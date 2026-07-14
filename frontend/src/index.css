@@ -1,0 +1,129 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ─────────────────────────────────────────────────────────────────────────
+   THE THEME. Every visual decision lives here. A reskin = edit these values
+   (or drop in a new block); components reference tokens only, never raw hex.
+   ───────────────────────────────────────────────────────────────────────── */
+@theme {
+  --font-display: "Space Grotesk", "IBM Plex Sans", system-ui, sans-serif;
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* warm-neutral surfaces + one confident graph-accent */
+  --color-surface: oklch(98.6% 0.006 85);
+  --color-panel: oklch(99.6% 0.003 85);
+  --color-ink: oklch(26% 0.012 65);
+  --color-muted: oklch(56% 0.014 70);
+  --color-hairline: oklch(89% 0.012 80);
+  /* vivid corporate blue (~Tailwind blue-600) - anchors the chat bubble + every interactive surface */
+  --color-accent: oklch(54.6% 0.245 262.9);
+  --color-accent-soft: oklch(95% 0.035 262.9);
+  --color-danger: oklch(58% 0.19 25);
+
+  /* graph label palette — HEX on purpose: NVL (WebGL) + Leaflet parse these
+     directly, where oklch() is not universally supported on canvas. Tuned deep/rich
+     so the nodes carry weight on the warm-light graph surface (not just on dark). */
+  --graph-1: #1c5fd6;
+  --graph-2: #e8590c;
+  --graph-3: #2b8a3e;
+  --graph-4: #9c36b5;
+  --graph-5: #0c8599;
+  --graph-6: #c2255c;
+  --graph-7: #e67700;
+  --graph-8: #5f3dc4;
+  --marker: #1c5fd6;
+  --marker-recurring: #e8590c;
+
+  /* strict per-label node colours (exact hexes, per spec); unspecified labels fall back to --graph-* */
+  --node-observation: #1d4ed8;
+  --node-category: #ea580c;
+  --node-incident: #16a34a;
+  --node-municipality: #7c3aed;
+  --node-source: #0891b2;
+  --node-data-entry: #dc2626;
+  --node-track: #0d9488;
+  --node-track-objective: #ca8a04;
+  --node-person: #65a30d;
+  --node-steerco-session: #475569;
+}
+
+/* ponytail: dark tokens are wired but deferred — no toggle ships yet. Flip by adding
+   class="dark" to <html>; adding a toggle is additive, with no component edits. */
+.dark {
+  --color-surface: oklch(21% 0.01 70);
+  --color-panel: oklch(25% 0.012 70);
+  --color-ink: oklch(95% 0.008 85);
+  --color-muted: oklch(70% 0.015 80);
+  --color-hairline: oklch(34% 0.014 75);
+  --color-accent: oklch(72% 0.16 262.9);
+  --color-accent-soft: oklch(34% 0.05 262.9);
+  --color-danger: oklch(70% 0.17 25);
+}
+
+@layer base {
+  html, body, #root { height: 100%; }
+  body {
+    margin: 0;
+    background-color: var(--color-surface);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Leaflet popups: theme-matched, rounded, soft-shadowed instead of the plugin's default sharp
+     white bubble + drop-shadow filter + blue-link close button. */
+  /* !important: leaflet.css is imported from inside MapView.tsx, which lands after index.css in
+     the bundle - without it, Leaflet's own equal-specificity rules win the cascade. */
+  .leaflet-popup-content-wrapper {
+    background: var(--color-panel) !important;
+    color: var(--color-ink) !important;
+    border-radius: 0.75rem !important;
+    box-shadow: 0 12px 28px -8px color-mix(in srgb, var(--color-ink) 22%, transparent) !important;
+    border: 1px solid var(--color-hairline) !important;
+  }
+  .leaflet-popup-content { margin: 0.65rem 0.8rem !important; font-family: var(--font-sans) !important; }
+  .leaflet-popup-tip {
+    background: var(--color-panel) !important;
+    box-shadow: none !important;
+  }
+  .leaflet-popup-tip-container { filter: none !important; }
+  .leaflet-popup-close-button {
+    color: var(--color-muted) !important;
+    font: 400 18px/1 var(--font-sans) !important;
+  }
+  .leaflet-popup-close-button:hover { color: var(--color-ink) !important; }
+
+  /* quiet scrollbars everywhere: thin, rounded, hairline-toned thumb on an invisible track */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--color-muted) 30%, transparent) transparent;
+  }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--color-muted) 30%, transparent);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--color-muted) 50%, transparent);
+  }
+}
+
+/* "thinking" shimmer - a light band sweeps across the label while the agent works */
+@keyframes shimmer {
+  from { background-position: 200% center; }
+  to { background-position: 0% center; }
+}
+.shimmer {
+  background: linear-gradient(90deg, var(--color-muted) 0%, var(--color-ink) 50%, var(--color-muted) 100%);
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: shimmer 1.6s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .shimmer { animation: none; }
+}

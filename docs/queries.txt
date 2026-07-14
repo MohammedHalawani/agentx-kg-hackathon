@@ -1,0 +1,437 @@
+
+# Q01 — Mandate status counts
+
+> **How many mandates are currently open, closed, and evolved across the programme?**
+> كم عدد التوجيهات المفتوحة والمغلقة والمتحولة حالياً على مستوى البرنامج؟
+
+**Persona:** Minister · **Surface:** Minister dashboard · **P1** · **Answerable: Yes**
+
+```cypher
+MATCH (m:Mandate)-[:HAS_CURRENT_STATE]->(s:MandateState)
+RETURN s.status AS status, count(m) AS mandates
+ORDER BY mandates DESC;
+```
+
+### Purpose
+The single headline number for governance follow-through. This is the first slide of
+every steering committee meeting.
+
+
+### The story behind it
+**Look closely at `HAS_CURRENT_STATE`.** The obvious query — the one everybody writes
+first — is `MATCH (m:Mandate)-[:HAS_STATE]->(s)`. It is wrong, and it is wrong in a way
+that looks right.
+
+A mandate appears in more than one document. Mandate MAN-0016 appears in the minutes of
+SteerCo 3, SteerCo 4 and SteerCo 5. Each appearance is a separate `MandateState` node —
+that is deliberate, because it is what gives us a history. `HAS_STATE` returns **all
+three**. Count on it and MAN-0016 is counted three times, in possibly three different
+statuses.
+
+`HAS_CURRENT_STATE` points at exactly one — the state we believe today, chosen by
+evidence strength first and recency second. Integrity assertion **A2** enforces that
+every mandate has exactly one.
+
+**And here is the finding to say out loud:** of 40 mandates, **11 had their current state
+chosen arbitrarily** — two or three sources tied on evidence strength and the graph had
+to break the tie deterministically rather than on merit. Every one is flagged
+`currentIsArbitrary = true`. Run this:
+
+```cypher
+MATCH (m:Mandate)-[:HAS_CURRENT_STATE]->(s:MandateState {currentIsArbitrary: true})
+RETURN m.mandateCode, s.status, s.assertedOn
+ORDER BY m.mandateCode;
+```
+
+Eleven rows. That is **27% of all mandates** whose headline status was decided by a
+tiebreak, not by evidence. The cause is a single missing column — see Q45.
+
+---
+
+# Q02 — Overdue mandates and their owners
+
+> **Which open mandates are past their due date, and who owns each one?**
+> ما هي التوجيهات المفتوحة التي تجاوزت تاريخ استحقاقها، ومن المسؤول عن كل منها؟
+
+**Persona:** Minister · **Surface:** Minister dashboard · **P1** · **Answerable: Yes**
+
+```cypher
+MATCH (m:Mandate)-[:HAS_CURRENT_STATE]->(s:MandateState)
+WHERE s.status <> 'Closed'
+  AND coalesce(s.dueDate, m.originalDueDate) < date()
+MATCH (m)-[:HAS_ASSIGNMENT]->(a:Assignment)-[:TO]->(owner:Accountable)
+WHERE a.isCurrent
+RETURN m.mandateCode                          AS mandate,
+       m.text_ar                              AS directive,
+       coalesce(s.dueDate, m.originalDueDate) AS due,
+       duration.inDays(coalesce(s.dueDate, m.originalDueDate), date()).days AS days_overdue,
+       owner.displayName_ar                   AS owner,
+       head(labels(owner))                    AS owner_type
+ORDER BY days_overdue DESC;
+```
+
+### Purpose
+Overdue plus a **named owner** is the core accountability view. Not "the ministry is
+late" — *this person* is late, by *this many days*.
+
+
+### The story behind it
+Three things in this query are doing quiet work.
+
+**`coalesce(s.dueDate, m.originalDueDate)`.** The mandate carries `originalDueDate` —
+the deadline **as issued**, immutable. The *current* deadline lives on the state. If they
+differ, the deadline was extended. In v1 the due date was simply overwritten, and
+"was this deadline moved?" was permanently unanswerable. Now:
+
+```cypher
+MATCH (m:Mandate)-[:HAS_CURRENT_STATE]->(s:MandateState)
+WHERE s.dueDate <> m.originalDueDate
+RETURN m.mandateCode, m.originalDueDate AS issued_as, s.dueDate AS now, s.assertedOn;
+```
+
+**`-[:TO]->(owner:Accountable)` with no label branching.** The owner might be a Person, an
+Entity, a Position, or the Programme itself. Without the supertype, this query needs four
+branches and a `coalesce` over two different name properties. With it, one line.
+
+**`WHERE a.isCurrent`.** Assignments are *time-bounded* — the `Assignment` node carries
+`validFrom` / `validTo`. That exists so we can answer the question that matters when
+something goes wrong: **"who owned it when it went overdue?"** — not "who owns it now,
+after it was quietly reassigned."
+
+
+# Q07 — Mandates with no named individual owner
+
+> **What proportion of mandates have no named individual owner (assigned only to an entity or to the programme)?**
+> ما نسبة التوجيهات التي ليس لها مسؤول محدد بالاسم؟
+
+**Persona:** Audit / PMO · **Surface:** Management dashboard · **P1** · **Answerable: Yes**
+
+```cypher
+MATCH (m:Mandate)-[:HAS_ASSIGNMENT]->(a:Assignment)-[:TO]->(owner:Accountable)
+WHERE a.isCurrent
+WITH m, collect(head(labels(owner))) AS owner_types
+WITH CASE WHEN 'Person' IN owner_types THEN 'Named individual'
+          ELSE 'No named individual' END AS ownership,
+     count(m) AS mandates
+WITH collect({ownership: ownership, mandates: mandates}) AS rows,
+     sum(mandates) AS total
+UNWIND rows AS r
+RETURN r.ownership                          AS ownership,
+       r.mandates                           AS mandates,
+       round(100.0 * r.mandates / total, 1) AS pct
+ORDER BY mandates DESC;
+```
+
+Then the drilldown — *who* is carrying the diffuse ones:
+
+```cypher
+MATCH (m:Mandate)-[:HAS_ASSIGNMENT]->(a:Assignment)-[:TO]->(owner:Accountable)
+WHERE a.isCurrent AND NOT owner:Person
+RETURN head(labels(owner))   AS owner_type,
+       owner.displayName_ar  AS owner,
+       count(m)              AS mandates,
+       collect(m.mandateCode)[0..5] AS examples
+ORDER BY mandates DESC;
+```
+
+### Purpose
+Surfaces **diffuse accountability as a measurable finding**, not as a data defect.
+
+
+
+# Q11 — Which mandates created which tracks
+
+> **Which tracks and sub-tracks were created by a steering committee mandate, and which mandate created them?**
+> ما هي المسارات والمسارات الفرعية التي أُنشئت بموجب توجيه من اللجنة؟
+
+**Persona:** Minister · **Surface:** Minister dashboard · **P1** · **Answerable: Yes**
+
+```cypher
+MATCH (m:Mandate)-[:EVOLVED_INTO]->(d:DeliveryUnit)
+OPTIONAL MATCH (mtg:Meeting)-[:ISSUED]->(m)
+OPTIONAL MATCH (mtg)-[:CONVENED_BY]->(c:Committee)
+RETURN head(labels(d))      AS created,
+       d.displayName_ar     AS delivery_unit,
+       m.mandateCode        AS from_mandate,
+       m.text_ar            AS directive,
+       m.evolvedDate        AS evolved_on,
+       mtg.meetingNumber    AS meeting,
+       c.displayName_ar     AS committee
+ORDER BY m.evolvedDate;
+```
+
+### Purpose
+**This is the thesis of the whole graph: decisions becoming delivery.**
+
+# Q15 — FLAGSHIP: trace the full story
+
+> **Trace the full story: which meeting issued this mandate, who owned it, what it became, and where that work stands today.**
+> تتبّع القصة كاملة: أي اجتماع أصدر هذا التوجيه، ومن كان مسؤولاً عنه، وإلى ماذا تحوّل، وأين وصل هذا العمل اليوم.
+
+**Persona:** Minister · **Surface:** Conversational (LLM) · **P1** · **Answerable: Yes**
+
+```cypher
+MATCH (m:Mandate {mandateCode: $code})
+
+// 1. Authority — which body decided this
+OPTIONAL MATCH (mtg:Meeting)-[:ISSUED]->(m)
+OPTIONAL MATCH (mtg)-[:CONVENED_BY]->(c:Committee)
+
+// 2. Ownership — who was accountable
+OPTIONAL MATCH (m)-[:HAS_ASSIGNMENT]->(a:Assignment)-[:TO]->(owner:Accountable)
+                WHERE a.isCurrent
+
+// 3. Current status
+OPTIONAL MATCH (m)-[:HAS_CURRENT_STATE]->(s:MandateState)
+
+// 4. What it became
+OPTIONAL MATCH (m)-[:EVOLVED_INTO]->(d:DeliveryUnit)
+
+// 5. Where that work stands
+OPTIONAL MATCH (d)<-[:PROGRESS_OF]-(snap:ProgressSnapshot)
+OPTIONAL MATCH (tu:TrackUpdate)-[:REPORTS_ON]->(d)
+
+// 6. Evidence
+OPTIONAL MATCH (m)-[:EVIDENCED_BY]->(doc:Document)
+
+RETURN c.displayName_ar    AS committee,
+       mtg.meetingNumber   AS meeting,
+       mtg.meetingDate     AS met_on,
+       m.mandateCode       AS mandate,
+       m.text_ar           AS directive,
+       owner.displayName_ar AS owner,
+       head(labels(owner)) AS owner_type,
+       s.status            AS status,
+       d.displayName_ar    AS became,
+       head(labels(d))     AS became_type,
+       snap.completionPct  AS progress,
+       snap.observedOn     AS progress_as_at,
+       tu.narrative_ar     AS latest_update,
+       collect(DISTINCT doc.title) AS evidence;
+```
+
+Try it on an evolved mandate — those tell the best story:
+
+```cypher
+MATCH (m:Mandate)-[:EVOLVED_INTO]->(:DeliveryUnit)
+RETURN m.mandateCode LIMIT 5;
+```
+
+### Purpose
+**Five hops. Impossible in a spreadsheet; trivial in a graph.** This is the query that
+justifies the entire project.
+
+# Q20 — Latest update for my track, with evidence
+
+> **Summarise the latest update for my track, with the key highlights and the source document.**
+> لخّص آخر تحديث لمساري، مع أبرز النقاط والوثيقة المصدر.
+
+**Persona:** Track owner · **Surface:** Conversational (LLM) · **P1** · **Answerable: Yes**
+
+```cypher
+MATCH (t:Track {trackId: $trackId})<-[:REPORTS_ON]-(tu:TrackUpdate)
+WITH t, tu ORDER BY tu.updateDate DESC LIMIT 1
+OPTIONAL MATCH (tu)-[:HAS_HIGHLIGHT]->(k:KeyHighlight)
+OPTIONAL MATCH (tu)-[:EVIDENCED_BY]->(doc:Document)
+OPTIONAL MATCH (tu)-[:REPORTS_PROGRESS]->(s:ProgressSnapshot)
+RETURN t.displayName_ar  AS track,
+       tu.updateDate     AS reported_on,
+       tu.narrative_ar   AS narrative,
+       s.completionPct   AS completion,
+       collect(DISTINCT {order: k.order, text: k.text_ar}) AS highlights,
+       collect(DISTINCT {title: doc.title, format: doc.format, date: doc.sourceDate}) AS sources;
+```
+
+### Purpose
+**The primary LLM retrieval pattern.** `KeyHighlight` is the *citable unit* — the chunk
+the model quotes.
+# Q32 — SHOWCASE: mandates given to people who do not attend
+
+> **Which people are being given mandates but rarely attend the meetings where those mandates are issued?**
+> من هم الأشخاص الذين تُسند إليهم توجيهات لكنهم نادراً ما يحضرون الاجتماعات التي تصدر فيها تلك التوجيهات؟
+
+**Persona:** Minister · **Surface:** Conversational (LLM) · **P1** · **Answerable: Yes**
+
+```cypher
+MATCH (mtg:Meeting)-[:ISSUED]->(m:Mandate)
+      -[:HAS_ASSIGNMENT]->(asg:Assignment)-[:TO]->(p:Person)
+WHERE asg.isCurrent
+
+// Was this person actually in the room when their mandate was issued?
+OPTIONAL MATCH (p)-[:PARTICIPATED_AS]->(att:Attendance)-[:AT_MEETING]->(mtg)
+
+WITH p,
+     count(DISTINCT m)   AS mandates_received,
+     count(DISTINCT CASE WHEN att.statusCode = 'PRESENT'
+                         THEN mtg END) AS meetings_present_at,
+     count(DISTINCT CASE WHEN att IS NULL
+                         THEN mtg END) AS meetings_absent_from
+RETURN p.displayName_ar   AS person,
+       mandates_received,
+       meetings_present_at,
+       meetings_absent_from,
+       round(100.0 * meetings_present_at /
+             CASE WHEN mandates_received = 0 THEN 1
+                  ELSE mandates_received END, 0) AS pct_in_the_room
+ORDER BY mandates_received DESC, pct_in_the_room ASC;
+```
+
+### Purpose
+**A genuine multi-hop insight that no report currently produces.** Not a metric anyone
+asked for — a *pattern* the graph reveals.
+
+
+# Q34 — Who leads a track and its sub-tracks
+
+> **Who leads a given track, and who leads each of its sub-tracks?**
+> من يقود مساراً معيّناً، ومن يقود كل مسار فرعي تابع له؟
+
+**Persona:** Ops · **Surface:** Operations dashboard · **P1** · **Answerable: Yes**
+
+```cypher
+MATCH (t:Track {trackId: $trackId})
+
+OPTIONAL MATCH (leader:Person)-[:HOLDS]->(ra:RoleAssignment)-[:IN_CONTEXT]->(t)
+OPTIONAL MATCH (ra)-[:AS_ROLE]->(role:Role)
+
+OPTIONAL MATCH (st:SubTrack)-[:PART_OF]->(t)
+OPTIONAL MATCH (sl:Person)-[:HOLDS]->(sra:RoleAssignment)-[:IN_CONTEXT]->(st)
+OPTIONAL MATCH (sra)-[:AS_ROLE]->(srole:Role)
+
+RETURN t.displayName_ar        AS track,
+       leader.displayName_ar   AS track_leader,
+       role.displayName_ar     AS track_role,
+       st.displayName_ar       AS subtrack,
+       sl.displayName_ar       AS subtrack_leader,
+       srole.displayName_ar    AS subtrack_role
+ORDER BY subtrack;
+```
+
+The whole leadership map at once:
+
+```cypher
+MATCH (p:Person)-[:HOLDS]->(ra:RoleAssignment)-[:IN_CONTEXT]->(d:DeliveryUnit)
+MATCH (ra)-[:AS_ROLE]->(r:Role)
+RETURN head(labels(d))    AS unit_type,
+       d.displayName_ar   AS unit,
+       r.displayName_ar   AS role,
+       p.displayName_ar   AS person
+ORDER BY unit_type, unit;
+```
+
+### Purpose
+The basic **"who do I call"** question.
+# Q39 — Institutional performance league table
+
+> **Which ministries and agencies have mandates assigned to them, and what is each one's closure rate?**
+> ما هي الوزارات والجهات التي أُسندت إليها توجيهات، وما معدل الإغلاق لكل منها؟
+
+**Persona:** Minister · **Surface:** Minister dashboard · **P1** · **Answerable: Yes**
+
+```cypher
+MATCH (e:Entity)<-[:TO]-(a:Assignment)<-[:HAS_ASSIGNMENT]-(m:Mandate)
+      -[:HAS_CURRENT_STATE]->(s:MandateState)
+WHERE a.isCurrent
+WITH e,
+     count(m)                                                   AS total,
+     sum(CASE WHEN s.status = 'Closed'  THEN 1 ELSE 0 END)      AS closed,
+     sum(CASE WHEN s.status = 'Evolved' THEN 1 ELSE 0 END)      AS evolved,
+     sum(CASE WHEN s.status <> 'Closed'
+               AND coalesce(s.dueDate, date('2099-01-01')) < date()
+              THEN 1 ELSE 0 END)                                AS overdue
+RETURN e.displayName_ar   AS entity,
+       e.entityType       AS type,
+       total, closed, evolved, overdue,
+       round(100.0 * closed / total, 1) AS closure_rate_pct
+ORDER BY total DESC, closure_rate_pct ASC;
+```
+
+### Purpose
+**Institutional performance league table.** Shifts accountability from individuals to
+institutions.
+# Q51 — On whose authority does this rest?
+
+> **On whose authority does this commitment rest — which committee, which meeting, which date?**
+> على أي سلطة يستند هذا الالتزام — أي لجنة، وأي اجتماع، وأي تاريخ؟
+
+**Persona:** Minister · **Surface:** Drilldown · **P1** · **Answerable: Yes**
+
+```cypher
+MATCH (m:Mandate {mandateCode: $code})
+MATCH (mtg:Meeting)-[:ISSUED]->(m)
+MATCH (mtg)-[:CONVENED_BY]->(c:Committee)
+OPTIONAL MATCH (c)-[:GOVERNS]->(prog:Programme)
+OPTIONAL MATCH (doc:Document)-[:PRODUCED_BY]->(mtg)
+RETURN m.mandateCode        AS mandate,
+       m.text_ar            AS directive,
+       c.displayName_ar     AS decided_by_committee,
+       mtg.meetingNumber    AS meeting_number,
+       mtg.meetingDate      AS meeting_date,
+       mtg.hijriDate        AS hijri_date,
+       prog.displayName_ar  AS under_programme,
+       collect(doc.title)   AS recorded_in;
+```
+
+The full authority chain across the programme:
+
+```cypher
+MATCH (c:Committee)<-[:CONVENED_BY]-(mtg:Meeting)-[:ISSUED]->(m:Mandate)
+RETURN c.displayName_ar AS committee,
+       count(DISTINCT mtg) AS meetings,
+       count(m)            AS mandates_issued
+ORDER BY mandates_issued DESC;
+```
+
+### Purpose
+**Customer-requested.** Authority is the **legitimacy chain** behind every mandate.
+# Q64 — Faceted mandate filter
+
+> **Show mandates by status (open / overdue / closed), filtered by track, sub-track, committee, entity or person — any combination.**
+> أعرض التوجيهات بحسب الحالة، مع إمكانية التصفية حسب المسار أو اللجنة أو الجهة أو الشخص.
+
+**Persona:** Ops · **Surface:** Drilldown · **P1** · **Answerable: Yes**
+
+```cypher
+// Every filter is optional. Pass null to ignore it.
+// :status :trackId :subTrackId :committeeId :entityId :personId
+
+MATCH (m:Mandate)-[:HAS_CURRENT_STATE]->(s:MandateState)
+
+OPTIONAL MATCH (m)-[:HAS_ASSIGNMENT]->(a:Assignment)-[:TO]->(owner:Accountable)
+                WHERE a.isCurrent
+OPTIONAL MATCH (m)-[:RELATES_TO]->(d:DeliveryUnit)
+OPTIONAL MATCH (mtg:Meeting)-[:ISSUED]->(m)
+OPTIONAL MATCH (mtg)-[:CONVENED_BY]->(c:Committee)
+
+// owner/delivery-unit/committee all fan out (RELATES_TO is many-cardinality, and a
+// mandate can have more than one current owner or issuing meeting), so collect them per
+// mandate BEFORE filtering/returning - otherwise one mandate produces one row per
+// owner x delivery-unit x committee combination and every status count downstream is
+// inflated by however many relations that particular mandate happens to have.
+WITH m, s,
+     CASE WHEN s.status = 'Closed' THEN 'Closed'
+          WHEN coalesce(s.dueDate, m.originalDueDate) < date() THEN 'Overdue'
+          ELSE 'Open' END AS derived_status,
+     collect(DISTINCT owner) AS owners,
+     collect(DISTINCT d)     AS delivery_units,
+     collect(DISTINCT c)     AS committees
+
+WHERE ($status      IS NULL OR derived_status = $status)
+  AND ($trackId     IS NULL OR any(x IN delivery_units WHERE x.trackId = $trackId))
+  AND ($subTrackId  IS NULL OR any(x IN delivery_units WHERE x.subTrackId = $subTrackId))
+  AND ($committeeId IS NULL OR any(x IN committees WHERE x.committeeId = $committeeId))
+  AND ($entityId    IS NULL OR any(x IN owners WHERE x.entityId = $entityId))
+  AND ($personId    IS NULL OR any(x IN owners WHERE x.personId = $personId))
+
+RETURN derived_status                           AS status,
+       m.mandateCode                            AS mandate,
+       m.text_ar                                AS directive,
+       coalesce(s.dueDate, m.originalDueDate)   AS due,
+       [x IN owners | x.displayName_ar]         AS owner,
+       [x IN delivery_units | x.displayName_ar] AS delivery_unit,
+       [x IN committees | x.displayName_ar]     AS committee
+ORDER BY status, due;
+```
+
+### Purpose
+**Customer-requested.** Extends Q01/Q02 into a **faceted-filter** requirement.

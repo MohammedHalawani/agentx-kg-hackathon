@@ -1,0 +1,396 @@
+# =====================================================================
+# SINGLE SOURCE OF TRUTH.
+#
+# schema.cypher, the schema documentation tables, and the loader's
+# label/key map are all GENERATED from this file (gen_schema.py).
+# Nothing may be hand-edited downstream. This closes finding F-14 and
+# the whole F-25 drift class by construction.
+# =====================================================================
+
+version: 2.0.0
+
+# ---------------------------------------------------------------------
+# Naming conventions (F-23)
+#   labels        PascalCase
+#   relationships UPPER_SNAKE_CASE, active verb
+#   properties    camelCase
+#   key property  ALWAYS <label>Id  — no exceptions
+#   display name  ALWAYS displayName_ar / displayName_en on every named node
+#   prose body    ALWAYS text_ar
+# ---------------------------------------------------------------------
+
+supertypes:
+  DeliveryUnit:
+    members: [Track, SubTrack]
+    why: >
+      Four relationships must target "a Track or a SubTrack" (RELATES_TO,
+      EVOLVED_INTO, REPORTS_ON, IN_CONTEXT). One edge type, not two.
+  Accountable:
+    members: [Person, Entity, Position, Programme]
+    why: >
+      F-17. ASSIGNED_TO was polymorphic with no supertype while the identical
+      case for delivery was solved with :DeliveryUnit. Every accountability
+      query had to branch on label and coalesce two display-property names.
+      Programme stays in the set: a Programme-assigned mandate IS an
+      accountability answer (Q07) — just a bad one.
+
+nodes:
+
+  Programme:
+    key: programmeId
+    labels: [Accountable]
+    registry: true                # authoritative — may CREATE nodes
+    props:
+      displayName_ar: {type: string}
+      displayName_en: {type: string}
+      programmeType:  {type: string}
+    questions: [Q59, Q63]
+
+  Committee:
+    key: committeeId
+    registry: true
+    props:
+      displayName_ar: {type: string, note: "F-22 — was never populated"}
+      displayName_en: {type: string}
+    fulltext: [displayName_ar, displayName_en]   # F-22
+    questions: [Q51, Q60, Q64]
+
+  Meeting:
+    key: meetingId
+    registry: true
+    props:
+      meetingNumber: {type: int}
+      meetingDate:   {type: date, index: true}
+      hijriDate:     {type: string}
+      startTime:     {type: string}
+      endTime:       {type: string}
+    questions: [Q04, Q31, Q51, Q60]
+
+  Person:
+    key: personId
+    labels: [Accountable]
+    registry: true
+    props:
+      displayName_ar:  {type: string, note: "F-17/F-23 — was canonicalName_ar"}
+      normalisedName:  {type: string, note: "identity-matching key, not display"}
+      nameVariants:    {type: list}
+      honorificPrefix: {type: string, note: "F-10 of register 1 — was jopTitle"}
+    fulltext: [displayName_ar, normalisedName]
+    questions: [Q05, Q29, Q30, Q31, Q32, Q33, Q34, Q35, Q36, Q37, Q38, Q57, Q63]
+
+  Position:
+    key: positionId
+    labels: [Accountable]
+    registry: true
+    props:
+      displayName_ar: {type: string}
+      displayName_en: {type: string}
+    fulltext: [displayName_ar]
+    why: >
+      F-07. أمين محافظة جدة was routed out of :Person and
+      then dropped entirely — no node, no assignment edge — so a mandate held
+      by a clearly accountable public office was counted as UNOWNED, corrupting
+      the very Q07 metric the routing was justified by. A Position also survives
+      the office-holder changing, which is correct for government.
+    questions: [Q02, Q05, Q07, Q35, Q36]
+
+  Entity:
+    key: entityId
+    labels: [Accountable]
+    registry: true
+    props:
+      displayName_ar: {type: string}
+      displayName_en: {type: string}
+      sector:         {type: string, index: true}
+      entityType:     {type: string}
+      externalIds:    {type: list, note: "F-15 — every upstream ID ever seen"}
+    fulltext: [displayName_ar, displayName_en]
+    sublabels:
+      source: entityType_column     # F-16 — NEVER from the ID prefix
+      values: [Ministry, Agency, Municipality, InternalUnit, PrivateEntity]
+    questions: [Q06, Q39, Q40, Q41, Q57, Q61, Q64]
+
+  Track:
+    key: trackId
+    labels: [DeliveryUnit]
+    registry: true
+    props:
+      displayName_ar: {type: string}
+      startDate:      {type: date}
+    questions: [Q16, Q17, Q18, Q19, Q20, Q59, Q64]
+
+  SubTrack:
+    key: subTrackId
+    labels: [DeliveryUnit]
+    registry: true
+    props:
+      displayName_ar: {type: string}
+    questions: [Q18, Q21, Q59, Q64]
+
+  Role:
+    key: roleId
+    registry: true
+    props:
+      displayName_ar: {type: string}
+    why: >
+      F-06. Roles were keyed as ROL-{normalised Arabic name truncated to 40
+      chars} — a name-derived namespace, the exact failure the normalisation
+      work existed to prevent. Truncation could also COLLIDE two distinct roles.
+      Now a real registry with stable IDs, frozen in config/role_registry.csv.
+    questions: [Q31, Q34, Q65]
+
+  Mandate:
+    key: mandateId
+    props:
+      mandateCode:     {type: string}
+      text_ar:         {type: string}
+      category:        {type: string, note: "was mis-named mandateTitle"}
+      issuedDate:      {type: date, index: true}
+      originalDueDate: {type: date, index: true, note: "F-18 — immutable, as issued. Current due date lives on MandateState."}
+      closedDate:      {type: date, index: true}
+      evolvedDate:     {type: date}
+    fulltext: [text_ar]
+    questions: [Q01, Q02, Q03, Q04, Q05, Q07, Q08, Q56]
+
+  MandateState:
+    key: mandateStateId          # F-23 — was stateId
+    props:
+      status:        {type: string, index: true}
+      dueDate:       {type: date}
+      updateText_ar: {type: string}
+      validFrom:     {type: date}
+      validTo:       {type: date}
+      assertedOn:    {type: date}
+      evidenceRank:  {type: int, note: "F-11/F-20 — from the signed evidence policy"}
+      isCurrent:     {type: bool, index: true}
+    fulltext: [updateText_ar]    # F-24 — the MOST current narrative was unindexed
+    questions: [Q01, Q08, Q56]
+
+  Assignment:
+    key: assignmentId
+    props:
+      validFrom: {type: date}
+      validTo:   {type: date}
+      isCurrent: {type: bool, index: true}
+    why: >
+      F-08. ASSIGNED_TO carried no validity interval, so every overdue mandate
+      was attributed to its CURRENT owner with no record of who held it when it
+      slipped. The schema argued this exact point to justify RoleAssignment and
+      then failed to apply it to its single most-queried edge.
+    questions: [Q02, Q06, Q35, Q49, Q50, Q62]
+
+  Attendance:
+    key: attendanceId
+    props:
+      statusCode:  {type: string, index: true, note: "F-13/F-21 — controlled vocabulary"}
+      statusLabel_ar: {type: string, note: "original Arabic, retained for audit"}
+    questions: [Q29, Q30, Q31, Q33]
+
+  RoleAssignment:
+    key: roleAssignmentId
+    props:
+      validFrom: {type: date}
+      validTo:   {type: date}
+      isCurrent: {type: bool, index: true}
+    questions: [Q34, Q37, Q65]
+
+  CommitteeMembership:
+    key: committeeMembershipId
+    props:
+      validFrom: {type: date}
+      validTo:   {type: date}
+      isCurrent: {type: bool, index: true}
+    why: >
+      F-10. No Person->Committee membership existed anywhere, yet Q38 ("which
+      assignees are NOT committee members?") was marked GREEN/answerable in the
+      sheet the customer was about to mark up. Attendance RATE (Q29) is also
+      blocked at schema level, not merely by the absentee data gap: a rate needs
+      a denominator of "meetings where this person was a member at the time".
+    questions: [Q29, Q33, Q38]
+
+  TrackUpdate:
+    key: trackUpdateId
+    props:
+      updateDate:   {type: date, index: true}
+      narrative_ar: {type: string}
+    fulltext: [narrative_ar]
+    questions: [Q16, Q17, Q19, Q20, Q25, Q28]
+
+  ProgressSnapshot:
+    key: progressSnapshotId
+    props:
+      completionPct:   {type: float}
+      milestoneStatus: {type: string}
+      observedOn:      {type: date, index: true}
+      derived:         {type: bool, note: "true = no TrackUpdate anchor; see F-14"}
+    questions: [Q16, Q17, Q59]
+
+  KeyHighlight:
+    key: keyHighlightId
+    props:
+      order:   {type: int}
+      text_ar: {type: string}
+    fulltext: [text_ar]
+    questions: [Q20]
+
+  BudgetLine:
+    key: budgetLineId
+    props:
+      budgetType_ar:   {type: string}
+      periodYear:      {type: int, index: true}
+      requiredBudget:  {type: float}
+      approvedBudget:  {type: float}
+      expendedAmount:  {type: float}
+      remainingAmount: {type: float}
+      revenueTarget:   {type: float}
+      revenueActual:   {type: float}
+    questions: [Q24, Q25, Q26, Q27, Q28]
+
+  ExpectedResult:
+    key: expectedResultId
+    props:
+      title_ar:       {type: string}
+      text_ar:        {type: string}
+      deliveryStatus: {type: string}
+    fulltext: [title_ar, text_ar]
+    questions: [Q21, Q22, Q23]
+
+  SupportRequest:
+    key: supportRequestId
+    props:
+      text_ar:     {type: string}
+      requestDate: {type: date}
+      statusCode:  {type: string, note: "F-21 — controlled vocabulary"}
+    fulltext: [text_ar]          # F-24
+    questions: [Q42, Q43, Q44]
+
+  EscalationEvent:
+    key: escalationEventId       # F-23 — was escalationId
+    props:
+      escalationLevel: {type: string}
+      escalationDate:  {type: date, index: true}
+    questions: [Q43, Q44, Q60]
+
+  Document:
+    key: documentId
+    props:
+      title:          {type: string}
+      format:         {type: string, index: true}
+      isSigned:       {type: bool, note: "F-20 — the dimension format cannot carry"}
+      sourceDate:     {type: date, index: true}
+      evidenceRank:   {type: int, note: "F-20 — from config/evidence_policy.csv, NOT derived in code"}
+    questions: [Q10, Q45, Q46, Q48, Q52]
+
+  Excerpt:
+    key: excerptId
+    props:
+      page:    {type: int}
+      section: {type: string}
+      text_ar: {type: string}
+    fulltext: [text_ar]
+    populated: false
+    questions: [Q45]
+
+relationships:
+
+  # --- structure
+  GOVERNS:        {from: Committee, to: Programme,  questions: [Q51]}
+  CONVENED_BY:    {from: Meeting,   to: Committee,  questions: [Q51, Q60]}
+  PART_OF:
+    pairs: [[Track, Programme], [SubTrack, Track], [Entity, Entity]]
+    props: {validFrom: date, validTo: date}    # F-08 — a 2024 mandate must roll up to the 2024 org chart
+    questions: [Q40, Q59]
+  LOCATED_IN:     {from: DeliveryUnit, to: Entity, populated: false, questions: [Q61]}
+
+  # --- decision spine
+  ISSUED:         {from: Meeting, to: Mandate, questions: [Q04, Q51]}
+  HAS_STATE:      {from: Mandate, to: MandateState, questions: [Q01, Q08]}
+  HAS_CURRENT_STATE:
+    from: Mandate
+    to: MandateState
+    cardinality: exactly_one     # F-02 — enforced by tests/integrity.cypher
+    questions: [Q01]
+  CONTRADICTS:
+    from: MandateState
+    to: MandateState
+    why: >
+      F-11. The model could express uncertainty about WHEN a fact was true but
+      not DISAGREEMENT about WHETHER it was true. With three source channels
+      (signed minutes, tracking sheets, a WhatsApp group) conflict is the NORMAL
+      case, and "these two documents disagree about whether this is done" is
+      arguably the highest-value output a governance graph can produce.
+    questions: [Q01, Q10, Q46, Q52]
+  HAS_ASSIGNMENT: {from: Mandate,    to: Assignment,  questions: [Q02, Q05]}
+  TO:             {from: Assignment, to: Accountable, questions: [Q02, Q05, Q06, Q07]}
+  RELATES_TO:
+    from: Mandate
+    to: DeliveryUnit
+    cardinality: many
+    questions: [Q58]
+  EVOLVED_INTO:
+    from: Mandate
+    to: [DeliveryUnit, Mandate]
+    chainable: true
+    questions: [Q11, Q53, Q54]
+  SUPERSEDES:     {from: Mandate, to: Mandate, populated: false, questions: [Q55]}
+
+  # --- participation
+  PARTICIPATED_AS: {from: Person,     to: Attendance, questions: [Q31]}
+  AT_MEETING:      {from: Attendance, to: Meeting,    questions: [Q31]}
+  DELEGATED_TO:    {from: Attendance, to: Person,     questions: [Q30]}
+  IN_ROLE:         {from: Attendance, to: Role,       questions: [Q31]}
+  HAS_MEMBERSHIP:  {from: Person,     to: CommitteeMembership, questions: [Q38]}
+  OF_COMMITTEE:    {from: CommitteeMembership, to: Committee,  questions: [Q29, Q38]}
+  HOLDS:           {from: Person,         to: RoleAssignment,          questions: [Q34]}
+  AS_ROLE:         {from: RoleAssignment, to: Role,                    questions: [Q34]}
+  IN_CONTEXT:      {from: RoleAssignment, to: [Programme, DeliveryUnit], questions: [Q65]}
+  HOLDS_POSITION:  {from: Person,         to: Position, props: {validFrom: date, validTo: date}, questions: [Q07]}
+  AFFILIATED_WITH: {from: Person,         to: Entity,   questions: [Q57]}
+
+  # --- delivery spine
+  REPORTS_ON:       {from: TrackUpdate,      to: DeliveryUnit,     questions: [Q19, Q20]}
+  REPORTS_PROGRESS: {from: TrackUpdate,      to: ProgressSnapshot, questions: [Q16, Q17]}   # F-14 — was declared, never emitted
+  PROGRESS_OF:      {from: ProgressSnapshot, to: DeliveryUnit,     questions: [Q16]}
+  HAS_HIGHLIGHT:    {from: TrackUpdate,      to: KeyHighlight,     questions: [Q20]}
+  REPORTS_BUDGET:   {from: TrackUpdate,      to: BudgetLine,       questions: [Q24, Q25]}
+  RAISED:           {from: TrackUpdate,      to: SupportRequest,   questions: [Q42]}
+  CONCERNS:         {from: SupportRequest,   to: DeliveryUnit,     questions: [Q42]}
+  ESCALATED_VIA:    {from: SupportRequest,   to: EscalationEvent,  questions: [Q43]}
+  RAISED_BY:        {from: EscalationEvent,  to: Person,           questions: [Q43]}
+  RESULTED_IN:      {from: EscalationEvent,  to: Mandate, populated: false, questions: [Q44]}
+  HAS_EXPECTED_RESULT: {from: SubTrack, to: ExpectedResult, questions: [Q21, Q22, Q23]}
+
+  # --- provenance
+  EVIDENCED_BY:
+    from: [Mandate, MandateState, TrackUpdate, ExpectedResult, BudgetLine, Assignment]
+    to: Document
+    props:
+      extractionMethod: string
+      extractedBy:      string
+      extractedOn:      date
+      asserted:         bool      # F-01 — NULL when unknown. NEVER hardcoded true.
+      confidence:       string
+    questions: [Q45, Q46, Q47, Q48, Q52]
+  PART_OF_DOC:  {from: Excerpt,  to: Document, populated: false, questions: [Q45]}
+  PRODUCED_BY:  {from: Document, to: Meeting,  questions: [Q07, Q51]}   # F-14 — was declared, never emitted
+
+# ---------------------------------------------------------------------
+# Deliberately unpopulated. An empty edge makes an ORGANISATIONAL gap
+# visible. An empty edge presented as populated (see F-01) is a lie.
+# ---------------------------------------------------------------------
+known_gaps:
+  - {edge: RESULTED_IN,  question: Q44, gap: "Minutes never link an escalation to the mandate it produced."}
+  - {edge: SUPERSEDES,   question: Q55, gap: "No mandate-to-mandate relationship exists in any source."}
+  - {edge: LOCATED_IN,   question: Q61, gap: "Geography is buried in Arabic free text inside sub-track names."}
+  - {edge: PART_OF_DOC,  question: Q45, gap: "Extraction does not capture page/section."}
+  - {prop: "EVIDENCED_BY.asserted", question: Q47, gap: "Extraction does not record stated-vs-inferred. Loaded as NULL, never true."}
+  - {prop: "ExpectedResult.deliveryStatus", question: Q21, gap: "Empty in all 54 real rows."}
+  - {prop: "multiple MandateState per Mandate", question: Q08, gap: "Extract still collapses to one row per mandate."}
+
+# ---------------------------------------------------------------------
+# Full-text analyzer. F-09: the default analyzer does NO Arabic folding or
+# stemming, so a user searching جده would never match جدة. Orthography was
+# solved for 41 person records and left open across every retrieval unit the
+# LLM actually searches.
+# ---------------------------------------------------------------------
+fulltext_analyzer: arabic

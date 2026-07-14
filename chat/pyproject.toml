@@ -1,0 +1,18 @@
+[project]
+name = "steerco-kg-chat"
+version = "0.1.0"
+description = "Chat + dashboard + filter + map app over the steering-committee governance Neo4j graph"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "langchain-litellm>=0.2.4",
+    "langgraph>=1.2.5",
+    "litellm>=1.61",
+    "neo4j>=6.2.0",
+    "python-dotenv>=1.2.0",
+    "pyyaml>=6.0.3",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
