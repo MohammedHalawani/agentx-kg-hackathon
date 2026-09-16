@@ -4,6 +4,9 @@ thing that is (the new Resolution/Outcome chain, once a recommendation is accept
 """
 from typing import Literal, TypedDict
 
+Verdict = Literal["accept", "reject"]
+Disposition = Literal["execute", "escalate"]
+
 
 class ExtractedComplaint(TypedDict):
     """Structured fields pulled from the free-text complaint by extract.py. All optional -
@@ -18,30 +21,33 @@ class ExtractedComplaint(TypedDict):
 
 
 class RetrievedContext(TypedDict):
-    """The fused output of retrieve.py's vector_search + graph_traversal, ready for the
-    classifier - resolved historical cases (with their FailureReason/Resolution/Outcome
-    chain) plus any graph-local context around the current complaint's own shipment."""
-    similar_cases: list[dict]     # resolved FailureReason nodes + their case_summary, ranked
-    local_subgraph: dict          # nodes/relationships within N hops of the matched shipment
+    """The fused output of retrieve.py's vector_search + graph_traversal - resolved
+    historical cases (with their FailureReason/Resolution/Outcome chain) plus the graph-local
+    context around the complaint's own shipment."""
+    similar_cases: list[dict]   # resolved cases, RRF-ranked, each with action + outcome
+    local_subgraph: dict        # {shipment, events, failure, courier, address, policy}
+    live_failure_id: str | None  # the unresolved FailureReason this complaint is about
 
 
 class Classification(TypedDict):
-    category: str        # matches an existing FailureReason.category value where possible
-    confidence: float     # 0-1
+    category: str      # matches an existing FailureReason.category where possible
+    confidence: float  # 0-1
     priority: Literal["low", "medium", "high"]
     rationale: str
 
 
 class Recommendation(TypedDict):
-    action: str                 # matches the Resolution.action vocabulary already in the graph
-    grounded_in: list[str]      # resolution_id(s) of the similar cases this action is based on
+    action: str               # ideally from the Resolution.action vocabulary already in the graph
+    grounded_in: list[str]    # resolution_id(s) of the cases this action is based on
     rationale: str
+    candidates: list[dict]    # the other actions considered, with their historical success rate
 
 
 class Review(TypedDict):
-    verdict: Literal["accept", "reject"]
+    verdict: Verdict
+    score: float              # 0-1 evaluation score (the diagram's "Evaluation Score")
     reason: str
-    checked_against: list[str]  # e.g. ["SLA", "evidence", "business_rules", "prior_outcomes"]
+    checked_against: list[str]  # e.g. ["evidence", "business_rules", "sla", "historical_outcomes"]
 
 
 class PipelineState(TypedDict):
@@ -51,6 +57,7 @@ class PipelineState(TypedDict):
     classification: Classification | None
     recommendation: Recommendation | None
     review: Review | None
-    review_notes: list[str]     # accumulated reviewer feedback, carried into re-classification
-    loop_count: int             # AFL retries so far; graph.py caps this to avoid infinite loops
-    resolution_id: str | None   # set by writeback.py once accepted and written to Neo4j
+    review_notes: list[str]      # accumulated reviewer feedback, carried into re-classification
+    loop_count: int              # AFL retries so far; graph.py caps this via MAX_LOOPS
+    disposition: Disposition | None  # set at the end: execute (accepted) or escalate
+    resolution_id: str | None    # set by writeback.py once written to Neo4j
