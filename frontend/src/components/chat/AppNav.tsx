@@ -1,13 +1,12 @@
 import { motion } from 'motion/react'
-import { Compass, LayoutDashboard, MessageSquare, SlidersHorizontal } from 'lucide-react'
+import { Compass, GitBranch, Inbox } from 'lucide-react'
 import { cn } from '../../lib/cn'
 
-export type ViewKey = 'chat' | 'dashboard' | 'filter' | 'explore'
+export type ViewKey = 'intake' | 'decisions' | 'explore'
 
-const NAV: { key: ViewKey; label: string; icon: typeof MessageSquare }[] = [
-  { key: 'chat', label: 'Chat', icon: MessageSquare },
-  { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { key: 'filter', label: 'Filter', icon: SlidersHorizontal },
+const NAV: { key: ViewKey; label: string; icon: typeof Inbox }[] = [
+  { key: 'intake', label: 'Intake', icon: Inbox },
+  { key: 'decisions', label: 'Decisions', icon: GitBranch },
   { key: 'explore', label: 'Explore', icon: Compass },
 ]
 

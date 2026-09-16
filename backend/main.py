@@ -27,8 +27,10 @@ from neo4j.exceptions import ServiceUnavailable
 from pydantic import BaseModel, Field
 
 import config
-from core import csv_data, queries, query_runner, registry, threads
+from core import query_runner, registry, threads
 from llm.agent import stream_agent
+from llm.pipeline import cases
+from llm.pipeline import graph as pipeline_graph
 from view import subgraph
 
 log = logging.getLogger("steerco-kg")
@@ -173,65 +175,81 @@ async def chat(req: ChatRequest) -> StreamingResponse:
 
 
 @app.get("/samples")
-def samples() -> dict:
-    """Discovery chips for the chat - just the one conversational query plus the map
-    lookup, since chat is deliberately small (see llm/agent.py)."""
-    return {"groups": [{"label": "Ask", "questions": [
-        "Which people are given mandates but rarely attend the meetings where they're issued?",
-        "Show me the visual status on the map",
-    ]}]}
+def samples() -> Response:
+    """Example complaints for the intake view. Drawn from the live queue rather than
+    hardcoded, so every chip is a real unresolved FailureReason the pipeline can actually
+    retrieve context for - a made-up shipment id would extract cleanly and then retrieve
+    nothing, which demos as a bug."""
+    return _SafeJSON({"examples": cases.examples()})
 
 
 @app.get("/meta")
 def meta() -> dict:
-    return {"counts": None, "scope": "Steering-committee mandate & governance tracking"}
+    return {"scope": "Autonomous shipment-complaint resolution over a Neo4j knowledge graph"}
 
 
-# --- Dashboard: every query, live for the param-free ones, a shortcut card for the rest ------
+# --- Agent: one complaint -> the live pipeline trace ---------------------------------------
 
-@app.get("/dashboard")
-def dashboard() -> Response:
-    tiles = []
-    for qid in queries.dashboard_ids():
-        q = queries.get(qid)
-        if q.needs_params:
-            tiles.append({
-                "id": qid, "title": q.title, "question": q.question_en,
-                "live": False, "params": q.params,
-            })
-        else:
-            tiles.append({
-                "id": qid, "title": q.title, "question": q.question_en,
-                "live": True, "rows": query_runner.run(qid),
-            })
-    return _SafeJSON({"tiles": tiles})
+class ComplaintRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=4000)
 
 
-# --- Filter tab: every query, as a card; params rendered from their derived kind ------------
+async def _stream_complaint(text: str) -> AsyncIterator[str]:
+    """Bridge the pipeline's synchronous, blocking generator onto SSE.
 
-@app.get("/filter/catalog")
-def filter_catalog() -> dict:
-    return {"queries": [
-        {
-            "id": q.id,
-            "title": q.title,
-            "question_en": q.question_en,
-            "question_ar": q.question_ar,
-            "params": [queries.param_meta(p) for p in q.params],
-        }
-        for q in queries.catalog().values()
-    ]}
+    Same shape as _stream() above: the pipeline runs in a worker thread and hands stages
+    back through a queue, so a stage that takes ten seconds in the model never blocks the
+    event loop. Each stage is emitted the moment its node returns, which is what makes the
+    AFL loop visible as it happens rather than after the fact.
+    """
+    loop = asyncio.get_running_loop()
+    queue: asyncio.Queue = asyncio.Queue()
+    DONE = object()
 
+    def produce() -> None:
+        try:
+            for kind, payload in pipeline_graph.stream_complaint(text):
+                loop.call_soon_threadsafe(queue.put_nowait, (kind, payload))
+        except ServiceUnavailable:
+            loop.call_soon_threadsafe(
+                queue.put_nowait, ("error", "The graph database isn't reachable right now."))
+        except Exception as exc:
+            log.exception("complaint pipeline failed")
+            loop.call_soon_threadsafe(
+                queue.put_nowait, ("error", f"The pipeline failed: {type(exc).__name__}"))
+        finally:
+            loop.call_soon_threadsafe(queue.put_nowait, DONE)
 
-@app.get("/filter/{qid}")
-def run_filter(qid: str, request: Request) -> Response:
+    worker = asyncio.create_task(asyncio.to_thread(produce))
     try:
-        q = queries.get(qid)
-    except KeyError:
-        raise HTTPException(404, f"Unknown query id {qid!r}")
-    params = {p: (request.query_params.get(p) or None) for p in q.params}
-    rows = query_runner.run(qid, params)
-    return _SafeJSON({"rows": rows})
+        while True:
+            item = await queue.get()
+            if item is DONE:
+                break
+            kind, payload = item
+            if kind == "error":
+                yield _sse("error", {"message": payload})
+            else:
+                yield _sse(kind, payload)
+        yield _sse("done", {})
+    finally:
+        await worker
+
+
+@app.post("/complaint")
+async def complaint(req: ComplaintRequest) -> StreamingResponse:
+    return StreamingResponse(
+        _stream_complaint(req.text),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+# --- Decisions: the case queue and whether the closed loop is working ----------------------
+
+@app.get("/cases")
+def cases_overview() -> Response:
+    return _SafeJSON(cases.overview())
 
 
 @app.get("/registry/{label}")
@@ -254,18 +272,6 @@ def graph() -> Response:
 def schema_view() -> dict:
     """The data model as a graph for the Schema view."""
     return query_runner.schema_graph()
-
-
-# --- Map: parsed straight from CSV, independent of Neo4j ------------------------------------
-
-@app.get("/incidents")
-def incidents() -> dict:
-    return {"incidents": csv_data.incidents()}
-
-
-@app.get("/track-status")
-def track_status() -> dict:
-    return {"trackStatus": csv_data.track_status()}
 
 
 # --- conversation memory (persisted in Neo4j; see core.threads) ----------------------------

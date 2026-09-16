@@ -1,20 +1,18 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { BrainCircuit, Map as MapIcon, Workflow } from 'lucide-react'
+import { BrainCircuit, Workflow } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import { BrainView } from './BrainView'
-import { MapAllView } from './MapAllView'
 import { SchemaView } from './SchemaView'
 
-type Lens = 'graph' | 'map' | 'schema'
+type Lens = 'graph' | 'schema'
 
 const LENSES: { key: Lens; label: string; icon: typeof BrainCircuit; hint: string }[] = [
   { key: 'graph', label: 'Graph', icon: BrainCircuit, hint: 'A sample of the whole knowledge graph - the entities and how they connect.' },
-  { key: 'map', label: 'Map', icon: MapIcon, hint: 'Incidents and real track-status field photos, plotted geographically.' },
   { key: 'schema', label: 'Schema', icon: Workflow, hint: 'The data model itself - the types of things in the graph and how they relate.' },
 ]
 
-// The three read-only lenses on the data — graph, map, schema — behind one nav entry, switched by a
+// The two read-only lenses on the data — graph, schema — behind one nav entry, switched by a
 // segmented control so they stay one click away without each taking a full slot in the app rail.
 export function ExploreView() {
   const [lens, setLens] = useState<Lens>('graph')
@@ -58,7 +56,6 @@ export function ExploreView() {
             transition={{ duration: 0.15, ease: 'easeOut' }}
           >
             {lens === 'graph' && <BrainView />}
-            {lens === 'map' && <MapAllView />}
             {lens === 'schema' && <SchemaView />}
           </motion.div>
         </AnimatePresence>
