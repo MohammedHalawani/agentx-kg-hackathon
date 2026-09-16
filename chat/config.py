@@ -35,6 +35,18 @@ LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o-mini")
 LLM_API_KEY = os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY")
 LLM_API_BASE = os.getenv("LLM_API_BASE")  # set for a local/self-hosted endpoint
 
+# --- Embeddings: vector search over fulltext-eligible node text (see scripts/embed_backfill.py).
+# Also routed through LiteLLM. Defaults to a local Ollama embedding model - must be pulled
+# separately (e.g. `ollama pull bge-m3`); this app never pulls a model for you.
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "ollama/bge-m3")
+EMBEDDING_API_BASE = os.getenv("EMBEDDING_API_BASE", "http://localhost:11434")
+EMBEDDING_DIMENSIONS = int(os.getenv("EMBEDDING_DIMENSIONS", "1024"))  # bge-m3's output size
+
+# --- Shipment-complaint pipeline (llm/pipeline/): its own database, same Neo4j server/creds
+# as above - keeps it from ever mixing with the governance graph or chat history. Loaded from
+# Saudi-Arabia-Regions-Cities-and-Districts/shipment_kg/shipment_dataset.dump (sibling repo).
+SHIPMENT_DATABASE = os.getenv("SHIPMENT_DATABASE", "shipments")
+
 # --- Map data: parsed straight from CSV, never ingested into Neo4j (sensitive, filled in later) --
 CATEGORY_CSV = os.getenv("CATEGORY_CSV")        # incident_category, category_id
 INCIDENTS_CSV = os.getenv("INCIDENTS_CSV")      # category_id, incident_id, municipality_date, lat, lng, source_id
