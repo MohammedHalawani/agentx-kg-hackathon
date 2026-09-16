@@ -14,8 +14,28 @@ round trip.
 from datetime import datetime
 from typing import TypedDict
 
-# Actions that constitute "try delivering again", for the retry-limit rule.
-RETRY_ACTIONS = ("إعادة", "retry", "redeliver", "reschedule")
+# Actions that constitute "try delivering again", for the retry-limit rule. Matched as
+# substrings against the proposed action, so each entry has to be specific enough to mean
+# re-delivery on its own.
+#
+# Deliberately NOT the bare "إعادة": that is just the Arabic prefix "re-", so it matches every
+# re-anything - including "إعادة التوجيه" (redirect), which is the correct move once the
+# original address has failed, not another attempt at the same one. Matching it here made the
+# reviewer reject the right action on any shipment that had spent its retries.
+# Each phrase appears twice, with and without the definite article "ال", because Arabic
+# inserts it between the two words ("إعادة الجدولة" vs "إعادة جدولة التسليم") and a substring
+# test sees those as different strings. Both spellings occur in the graph's own vocabulary.
+RETRY_ACTIONS = (
+    "إعادة الجدولة",   # reschedule
+    "إعادة جدولة",     #   "     (no article - "إعادة جدولة التسليم في يوم آخر")
+    "إعادة التسليم",   # re-deliver
+    "إعادة تسليم",     #   "     (no article)
+    "إعادة المحاولة",  # retry the attempt
+    "إعادة محاولة",    #   "     (no article)
+    "retry",
+    "redeliver",
+    "reschedule",
+)
 
 # An action a near-identical past case already failed with shouldn't be proposed blind.
 REPEAT_FAILURE_THRESHOLD = 0.5  # historical success rate below this = flagged
