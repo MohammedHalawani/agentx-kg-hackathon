@@ -22,6 +22,17 @@
   --color-accent-soft: oklch(95% 0.035 262.9);
   --color-danger: oklch(58% 0.19 25);
 
+  /* Dashboard chart colors - see dataviz skill. Categorical slots 1/2/3 (blue/orange/aqua):
+     the only ordering of this ramp that clears CVD-adjacency + normal-vision floors in both
+     light and dark (validated with scripts/validate_palette.js). Status good/warning: the
+     skill's fixed, never-themed status pair - same hex both modes by design, always paired
+     with an icon + label in the UI (a color a lone status color never carries meaning alone). */
+  --color-chart-blue: #2a78d6;
+  --color-chart-orange: #eb6834;
+  --color-chart-aqua: #1baf7a;
+  --color-chart-good: #0ca30c;
+  --color-chart-warning: #fab219;
+
   /* graph label palette — HEX on purpose: NVL (WebGL) + Leaflet parse these
      directly, where oklch() is not universally supported on canvas. Tuned deep/rich
      so the nodes carry weight on the warm-light graph surface (not just on dark). */
@@ -60,6 +71,11 @@
   --color-accent: oklch(72% 0.16 262.9);
   --color-accent-soft: oklch(34% 0.05 262.9);
   --color-danger: oklch(70% 0.17 25);
+
+  /* dark-surface steps of the same three categorical hues; status good/warning unchanged */
+  --color-chart-blue: #3987e5;
+  --color-chart-orange: #d95926;
+  --color-chart-aqua: #199e70;
 }
 
 @layer base {

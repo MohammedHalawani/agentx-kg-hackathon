@@ -126,7 +126,7 @@ function QueryCard({ query, focused }: { query: QueryMeta; focused: boolean }) {
 
       {rows !== null && (
         <div className="mt-3 h-64 overflow-hidden rounded-lg border border-hairline">
-          {loading ? <Skeleton className="h-full w-full" /> : <TableView rows={rows} />}
+          {loading ? <Skeleton className="h-full w-full" /> : <TableView rows={rows} title={query.title} />}
         </div>
       )}
     </section>

@@ -245,6 +245,65 @@ RETURN t.displayName_ar  AS track,
 ### Purpose
 **The primary LLM retrieval pattern.** `KeyHighlight` is the *citable unit* — the chunk
 the model quotes.
+
+# Q24 — Total required budget by year
+
+> **What is the total required budget across all tracks for a given year (2026–2030)?**
+> ما إجمالي الميزانية المطلوبة لجميع المسارات لسنة معيّنة؟
+
+**Persona:** Minister · **Surface:** Minister dashboard · **P1** · **Answerable: Yes**
+
+```cypher
+MATCH (b:BudgetLine)
+WHERE b.periodYear IS NOT NULL
+RETURN b.periodYear                    AS year,
+       sum(b.requiredBudget)           AS required,
+       sum(b.approvedBudget)           AS approved,
+       sum(b.expendedAmount)           AS expended,
+       sum(b.remainingAmount)          AS remaining,
+       count(b)                        AS budget_lines
+ORDER BY year;
+```
+
+The **funding-gap** query — and the result is itself the finding:
+
+```cypher
+MATCH (b:BudgetLine)
+RETURN count(b)                                                AS total_lines,
+       count(b.requiredBudget)                                 AS has_required,
+       count(b.approvedBudget)                                 AS has_approved,
+       count(b.expendedAmount)                                 AS has_expended,
+       count(b.remainingAmount)                                AS has_remaining;
+```
+
+### Purpose
+The headline financial number, by year.
+
+### Value
+**This entire domain did not exist in the ministry's proposed data model.** The original
+ERD had committees, meetings, mandates and tracks — and no concept of money at all. Five
+of the ten minister questions are financial. `BudgetLine` was added precisely to close
+that gap.
+
+### The story behind it
+**Run the second query and look at the nulls. The nulls are the answer.**
+
+`requiredBudget` is populated. `approvedBudget`, `expendedAmount` and `remainingAmount`
+are **empty across the board**.
+
+That means the graph can tell a minister *what was asked for*, and cannot tell them
+*what was granted, what was spent, or what is left.*
+
+That is not a bug in the graph. **It is a finding about the ministry's own financial
+reporting**, and it is exactly the kind of thing that stays invisible in a spreadsheet
+(where an empty cell looks like a zero) and becomes glaring in a graph (where a null is a
+null).
+
+`BudgetLine` also carries `revenueTarget` and `revenueActual` — the programme has an
+explicit financial-sustainability objective, and this is where it lives.
+
+**45 budget lines** are loaded, across the 2026–2030 horizon.
+
 # Q32 — SHOWCASE: mandates given to people who do not attend
 
 > **Which people are being given mandates but rarely attend the meetings where those mandates are issued?**
