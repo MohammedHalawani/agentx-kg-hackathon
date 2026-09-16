@@ -15,7 +15,19 @@ interface Example {
 // The verdict banner at the end of a run. Execute and Escalate are both legitimate outcomes
 // (the diagram's "Accept -> Execute or Escalate"), so escalation is styled as a considered
 // decision, not an error - it is the system declining to act without human judgement.
-function Outcome({ disposition, resolutionId, loops }: { disposition: string; resolutionId: string | null; loops: number }) {
+function Outcome({
+  disposition,
+  resolutionId,
+  loops,
+  accepted,
+  reviewed,
+}: {
+  disposition: string
+  resolutionId: string | null
+  loops: number
+  accepted: boolean
+  reviewed: boolean
+}) {
   const executed = disposition === 'execute'
   return (
     <motion.div
@@ -40,6 +52,17 @@ function Outcome({ disposition, resolutionId, loops }: { disposition: string; re
             <>
               Written back as <span className="text-ink">{resolutionId}</span>. It is now retrievable precedent for
               future cases — the closed loop.
+            </>
+          ) : !reviewed ? (
+            <>
+              Retrieval found no precedent above the similarity floor and no matching shipment, so there was nothing to
+              reason from — the pipeline stopped before classifying rather than inventing a decision. A human needs to
+              look at this one.
+            </>
+          ) : accepted ? (
+            <>
+              The recommendation was accepted, but the complaint never resolved to a shipment in the graph — so there is
+              nothing to attach a resolution to, and no record could be written. A human needs to identify the shipment.
             </>
           ) : (
             <>
@@ -150,7 +173,13 @@ export function IntakeView() {
             )}
 
             {final?.disposition && (
-              <Outcome disposition={final.disposition} resolutionId={final.resolution_id} loops={final.loops} />
+              <Outcome
+                disposition={final.disposition}
+                resolutionId={final.resolution_id}
+                loops={final.loops}
+                accepted={final.review?.verdict === 'accept'}
+                reviewed={Boolean(final.review)}
+              />
             )}
           </div>
         )}

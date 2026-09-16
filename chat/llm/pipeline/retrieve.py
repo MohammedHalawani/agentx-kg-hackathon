@@ -33,6 +33,18 @@ RRF_K = 60          # standard RRF damping constant
 VECTOR_TOP_K = 10
 GRAPH_TOP_K = 10
 
+# Cosine floor below which a vector hit is not treated as precedent at all.
+#
+# db.index.vector.queryNodes always returns k neighbours, however unlike the query they are -
+# so without a floor, text that is not a complaint ("asdf qwerty 12345", or a question about
+# France) still comes back with 5 "precedents" that the recommender then cites as
+# justification. Measured against this graph with bge-m3: real complaints score 0.826-0.848
+# top-1, junk scores 0.688-0.710. 0.78 sits in that gap with ~0.07 of margin either side.
+#
+# Re-measure this if EMBEDDING_MODEL changes - the number is a property of the model's score
+# distribution over this corpus, not a universal constant.
+MIN_VECTOR_SCORE = 0.78
+
 # --- vector path -----------------------------------------------------------------------
 # Returns the full precedent chain, not just the matched node: a similar case is only useful
 # if you can also see what was DONE about it and whether that worked.
@@ -122,12 +134,20 @@ def vector_search(query_text: str, k: int = VECTOR_TOP_K) -> list[dict]:
     """Top-k resolved cases by cosine similarity to query_text, each with the action taken
     and whether it worked.
 
+    Hits scoring below MIN_VECTOR_SCORE are dropped: the index returns k neighbours whatever
+    the query, and a neighbour that isn't actually similar is not precedent.
+
     Returns [] with a warning rather than raising if the vector index hasn't been built yet
     or the embedding endpoint is down - a graph-only run is degraded but still useful, and
     this is the single most likely thing to be unconfigured on a fresh checkout."""
     from scripts.embed_backfill_shipments import VECTOR_INDEX_NAME
     try:
-        return _read(_VECTOR, {"index": VECTOR_INDEX_NAME, "k": k, "embedding": _embed(query_text)})
+        hits = _read(_VECTOR, {"index": VECTOR_INDEX_NAME, "k": k, "embedding": _embed(query_text)})
+        kept = [h for h in hits if (h.get("score") or 0) >= MIN_VECTOR_SCORE]
+        if len(kept) < len(hits):
+            log.info("dropped %d/%d vector hit(s) below the %.2f similarity floor",
+                     len(hits) - len(kept), len(hits), MIN_VECTOR_SCORE)
+        return kept
     except Exception as exc:
         log.warning("vector_search unavailable (%s: %s) - continuing graph-only",
                     type(exc).__name__, exc)
@@ -135,7 +155,18 @@ def vector_search(query_text: str, k: int = VECTOR_TOP_K) -> list[dict]:
 
 
 def graph_traversal(extracted: ExtractedComplaint, k: int = GRAPH_TOP_K) -> list[dict]:
-    """Resolved cases sharing this complaint's courier / city / district / category."""
+    """Resolved cases sharing this complaint's courier / city / district / category.
+
+    Returns [] when the extractor resolved none of those four seeds. Every clause in _GRAPH
+    is `$x IS NULL OR ...`, so with all four null the WHERE matches every resolved case in
+    the graph and the query hands back k arbitrary ones - which the recommender would then
+    cite as cases "structurally related" to a complaint it knows nothing about. No seed means
+    no relation to traverse, which is not the same as a relation to everything.
+    """
+    seeds = ("courier", "city", "district", "category_hint")
+    if not any(extracted.get(s) for s in seeds):
+        log.info("no seed entity resolved - skipping graph traversal")
+        return []
     return _read(_GRAPH, {
         "courier": extracted.get("courier"),
         "city": extracted.get("city"),

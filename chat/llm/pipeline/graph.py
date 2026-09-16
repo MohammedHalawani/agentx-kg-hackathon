@@ -1,14 +1,18 @@
 """Compiles the pipeline stages into one LangGraph StateGraph:
 
     extract -> retrieve -> classify -> recommend -> review
-                             ^                        |
-                             |   reject (loop_count < MAX_LOOPS)
-                             +------------------------+
-                                       |
-                            accept     v      reject (cap hit)
-                          writeback ---+--- escalate
-                               |             |
-                               +---> END <---+
+                    |        ^                        |
+      no grounding  |        |   reject (loop_count < MAX_LOOPS)
+                    |        +------------------------+
+                    |                  |
+                    |       accept     v      reject (cap hit)
+                    |     writeback ---+--- escalate
+                    |          |             ^   |
+                    |          | nothing     |   |
+                    |          | written ----+   |
+                    +--------------------------->+
+                               |                 |
+                               +---> END <-------+
 
 Mirrors chat/llm/agent.py's shape (one compiled, memoized graph object) but assembled by
 hand with StateGraph rather than create_react_agent, because this graph has real branching:
@@ -67,7 +71,21 @@ def _review(state: PipelineState) -> dict:
 
 
 def _writeback(state: PipelineState) -> dict:
-    return {"disposition": "execute", "resolution_id": writeback.write_resolution(state)}
+    """Record the accepted decision - and only claim "execute" if it was actually recorded.
+
+    write_resolution() returns None when retrieval never resolved a live FailureReason, so
+    there is no node to attach the resolution to (a complaint naming no shipment, or one
+    naming a shipment that doesn't exist). The decision then cannot enter the graph, which
+    means it also can't become precedent and can't be audited later. Reporting that as
+    "execute" would tell an operator the case is handled when nothing was written at all -
+    a silent failure the human-in-the-loop never sees. Escalating routes it to exactly the
+    review the accept path was trying to skip.
+    """
+    resolution_id = writeback.write_resolution(state)
+    if resolution_id is None:
+        log.info("accepted recommendation could not be written back - escalating instead")
+        return {"disposition": "escalate", "resolution_id": None}
+    return {"disposition": "execute", "resolution_id": resolution_id}
 
 
 def _escalate(state: PipelineState) -> dict:
@@ -76,6 +94,27 @@ def _escalate(state: PipelineState) -> dict:
 
 
 # --- edges ------------------------------------------------------------------------------
+
+def _after_retrieve(state: PipelineState) -> str:
+    """Conditional edge out of retrieve: is there anything at all to reason from?
+
+    Retrieval having found no precedent above the similarity floor AND no live shipment means
+    the graph knows nothing about this complaint - it may not be a complaint at all. Running
+    the classifier anyway produces a confident category, an action, and a reviewer that
+    accepts it, all built on nothing: the failure mode where "grounded in historical
+    precedent" is asserted over five unrelated neighbours the index returned because it
+    always returns k of them.
+
+    Escalating here is both more honest and much cheaper - it costs zero model calls instead
+    of the five or more a full classify/recommend/review pass would spend before arriving at
+    an answer nobody should trust.
+    """
+    context = state.get("context") or {}
+    if not (context.get("similar_cases") or context.get("live_failure_id")):
+        log.info("no precedent above the floor and no live shipment - escalating without classifying")
+        return "escalate"
+    return "classify"
+
 
 def _after_review(state: PipelineState) -> str:
     """Conditional edge out of review: accept -> writeback, reject -> classify (under the
@@ -103,7 +142,8 @@ def build_pipeline():
 
     g.set_entry_point("extract")
     g.add_edge("extract", "retrieve")
-    g.add_edge("retrieve", "classify")
+    g.add_conditional_edges("retrieve", _after_retrieve,
+                            {"classify": "classify", "escalate": "escalate"})
     g.add_edge("classify", "recommend")
     g.add_edge("recommend", "review")
     g.add_conditional_edges("review", _after_review,
