@@ -61,6 +61,19 @@ def is_registry_label(label: str) -> bool:
 
 
 @lru_cache(maxsize=1)
+def fulltext_labels() -> list[str]:
+    """Every node label with a `fulltext:` list in schema.yaml — the set with text worth
+    embedding or full-text indexing. Same whitelist role as registry_labels() for labels
+    interpolated into Cypher."""
+    return [label for label, spec in nodes().items() if spec.get("fulltext")]
+
+
+def fulltext_props(label: str) -> list[str]:
+    """The fulltext-eligible text properties for one node label, in schema.yaml's order."""
+    return node_spec(label).get("fulltext", [])
+
+
+@lru_cache(maxsize=1)
 def caption_props() -> dict[str, list[str]]:
     """label -> its displayName_* properties, in order — the Explore graph view's caption
     picker (see view/subgraph.py) tries these first before falling back to the label name."""
