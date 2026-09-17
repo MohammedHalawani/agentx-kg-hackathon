@@ -67,6 +67,9 @@ def _review(state: PipelineState) -> dict:
         # objections, or it can "fix" one by reintroducing the other.
         update["review_notes"] = [*(state.get("review_notes") or []), result["reason"]]
         update["loop_count"] = (state.get("loop_count") or 0) + 1
+        rejected = (state.get("recommendation") or {}).get("action")
+        if rejected:
+            update["attempted_actions"] = [*(state.get("attempted_actions") or []), rejected]
     return update
 
 
@@ -84,7 +87,12 @@ def _writeback(state: PipelineState) -> dict:
     resolution_id = writeback.write_resolution(state)
     if resolution_id is None:
         log.info("accepted recommendation could not be written back - escalating instead")
-        return {"disposition": "escalate", "resolution_id": None, "handover": _handover(state)}
+        return {
+            "disposition": "escalate",
+            "resolution_id": None,
+            "handover": _handover(state),
+            "escalation": writeback.write_escalation(state),
+        }
     return {"disposition": "execute", "resolution_id": resolution_id}
 
 
@@ -112,7 +120,12 @@ def _handover(state: PipelineState) -> dict | None:
 
 def _escalate(state: PipelineState) -> dict:
     log.info("escalating after %d rejected attempt(s)", state.get("loop_count") or 0)
-    return {"disposition": "escalate", "handover": _handover(state)}
+    filed = writeback.write_escalation(state)
+    return {
+        "disposition": "escalate",
+        "handover": _handover(state),
+        "escalation": filed,
+    }
 
 
 # --- edges ------------------------------------------------------------------------------
@@ -187,10 +200,12 @@ def run_complaint(complaint_text: str) -> PipelineState:
         "recommendation": None,
         "review": None,
         "review_notes": [],
+        "attempted_actions": [],
         "loop_count": 0,
         "disposition": None,
         "resolution_id": None,
         "handover": None,
+        "escalation": None,
     }
     return build_pipeline().invoke(initial)
 
@@ -260,8 +275,9 @@ def stream_complaint(complaint_text: str):
     state: PipelineState = {
         "complaint_text": complaint_text,
         "extracted": None, "context": None, "classification": None,
-        "recommendation": None, "review": None, "review_notes": [],
+        "recommendation": None, "review": None, "review_notes": [], "attempted_actions": [],
         "loop_count": 0, "disposition": None, "resolution_id": None, "handover": None,
+        "escalation": None,
     }
     merged: dict = dict(state)
     loop = 0
@@ -272,6 +288,7 @@ def stream_complaint(complaint_text: str):
             yield "stage", _summarize(node, update or {}, loop)
     yield "final", {
         "handover": merged.get("handover"),
+        "escalation": merged.get("escalation"),
         "disposition": merged.get("disposition"),
         "resolution_id": merged.get("resolution_id"),
         "loops": merged.get("loop_count") or 0,
