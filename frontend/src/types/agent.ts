@@ -79,24 +79,7 @@ export interface CaseRow {
   shipment_id?: string
 }
 
-export interface EscalatedCase {
-  escalation_id: string
-  complaint: string
-  created_at: string
-  status: string
-  team: string
-  reason: string
-  category: string | null
-  priority: string | null
-  shipment_id: string | null
-  loops: number
-  attempted_actions: string[]
-  failure_id: string | null
-}
-
 export interface CasesOverview {
-  escalations: EscalatedCase[]
-  escalations_by_team: { team: string; cases: number }[]
   coverage: { resolved: number; unresolved: number; total: number }
   by_category: { category: string; cases: number; succeeded: number; success_rate: number }[]
   by_action: { action: string; used: number; succeeded: number; success_rate: number }[]

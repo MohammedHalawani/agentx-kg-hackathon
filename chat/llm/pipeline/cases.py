@@ -83,36 +83,6 @@ RETURN sum(CASE WHEN r.source = 'agent_pipeline' THEN 1 ELSE 0 END) AS by_agent,
 """
 
 
-# Cases the pipeline handed to a human, newest first - the queue that used to exist only in
-# whoever's browser tab. Open ones first, because a closed escalation is history.
-_ESCALATIONS = """
-MATCH (e:EscalatedCase)
-OPTIONAL MATCH (e)-[:ESCALATES]->(f:FailureReason)
-RETURN e.escalation_id     AS escalation_id,
-       e.complaint         AS complaint,
-       e.created_at        AS created_at,
-       e.status            AS status,
-       e.team              AS team,
-       e.reason            AS reason,
-       e.category          AS category,
-       e.priority          AS priority,
-       e.shipment_id       AS shipment_id,
-       e.loops             AS loops,
-       e.attempted_actions AS attempted_actions,
-       f.failure_id        AS failure_id
-ORDER BY e.status = 'open' DESC, e.created_at DESC
-LIMIT 100
-"""
-
-# How the escalated workload splits across teams - the part-to-whole for the Decisions view.
-_ESCALATIONS_BY_TEAM = """
-MATCH (e:EscalatedCase)
-WHERE e.status = 'open'
-RETURN e.team AS team, count(*) AS cases
-ORDER BY cases DESC
-"""
-
-
 def _read(cypher: str) -> list[dict]:
     return get_driver().execute_query(
         cypher, routing_=RoutingControl.READ, database_=config.SHIPMENT_DATABASE,
@@ -139,8 +109,6 @@ def overview() -> dict:
         "by_action": _read(_BY_ACTION),
         "writebacks": _one(_AGENT_WRITEBACKS),
         "queue": queue(),
-        "escalations": _read(_ESCALATIONS),
-        "escalations_by_team": _read(_ESCALATIONS_BY_TEAM),
     }
 
 
