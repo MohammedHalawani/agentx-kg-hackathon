@@ -130,7 +130,8 @@ def _read(cypher: str, params: dict) -> list[dict]:
     return [dict(r) for r in records]
 
 
-def vector_search(query_text: str, k: int = VECTOR_TOP_K) -> list[dict]:
+def vector_search(query_text: str, k: int = VECTOR_TOP_K,
+                  exclude_failure_id: str | None = None) -> list[dict]:
     """Top-k resolved cases by cosine similarity to query_text, each with the action taken
     and whether it worked.
 
@@ -143,6 +144,12 @@ def vector_search(query_text: str, k: int = VECTOR_TOP_K) -> list[dict]:
     from scripts.embed_backfill_shipments import VECTOR_INDEX_NAME
     try:
         hits = _read(_VECTOR, {"index": VECTOR_INDEX_NAME, "k": k, "embedding": _embed(query_text)})
+        if exclude_failure_id:
+            # Holdout evaluation only: a resolved case being graded is itself in the index, so
+            # without this it retrieves its own resolution and "predicts" the answer it was
+            # given. Never set in normal operation, where the live failure is unresolved and
+            # therefore absent from the index anyway.
+            hits = [h for h in hits if h.get("failure_id") != exclude_failure_id]
         kept = [h for h in hits if (h.get("score") or 0) >= MIN_VECTOR_SCORE]
         if len(kept) < len(hits):
             log.info("dropped %d/%d vector hit(s) below the %.2f similarity floor",
@@ -154,7 +161,8 @@ def vector_search(query_text: str, k: int = VECTOR_TOP_K) -> list[dict]:
         return []
 
 
-def graph_traversal(extracted: ExtractedComplaint, k: int = GRAPH_TOP_K) -> list[dict]:
+def graph_traversal(extracted: ExtractedComplaint, k: int = GRAPH_TOP_K,
+                    exclude_failure_id: str | None = None) -> list[dict]:
     """Resolved cases sharing this complaint's courier / city / district / category.
 
     Returns [] when the extractor resolved none of those four seeds. Every clause in _GRAPH
@@ -167,13 +175,16 @@ def graph_traversal(extracted: ExtractedComplaint, k: int = GRAPH_TOP_K) -> list
     if not any(extracted.get(s) for s in seeds):
         log.info("no seed entity resolved - skipping graph traversal")
         return []
-    return _read(_GRAPH, {
+    rows = _read(_GRAPH, {
         "courier": extracted.get("courier"),
         "city": extracted.get("city"),
         "district": extracted.get("district"),
         "category": extracted.get("category_hint"),
         "k": k,
     })
+    if exclude_failure_id:
+        rows = [r for r in rows if r.get("failure_id") != exclude_failure_id]
+    return rows
 
 
 def local_subgraph(extracted: ExtractedComplaint) -> dict:
@@ -212,11 +223,16 @@ def fuse_rrf(*ranked_lists: list[dict], k: int = RRF_K) -> list[dict]:
     return out
 
 
-def retrieve_context(extracted: ExtractedComplaint, top_k: int = 5) -> RetrievedContext:
+def retrieve_context(extracted: ExtractedComplaint, top_k: int = 5,
+                     exclude_failure_id: str | None = None) -> RetrievedContext:
     """The entry point graph.py's retrieve node calls: run both paths, fuse them, and attach
-    the complaint's own shipment evidence."""
-    vector_hits = vector_search(extracted["raw_text"])
-    graph_hits = graph_traversal(extracted)
+    the complaint's own shipment evidence.
+
+    `exclude_failure_id` is for holdout evaluation, where the case under test is resolved and
+    would otherwise retrieve itself. It is never passed in normal operation.
+    """
+    vector_hits = vector_search(extracted["raw_text"], exclude_failure_id=exclude_failure_id)
+    graph_hits = graph_traversal(extracted, exclude_failure_id=exclude_failure_id)
     fused = fuse_rrf(vector_hits, graph_hits)[:top_k]
     local = local_subgraph(extracted)
     log.info("retrieved %d vector + %d graph -> %d fused",

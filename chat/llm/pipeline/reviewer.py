@@ -65,7 +65,49 @@ def _hard_rejects(state: PipelineState, findings: list) -> list[str]:
             "Precedent was retrieved but the recommendation cites none of it. Ground the "
             "action in specific resolved cases or explain why none apply."
         )
+    elif rec.get("grounded_in"):
+        mismatch = _category_mismatch(state)
+        if mismatch:
+            reasons.append(mismatch)
     return reasons
+
+
+def _base_category(category: str | None) -> str:
+    """Root cause without the escalation marker.
+
+    A category of `escalation:address_conflict` is an address conflict that already failed
+    ordinary handling once. For the purpose of asking "is this precedent about the same
+    problem?" the two are the same problem, so they are compared on the base name.
+    """
+    c = (category or "").strip()
+    return c[len("escalation:"):] if c.startswith("escalation:") else c
+
+
+def _category_mismatch(state: PipelineState) -> str | None:
+    """Reject a recommendation whose every citation is for a different root cause.
+
+    Retrieval fuses a vector search with a graph walk, and the vector half ranks by wording,
+    which crosses category lines readily. That is useful for recall and dangerous as
+    justification: an action can be cited as precedent-backed while every case behind it
+    concerns a different failure. Observed in practice - a wrong-gate failure was resolved by
+    replacing the barcode label, the remedy for a different category entirely, and the
+    reviewer accepted it because citations were present.
+
+    Only the citations are judged here, not the action: proposing something novel is allowed,
+    but then `grounded_in` should be empty and the clause above applies instead.
+    """
+    classified = _base_category((state.get("classification") or {}).get("category"))
+    if not classified:
+        return None
+    cited = (state.get("recommendation") or {}).get("grounded_cases") or []
+    if not cited:
+        return None
+    if any(_base_category(c.get("category")) == classified for c in cited):
+        return None
+    seen = sorted({_base_category(c.get("category")) for c in cited if c.get("category")})
+    return (f"The root cause is {classified}, but every cited case is about "
+            f"{', '.join(seen) or 'another category'}. Cite precedent for {classified}, or "
+            f"propose an action without claiming precedent that does not apply.")
 
 
 def _prompt(state: PipelineState, findings: list) -> str:

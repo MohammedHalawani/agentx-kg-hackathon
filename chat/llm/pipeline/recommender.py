@@ -72,7 +72,10 @@ def second_retrieval(state: PipelineState, top_k: int = 5) -> list[dict]:
     query = f"{cls.get('category', '')} {cls.get('rationale', '')}".strip()
     if not query:
         return ctx.get("similar_cases") or []
-    fresh = retrieve.vector_search(query)
+    # Honour the holdout exclusion here too: the first retrieval filtering the case out and
+    # the second silently letting it back in would leak the answer at the exact stage that
+    # chooses the action.
+    fresh = retrieve.vector_search(query, exclude_failure_id=state.get("exclude_failure_id"))
     fused = retrieve.fuse_rrf(fresh, ctx.get("similar_cases") or [])
     log.info("2nd retrieval: %d fresh hits -> %d fused", len(fresh), len(fused))
     return fused[:top_k]
@@ -111,6 +114,15 @@ def recommend(state: PipelineState) -> Recommendation:
     # resolution_id it never saw is exactly what the reviewer should not have to catch.
     seen = {c.get("resolution_id") for c in cases}
     out["grounded_in"] = [g for g in out["grounded_in"] if g in seen]
+    # Carry the cited rows themselves, not just their ids, so the reviewer can check WHAT was
+    # cited rather than merely THAT something was. Retrieval is similarity-based and crosses
+    # category lines freely - a barcode-mismatch case reads much like a wrong-gate one - so
+    # "grounded" is meaningless without knowing the precedent's own root cause.
+    cited = set(out["grounded_in"])
+    out["grounded_cases"] = [
+        {k: c.get(k) for k in ("resolution_id", "category", "action", "success")}
+        for c in cases if c.get("resolution_id") in cited
+    ]
     out["candidates"] = [
         {"action": a, **stats} for a, stats in
         sorted(success_rates.items(), key=lambda kv: kv[1]["rate"], reverse=True)

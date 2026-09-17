@@ -41,6 +41,9 @@ class Recommendation(TypedDict):
     grounded_in: list[str]    # resolution_id(s) of the cases this action is based on
     rationale: str
     candidates: list[dict]    # the other actions considered, with their historical success rate
+    # The cited precedent rows (id, category, action, success), so the reviewer can check the
+    # citations are for the same root cause and not merely present.
+    grounded_cases: list[dict]
 
 
 class Review(TypedDict):
@@ -65,3 +68,6 @@ class PipelineState(TypedDict):
     # human inheriting the case gets the graph around it rather than just the complaint text.
     # None when the complaint never resolved to a real shipment - there is nothing to draw.
     handover: dict | None
+    # Holdout evaluation only (scripts/eval_pipeline.py): the failure being graded, kept out
+    # of retrieval so a resolved case cannot retrieve its own answer. None in normal runs.
+    exclude_failure_id: str | None
