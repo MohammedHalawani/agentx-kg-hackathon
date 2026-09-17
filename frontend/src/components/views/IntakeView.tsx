@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { ArrowUpRight, CheckCircle2, Loader2, Send, Square } from 'lucide-react'
+import { ArrowUpRight, CheckCircle2, Loader2, RotateCcw, Square } from 'lucide-react'
 import { useComplaintStream } from '../../hooks/useComplaintStream'
 import { AflDivider, StageCard } from '../agent/StageCard'
 import { Handover } from '../agent/Handover'
@@ -93,8 +93,7 @@ function renderTrace(stages: Stage[]) {
 }
 
 export function IntakeView() {
-  const { stages, final, busy, error, complaint, run, stop } = useComplaintStream()
-  const [text, setText] = useState('')
+  const { stages, final, busy, error, complaint, run, stop, reset } = useComplaintStream()
   const [examples, setExamples] = useState<Example[]>([])
 
   useEffect(() => {
@@ -103,13 +102,6 @@ export function IntakeView() {
       .then((d: { examples?: Example[] }) => setExamples(d.examples ?? []))
       .catch(() => undefined)
   }, [])
-
-  const submit = () => {
-    const t = text.trim()
-    if (!t || busy) return
-    run(t)
-    setText('')
-  }
 
   const started = stages.length > 0 || busy || Boolean(error)
 
@@ -120,12 +112,16 @@ export function IntakeView() {
           <div className="mx-auto max-w-2xl pt-10 text-center">
             <h2 className="font-display text-xl font-bold text-ink">Resolve a disrupted shipment</h2>
             <p className="mx-auto mt-2 max-w-lg text-sm text-muted">
-              A complaint goes in; three agents classify the root cause, recommend an action grounded in historical
-              precedent, and review it against the business rules — then the outcome is written back to the graph.
+              Pick an unresolved case below. Three agents classify the root cause, recommend an action grounded in
+              historical precedent, and review it against the business rules — then the outcome is written back to the
+              graph, or the case is handed to a human.
             </p>
             {examples.length > 0 && (
               <div className="mt-6 space-y-2 text-left">
-                <p className="text-center text-xs text-muted">Try one of the live unresolved cases</p>
+                <p className="text-center text-xs text-muted">
+                  Live unresolved cases from the graph — {examples.length} root cause
+                  {examples.length === 1 ? '' : 's'}
+                </p>
                 {examples.map((ex) => (
                   <button
                     key={ex.text}
@@ -191,35 +187,33 @@ export function IntakeView() {
         )}
       </div>
 
-      <div className="border-t border-hairline bg-panel px-6 py-3">
-        <div className="mx-auto flex max-w-3xl items-end gap-2">
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault()
-                submit()
-              }
-            }}
-            rows={1}
-            dir="auto"
-            placeholder="Describe the problem with the shipment…"
-            className="max-h-32 min-h-[40px] flex-1 resize-none rounded-xl border border-hairline bg-surface px-3 py-2.5 text-sm text-ink outline-none placeholder:text-muted focus:border-accent"
-          />
-          <button
-            onClick={busy ? stop : submit}
-            disabled={!busy && !text.trim()}
-            aria-label={busy ? 'Stop' : 'Run the pipeline'}
-            className={cn(
-              'flex size-10 shrink-0 items-center justify-center rounded-xl transition-colors',
-              busy ? 'bg-danger text-white' : 'bg-accent text-white disabled:bg-hairline disabled:text-muted',
+      {/* No free-text composer: a run can only be started from a real unresolved case, so
+          arbitrary text never reaches the pipeline or the graph. This bar is just the run
+          controls - stop while it works, start another once it's done. */}
+      {started && (
+        <div className="border-t border-hairline bg-panel px-6 py-3">
+          <div className="mx-auto flex max-w-3xl items-center gap-2">
+            {busy ? (
+              <button
+                onClick={stop}
+                className="inline-flex items-center gap-2 rounded-xl bg-danger px-3 py-2 text-sm font-medium text-white"
+              >
+                <Square size={14} /> Stop
+              </button>
+            ) : (
+              <button
+                onClick={reset}
+                className="inline-flex items-center gap-2 rounded-xl bg-accent px-3 py-2 text-sm font-medium text-white"
+              >
+                <RotateCcw size={14} /> Run another case
+              </button>
             )}
-          >
-            {busy ? <Square size={15} /> : <Send size={15} />}
-          </button>
+            <span className="text-xs text-muted">
+              {busy ? 'The pipeline is running…' : 'Pick another unresolved case from the queue.'}
+            </span>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

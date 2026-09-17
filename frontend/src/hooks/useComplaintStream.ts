@@ -19,6 +19,18 @@ export function useComplaintStream() {
     setBusy(false)
   }, [])
 
+  // Clears the finished run so the view can return to the case list. With no free-text
+  // composer, this is the only way to start a second case without reloading the page.
+  const reset = useCallback(() => {
+    ctrlRef.current?.abort()
+    ctrlRef.current = null
+    setStages([])
+    setFinal(null)
+    setError(null)
+    setComplaint('')
+    setBusy(false)
+  }, [])
+
   const run = useCallback(async (text: string) => {
     ctrlRef.current?.abort()
     const ctrl = new AbortController()
@@ -78,5 +90,5 @@ export function useComplaintStream() {
     }
   }, [])
 
-  return { stages, final, busy, error, complaint, run, stop }
+  return { stages, final, busy, error, complaint, run, stop, reset }
 }

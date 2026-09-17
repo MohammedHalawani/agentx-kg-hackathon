@@ -123,9 +123,13 @@ _PHRASING = {
 _DEFAULT_PHRASING = "لدي مشكلة في الشحنة {sid} ولم يتم حلها حتى الآن"
 
 
-def examples(limit: int = 4) -> list[dict]:
-    """One example complaint per distinct category, capped - enough to show the pipeline
-    behaving differently per root cause without turning the composer into a menu."""
+def examples(limit: int = 8) -> list[dict]:
+    """One example complaint per distinct category, capped.
+
+    This is the intake view's only entry point - there is no free-text composer, so a run can
+    only ever be started from a real unresolved case. The cap is therefore generous rather
+    than illustrative: every root cause present in the queue should be reachable, since a
+    category missing from this list cannot be demonstrated at all."""
     out: list[dict] = []
     seen: set[str] = set()
     for row in queue():
