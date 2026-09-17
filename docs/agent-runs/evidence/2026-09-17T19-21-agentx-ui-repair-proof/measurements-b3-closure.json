@@ -1,0 +1,1250 @@
+{
+  "runId": "2026-09-17T19-21-agentx-ui-repair-proof",
+  "phase": "b3-closure",
+  "agent": "5C",
+  "locale": "ar",
+  "url": "http://127.0.0.1:8000",
+  "viewport": "1440x900",
+  "candidateBuild": {
+    "css": "index-DVhlRZ8U.css",
+    "js": "index-DE557tU5.js"
+  },
+  "apiMetrics": {
+    "coverage": {
+      "resolved": 165,
+      "unresolved": 75,
+      "total": 240
+    },
+    "by_category": [
+      {
+        "category": "address_conflict",
+        "cases": 43,
+        "succeeded": 39,
+        "success_rate": 90.69767441860465
+      },
+      {
+        "category": "recipient_unavailable",
+        "cases": 38,
+        "succeeded": 34,
+        "success_rate": 89.47368421052632
+      },
+      {
+        "category": "hub_delay",
+        "cases": 20,
+        "succeeded": 17,
+        "success_rate": 85
+      },
+      {
+        "category": "failed_attempt_weight_mismatch",
+        "cases": 16,
+        "succeeded": 14,
+        "success_rate": 87.5
+      },
+      {
+        "category": "failed_attempt_wrong_gate",
+        "cases": 11,
+        "succeeded": 10,
+        "success_rate": 90.9090909090909
+      },
+      {
+        "category": "escalation:address_conflict",
+        "cases": 9,
+        "succeeded": 8,
+        "success_rate": 88.88888888888889
+      },
+      {
+        "category": "failed_attempt_barcode_mismatch",
+        "cases": 7,
+        "succeeded": 7,
+        "success_rate": 100
+      },
+      {
+        "category": "escalation:hub_delay",
+        "cases": 7,
+        "succeeded": 7,
+        "success_rate": 100
+      },
+      {
+        "category": "escalation:recipient_unavailable",
+        "cases": 7,
+        "succeeded": 7,
+        "success_rate": 100
+      },
+      {
+        "category": "escalation:failed_attempt_wrong_gate",
+        "cases": 4,
+        "succeeded": 4,
+        "success_rate": 100
+      },
+      {
+        "category": "escalation:failed_attempt_barcode_mismatch",
+        "cases": 2,
+        "succeeded": 2,
+        "success_rate": 100
+      },
+      {
+        "category": "escalation:failed_attempt_weight_mismatch",
+        "cases": 1,
+        "succeeded": 0,
+        "success_rate": 0
+      }
+    ],
+    "by_action": [
+      {
+        "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+        "used": 18,
+        "succeeded": 16,
+        "success_rate": 88.88888888888889
+      },
+      {
+        "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+        "used": 16,
+        "succeeded": 13,
+        "success_rate": 81.25
+      },
+      {
+        "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+        "used": 15,
+        "succeeded": 14,
+        "success_rate": 93.33333333333333
+      },
+      {
+        "action": "إعادة جدولة التسليم في يوم آخر",
+        "used": 14,
+        "succeeded": 13,
+        "success_rate": 92.85714285714286
+      },
+      {
+        "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+        "used": 13,
+        "succeeded": 11,
+        "success_rate": 84.61538461538461
+      },
+      {
+        "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+        "used": 12,
+        "succeeded": 12,
+        "success_rate": 100
+      },
+      {
+        "action": "تسليم لجهة بديلة بموافقة العميل",
+        "used": 11,
+        "succeeded": 10,
+        "success_rate": 90.9090909090909
+      },
+      {
+        "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+        "used": 10,
+        "succeeded": 8,
+        "success_rate": 80
+      }
+    ],
+    "writebacks": {
+      "by_agent": 0,
+      "seeded": 165,
+      "pending": 0,
+      "total": 165
+    },
+    "queue": [
+      {
+        "failure_id": "FR-030af469e0",
+        "category": "recipient_unavailable",
+        "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+        "city": "القيصومة",
+        "district": "حي الصناعية",
+        "courier": "أحمد الزهيري",
+        "shipment_id": "SHP-0227"
+      },
+      {
+        "failure_id": "FR-05d5f8a701",
+        "category": "failed_attempt_barcode_mismatch",
+        "description": "محاولة تسليم فاشلة: عدم تطابق الباركود مع الشحنة",
+        "city": "بقعاء",
+        "district": "حي الحفل",
+        "courier": "عبدالله الحربي",
+        "shipment_id": "SHP-0033"
+      },
+      {
+        "failure_id": "FR-06e17dd099",
+        "category": "address_conflict",
+        "description": "تعارض في العنوان: نسخة العنوان المسجلة تختلف عن الموقع الفعلي للتسليم",
+        "city": "جدة",
+        "district": "حي الربوة",
+        "courier": "جابر الثقفي",
+        "shipment_id": "SHP-0072"
+      },
+      {
+        "failure_id": "FR-0c1bd3da96",
+        "category": "hub_delay",
+        "description": "تأخير في مركز الفرز أدى إلى تجاوز مدة اتفاقية مستوى الخدمة",
+        "city": "الشنان",
+        "district": "حي الحمراء",
+        "courier": "تركي الغامدي",
+        "shipment_id": "SHP-0187"
+      },
+      {
+        "failure_id": "FR-10a28de29e",
+        "category": "address_conflict",
+        "description": "تعارض في العنوان: نسخة العنوان المسجلة تختلف عن الموقع الفعلي للتسليم",
+        "city": "بدر",
+        "district": "حي الجديد",
+        "courier": "محمد الفيفي",
+        "shipment_id": "SHP-0175"
+      },
+      {
+        "failure_id": "FR-11fef36daa",
+        "category": "hub_delay",
+        "description": "تأخير في مركز الفرز أدى إلى تجاوز مدة اتفاقية مستوى الخدمة",
+        "city": "العقيق",
+        "district": "مخطط المطار",
+        "courier": "جابر الثقفي",
+        "shipment_id": "SHP-0254"
+      },
+      {
+        "failure_id": "FR-12fa7b596f",
+        "category": "hub_delay",
+        "description": "تأخير في مركز الفرز أدى إلى تجاوز مدة اتفاقية مستوى الخدمة",
+        "city": "حفر الباطن",
+        "district": "حي ابو موسى الاشعري",
+        "courier": "إبراهيم القرني",
+        "shipment_id": "SHP-0214"
+      },
+      {
+        "failure_id": "FR-151991b528",
+        "category": "escalation:address_conflict",
+        "description": "تعارض في العنوان: نسخة العنوان المسجلة تختلف عن الموقع الفعلي للتسليم",
+        "city": "الشنان",
+        "district": "حي الصالحية",
+        "courier": "فهد الشمري",
+        "shipment_id": "SHP-0017"
+      },
+      {
+        "failure_id": "FR-15f0a1d7d8",
+        "category": "address_conflict",
+        "description": "تعارض في العنوان: نسخة العنوان المسجلة تختلف عن الموقع الفعلي للتسليم",
+        "city": "الليث",
+        "district": "حي رقم 5",
+        "courier": "سامي البقمي",
+        "shipment_id": "SHP-0233"
+      },
+      {
+        "failure_id": "FR-17cc8662e9",
+        "category": "recipient_unavailable",
+        "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+        "city": "بدر",
+        "district": "حي الغزلاني",
+        "courier": "جابر الثقفي",
+        "shipment_id": "SHP-0025"
+      },
+      {
+        "failure_id": "FR-1b2a976e60",
+        "category": "recipient_unavailable",
+        "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+        "city": "بقعاء",
+        "district": "حي ج16",
+        "courier": "سامي البقمي",
+        "shipment_id": "SHP-0170"
+      },
+      {
+        "failure_id": "FR-1fe14de7e3",
+        "category": "address_conflict",
+        "description": "تعارض في العنوان: نسخة العنوان المسجلة تختلف عن الموقع الفعلي للتسليم",
+        "city": "سكاكا",
+        "district": "حي الرسالة",
+        "courier": "راشد البلوي",
+        "shipment_id": "SHP-0039"
+      },
+      {
+        "failure_id": "FR-21d1edca80",
+        "category": "failed_attempt_weight_mismatch",
+        "description": "محاولة تسليم فاشلة: عدم تطابق وزن الشحنة مع السجل",
+        "city": "بللحمر",
+        "district": "حي الفيصلية",
+        "courier": "علي الشريف",
+        "shipment_id": "SHP-0197"
+      },
+      {
+        "failure_id": "FR-27a29782e4",
+        "category": "failed_attempt_weight_mismatch",
+        "description": "محاولة تسليم فاشلة: عدم تطابق وزن الشحنة مع السجل",
+        "city": "جدة",
+        "district": "حي السنابل",
+        "courier": "علي الشريف",
+        "shipment_id": "SHP-0054"
+      },
+      {
+        "failure_id": "FR-2b24e533e7",
+        "category": "failed_attempt_wrong_gate",
+        "description": "محاولة تسليم فاشلة: بوابة دخول خاطئة",
+        "city": "تاروت",
+        "district": "حي الديرة",
+        "courier": "محمد الفيفي",
+        "shipment_id": "SHP-0243"
+      },
+      {
+        "failure_id": "FR-2ba47b3fe5",
+        "category": "hub_delay",
+        "description": "تأخير في مركز الفرز أدى إلى تجاوز مدة اتفاقية مستوى الخدمة",
+        "city": "القويعية",
+        "district": "حي الخليج",
+        "courier": "سعود العتيبي",
+        "shipment_id": "SHP-0021"
+      },
+      {
+        "failure_id": "FR-2e08fa4539",
+        "category": "escalation:failed_attempt_wrong_gate",
+        "description": "محاولة تسليم فاشلة: بوابة دخول خاطئة",
+        "city": "الشنان",
+        "district": "حي الصالحية",
+        "courier": "فهد الشمري",
+        "shipment_id": "SHP-0017"
+      },
+      {
+        "failure_id": "FR-2f6f06ddc6",
+        "category": "escalation:hub_delay",
+        "description": "تأخير في مركز الفرز أدى إلى تجاوز مدة اتفاقية مستوى الخدمة",
+        "city": "الدمام",
+        "district": "حي الاسكان الشمالي",
+        "courier": "فهد الشمري",
+        "shipment_id": "SHP-0201"
+      },
+      {
+        "failure_id": "FR-314b233851",
+        "category": "recipient_unavailable",
+        "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+        "city": "النماص",
+        "district": "حي المطل",
+        "courier": "ماجد الدوسري",
+        "shipment_id": "SHP-0270"
+      },
+      {
+        "failure_id": "FR-376691e0c7",
+        "category": "hub_delay",
+        "description": "تأخير في مركز الفرز أدى إلى تجاوز مدة اتفاقية مستوى الخدمة",
+        "city": "بدر",
+        "district": "حي العدوة",
+        "courier": "سلطان السبيعي",
+        "shipment_id": "SHP-0228"
+      },
+      {
+        "failure_id": "FR-3fc80a76d4",
+        "category": "hub_delay",
+        "description": "تأخير في مركز الفرز أدى إلى تجاوز مدة اتفاقية مستوى الخدمة",
+        "city": "القيصومة",
+        "district": "حي الروضة",
+        "courier": "عبدالعزيز اليامي",
+        "shipment_id": "SHP-0141"
+      },
+      {
+        "failure_id": "FR-42a9e31bf2",
+        "category": "recipient_unavailable",
+        "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+        "city": "الشماسية",
+        "district": "حي السلام",
+        "courier": "فيصل الجهني",
+        "shipment_id": "SHP-0085"
+      },
+      {
+        "failure_id": "FR-44a501c24c",
+        "category": "hub_delay",
+        "description": "تأخير في مركز الفرز أدى إلى تجاوز مدة اتفاقية مستوى الخدمة",
+        "city": "الأضارع",
+        "district": "حي الملك فهد",
+        "courier": "علي الشريف",
+        "shipment_id": "SHP-0027"
+      },
+      {
+        "failure_id": "FR-510ca3b99d",
+        "category": "failed_attempt_barcode_mismatch",
+        "description": "محاولة تسليم فاشلة: عدم تطابق الباركود مع الشحنة",
+        "city": "جواثا",
+        "district": "حي الفيصلية",
+        "courier": "مشعل السلمي",
+        "shipment_id": "SHP-0237"
+      },
+      {
+        "failure_id": "FR-5608e6d233",
+        "category": "escalation:failed_attempt_weight_mismatch",
+        "description": "محاولة تسليم فاشلة: عدم تطابق وزن الشحنة مع السجل",
+        "city": "بقعاء",
+        "district": "حي بقعاء القديمه",
+        "courier": "فيصل الجهني",
+        "shipment_id": "SHP-0269"
+      },
+      {
+        "failure_id": "FR-56b12c96e3",
+        "category": "hub_delay",
+        "description": "تأخير في مركز الفرز أدى إلى تجاوز مدة اتفاقية مستوى الخدمة",
+        "city": "الحناكية",
+        "district": "المنطقة الصناعية",
+        "courier": "ماجد الدوسري",
+        "shipment_id": "SHP-0043"
+      },
+      {
+        "failure_id": "FR-66094e6627",
+        "category": "recipient_unavailable",
+        "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+        "city": "الرين",
+        "district": "حي الملك فهد",
+        "courier": "زياد الحارثي",
+        "shipment_id": "SHP-0229"
+      },
+      {
+        "failure_id": "FR-664b7ec43c",
+        "category": "failed_attempt_barcode_mismatch",
+        "description": "محاولة تسليم فاشلة: عدم تطابق الباركود مع الشحنة",
+        "city": "المجاردة",
+        "district": "حي الربيع",
+        "courier": "فيصل الجهني",
+        "shipment_id": "SHP-0015"
+      },
+      {
+        "failure_id": "FR-6f6b188775",
+        "category": "escalation:failed_attempt_barcode_mismatch",
+        "description": "محاولة تسليم فاشلة: عدم تطابق الباركود مع الشحنة",
+        "city": "حائل",
+        "district": "حي الوادي",
+        "courier": "يوسف الزهراني",
+        "shipment_id": "SHP-0173"
+      },
+      {
+        "failure_id": "FR-702f8b023e",
+        "category": "address_conflict",
+        "description": "تعارض في العنوان: نسخة العنوان المسجلة تختلف عن الموقع الفعلي للتسليم",
+        "city": "خيبر",
+        "district": "حي الخالدية",
+        "courier": "مشعل السلمي",
+        "shipment_id": "SHP-0182"
+      },
+      {
+        "failure_id": "FR-7264c2826f",
+        "category": "recipient_unavailable",
+        "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+        "city": "ينبع الصناعية",
+        "district": "حي الزهور",
+        "courier": "تركي الغامدي",
+        "shipment_id": "SHP-0020"
+      },
+      {
+        "failure_id": "FR-7376390d95",
+        "category": "recipient_unavailable",
+        "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+        "city": "رنية",
+        "district": "حي الصالحية",
+        "courier": "سامي البقمي",
+        "shipment_id": "SHP-0256"
+      },
+      {
+        "failure_id": "FR-7ada642f64",
+        "category": "escalation:recipient_unavailable",
+        "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+        "city": "حائل",
+        "district": "حي الوادي",
+        "courier": "يوسف الزهراني",
+        "shipment_id": "SHP-0173"
+      },
+      {
+        "failure_id": "FR-80e38c5092",
+        "category": "escalation:recipient_unavailable",
+        "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+        "city": "بقعاء",
+        "district": "حي بقعاء القديمه",
+        "courier": "فيصل الجهني",
+        "shipment_id": "SHP-0269"
+      },
+      {
+        "failure_id": "FR-81e3541786",
+        "category": "failed_attempt_wrong_gate",
+        "description": "محاولة تسليم فاشلة: بوابة دخول خاطئة",
+        "city": "طريف",
+        "district": "حي الروابي",
+        "courier": "علي الشريف",
+        "shipment_id": "SHP-0259"
+      },
+      {
+        "failure_id": "FR-836ae998c8",
+        "category": "failed_attempt_weight_mismatch",
+        "description": "محاولة تسليم فاشلة: عدم تطابق وزن الشحنة مع السجل",
+        "city": "المجاردة",
+        "district": "حي الروضة",
+        "courier": "حمد العمري",
+        "shipment_id": "SHP-0084"
+      },
+      {
+        "failure_id": "FR-89913d790f",
+        "category": "address_conflict",
+        "description": "تعارض في العنوان: نسخة العنوان المسجلة تختلف عن الموقع الفعلي للتسليم",
+        "city": "صفوى",
+        "district": "حي التلال",
+        "courier": "طلال المطيري",
+        "shipment_id": "SHP-0134"
+      },
+      {
+        "failure_id": "FR-8af5fd96fc",
+        "category": "recipient_unavailable",
+        "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+        "city": "الشملي",
+        "district": "حي الحفيرة الغربي",
+        "courier": "سلطان السبيعي",
+        "shipment_id": "SHP-0255"
+      },
+      {
+        "failure_id": "FR-8f0fa2fa46",
+        "category": "failed_attempt_barcode_mismatch",
+        "description": "محاولة تسليم فاشلة: عدم تطابق الباركود مع الشحنة",
+        "city": "تاروت",
+        "district": "حي اليمامة",
+        "courier": "وليد الشهري",
+        "shipment_id": "SHP-0062"
+      },
+      {
+        "failure_id": "FR-94e663f0f5",
+        "category": "recipient_unavailable",
+        "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+        "city": "ابو عريش",
+        "district": "حي السادلية",
+        "courier": "إبراهيم القرني",
+        "shipment_id": "SHP-0222"
+      },
+      {
+        "failure_id": "FR-980e629a87",
+        "category": "recipient_unavailable",
+        "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+        "city": "حوطة سدير",
+        "district": "حي الدوائر الحكومية",
+        "courier": "تركي الغامدي",
+        "shipment_id": "SHP-0192"
+      },
+      {
+        "failure_id": "FR-99fd8abcd0",
+        "category": "address_conflict",
+        "description": "تعارض في العنوان: نسخة العنوان المسجلة تختلف عن الموقع الفعلي للتسليم",
+        "city": "طريب",
+        "district": "حي الخالدية",
+        "courier": "وليد الشهري",
+        "shipment_id": "SHP-0078"
+      },
+      {
+        "failure_id": "FR-9c6115c5f4",
+        "category": "recipient_unavailable",
+        "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+        "city": "القريات",
+        "district": "حي النرجس",
+        "courier": "زياد الحارثي",
+        "shipment_id": "SHP-0156"
+      },
+      {
+        "failure_id": "FR-9d20bcb013",
+        "category": "recipient_unavailable",
+        "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+        "city": "الشملي",
+        "district": "حي الجامعة الاوسط",
+        "courier": "طلال المطيري",
+        "shipment_id": "SHP-0183"
+      },
+      {
+        "failure_id": "FR-a068133b90",
+        "category": "escalation:recipient_unavailable",
+        "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+        "city": "صوير",
+        "district": "حي الصالحية",
+        "courier": "علي الشريف",
+        "shipment_id": "SHP-0193"
+      },
+      {
+        "failure_id": "FR-a5a3c5327c",
+        "category": "recipient_unavailable",
+        "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+        "city": "مهد الذهب",
+        "district": "حي ج1",
+        "courier": "سلطان السبيعي",
+        "shipment_id": "SHP-0096"
+      },
+      {
+        "failure_id": "FR-ab303d5110",
+        "category": "recipient_unavailable",
+        "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+        "city": "جدة",
+        "district": "حي المنار",
+        "courier": "ناصر المالكي",
+        "shipment_id": "SHP-0253"
+      },
+      {
+        "failure_id": "FR-abc5854078",
+        "category": "recipient_unavailable",
+        "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+        "city": "الشماسية",
+        "district": "حي القادسية",
+        "courier": "سعود العتيبي",
+        "shipment_id": "SHP-0257"
+      },
+      {
+        "failure_id": "FR-ac3eee944f",
+        "category": "failed_attempt_weight_mismatch",
+        "description": "محاولة تسليم فاشلة: عدم تطابق وزن الشحنة مع السجل",
+        "city": "الحلوة",
+        "district": "حي الحزم",
+        "courier": "خالد القحطاني",
+        "shipment_id": "SHP-0196"
+      },
+      {
+        "failure_id": "FR-ae1c2c2e72",
+        "category": "failed_attempt_wrong_gate",
+        "description": "محاولة تسليم فاشلة: بوابة دخول خاطئة",
+        "city": "طريب",
+        "district": "حي التعاون",
+        "courier": "يوسف الزهراني",
+        "shipment_id": "SHP-0180"
+      },
+      {
+        "failure_id": "FR-ae9257148e",
+        "category": "address_conflict",
+        "description": "تعارض في العنوان: نسخة العنوان المسجلة تختلف عن الموقع الفعلي للتسليم",
+        "city": "القوز",
+        "district": "حي القوز",
+        "courier": "راشد البلوي",
+        "shipment_id": "SHP-0271"
+      },
+      {
+        "failure_id": "FR-af2eb7d119",
+        "category": "hub_delay",
+        "description": "تأخير في مركز الفرز أدى إلى تجاوز مدة اتفاقية مستوى الخدمة",
+        "city": "حائل",
+        "district": "حي الوادي",
+        "courier": "ماجد الدوسري",
+        "shipment_id": "SHP-0136"
+      },
+      {
+        "failure_id": "FR-afe5005c9e",
+        "category": "escalation:failed_attempt_weight_mismatch",
+        "description": "محاولة تسليم فاشلة: عدم تطابق وزن الشحنة مع السجل",
+        "city": "الدمام",
+        "district": "حي الاسكان الشمالي",
+        "courier": "فهد الشمري",
+        "shipment_id": "SHP-0201"
+      },
+      {
+        "failure_id": "FR-b2549d2c17",
+        "category": "failed_attempt_weight_mismatch",
+        "description": "محاولة تسليم فاشلة: عدم تطابق وزن الشحنة مع السجل",
+        "city": "الشنان",
+        "district": "حي الصالحية",
+        "courier": "سعود العتيبي",
+        "shipment_id": "SHP-0070"
+      },
+      {
+        "failure_id": "FR-b6e962cc2a",
+        "category": "address_conflict",
+        "description": "تعارض في العنوان: نسخة العنوان المسجلة تختلف عن الموقع الفعلي للتسليم",
+        "city": "ينبع الصناعية",
+        "district": "المنطقة الصناعية",
+        "courier": "ماجد الدوسري",
+        "shipment_id": "SHP-0097"
+      },
+      {
+        "failure_id": "FR-ba5acbc796",
+        "category": "failed_attempt_barcode_mismatch",
+        "description": "محاولة تسليم فاشلة: عدم تطابق الباركود مع الشحنة",
+        "city": "القنفذة",
+        "district": "حي الناعمية",
+        "courier": "فيصل الجهني",
+        "shipment_id": "SHP-0219"
+      },
+      {
+        "failure_id": "FR-ba995f462b",
+        "category": "failed_attempt_weight_mismatch",
+        "description": "محاولة تسليم فاشلة: عدم تطابق وزن الشحنة مع السجل",
+        "city": "رنية",
+        "district": "حي الملحة 2",
+        "courier": "إبراهيم القرني",
+        "shipment_id": "SHP-0209"
+      },
+      {
+        "failure_id": "FR-bee7b1d755",
+        "category": "escalation:address_conflict",
+        "description": "تعارض في العنوان: نسخة العنوان المسجلة تختلف عن الموقع الفعلي للتسليم",
+        "city": "صوير",
+        "district": "حي الصالحية",
+        "courier": "علي الشريف",
+        "shipment_id": "SHP-0193"
+      },
+      {
+        "failure_id": "FR-bf74f5cd54",
+        "category": "failed_attempt_weight_mismatch",
+        "description": "محاولة تسليم فاشلة: عدم تطابق وزن الشحنة مع السجل",
+        "city": "الهلالية",
+        "district": "حي السلاح",
+        "courier": "جابر الثقفي",
+        "shipment_id": "SHP-0061"
+      },
+      {
+        "failure_id": "FR-c1f539796d",
+        "category": "hub_delay",
+        "description": "تأخير في مركز الفرز أدى إلى تجاوز مدة اتفاقية مستوى الخدمة",
+        "city": "مدينة الملك عبدالله الاقتصادية",
+        "district": "حي المروج",
+        "courier": "سعود العتيبي",
+        "shipment_id": "SHP-0024"
+      },
+      {
+        "failure_id": "FR-c25e4ba84c",
+        "category": "hub_delay",
+        "description": "تأخير في مركز الفرز أدى إلى تجاوز مدة اتفاقية مستوى الخدمة",
+        "city": "الشملي",
+        "district": "حي الحفيرة الغربي",
+        "courier": "وليد الشهري",
+        "shipment_id": "SHP-0081"
+      },
+      {
+        "failure_id": "FR-c5d5bc31d2",
+        "category": "hub_delay",
+        "description": "تأخير في مركز الفرز أدى إلى تجاوز مدة اتفاقية مستوى الخدمة",
+        "city": "دارين",
+        "district": "حي الاندلس",
+        "courier": "عبدالعزيز اليامي",
+        "shipment_id": "SHP-0079"
+      },
+      {
+        "failure_id": "FR-c6c80b7014",
+        "category": "address_conflict",
+        "description": "تعارض في العنوان: نسخة العنوان المسجلة تختلف عن الموقع الفعلي للتسليم",
+        "city": "تندحة",
+        "district": "حي شمال تندحة",
+        "courier": "مشعل السلمي",
+        "shipment_id": "SHP-0004"
+      },
+      {
+        "failure_id": "FR-c8e667baf3",
+        "category": "hub_delay",
+        "description": "تأخير في مركز الفرز أدى إلى تجاوز مدة اتفاقية مستوى الخدمة",
+        "city": "الشملي",
+        "district": "حي حفيرة السبعة الشمالي",
+        "courier": "يوسف الزهراني",
+        "shipment_id": "SHP-0164"
+      },
+      {
+        "failure_id": "FR-caada3d6a2",
+        "category": "hub_delay",
+        "description": "تأخير في مركز الفرز أدى إلى تجاوز مدة اتفاقية مستوى الخدمة",
+        "city": "ابو عريش",
+        "district": "حي الشاقة",
+        "courier": "سلطان السبيعي",
+        "shipment_id": "SHP-0052"
+      },
+      {
+        "failure_id": "FR-d385608b6b",
+        "category": "recipient_unavailable",
+        "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+        "city": "شقراء",
+        "district": "حي الوشم",
+        "courier": "بندر العنزي",
+        "shipment_id": "SHP-0211"
+      },
+      {
+        "failure_id": "FR-d6c38492f4",
+        "category": "failed_attempt_barcode_mismatch",
+        "description": "محاولة تسليم فاشلة: عدم تطابق الباركود مع الشحنة",
+        "city": "الحلوة",
+        "district": "الحلوة",
+        "courier": "سلطان السبيعي",
+        "shipment_id": "SHP-0279"
+      },
+      {
+        "failure_id": "FR-d6fd70cd61",
+        "category": "failed_attempt_barcode_mismatch",
+        "description": "محاولة تسليم فاشلة: عدم تطابق الباركود مع الشحنة",
+        "city": "الباحة",
+        "district": "حي الازهر",
+        "courier": "سعود العتيبي",
+        "shipment_id": "SHP-0217"
+      },
+      {
+        "failure_id": "FR-de41eb3ec0",
+        "category": "hub_delay",
+        "description": "تأخير في مركز الفرز أدى إلى تجاوز مدة اتفاقية مستوى الخدمة",
+        "city": "الزلفي",
+        "district": "حي حطين",
+        "courier": "حمد العمري",
+        "shipment_id": "SHP-0273"
+      },
+      {
+        "failure_id": "FR-de9e557995",
+        "category": "failed_attempt_barcode_mismatch",
+        "description": "محاولة تسليم فاشلة: عدم تطابق الباركود مع الشحنة",
+        "city": "نفي",
+        "district": "حي العزيزية",
+        "courier": "حمد العمري",
+        "shipment_id": "SHP-0224"
+      },
+      {
+        "failure_id": "FR-e58dd8c113",
+        "category": "failed_attempt_barcode_mismatch",
+        "description": "محاولة تسليم فاشلة: عدم تطابق الباركود مع الشحنة",
+        "city": "شقراء",
+        "district": "حي الروضة",
+        "courier": "فيصل الجهني",
+        "shipment_id": "SHP-0067"
+      },
+      {
+        "failure_id": "FR-ea43a1fec1",
+        "category": "failed_attempt_wrong_gate",
+        "description": "محاولة تسليم فاشلة: بوابة دخول خاطئة",
+        "city": "خيبر",
+        "district": "حي الروضة",
+        "courier": "أحمد الزهيري",
+        "shipment_id": "SHP-0166"
+      },
+      {
+        "failure_id": "FR-ef41caa78b",
+        "category": "address_conflict",
+        "description": "تعارض في العنوان: نسخة العنوان المسجلة تختلف عن الموقع الفعلي للتسليم",
+        "city": "الغاط",
+        "district": "حي الصناعية",
+        "courier": "سلطان السبيعي",
+        "shipment_id": "SHP-0280"
+      },
+      {
+        "failure_id": "FR-ef5edfb661",
+        "category": "address_conflict",
+        "description": "تعارض في العنوان: نسخة العنوان المسجلة تختلف عن الموقع الفعلي للتسليم",
+        "city": "خميس مشيط",
+        "district": "حي الخالدية",
+        "courier": "تركي الغامدي",
+        "shipment_id": "SHP-0101"
+      },
+      {
+        "failure_id": "FR-fcc7dcdf17",
+        "category": "failed_attempt_barcode_mismatch",
+        "description": "محاولة تسليم فاشلة: عدم تطابق الباركود مع الشحنة",
+        "city": "الليث",
+        "district": "حي رقم 1",
+        "courier": "فيصل الجهني",
+        "shipment_id": "SHP-0178"
+      }
+    ],
+    "escalations": [],
+    "escalations_by_team": []
+  },
+  "uiMetrics": {
+    "kpis": [
+      "القرارات",
+      "75",
+      "165",
+      "90%",
+      "0",
+      "0"
+    ],
+    "openKpi": "75",
+    "resolvedKpi": "165",
+    "historicalRate": "90%",
+    "coverageResolved": "75",
+    "coverageOpen": "75",
+    "pageTitle": "القرارات"
+  },
+  "panels": {
+    "المشكلات": 440,
+    "إجراءات المعالجة": 440,
+    "التفاصيل": 440,
+    "queue": 400
+  },
+  "progressSemantics": {
+    "segmentCount": 28,
+    "variants": [
+      "success",
+      "pending",
+      "failure"
+    ],
+    "primaryOnly": 0,
+    "full100": [
+      [
+        "success"
+      ],
+      [
+        "success"
+      ]
+    ],
+    "partial": [
+      {
+        "pct": "91",
+        "segs": [
+          "success",
+          "failure"
+        ]
+      },
+      {
+        "pct": "89",
+        "segs": [
+          "success",
+          "failure"
+        ]
+      },
+      {
+        "pct": "85",
+        "segs": [
+          "success",
+          "failure"
+        ]
+      },
+      {
+        "pct": "88",
+        "segs": [
+          "success",
+          "failure"
+        ]
+      },
+      {
+        "pct": "91",
+        "segs": [
+          "success",
+          "failure"
+        ]
+      },
+      {
+        "pct": "89",
+        "segs": [
+          "success",
+          "failure"
+        ]
+      },
+      {
+        "pct": "81",
+        "segs": [
+          "success",
+          "failure"
+        ]
+      },
+      {
+        "pct": "93",
+        "segs": [
+          "success",
+          "failure"
+        ]
+      },
+      {
+        "pct": "93",
+        "segs": [
+          "success",
+          "failure"
+        ]
+      },
+      {
+        "pct": "85",
+        "segs": [
+          "success",
+          "failure"
+        ]
+      },
+      {
+        "pct": "91",
+        "segs": [
+          "success",
+          "failure"
+        ]
+      },
+      {
+        "pct": "80",
+        "segs": [
+          "success",
+          "failure"
+        ]
+      }
+    ],
+    "sample": [
+      {
+        "variant": "success",
+        "bg": "rgb(12, 163, 12)",
+        "className": "h-full transition-all bg-outcome-success"
+      },
+      {
+        "variant": "pending",
+        "bg": "rgb(250, 178, 25)",
+        "className": "h-full transition-all bg-outcome-pending border-l border-progress-track/60"
+      },
+      {
+        "variant": "success",
+        "bg": "rgb(12, 163, 12)",
+        "className": "h-full transition-all bg-outcome-success"
+      },
+      {
+        "variant": "failure",
+        "bg": "oklch(0.58 0.19 25)",
+        "className": "h-full transition-all bg-outcome-failure border-l border-progress-track/60"
+      },
+      {
+        "variant": "success",
+        "bg": "rgb(12, 163, 12)",
+        "className": "h-full transition-all bg-outcome-success"
+      },
+      {
+        "variant": "failure",
+        "bg": "oklch(0.58 0.19 25)",
+        "className": "h-full transition-all bg-outcome-failure border-l border-progress-track/60"
+      }
+    ]
+  },
+  "progressSemanticsDark": {
+    "segmentCount": 28,
+    "variants": [
+      "success",
+      "pending",
+      "failure"
+    ],
+    "sample": [
+      {
+        "variant": "success",
+        "bg": "rgb(52, 211, 153)"
+      },
+      {
+        "variant": "pending",
+        "bg": "rgb(251, 191, 36)"
+      },
+      {
+        "variant": "success",
+        "bg": "rgb(52, 211, 153)"
+      },
+      {
+        "variant": "failure",
+        "bg": "rgb(248, 113, 113)"
+      },
+      {
+        "variant": "success",
+        "bg": "rgb(52, 211, 153)"
+      },
+      {
+        "variant": "failure",
+        "bg": "rgb(248, 113, 113)"
+      }
+    ],
+    "visibleCount": 6
+  },
+  "selectedRowBars": {
+    "ok": true,
+    "segmentCount": 2,
+    "details": [
+      {
+        "variant": "success",
+        "bg": "rgb(12, 163, 12)",
+        "hasPrimary": false,
+        "hasOutcome": true
+      },
+      {
+        "variant": "failure",
+        "bg": "oklch(0.58 0.19 25)",
+        "hasPrimary": false,
+        "hasOutcome": true
+      }
+    ],
+    "rowBg": "rgb(232, 241, 252)"
+  },
+  "queueSticky": {
+    "ok": true,
+    "scrollOwner": "overflow-auto",
+    "before": {
+      "ownerTop": 996.546875,
+      "theadTop": 996.546875
+    },
+    "after": {
+      "scrollTop": 400,
+      "ownerTop": 996.546875,
+      "theadTop": 996.546875,
+      "theadPosition": "sticky"
+    },
+    "headerPinned": true
+  },
+  "focusSticky": {
+    "ok": true,
+    "before": {
+      "ownerTop": 501.546875,
+      "theadTop": 682.546875
+    },
+    "after": {
+      "scrollTop": 218,
+      "ownerTop": 501.546875,
+      "theadTop": 501.546875,
+      "rowCount": 12
+    },
+    "headerPinned": true,
+    "lastRowVisible": true,
+    "lastRowText": "SHP-0101خميس مشيطتركي الغامدي"
+  },
+  "queueScrollToEnd": {
+    "ok": true,
+    "rowCount": 75,
+    "scrollTop": 2235,
+    "scrollHeight": 2511,
+    "clientHeight": 276,
+    "lastRowVisible": true,
+    "lastRowText": "FR-fcc7dcdf17SHP-0178عدم تطابق الباركودالليثفيصل الجهني",
+    "lastFailureId": "FR-fcc7dcdf17"
+  },
+  "focusLastCase": {
+    "category": "recipient_unavailable",
+    "ok": true,
+    "before": {
+      "ownerTop": 501.546875,
+      "theadTop": 682.546875
+    },
+    "after": {
+      "scrollTop": 218,
+      "ownerTop": 501.546875,
+      "theadTop": 501.546875,
+      "rowCount": 12
+    },
+    "headerPinned": true,
+    "lastRowVisible": true,
+    "lastRowText": "SHP-0101خميس مشيطتركي الغامدي"
+  },
+  "overflowFixture": {
+    "panels": {
+      "المشكلات": 440,
+      "إجراءات المعالجة": 440,
+      "التفاصيل": 440,
+      "queue": 400
+    },
+    "scrollReach": {
+      "problems": {
+        "scrollHeight": 2162,
+        "clientHeight": 351,
+        "overflow": true,
+        "reachedEnd": true
+      },
+      "actions": {
+        "scrollHeight": 1440,
+        "clientHeight": 351,
+        "overflow": true,
+        "reachedEnd": true
+      },
+      "queue": {
+        "scrollHeight": 2676,
+        "clientHeight": 276,
+        "overflow": true,
+        "reachedEnd": true
+      }
+    },
+    "problemBarCount": 50,
+    "queueRowCount": 80
+  },
+  "b1Sentinels": [
+    {
+      "id": "H03",
+      "theme": "light",
+      "lang": "ar",
+      "ratio": 9.95,
+      "pass": true
+    },
+    {
+      "id": "H04",
+      "theme": "light",
+      "lang": "ar",
+      "ratio": 14.55,
+      "pass": true
+    },
+    {
+      "id": "H03",
+      "theme": "dark",
+      "lang": "ar",
+      "ratio": 11.58,
+      "pass": true
+    },
+    {
+      "id": "H04",
+      "theme": "dark",
+      "lang": "ar",
+      "ratio": 13.02,
+      "pass": true
+    }
+  ],
+  "buildFingerprint": {
+    "css": [
+      "css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap",
+      "index-DVhlRZ8U.css"
+    ],
+    "js": [
+      "index-DE557tU5.js"
+    ]
+  },
+  "metricComparison": {
+    "api": {
+      "coverage": {
+        "resolved": 165,
+        "unresolved": 75,
+        "total": 240
+      },
+      "writebacks": {
+        "by_agent": 0,
+        "seeded": 165,
+        "pending": 0,
+        "total": 165
+      },
+      "overallRate": 90,
+      "coveragePct": 69,
+      "queueLength": 75
+    },
+    "ui": {
+      "openKpi": "75",
+      "resolvedKpi": "165",
+      "historicalRate": "90%",
+      "coverageResolved": "75",
+      "coverageOpen": "75"
+    },
+    "matches": {
+      "open": true,
+      "resolved": true,
+      "historicalRate": true,
+      "queueLength": true
+    }
+  },
+  "kpiTones": {
+    "precedent": null,
+    "openCases": null
+  },
+  "learningBadge": {
+    "text": "لا توجد إضافات من الوكيل بعد",
+    "hasChartGood": false
+  },
+  "coverageBar": {
+    "segmentCount": 2,
+    "variants": [
+      "success",
+      "pending"
+    ],
+    "sample": [
+      {
+        "variant": "success",
+        "bg": "rgb(12, 163, 12)"
+      },
+      {
+        "variant": "pending",
+        "bg": "rgb(250, 178, 25)"
+      }
+    ]
+  },
+  "issues": [
+    {
+      "id": "M05",
+      "severity": "HIGH",
+      "detail": "Precedent KPI not warning when open > 0"
+    }
+  ],
+  "verdicts": {
+    "M01": "PASS",
+    "M02": "PASS",
+    "M03": "PASS",
+    "M04": "PASS",
+    "M05": "FAIL",
+    "L01": "PASS",
+    "L02": "PASS",
+    "L03": "PASS",
+    "H03": "PASS",
+    "H04": "PASS",
+    "OVERFLOW": "PASS",
+    "OVERALL": "CONDITIONAL"
+  },
+  "panelHeightCheck": {
+    "problems": 440,
+    "actions": 440,
+    "focus": 440,
+    "queue": 400,
+    "pass": true
+  }
+}

@@ -1,0 +1,1057 @@
+{
+  "runId": "2026-09-17T19-21-agentx-ui-repair-proof",
+  "phase": "b1-closure",
+  "agent": "5A",
+  "url": "http://127.0.0.1:8000",
+  "viewport": "1440x900",
+  "candidateBuild": {
+    "css": "index-DVhlRZ8U.css",
+    "js": "index-DE557tU5.js"
+  },
+  "baselineRef": "measurements-gate.json (B1 gate @ index-B9I8LKnG.css)",
+  "captures": [
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-theme-menu-en-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-language-menu-en-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-intake-hover-en-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-queue-en-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-sidebar-en-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-escalations-en-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-explore-lens-en-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-schema-en-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-theme-menu-ar-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-language-menu-ar-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-intake-hover-ar-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-queue-ar-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-sidebar-ar-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-escalations-ar-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-explore-lens-ar-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-schema-ar-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-theme-menu-en-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-language-menu-en-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-intake-hover-en-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-queue-en-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-sidebar-en-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-escalations-en-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-explore-lens-en-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-schema-en-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-theme-menu-ar-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-language-menu-ar-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-intake-hover-ar-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-queue-ar-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-sidebar-ar-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-escalations-ar-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-explore-lens-ar-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b1-closure-schema-ar-dark.png"
+  ],
+  "measurements": [
+    {
+      "view": "H01-intake-count",
+      "theme": "light",
+      "lang": "en",
+      "ratio": 5.62,
+      "color": "rgb(102, 100, 95)",
+      "bg": "rgb(250, 249, 247)",
+      "selector": "h2 ~ span.text-sm.text-muted-foreground",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "className": "text-sm text-muted-foreground",
+      "text": "Awaiting decision — 75",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 578.921875,
+        "y": 82,
+        "w": 144.296875,
+        "h": 20
+      }
+    },
+    {
+      "view": "H02-intake-hover",
+      "theme": "light",
+      "lang": "en",
+      "ratio": 9.95,
+      "pointerHover": true,
+      "selector": "button:hover",
+      "color": "rgb(22, 59, 102)",
+      "backgroundColor": "rgb(232, 241, 252)",
+      "className": "group flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary/35 hover:bg-accent hover:text-accent-foreground",
+      "text": "لم يتم تسليم الشحنة SHP-0227 ولم يتواصل معي المندوبSHP-0227recipient unavailable",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 456,
+        "y": 190,
+        "w": 768,
+        "h": 60.5
+      }
+    },
+    {
+      "view": "H03-problem-selected",
+      "theme": "light",
+      "lang": "en",
+      "ratio": 9.95,
+      "selector": "button.border-primary\\/30",
+      "color": "rgb(22, 59, 102)",
+      "backgroundColor": "rgb(232, 241, 252)",
+      "className": "w-full rounded-md border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring border-primary/30 bg-accent text-accent-foreground",
+      "text": "address conflict91%39 of 43 worked",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 273,
+        "y": 497.546875,
+        "w": 254,
+        "h": 68.203125
+      }
+    },
+    {
+      "view": "H03-problem-selected-hover",
+      "theme": "light",
+      "lang": "en",
+      "ratio": 9.95,
+      "pointerHover": true,
+      "selector": "button.border-primary\\/30:hover",
+      "color": "rgb(22, 59, 102)",
+      "backgroundColor": "rgb(232, 241, 252)",
+      "className": "w-full rounded-md border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring border-primary/30 bg-accent text-accent-foreground",
+      "text": "address conflict91%39 of 43 worked",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 273,
+        "y": 497.546875,
+        "w": 254,
+        "h": 68.203125
+      }
+    },
+    {
+      "view": "H03-problem-hover",
+      "theme": "light",
+      "lang": "en",
+      "ratio": 14.55,
+      "pointerHover": true,
+      "selector": "button:hover",
+      "color": "rgb(32, 32, 30)",
+      "backgroundColor": "rgb(240, 242, 245)",
+      "className": "w-full rounded-md border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring border-transparent hover:border-border hover:bg-muted",
+      "text": "recipient unavailable89%34 of 38 worked",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 273,
+        "y": 569.75,
+        "w": 254,
+        "h": 68.203125
+      }
+    },
+    {
+      "view": "H04-queue-selected-hover",
+      "theme": "light",
+      "lang": "en",
+      "ratio": 9.95,
+      "cellColor": "rgb(22, 59, 102)",
+      "rowBg": "rgb(232, 241, 252)",
+      "pointerHover": true,
+      "selector": "tr[data-state=\"selected\"] td:nth-child(2)",
+      "color": "rgb(22, 59, 102)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "className": "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 text-xs",
+      "text": "SHP-0072",
+      "fontSize": "12px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 434.515625,
+        "y": 461.546875,
+        "w": 120.421875,
+        "h": 33
+      }
+    },
+    {
+      "view": "H05-sidebar-hover",
+      "theme": "light",
+      "lang": "en",
+      "pointerHover": true,
+      "selector": "[data-sidebar=\"menu-button\"]:hover",
+      "color": "rgb(32, 32, 30)",
+      "backgroundColor": "rgb(240, 242, 245)",
+      "className": "peer/menu-button group/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left ring-sidebar-ring outline-hidden transition-[width,height,padding] group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-open:hover:bg-muted data-open:hover:text-sidebar-foreground data-active:border-l-2 data-active:border-sidebar-primary data-active:bg-sidebar-accent data-active:pl-[calc(0.5rem-2px)] data-active:font-medium data-active:text-sidebar-accent-foreground [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate hover:bg-muted hover:text-sidebar-foreground h-8 text-sm text-sidebar-foreground [&_svg]:text-current",
+      "text": "Intake",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 8,
+        "y": 65,
+        "w": 223,
+        "h": 32
+      }
+    },
+    {
+      "view": "H05-sidebar-active",
+      "theme": "light",
+      "lang": "en"
+    },
+    {
+      "view": "H06-escalations-empty-icon",
+      "theme": "light",
+      "lang": "en",
+      "ratio": 5.27,
+      "bg": "rgb(240, 242, 245)",
+      "selector": "[data-slot=\"empty-icon\"]",
+      "color": "rgb(102, 100, 95)",
+      "backgroundColor": "rgb(240, 242, 245)",
+      "className": "mb-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground [&_svg:not([class*='size-'])]:size-5",
+      "text": "",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 819.984375,
+        "y": 1404.546875,
+        "w": 40,
+        "h": 40
+      }
+    },
+    {
+      "view": "E01-explore-lens",
+      "theme": "light",
+      "lang": "en",
+      "ratio": null,
+      "textColor": "rgb(255, 255, 255)",
+      "pillBg": "oklch(0.546 0.245 262.9)",
+      "fontSize": "14px",
+      "fontWeight": "500"
+    },
+    {
+      "view": "E02-schema-selected",
+      "theme": "light",
+      "lang": "en",
+      "ratio": null,
+      "control": "force-or-renderer",
+      "selector": "button.bg-primary.text-primary-foreground",
+      "color": "rgb(255, 255, 255)",
+      "backgroundColor": "oklch(0.546 0.245 262.9)",
+      "className": "rounded-md px-2 py-0.5 transition-colors bg-primary text-primary-foreground",
+      "text": "Force",
+      "fontSize": "11px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 1324.609375,
+        "y": 147,
+        "w": 43.53125,
+        "h": 20.5
+      }
+    },
+    {
+      "view": "H01-intake-count",
+      "theme": "light",
+      "lang": "ar",
+      "ratio": 5.62,
+      "color": "rgb(102, 100, 95)",
+      "bg": "rgb(250, 249, 247)",
+      "selector": "h2 ~ span.text-sm.text-muted-foreground",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "className": "text-sm text-muted-foreground",
+      "text": "بانتظار قرار — 75",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 603.34375,
+        "y": 82,
+        "w": 97.265625,
+        "h": 20
+      }
+    },
+    {
+      "view": "H02-intake-hover",
+      "theme": "light",
+      "lang": "ar",
+      "ratio": 9.95,
+      "pointerHover": true,
+      "selector": "button:hover",
+      "color": "rgb(22, 59, 102)",
+      "backgroundColor": "rgb(232, 241, 252)",
+      "className": "group flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary/35 hover:bg-accent hover:text-accent-foreground",
+      "text": "لم يتم تسليم الشحنة SHP-0227 ولم يتواصل معي المندوبSHP-0227تعذر الوصول إلى المست",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 456,
+        "y": 170,
+        "w": 768,
+        "h": 60.5
+      }
+    },
+    {
+      "view": "H03-problem-selected",
+      "theme": "light",
+      "lang": "ar",
+      "ratio": 9.95,
+      "selector": "button.border-primary\\/30",
+      "color": "rgb(22, 59, 102)",
+      "backgroundColor": "rgb(232, 241, 252)",
+      "className": "w-full rounded-md border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring border-primary/30 bg-accent text-accent-foreground",
+      "text": "تعارض في العنوان91%39 من 43 نجح",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 273,
+        "y": 497.546875,
+        "w": 254,
+        "h": 68.203125
+      }
+    },
+    {
+      "view": "H03-problem-selected-hover",
+      "theme": "light",
+      "lang": "ar",
+      "ratio": 9.95,
+      "pointerHover": true,
+      "selector": "button.border-primary\\/30:hover",
+      "color": "rgb(22, 59, 102)",
+      "backgroundColor": "rgb(232, 241, 252)",
+      "className": "w-full rounded-md border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring border-primary/30 bg-accent text-accent-foreground",
+      "text": "تعارض في العنوان91%39 من 43 نجح",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 273,
+        "y": 497.546875,
+        "w": 254,
+        "h": 68.203125
+      }
+    },
+    {
+      "view": "H03-problem-hover",
+      "theme": "light",
+      "lang": "ar",
+      "ratio": 14.55,
+      "pointerHover": true,
+      "selector": "button:hover",
+      "color": "rgb(32, 32, 30)",
+      "backgroundColor": "rgb(240, 242, 245)",
+      "className": "w-full rounded-md border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring border-transparent hover:border-border hover:bg-muted",
+      "text": "تعذر الوصول إلى المستلم89%34 من 38 نجح",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 273,
+        "y": 569.75,
+        "w": 254,
+        "h": 68.203125
+      }
+    },
+    {
+      "view": "H04-queue-selected-hover",
+      "theme": "light",
+      "lang": "ar",
+      "ratio": 9.95,
+      "cellColor": "rgb(22, 59, 102)",
+      "rowBg": "rgb(232, 241, 252)",
+      "pointerHover": true,
+      "selector": "tr[data-state=\"selected\"] td:nth-child(2)",
+      "color": "rgb(22, 59, 102)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "className": "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 text-xs",
+      "text": "SHP-0072",
+      "fontSize": "12px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 443.609375,
+        "y": 461.546875,
+        "w": 126.890625,
+        "h": 33
+      }
+    },
+    {
+      "view": "H05-sidebar-hover",
+      "theme": "light",
+      "lang": "ar",
+      "pointerHover": true,
+      "selector": "[data-sidebar=\"menu-button\"]:hover",
+      "color": "rgb(32, 32, 30)",
+      "backgroundColor": "rgb(240, 242, 245)",
+      "className": "peer/menu-button group/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left ring-sidebar-ring outline-hidden transition-[width,height,padding] group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-open:hover:bg-muted data-open:hover:text-sidebar-foreground data-active:border-l-2 data-active:border-sidebar-primary data-active:bg-sidebar-accent data-active:pl-[calc(0.5rem-2px)] data-active:font-medium data-active:text-sidebar-accent-foreground [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate hover:bg-muted hover:text-sidebar-foreground h-8 text-sm text-sidebar-foreground [&_svg]:text-current",
+      "text": "الوارد",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 8,
+        "y": 65,
+        "w": 223,
+        "h": 32
+      }
+    },
+    {
+      "view": "H05-sidebar-active",
+      "theme": "light",
+      "lang": "ar"
+    },
+    {
+      "view": "H06-escalations-empty-icon",
+      "theme": "light",
+      "lang": "ar",
+      "ratio": 5.27,
+      "bg": "rgb(240, 242, 245)",
+      "selector": "[data-slot=\"empty-icon\"]",
+      "color": "rgb(102, 100, 95)",
+      "backgroundColor": "rgb(240, 242, 245)",
+      "className": "mb-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground [&_svg:not([class*='size-'])]:size-5",
+      "text": "",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 820,
+        "y": 727.546875,
+        "w": 40,
+        "h": 40
+      }
+    },
+    {
+      "view": "E01-explore-lens",
+      "theme": "light",
+      "lang": "ar",
+      "ratio": null,
+      "textColor": "rgb(255, 255, 255)",
+      "pillBg": "oklch(0.546 0.245 262.9)",
+      "fontSize": "14px",
+      "fontWeight": "500"
+    },
+    {
+      "view": "E02-schema-selected",
+      "theme": "light",
+      "lang": "ar",
+      "ratio": null,
+      "control": "force-or-renderer",
+      "selector": "button.bg-primary.text-primary-foreground",
+      "color": "rgb(255, 255, 255)",
+      "backgroundColor": "oklch(0.546 0.245 262.9)",
+      "className": "rounded-md px-2 py-0.5 transition-colors bg-primary text-primary-foreground",
+      "text": "تخطيط بالقوى",
+      "fontSize": "11px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 1247.5625,
+        "y": 147,
+        "w": 80.140625,
+        "h": 20.5
+      }
+    },
+    {
+      "view": "H01-intake-count",
+      "theme": "dark",
+      "lang": "en",
+      "ratio": 8.23,
+      "color": "rgb(167, 173, 183)",
+      "bg": "rgb(17, 19, 24)",
+      "selector": "h2 ~ span.text-sm.text-muted-foreground",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "className": "text-sm text-muted-foreground",
+      "text": "Awaiting decision — 75",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 578.921875,
+        "y": 82,
+        "w": 144.296875,
+        "h": 20
+      }
+    },
+    {
+      "view": "H02-intake-hover",
+      "theme": "dark",
+      "lang": "en",
+      "ratio": 11.58,
+      "pointerHover": true,
+      "selector": "button:hover",
+      "color": "rgb(234, 242, 255)",
+      "backgroundColor": "rgb(30, 50, 74)",
+      "className": "group flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary/35 hover:bg-accent hover:text-accent-foreground",
+      "text": "لم يتم تسليم الشحنة SHP-0227 ولم يتواصل معي المندوبSHP-0227recipient unavailable",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 456,
+        "y": 190,
+        "w": 768,
+        "h": 60.5
+      }
+    },
+    {
+      "view": "H03-problem-selected",
+      "theme": "dark",
+      "lang": "en",
+      "ratio": 11.58,
+      "selector": "button.border-primary\\/30",
+      "color": "rgb(234, 242, 255)",
+      "backgroundColor": "rgb(30, 50, 74)",
+      "className": "w-full rounded-md border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring border-primary/30 bg-accent text-accent-foreground",
+      "text": "address conflict91%39 of 43 worked",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 273,
+        "y": 497.546875,
+        "w": 254,
+        "h": 68.203125
+      }
+    },
+    {
+      "view": "H03-problem-selected-hover",
+      "theme": "dark",
+      "lang": "en",
+      "ratio": 11.58,
+      "pointerHover": true,
+      "selector": "button.border-primary\\/30:hover",
+      "color": "rgb(234, 242, 255)",
+      "backgroundColor": "rgb(30, 50, 74)",
+      "className": "w-full rounded-md border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring border-primary/30 bg-accent text-accent-foreground",
+      "text": "address conflict91%39 of 43 worked",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 273,
+        "y": 497.546875,
+        "w": 254,
+        "h": 68.203125
+      }
+    },
+    {
+      "view": "H03-problem-hover",
+      "theme": "dark",
+      "lang": "en",
+      "ratio": 13.02,
+      "pointerHover": true,
+      "selector": "button:hover",
+      "color": "rgb(241, 245, 249)",
+      "backgroundColor": "rgb(36, 43, 53)",
+      "className": "w-full rounded-md border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring border-transparent hover:border-border hover:bg-muted",
+      "text": "recipient unavailable89%34 of 38 worked",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 273,
+        "y": 569.75,
+        "w": 254,
+        "h": 68.203125
+      }
+    },
+    {
+      "view": "H04-queue-selected-hover",
+      "theme": "dark",
+      "lang": "en",
+      "ratio": 11.58,
+      "cellColor": "rgb(234, 242, 255)",
+      "rowBg": "rgb(30, 50, 74)",
+      "pointerHover": true,
+      "selector": "tr[data-state=\"selected\"] td:nth-child(2)",
+      "color": "rgb(234, 242, 255)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "className": "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 text-xs",
+      "text": "SHP-0072",
+      "fontSize": "12px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 434.515625,
+        "y": 461.546875,
+        "w": 120.421875,
+        "h": 33
+      }
+    },
+    {
+      "view": "H05-sidebar-hover",
+      "theme": "dark",
+      "lang": "en",
+      "pointerHover": true,
+      "selector": "[data-sidebar=\"menu-button\"]:hover",
+      "color": "rgb(241, 245, 249)",
+      "backgroundColor": "rgb(36, 43, 53)",
+      "className": "peer/menu-button group/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left ring-sidebar-ring outline-hidden transition-[width,height,padding] group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-open:hover:bg-muted data-open:hover:text-sidebar-foreground data-active:border-l-2 data-active:border-sidebar-primary data-active:bg-sidebar-accent data-active:pl-[calc(0.5rem-2px)] data-active:font-medium data-active:text-sidebar-accent-foreground [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate hover:bg-muted hover:text-sidebar-foreground h-8 text-sm text-sidebar-foreground [&_svg]:text-current",
+      "text": "Intake",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 8,
+        "y": 65,
+        "w": 223,
+        "h": 32
+      }
+    },
+    {
+      "view": "H05-sidebar-active",
+      "theme": "dark",
+      "lang": "en"
+    },
+    {
+      "view": "H06-escalations-empty-icon",
+      "theme": "dark",
+      "lang": "en",
+      "ratio": 6.32,
+      "bg": "rgb(36, 43, 53)",
+      "selector": "[data-slot=\"empty-icon\"]",
+      "color": "rgb(167, 173, 183)",
+      "backgroundColor": "rgb(36, 43, 53)",
+      "className": "mb-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground [&_svg:not([class*='size-'])]:size-5",
+      "text": "",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 819.984375,
+        "y": 1404.546875,
+        "w": 40,
+        "h": 40
+      }
+    },
+    {
+      "view": "E01-explore-lens",
+      "theme": "dark",
+      "lang": "en",
+      "ratio": 4.76,
+      "textColor": "rgb(255, 255, 255)",
+      "pillBg": "rgb(59, 111, 212)",
+      "fontSize": "14px",
+      "fontWeight": "500"
+    },
+    {
+      "view": "E02-schema-selected",
+      "theme": "dark",
+      "lang": "en",
+      "ratio": 4.76,
+      "control": "force-or-renderer",
+      "selector": "button.bg-primary.text-primary-foreground",
+      "color": "rgb(255, 255, 255)",
+      "backgroundColor": "rgb(59, 111, 212)",
+      "className": "rounded-md px-2 py-0.5 transition-colors bg-primary text-primary-foreground",
+      "text": "Force",
+      "fontSize": "11px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 1324.609375,
+        "y": 147,
+        "w": 43.53125,
+        "h": 20.5
+      }
+    },
+    {
+      "view": "H01-intake-count",
+      "theme": "dark",
+      "lang": "ar",
+      "ratio": 8.23,
+      "color": "rgb(167, 173, 183)",
+      "bg": "rgb(17, 19, 24)",
+      "selector": "h2 ~ span.text-sm.text-muted-foreground",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "className": "text-sm text-muted-foreground",
+      "text": "بانتظار قرار — 75",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 603.34375,
+        "y": 82,
+        "w": 97.265625,
+        "h": 20
+      }
+    },
+    {
+      "view": "H02-intake-hover",
+      "theme": "dark",
+      "lang": "ar",
+      "ratio": 11.58,
+      "pointerHover": true,
+      "selector": "button:hover",
+      "color": "rgb(234, 242, 255)",
+      "backgroundColor": "rgb(30, 50, 74)",
+      "className": "group flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary/35 hover:bg-accent hover:text-accent-foreground",
+      "text": "لم يتم تسليم الشحنة SHP-0227 ولم يتواصل معي المندوبSHP-0227تعذر الوصول إلى المست",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 456,
+        "y": 170,
+        "w": 768,
+        "h": 60.5
+      }
+    },
+    {
+      "view": "H03-problem-selected",
+      "theme": "dark",
+      "lang": "ar",
+      "ratio": 11.58,
+      "selector": "button.border-primary\\/30",
+      "color": "rgb(234, 242, 255)",
+      "backgroundColor": "rgb(30, 50, 74)",
+      "className": "w-full rounded-md border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring border-primary/30 bg-accent text-accent-foreground",
+      "text": "تعارض في العنوان91%39 من 43 نجح",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 273,
+        "y": 497.546875,
+        "w": 254,
+        "h": 68.203125
+      }
+    },
+    {
+      "view": "H03-problem-selected-hover",
+      "theme": "dark",
+      "lang": "ar",
+      "ratio": 11.58,
+      "pointerHover": true,
+      "selector": "button.border-primary\\/30:hover",
+      "color": "rgb(234, 242, 255)",
+      "backgroundColor": "rgb(30, 50, 74)",
+      "className": "w-full rounded-md border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring border-primary/30 bg-accent text-accent-foreground",
+      "text": "تعارض في العنوان91%39 من 43 نجح",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 273,
+        "y": 497.546875,
+        "w": 254,
+        "h": 68.203125
+      }
+    },
+    {
+      "view": "H03-problem-hover",
+      "theme": "dark",
+      "lang": "ar",
+      "ratio": 13.02,
+      "pointerHover": true,
+      "selector": "button:hover",
+      "color": "rgb(241, 245, 249)",
+      "backgroundColor": "rgb(36, 43, 53)",
+      "className": "w-full rounded-md border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring border-transparent hover:border-border hover:bg-muted",
+      "text": "تعذر الوصول إلى المستلم89%34 من 38 نجح",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 273,
+        "y": 569.75,
+        "w": 254,
+        "h": 68.203125
+      }
+    },
+    {
+      "view": "H04-queue-selected-hover",
+      "theme": "dark",
+      "lang": "ar",
+      "ratio": 11.58,
+      "cellColor": "rgb(234, 242, 255)",
+      "rowBg": "rgb(30, 50, 74)",
+      "pointerHover": true,
+      "selector": "tr[data-state=\"selected\"] td:nth-child(2)",
+      "color": "rgb(234, 242, 255)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "className": "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 text-xs",
+      "text": "SHP-0072",
+      "fontSize": "12px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 443.609375,
+        "y": 461.546875,
+        "w": 126.890625,
+        "h": 33
+      }
+    },
+    {
+      "view": "H05-sidebar-hover",
+      "theme": "dark",
+      "lang": "ar",
+      "pointerHover": true,
+      "selector": "[data-sidebar=\"menu-button\"]:hover",
+      "color": "rgb(241, 245, 249)",
+      "backgroundColor": "rgb(36, 43, 53)",
+      "className": "peer/menu-button group/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left ring-sidebar-ring outline-hidden transition-[width,height,padding] group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-open:hover:bg-muted data-open:hover:text-sidebar-foreground data-active:border-l-2 data-active:border-sidebar-primary data-active:bg-sidebar-accent data-active:pl-[calc(0.5rem-2px)] data-active:font-medium data-active:text-sidebar-accent-foreground [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate hover:bg-muted hover:text-sidebar-foreground h-8 text-sm text-sidebar-foreground [&_svg]:text-current",
+      "text": "الوارد",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 8,
+        "y": 65,
+        "w": 223,
+        "h": 32
+      }
+    },
+    {
+      "view": "H05-sidebar-active",
+      "theme": "dark",
+      "lang": "ar"
+    },
+    {
+      "view": "H06-escalations-empty-icon",
+      "theme": "dark",
+      "lang": "ar",
+      "ratio": 6.32,
+      "bg": "rgb(36, 43, 53)",
+      "selector": "[data-slot=\"empty-icon\"]",
+      "color": "rgb(167, 173, 183)",
+      "backgroundColor": "rgb(36, 43, 53)",
+      "className": "mb-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground [&_svg:not([class*='size-'])]:size-5",
+      "text": "",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 820,
+        "y": 727.546875,
+        "w": 40,
+        "h": 40
+      }
+    },
+    {
+      "view": "E01-explore-lens",
+      "theme": "dark",
+      "lang": "ar",
+      "ratio": 4.76,
+      "textColor": "rgb(255, 255, 255)",
+      "pillBg": "rgb(59, 111, 212)",
+      "fontSize": "14px",
+      "fontWeight": "500"
+    },
+    {
+      "view": "E02-schema-selected",
+      "theme": "dark",
+      "lang": "ar",
+      "ratio": 4.76,
+      "control": "force-or-renderer",
+      "selector": "button.bg-primary.text-primary-foreground",
+      "color": "rgb(255, 255, 255)",
+      "backgroundColor": "rgb(59, 111, 212)",
+      "className": "rounded-md px-2 py-0.5 transition-colors bg-primary text-primary-foreground",
+      "text": "تخطيط بالقوى",
+      "fontSize": "11px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 1247.5625,
+        "y": 147,
+        "w": 80.140625,
+        "h": 20.5
+      }
+    }
+  ],
+  "menuCaptures": [
+    {
+      "kind": "theme",
+      "lang": "en",
+      "theme": "light",
+      "items": [
+        "Light",
+        "Dark",
+        "System"
+      ],
+      "hover": {
+        "selector": "[role=\"menuitem\"]:hover",
+        "color": "rgb(22, 59, 102)",
+        "backgroundColor": "rgb(232, 241, 252)",
+        "className": "group/dropdown-menu-item relative flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:*:[svg]:text-destructive",
+        "text": "Light",
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "rect": {
+          "x": 1285,
+          "y": 51,
+          "w": 134,
+          "h": 28
+        }
+      }
+    },
+    {
+      "kind": "language",
+      "lang": "en",
+      "theme": "light",
+      "items": [
+        "English",
+        "العربية"
+      ],
+      "hover": {
+        "selector": "[role=\"menuitem\"]:hover",
+        "color": "rgb(22, 59, 102)",
+        "backgroundColor": "rgb(232, 241, 252)",
+        "className": "group/dropdown-menu-item relative flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:*:[svg]:text-destructive",
+        "text": "English",
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "rect": {
+          "x": 1249,
+          "y": 51,
+          "w": 134,
+          "h": 28
+        }
+      }
+    },
+    {
+      "kind": "theme",
+      "lang": "ar",
+      "theme": "light",
+      "items": [
+        "فاتح",
+        "داكن",
+        "النظام"
+      ],
+      "hover": {
+        "selector": "[role=\"menuitem\"]:hover",
+        "color": "rgb(22, 59, 102)",
+        "backgroundColor": "rgb(232, 241, 252)",
+        "className": "group/dropdown-menu-item relative flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:*:[svg]:text-destructive",
+        "text": "فاتح",
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "rect": {
+          "x": 1285,
+          "y": 51,
+          "w": 134,
+          "h": 28
+        }
+      }
+    },
+    {
+      "kind": "language",
+      "lang": "ar",
+      "theme": "light",
+      "items": [
+        "English",
+        "العربية"
+      ],
+      "hover": {
+        "selector": "[role=\"menuitem\"]:hover",
+        "color": "rgb(22, 59, 102)",
+        "backgroundColor": "rgb(232, 241, 252)",
+        "className": "group/dropdown-menu-item relative flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:*:[svg]:text-destructive",
+        "text": "English",
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "rect": {
+          "x": 1249,
+          "y": 51,
+          "w": 134,
+          "h": 28
+        }
+      }
+    },
+    {
+      "kind": "theme",
+      "lang": "en",
+      "theme": "dark",
+      "items": [
+        "Light",
+        "Dark",
+        "System"
+      ],
+      "hover": {
+        "selector": "[role=\"menuitem\"]:hover",
+        "color": "rgb(234, 242, 255)",
+        "backgroundColor": "rgb(30, 50, 74)",
+        "className": "group/dropdown-menu-item relative flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:*:[svg]:text-destructive",
+        "text": "Light",
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "rect": {
+          "x": 1285,
+          "y": 51,
+          "w": 134,
+          "h": 28
+        }
+      }
+    },
+    {
+      "kind": "language",
+      "lang": "en",
+      "theme": "dark",
+      "items": [
+        "English",
+        "العربية"
+      ],
+      "hover": {
+        "selector": "[role=\"menuitem\"]:hover",
+        "color": "rgb(234, 242, 255)",
+        "backgroundColor": "rgb(30, 50, 74)",
+        "className": "group/dropdown-menu-item relative flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:*:[svg]:text-destructive",
+        "text": "English",
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "rect": {
+          "x": 1249,
+          "y": 51,
+          "w": 134,
+          "h": 28
+        }
+      }
+    },
+    {
+      "kind": "theme",
+      "lang": "ar",
+      "theme": "dark",
+      "items": [
+        "فاتح",
+        "داكن",
+        "النظام"
+      ],
+      "hover": {
+        "selector": "[role=\"menuitem\"]:hover",
+        "color": "rgb(234, 242, 255)",
+        "backgroundColor": "rgb(30, 50, 74)",
+        "className": "group/dropdown-menu-item relative flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:*:[svg]:text-destructive",
+        "text": "فاتح",
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "rect": {
+          "x": 1285,
+          "y": 51,
+          "w": 134,
+          "h": 28
+        }
+      }
+    },
+    {
+      "kind": "language",
+      "lang": "ar",
+      "theme": "dark",
+      "items": [
+        "English",
+        "العربية"
+      ],
+      "hover": {
+        "selector": "[role=\"menuitem\"]:hover",
+        "color": "rgb(234, 242, 255)",
+        "backgroundColor": "rgb(30, 50, 74)",
+        "className": "group/dropdown-menu-item relative flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:*:[svg]:text-destructive",
+        "text": "English",
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "rect": {
+          "x": 1249,
+          "y": 51,
+          "w": 134,
+          "h": 28
+        }
+      }
+    }
+  ],
+  "issues": [],
+  "verdicts": {
+    "H01": "PASS",
+    "H02": "PASS",
+    "H03": "PASS",
+    "H04": "PASS",
+    "H05": "PASS",
+    "H06": "PASS",
+    "E01": "PASS",
+    "E02": "PASS (schema proxy; live /graph BLOCKED)"
+  },
+  "buildFingerprint": {
+    "css": [
+      "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap",
+      "http://127.0.0.1:8000/assets/index-DVhlRZ8U.css"
+    ],
+    "js": [
+      "http://127.0.0.1:8000/assets/index-DE557tU5.js"
+    ]
+  },
+  "endpoint": {
+    "graph": {
+      "status": 500,
+      "ok": false
+    },
+    "schema": {
+      "status": 200,
+      "ok": true
+    }
+  },
+  "overall": "PASS"
+}

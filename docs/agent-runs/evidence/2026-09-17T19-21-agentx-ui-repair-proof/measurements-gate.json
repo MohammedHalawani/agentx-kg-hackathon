@@ -1,0 +1,377 @@
+{
+  "url": "http://127.0.0.1:8000",
+  "viewport": "1440x900",
+  "phase": "gate",
+  "agent": "D",
+  "candidateBuild": {
+    "css": "index-B9I8LKnG.css",
+    "js": "index-Cy1Gdul3.js"
+  },
+  "captures": [
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\gate-intake-light-hover.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\gate-decisions-light-queue-selected-hover.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\gate-sidebar-light-hover.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\gate-escalations-light-empty.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\gate-explore-light-lens.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\gate-intake-dark-hover.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\gate-decisions-dark-queue-selected-hover.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\gate-sidebar-dark-hover.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\gate-escalations-dark-empty.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\gate-explore-dark-lens.png"
+  ],
+  "measurements": [
+    {
+      "theme": "light",
+      "view": "H01-intake-count",
+      "ratio": 5.62,
+      "color": "rgb(102, 100, 95)",
+      "bg": "rgb(250, 249, 247)",
+      "selector": "h2 ~ span.text-sm.text-muted-foreground",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "className": "text-sm text-muted-foreground",
+      "text": "75 shipment(s) awaiting a decision",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 578.921875,
+        "y": 82,
+        "w": 218.109375,
+        "h": 20
+      }
+    },
+    {
+      "theme": "light",
+      "view": "H02-intake-hover",
+      "ratio": 9.95,
+      "pointerHover": true,
+      "selector": "button:hover",
+      "color": "rgb(22, 59, 102)",
+      "backgroundColor": "rgb(232, 241, 252)",
+      "className": "group flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary/35 hover:bg-accent hover:text-accent-foreground",
+      "text": "لم يتم تسليم الشحنة SHP-0227 ولم يتواصل معي المندوبSHP-0227recipient unavailable",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 456,
+        "y": 190,
+        "w": 768,
+        "h": 60.5
+      }
+    },
+    {
+      "theme": "light",
+      "view": "H03-problem-selected",
+      "ratio": 9.95,
+      "selector": "button.border-primary\\/30",
+      "color": "rgb(22, 59, 102)",
+      "backgroundColor": "rgb(232, 241, 252)",
+      "className": "w-full rounded-md border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring border-primary/30 bg-accent text-accent-foreground",
+      "text": "address conflict91%39 of 43 workedx",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 273,
+        "y": 497.546875,
+        "w": 254,
+        "h": 68.203125
+      }
+    },
+    {
+      "theme": "light",
+      "view": "H03-problem-selected-hover",
+      "ratio": 9.95,
+      "pointerHover": true,
+      "selector": "button.border-primary\\/30:hover",
+      "color": "rgb(22, 59, 102)",
+      "backgroundColor": "rgb(232, 241, 252)",
+      "className": "w-full rounded-md border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring border-primary/30 bg-accent text-accent-foreground",
+      "text": "address conflict91%39 of 43 workedx",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 273,
+        "y": 497.546875,
+        "w": 254,
+        "h": 68.203125
+      }
+    },
+    {
+      "theme": "light",
+      "view": "H03-problem-hover",
+      "ratio": 14.55,
+      "pointerHover": true,
+      "selector": "button:hover",
+      "color": "rgb(32, 32, 30)",
+      "backgroundColor": "rgb(240, 242, 245)",
+      "className": "w-full rounded-md border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring border-transparent hover:border-border hover:bg-muted",
+      "text": "recipient unavailable89%34 of 38 workedx",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 273,
+        "y": 569.75,
+        "w": 254,
+        "h": 68.203125
+      }
+    },
+    {
+      "theme": "light",
+      "view": "H04-queue-selected-hover",
+      "ratio": 9.95,
+      "cellColor": "rgb(22, 59, 102)",
+      "rowBg": "rgb(232, 241, 252)",
+      "selector": "tr[data-state=\"selected\"] td:nth-child(2)",
+      "pointerHover": true,
+      "color": "rgb(22, 59, 102)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "className": "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 text-xs",
+      "text": "SHP-0072",
+      "fontSize": "12px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 434.515625,
+        "y": 461.546875,
+        "w": 120.421875,
+        "h": 33
+      }
+    },
+    {
+      "theme": "light",
+      "view": "H05-sidebar-hover",
+      "pointerHover": true,
+      "selector": "[data-sidebar=\"menu-button\"]:hover",
+      "color": "rgb(32, 32, 30)",
+      "backgroundColor": "rgb(240, 242, 245)",
+      "className": "peer/menu-button group/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left ring-sidebar-ring outline-hidden transition-[width,height,padding] group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-open:hover:bg-muted data-open:hover:text-sidebar-foreground data-active:border-l-2 data-active:border-sidebar-primary data-active:bg-sidebar-accent data-active:pl-[calc(0.5rem-2px)] data-active:font-medium data-active:text-sidebar-accent-foreground [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate hover:bg-muted hover:text-sidebar-foreground h-8 text-sm text-sidebar-foreground [&_svg]:text-current",
+      "text": "Intake",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 8,
+        "y": 65,
+        "w": 223,
+        "h": 32
+      }
+    },
+    {
+      "theme": "light",
+      "view": "H05-sidebar-active"
+    },
+    {
+      "theme": "light",
+      "view": "H06-escalations-empty-icon",
+      "ratio": 5.27,
+      "bg": "rgb(240, 242, 245)",
+      "selector": "[data-slot=\"empty-icon\"]",
+      "color": "rgb(102, 100, 95)",
+      "backgroundColor": "rgb(240, 242, 245)",
+      "className": "mb-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground [&_svg:not([class*='size-'])]:size-5",
+      "text": "",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 819.984375,
+        "y": 1404.546875,
+        "w": 40,
+        "h": 40
+      }
+    },
+    {
+      "theme": "light",
+      "view": "E01-explore-lens",
+      "ratio": null,
+      "textColor": "rgb(255, 255, 255)",
+      "pillBg": "oklch(0.546 0.245 262.9)",
+      "fontSize": "14px",
+      "fontWeight": "500"
+    },
+    {
+      "theme": "dark",
+      "view": "H01-intake-count",
+      "ratio": 8.23,
+      "color": "rgb(167, 173, 183)",
+      "bg": "rgb(17, 19, 24)",
+      "selector": "h2 ~ span.text-sm.text-muted-foreground",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "className": "text-sm text-muted-foreground",
+      "text": "75 shipment(s) awaiting a decision",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 578.921875,
+        "y": 82,
+        "w": 218.109375,
+        "h": 20
+      }
+    },
+    {
+      "theme": "dark",
+      "view": "H02-intake-hover",
+      "ratio": 11.58,
+      "pointerHover": true,
+      "selector": "button:hover",
+      "color": "rgb(234, 242, 255)",
+      "backgroundColor": "rgb(30, 50, 74)",
+      "className": "group flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary/35 hover:bg-accent hover:text-accent-foreground",
+      "text": "لم يتم تسليم الشحنة SHP-0227 ولم يتواصل معي المندوبSHP-0227recipient unavailable",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 456,
+        "y": 190,
+        "w": 768,
+        "h": 60.5
+      }
+    },
+    {
+      "theme": "dark",
+      "view": "H03-problem-selected",
+      "ratio": 11.58,
+      "selector": "button.border-primary\\/30",
+      "color": "rgb(234, 242, 255)",
+      "backgroundColor": "rgb(30, 50, 74)",
+      "className": "w-full rounded-md border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring border-primary/30 bg-accent text-accent-foreground",
+      "text": "address conflict91%39 of 43 workedx",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 273,
+        "y": 497.546875,
+        "w": 254,
+        "h": 68.203125
+      }
+    },
+    {
+      "theme": "dark",
+      "view": "H03-problem-selected-hover",
+      "ratio": 11.58,
+      "pointerHover": true,
+      "selector": "button.border-primary\\/30:hover",
+      "color": "rgb(234, 242, 255)",
+      "backgroundColor": "rgb(30, 50, 74)",
+      "className": "w-full rounded-md border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring border-primary/30 bg-accent text-accent-foreground",
+      "text": "address conflict91%39 of 43 workedx",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 273,
+        "y": 497.546875,
+        "w": 254,
+        "h": 68.203125
+      }
+    },
+    {
+      "theme": "dark",
+      "view": "H03-problem-hover",
+      "ratio": 13.02,
+      "pointerHover": true,
+      "selector": "button:hover",
+      "color": "rgb(241, 245, 249)",
+      "backgroundColor": "rgb(36, 43, 53)",
+      "className": "w-full rounded-md border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring border-transparent hover:border-border hover:bg-muted",
+      "text": "recipient unavailable89%34 of 38 workedx",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 273,
+        "y": 569.75,
+        "w": 254,
+        "h": 68.203125
+      }
+    },
+    {
+      "theme": "dark",
+      "view": "H04-queue-selected-hover",
+      "ratio": 11.58,
+      "cellColor": "rgb(234, 242, 255)",
+      "rowBg": "rgb(30, 50, 74)",
+      "selector": "tr[data-state=\"selected\"] td:nth-child(2)",
+      "pointerHover": true,
+      "color": "rgb(234, 242, 255)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "className": "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 text-xs",
+      "text": "SHP-0072",
+      "fontSize": "12px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 434.515625,
+        "y": 461.546875,
+        "w": 120.421875,
+        "h": 33
+      }
+    },
+    {
+      "theme": "dark",
+      "view": "H05-sidebar-hover",
+      "pointerHover": true,
+      "selector": "[data-sidebar=\"menu-button\"]:hover",
+      "color": "rgb(241, 245, 249)",
+      "backgroundColor": "rgb(36, 43, 53)",
+      "className": "peer/menu-button group/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left ring-sidebar-ring outline-hidden transition-[width,height,padding] group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-open:hover:bg-muted data-open:hover:text-sidebar-foreground data-active:border-l-2 data-active:border-sidebar-primary data-active:bg-sidebar-accent data-active:pl-[calc(0.5rem-2px)] data-active:font-medium data-active:text-sidebar-accent-foreground [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate hover:bg-muted hover:text-sidebar-foreground h-8 text-sm text-sidebar-foreground [&_svg]:text-current",
+      "text": "Intake",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 8,
+        "y": 65,
+        "w": 223,
+        "h": 32
+      }
+    },
+    {
+      "theme": "dark",
+      "view": "H05-sidebar-active"
+    },
+    {
+      "theme": "dark",
+      "view": "H06-escalations-empty-icon",
+      "ratio": 6.32,
+      "bg": "rgb(36, 43, 53)",
+      "selector": "[data-slot=\"empty-icon\"]",
+      "color": "rgb(167, 173, 183)",
+      "backgroundColor": "rgb(36, 43, 53)",
+      "className": "mb-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground [&_svg:not([class*='size-'])]:size-5",
+      "text": "",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "rect": {
+        "x": 819.984375,
+        "y": 1404.546875,
+        "w": 40,
+        "h": 40
+      }
+    },
+    {
+      "theme": "dark",
+      "view": "E01-explore-lens",
+      "ratio": 4.76,
+      "textColor": "rgb(255, 255, 255)",
+      "pillBg": "rgb(59, 111, 212)",
+      "fontSize": "14px",
+      "fontWeight": "500"
+    }
+  ],
+  "issues": [],
+  "verdicts": {
+    "H01": "PASS",
+    "H02": "PASS",
+    "H03": "PASS",
+    "H04": "PASS",
+    "H05": "PASS",
+    "H06": "PASS",
+    "E01": "PASS",
+    "E02": "BLOCKED",
+    "E03": "BLOCKED (code PASS)",
+    "E04": "BLOCKED"
+  },
+  "buildFingerprint": {
+    "css": [
+      "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap",
+      "http://127.0.0.1:8000/assets/index-B9I8LKnG.css"
+    ],
+    "js": [
+      "http://127.0.0.1:8000/assets/index-Cy1Gdul3.js"
+    ]
+  },
+  "graphEndpointStatus": 500
+}

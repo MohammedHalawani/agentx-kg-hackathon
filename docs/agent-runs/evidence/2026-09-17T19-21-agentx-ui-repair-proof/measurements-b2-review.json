@@ -1,0 +1,234 @@
+{
+  "runId": "2026-09-17T19-21-agentx-ui-repair-proof",
+  "phase": "b2-review",
+  "agent": "C",
+  "url": "http://127.0.0.1:8000",
+  "viewport": "1440x900",
+  "candidateBuild": {
+    "css": "index-B9I8LKnG.css",
+    "js": "index-276MDZLC.js"
+  },
+  "endpoint": {
+    "graph": {
+      "status": 500,
+      "ok": false
+    },
+    "schema": {
+      "status": 200,
+      "ok": true
+    }
+  },
+  "captures": [
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b2-schema-2d-light-review.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b2-schema-2d-dark-review.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b2-schema-3d-light-review.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b2-schema-3d-dark-review.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b2-theme-toggle-no-remount-review.png"
+  ],
+  "measurements": [
+    {
+      "theme": "light",
+      "view": "H01-intake-count",
+      "ratio": 5.62,
+      "color": "rgb(102, 100, 95)",
+      "bg": "rgb(250, 249, 247)",
+      "selector": "h2 ~ span.text-sm.text-muted-foreground",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "className": "text-sm text-muted-foreground",
+      "text": "75 shipment(s) awaiting a decision"
+    },
+    {
+      "theme": "light",
+      "view": "H02-intake-hover",
+      "ratio": 9.95,
+      "pointerHover": true,
+      "selector": "button:hover",
+      "color": "rgb(22, 59, 102)",
+      "backgroundColor": "rgb(232, 241, 252)",
+      "className": "group flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary/35 hover:bg-accent hover:text-accent-foreground",
+      "text": "لم يتم تسليم الشحنة SHP-0227 ولم يتواصل معي المندوبSHP-0227r"
+    },
+    {
+      "theme": "light",
+      "view": "H03-problem-selected",
+      "ratio": 9.95,
+      "selector": "button.border-primary\\/30",
+      "color": "rgb(22, 59, 102)",
+      "backgroundColor": "rgb(232, 241, 252)",
+      "className": "w-full rounded-md border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring border-primary/30 bg-accent text-accent-foreground",
+      "text": "address conflict91%39 of 43 workedx"
+    },
+    {
+      "theme": "light",
+      "view": "H04-queue-selected-hover",
+      "ratio": 9.95,
+      "cellColor": "rgb(22, 59, 102)",
+      "rowBg": "rgb(232, 241, 252)",
+      "pointerHover": true,
+      "selector": "tr[data-state=\"selected\"] td:nth-child(2)",
+      "color": "rgb(22, 59, 102)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "className": "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 text-xs",
+      "text": "SHP-0072"
+    },
+    {
+      "theme": "light",
+      "view": "H05-sidebar-hover",
+      "pointerHover": true,
+      "selector": "[data-sidebar=\"menu-button\"]:hover",
+      "color": "rgb(32, 32, 30)",
+      "backgroundColor": "rgb(240, 242, 245)",
+      "className": "peer/menu-button group/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left ring-sidebar-ring outline-hidden transition-[width,height,padding] group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-open:hover:bg-muted data-open:hover:text-sidebar-foreground data-active:border-l-2 data-active:border-sidebar-primary data-active:bg-sidebar-accent data-active:pl-[calc(0.5rem-2px)] data-active:font-medium data-active:text-sidebar-accent-foreground [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate hover:bg-muted hover:text-sidebar-foreground h-8 text-sm text-sidebar-foreground [&_svg]:text-current",
+      "text": "Intake"
+    },
+    {
+      "theme": "light",
+      "view": "H05-sidebar-active"
+    },
+    {
+      "theme": "dark",
+      "view": "H01-intake-count",
+      "ratio": 8.23,
+      "color": "rgb(167, 173, 183)",
+      "bg": "rgb(17, 19, 24)",
+      "selector": "h2 ~ span.text-sm.text-muted-foreground",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "className": "text-sm text-muted-foreground",
+      "text": "75 shipment(s) awaiting a decision"
+    },
+    {
+      "theme": "dark",
+      "view": "H02-intake-hover",
+      "ratio": 11.58,
+      "pointerHover": true,
+      "selector": "button:hover",
+      "color": "rgb(234, 242, 255)",
+      "backgroundColor": "rgb(30, 50, 74)",
+      "className": "group flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary/35 hover:bg-accent hover:text-accent-foreground",
+      "text": "لم يتم تسليم الشحنة SHP-0227 ولم يتواصل معي المندوبSHP-0227r"
+    },
+    {
+      "theme": "dark",
+      "view": "H03-problem-selected",
+      "ratio": 11.58,
+      "selector": "button.border-primary\\/30",
+      "color": "rgb(234, 242, 255)",
+      "backgroundColor": "rgb(30, 50, 74)",
+      "className": "w-full rounded-md border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring border-primary/30 bg-accent text-accent-foreground",
+      "text": "address conflict91%39 of 43 workedx"
+    },
+    {
+      "theme": "dark",
+      "view": "H04-queue-selected-hover",
+      "ratio": 11.58,
+      "cellColor": "rgb(234, 242, 255)",
+      "rowBg": "rgb(30, 50, 74)",
+      "pointerHover": true,
+      "selector": "tr[data-state=\"selected\"] td:nth-child(2)",
+      "color": "rgb(234, 242, 255)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "className": "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 text-xs",
+      "text": "SHP-0072"
+    },
+    {
+      "theme": "dark",
+      "view": "H05-sidebar-hover",
+      "pointerHover": true,
+      "selector": "[data-sidebar=\"menu-button\"]:hover",
+      "color": "rgb(241, 245, 249)",
+      "backgroundColor": "rgb(36, 43, 53)",
+      "className": "peer/menu-button group/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left ring-sidebar-ring outline-hidden transition-[width,height,padding] group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-open:hover:bg-muted data-open:hover:text-sidebar-foreground data-active:border-l-2 data-active:border-sidebar-primary data-active:bg-sidebar-accent data-active:pl-[calc(0.5rem-2px)] data-active:font-medium data-active:text-sidebar-accent-foreground [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate hover:bg-muted hover:text-sidebar-foreground h-8 text-sm text-sidebar-foreground [&_svg]:text-current",
+      "text": "Intake"
+    },
+    {
+      "theme": "dark",
+      "view": "H05-sidebar-active"
+    },
+    {
+      "view": "E04-2d-wrap-changed",
+      "light": "rgb(250, 249, 247)",
+      "dark": "rgb(17, 19, 24)",
+      "changed": true
+    },
+    {
+      "view": "E03-3d-wrap-changed",
+      "light": "rgb(250, 249, 247)",
+      "dark": "rgb(17, 19, 24)",
+      "changed": true
+    },
+    {
+      "view": "E03-3d-surface-var",
+      "light": "#faf9f7",
+      "dark": "#111318",
+      "changed": true
+    }
+  ],
+  "themeToggle": [
+    {
+      "step": "light-return",
+      "wrapBg": "rgb(250, 249, 247)",
+      "surfaceVar": "#faf9f7",
+      "remounted": false
+    }
+  ],
+  "themeColorRefresh": [
+    {
+      "view": "schema-2d",
+      "theme": "light",
+      "method": "ui-toggle",
+      "wrapBg": "rgb(250, 249, 247)",
+      "surfaceVar": "#faf9f7",
+      "canvasCount": 2,
+      "canvasBg": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "view": "schema-2d",
+      "theme": "dark",
+      "method": "ui-toggle",
+      "wrapBg": "rgb(17, 19, 24)",
+      "surfaceVar": "#111318",
+      "canvasCount": 2,
+      "canvasBg": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "view": "schema-3d",
+      "theme": "light",
+      "method": "ui-toggle",
+      "wrapBg": "rgb(250, 249, 247)",
+      "surfaceVar": "#faf9f7",
+      "canvasCount": 1,
+      "canvasBg": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "view": "schema-3d",
+      "theme": "dark",
+      "method": "ui-toggle",
+      "wrapBg": "rgb(17, 19, 24)",
+      "surfaceVar": "#111318",
+      "canvasCount": 1,
+      "canvasBg": "rgba(0, 0, 0, 0)"
+    }
+  ],
+  "issues": [],
+  "verdicts": {
+    "E02": "PARTIAL PASS (schema proxy)",
+    "E03": "PARTIAL PASS (schema proxy; live Graph BLOCKED)",
+    "E04": "PARTIAL PASS (schema proxy)"
+  },
+  "b1Sentinels": {
+    "H01": "PASS",
+    "H02": "PASS",
+    "H03": "PASS",
+    "H04": "PASS",
+    "H05": "PASS"
+  },
+  "buildFingerprint": {
+    "css": [
+      "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap",
+      "http://127.0.0.1:8000/assets/index-B9I8LKnG.css"
+    ],
+    "js": [
+      "http://127.0.0.1:8000/assets/index-276MDZLC.js"
+    ]
+  }
+}

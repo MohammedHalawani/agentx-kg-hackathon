@@ -1,0 +1,486 @@
+{
+  "url": "http://127.0.0.1:8000",
+  "viewport": "1440x900",
+  "phase": "b4-audit",
+  "agent": "A",
+  "candidateBuild": {
+    "css": "index-DVhlRZ8U.css",
+    "js": "index-BVWhf3oi.js"
+  },
+  "captures": [
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-intake-en-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-decisions-en-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-schema-en-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-intake-ar-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-decisions-ar-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-schema-ar-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-intake-en-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-decisions-en-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-schema-en-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-intake-ar-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-decisions-ar-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-schema-ar-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-schema-ar-dark-after-toggle.png"
+  ],
+  "measurements": [
+    {
+      "view": "layout",
+      "theme": "light",
+      "lang": "en",
+      "dir": "ltr",
+      "sidebarLeft": 0
+    },
+    {
+      "view": "H01-intake-count",
+      "theme": "light",
+      "lang": "en",
+      "ratio": 5.62,
+      "selector": "h2 ~ span.text-sm.text-muted-foreground",
+      "color": "rgb(102, 100, 95)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "className": "text-sm text-muted-foreground",
+      "text": "75 shipment(s) awaiting a decision",
+      "rect": {
+        "x": 578.921875,
+        "y": 82,
+        "w": 218.109375,
+        "h": 20
+      }
+    },
+    {
+      "view": "B3-progress-variants",
+      "theme": "light",
+      "lang": "en",
+      "variants": [
+        "sidebar",
+        "success",
+        "pending",
+        "secondary",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "icon"
+      ],
+      "count": 31
+    },
+    {
+      "view": "B3-panel-heights",
+      "theme": "light",
+      "lang": "en",
+      "problems": 440,
+      "queue": 400
+    },
+    {
+      "view": "H03-problem-selected",
+      "theme": "light",
+      "lang": "en",
+      "ratio": 9.95,
+      "selector": "button.border-primary\\/30",
+      "color": "rgb(22, 59, 102)",
+      "backgroundColor": "rgb(232, 241, 252)",
+      "className": "w-full rounded-md border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ri",
+      "text": "address conflict91%39 of 43 worked",
+      "rect": {
+        "x": 273,
+        "y": 497.546875,
+        "w": 254,
+        "h": 68.203125
+      }
+    },
+    {
+      "view": "schema-legend",
+      "theme": "light",
+      "lang": "en",
+      "labels": []
+    },
+    {
+      "view": "layout",
+      "theme": "light",
+      "lang": "ar",
+      "dir": "ltr",
+      "sidebarLeft": 0
+    },
+    {
+      "view": "H01-intake-count",
+      "theme": "light",
+      "lang": "ar",
+      "ratio": 5.62,
+      "selector": "h2 ~ span.text-sm.text-muted-foreground",
+      "color": "rgb(102, 100, 95)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "className": "text-sm text-muted-foreground",
+      "text": "75 شحنة بانتظار قرار",
+      "rect": {
+        "x": 603.34375,
+        "y": 82,
+        "w": 117.90625,
+        "h": 20
+      }
+    },
+    {
+      "view": "B3-progress-variants",
+      "theme": "light",
+      "lang": "ar",
+      "variants": [
+        "sidebar",
+        "success",
+        "pending",
+        "secondary",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "icon"
+      ],
+      "count": 31
+    },
+    {
+      "view": "B3-panel-heights",
+      "theme": "light",
+      "lang": "ar",
+      "problems": 440,
+      "queue": 400
+    },
+    {
+      "view": "H03-problem-selected",
+      "theme": "light",
+      "lang": "ar",
+      "ratio": 9.95,
+      "selector": "button.border-primary\\/30",
+      "color": "rgb(22, 59, 102)",
+      "backgroundColor": "rgb(232, 241, 252)",
+      "className": "w-full rounded-md border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ri",
+      "text": "تعارض في العنوان91%39 من 43 نجح",
+      "rect": {
+        "x": 273,
+        "y": 497.546875,
+        "w": 254,
+        "h": 68.203125
+      }
+    },
+    {
+      "view": "schema-legend",
+      "theme": "light",
+      "lang": "ar",
+      "labels": []
+    },
+    {
+      "view": "layout",
+      "theme": "dark",
+      "lang": "en",
+      "dir": "ltr",
+      "sidebarLeft": 0
+    },
+    {
+      "view": "H01-intake-count",
+      "theme": "dark",
+      "lang": "en",
+      "ratio": 8.23,
+      "selector": "h2 ~ span.text-sm.text-muted-foreground",
+      "color": "rgb(167, 173, 183)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "className": "text-sm text-muted-foreground",
+      "text": "75 shipment(s) awaiting a decision",
+      "rect": {
+        "x": 578.921875,
+        "y": 82,
+        "w": 218.109375,
+        "h": 20
+      }
+    },
+    {
+      "view": "B3-progress-variants",
+      "theme": "dark",
+      "lang": "en",
+      "variants": [
+        "sidebar",
+        "success",
+        "pending",
+        "secondary",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "icon"
+      ],
+      "count": 31
+    },
+    {
+      "view": "B3-panel-heights",
+      "theme": "dark",
+      "lang": "en",
+      "problems": 440,
+      "queue": 400
+    },
+    {
+      "view": "H03-problem-selected",
+      "theme": "dark",
+      "lang": "en",
+      "ratio": 11.58,
+      "selector": "button.border-primary\\/30",
+      "color": "rgb(234, 242, 255)",
+      "backgroundColor": "rgb(30, 50, 74)",
+      "className": "w-full rounded-md border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ri",
+      "text": "address conflict91%39 of 43 worked",
+      "rect": {
+        "x": 273,
+        "y": 497.546875,
+        "w": 254,
+        "h": 68.203125
+      }
+    },
+    {
+      "view": "schema-legend",
+      "theme": "dark",
+      "lang": "en",
+      "labels": []
+    },
+    {
+      "view": "layout",
+      "theme": "dark",
+      "lang": "ar",
+      "dir": "ltr",
+      "sidebarLeft": 0
+    },
+    {
+      "view": "H01-intake-count",
+      "theme": "dark",
+      "lang": "ar",
+      "ratio": 8.23,
+      "selector": "h2 ~ span.text-sm.text-muted-foreground",
+      "color": "rgb(167, 173, 183)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "className": "text-sm text-muted-foreground",
+      "text": "75 شحنة بانتظار قرار",
+      "rect": {
+        "x": 603.34375,
+        "y": 82,
+        "w": 117.90625,
+        "h": 20
+      }
+    },
+    {
+      "view": "B3-progress-variants",
+      "theme": "dark",
+      "lang": "ar",
+      "variants": [
+        "sidebar",
+        "success",
+        "pending",
+        "secondary",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "icon"
+      ],
+      "count": 31
+    },
+    {
+      "view": "B3-panel-heights",
+      "theme": "dark",
+      "lang": "ar",
+      "problems": 440,
+      "queue": 400
+    },
+    {
+      "view": "H03-problem-selected",
+      "theme": "dark",
+      "lang": "ar",
+      "ratio": 11.58,
+      "selector": "button.border-primary\\/30",
+      "color": "rgb(234, 242, 255)",
+      "backgroundColor": "rgb(30, 50, 74)",
+      "className": "w-full rounded-md border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ri",
+      "text": "تعارض في العنوان91%39 من 43 نجح",
+      "rect": {
+        "x": 273,
+        "y": 497.546875,
+        "w": 254,
+        "h": 68.203125
+      }
+    },
+    {
+      "view": "schema-legend",
+      "theme": "dark",
+      "lang": "ar",
+      "labels": []
+    },
+    {
+      "view": "toggle-no-remount",
+      "beforeToggle": {
+        "hasCanvas": true,
+        "surface": "#faf9f7"
+      },
+      "afterToggle": {
+        "hasCanvas": true,
+        "surface": "#111318",
+        "lang": "ar",
+        "dir": "ltr"
+      }
+    }
+  ],
+  "issues": [
+    {
+      "id": "I01",
+      "detail": "Header scope + agent pipeline strings (StageCard/CaseFile/ShipmentMap) hardcoded English"
+    },
+    {
+      "id": "I02",
+      "detail": "IntakeView category metadata uses replace(/_/g) not rootCauseLabel()"
+    },
+    {
+      "id": "I03",
+      "detail": "GraphView legend + detail labels show raw ontology English; /meta labels empty"
+    },
+    {
+      "id": "I04",
+      "detail": "StageCard field labels English; hardcoded pending; AR count lacks plural rules"
+    }
+  ],
+  "englishInventory": {
+    "intake-en-light": {
+      "enMarkers": [
+        "Open cases",
+        "Decisions",
+        "Explore",
+        "shipment(s) awaiting"
+      ],
+      "rawCategoryKeys": []
+    },
+    "intake-ar-light": {
+      "enMarkers": [],
+      "rawCategoryKeys": []
+    },
+    "decisions-ar-light": [],
+    "intake-en-dark": {
+      "enMarkers": [
+        "Open cases",
+        "Decisions",
+        "Explore",
+        "shipment(s) awaiting"
+      ],
+      "rawCategoryKeys": []
+    },
+    "intake-ar-dark": {
+      "enMarkers": [],
+      "rawCategoryKeys": []
+    },
+    "decisions-ar-dark": []
+  },
+  "verdicts": {
+    "I01": "REPRODUCED",
+    "I02": "REPRODUCED",
+    "I03": "REPRODUCED",
+    "I04": "REPRODUCED"
+  },
+  "buildFingerprint": {
+    "css": [
+      "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap",
+      "http://127.0.0.1:8000/assets/index-DVhlRZ8U.css"
+    ],
+    "js": [
+      "http://127.0.0.1:8000/assets/index-BVWhf3oi.js"
+    ]
+  },
+  "graphEndpointStatus": 500,
+  "metaLabelsCount": 0,
+  "dictionaryParity": {
+    "note": "checked in audit doc from en.ts/ar.ts"
+  },
+  "manualFindings": {
+    "I02_intakeCategories": "REPRODUCED via screenshot b4-intake-ar-light.png",
+    "I03_schemaLegend": "REPRODUCED via screenshot b4-schema-ar-light.png — Policy,Order,Shipment,...",
+    "I01_scopeHeader": "REPRODUCED — backend scope English in all AR captures",
+    "I04_pluralAwaiting": "PARTIAL — AR uses singular شحنة for count=75"
+  }
+}

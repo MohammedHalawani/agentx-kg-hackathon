@@ -1,6 +1,13 @@
-import { cn } from '../../lib/cn'
+import { cn } from "cn"
 
-// A pulsing placeholder block sized by the caller to match the content it stands in for.
-export function Skeleton({ className }: { className?: string }) {
-  return <div className={cn('animate-pulse rounded-md bg-ink/[0.06]', className)} />
+function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="skeleton"
+      className={cn("animate-pulse rounded-md bg-muted", className)}
+      {...props}
+    />
+  )
 }
+
+export { Skeleton }

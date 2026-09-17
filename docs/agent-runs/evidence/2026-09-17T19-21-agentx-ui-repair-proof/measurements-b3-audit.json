@@ -1,0 +1,806 @@
+{
+  "runId": "2026-09-17T19-21-agentx-ui-repair-proof",
+  "phase": "b3-audit",
+  "agent": "A",
+  "slug": "metric-semantics-bounded-workspace",
+  "url": "http://127.0.0.1:8000",
+  "viewport": "1440x900",
+  "locale": "EN",
+  "candidateBuild": {
+    "css": "index-B9I8LKnG.css",
+    "js": "index-276MDZLC.js"
+  },
+  "captures": [
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b3-decisions-light-default.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b3-decisions-dark-default.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b3-decisions-overflow-scrolled.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b3-escalations-empty-light.png"
+  ],
+  "measurements": [
+    {
+      "theme": "light",
+      "view": "H01-intake-count",
+      "ratio": 5.62,
+      "selector": "h2 ~ span.text-sm.text-muted-foreground",
+      "color": "rgb(102, 100, 95)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "className": "text-sm text-muted-foreground",
+      "text": "75 shipment(s) awaiting a decision",
+      "width": 218,
+      "height": 20
+    },
+    {
+      "theme": "light",
+      "view": "H02-intake-hover",
+      "ratio": 9.95,
+      "pointerHover": true,
+      "selector": "button:hover",
+      "color": "rgb(22, 59, 102)",
+      "backgroundColor": "rgb(232, 241, 252)",
+      "className": "group flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors hov",
+      "text": "لم يتم تسليم الشحنة SHP-0227 ولم يتواصل معي المندوبSHP-0227recipient unavailable",
+      "width": 768,
+      "height": 61
+    },
+    {
+      "theme": "light",
+      "view": "H03-problem-selected",
+      "ratio": 9.95,
+      "selector": "button.border-primary\\/30",
+      "color": "rgb(22, 59, 102)",
+      "backgroundColor": "rgb(232, 241, 252)",
+      "className": "w-full rounded-md border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ri",
+      "text": "address conflict91%39 of 43 workedx",
+      "width": 254,
+      "height": 68
+    },
+    {
+      "theme": "light",
+      "view": "H04-queue-selected-hover",
+      "ratio": 9.95,
+      "pointerHover": true,
+      "selector": "tr[data-state=\"selected\"] td:nth-child(2)",
+      "color": "rgb(22, 59, 102)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "className": "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 text-xs",
+      "text": "SHP-0072",
+      "width": 120,
+      "height": 33
+    },
+    {
+      "theme": "light",
+      "view": "L01-queue-sticky-header",
+      "position": "sticky",
+      "top": "0px",
+      "zIndex": "10",
+      "backgroundColor": "rgb(255, 255, 255)"
+    },
+    {
+      "theme": "dark",
+      "view": "H01-intake-count",
+      "ratio": 8.23,
+      "selector": "h2 ~ span.text-sm.text-muted-foreground",
+      "color": "rgb(167, 173, 183)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "className": "text-sm text-muted-foreground",
+      "text": "75 shipment(s) awaiting a decision",
+      "width": 218,
+      "height": 20
+    },
+    {
+      "theme": "dark",
+      "view": "H02-intake-hover",
+      "ratio": 11.58,
+      "pointerHover": true,
+      "selector": "button:hover",
+      "color": "rgb(234, 242, 255)",
+      "backgroundColor": "rgb(30, 50, 74)",
+      "className": "group flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors hov",
+      "text": "لم يتم تسليم الشحنة SHP-0227 ولم يتواصل معي المندوبSHP-0227recipient unavailable",
+      "width": 768,
+      "height": 61
+    },
+    {
+      "theme": "dark",
+      "view": "H03-problem-selected",
+      "ratio": 11.58,
+      "selector": "button.border-primary\\/30",
+      "color": "rgb(234, 242, 255)",
+      "backgroundColor": "rgb(30, 50, 74)",
+      "className": "w-full rounded-md border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ri",
+      "text": "address conflict91%39 of 43 workedx",
+      "width": 254,
+      "height": 68
+    },
+    {
+      "theme": "dark",
+      "view": "H04-queue-selected-hover",
+      "ratio": 11.58,
+      "pointerHover": true,
+      "selector": "tr[data-state=\"selected\"] td:nth-child(2)",
+      "color": "rgb(234, 242, 255)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "className": "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 text-xs",
+      "text": "SHP-0072",
+      "width": 120,
+      "height": 33
+    },
+    {
+      "theme": "dark",
+      "view": "L01-queue-sticky-header",
+      "position": "sticky",
+      "top": "0px",
+      "zIndex": "10",
+      "backgroundColor": "rgb(23, 26, 31)"
+    },
+    {
+      "view": "H06-escalations-empty",
+      "selector": "[data-slot=\"empty\"]",
+      "color": "rgb(32, 32, 30)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "className": "flex w-full min-w-0 flex-1 flex-col items-center justify-center gap-4 rounded-xl p-6 text-center text-balance min-h-[120",
+      "text": "No active escalationsNo cases are currently waiting for human escalation.",
+      "width": 1118,
+      "height": 157
+    },
+    {
+      "theme": "light",
+      "view": "E02-schema-selected",
+      "ratio": null,
+      "selector": "button.bg-primary.text-primary-foreground",
+      "color": "rgb(255, 255, 255)",
+      "backgroundColor": "oklch(0.546 0.245 262.9)",
+      "className": "rounded-md px-2 py-0.5 transition-colors bg-primary text-primary-foreground",
+      "text": "Force",
+      "width": 44,
+      "height": 21
+    }
+  ],
+  "panels": [
+    {
+      "label": "problems-light",
+      "found": true,
+      "outerHeight": 440,
+      "outerWidth": 280,
+      "className": "group/card overflow-hidden border border-border bg-card text-sm text-card-foreground [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl h-[440px] min-h-0 flex flex-col gap-0 rounded-lg py-0 shadow-none",
+      "scroll": {
+        "scrollHeight": 429,
+        "clientHeight": 351,
+        "scrollTop": 0,
+        "overflows": true
+      }
+    },
+    {
+      "label": "actions-light",
+      "found": true,
+      "outerHeight": 440,
+      "outerWidth": 340,
+      "className": "group/card overflow-hidden border border-border bg-card text-sm text-card-foreground [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl h-[440px] min-h-0 flex flex-col gap-0 rounded-lg py-0 shadow-none",
+      "scroll": {
+        "scrollHeight": 607,
+        "clientHeight": 351,
+        "scrollTop": 0,
+        "overflows": true
+      }
+    },
+    {
+      "label": "focus-light",
+      "found": true,
+      "outerHeight": 440,
+      "outerWidth": 508,
+      "className": "group/card overflow-hidden border border-border bg-card text-sm text-card-foreground [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl h-[440px] min-h-0 flex flex-col gap-0 rounded-lg py-0 shadow-none lg:col-span-2 xl:col-span-1",
+      "scroll": {
+        "scrollHeight": 561,
+        "clientHeight": 343,
+        "scrollTop": 0,
+        "overflows": true
+      }
+    },
+    {
+      "label": "queue-light",
+      "found": true,
+      "outerHeight": 94,
+      "outerWidth": 221,
+      "className": "group/card flex flex-col overflow-hidden rounded-xl border border-border bg-card text-sm text-card-foreground [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl gap-0 py-0 shadow-none",
+      "scroll": null
+    },
+    {
+      "label": "problems-dark",
+      "found": true,
+      "outerHeight": 440,
+      "outerWidth": 280,
+      "className": "group/card overflow-hidden border border-border bg-card text-sm text-card-foreground [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl h-[440px] min-h-0 flex flex-col gap-0 rounded-lg py-0 shadow-none",
+      "scroll": {
+        "scrollHeight": 429,
+        "clientHeight": 351,
+        "scrollTop": 0,
+        "overflows": true
+      }
+    },
+    {
+      "label": "actions-dark",
+      "found": true,
+      "outerHeight": 440,
+      "outerWidth": 340,
+      "className": "group/card overflow-hidden border border-border bg-card text-sm text-card-foreground [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl h-[440px] min-h-0 flex flex-col gap-0 rounded-lg py-0 shadow-none",
+      "scroll": {
+        "scrollHeight": 607,
+        "clientHeight": 351,
+        "scrollTop": 0,
+        "overflows": true
+      }
+    },
+    {
+      "label": "focus-dark",
+      "found": true,
+      "outerHeight": 440,
+      "outerWidth": 508,
+      "className": "group/card overflow-hidden border border-border bg-card text-sm text-card-foreground [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl h-[440px] min-h-0 flex flex-col gap-0 rounded-lg py-0 shadow-none lg:col-span-2 xl:col-span-1",
+      "scroll": {
+        "scrollHeight": 561,
+        "clientHeight": 343,
+        "scrollTop": 0,
+        "overflows": true
+      }
+    },
+    {
+      "label": "queue-dark",
+      "found": true,
+      "outerHeight": 94,
+      "outerWidth": 221,
+      "className": "group/card flex flex-col overflow-hidden rounded-xl border border-border bg-card text-sm text-card-foreground [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl gap-0 py-0 shadow-none",
+      "scroll": null
+    }
+  ],
+  "progressBars": [
+    {
+      "theme": "light",
+      "bars": [
+        {
+          "index": 0,
+          "indicatorBg": "oklch(0.546 0.245 262.9)",
+          "trackBg": "rgb(221, 217, 210)",
+          "pctLabel": null,
+          "context": "coverage-card"
+        },
+        {
+          "index": 1,
+          "indicatorBg": "oklch(0.546 0.245 262.9)",
+          "trackBg": "rgb(221, 217, 210)",
+          "pctLabel": "91%",
+          "context": "address conflict"
+        },
+        {
+          "index": 2,
+          "indicatorBg": "oklch(0.546 0.245 262.9)",
+          "trackBg": "rgb(221, 217, 210)",
+          "pctLabel": "89%",
+          "context": "recipient unavailable"
+        },
+        {
+          "index": 3,
+          "indicatorBg": "oklch(0.546 0.245 262.9)",
+          "trackBg": "rgb(221, 217, 210)",
+          "pctLabel": "85%",
+          "context": "hub delay"
+        },
+        {
+          "index": 4,
+          "indicatorBg": "oklch(0.546 0.245 262.9)",
+          "trackBg": "rgb(221, 217, 210)",
+          "pctLabel": "88%",
+          "context": "failed attempt weight mismatch"
+        },
+        {
+          "index": 5,
+          "indicatorBg": "oklch(0.546 0.245 262.9)",
+          "trackBg": "rgb(221, 217, 210)",
+          "pctLabel": "91%",
+          "context": "failed attempt wrong gate"
+        },
+        {
+          "index": 6,
+          "indicatorBg": "oklch(0.546 0.245 262.9)",
+          "trackBg": "rgb(221, 217, 210)",
+          "pctLabel": "100%",
+          "context": "failed attempt barcode mismatch"
+        },
+        {
+          "index": 7,
+          "indicatorBg": "oklch(0.546 0.245 262.9)",
+          "trackBg": "rgb(221, 217, 210)",
+          "pctLabel": "89%",
+          "context": "تصحيح العنوان في النظام وإعادة الجدولة"
+        },
+        {
+          "index": 8,
+          "indicatorBg": "oklch(0.546 0.245 262.9)",
+          "trackBg": "rgb(221, 217, 210)",
+          "pctLabel": "81%",
+          "context": "تحويل الشحنة إلى مندوب آخر لإعادة المحاو"
+        },
+        {
+          "index": 9,
+          "indicatorBg": "oklch(0.546 0.245 262.9)",
+          "trackBg": "rgb(221, 217, 210)",
+          "pctLabel": "93%",
+          "context": "تأكيد العنوان الصحيح مع العميل وإعادة ال"
+        },
+        {
+          "index": 10,
+          "indicatorBg": "oklch(0.546 0.245 262.9)",
+          "trackBg": "rgb(221, 217, 210)",
+          "pctLabel": "93%",
+          "context": "إعادة جدولة التسليم في يوم آخر"
+        },
+        {
+          "index": 11,
+          "indicatorBg": "oklch(0.546 0.245 262.9)",
+          "trackBg": "rgb(221, 217, 210)",
+          "pctLabel": "85%",
+          "context": "التنسيق مع العميل عبر الهاتف لتحديد وقت "
+        },
+        {
+          "index": 12,
+          "indicatorBg": "oklch(0.546 0.245 262.9)",
+          "trackBg": "rgb(221, 217, 210)",
+          "pctLabel": "100%",
+          "context": "التنسيق بين فريق المستودع والمندوب لحل ا"
+        },
+        {
+          "index": 13,
+          "indicatorBg": "oklch(0.546 0.245 262.9)",
+          "trackBg": "rgb(221, 217, 210)",
+          "pctLabel": "91%",
+          "context": "تسليم لجهة بديلة بموافقة العميل"
+        },
+        {
+          "index": 14,
+          "indicatorBg": "oklch(0.546 0.245 262.9)",
+          "trackBg": "rgb(221, 217, 210)",
+          "pctLabel": "80%",
+          "context": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل"
+        }
+      ]
+    },
+    {
+      "theme": "dark",
+      "bars": [
+        {
+          "index": 0,
+          "indicatorBg": "rgb(59, 111, 212)",
+          "trackBg": "rgb(43, 49, 58)",
+          "pctLabel": null,
+          "context": "coverage-card"
+        },
+        {
+          "index": 1,
+          "indicatorBg": "rgb(59, 111, 212)",
+          "trackBg": "rgb(43, 49, 58)",
+          "pctLabel": "91%",
+          "context": "address conflict"
+        },
+        {
+          "index": 2,
+          "indicatorBg": "rgb(59, 111, 212)",
+          "trackBg": "rgb(43, 49, 58)",
+          "pctLabel": "89%",
+          "context": "recipient unavailable"
+        },
+        {
+          "index": 3,
+          "indicatorBg": "rgb(59, 111, 212)",
+          "trackBg": "rgb(43, 49, 58)",
+          "pctLabel": "85%",
+          "context": "hub delay"
+        },
+        {
+          "index": 4,
+          "indicatorBg": "rgb(59, 111, 212)",
+          "trackBg": "rgb(43, 49, 58)",
+          "pctLabel": "88%",
+          "context": "failed attempt weight mismatch"
+        },
+        {
+          "index": 5,
+          "indicatorBg": "rgb(59, 111, 212)",
+          "trackBg": "rgb(43, 49, 58)",
+          "pctLabel": "91%",
+          "context": "failed attempt wrong gate"
+        },
+        {
+          "index": 6,
+          "indicatorBg": "rgb(59, 111, 212)",
+          "trackBg": "rgb(43, 49, 58)",
+          "pctLabel": "100%",
+          "context": "failed attempt barcode mismatch"
+        },
+        {
+          "index": 7,
+          "indicatorBg": "rgb(59, 111, 212)",
+          "trackBg": "rgb(43, 49, 58)",
+          "pctLabel": "89%",
+          "context": "تصحيح العنوان في النظام وإعادة الجدولة"
+        },
+        {
+          "index": 8,
+          "indicatorBg": "rgb(59, 111, 212)",
+          "trackBg": "rgb(43, 49, 58)",
+          "pctLabel": "81%",
+          "context": "تحويل الشحنة إلى مندوب آخر لإعادة المحاو"
+        },
+        {
+          "index": 9,
+          "indicatorBg": "rgb(59, 111, 212)",
+          "trackBg": "rgb(43, 49, 58)",
+          "pctLabel": "93%",
+          "context": "تأكيد العنوان الصحيح مع العميل وإعادة ال"
+        },
+        {
+          "index": 10,
+          "indicatorBg": "rgb(59, 111, 212)",
+          "trackBg": "rgb(43, 49, 58)",
+          "pctLabel": "93%",
+          "context": "إعادة جدولة التسليم في يوم آخر"
+        },
+        {
+          "index": 11,
+          "indicatorBg": "rgb(59, 111, 212)",
+          "trackBg": "rgb(43, 49, 58)",
+          "pctLabel": "85%",
+          "context": "التنسيق مع العميل عبر الهاتف لتحديد وقت "
+        },
+        {
+          "index": 12,
+          "indicatorBg": "rgb(59, 111, 212)",
+          "trackBg": "rgb(43, 49, 58)",
+          "pctLabel": "100%",
+          "context": "التنسيق بين فريق المستودع والمندوب لحل ا"
+        },
+        {
+          "index": 13,
+          "indicatorBg": "rgb(59, 111, 212)",
+          "trackBg": "rgb(43, 49, 58)",
+          "pctLabel": "91%",
+          "context": "تسليم لجهة بديلة بموافقة العميل"
+        },
+        {
+          "index": 14,
+          "indicatorBg": "rgb(59, 111, 212)",
+          "trackBg": "rgb(43, 49, 58)",
+          "pctLabel": "80%",
+          "context": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل"
+        }
+      ]
+    }
+  ],
+  "scrollReach": [
+    {
+      "panel": "problems",
+      "liveData": true,
+      "scrolled": true,
+      "before": {
+        "top": 0,
+        "sh": 429,
+        "ch": 351
+      },
+      "after": {
+        "scrollTop": 78,
+        "scrollHeight": 429,
+        "clientHeight": 351,
+        "atEnd": true,
+        "lastVisible": true
+      }
+    },
+    {
+      "panel": "actions",
+      "liveData": true,
+      "scrolled": true,
+      "before": {
+        "top": 0,
+        "sh": 607,
+        "ch": 351
+      },
+      "after": {
+        "scrollTop": 256,
+        "scrollHeight": 607,
+        "clientHeight": 351,
+        "atEnd": true,
+        "lastVisible": true
+      }
+    },
+    {
+      "panel": "focus",
+      "liveData": true,
+      "scrolled": true,
+      "before": {
+        "top": 0,
+        "sh": 561,
+        "ch": 343
+      },
+      "after": {
+        "scrollTop": 218,
+        "scrollHeight": 561,
+        "clientHeight": 343,
+        "atEnd": true,
+        "lastVisible": true
+      }
+    },
+    {
+      "panel": "queue",
+      "liveData": true,
+      "scrolled": false
+    },
+    {
+      "panel": "problems",
+      "liveData": false,
+      "overflowFixture": true,
+      "scrolled": true,
+      "before": {
+        "top": 0,
+        "sh": 2162,
+        "ch": 351
+      },
+      "after": {
+        "scrollTop": 1811,
+        "scrollHeight": 2162,
+        "clientHeight": 351,
+        "atEnd": true,
+        "lastVisible": true
+      }
+    },
+    {
+      "panel": "actions",
+      "liveData": false,
+      "overflowFixture": true,
+      "scrolled": true,
+      "before": {
+        "top": 0,
+        "sh": 1770,
+        "ch": 351
+      },
+      "after": {
+        "scrollTop": 1419,
+        "scrollHeight": 1770,
+        "clientHeight": 351,
+        "atEnd": true,
+        "lastVisible": true
+      }
+    },
+    {
+      "panel": "focus",
+      "liveData": false,
+      "overflowFixture": true,
+      "scrolled": true,
+      "before": {
+        "top": 0,
+        "sh": 343,
+        "ch": 343
+      },
+      "after": {
+        "scrollTop": 0,
+        "scrollHeight": 343,
+        "clientHeight": 343,
+        "atEnd": true,
+        "lastVisible": true
+      }
+    },
+    {
+      "panel": "queue",
+      "liveData": false,
+      "overflowFixture": true,
+      "scrolled": false
+    }
+  ],
+  "issues": [
+    {
+      "id": "M01",
+      "detail": "All progress indicators share single fill color (bg-primary); no outcome-based green/red/amber/neutral"
+    },
+  ],
+  "verdicts": {
+    "H01": "NOT REPRODUCED",
+    "H02": "NOT REPRODUCED",
+    "H03": "NOT REPRODUCED",
+    "H04": "NOT REPRODUCED",
+    "H05": "NOT REPRODUCED",
+    "H06": "NOT REPRODUCED",
+    "E01": "NOT REPRODUCED",
+    "E02": "NOT REPRODUCED",
+    "E03": "BLOCKED (no /graph)",
+    "E04": "BLOCKED (no /graph)",
+    "M01": "REPRODUCED",
+    "L01": "NOT REPRODUCED",
+    "L02": "REPRODUCED"
+  },
+  "apiProvenance": {
+    "coverage": {
+      "resolved": 165,
+      "unresolved": 75,
+      "total": 240
+    },
+    "writebacks": {
+      "by_agent": 0,
+      "seeded": 165,
+      "pending": 0,
+      "total": 165
+    },
+    "queueLen": 75,
+    "escalationsLen": 0,
+    "categoryCount": 12,
+    "displayedCategoryCount": 6,
+    "categories100pct": [
+      {
+        "category": "failed_attempt_barcode_mismatch",
+        "cases": 7,
+        "succeeded": 7
+      },
+      {
+        "category": "escalation:hub_delay",
+        "cases": 7,
+        "succeeded": 7
+      },
+      {
+        "category": "escalation:recipient_unavailable",
+        "cases": 7,
+        "succeeded": 7
+      },
+      {
+        "category": "escalation:failed_attempt_wrong_gate",
+        "cases": 4,
+        "succeeded": 4
+      },
+      {
+        "category": "escalation:failed_attempt_barcode_mismatch",
+        "cases": 2,
+        "succeeded": 2
+      }
+    ],
+    "overallRateExcludingEscalationDisplay": 90,
+    "overallRateAsComputedInDecisionsView": 90,
+    "by_action_top": [
+      {
+        "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+        "used": 18,
+        "succeeded": 16,
+        "success_rate": 88.88888888888889
+      },
+      {
+        "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+        "used": 16,
+        "succeeded": 13,
+        "success_rate": 81.25
+      },
+      {
+        "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+        "used": 15,
+        "succeeded": 14,
+        "success_rate": 93.33333333333333
+      }
+    ]
+  },
+  "buildFingerprint": {
+    "css": [
+      "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap",
+      "http://127.0.0.1:8000/assets/index-B9I8LKnG.css"
+    ],
+    "js": [
+      "http://127.0.0.1:8000/assets/index-276MDZLC.js"
+    ]
+  },
+  "panelsOverflow": [
+    {
+      "label": "problems-overflow",
+      "found": true,
+      "outerHeight": 440,
+      "outerWidth": 280,
+      "className": "group/card overflow-hidden border border-border bg-card text-sm text-card-foreground [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl h-[440px] min-h-0 flex flex-col gap-0 rounded-lg py-0 shadow-none",
+      "scroll": {
+        "scrollHeight": 2162,
+        "clientHeight": 351,
+        "scrollTop": 0,
+        "overflows": true
+      }
+    },
+    {
+      "label": "actions-overflow",
+      "found": true,
+      "outerHeight": 440,
+      "outerWidth": 340,
+      "className": "group/card overflow-hidden border border-border bg-card text-sm text-card-foreground [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl h-[440px] min-h-0 flex flex-col gap-0 rounded-lg py-0 shadow-none",
+      "scroll": {
+        "scrollHeight": 1770,
+        "clientHeight": 351,
+        "scrollTop": 0,
+        "overflows": true
+      }
+    },
+    {
+      "label": "focus-overflow",
+      "found": true,
+      "outerHeight": 440,
+      "outerWidth": 508,
+      "className": "group/card overflow-hidden border border-border bg-card text-sm text-card-foreground [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl h-[440px] min-h-0 flex flex-col gap-0 rounded-lg py-0 shadow-none lg:col-span-2 xl:col-span-1",
+      "scroll": {
+        "scrollHeight": 343,
+        "clientHeight": 343,
+        "scrollTop": 0,
+        "overflows": false
+      }
+    },
+    {
+      "label": "queue-overflow",
+      "found": true,
+      "outerHeight": 94,
+      "outerWidth": 221,
+      "className": "group/card flex flex-col overflow-hidden rounded-xl border border-border bg-card text-sm text-card-foreground [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl gap-0 py-0 shadow-none",
+      "scroll": null
+    }
+  ],
+  "semanticGap": {
+    "uniqueIndicatorColors": [
+      "oklch(0.546 0.245 262.9)"
+    ],
+    "allPrimaryOnly": true,
+    "barCount": 51,
+    "sample": [
+      {
+        "index": 0,
+        "indicatorBg": "oklch(0.546 0.245 262.9)",
+        "trackBg": "rgb(221, 217, 210)",
+        "pctLabel": null,
+        "context": "coverage-card"
+      },
+      {
+        "index": 1,
+        "indicatorBg": "oklch(0.546 0.245 262.9)",
+        "trackBg": "rgb(221, 217, 210)",
+        "pctLabel": "50%",
+        "context": "overflow cat 0"
+      },
+      {
+        "index": 2,
+        "indicatorBg": "oklch(0.546 0.245 262.9)",
+        "trackBg": "rgb(221, 217, 210)",
+        "pctLabel": "51%",
+        "context": "overflow cat 1"
+      },
+      {
+        "index": 3,
+        "indicatorBg": "oklch(0.546 0.245 262.9)",
+        "trackBg": "rgb(221, 217, 210)",
+        "pctLabel": "52%",
+        "context": "overflow cat 2"
+      },
+      {
+        "index": 4,
+        "indicatorBg": "oklch(0.546 0.245 262.9)",
+        "trackBg": "rgb(221, 217, 210)",
+        "pctLabel": "53%",
+        "context": "overflow cat 3"
+      }
+    ]
+  },
+  "panelHeightCheck": {
+    "problems": 440,
+    "actions": 440,
+    "focus": 440,
+    "queue": 400,
+    "queueNote": "Corrected via b3-queue-measure.mjs (.h-[400px]); initial selector matched wrong card",
+    "problemsActionsEqual": true,
+    "problemsFocusEqual": true,
+    "trioWithin2px": true,
+    "queueNear400": true,
+    "trioNear440": true
+  },
+  "endpoint": {
+    "graph": {
+      "status": 500,
+      "ok": false
+    },
+    "schema": {
+      "status": 200,
+      "ok": true
+    }
+  }
+}

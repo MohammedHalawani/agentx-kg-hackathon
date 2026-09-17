@@ -1,13 +1,14 @@
 import { useFetch } from '../../hooks/useFetch'
 import type { SubGraph } from '../../types/contract'
+import { useLanguage } from '@/components/i18n/LanguageProvider'
 import { Graph } from '../artifacts/Graph'
-import { Skeleton } from '../ui/Skeleton'
+import { Skeleton } from '../ui/skeleton'
 import { Center, Frame } from './shell'
 
-// The data model itself: node labels + relationship types as a graph. Switch to Tree layout to
-// read it as a blueprint.
 export function SchemaView() {
   const { data, loading } = useFetch<SubGraph>('/schema')
+  const { t } = useLanguage()
+
   return (
     <Frame>
       {loading ? (
@@ -15,7 +16,7 @@ export function SchemaView() {
       ) : data?.nodes?.length ? (
         <Graph graph={data} />
       ) : (
-        <Center>Schema unavailable.</Center>
+        <Center>{t('explore.schemaUnavailable')}</Center>
       )}
     </Frame>
   )

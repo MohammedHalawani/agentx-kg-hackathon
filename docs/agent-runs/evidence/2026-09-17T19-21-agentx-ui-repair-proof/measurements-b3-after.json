@@ -1,0 +1,105 @@
+{
+  "runId": "2026-09-17T19-21-agentx-ui-repair-proof",
+  "phase": "b3-impl-after",
+  "agent": "B",
+  "url": "http://127.0.0.1:8000",
+  "viewport": "1440x900",
+  "panels": {
+    "Problems": 440,
+    "Resolution actions": 440,
+    "Focus": 440,
+    "queue": 400
+  },
+  "progressSemantics": {
+    "segmentCount": 28,
+    "variants": [
+      "success",
+      "pending",
+      "failure"
+    ],
+    "primaryOnly": 0,
+    "sample": [
+      {
+        "variant": "success",
+        "bg": "rgb(12, 163, 12)"
+      },
+      {
+        "variant": "pending",
+        "bg": "rgb(250, 178, 25)"
+      },
+      {
+        "variant": "success",
+        "bg": "rgb(12, 163, 12)"
+      },
+      {
+        "variant": "failure",
+        "bg": "oklch(0.58 0.19 25)"
+      },
+      {
+        "variant": "success",
+        "bg": "rgb(12, 163, 12)"
+      },
+      {
+        "variant": "failure",
+        "bg": "oklch(0.58 0.19 25)"
+      }
+    ]
+  },
+  "sticky": {
+    "ok": true,
+    "scrollOwner": "overflow-auto",
+    "before": {
+      "ownerTop": 996.546875,
+      "theadTop": 996.546875
+    },
+    "after": {
+      "scrollTop": 400,
+      "ownerTop": 996.546875,
+      "theadTop": 996.546875,
+      "theadPosition": "sticky"
+    },
+    "headerPinned": true
+  },
+  "b1Sentinels": [
+    {
+      "id": "H01",
+      "theme": "light",
+      "ratio": 5.62
+    },
+    {
+      "id": "H03",
+      "theme": "light",
+      "ratio": 9.95
+    },
+    {
+      "id": "H04",
+      "theme": "light",
+      "ratio": null
+    },
+    {
+      "id": "H01",
+      "theme": "dark",
+      "ratio": 8.23
+    },
+    {
+      "id": "H03",
+      "theme": "dark",
+      "ratio": 11.58
+    },
+    {
+      "id": "H04",
+      "theme": "dark",
+      "ratio": null
+    }
+  ],
+  "buildFingerprint": {
+    "css": [
+      "css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap",
+      "index-DVhlRZ8U.css"
+    ],
+    "js": [
+      "index-BVWhf3oi.js"
+    ]
+  },
+  "focusStickyHeader": "sticky"
+}

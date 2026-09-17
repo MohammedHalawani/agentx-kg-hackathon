@@ -116,6 +116,6 @@ export interface CasesOverview {
   coverage: { resolved: number; unresolved: number; total: number }
   by_category: { category: string; cases: number; succeeded: number; success_rate: number }[]
   by_action: { action: string; used: number; succeeded: number; success_rate: number }[]
-  writebacks: { by_agent: number; seeded: number; total: number }
+  writebacks: { by_agent: number; seeded: number; pending: number; total: number }
   queue: CaseRow[]
 }

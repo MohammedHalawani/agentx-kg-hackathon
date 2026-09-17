@@ -5,12 +5,18 @@ import { X } from 'lucide-react'
 import type { GraphNode, Incident, SubGraph } from '../../types/contract'
 import { buildLabelColors, cssVar } from '../../lib/theme'
 import { useEntityInfo } from '../../lib/entityInfo'
-import { humanizeKey } from '../../lib/humanizeKey'
 import { LAYOUTS, type LayoutKey } from '../../lib/graphLayouts'
 import { cn } from '../../lib/cn'
+import { useLanguage } from '@/components/i18n/LanguageProvider'
+import { useTheme } from '../theme/ThemeProvider'
 import { MapView } from './MapView'
 
 const labelOf = (n: GraphNode): string => n.labels[0] ?? 'Node'
+
+const LAYOUT_LABEL_KEYS: Record<LayoutKey, { label: string; hint: string }> = {
+  forceDirected: { label: 'explore.layoutForce', hint: 'explore.layoutForceHint' },
+  hierarchical: { label: 'explore.layoutTree', hint: 'explore.layoutTreeHint' },
+}
 
 // Resolve a CSS custom property (an oklch() string) to a hex three.js can use, via a 1px canvas -
 // so the 3D scene's background + edges are the app's real light-theme tokens, not hardcoded values.
@@ -97,12 +103,14 @@ interface BrainGraphProps {
   onLayoutChange?: (layout: LayoutKey) => void
 }
 
-// A 3D force-directed rendering of the same subgraph GraphView draws, on the app's LIGHT surface
+// A 3D force-directed rendering of the same subgraph GraphView draws, themed to the app's surface
 // with the same node palette and visible edges. Cinematic on-scheme touches: the layout springs
 // out on load; clicking a node glides the camera to it, pins focus (unrelated nodes dim + shrink),
 // and fires signal particles down its links; the detail card renders the node's photo + a mini map.
 export function BrainGraph({ graph, layout: layoutProp, onLayoutChange }: BrainGraphProps) {
+  const { t, entityLabel, propertyLabel } = useLanguage()
   const entityInfo = useEntityInfo()
+  const { resolvedTheme } = useTheme()
   const fgRef = useRef<ForceGraphMethods<BNode, BLink> | undefined>(undefined)
   const wrapRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ w: 0, h: 0 })
@@ -115,7 +123,7 @@ export function BrainGraph({ graph, layout: layoutProp, onLayoutChange }: BrainG
       link: tokenHex('--color-muted'), // neutral fallback for a link whose endpoint colour is unknown
       signal: cssVar('--marker'),
     }),
-    [],
+    [resolvedTheme],
   )
 
   const [internalLayout, setInternalLayout] = useState<LayoutKey>('forceDirected')
@@ -128,13 +136,13 @@ export function BrainGraph({ graph, layout: layoutProp, onLayoutChange }: BrainG
     for (const n of graph.nodes) seen.add(labelOf(n))
     return [...seen]
   }, [graph])
-  const colors = useMemo(() => buildLabelColors(orderedLabels), [orderedLabels])
+  const colors = useMemo(() => buildLabelColors(orderedLabels), [orderedLabels, resolvedTheme])
   // id -> node colour, so a link can inherit the tint of the two nodes it joins (no more grey lines)
   const nodeColorById = useMemo(() => {
     const m = new Map<string, string>()
     for (const n of graph.nodes) m.set(n.id, colors[labelOf(n)])
     return m
-  }, [graph, colors])
+  }, [graph, colors, resolvedTheme])
   const labelCounts = useMemo(() => {
     const c = new Map<string, number>()
     for (const n of graph.nodes) c.set(labelOf(n), (c.get(labelOf(n)) ?? 0) + 1)
@@ -172,7 +180,7 @@ export function BrainGraph({ graph, layout: layoutProp, onLayoutChange }: BrainG
         rotation: (i * 2.399963) % (Math.PI * 2), // golden-angle spread of arc planes
       })),
     }),
-    [graph, colors, degree],
+    [graph, colors, degree, resolvedTheme],
   )
 
   useEffect(() => {
@@ -264,26 +272,26 @@ export function BrainGraph({ graph, layout: layoutProp, onLayoutChange }: BrainG
         />
       )}
 
-      <div className="pointer-events-none absolute left-3 top-3 flex max-w-[55%] flex-wrap gap-x-3 gap-y-1 rounded-lg border border-hairline bg-panel/80 px-2.5 py-1.5 text-[11px] text-ink backdrop-blur">
+      <div className="pointer-events-none absolute left-3 top-3 flex max-w-[55%] flex-wrap gap-x-3 gap-y-1 rounded-lg border border-border bg-card/90 px-2.5 py-1.5 text-[11px] text-foreground backdrop-blur">
         {orderedLabels.map((l) => (
           <span key={l} title={entityInfo(l)} className="pointer-events-auto inline-flex cursor-help items-center gap-1">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: colors[l] }} />
-            {l}
-            <span className="font-mono tabular-nums text-muted">{labelCounts.get(l)}</span>
+            {entityLabel(l)}
+            <span className="font-mono tabular-nums text-muted-foreground">{labelCounts.get(l)}</span>
           </span>
         ))}
       </div>
 
       {!controlled && (
-        <div className="absolute right-3 top-3 inline-flex gap-0.5 rounded-lg border border-hairline bg-panel/80 p-0.5 text-[11px] text-muted backdrop-blur">
+        <div className="absolute right-3 top-3 inline-flex gap-0.5 rounded-lg border border-border bg-card/90 p-0.5 text-[11px] text-muted-foreground backdrop-blur">
           {LAYOUTS.map((l) => (
             <button
               key={l.key}
               onClick={() => setLayout(l.key)}
-              title={l.hint}
-              className={cn('rounded-md px-2 py-0.5 transition-colors', layout === l.key ? 'bg-accent text-white' : 'hover:text-ink')}
+              title={t(LAYOUT_LABEL_KEYS[l.key].hint)}
+              className={cn('rounded-md px-2 py-0.5 transition-colors', layout === l.key ? 'bg-primary text-primary-foreground' : 'hover:text-foreground')}
             >
-              {l.label}
+              {t(LAYOUT_LABEL_KEYS[l.key].label)}
             </button>
           ))}
         </div>
@@ -299,22 +307,22 @@ export function BrainGraph({ graph, layout: layoutProp, onLayoutChange }: BrainG
             transition={{ duration: 0.2, ease: 'easeOut' }}
             // top edge inherits the clicked node's colour, tying the card back to the graph
             style={{ borderTopColor: colors[labelOf(selected)], borderTopWidth: 2 }}
-            className="absolute bottom-3 right-3 max-h-[80%] w-72 overflow-auto rounded-xl border border-hairline bg-panel/95 p-3.5 text-xs shadow-lg backdrop-blur-md"
+            className="absolute bottom-3 right-3 max-h-[80%] w-72 overflow-auto rounded-xl border border-border bg-card/95 p-3.5 text-xs text-card-foreground shadow-lg backdrop-blur-md"
           >
             <div className="mb-2.5 flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <div className="inline-flex items-center gap-1.5">
                   <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: colors[labelOf(selected)] }} />
-                  <span className="truncate text-[10px] font-semibold uppercase tracking-wider text-muted">
-                    {selected.labels.join(' · ')}
+                  <span className="truncate text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    {selected.labels.map(entityLabel).join(' · ')}
                   </span>
                 </div>
-                <div className="mt-0.5 truncate font-display text-sm font-semibold text-ink">{selected.caption}</div>
+                <div className="mt-0.5 truncate font-display text-sm font-semibold text-foreground">{selected.caption}</div>
               </div>
               <button
                 onClick={() => setSelected(null)}
-                aria-label="Close"
-                className="shrink-0 rounded-md p-0.5 text-muted transition-colors hover:text-ink"
+                aria-label={t('common.close')}
+                className="shrink-0 rounded-md p-0.5 text-muted-foreground transition-colors hover:text-foreground"
               >
                 <X size={14} />
               </button>
@@ -326,24 +334,24 @@ export function BrainGraph({ graph, layout: layoutProp, onLayoutChange }: BrainG
                 src={nodeImageUrl(selected.properties)!}
                 alt={selected.caption}
                 loading="lazy"
-                className="mb-2.5 h-28 w-full rounded-lg border border-hairline object-cover"
+                className="mb-2.5 h-28 w-full rounded-lg border border-border object-cover"
               />
             )}
             {nodeCoord(selected.properties) && (
-              <div className="mb-2.5 h-28 w-full overflow-hidden rounded-lg border border-hairline">
+              <div className="mb-2.5 h-28 w-full overflow-hidden rounded-lg border border-border">
                 <MapView incidents={[nodeCoord(selected.properties)!]} />
               </div>
             )}
 
-            {entityInfo(labelOf(selected)) && <p className="mb-2.5 leading-relaxed text-muted">{entityInfo(labelOf(selected))}</p>}
-            <dl className="divide-y divide-hairline">
+            {entityInfo(labelOf(selected)) && <p className="mb-2.5 leading-relaxed text-muted-foreground">{entityInfo(labelOf(selected))}</p>}
+            <dl className="divide-y divide-border">
               {Object.entries(selected.properties)
                 .filter(([k, v]) => !HIDDEN_PROPS.has(k) && v !== '' && v != null)
                 .slice(0, 12)
                 .map(([k, v]) => (
                   <div key={k} className="flex items-center justify-between gap-3 py-1.5">
-                    <dt className="shrink-0 text-muted">{humanizeKey(k)}</dt>
-                    <dd className="truncate rounded-md bg-surface px-1.5 py-0.5 font-mono text-[11px] text-ink">{String(v)}</dd>
+                    <dt className="shrink-0 text-muted-foreground">{propertyLabel(k)}</dt>
+                    <dd className="truncate rounded-md bg-muted px-1.5 py-0.5 font-mono text-[11px] text-foreground">{String(v)}</dd>
                   </div>
                 ))}
             </dl>

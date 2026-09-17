@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { LanguageProvider } from '@/components/i18n/LanguageProvider'
+import { ThemeProvider, useTheme } from '@/components/theme/ThemeProvider'
 import { BrainView } from './BrainView'
 
 // Graph renders NVL/force-graph onto a canvas, which jsdom can't do meaningfully - stub it so this
@@ -21,12 +23,35 @@ describe('BrainView resample', () => {
     })
     vi.stubGlobal('fetch', fetchMock)
 
-    render(<BrainView />)
+    render(
+      <ThemeProvider>
+        <LanguageProvider>
+          <BrainView />
+        </LanguageProvider>
+      </ThemeProvider>,
+    )
     await waitFor(() => expect(screen.getByTestId('graph')).toBeTruthy())
     expect(fetchMock).toHaveBeenCalledWith('/graph', expect.anything())
     expect(fetchMock).toHaveBeenCalledTimes(1)
 
     await act(async () => fireEvent.click(screen.getByText('Show another part of the graph')))
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+  })
+})
+
+describe('BrainView theme provider', () => {
+  it('wraps content in ThemeProvider so graph chrome can subscribe to resolvedTheme', () => {
+    function ThemeProbe() {
+      const { resolvedTheme } = useTheme()
+      return <span data-testid="theme">{resolvedTheme}</span>
+    }
+
+    render(
+      <ThemeProvider>
+        <ThemeProbe />
+      </ThemeProvider>,
+    )
+
+    expect(screen.getByTestId('theme').textContent).toBe('light')
   })
 })

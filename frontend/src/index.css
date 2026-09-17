@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -11,12 +13,13 @@
   --font-sans: "IBM Plex Sans", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 
-  /* warm-neutral surfaces + one confident graph-accent */
-  --color-surface: oklch(98.6% 0.006 85);
-  --color-panel: oklch(99.6% 0.003 85);
-  --color-ink: oklch(26% 0.012 65);
-  --color-muted: oklch(56% 0.014 70);
-  --color-hairline: oklch(89% 0.012 80);
+  /* warm-neutral surfaces + readable text hierarchy (light mode) */
+  --color-surface: #faf9f7;
+  --color-panel: #ffffff;
+  --color-ink: #20201e;
+  --color-muted-text: #66645f;
+  --color-subtle: #7a7771;
+  --color-hairline: #e4e1db;
   /* vivid corporate blue (~Tailwind blue-600) - anchors the chat bubble + every interactive surface */
   --color-accent: oklch(54.6% 0.245 262.9);
   --color-accent-soft: oklch(95% 0.035 262.9);
@@ -32,6 +35,12 @@
   --color-chart-aqua: #1baf7a;
   --color-chart-good: #0ca30c;
   --color-chart-warning: #fab219;
+
+  /* outcome semantics for metric bars — success/failure/pending/neutral */
+  --color-outcome-success: var(--color-chart-good);
+  --color-outcome-failure: var(--color-danger);
+  --color-outcome-pending: var(--color-chart-warning);
+  --color-outcome-neutral: #9ca3af;
 
   /* graph label palette — HEX on purpose: NVL (WebGL) + Leaflet parse these
      directly, where oklch() is not universally supported on canvas. Tuned deep/rich
@@ -60,24 +69,6 @@
   --node-steerco-session: #475569;
 }
 
-/* ponytail: dark tokens are wired but deferred — no toggle ships yet. Flip by adding
-   class="dark" to <html>; adding a toggle is additive, with no component edits. */
-.dark {
-  --color-surface: oklch(21% 0.01 70);
-  --color-panel: oklch(25% 0.012 70);
-  --color-ink: oklch(95% 0.008 85);
-  --color-muted: oklch(70% 0.015 80);
-  --color-hairline: oklch(34% 0.014 75);
-  --color-accent: oklch(72% 0.16 262.9);
-  --color-accent-soft: oklch(34% 0.05 262.9);
-  --color-danger: oklch(70% 0.17 25);
-
-  /* dark-surface steps of the same three categorical hues; status good/warning unchanged */
-  --color-chart-blue: #3987e5;
-  --color-chart-orange: #d95926;
-  --color-chart-aqua: #199e70;
-}
-
 @layer base {
   html, body, #root { height: 100%; }
   body {
@@ -86,6 +77,7 @@
     color: var(--color-ink);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    @apply bg-background text-foreground;
   }
   /* Leaflet popups: theme-matched, rounded, soft-shadowed instead of the plugin's default sharp
      white bubble + drop-shadow filter + blue-link close button. */
@@ -105,7 +97,7 @@
   }
   .leaflet-popup-tip-container { filter: none !important; }
   .leaflet-popup-close-button {
-    color: var(--color-muted) !important;
+    color: var(--color-muted-text) !important;
     font: 400 18px/1 var(--font-sans) !important;
   }
   .leaflet-popup-close-button:hover { color: var(--color-ink) !important; }
@@ -113,16 +105,20 @@
   /* quiet scrollbars everywhere: thin, rounded, hairline-toned thumb on an invisible track */
   * {
     scrollbar-width: thin;
-    scrollbar-color: color-mix(in srgb, var(--color-muted) 30%, transparent) transparent;
+    scrollbar-color: color-mix(in srgb, var(--muted-foreground) 40%, transparent) transparent;
+    @apply border-border outline-ring/50;
   }
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background: color-mix(in srgb, var(--color-muted) 30%, transparent);
+    background: color-mix(in srgb, var(--muted-foreground) 40%, transparent);
     border-radius: 999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in srgb, var(--color-muted) 50%, transparent);
+    background: color-mix(in srgb, var(--muted-foreground) 55%, transparent);
+  }
+  html {
+    @apply font-sans;
   }
 }
 
@@ -132,7 +128,7 @@
   to { background-position: 0% center; }
 }
 .shimmer {
-  background: linear-gradient(90deg, var(--color-muted) 0%, var(--color-ink) 50%, var(--color-muted) 100%);
+  background: linear-gradient(90deg, var(--color-muted-text) 0%, var(--color-ink) 50%, var(--color-muted-text) 100%);
   background-size: 200% auto;
   background-clip: text;
   -webkit-background-clip: text;
@@ -142,4 +138,169 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .shimmer { animation: none; }
+}
+
+@theme inline {
+  --font-heading: var(--font-display);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-progress-track: var(--progress-track);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --background: var(--color-surface);
+  --foreground: var(--color-ink);
+  --card: var(--color-panel);
+  --card-foreground: var(--color-ink);
+  --popover: var(--color-panel);
+  --popover-foreground: var(--color-ink);
+  /* primary = brand blue; accent = soft selection/hover fill (see @theme inline --color-accent) */
+  --primary: oklch(54.6% 0.245 262.9);
+  --primary-foreground: #ffffff;
+  --secondary: #f0f2f5;
+  --secondary-foreground: #20201e;
+  --muted: #f0f2f5;
+  --muted-foreground: var(--color-muted-text);
+  --accent: #e8f1fc;
+  --accent-foreground: #163b66;
+  --progress-track: #ddd9d2;
+  --destructive: var(--color-danger);
+  --border: var(--color-hairline);
+  --input: var(--color-hairline);
+  --ring: color-mix(in srgb, var(--color-accent) 45%, transparent);
+  --chart-1: var(--color-chart-blue);
+  --chart-2: var(--color-chart-orange);
+  --chart-3: var(--color-chart-aqua);
+  --chart-4: var(--color-chart-good);
+  --chart-5: var(--color-chart-warning);
+  --radius: 0.625rem;
+  --sidebar: var(--color-panel);
+  --sidebar-foreground: var(--color-ink);
+  --sidebar-primary: var(--color-accent);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e8f1fc;
+  --sidebar-accent-foreground: #163b66;
+  --sidebar-border: var(--color-hairline);
+  --sidebar-ring: color-mix(in srgb, var(--color-accent) 40%, transparent);
+}
+
+/* Must follow :root — equal specificity, later rule wins on html.dark */
+.dark {
+  --color-surface: #111318;
+  --color-panel: #171a1f;
+  --color-ink: #f1f5f9;
+  --color-muted-text: #a7adb7;
+  --color-subtle: #8b919c;
+  --color-hairline: #2b313a;
+  --color-accent: #60a5fa;
+  --color-accent-soft: #1d2b3f;
+  --color-danger: #f87171;
+
+  --color-chart-blue: #76a9fa;
+  --color-chart-orange: #f0885c;
+  --color-chart-aqua: #34d399;
+  --color-chart-good: #34d399;
+  --color-chart-warning: #fbbf24;
+
+  --color-outcome-success: var(--color-chart-good);
+  --color-outcome-failure: var(--color-danger);
+  --color-outcome-pending: var(--color-chart-warning);
+  --color-outcome-neutral: #6b7280;
+
+  --background: var(--color-surface);
+  --foreground: var(--color-ink);
+  --card: var(--color-panel);
+  --card-foreground: var(--color-ink);
+  --popover: var(--color-panel);
+  --popover-foreground: var(--color-ink);
+  /* #3b6fd4 + #fff clears 4.5:1 on primary pills (E01); #5b8def + #eaf2ff was 2.87:1 */
+  --primary: #3b6fd4;
+  --primary-foreground: #ffffff;
+  --secondary: #242b35;
+  --secondary-foreground: #f1f5f9;
+  --muted: #242b35;
+  --muted-foreground: var(--color-muted-text);
+  --accent: #1e324a;
+  --accent-foreground: #eaf2ff;
+  --progress-track: #2b313a;
+  --destructive: var(--color-danger);
+  --border: var(--color-hairline);
+  --input: #2b313a;
+  --ring: color-mix(in srgb, var(--color-accent) 55%, transparent);
+  --chart-1: var(--color-chart-blue);
+  --chart-2: var(--color-chart-orange);
+  --chart-3: var(--color-chart-aqua);
+  --chart-4: var(--color-chart-good);
+  --chart-5: var(--color-chart-warning);
+  --sidebar: var(--color-panel);
+  --sidebar-foreground: var(--color-ink);
+  --sidebar-primary: var(--color-accent);
+  --sidebar-primary-foreground: #eaf2ff;
+  --sidebar-accent: #1e324a;
+  --sidebar-accent-foreground: #eaf2ff;
+  --sidebar-border: var(--color-hairline);
+  --sidebar-ring: color-mix(in srgb, var(--color-accent) 50%, transparent);
+}
+
+/* shadcn generates `.text-muted { color: var(--muted) }`; override after theme tokens. */
+@layer utilities {
+  .text-muted {
+    color: var(--muted-foreground);
+  }
+}
+
+@utility text-ink {
+  color: var(--foreground);
+}
+
+@utility text-subtle {
+  color: var(--color-subtle);
+}
+
+@utility bg-panel {
+  background-color: var(--card);
+}
+
+@utility bg-surface {
+  background-color: var(--background);
+}
+
+@utility border-hairline {
+  border-color: var(--border);
 }

@@ -1,0 +1,223 @@
+{
+  "url": "http://127.0.0.1:8000",
+  "viewport": "1440x900",
+  "captures": [
+    "C:\\Projects\\demo\\frontend\\intake-light-default.png",
+    "C:\\Projects\\demo\\frontend\\intake-light-hover.png",
+    "C:\\Projects\\demo\\frontend\\decisions-light-default.png",
+    "C:\\Projects\\demo\\frontend\\decisions-light-problem-selected.png",
+    "C:\\Projects\\demo\\frontend\\decisions-light-problem-hover.png",
+    "C:\\Projects\\demo\\frontend\\decisions-light-queue-hover.png",
+    "C:\\Projects\\demo\\frontend\\sidebar-light-hover-intake.png",
+    "C:\\Projects\\demo\\frontend\\explore-light-graph.png",
+    "C:\\Projects\\demo\\frontend\\intake-dark-default.png",
+    "C:\\Projects\\demo\\frontend\\intake-dark-hover.png",
+    "C:\\Projects\\demo\\frontend\\decisions-dark-default.png",
+    "C:\\Projects\\demo\\frontend\\decisions-dark-problem-selected.png",
+    "C:\\Projects\\demo\\frontend\\decisions-dark-problem-hover.png",
+    "C:\\Projects\\demo\\frontend\\decisions-dark-queue-hover.png",
+    "C:\\Projects\\demo\\frontend\\sidebar-dark-hover-intake.png",
+    "C:\\Projects\\demo\\frontend\\explore-dark-graph.png"
+  ],
+  "measurements": [
+    {
+      "theme": "light",
+      "view": "intake",
+      "countEl": {
+        "selector": "h2 + span.text-muted, h2 ~ span.text-sm.text-muted",
+        "color": "rgb(236, 234, 229)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "className": "text-sm text-muted",
+        "text": "75 shipment(s) awaiting a decision"
+      },
+      "descEl": {
+        "selector": "p.text-muted",
+        "color": "rgb(236, 234, 229)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "className": "mt-1.5 max-w-2xl text-sm text-muted",
+        "text": "Pick one to run it. Three agents classify the root cause, recommend an action gr"
+      },
+      "metaEl": {
+        "selector": "button span.text-muted",
+        "color": "rgb(236, 234, 229)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "className": "mt-0.5 flex flex-wrap gap-x-2 text-[11px] text-muted",
+        "text": "SHP-0227recipient unavailableالقيصومةأحمد الزهيري"
+      }
+    },
+    {
+      "theme": "light",
+      "view": "intake-count-contrast",
+      "ratio": 17.47,
+      "selector": "h2 + span.text-muted, h2 ~ span.text-sm.text-muted",
+      "color": "rgb(236, 234, 229)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "className": "text-sm text-muted",
+      "text": "75 shipment(s) awaiting a decision"
+    },
+    {
+      "theme": "light",
+      "view": "intake-hover",
+      "hoverBtn": {
+        "selector": "button:hover",
+        "color": "rgb(32, 32, 30)",
+        "backgroundColor": "rgb(232, 241, 252)",
+        "className": "flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary/35 hover:bg-accent",
+        "text": "لم يتم تسليم الشحنة SHP-0227 ولم يتواصل معي المندوبSHP-0227recipient unavailable"
+      }
+    },
+    {
+      "theme": "light",
+      "view": "intake-hover-contrast",
+      "ratio": 14.31,
+      "selector": "button:hover",
+      "color": "rgb(32, 32, 30)",
+      "backgroundColor": "rgb(232, 241, 252)",
+      "className": "flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary/35 hover:bg-accent",
+      "text": "لم يتم تسليم الشحنة SHP-0227 ولم يتواصل معي المندوبSHP-0227recipient unavailable"
+    },
+    {
+      "theme": "light",
+      "view": "problem-selected",
+      "sel": {
+        "selector": "button.border-primary\\/30",
+        "color": "rgb(26, 79, 168)",
+        "backgroundColor": "rgb(232, 241, 252)",
+        "className": "w-full rounded-md border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring border-primary/30 bg-accent text-accent-foreground",
+        "text": "address conflict91%39 of 43 workedx"
+      }
+    },
+    {
+      "theme": "light",
+      "view": "queue-row",
+      "qCell": {
+        "selector": "tbody tr:first-child td",
+        "color": "rgb(32, 32, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "className": "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 px-1 py-1.5 text-xs font-medium",
+        "text": "SHP-0072"
+      }
+    },
+    {
+      "theme": "light",
+      "view": "explore-lens",
+      "lensSelected": {
+        "selector": "button .absolute.inset-0.rounded-md.bg-primary",
+        "color": "rgb(255, 255, 255)",
+        "backgroundColor": "rgb(232, 241, 252)",
+        "className": "absolute inset-0 rounded-md bg-primary",
+        "text": ""
+      }
+    },
+    {
+      "theme": "light",
+      "view": "graph-controls",
+      "layoutSelected": null
+    },
+    {
+      "theme": "dark",
+      "view": "intake",
+      "countEl": {
+        "selector": "h2 + span.text-muted, h2 ~ span.text-sm.text-muted",
+        "color": "rgb(236, 234, 229)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "className": "text-sm text-muted",
+        "text": "75 shipment(s) awaiting a decision"
+      },
+      "descEl": {
+        "selector": "p.text-muted",
+        "color": "rgb(236, 234, 229)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "className": "mt-1.5 max-w-2xl text-sm text-muted",
+        "text": "Pick one to run it. Three agents classify the root cause, recommend an action gr"
+      },
+      "metaEl": {
+        "selector": "button span.text-muted",
+        "color": "rgb(236, 234, 229)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "className": "mt-0.5 flex flex-wrap gap-x-2 text-[11px] text-muted",
+        "text": "SHP-0227recipient unavailableالقيصومةأحمد الزهيري"
+      }
+    },
+    {
+      "theme": "dark",
+      "view": "intake-count-contrast",
+      "ratio": 17.47,
+      "selector": "h2 + span.text-muted, h2 ~ span.text-sm.text-muted",
+      "color": "rgb(236, 234, 229)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "className": "text-sm text-muted",
+      "text": "75 shipment(s) awaiting a decision"
+    },
+    {
+      "theme": "dark",
+      "view": "intake-hover",
+      "hoverBtn": {
+        "selector": "button:hover",
+        "color": "rgb(240, 242, 245)",
+        "backgroundColor": "rgb(232, 241, 252)",
+        "className": "flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary/35 hover:bg-accent",
+        "text": "لم يتم تسليم الشحنة SHP-0227 ولم يتواصل معي المندوبSHP-0227recipient unavailable"
+      }
+    },
+    {
+      "theme": "dark",
+      "view": "intake-hover-contrast",
+      "ratio": 1.02,
+      "selector": "button:hover",
+      "color": "rgb(240, 242, 245)",
+      "backgroundColor": "rgb(232, 241, 252)",
+      "className": "flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary/35 hover:bg-accent",
+      "text": "لم يتم تسليم الشحنة SHP-0227 ولم يتواصل معي المندوبSHP-0227recipient unavailable"
+    },
+    {
+      "theme": "dark",
+      "view": "problem-selected",
+      "sel": {
+        "selector": "button.border-primary\\/30",
+        "color": "rgb(26, 79, 168)",
+        "backgroundColor": "rgb(232, 241, 252)",
+        "className": "w-full rounded-md border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring border-primary/30 bg-accent text-accent-foreground",
+        "text": "address conflict91%39 of 43 workedx"
+      }
+    },
+    {
+      "theme": "dark",
+      "view": "queue-row",
+      "qCell": {
+        "selector": "tbody tr:first-child td",
+        "color": "rgb(240, 242, 245)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "className": "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 px-1 py-1.5 text-xs font-medium",
+        "text": "SHP-0072"
+      }
+    },
+    {
+      "theme": "dark",
+      "view": "explore-lens",
+      "lensSelected": {
+        "selector": "button .absolute.inset-0.rounded-md.bg-primary",
+        "color": "rgb(255, 255, 255)",
+        "backgroundColor": "rgb(96, 165, 250)",
+        "className": "absolute inset-0 rounded-md bg-primary",
+        "text": ""
+      }
+    },
+    {
+      "theme": "dark",
+      "view": "graph-controls",
+      "layoutSelected": null
+    }
+  ],
+  "buildFingerprint": {
+    "css": [
+      "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap",
+      "http://127.0.0.1:8000/assets/index-6fyoBKuw.css"
+    ],
+    "js": [
+      "http://127.0.0.1:8000/assets/index-Ca8GudiR.js"
+    ],
+    "theme": null,
+    "dark": false
+  }
+}

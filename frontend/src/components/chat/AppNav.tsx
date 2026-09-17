@@ -1,8 +1,9 @@
 import { motion } from 'motion/react'
 import { Compass, GitBranch, Inbox } from 'lucide-react'
 import { cn } from '../../lib/cn'
+import type { ViewKey } from '../layout/types'
 
-export type ViewKey = 'intake' | 'decisions' | 'explore'
+export type { ViewKey } from '../layout/types'
 
 const NAV: { key: ViewKey; label: string; icon: typeof Inbox }[] = [
   { key: 'intake', label: 'Intake', icon: Inbox },

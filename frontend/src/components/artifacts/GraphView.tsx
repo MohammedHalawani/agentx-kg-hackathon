@@ -8,8 +8,14 @@ import { buildLabelColors } from '../../lib/theme'
 import { useEntityInfo } from '../../lib/entityInfo'
 import { cn } from '../../lib/cn'
 import { LAYOUTS, type LayoutKey } from '../../lib/graphLayouts'
-import { humanizeKey } from '../../lib/humanizeKey'
-import { Skeleton } from '../ui/Skeleton'
+import { useLanguage } from '@/components/i18n/LanguageProvider'
+import { useTheme } from '../theme/ThemeProvider'
+import { Skeleton } from '../ui/skeleton'
+
+const LAYOUT_LABEL_KEYS: Record<LayoutKey, { label: string; hint: string }> = {
+  forceDirected: { label: 'explore.layoutForce', hint: 'explore.layoutForceHint' },
+  hierarchical: { label: 'explore.layoutTree', hint: 'explore.layoutTreeHint' },
+}
 
 const labelOf = (n: GraphNode): string => n.labels[0] ?? 'Node'
 
@@ -41,6 +47,8 @@ interface GraphViewProps {
 
 // the graph renders on the app's warm-light surface; nodes carry the color, edges stay quiet
 export function GraphView({ graph, layout: layoutProp, onLayoutChange }: GraphViewProps) {
+  const { t, entityLabel, propertyLabel } = useLanguage()
+  const { resolvedTheme } = useTheme()
   const [internalLayout, setInternalLayout] = useState<LayoutKey>('forceDirected')
   const controlled = layoutProp !== undefined && onLayoutChange !== undefined
   const layout = controlled ? layoutProp : internalLayout
@@ -73,7 +81,7 @@ export function GraphView({ graph, layout: layoutProp, onLayoutChange }: GraphVi
     return { degree, adjacency }
   }, [graph])
 
-  const colors = useMemo(() => buildLabelColors(orderedLabels), [orderedLabels])
+  const colors = useMemo(() => buildLabelColors(orderedLabels), [orderedLabels, resolvedTheme])
   const byId = useMemo(() => new Map(graph.nodes.map((n) => [n.id, n])), [graph])
   const sizeById = useMemo(() => {
     const m = new Map<string, number>()
@@ -143,6 +151,11 @@ export function GraphView({ graph, layout: layoutProp, onLayoutChange }: GraphVi
     labelsRef.current = false
     focusRef.current = null
   }, [graph])
+
+  // Refresh NVL node colours when theme tokens change without remounting the graph.
+  useEffect(() => {
+    if (ready) restyle()
+  }, [resolvedTheme, ready, restyle])
 
   const onLayoutDone = useCallback(() => {
     // Cap the initial fit. Without a maxZoom a small graph - the 13-16 node case file beside
@@ -217,25 +230,25 @@ export function GraphView({ graph, layout: layoutProp, onLayoutChange }: GraphVi
       {/* Zoom controls, bottom-right - clear of the legend (top-left) and the layout toggle
           (top-right), and out of the way of the renderer switch at bottom-centre. */}
       {ready && (
-        <div className="absolute bottom-3 right-3 z-10 flex flex-col gap-0.5 rounded-lg border border-hairline bg-panel/85 p-0.5 shadow-sm backdrop-blur">
+        <div className="absolute bottom-3 right-3 z-10 flex flex-col gap-0.5 rounded-lg border border-border bg-card/90 p-0.5 shadow-sm backdrop-blur">
           <button
             onClick={() => zoomBy(ZOOM_STEP)}
-            aria-label="Zoom in"
-            className="grid size-7 place-items-center rounded-md text-muted transition-colors hover:bg-surface hover:text-ink"
+            aria-label={t('explore.zoomIn')}
+            className="grid size-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <Plus size={14} />
           </button>
           <button
             onClick={() => zoomBy(1 / ZOOM_STEP)}
-            aria-label="Zoom out"
-            className="grid size-7 place-items-center rounded-md text-muted transition-colors hover:bg-surface hover:text-ink"
+            aria-label={t('explore.zoomOut')}
+            className="grid size-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <Minus size={14} />
           </button>
           <button
             onClick={fitAll}
-            aria-label="Fit the whole graph"
-            className="grid size-7 place-items-center rounded-md text-muted transition-colors hover:bg-surface hover:text-ink"
+            aria-label={t('explore.fitGraph')}
+            className="grid size-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <Maximize2 size={13} />
           </button>
@@ -243,13 +256,13 @@ export function GraphView({ graph, layout: layoutProp, onLayoutChange }: GraphVi
       )}
 
       {!ready && (
-        <div className="absolute inset-0 grid place-items-center overflow-hidden bg-surface">
+        <div className="absolute inset-0 grid place-items-center overflow-hidden bg-background">
           <Skeleton className="absolute inset-0 h-full w-full rounded-none" />
-          <span className="relative shimmer text-xs font-medium">Laying out the graph…</span>
+          <span className="relative shimmer text-xs font-medium">{t('explore.layingOut')}</span>
         </div>
       )}
 
-      <div className="pointer-events-none absolute left-3 top-3 flex max-w-[55%] flex-wrap gap-x-3 gap-y-1 rounded-lg border border-hairline bg-panel/80 px-2.5 py-1.5 text-[11px] text-ink backdrop-blur">
+      <div className="pointer-events-none absolute left-3 top-3 flex max-w-[55%] flex-wrap gap-x-3 gap-y-1 rounded-lg border border-border bg-card/90 px-2.5 py-1.5 text-[11px] text-foreground backdrop-blur">
         {orderedLabels.map((l) => (
           <span
             key={l}
@@ -257,25 +270,25 @@ export function GraphView({ graph, layout: layoutProp, onLayoutChange }: GraphVi
             className="pointer-events-auto inline-flex cursor-help items-center gap-1"
           >
             <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: colors[l] }} />
-            {l}
-            <span className="font-mono tabular-nums text-muted">{labelCounts.get(l)}</span>
+            {entityLabel(l)}
+            <span className="font-mono tabular-nums text-muted-foreground">{labelCounts.get(l)}</span>
           </span>
         ))}
       </div>
 
       {!controlled && (
-        <div className="absolute right-3 top-3 inline-flex gap-0.5 rounded-lg border border-hairline bg-panel/80 p-0.5 text-[11px] text-muted backdrop-blur">
+        <div className="absolute right-3 top-3 inline-flex gap-0.5 rounded-lg border border-border bg-card/90 p-0.5 text-[11px] text-muted-foreground backdrop-blur">
           {LAYOUTS.map((l) => (
             <button
               key={l.key}
               onClick={() => setLayout(l.key)}
-              title={l.hint}
+              title={t(LAYOUT_LABEL_KEYS[l.key].hint)}
               className={cn(
                 'rounded-md px-2 py-0.5 transition-colors',
-                layout === l.key ? 'bg-accent text-white' : 'hover:text-ink',
+                layout === l.key ? 'bg-primary text-primary-foreground' : 'hover:text-foreground',
               )}
             >
-              {l.label}
+              {t(LAYOUT_LABEL_KEYS[l.key].label)}
             </button>
           ))}
         </div>
@@ -289,36 +302,36 @@ export function GraphView({ graph, layout: layoutProp, onLayoutChange }: GraphVi
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 12 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="absolute bottom-3 right-3 max-h-[72%] w-64 overflow-auto rounded-xl border border-hairline bg-panel/95 p-3.5 text-xs shadow-lg backdrop-blur-md"
+            className="absolute bottom-3 right-3 max-h-[72%] w-64 overflow-auto rounded-xl border border-border bg-card/95 p-3.5 text-xs text-card-foreground shadow-lg backdrop-blur-md"
           >
             <div className="mb-2.5 flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <div className="inline-flex items-center gap-1.5">
                   <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: colors[labelOf(selected)] }} />
-                  <span className="truncate text-[10px] font-semibold uppercase tracking-wider text-muted">
-                    {selected.labels.join(' · ')}
+                  <span className="truncate text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    {selected.labels.map(entityLabel).join(' · ')}
                   </span>
                 </div>
-                <div className="mt-0.5 truncate font-display text-sm font-semibold text-ink">{selected.caption}</div>
+                <div className="mt-0.5 truncate font-display text-sm font-semibold text-foreground">{selected.caption}</div>
               </div>
               <button
                 onClick={() => setSelected(null)}
-                aria-label="Close"
-                className="shrink-0 rounded-md p-0.5 text-muted transition-colors hover:text-ink"
+                aria-label={t('common.close')}
+                className="shrink-0 rounded-md p-0.5 text-muted-foreground transition-colors hover:text-foreground"
               >
                 <X size={14} />
               </button>
             </div>
             {entityInfo(labelOf(selected)) && (
-              <p className="mb-2.5 leading-relaxed text-muted">{entityInfo(labelOf(selected))}</p>
+              <p className="mb-2.5 leading-relaxed text-muted-foreground">{entityInfo(labelOf(selected))}</p>
             )}
-            <dl className="divide-y divide-hairline">
+            <dl className="divide-y divide-border">
               {Object.entries(selected.properties)
                 .slice(0, 12)
                 .map(([k, v]) => (
                   <div key={k} className="flex items-center justify-between gap-3 py-1.5">
-                    <dt className="shrink-0 text-muted">{humanizeKey(k)}</dt>
-                    <dd className="truncate rounded-md bg-surface px-1.5 py-0.5 font-mono text-[11px] text-ink">
+                    <dt className="shrink-0 text-muted-foreground">{propertyLabel(k)}</dt>
+                    <dd className="truncate rounded-md bg-muted px-1.5 py-0.5 font-mono text-[11px] text-foreground">
                       {String(v)}
                     </dd>
                   </div>

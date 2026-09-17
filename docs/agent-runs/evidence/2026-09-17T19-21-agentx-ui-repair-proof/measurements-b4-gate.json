@@ -1,0 +1,465 @@
+{
+  "url": "http://127.0.0.1:8000",
+  "viewport": "1440x900",
+  "phase": "b4-gate",
+  "agent": "D",
+  "candidateBuild": {
+    "css": "index-DVhlRZ8U.css",
+    "js": "index-DE557tU5.js"
+  },
+  "captures": [
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-gate-theme-menu-en-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-gate-language-menu-en-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-gate-intake-en-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-gate-decisions-en-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-gate-schema-en-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-gate-theme-menu-ar-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-gate-language-menu-ar-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-gate-intake-ar-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-gate-decisions-ar-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-gate-schema-ar-light.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-gate-theme-menu-en-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-gate-language-menu-en-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-gate-intake-en-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-gate-decisions-en-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-gate-schema-en-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-gate-theme-menu-ar-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-gate-language-menu-ar-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-gate-intake-ar-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-gate-decisions-ar-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-gate-schema-ar-dark.png",
+    "C:\\Projects\\demo\\docs\\agent-runs\\evidence\\2026-09-17T19-21-agentx-ui-repair-proof\\b4-gate-schema-ar-dark-after-toggle.png"
+  ],
+  "measurements": [
+    {
+      "view": "layout",
+      "theme": "light",
+      "lang": "en",
+      "dir": "ltr",
+      "sidebarLeft": 0
+    },
+    {
+      "view": "schema-legend",
+      "theme": "light",
+      "lang": "en",
+      "labels": []
+    },
+    {
+      "view": "layout",
+      "theme": "light",
+      "lang": "ar",
+      "dir": "ltr",
+      "sidebarLeft": 0
+    },
+    {
+      "view": "H01-intake-count",
+      "theme": "light",
+      "lang": "ar",
+      "ratio": 5.62,
+      "selector": "h2 ~ span.text-sm.text-muted-foreground",
+      "color": "rgb(102, 100, 95)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "text": "بانتظار قرار — 75",
+      "rect": {
+        "x": 603.34375,
+        "y": 82,
+        "w": 97.265625,
+        "h": 20
+      }
+    },
+    {
+      "view": "B3-progress-variants",
+      "theme": "light",
+      "lang": "ar",
+      "count": 31,
+      "variants": [
+        "sidebar",
+        "success",
+        "pending",
+        "secondary",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "icon"
+      ]
+    },
+    {
+      "view": "B3-panel-heights",
+      "theme": "light",
+      "lang": "ar",
+      "problems": 440,
+      "queue": 400
+    },
+    {
+      "view": "H03-problem-selected",
+      "theme": "light",
+      "lang": "ar",
+      "ratio": 9.95,
+      "selector": "button.border-primary\\/30",
+      "color": "rgb(22, 59, 102)",
+      "backgroundColor": "rgb(232, 241, 252)",
+      "text": "تعارض في العنوان91%39 من 43 نجح",
+      "rect": {
+        "x": 273,
+        "y": 497.546875,
+        "w": 254,
+        "h": 68.203125
+      }
+    },
+    {
+      "view": "schema-legend",
+      "theme": "light",
+      "lang": "ar",
+      "labels": []
+    },
+    {
+      "view": "layout",
+      "theme": "dark",
+      "lang": "en",
+      "dir": "ltr",
+      "sidebarLeft": 0
+    },
+    {
+      "view": "schema-legend",
+      "theme": "dark",
+      "lang": "en",
+      "labels": []
+    },
+    {
+      "view": "layout",
+      "theme": "dark",
+      "lang": "ar",
+      "dir": "ltr",
+      "sidebarLeft": 0
+    },
+    {
+      "view": "H01-intake-count",
+      "theme": "dark",
+      "lang": "ar",
+      "ratio": 8.23,
+      "selector": "h2 ~ span.text-sm.text-muted-foreground",
+      "color": "rgb(167, 173, 183)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "text": "بانتظار قرار — 75",
+      "rect": {
+        "x": 603.34375,
+        "y": 82,
+        "w": 97.265625,
+        "h": 20
+      }
+    },
+    {
+      "view": "B3-progress-variants",
+      "theme": "dark",
+      "lang": "ar",
+      "count": 31,
+      "variants": [
+        "sidebar",
+        "success",
+        "pending",
+        "secondary",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "success",
+        "success",
+        "failure",
+        "success",
+        "failure",
+        "icon"
+      ]
+    },
+    {
+      "view": "B3-panel-heights",
+      "theme": "dark",
+      "lang": "ar",
+      "problems": 440,
+      "queue": 400
+    },
+    {
+      "view": "H03-problem-selected",
+      "theme": "dark",
+      "lang": "ar",
+      "ratio": 11.58,
+      "selector": "button.border-primary\\/30",
+      "color": "rgb(234, 242, 255)",
+      "backgroundColor": "rgb(30, 50, 74)",
+      "text": "تعارض في العنوان91%39 من 43 نجح",
+      "rect": {
+        "x": 273,
+        "y": 497.546875,
+        "w": 254,
+        "h": 68.203125
+      }
+    },
+    {
+      "view": "schema-legend",
+      "theme": "dark",
+      "lang": "ar",
+      "labels": []
+    },
+    {
+      "view": "toggle-no-remount",
+      "beforeToggle": {
+        "hasCanvas": true,
+        "surface": "#faf9f7"
+      },
+      "afterToggle": {
+        "hasCanvas": true,
+        "surface": "#111318",
+        "lang": "ar",
+        "dir": "ltr"
+      },
+      "selectionPreserved": true,
+      "selectedBefore": "address conflict91%39 of 43 worked",
+      "selectedAfter": "address conflict91%39 of 43 worked"
+    }
+  ],
+  "issues": [],
+  "englishInventory": {
+    "intake-en-light": {
+      "enMarkers": [
+        "Open cases",
+        "Decisions",
+        "Explore",
+        "Toggle Sidebar"
+      ],
+      "blockingMarkers": [
+        "Open cases",
+        "Decisions",
+        "Explore"
+      ],
+      "rawCategoryKeys": [
+        "recipient unavailable",
+        "address conflict",
+        "hub delay",
+        "address conflict",
+        "hub delay",
+        "hub delay",
+        "address conflict",
+        "recipient unavailable",
+        "recipient unavailable",
+        "address conflict"
+      ],
+      "scopeEnglish": true,
+      "scopeText": "Autonomous shipment-complaint resolution over a Neo4j knowledge graph"
+    },
+    "intake-ar-light": {
+      "enMarkers": [
+        "Toggle Sidebar"
+      ],
+      "blockingMarkers": [],
+      "rawCategoryKeys": [],
+      "scopeEnglish": false,
+      "scopeText": "معالجة شكاوى الشحنات تلقائيًا عبر رسم معرفي Neo4j"
+    },
+    "decisions-ar-light": {
+      "enMarkers": [
+        "Toggle Sidebar"
+      ],
+      "blockingMarkers": []
+    },
+    "intake-en-dark": {
+      "enMarkers": [
+        "Open cases",
+        "Decisions",
+        "Explore",
+        "Toggle Sidebar"
+      ],
+      "blockingMarkers": [
+        "Open cases",
+        "Decisions",
+        "Explore"
+      ],
+      "rawCategoryKeys": [
+        "recipient unavailable",
+        "address conflict",
+        "hub delay",
+        "address conflict",
+        "hub delay",
+        "hub delay",
+        "address conflict",
+        "recipient unavailable",
+        "recipient unavailable",
+        "address conflict"
+      ],
+      "scopeEnglish": true,
+      "scopeText": "Autonomous shipment-complaint resolution over a Neo4j knowledge graph"
+    },
+    "intake-ar-dark": {
+      "enMarkers": [
+        "Toggle Sidebar"
+      ],
+      "blockingMarkers": [],
+      "rawCategoryKeys": [],
+      "scopeEnglish": false,
+      "scopeText": "معالجة شكاوى الشحنات تلقائيًا عبر رسم معرفي Neo4j"
+    },
+    "decisions-ar-dark": {
+      "enMarkers": [
+        "Toggle Sidebar"
+      ],
+      "blockingMarkers": []
+    }
+  },
+  "menuCaptures": [
+    {
+      "kind": "theme",
+      "lang": "en",
+      "theme": "light",
+      "items": [
+        "Light",
+        "Dark",
+        "System"
+      ]
+    },
+    {
+      "kind": "language",
+      "lang": "en",
+      "theme": "light",
+      "items": [
+        "English",
+        "العربية"
+      ]
+    },
+    {
+      "kind": "theme",
+      "lang": "ar",
+      "theme": "light",
+      "items": [
+        "فاتح",
+        "داكن",
+        "النظام"
+      ]
+    },
+    {
+      "kind": "language",
+      "lang": "ar",
+      "theme": "light",
+      "items": [
+        "English",
+        "العربية"
+      ]
+    },
+    {
+      "kind": "theme",
+      "lang": "en",
+      "theme": "dark",
+      "items": [
+        "Light",
+        "Dark",
+        "System"
+      ]
+    },
+    {
+      "kind": "language",
+      "lang": "en",
+      "theme": "dark",
+      "items": [
+        "English",
+        "العربية"
+      ]
+    },
+    {
+      "kind": "theme",
+      "lang": "ar",
+      "theme": "dark",
+      "items": [
+        "فاتح",
+        "داكن",
+        "النظام"
+      ]
+    },
+    {
+      "kind": "language",
+      "lang": "ar",
+      "theme": "dark",
+      "items": [
+        "English",
+        "العربية"
+      ]
+    }
+  ],
+  "verdicts": {
+    "I01": "PASS",
+    "I02": "PASS",
+    "I03": "PASS",
+    "I04": "PASS"
+  },
+  "scope": {},
+  "buildFingerprint": {
+    "css": [
+      "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap",
+      "http://127.0.0.1:8000/assets/index-DVhlRZ8U.css"
+    ],
+    "js": [
+      "http://127.0.0.1:8000/assets/index-DE557tU5.js"
+    ]
+  },
+  "graphEndpointStatus": 500,
+  "documentedExceptions": [
+    "Toggle Sidebar",
+    "English",
+    "EN",
+    "AR",
+    "OpenStreetMap",
+    "Neo4j",
+    "Shipment",
+    "Policy",
+    "Order",
+    "Address",
+    "Customer",
+    "Outcome",
+    "FailureReason",
+    "Event",
+    "Courier",
+    "Resolution",
+    "Node"
+  ],
+  "residualNonBlocking": {
+    "toggleSidebarSrOnly": true,
+    "canvasOntologyLabels": "English node chips on schema canvas (data labels, not UI legend)"
+  },
+  "gateVerdict": "PASS"
+}
