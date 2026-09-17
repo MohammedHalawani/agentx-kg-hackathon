@@ -44,10 +44,14 @@ RETURN sum(CASE WHEN (f)-[:RESOLVES_WITH]->() THEN 1 ELSE 0 END) AS resolved,
        count(f) AS total
 """
 
+# Per-category success rate, over OBSERVED outcomes only: an agent decision is written with
+# success null and status 'pending' until someone confirms the action worked, and counting
+# those as wins would report the agent's own confidence back as evidence.
 # Per-category success rate, the ranked comparison. This is the precedent the recommender
 # actually draws on, so it doubles as an explanation of why it favours the actions it does.
 _BY_CATEGORY = """
 MATCH (f:FailureReason)-[:RESOLVES_WITH]->(:Resolution)-[:HAD_OUTCOME]->(o:Outcome)
+WHERE o.success IS NOT NULL
 WITH f.category AS category,
      count(*) AS cases,
      sum(CASE WHEN o.success THEN 1 ELSE 0 END) AS succeeded
@@ -61,6 +65,7 @@ ORDER BY cases DESC
 # Which actions the graph has actually seen work, across every category.
 _BY_ACTION = """
 MATCH (:FailureReason)-[:RESOLVES_WITH]->(r:Resolution)-[:HAD_OUTCOME]->(o:Outcome)
+WHERE o.success IS NOT NULL
 WITH r.action AS action,
      count(*) AS used,
      sum(CASE WHEN o.success THEN 1 ELSE 0 END) AS succeeded
@@ -77,8 +82,10 @@ LIMIT 8
 # such property, which is what makes this a clean split rather than a guess.
 _AGENT_WRITEBACKS = """
 MATCH (r:Resolution)
+OPTIONAL MATCH (r)-[:HAD_OUTCOME]->(o:Outcome)
 RETURN sum(CASE WHEN r.source = 'agent_pipeline' THEN 1 ELSE 0 END) AS by_agent,
        sum(CASE WHEN r.source = 'agent_pipeline' THEN 0 ELSE 1 END) AS seeded,
+       sum(CASE WHEN o.success IS NULL THEN 1 ELSE 0 END)           AS pending,
        count(r) AS total
 """
 

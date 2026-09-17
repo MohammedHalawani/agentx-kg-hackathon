@@ -38,6 +38,7 @@ MERGE (f)-[:RESOLVES_WITH]->(r:Resolution {resolution_id: $resolution_id})
                 r.source = 'agent_pipeline'
 MERGE (r)-[:HAD_OUTCOME]->(o:Outcome {outcome_id: $outcome_id})
   ON CREATE SET o.success = $success,
+                o.status = $status,
                 o.notes = $notes,
                 o.timestamp = $timestamp
 SET f.case_summary = coalesce(f.case_summary,
@@ -77,9 +78,18 @@ def write_resolution(state: PipelineState) -> str | None:
             "action": rec.get("action"),
             "timestamp": now,
             "outcome_id": f"OUT-{uuid.uuid4().hex[:10]}",
-            # The action was approved, not yet performed - success records the DECISION's
-            # acceptance. A real deployment would update this once the action completes.
-            "success": True,
+            # Flips to 'succeeded'/'failed' when the action is actually carried out and
+            # reported back - the feedback path a real deployment supplies and this one does
+            # not yet have.
+            "status": "pending",
+            # NOT True. The action was approved, not performed: nobody has observed whether
+            # it worked. Writing success=true would feed the graph an outcome it never saw,
+            # and because the recommender ranks candidate actions BY historical success rate,
+            # those invented successes would compound - the agent would increasingly prefer
+            # whatever it had already chosen, on evidence it manufactured. null plus an
+            # explicit status keeps "decided" and "worked" as different facts, and the
+            # success-rate queries all skip nulls rather than counting them either way.
+            "success": None,
             "notes": f"Agent pipeline: {rev.get('reason', '')}".strip(),
         },
         routing_=RoutingControl.WRITE,

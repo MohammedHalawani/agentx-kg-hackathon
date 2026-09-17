@@ -129,6 +129,12 @@ def action_success_rate(similar_cases: list[dict]) -> dict[str, dict]:
         action = case.get("action")
         if not action:
             continue
+        # A pending outcome (success is null - the agent decided it, nobody has confirmed it)
+        # counts neither way. Treating it as a success would let the agent's own choices
+        # inflate their track record; treating it as a failure would punish them for not
+        # having been verified yet. Excluding it keeps the rate a measure of observed reality.
+        if case.get("success") is None:
+            continue
         s = stats.setdefault(action, {"tried": 0, "succeeded": 0, "rate": 0.0})
         s["tried"] += 1
         if case.get("success"):

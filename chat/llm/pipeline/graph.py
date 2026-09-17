@@ -118,22 +118,29 @@ def _escalate(state: PipelineState) -> dict:
 # --- edges ------------------------------------------------------------------------------
 
 def _after_retrieve(state: PipelineState) -> str:
-    """Conditional edge out of retrieve: is there anything at all to reason from?
+    """Conditional edge out of retrieve: is there precedent to reason from?
 
-    Retrieval having found no precedent above the similarity floor AND no live shipment means
-    the graph knows nothing about this complaint - it may not be a complaint at all. Running
-    the classifier anyway produces a confident category, an action, and a reviewer that
-    accepts it, all built on nothing: the failure mode where "grounded in historical
-    precedent" is asserted over five unrelated neighbours the index returned because it
+    No precedent above the similarity floor means the graph has never seen a case like this
+    resolved. Running the classifier anyway produces a confident category, an action, and a
+    reviewer that accepts it, all built on nothing - the failure mode where "grounded in
+    historical precedent" is asserted over neighbours the index returned only because it
     always returns k of them.
 
-    Escalating here is both more honest and much cheaper - it costs zero model calls instead
-    of the five or more a full classify/recommend/review pass would spend before arriving at
-    an answer nobody should trust.
+    This used to also require the complaint to name no live shipment, so a case with a real
+    shipment but no precedent proceeded. Measured over the holdout, that is the population
+    the classifier gets wrong most: no precedent on 6 of 16 misses (37%) against 10 of 44
+    correct calls (23%), consistent in direction across three samples. So the shipment
+    condition is gone. The trade is explicit - roughly six wrong decisions prevented per ten
+    unnecessary handovers - and it is the right way round when a bad automated action costs a
+    failed redelivery and a handover costs somebody thirty seconds.
+
+    Uniquely among the pipeline's guards this one is free: it fires before any model call, so
+    a case that cannot be reasoned about returns in under a second instead of spending five
+    calls to reach an answer nobody should trust.
     """
     context = state.get("context") or {}
-    if not (context.get("similar_cases") or context.get("live_failure_id")):
-        log.info("no precedent above the floor and no live shipment - escalating without classifying")
+    if not context.get("similar_cases"):
+        log.info("no precedent above the similarity floor - escalating without classifying")
         return "escalate"
     return "classify"
 
