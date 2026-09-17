@@ -1,9 +1,7 @@
 import { Map as MapIcon, Network } from 'lucide-react'
 import { Graph } from '../artifacts/Graph'
 import { ShipmentMap } from './ShipmentMap'
-import type { FinalResult } from '../../types/agent'
-
-type CaseFileData = NonNullable<FinalResult['case_file']>
+import type { CaseFile as CaseFileData } from '../../types/agent'
 
 function Panel({
   title,

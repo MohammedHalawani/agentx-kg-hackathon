@@ -68,13 +68,15 @@ export interface RoutePoint {
   approximate?: boolean
 }
 
+// The shipment's own evidence. Streamed as its own event as soon as retrieval resolves the
+// shipment, roughly a second in, rather than waiting for the run to finish.
+export interface CaseFile {
+  graph: { nodes: GraphNode[]; relationships: GraphRel[] } | null
+  route: { origin: RoutePoint | null; points: RoutePoint[] } | null
+}
+
 export interface FinalResult {
-  // The shipment's own evidence, on every run that resolved to a real shipment: its
-  // neighbourhood in the graph, and the same journey as map pins.
-  case_file?: {
-    graph: { nodes: GraphNode[]; relationships: GraphRel[] } | null
-    route: { origin: RoutePoint | null; points: RoutePoint[] } | null
-  } | null
+
   disposition: 'execute' | 'escalate' | null
   resolution_id: string | null
   loops: number

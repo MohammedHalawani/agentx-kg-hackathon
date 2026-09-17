@@ -98,7 +98,7 @@ function renderTrace(stages: Stage[]) {
 }
 
 export function IntakeView() {
-  const { stages, final, busy, error, complaint, run, stop, reset } = useComplaintStream()
+  const { stages, final, caseFile, busy, error, complaint, run, stop, reset } = useComplaintStream()
   const { data, loading, refetch } = useFetch<{ cases: OpenCase[] }>('/samples')
   const openCases = data?.cases ?? []
 
@@ -212,9 +212,9 @@ export function IntakeView() {
               )}
             </div>
 
-            {final?.case_file && (
+            {caseFile && (
               <div className="min-h-[520px] flex-1 lg:min-h-0 lg:max-w-[640px]">
-                <CaseFile data={final.case_file} />
+                <CaseFile data={caseFile} />
               </div>
             )}
           </div>

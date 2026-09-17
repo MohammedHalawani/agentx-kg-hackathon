@@ -40,6 +40,40 @@ log = logging.getLogger("pipeline.graph")
 MAX_LOOPS = 2
 
 
+def _case_file(state: PipelineState) -> dict | None:
+    """The shipment's own evidence, shown beside the trace for every run.
+
+    Two views of the same shipment: its neighbourhood in the graph (order, customer,
+    addresses, courier, policy, the whole event timeline, the failure and any fix already
+    tried), and the same journey geographically - origin warehouse, delivery address, and on
+    an address-conflict case the customer's own address as a second pin, because two pins
+    apart IS the problem stated in map form.
+
+    Built for an executed case as well as an escalated one. On an escalation it is what a
+    human inherits instead of a bare sentence; on an execution it is how someone checks the
+    decision against the shipment it was made about. Same evidence, different reader.
+
+    Best-effort: this is context, not the decision. A failure here must never turn a
+    completed run into an error, so everything is wrapped and a partial result is fine.
+    """
+    shipment_id = (state.get("extracted") or {}).get("shipment_id")
+    if not shipment_id:
+        return None
+    graph_view = route = None
+    try:
+        graph_view = cases.shipment_subgraph(shipment_id)
+    except Exception:
+        log.exception("could not build the case-file subgraph")
+    try:
+        route = cases.shipment_route(shipment_id)
+    except Exception:
+        log.exception("could not build the case-file route")
+    if not (graph_view or route):
+        return None
+    return {"graph": graph_view, "route": route}
+
+
+
 # --- nodes ------------------------------------------------------------------------------
 # Each returns only the keys it changes; LangGraph merges them into the state.
 
@@ -48,7 +82,19 @@ def _extract(state: PipelineState) -> dict:
 
 
 def _retrieve(state: PipelineState) -> dict:
-    return {"context": retrieve.retrieve_context(state["extracted"])}
+    """Retrieve precedent, and assemble the case file while we are here.
+
+    The case file depends only on the shipment id, which extract has already resolved - it
+    does not need the classification, the recommendation or the verdict. Building it at the
+    end meant the evidence pane stayed empty for the whole run, ten seconds or more, and then
+    appeared once there was nothing left to read it against. Built here it lands about a
+    second in, so the reader has the shipment in front of them while the agents are still
+    arguing about it. Two read-only queries; the latency is noise next to a model call.
+    """
+    return {
+        "context": retrieve.retrieve_context(state["extracted"]),
+        "case_file": _case_file(state),
+    }
 
 
 def _classify(state: PipelineState) -> dict:
@@ -84,60 +130,21 @@ def _writeback(state: PipelineState) -> dict:
     a silent failure the human-in-the-loop never sees. Escalating routes it to exactly the
     review the accept path was trying to skip.
     """
-    case_file = _case_file(state)
     resolution_id = writeback.write_resolution(state)
     if resolution_id is None:
         log.info("accepted recommendation could not be written back - escalating instead")
         return {
             "disposition": "escalate",
             "resolution_id": None,
-            "case_file": case_file,
             "escalation": writeback.write_escalation(state),
         }
-    return {"disposition": "execute", "resolution_id": resolution_id, "case_file": case_file}
-
-
-def _case_file(state: PipelineState) -> dict | None:
-    """The shipment's own evidence, shown beside the trace for every run.
-
-    Two views of the same shipment: its neighbourhood in the graph (order, customer,
-    addresses, courier, policy, the whole event timeline, the failure and any fix already
-    tried), and the same journey geographically - origin warehouse, delivery address, and on
-    an address-conflict case the customer's own address as a second pin, because two pins
-    apart IS the problem stated in map form.
-
-    Built for an executed case as well as an escalated one. On an escalation it is what a
-    human inherits instead of a bare sentence; on an execution it is how someone checks the
-    decision against the shipment it was made about. Same evidence, different reader.
-
-    Best-effort: this is context, not the decision. A failure here must never turn a
-    completed run into an error, so everything is wrapped and a partial result is fine.
-    """
-    shipment_id = (state.get("extracted") or {}).get("shipment_id")
-    if not shipment_id:
-        return None
-    graph_view = route = None
-    try:
-        graph_view = cases.shipment_subgraph(shipment_id)
-    except Exception:
-        log.exception("could not build the case-file subgraph")
-    try:
-        route = cases.shipment_route(shipment_id)
-    except Exception:
-        log.exception("could not build the case-file route")
-    if not (graph_view or route):
-        return None
-    return {"graph": graph_view, "route": route}
+    return {"disposition": "execute", "resolution_id": resolution_id}
 
 
 def _escalate(state: PipelineState) -> dict:
     log.info("escalating after %d rejected attempt(s)", state.get("loop_count") or 0)
     filed = writeback.write_escalation(state)
-    return {
-        "disposition": "escalate",
-        "case_file": _case_file(state),
-        "escalation": filed,
-    }
+    return {"disposition": "escalate", "escalation": filed}
 
 
 # --- edges ------------------------------------------------------------------------------
@@ -305,6 +312,10 @@ def stream_complaint(complaint_text: str):
             merged.update(update or {})
             loop = merged.get("loop_count") or 0
             yield "stage", _summarize(node, update or {}, loop)
+            # Send the evidence as soon as it exists rather than holding it until the end -
+            # it is what the reader looks at while the run is still going.
+            if (update or {}).get("case_file"):
+                yield "case_file", update["case_file"]
     yield "final", {
         "case_file": merged.get("case_file"),
         "escalation": merged.get("escalation"),

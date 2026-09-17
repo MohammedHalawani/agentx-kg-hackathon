@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef } 
 import { InteractiveNvlWrapper } from '@neo4j-nvl/react'
 import type { Node as NvlNode, Relationship as NvlRel } from '@neo4j-nvl/base'
 import { AnimatePresence, motion } from 'motion/react'
-import { X } from 'lucide-react'
+import { Maximize2, Minus, Plus, X } from 'lucide-react'
 import type { GraphNode, SubGraph } from '../../types/contract'
 import { buildLabelColors } from '../../lib/theme'
 import { useEntityInfo } from '../../lib/entityInfo'
@@ -20,6 +20,14 @@ const MIN_NODE_SIZE = 12
 const MAX_NODE_SIZE = 46
 // show captions only once zoomed in enough to read them — declutters the fitted whole-graph view
 const CAPTION_ZOOM = 0.65
+// Ceiling for a fitted view: past this a small graph stops looking like a graph and starts
+// looking like three circles.
+const FIT_MAX_ZOOM = 1.1
+// How far the zoom buttons and a node click may go. 3 is enough to read a caption on a dense
+// cluster without losing the neighbours that give it meaning.
+const MAX_ZOOM = 3
+const MIN_ZOOM = 0.2
+const ZOOM_STEP = 1.4
 const EMPTY = new Set<string>()
 
 interface GraphViewProps {
@@ -137,9 +145,29 @@ export function GraphView({ graph, layout: layoutProp, onLayoutChange }: GraphVi
   }, [graph])
 
   const onLayoutDone = useCallback(() => {
-    nvlRef.current?.fit(graph.nodes.map((n) => n.id))
+    // Cap the initial fit. Without a maxZoom a small graph - the 13-16 node case file beside
+    // a complaint run - is scaled up until a handful of nodes fill the pane and every edge
+    // runs off the edge of it. FIT_MAX_ZOOM keeps the whole shape on screen at a readable
+    // size, which is the point of fitting rather than zooming.
+    nvlRef.current?.fit(graph.nodes.map((n) => n.id), { maxZoom: FIT_MAX_ZOOM })
     syncCaptions()
     setReady(true)
+  }, [graph, syncCaptions])
+
+  // Explicit zoom, because the alternatives are all worse in a side panel: scroll-wheel zoom
+  // fights the page scroll, and pinch needs a trackpad. Steps are multiplicative so each
+  // press covers the same proportion of the range whatever the current scale.
+  const zoomBy = useCallback((factor: number) => {
+    const nvl = nvlRef.current
+    const current = nvl?.getScale?.()
+    if (!nvl || typeof current !== 'number') return
+    nvl.setZoom?.(Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, current * factor)))
+    syncCaptions()
+  }, [syncCaptions])
+
+  const fitAll = useCallback(() => {
+    nvlRef.current?.fit(graph.nodes.map((n) => n.id), { animated: true, maxZoom: FIT_MAX_ZOOM })
+    syncCaptions()
   }, [graph, syncCaptions])
 
   // hover a node → spotlight it + neighbours (dim the rest); restore off-node
@@ -160,13 +188,18 @@ export function GraphView({ graph, layout: layoutProp, onLayoutChange }: GraphVi
           nodes={nodes}
           rels={rels}
           layout={layout}
-          nvlOptions={{ disableTelemetry: true, renderer }}
+          // The same bounds the buttons use, so scroll-wheel zoom and the controls agree on
+          // how far in and out the view can go.
+          nvlOptions={{ disableTelemetry: true, renderer, minZoom: MIN_ZOOM, maxZoom: MAX_ZOOM }}
           nvlCallbacks={{ onLayoutDone, onZoomTransitionDone: syncCaptions }}
           mouseEventCallbacks={{
             onNodeClick: (node) => {
               setSelected(byId.get(node.id) ?? null)
               const keep = adjacency.get(node.id) ?? EMPTY
-              nvlRef.current?.fit([node.id, ...keep], { animated: true, maxZoom: 1.75 })
+              // Zoom to the node AND its neighbours: a node alone tells you nothing about
+              // why it is there. Allowed closer than the old 1.75, which left a two-neighbour
+              // selection sitting small in the middle of an empty canvas.
+              nvlRef.current?.fit([node.id, ...keep], { animated: true, maxZoom: MAX_ZOOM })
             },
             onCanvasClick: () => {
               setSelected(null)
@@ -180,6 +213,34 @@ export function GraphView({ graph, layout: layoutProp, onLayoutChange }: GraphVi
           className="h-full w-full"
         />
       </div>
+
+      {/* Zoom controls, bottom-right - clear of the legend (top-left) and the layout toggle
+          (top-right), and out of the way of the renderer switch at bottom-centre. */}
+      {ready && (
+        <div className="absolute bottom-3 right-3 z-10 flex flex-col gap-0.5 rounded-lg border border-hairline bg-panel/85 p-0.5 shadow-sm backdrop-blur">
+          <button
+            onClick={() => zoomBy(ZOOM_STEP)}
+            aria-label="Zoom in"
+            className="grid size-7 place-items-center rounded-md text-muted transition-colors hover:bg-surface hover:text-ink"
+          >
+            <Plus size={14} />
+          </button>
+          <button
+            onClick={() => zoomBy(1 / ZOOM_STEP)}
+            aria-label="Zoom out"
+            className="grid size-7 place-items-center rounded-md text-muted transition-colors hover:bg-surface hover:text-ink"
+          >
+            <Minus size={14} />
+          </button>
+          <button
+            onClick={fitAll}
+            aria-label="Fit the whole graph"
+            className="grid size-7 place-items-center rounded-md text-muted transition-colors hover:bg-surface hover:text-ink"
+          >
+            <Maximize2 size={13} />
+          </button>
+        </div>
+      )}
 
       {!ready && (
         <div className="absolute inset-0 grid place-items-center overflow-hidden bg-surface">

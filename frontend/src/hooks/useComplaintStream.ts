@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
-import type { FinalResult, Stage } from '../types/agent'
+import type { CaseFile, FinalResult, Stage } from '../types/agent'
 
 // Drives one complaint through POST /complaint and collects the stage trace as it streams.
 // Deliberately separate from useChatStream: that one accumulates free text token by token,
@@ -8,6 +8,9 @@ import type { FinalResult, Stage } from '../types/agent'
 export function useComplaintStream() {
   const [stages, setStages] = useState<Stage[]>([])
   const [final, setFinal] = useState<FinalResult | null>(null)
+  // Arrives mid-run, well before `final` - the evidence pane renders off this, so it is held
+  // separately rather than read out of the final payload.
+  const [caseFile, setCaseFile] = useState<CaseFile | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [complaint, setComplaint] = useState('')
@@ -26,6 +29,7 @@ export function useComplaintStream() {
     ctrlRef.current = null
     setStages([])
     setFinal(null)
+    setCaseFile(null)
     setError(null)
     setComplaint('')
     setBusy(false)
@@ -37,6 +41,7 @@ export function useComplaintStream() {
     ctrlRef.current = ctrl
     setStages([])
     setFinal(null)
+    setCaseFile(null)
     setError(null)
     setComplaint(text)
     setBusy(true)
@@ -78,6 +83,7 @@ export function useComplaintStream() {
             continue // skip a malformed frame rather than killing the read loop
           }
           if (event === 'stage') setStages((prev) => [...prev, payload as Stage])
+          else if (event === 'case_file') setCaseFile(payload as CaseFile)
           else if (event === 'final') setFinal(payload as FinalResult)
           else if (event === 'error') setError((payload as { message?: string }).message ?? 'stream error')
         }
@@ -90,5 +96,5 @@ export function useComplaintStream() {
     }
   }, [])
 
-  return { stages, final, busy, error, complaint, run, stop, reset }
+  return { stages, final, caseFile, busy, error, complaint, run, stop, reset }
 }
