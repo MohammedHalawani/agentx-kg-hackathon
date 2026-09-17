@@ -167,8 +167,17 @@ def _evaluate_one(case: dict, action_stats: dict, hard: bool = False) -> dict:
     predicted_act = (state["recommendation"] or {}).get("action")
     true_cat, true_act = case["true_category"], case["true_action"]
 
+    # How much the retrieved precedent agrees with itself. The model's own confidence turns
+    # out to be flat between hits and misses, so the question is whether the evidence carries
+    # a signal the model does not: when the neighbours disagree about the category, is the
+    # classifier more likely to be wrong?
+    cats = [_base(c.get("category")) for c in (context.get("similar_cases") or []) if c.get("category")]
+    top_share = (max(Counter(cats).values()) / len(cats)) if cats else 0.0
+
     stats = action_stats.get((true_cat, predicted_act))
     return {
+        "precedent_agreement": round(top_share, 2),
+        "precedent_n": len(cats),
         "failure_id": fid,
         "true_category": true_cat,
         "predicted_category": predicted_cat,
@@ -236,6 +245,25 @@ def main() -> None:
     print(f"Action matches the human  : {act_ok}/{n}  ({100 * act_ok / n:.0f}%)")
     print(f"Action exact or plausible : {plausible}/{n}  ({100 * plausible / n:.0f}%)")
     print("  plausible = not what was done, but historically succeeds for the true category")
+
+    # Does the classifier know when it is wrong? If confidence is as high on the misses as on
+    # the hits, it carries no signal and cannot be used as an escalation trigger.
+    hit_conf = [r["confidence"] for r in results if r["category_ok"] and r["confidence"] is not None]
+    miss_conf = [r["confidence"] for r in results if not r["category_ok"] and r["confidence"] is not None]
+    if hit_conf and miss_conf:
+        print(f"\nStated confidence when right : {sum(hit_conf)/len(hit_conf):.2f}  "
+              f"(min {min(hit_conf):.2f})")
+        print(f"Stated confidence when wrong : {sum(miss_conf)/len(miss_conf):.2f}  "
+              f"(min {min(miss_conf):.2f})")
+        print("  A gap here means confidence could gate escalation; no gap means it cannot.")
+
+    hit_agree = [r["precedent_agreement"] for r in results if r["category_ok"]]
+    miss_agree = [r["precedent_agreement"] for r in results if not r["category_ok"]]
+    if hit_agree and miss_agree:
+        print(f"\nPrecedent agreement when right: {sum(hit_agree)/len(hit_agree):.2f}")
+        print(f"Precedent agreement when wrong: {sum(miss_agree)/len(miss_agree):.2f}")
+        print("  Share of retrieved cases sharing the majority category - an evidence-side")
+        print("  uncertainty signal, independent of what the model claims about itself.")
 
     misses = Counter(f"{r['true_category']} -> {r['predicted_category']}"
                      for r in results if not r["category_ok"])
