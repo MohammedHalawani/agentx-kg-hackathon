@@ -61,3 +61,7 @@ class PipelineState(TypedDict):
     loop_count: int              # AFL retries so far; graph.py caps this via MAX_LOOPS
     disposition: Disposition | None  # set at the end: execute (accepted) or escalate
     resolution_id: str | None    # set by writeback.py once written to Neo4j
+    # On escalation only: the shipment's own neighbourhood as {nodes, relationships}, so the
+    # human inheriting the case gets the graph around it rather than just the complaint text.
+    # None when the complaint never resolved to a real shipment - there is nothing to draw.
+    handover: dict | None

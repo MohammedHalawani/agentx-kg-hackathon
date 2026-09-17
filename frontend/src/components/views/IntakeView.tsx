@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { ArrowUpRight, CheckCircle2, Loader2, Send, Square } from 'lucide-react'
 import { useComplaintStream } from '../../hooks/useComplaintStream'
 import { AflDivider, StageCard } from '../agent/StageCard'
+import { Handover } from '../agent/Handover'
 import { cn } from '../../lib/cn'
 import type { Stage } from '../../types/agent'
 
@@ -67,7 +68,8 @@ function Outcome({
           ) : (
             <>
               The reviewer rejected every candidate after {loops} feedback {loops === 1 ? 'loop' : 'loops'}. Nothing was
-              written to the graph.
+              written to the graph — the rejection reasons above, and the case file below, are what a human picks this
+              up with.
             </>
           )}
         </p>
@@ -173,13 +175,17 @@ export function IntakeView() {
             )}
 
             {final?.disposition && (
-              <Outcome
-                disposition={final.disposition}
-                resolutionId={final.resolution_id}
-                loops={final.loops}
-                accepted={final.review?.verdict === 'accept'}
-                reviewed={Boolean(final.review)}
-              />
+              <>
+                <Outcome
+                  disposition={final.disposition}
+                  resolutionId={final.resolution_id}
+                  loops={final.loops}
+                  accepted={final.review?.verdict === 'accept'}
+                  reviewed={Boolean(final.review)}
+                />
+                {/* An escalated case hands the human the shipment's graph, not just the text. */}
+                {final.disposition === 'escalate' && final.handover && <Handover graph={final.handover} />}
+              </>
             )}
           </div>
         )}

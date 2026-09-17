@@ -32,7 +32,7 @@ from functools import lru_cache
 
 from langgraph.graph import END, StateGraph
 
-from llm.pipeline import classifier, extract, recommender, retrieve, reviewer, writeback
+from llm.pipeline import cases, classifier, extract, recommender, retrieve, reviewer, writeback
 from llm.pipeline.state import PipelineState
 
 log = logging.getLogger("pipeline.graph")
@@ -84,13 +84,35 @@ def _writeback(state: PipelineState) -> dict:
     resolution_id = writeback.write_resolution(state)
     if resolution_id is None:
         log.info("accepted recommendation could not be written back - escalating instead")
-        return {"disposition": "escalate", "resolution_id": None}
+        return {"disposition": "escalate", "resolution_id": None, "handover": _handover(state)}
     return {"disposition": "execute", "resolution_id": resolution_id}
+
+
+def _handover(state: PipelineState) -> dict | None:
+    """The case file a human inherits with an escalated case.
+
+    Escalating with only the complaint text makes the human start from zero - they get the
+    customer's sentence and nothing the pipeline learned. This attaches the shipment's own
+    neighbourhood (order, customer, addresses, courier, policy, its whole event timeline, the
+    failure and any fix already tried), which the UI renders with the same graph component
+    the Explore tab uses.
+
+    Best-effort: a handover that fails must never turn an escalation into an error, because
+    the escalation itself is the thing that matters.
+    """
+    shipment_id = (state.get("extracted") or {}).get("shipment_id")
+    if not shipment_id:
+        return None
+    try:
+        return cases.shipment_subgraph(shipment_id)
+    except Exception:
+        log.exception("could not build the escalation handover subgraph")
+        return None
 
 
 def _escalate(state: PipelineState) -> dict:
     log.info("escalating after %d rejected attempt(s)", state.get("loop_count") or 0)
-    return {"disposition": "escalate"}
+    return {"disposition": "escalate", "handover": _handover(state)}
 
 
 # --- edges ------------------------------------------------------------------------------
@@ -168,6 +190,7 @@ def run_complaint(complaint_text: str) -> PipelineState:
         "loop_count": 0,
         "disposition": None,
         "resolution_id": None,
+        "handover": None,
     }
     return build_pipeline().invoke(initial)
 
@@ -238,7 +261,7 @@ def stream_complaint(complaint_text: str):
         "complaint_text": complaint_text,
         "extracted": None, "context": None, "classification": None,
         "recommendation": None, "review": None, "review_notes": [],
-        "loop_count": 0, "disposition": None, "resolution_id": None,
+        "loop_count": 0, "disposition": None, "resolution_id": None, "handover": None,
     }
     merged: dict = dict(state)
     loop = 0
@@ -248,6 +271,7 @@ def stream_complaint(complaint_text: str):
             loop = merged.get("loop_count") or 0
             yield "stage", _summarize(node, update or {}, loop)
     yield "final", {
+        "handover": merged.get("handover"),
         "disposition": merged.get("disposition"),
         "resolution_id": merged.get("resolution_id"),
         "loops": merged.get("loop_count") or 0,

@@ -1,3 +1,5 @@
+import type { GraphNode, GraphRel } from './contract'
+
 // Mirrors the payloads chat/llm/pipeline/graph.py's stream_complaint() emits over SSE.
 // The vocabulary (lane, arabic, is_agent) comes from that file's STAGE_META, which in turn
 // comes from the architecture diagram - so a stage renamed there flows through to the UI.
@@ -56,6 +58,9 @@ export interface Stage {
 }
 
 export interface FinalResult {
+  // Only on escalation, and only when the complaint resolved to a real shipment: that
+  // shipment's neighbourhood, for the human who inherits the case.
+  handover?: { nodes: GraphNode[]; relationships: GraphRel[] } | null
   disposition: 'execute' | 'escalate' | null
   resolution_id: string | null
   loops: number
