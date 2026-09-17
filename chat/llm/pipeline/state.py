@@ -61,6 +61,10 @@ class PipelineState(TypedDict):
     recommendation: Recommendation | None
     review: Review | None
     review_notes: list[str]      # accumulated reviewer feedback, carried into re-classification
+    # Every action the reviewer turned down, in order. Kept alongside review_notes because a
+    # human inheriting an escalated case needs to know what has already been ruled out - the
+    # notes say why, this says what.
+    attempted_actions: list[str]
     loop_count: int              # AFL retries so far; graph.py caps this via MAX_LOOPS
     disposition: Disposition | None  # set at the end: execute (accepted) or escalate
     resolution_id: str | None    # set by writeback.py once written to Neo4j
@@ -71,3 +75,6 @@ class PipelineState(TypedDict):
     # Holdout evaluation only (scripts/eval_pipeline.py): the failure being graded, kept out
     # of retrieval so a resolved case cannot retrieve its own answer. None in normal runs.
     exclude_failure_id: str | None
+    # On escalation only: {escalation_id, team} once the case has been filed in the graph,
+    # or None if filing was skipped or failed - the decision to escalate stands either way.
+    escalation: dict | None
