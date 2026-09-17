@@ -176,11 +176,9 @@ async def chat(req: ChatRequest) -> StreamingResponse:
 
 @app.get("/samples")
 def samples() -> Response:
-    """Example complaints for the intake view. Drawn from the live queue rather than
-    hardcoded, so every chip is a real unresolved FailureReason the pipeline can actually
-    retrieve context for - a made-up shipment id would extract cleanly and then retrieve
-    nothing, which demos as a bug."""
-    return _SafeJSON({"examples": cases.examples()})
+    """The open-case worklist the intake view runs from. Read live on every call, so a case
+    resolved by a previous run has already dropped out by the time the list is re-fetched."""
+    return _SafeJSON({"cases": cases.worklist()})
 
 
 @app.get("/meta")

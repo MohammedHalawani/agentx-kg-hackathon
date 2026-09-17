@@ -1,15 +1,20 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { ArrowUpRight, CheckCircle2, Loader2, RotateCcw, Square } from 'lucide-react'
+import { ArrowUpRight, CheckCircle2, Loader2, Play, RotateCcw, Square } from 'lucide-react'
 import { useComplaintStream } from '../../hooks/useComplaintStream'
+import { useFetch } from '../../hooks/useFetch'
+import { Skeleton } from '../ui/Skeleton'
 import { AflDivider, StageCard } from '../agent/StageCard'
 import { Handover } from '../agent/Handover'
 import { cn } from '../../lib/cn'
 import type { Stage } from '../../types/agent'
 
-interface Example {
+interface OpenCase {
+  failure_id: string
+  shipment_id: string
   category: string
   city?: string
+  courier?: string
   text: string
 }
 
@@ -94,14 +99,15 @@ function renderTrace(stages: Stage[]) {
 
 export function IntakeView() {
   const { stages, final, busy, error, complaint, run, stop, reset } = useComplaintStream()
-  const [examples, setExamples] = useState<Example[]>([])
+  const { data, loading, refetch } = useFetch<{ cases: OpenCase[] }>('/samples')
+  const openCases = data?.cases ?? []
 
+  // Re-read the queue once a run finishes: an executed case has just had :RESOLVES_WITH
+  // written, so it is no longer open and should disappear from the list rather than sit
+  // there waiting to be clicked again (which would now escalate, looking like a bug).
   useEffect(() => {
-    fetch('/samples')
-      .then((r) => r.json())
-      .then((d: { examples?: Example[] }) => setExamples(d.examples ?? []))
-      .catch(() => undefined)
-  }, [])
+    if (final) refetch()
+  }, [final, refetch])
 
   const started = stages.length > 0 || busy || Boolean(error)
 
@@ -109,33 +115,52 @@ export function IntakeView() {
     <div className="flex h-full flex-col">
       <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
         {!started ? (
-          <div className="mx-auto max-w-2xl pt-10 text-center">
-            <h2 className="font-display text-xl font-bold text-ink">Resolve a disrupted shipment</h2>
-            <p className="mx-auto mt-2 max-w-lg text-sm text-muted">
-              Pick an unresolved case below. Three agents classify the root cause, recommend an action grounded in
-              historical precedent, and review it against the business rules — then the outcome is written back to the
-              graph, or the case is handed to a human.
+          <div className="mx-auto max-w-3xl">
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <h2 className="font-display text-xl font-bold text-ink">Open cases</h2>
+              <span className="text-sm text-muted">
+                {loading ? 'loading…' : `${openCases.length} shipment${openCases.length === 1 ? '' : 's'} awaiting a decision`}
+              </span>
+            </div>
+            <p className="mt-1.5 max-w-2xl text-sm text-muted">
+              Pick one to run it. Three agents classify the root cause, recommend an action grounded in historical
+              precedent, and review it against the business rules — then the outcome is written back to the graph, or
+              the case is handed to a human. A case you resolve leaves this list.
             </p>
-            {examples.length > 0 && (
-              <div className="mt-6 space-y-2 text-left">
-                <p className="text-center text-xs text-muted">
-                  Live unresolved cases from the graph — {examples.length} root cause
-                  {examples.length === 1 ? '' : 's'}
-                </p>
-                {examples.map((ex) => (
-                  <button
-                    key={ex.text}
-                    onClick={() => run(ex.text)}
-                    className="flex w-full items-center gap-3 rounded-xl border border-hairline bg-panel px-3 py-2.5 text-left transition-colors hover:border-accent hover:bg-accent-soft"
-                  >
-                    <span className="min-w-0 flex-1 text-sm text-ink" dir="rtl">
-                      {ex.text}
+
+            <div className="mt-5 space-y-2">
+              {loading && Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)}
+
+              {!loading && openCases.length === 0 && (
+                <div className="rounded-xl border border-hairline bg-panel px-4 py-8 text-center">
+                  <p className="text-sm font-medium text-ink">No open cases left</p>
+                  <p className="mt-1 text-xs text-muted">
+                    Every failure in the graph now carries a resolution. Restore the dataset to work through them again.
+                  </p>
+                </div>
+              )}
+
+              {openCases.map((c) => (
+                <button
+                  key={c.failure_id}
+                  onClick={() => run(c.text)}
+                  className="flex w-full items-center gap-3 rounded-xl border border-hairline bg-panel px-3 py-2.5 text-left transition-colors hover:border-accent hover:bg-accent-soft"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm text-ink" dir="rtl">
+                      {c.text}
                     </span>
-                    <span className="shrink-0 text-[11px] text-muted">{ex.category}</span>
-                  </button>
-                ))}
-              </div>
-            )}
+                    <span className="mt-0.5 flex flex-wrap gap-x-2 text-[11px] text-muted">
+                      <span className="font-mono">{c.shipment_id}</span>
+                      <span>{c.category.replace(/_/g, ' ')}</span>
+                      {c.city && <span dir="auto">{c.city}</span>}
+                      {c.courier && <span dir="auto">{c.courier}</span>}
+                    </span>
+                  </span>
+                  <Play size={14} className="shrink-0 text-muted" />
+                </button>
+              ))}
+            </div>
           </div>
         ) : (
           <div className="mx-auto max-w-3xl">

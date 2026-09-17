@@ -112,145 +112,45 @@ def overview() -> dict:
     }
 
 
-# Complaint text for the intake chips. Built from real queue rows so the shipment id in the
-# chip resolves during extraction and seeds a real graph traversal - a plausible-looking but
-# fabricated id extracts fine and then retrieves nothing, which looks like a pipeline bug.
+# Complaint text for the intake worklist. Built from real queue rows so the shipment id in
+# each row resolves during extraction and seeds a real graph traversal - a plausible-looking
+# but fabricated id extracts fine and then retrieves nothing, which looks like a pipeline bug.
 _PHRASING = {
     "address_conflict": "الشحنة {sid} لم تصل والعنوان المسجل غير صحيح",
     "recipient_unavailable": "لم يتم تسليم الشحنة {sid} ولم يتواصل معي المندوب",
     "hub_delay": "الشحنة {sid} متأخرة كثيراً ولم تتحرك من المستودع",
+    "failed_attempt_wrong_gate": "المندوب لم يستطع الوصول إلى الشحنة {sid} عند البوابة",
+    "failed_attempt_barcode_mismatch": "الشحنة {sid} لم تسلّم بسبب مشكلة في الباركود",
+    "failed_attempt_weight_mismatch": "الشحنة {sid} لم تسلّم بسبب اختلاف في الوزن",
 }
 _DEFAULT_PHRASING = "لدي مشكلة في الشحنة {sid} ولم يتم حلها حتى الآن"
 
 
-def examples(limit: int = 8) -> list[dict]:
-    """One example complaint per distinct category, capped.
+def worklist() -> list[dict]:
+    """Every open case, as something the intake view can run.
 
-    This is the intake view's only entry point - there is no free-text composer, so a run can
-    only ever be started from a real unresolved case. The cap is therefore generous rather
-    than illustrative: every root cause present in the queue should be reachable, since a
-    category missing from this list cannot be demonstrated at all."""
+    This is the whole unresolved queue rather than one sample per category: with no free-text
+    composer, the list IS the entry point, so anything missing from it cannot be worked at
+    all. It is re-read after each run, which is what makes a resolved case disappear - the
+    :RESOLVES_WITH edge written on acceptance drops it out of queue()'s results, so the list
+    shrinks on its own with no client-side bookkeeping.
+
+    Rows whose failure never resolved to a shipment are skipped: without an id the complaint
+    text has nothing to name, and the run would escalate for want of an anchor.
+    """
     out: list[dict] = []
-    seen: set[str] = set()
     for row in queue():
-        category = row.get("category") or ""
-        if category in seen or not row.get("shipment_id"):
+        shipment_id = row.get("shipment_id")
+        if not shipment_id:
             continue
-        seen.add(category)
+        category = row.get("category") or ""
         template = _PHRASING.get(category, _DEFAULT_PHRASING)
         out.append({
+            "failure_id": row.get("failure_id"),
+            "shipment_id": shipment_id,
             "category": category,
             "city": row.get("city"),
-            "text": template.format(sid=row["shipment_id"]),
+            "courier": row.get("courier"),
+            "text": template.format(sid=shipment_id),
         })
-        if len(out) >= limit:
-            break
     return out
-
-
-# --- escalation handover packet ----------------------------------------------------------
-# When the pipeline gives up, the human inherits the case. Handing over the complaint text
-# alone makes them start from zero, so the escalation carries the shipment's own
-# neighbourhood: every node it touches and every relationship between them, in the same
-# {nodes, relationships} shape the Explore graph view already renders (view/subgraph.py).
-#
-# Two hops, not one: one hop reaches the Events and the Courier, but the FailureReason hangs
-# off an Event rather than the Shipment, so a one-hop view would omit the very thing the case
-# is about. Two hops also brings in the precedent chain (Resolution/Outcome) on any sibling
-# failure, which is exactly what a human wants to compare against.
-# Curated rather than a blind (s)-[*1..2]-(m) walk. Two hops in any direction leaves the
-# Shipment, reaches its Policy or Courier, and comes straight back down into every OTHER
-# shipment sharing them - measured on SHP-0004 that was 136 nodes, 123 of them unrelated
-# shipments. A case file has to be the ONE shipment's story, so each leg is named explicitly
-# and hub nodes are terminal: reached, never expanded back out of.
-_SHIPMENT_NEIGHBOURHOOD = """
-MATCH (s:Shipment {shipment_id: $shipment_id})
-CALL (s) {
-  // who it belongs to, and where it was going
-  OPTIONAL MATCH p = (s)<-[:HAS_SHIPMENT]-(:Order)-[:PLACED_BY]->(:Customer)-[:LIVES_AT]->(:Address)
-  RETURN p AS p
-  UNION
-  OPTIONAL MATCH p = (s)-[:DELIVERED_TO]->(:Address)
-  RETURN p AS p
-  UNION
-  // who was carrying it, and under which SLA - both terminal, not expanded further
-  OPTIONAL MATCH p = (s)-[:ASSIGNED_TO]->(:Courier)
-  RETURN p AS p
-  UNION
-  OPTIONAL MATCH p = (s)-[:GOVERNED_BY]->(:Policy)
-  RETURN p AS p
-  UNION
-  // the journey itself, and whatever went wrong on it
-  OPTIONAL MATCH p = (s)-[:HAS_EVENT]->(:Event)
-  RETURN p AS p
-  UNION
-  OPTIONAL MATCH p = (s)-[:HAS_EVENT]->(:Event)-[:CAUSED_BY]->(:FailureReason)
-  RETURN p AS p
-  UNION
-  // any fix already attempted on this shipment's own failures, and whether it worked
-  OPTIONAL MATCH p = (s)-[:HAS_EVENT]->(:Event)-[:CAUSED_BY]->(:FailureReason)
-        -[:RESOLVES_WITH]->(:Resolution)-[:HAD_OUTCOME]->(:Outcome)
-  RETURN p AS p
-}
-WITH p WHERE p IS NOT NULL
-RETURN p
-"""
-
-
-# Per-label caption property, in preference order - the shipment graph's equivalent of
-# schema.yaml's displayName_* for the governance graph. Without this every node renders as
-# its bare label and a 30-node view says nothing.
-_CAPTION_PROPS: dict[str, list[str]] = {
-    "Shipment": ["shipment_id"],
-    "Order": ["order_id"],
-    "Customer": ["name", "customer_id"],
-    "Courier": ["name", "courier_id"],
-    "Address": ["district", "city"],
-    "Event": ["event_type"],
-    "FailureReason": ["category"],
-    "Resolution": ["action"],
-    "Outcome": ["notes"],
-    "Policy": ["name", "policy_id"],
-}
-_CAPTION_MAX = 24
-
-
-def _caption(labels: list[str], props: dict) -> str:
-    for label in labels:
-        for prop in _CAPTION_PROPS.get(label, []):
-            value = props.get(prop)
-            if value not in (None, ""):
-                text = " ".join(str(value).split())
-                return text if len(text) <= _CAPTION_MAX else text[: _CAPTION_MAX - 1] + "…"
-    return ":".join(labels) if labels else "?"
-
-
-def _node_dict(node) -> dict:
-    labels = list(node.labels)
-    # Drop the embedding: 1024 floats per node, useless to a human and enough to bloat the
-    # SSE frame past anything the browser should be parsing mid-stream.
-    props = {k: v for k, v in dict(node).items()
-             if k != "embedding" and not isinstance(v, (bytes, bytearray))}
-    return {"id": node.element_id, "labels": labels,
-            "caption": _caption(labels, props), "properties": props}
-
-
-def shipment_subgraph(shipment_id: str | None) -> dict | None:
-    """The shipment's two-hop neighbourhood for an escalated case, or None when the complaint
-    never resolved to a shipment (nothing to draw, and inventing one would mislead)."""
-    if not shipment_id:
-        return None
-    from neo4j import Result
-    graph = get_driver().execute_query(
-        _SHIPMENT_NEIGHBOURHOOD, shipment_id=shipment_id,
-        routing_=RoutingControl.READ, database_=config.SHIPMENT_DATABASE,
-        result_transformer_=Result.graph,
-    )
-    if not graph.nodes:
-        return None
-    return {
-        "nodes": [_node_dict(n) for n in graph.nodes],
-        "relationships": [{"id": r.element_id, "type": r.type,
-                           "from": r.start_node.element_id, "to": r.end_node.element_id}
-                          for r in graph.relationships],
-    }
