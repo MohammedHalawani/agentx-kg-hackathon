@@ -29,6 +29,7 @@ from pydantic import BaseModel, Field
 import config
 from core import query_runner, registry, threads
 from llm.agent import stream_agent
+from llm import translate
 from llm.pipeline import cases
 from llm.pipeline import graph as pipeline_graph
 from view import subgraph
@@ -241,6 +242,29 @@ async def complaint(req: ComplaintRequest) -> StreamingResponse:
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+# --- Display-only translation of agent prose ----------------------------------------------
+
+class TranslateRequest(BaseModel):
+    # A batch, because a finished run shows several rationales at once and one round trip
+    # beats one per field. Order is preserved, so the caller can zip inputs to outputs.
+    texts: list[str] = Field(min_length=1, max_length=20)
+    target: Literal["ar"] = "ar"
+
+
+@app.post("/translate")
+async def translate_texts(req: TranslateRequest) -> dict:
+    """Arabic renderings of agent free-text, for the UI to display when the interface
+    language is Arabic. Presentation only: nothing here is persisted, fed back into the
+    pipeline, or allowed to change a score, an id or a decision - see llm/translate.py.
+    A text that cannot be translated safely comes back unchanged, so the UI always has
+    something to render."""
+    texts = [t[:translate.MAX_CHARS] for t in req.texts]
+    # to_arabic is a blocking model call, memoized per source string; run the batch off the
+    # event loop so a cold cache never stalls the rest of the app.
+    out = await asyncio.to_thread(lambda: [translate.to_arabic(t) for t in texts])
+    return {"texts": out}
 
 
 # --- Decisions: the case queue and whether the closed loop is working ----------------------

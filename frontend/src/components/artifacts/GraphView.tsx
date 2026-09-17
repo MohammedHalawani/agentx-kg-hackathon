@@ -8,6 +8,7 @@ import { buildLabelColors } from '../../lib/theme'
 import { useEntityInfo } from '../../lib/entityInfo'
 import { cn } from '../../lib/cn'
 import { LAYOUTS, type LayoutKey } from '../../lib/graphLayouts'
+import { shapeForCanvas } from '../../lib/arabicShaping'
 import { useLanguage } from '@/components/i18n/LanguageProvider'
 import { useTheme } from '../theme/ThemeProvider'
 import { Skeleton } from '../ui/skeleton'
@@ -125,7 +126,10 @@ export function GraphView({ graph, layout: layoutProp, onLayoutChange }: GraphVi
         id: n.id,
         color: colors[labelOf(n)],
         size: sizeById.get(n.id),
-        captions: labelsRef.current ? [{ value: n.caption }] : [],
+        // NVL's canvas renderer draws a caption character by character, which strips Arabic
+        // joining and lays the letters out left-to-right; shapeForCanvas pre-shapes and
+        // reorders so they render correctly. Latin captions pass through untouched.
+        captions: labelsRef.current ? [{ value: shapeForCanvas(n.caption) }] : [],
         disabled: keep ? !(n.id === focus || keep.has(n.id)) : false,
       })),
       [],
