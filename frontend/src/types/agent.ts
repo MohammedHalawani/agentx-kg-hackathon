@@ -57,10 +57,24 @@ export interface Stage {
   detail?: StageDetail
 }
 
+export interface RoutePoint {
+  lat: number
+  lng: number
+  kind: 'warehouse' | 'delivery' | 'home'
+  city?: string
+  district?: string
+  full?: string
+  // Warehouses are placed at a city centroid: the graph holds no facility coordinates.
+  approximate?: boolean
+}
+
 export interface FinalResult {
-  // Only on escalation, and only when the complaint resolved to a real shipment: that
-  // shipment's neighbourhood, for the human who inherits the case.
-  handover?: { nodes: GraphNode[]; relationships: GraphRel[] } | null
+  // The shipment's own evidence, on every run that resolved to a real shipment: its
+  // neighbourhood in the graph, and the same journey as map pins.
+  case_file?: {
+    graph: { nodes: GraphNode[]; relationships: GraphRel[] } | null
+    route: { origin: RoutePoint | null; points: RoutePoint[] } | null
+  } | null
   disposition: 'execute' | 'escalate' | null
   resolution_id: string | null
   loops: number

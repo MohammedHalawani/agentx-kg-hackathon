@@ -5,7 +5,7 @@ import { useComplaintStream } from '../../hooks/useComplaintStream'
 import { useFetch } from '../../hooks/useFetch'
 import { Skeleton } from '../ui/Skeleton'
 import { AflDivider, StageCard } from '../agent/StageCard'
-import { Handover } from '../agent/Handover'
+import { CaseFile } from '../agent/CaseFile'
 import { cn } from '../../lib/cn'
 import type { Stage } from '../../types/agent'
 
@@ -113,7 +113,7 @@ export function IntakeView() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+      <div className={cn('min-h-0 flex-1 px-6 py-5', started ? 'overflow-hidden' : 'overflow-y-auto')}>
         {!started ? (
           <div className="mx-auto max-w-3xl">
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -163,40 +163,45 @@ export function IntakeView() {
             </div>
           </div>
         ) : (
-          <div className="mx-auto max-w-3xl">
-            {complaint && (
-              <div className="mb-5 rounded-xl border border-hairline bg-panel p-3">
-                <p className="mb-1 text-[11px] font-medium text-muted">Customer complaint</p>
-                <p className="text-sm text-ink" dir="auto">
-                  {complaint}
-                </p>
-              </div>
-            )}
-
-            <ul className="relative">{renderTrace(stages)}</ul>
-
-            <AnimatePresence>
-              {busy && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="ml-[116px] flex items-center gap-2 py-2 text-xs text-muted"
-                >
-                  <Loader2 size={13} className="animate-spin" />
-                  {stages.length === 0 ? 'Starting the pipeline…' : 'Working…'}
-                </motion.div>
+          /* Two panes once a run starts: the reasoning on the left, the shipment's own
+             evidence on the right. The evidence is always open - it is what the decision was
+             made from, so hiding it behind a disclosure made the most useful half of the
+             screen opt-in. Stacks on a narrow viewport, where side-by-side would leave both
+             halves too cramped to read. */
+          <div className="mx-auto flex h-full max-w-[1600px] flex-col gap-4 lg:flex-row">
+            <div className="min-h-0 flex-1 overflow-y-auto lg:max-w-3xl">
+              {complaint && (
+                <div className="mb-5 rounded-xl border border-hairline bg-panel p-3">
+                  <p className="mb-1 text-[11px] font-medium text-muted">Customer complaint</p>
+                  <p className="text-sm text-ink" dir="auto">
+                    {complaint}
+                  </p>
+                </div>
               )}
-            </AnimatePresence>
 
-            {error && (
-              <div className="ml-[116px] rounded-lg border border-danger/40 bg-danger/5 px-3 py-2 text-xs text-danger">
-                {error}
-              </div>
-            )}
+              <ul className="relative">{renderTrace(stages)}</ul>
 
-            {final?.disposition && (
-              <>
+              <AnimatePresence>
+                {busy && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="ml-[116px] flex items-center gap-2 py-2 text-xs text-muted"
+                  >
+                    <Loader2 size={13} className="animate-spin" />
+                    {stages.length === 0 ? 'Starting the pipeline…' : 'Working…'}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {error && (
+                <div className="ml-[116px] rounded-lg border border-danger/40 bg-danger/5 px-3 py-2 text-xs text-danger">
+                  {error}
+                </div>
+              )}
+
+              {final?.disposition && (
                 <Outcome
                   disposition={final.disposition}
                   resolutionId={final.resolution_id}
@@ -204,9 +209,13 @@ export function IntakeView() {
                   accepted={final.review?.verdict === 'accept'}
                   reviewed={Boolean(final.review)}
                 />
-                {/* An escalated case hands the human the shipment's graph, not just the text. */}
-                {final.disposition === 'escalate' && final.handover && <Handover graph={final.handover} />}
-              </>
+              )}
+            </div>
+
+            {final?.case_file && (
+              <div className="min-h-[520px] flex-1 lg:min-h-0 lg:max-w-[640px]">
+                <CaseFile data={final.case_file} />
+              </div>
             )}
           </div>
         )}

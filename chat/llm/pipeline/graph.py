@@ -84,38 +84,50 @@ def _writeback(state: PipelineState) -> dict:
     a silent failure the human-in-the-loop never sees. Escalating routes it to exactly the
     review the accept path was trying to skip.
     """
+    case_file = _case_file(state)
     resolution_id = writeback.write_resolution(state)
     if resolution_id is None:
         log.info("accepted recommendation could not be written back - escalating instead")
         return {
             "disposition": "escalate",
             "resolution_id": None,
-            "handover": _handover(state),
+            "case_file": case_file,
             "escalation": writeback.write_escalation(state),
         }
-    return {"disposition": "execute", "resolution_id": resolution_id}
+    return {"disposition": "execute", "resolution_id": resolution_id, "case_file": case_file}
 
 
-def _handover(state: PipelineState) -> dict | None:
-    """The case file a human inherits with an escalated case.
+def _case_file(state: PipelineState) -> dict | None:
+    """The shipment's own evidence, shown beside the trace for every run.
 
-    Escalating with only the complaint text makes the human start from zero - they get the
-    customer's sentence and nothing the pipeline learned. This attaches the shipment's own
-    neighbourhood (order, customer, addresses, courier, policy, its whole event timeline, the
-    failure and any fix already tried), which the UI renders with the same graph component
-    the Explore tab uses.
+    Two views of the same shipment: its neighbourhood in the graph (order, customer,
+    addresses, courier, policy, the whole event timeline, the failure and any fix already
+    tried), and the same journey geographically - origin warehouse, delivery address, and on
+    an address-conflict case the customer's own address as a second pin, because two pins
+    apart IS the problem stated in map form.
 
-    Best-effort: a handover that fails must never turn an escalation into an error, because
-    the escalation itself is the thing that matters.
+    Built for an executed case as well as an escalated one. On an escalation it is what a
+    human inherits instead of a bare sentence; on an execution it is how someone checks the
+    decision against the shipment it was made about. Same evidence, different reader.
+
+    Best-effort: this is context, not the decision. A failure here must never turn a
+    completed run into an error, so everything is wrapped and a partial result is fine.
     """
     shipment_id = (state.get("extracted") or {}).get("shipment_id")
     if not shipment_id:
         return None
+    graph_view = route = None
     try:
-        return cases.shipment_subgraph(shipment_id)
+        graph_view = cases.shipment_subgraph(shipment_id)
     except Exception:
-        log.exception("could not build the escalation handover subgraph")
+        log.exception("could not build the case-file subgraph")
+    try:
+        route = cases.shipment_route(shipment_id)
+    except Exception:
+        log.exception("could not build the case-file route")
+    if not (graph_view or route):
         return None
+    return {"graph": graph_view, "route": route}
 
 
 def _escalate(state: PipelineState) -> dict:
@@ -123,7 +135,7 @@ def _escalate(state: PipelineState) -> dict:
     filed = writeback.write_escalation(state)
     return {
         "disposition": "escalate",
-        "handover": _handover(state),
+        "case_file": _case_file(state),
         "escalation": filed,
     }
 
@@ -211,7 +223,7 @@ def run_complaint(complaint_text: str) -> PipelineState:
         "loop_count": 0,
         "disposition": None,
         "resolution_id": None,
-        "handover": None,
+        "case_file": None,
         "escalation": None,
     }
     return build_pipeline().invoke(initial)
@@ -283,7 +295,7 @@ def stream_complaint(complaint_text: str):
         "complaint_text": complaint_text,
         "extracted": None, "context": None, "classification": None,
         "recommendation": None, "review": None, "review_notes": [], "attempted_actions": [],
-        "loop_count": 0, "disposition": None, "resolution_id": None, "handover": None,
+        "loop_count": 0, "disposition": None, "resolution_id": None, "case_file": None,
         "escalation": None,
     }
     merged: dict = dict(state)
@@ -294,7 +306,7 @@ def stream_complaint(complaint_text: str):
             loop = merged.get("loop_count") or 0
             yield "stage", _summarize(node, update or {}, loop)
     yield "final", {
-        "handover": merged.get("handover"),
+        "case_file": merged.get("case_file"),
         "escalation": merged.get("escalation"),
         "disposition": merged.get("disposition"),
         "resolution_id": merged.get("resolution_id"),

@@ -120,6 +120,14 @@ ORDER BY cases DESC
 """
 
 
+def _read_params(cypher: str, params: dict) -> list[dict]:
+    return get_driver().execute_query(
+        cypher, parameters_=params,
+        routing_=RoutingControl.READ, database_=config.SHIPMENT_DATABASE,
+        result_transformer_=lambda res: [r.data() for r in res],
+    )
+
+
 def _read(cypher: str) -> list[dict]:
     return get_driver().execute_query(
         cypher, routing_=RoutingControl.READ, database_=config.SHIPMENT_DATABASE,
@@ -195,7 +203,7 @@ def worklist() -> list[dict]:
     return out
 
 
-# --- escalation handover packet ----------------------------------------------------------
+# --- case file: the shipment's own evidence, shown beside every run -------------------
 # When the pipeline gives up, the human inherits the case. Handing over the complaint text
 # alone makes them start from zero, so the escalation carries the shipment's own
 # neighbourhood: every node it touches and every relationship between them, in the same
@@ -280,6 +288,78 @@ def _node_dict(node) -> dict:
              if k != "embedding" and not isinstance(v, (bytes, bytearray))}
     return {"id": node.element_id, "labels": labels,
             "caption": _caption(labels, props), "properties": props}
+
+
+# Where each warehouse is, approximately.
+#
+# The graph has no warehouse coordinates: origin_warehouse is a name string on the Order, and
+# the Saudi regions dataset that carried city geometry is not in this repo (see the note in
+# shipment_kg/generate_shipment_kg.py about <repo root>/json). Deriving them from Address
+# rows mostly fails too - Abha has no addresses at all and Riyadh has exactly one.
+#
+# So these are CITY centroids, not facility locations: right to within a few kilometres,
+# which is the resolution the map is read at anyway. Replace with real coordinates if the
+# warehouse master data ever lands in the graph.
+_WAREHOUSE_COORDS: dict[str, tuple[float, float]] = {
+    "WH-RUH": (24.7136, 46.6753),   # الرياض
+    "WH-JED": (21.4858, 39.1925),   # جدة
+    "WH-MAD": (24.5247, 39.5692),   # المدينة المنورة
+    "WH-ABH": (18.2465, 42.5117),   # أبها
+    "WH-DMM": (26.4207, 50.0888),   # الدمام
+    "WH-HAIL": (27.5114, 41.7208),  # حائل
+}
+
+# The two ends of the journey, for the map under the graph. The delivery address and the
+# customer's own address are returned separately because on an address-conflict case they
+# differ - 55 of 300 shipments - and seeing the two pins apart IS the problem, stated
+# geographically.
+_SHIPMENT_ROUTE = """
+MATCH (s:Shipment {shipment_id: $shipment_id})<-[:HAS_SHIPMENT]-(o:Order)
+OPTIONAL MATCH (s)-[:DELIVERED_TO]->(dest:Address)
+OPTIONAL MATCH (o)-[:PLACED_BY]->(:Customer)-[:LIVES_AT]->(home:Address)
+RETURN o.origin_warehouse    AS warehouse_name,
+       o.origin_warehouse_id AS warehouse_id,
+       collect(DISTINCT {lat: dest.lat, lng: dest.lng, city: dest.city,
+                         district: dest.district, full: dest.full_address,
+                         kind: 'delivery'}) AS destinations,
+       head(collect(DISTINCT {lat: home.lat, lng: home.lng, city: home.city,
+                              district: home.district, full: home.full_address,
+                              kind: 'home'})) AS home
+"""
+
+
+def shipment_route(shipment_id: str | None) -> dict | None:
+    """Origin warehouse and destination pins for one shipment, or None if it has neither.
+
+    Points without coordinates are dropped rather than plotted at (0, 0) - a pin in the Gulf
+    of Guinea is worse than a missing pin.
+    """
+    if not shipment_id:
+        return None
+    rows = _read_params(_SHIPMENT_ROUTE, {"shipment_id": shipment_id})
+    if not rows:
+        return None
+    row = rows[0]
+
+    def _ok(p: dict | None) -> bool:
+        return bool(p) and isinstance(p.get("lat"), (int, float)) and isinstance(p.get("lng"), (int, float))
+
+    points = [p for p in (row.get("destinations") or []) if _ok(p)]
+    home = row.get("home") if _ok(row.get("home")) else None
+    # Only worth a second pin when it is somewhere else - otherwise it is the same dot twice.
+    if home and not any(abs(home["lat"] - p["lat"]) < 1e-6 and abs(home["lng"] - p["lng"]) < 1e-6
+                        for p in points):
+        points.append(home)
+
+    coords = _WAREHOUSE_COORDS.get(row.get("warehouse_id") or "")
+    origin = None
+    if coords:
+        origin = {"lat": coords[0], "lng": coords[1], "kind": "warehouse",
+                  "full": row.get("warehouse_name"), "approximate": True}
+
+    if not points and not origin:
+        return None
+    return {"origin": origin, "points": points}
 
 
 def shipment_subgraph(shipment_id: str | None) -> dict | None:
