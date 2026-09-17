@@ -191,9 +191,18 @@ def _evaluate_one(case: dict, action_stats: dict, hard: bool = False) -> dict:
     cats = [_base(c.get("category")) for c in (context.get("similar_cases") or []) if c.get("category")]
     top_share = (max(Counter(cats).values()) / len(cats)) if cats else 0.0
 
+    # Retrieval quality itself: how close the nearest precedent actually is. Unlike the
+    # model's self-report this is a property of the evidence, measured before any reasoning
+    # happens - so if it separates hits from misses it can gate the pipeline at the retrieve
+    # stage, which is both earlier and cheaper than catching the error afterwards.
+    scores = [c.get("score") for c in (context.get("similar_cases") or [])
+              if isinstance(c.get("score"), (int, float))]
+    top_score = max(scores) if scores else 0.0
+
     stats = action_stats.get((true_cat, predicted_act))
     return {
         "precedent_agreement": round(top_share, 2),
+        "top_score": round(top_score, 4),
         "precedent_n": len(cats),
         "failure_id": fid,
         "true_category": true_cat,
@@ -273,6 +282,29 @@ def main() -> None:
         print(f"Stated confidence when wrong : {sum(miss_conf)/len(miss_conf):.2f}  "
               f"(min {min(miss_conf):.2f})")
         print("  A gap here means confidence could gate escalation; no gap means it cannot.")
+
+    # Count every case, including those that retrieved nothing (top_score 0) - those are
+    # exactly the ones a retrieval-quality gate would catch, so excluding them would flatter
+    # the threshold it is being used to judge.
+    hit_s = [r["top_score"] or 0.0 for r in results if r["category_ok"]]
+    miss_s = [r["top_score"] or 0.0 for r in results if not r["category_ok"]]
+    if hit_s and miss_s:
+        print(f"\nBest precedent score when right: {sum(hit_s)/len(hit_s):.3f}  "
+              f"(min {min(hit_s):.3f})")
+        print(f"Best precedent score when wrong: {sum(miss_s)/len(miss_s):.3f}  "
+              f"(min {min(miss_s):.3f})")
+        # The threshold-free version of the same idea: retrieval came back with nothing at
+        # all above the similarity floor. No judgement call, no tuning - either there is
+        # precedent for this kind of failure or there is not.
+        none_miss = sum(1 for r in results if not r["category_ok"] and not r["top_score"])
+        none_hit = sum(1 for r in results if r["category_ok"] and not r["top_score"])
+        print(f"  no precedent at all: {none_miss}/{len(miss_s)} of misses, "
+              f"{none_hit}/{len(hit_s)} of correct calls")
+        for t in (0.80, 0.82, 0.84, 0.86):
+            caught = sum(1 for r in results if not r["category_ok"] and (r["top_score"] or 0.0) < t)
+            cost = sum(1 for r in results if r["category_ok"] and (r["top_score"] or 0.0) < t)
+            print(f"  escalate below {t:.2f}: catches {caught}/{len(miss_s)} misses, "
+                  f"costs {cost}/{len(hit_s)} correct")
 
     hit_agree = [r["precedent_agreement"] for r in results if r["category_ok"]]
     miss_agree = [r["precedent_agreement"] for r in results if not r["category_ok"]]
