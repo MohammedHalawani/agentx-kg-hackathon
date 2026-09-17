@@ -190,6 +190,8 @@ export const ar: Messages = {
       journey: 'المسار',
       conflictingAddresses: 'عنوانان مسجّلان — يتعارضان',
       locationCount: 'مواقع: {count}',
+      expand: 'عرض بالشاشة الكاملة',
+      collapse: 'إغلاق الشاشة الكاملة',
     },
     map: {
       empty: 'لا توجد إحداثيات لهذه الشحنة.',

@@ -189,6 +189,8 @@ export const en = {
       journey: 'Journey',
       conflictingAddresses: 'two addresses on record — they disagree',
       locationCount: '{count} locations',
+      expand: 'Open full screen',
+      collapse: 'Close full screen',
     },
     map: {
       empty: 'This shipment has no mapped coordinates.',
