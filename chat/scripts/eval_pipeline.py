@@ -34,6 +34,23 @@ sentence of the kind a customer would actually write, and is the setting worth q
 Even in hard mode the complaint is synthesized from the case's own fields, so it stays
 cleaner and more on-topic than real traffic. Treat every number here as an upper bound.
 
+What has already been tried, so it is not tried again:
+
+  * Self-reported confidence as an escalation trigger. Flat - 0.86 stated when right, 0.84
+    when wrong. Nothing in the pipeline reads the field, and on this evidence nothing should.
+  * Precedent agreement (share of retrieved cases sharing a majority category) as an
+    evidence-side signal. Also flat, and it inverted between samples: 0.86/0.83 on one seed,
+    0.57/0.94 on another.
+  * Asking the classifier to name a runner-up category and escalating on a narrow margin.
+    Ranking should be an easier question than self-assessment, but measured it cost accuracy
+    to ask - 76% without the runner-up prompt, 64-68% with it - and the margin caught 2 of 8
+    misses on one seed while catching none on another. Reverted.
+
+Still untried: classifying twice and escalating on disagreement (reliable, doubles the cost
+per case), and treating structurally inseparable pairs - a weight mismatch and a barcode
+mismatch look identical from a customer's description - as escalate-by-policy rather than
+something inference can fix.
+
 Usage (from chat/):
     uv run python scripts/eval_pipeline.py --hard          # the realistic number
     uv run python scripts/eval_pipeline.py                 # easy mode, description included
