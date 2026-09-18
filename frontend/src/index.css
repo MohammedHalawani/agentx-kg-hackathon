@@ -120,6 +120,29 @@
   html {
     @apply font-sans;
   }
+
+  /* Arabic: let every block of text pick its own direction from its own content.
+     ---------------------------------------------------------------------------
+     The frame deliberately stays left-to-right in both languages (LanguageProvider
+     pins <html dir>), because the layout positions ~114 things with physical classes
+     (ml-auto, left-2, pr-2) that a real mirror would strand on the wrong side. What
+     was wrong is narrower: Arabic prose and labels were laid out as if they were
+     English - left-aligned, and mixed content ordered by the wrong base direction.
+
+     `unicode-bidi: plaintext` is the CSS form of dir="auto": the browser resolves each
+     block's direction from its first strong character, so an Arabic label reads and
+     aligns right-to-left while an id like SHP-1042, a percentage or an untranslated
+     English string keeps reading left-to-right in the very same view. It changes only
+     how inline content is ordered and aligned - never the box, so no flex row reverses
+     and nothing moves side to side.
+
+     Alignment follows because `start` resolves against the paragraph's own direction
+     under plaintext; the handful of elements with an explicit text-left/text-right are
+     left as they are on purpose (numeric columns stay put). */
+  :root[lang='ar'] :where(p, h1, h2, h3, h4, h5, h6, li, dt, dd, th, td, caption,
+    figcaption, blockquote, label, legend, summary, option, span, button, a, div) {
+    unicode-bidi: plaintext;
+  }
 }
 
 /* "thinking" shimmer - a light band sweeps across the label while the agent works */
