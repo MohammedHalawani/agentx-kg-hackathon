@@ -82,7 +82,7 @@ function renderTrace(stages: Stage[]) {
 export function IntakeView() {
   const { stages, final, caseFile, busy, error, complaint, run, stop, reset } = useComplaintStream()
   const { data, loading, refetch } = useFetch<{ cases: OpenCase[] }>('/samples')
-  const { t, rootCauseLabel } = useLanguage()
+  const { t, rootCauseLabel, isArabic } = useLanguage()
   const openCases = data?.cases ?? []
 
   useEffect(() => {
@@ -120,13 +120,20 @@ export function IntakeView() {
                 <button
                   key={c.failure_id}
                   onClick={() => run(c.text)}
-                  className="group flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary/35 hover:bg-accent hover:text-accent-foreground"
+                  className="group flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-start transition-colors hover:border-primary/35 hover:bg-accent hover:text-accent-foreground"
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm text-ink group-hover:text-accent-foreground" dir="auto">
                       {c.text}
                     </span>
-                    <span className="mt-0.5 flex flex-wrap gap-x-2 text-[11px] text-muted-foreground group-hover:text-accent-foreground/80">
+                    {/* The one row in the card that text-align cannot reach: these are flex
+                        items, so their order comes from direction, not from alignment. In
+                        Arabic it reads right-to-left with the complaint above it; the id keeps
+                        its own dir="ltr" so SHP-0270 is never reordered internally. */}
+                    <span
+                      dir={isArabic ? 'rtl' : 'ltr'}
+                      className="mt-0.5 flex flex-wrap gap-x-2 text-[11px] text-muted-foreground group-hover:text-accent-foreground/80"
+                    >
                       <span className="font-mono" dir="ltr">
                         {c.shipment_id}
                       </span>
