@@ -40,7 +40,7 @@ function Outcome({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        'ml-[116px] flex items-start gap-3 rounded-xl border p-3',
+        'ms-[116px] flex items-start gap-3 rounded-xl border p-3',
         executed ? 'border-chart-good/40 bg-chart-good/5' : 'border-chart-warning/40 bg-chart-warning/5',
       )}
     >
@@ -94,8 +94,11 @@ export function IntakeView() {
   return (
     <div className="flex h-full flex-col">
       <div className={cn('min-h-0 flex-1 px-6 py-5', started ? 'overflow-hidden' : 'overflow-y-auto')}>
+        {/* Arabic flips these text columns, not the app frame. Alignment alone cannot fix
+            a row like the title (heading + count) or a case card's metadata line: those are
+            flex items, and only direction decides which end they start from. */}
         {!started ? (
-          <div className="mx-auto max-w-3xl">
+          <div className="mx-auto max-w-3xl" dir={isArabic ? 'rtl' : undefined}>
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <h2 className="font-display text-xl font-bold text-ink">{t('intake.title')}</h2>
               <span className="text-sm text-muted-foreground">
@@ -131,7 +134,6 @@ export function IntakeView() {
                         Arabic it reads right-to-left with the complaint above it; the id keeps
                         its own dir="ltr" so SHP-0270 is never reordered internally. */}
                     <span
-                      dir={isArabic ? 'rtl' : 'ltr'}
                       className="mt-0.5 flex flex-wrap gap-x-2 text-[11px] text-muted-foreground group-hover:text-accent-foreground/80"
                     >
                       <span className="font-mono" dir="ltr">
@@ -149,7 +151,9 @@ export function IntakeView() {
           </div>
         ) : (
           <div className="mx-auto flex h-full max-w-[1600px] flex-col gap-4 lg:flex-row">
-            <div className="min-h-0 flex-1 overflow-y-auto lg:max-w-3xl">
+            {/* The trace flips with the language too. The case-file pane beside it does not:
+                it holds the graph and a Leaflet map, which position their own controls. */}
+            <div className="min-h-0 flex-1 overflow-y-auto lg:max-w-3xl" dir={isArabic ? 'rtl' : undefined}>
               {complaint && (
                 <div className="mb-5 rounded-xl border border-hairline bg-panel p-3">
                   <p className="mb-1 text-[11px] font-medium text-muted-foreground">{t('intake.complaint')}</p>
@@ -167,7 +171,7 @@ export function IntakeView() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="ml-[116px] flex items-center gap-2 py-2 text-xs text-muted-foreground"
+                    className="ms-[116px] flex items-center gap-2 py-2 text-xs text-muted-foreground"
                   >
                     <Loader2 size={13} className="animate-spin" />
                     {stages.length === 0 ? t('intake.starting') : t('intake.working')}
@@ -176,7 +180,7 @@ export function IntakeView() {
               </AnimatePresence>
 
               {error && (
-                <div className="ml-[116px] rounded-lg border border-danger/40 bg-danger/5 px-3 py-2 text-xs text-danger">
+                <div className="ms-[116px] rounded-lg border border-danger/40 bg-danger/5 px-3 py-2 text-xs text-danger">
                   {error}
                 </div>
               )}

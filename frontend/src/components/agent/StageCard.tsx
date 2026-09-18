@@ -465,11 +465,11 @@ export function StageCard({ stage, index }: { stage: Stage; index: number }) {
 
       transition={{ duration: 0.25, ease: 'easeOut', delay: Math.min(index * 0.02, 0.1) }}
 
-      className="relative flex gap-3 pl-1"
+      className="relative flex gap-3 ps-1"
 
     >
 
-      <div className="flex w-[104px] shrink-0 flex-col items-end pt-2 text-right">
+      <div className="flex w-[104px] shrink-0 flex-col items-end pt-2 text-end">
 
         <span className="text-[11px] font-medium text-muted-foreground">{stage.lane}</span>
 
@@ -567,7 +567,7 @@ export function AflDivider({ reason }: { reason?: string }) {
 
         animate={{ opacity: 1 }}
 
-        className="my-1 ml-[116px] flex items-start gap-2 rounded-lg border border-dashed border-chart-warning/50 bg-chart-warning/5 px-3 py-2"
+        className="my-1 ms-[116px] flex items-start gap-2 rounded-lg border border-dashed border-chart-warning/50 bg-chart-warning/5 px-3 py-2"
 
       >
 
