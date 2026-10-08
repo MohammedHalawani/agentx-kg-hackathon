@@ -9,6 +9,7 @@ import {
   Check,
 
   CheckCircle2,
+  Clock3,
 
   Database,
 
@@ -199,7 +200,7 @@ function StageBody({ stage }: { stage: Stage }) {
 
               <li key={p.failure_id} className="flex items-start gap-2 rounded-md bg-surface px-2 py-1.5 text-xs">
 
-                {p.success ? (
+                {p.success == null ? <Clock3 size={12} className="mt-0.5 shrink-0 text-chart-warning" /> : p.success ? (
 
                   <CheckCircle2 size={12} className="mt-0.5 shrink-0 text-chart-good" />
 
@@ -219,7 +220,7 @@ function StageBody({ stage }: { stage: Stage }) {
 
                     · {rootCauseLabel(p.category)}
 
-                    {p.success ? ` · ${t('intake.stages.retrieve.worked')}` : ` · ${t('intake.stages.retrieve.didNotWork')}`}
+                    {p.success == null ? ` · ${t('intake.stages.retrieve.pending')}` : p.success ? ` · ${t('intake.stages.retrieve.worked')}` : ` · ${t('intake.stages.retrieve.didNotWork')}`}
 
                   </span>
 

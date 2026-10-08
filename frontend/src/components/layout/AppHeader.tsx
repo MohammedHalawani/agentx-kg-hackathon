@@ -8,6 +8,7 @@ const VIEW_KEYS: Record<ViewKey, string> = {
   intake: 'nav.intake',
   decisions: 'nav.decisions',
   explore: 'nav.explore',
+  audit: 'nav.audit',
 }
 
 export function AppHeader({ view, scope: _scope }: { view: ViewKey; scope: string }) {
@@ -16,12 +17,12 @@ export function AppHeader({ view, scope: _scope }: { view: ViewKey; scope: strin
   return (
     <header className="flex h-14 shrink-0 items-center gap-4 border-b border-border bg-card px-4">
       <SidebarTrigger
-        className="-ml-1 text-foreground"
+        className="-ms-1 text-foreground"
         aria-label={t('common.toggleSidebar')}
         title={t('common.toggleSidebar')}
       />
       <h1 className="text-sm font-semibold text-foreground">{t(VIEW_KEYS[view])}</h1>
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ms-auto flex items-center gap-2">
         <span className="hidden max-w-md truncate text-xs text-muted-foreground sm:inline">
           {t('scope')}
         </span>

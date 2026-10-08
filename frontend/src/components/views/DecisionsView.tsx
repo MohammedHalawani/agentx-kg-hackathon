@@ -400,6 +400,10 @@ export function DecisionsView() {
           <p className="text-sm text-muted-foreground">{t('decisions.subtitle')}</p>
         </div>
 
+        <section aria-labelledby="decisions-operational">
+          <h3 id="decisions-operational" className="mb-2 text-sm font-semibold text-foreground">
+            {t('ops.decisions.operational')}
+          </h3>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           <KpiCard
             label={t('decisions.kpi.openCases')}
@@ -451,7 +455,12 @@ export function DecisionsView() {
             icon={<Repeat size={15} />}
           />
         </div>
+        </section>
 
+        <section aria-labelledby="decisions-resolution">
+          <h3 id="decisions-resolution" className="mb-2 text-sm font-semibold text-foreground">
+            {t('ops.decisions.resolutionQuality')}
+          </h3>
         <div className="grid gap-3 lg:grid-cols-2">
           <CaseCoverageCard resolved={coverage.resolved} open={coverage.unresolved} />
           <ClosedLoopLearningCard
@@ -613,6 +622,15 @@ export function DecisionsView() {
             </CardContent>
           </Card>
         </div>
+        </section>
+
+        <p className="text-xs text-muted-foreground">{t('ops.decisions.pendingNote')}</p>
+
+        <section aria-labelledby="decisions-learning">
+          <h3 id="decisions-learning" className="mb-2 text-sm font-semibold text-foreground">
+            {t('ops.decisions.historicalLearning')}
+          </h3>
+        </section>
 
         <Card className={cn(QUEUE_HEIGHT, 'flex flex-col gap-0 py-0 shadow-none')}>
           <CardHeader className="shrink-0 border-b px-4 py-3">
@@ -695,6 +713,10 @@ export function DecisionsView() {
           </CardContent>
         </Card>
 
+        <section aria-labelledby="decisions-escalations">
+          <h3 id="decisions-escalations" className="mb-2 text-sm font-semibold text-foreground">
+            {t('ops.decisions.escalations')}
+          </h3>
         <Card
           className={cn(
             'flex flex-col gap-0 py-0 shadow-none',
@@ -742,6 +764,7 @@ export function DecisionsView() {
             )}
           </CardContent>
         </Card>
+        </section>
       </div>
     </div>
   )

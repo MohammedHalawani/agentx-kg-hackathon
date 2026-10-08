@@ -22,21 +22,22 @@ vi.mock('../../hooks/useComplaintStream', () => ({
 }))
 
 vi.mock('../../hooks/useFetch', () => ({
-  useFetch: () => ({
-    data: {
-      cases: [
+  useFetch: (url: string) => ({
+    data: url.startsWith('/cases/queue') ? {
+      items: [
         {
-          failure_id: 'f1',
+          case_id: 'f1',
           shipment_id: 'SHP-0001',
           category: 'address_conflict',
           city: 'Riyadh',
           courier: 'Courier A',
-          text: 'Sample complaint text',
+          issue_summary: 'Sample complaint text',
+          priority: 'medium', workflow_state: 'OPEN',
         },
-      ],
-    },
+      ], filtered_total: 1, next_cursor: null, previous_cursor: null, metadata: { buckets: { OPEN: 1 }, filter_choices: { city: ['Riyadh'], cause: ['address_conflict'] } },
+    } : { synthetic: true, demo: true, as_of: '2026-10-08T08:00:00Z', worker: { state: 'paused', concurrency: 1, processed_count: 0, active_case_id: null }, simulator: { state: 'paused', speed: 1, event_count: 0 }, notifications: { mode: 'dry_run', external_calls: 0 } },
     loading: false,
-    refetch: vi.fn(),
+    error: null, refetch: vi.fn(),
   }),
 }))
 
@@ -100,7 +101,12 @@ describe('IntakeView metadata contrast (H01)', () => {
     const mutedEls = document.querySelectorAll('.text-muted-foreground')
     expect(mutedEls.length).toBeGreaterThanOrEqual(3)
     expect(document.querySelector('.text-muted')).toBeNull()
-    expect(screen.getByText(/awaiting decision/i).className).toContain('text-muted-foreground')
+    expect(screen.getByText(/Operations intake|استقبال العمليات/)).toBeTruthy()
+  })
+
+  it('labels simulation panel as demo-only', () => {
+    renderIntake()
+    expect(screen.getAllByText(/DEMO — synthetic operational data/i).length).toBeGreaterThan(0)
   })
 
   it('pairs accent hover background with accent-foreground on case buttons (H02)', () => {
@@ -123,7 +129,7 @@ describe('IntakeView Arabic root causes (I02)', () => {
 
   it('shows Arabic category metadata on idle case cards', () => {
     renderIntake()
-    expect(screen.getByText('تعارض في العنوان')).toBeTruthy()
+    expect(screen.getAllByText('تعارض في العنوان').length).toBeGreaterThan(0)
     expect(screen.queryByText('address conflict')).toBeNull()
   })
 })
@@ -136,7 +142,7 @@ describe('IntakeView active-run lifecycle', () => {
 
     renderIntake()
 
-    expect(screen.getByText('Extract entities')).toBeTruthy()
+    expect(screen.getByText('Evidence collected')).toBeTruthy()
     expect(document.querySelector('.text-muted')).toBeNull()
     expect(document.querySelectorAll('.text-muted-foreground').length).toBeGreaterThan(0)
     expect(screen.getByText(/working/i)).toBeTruthy()
@@ -154,7 +160,7 @@ describe('IntakeView active-run lifecycle', () => {
     expect(document.querySelector('.text-muted')).toBeNull()
   })
 
-  it('renders success outcome and case file evidence pane', () => {
+  it('renders a pending recommendation without claiming execution', () => {
     mockStream.busy = false
     mockStream.complaint = 'Wrong address delivered'
     mockStream.stages = [sampleStage]
@@ -168,7 +174,8 @@ describe('IntakeView active-run lifecycle', () => {
 
     renderIntake()
 
-    expect(screen.getByText(/executed/i)).toBeTruthy()
+    expect(screen.getByText(/Recommendation recorded/i)).toBeTruthy()
+    expect(screen.queryByText(/^Executed$/i)).toBeNull()
     expect(screen.getByTestId('case-graph')).toBeTruthy()
     expect(screen.getByTestId('shipment-map')).toBeTruthy()
     expect(document.querySelector('.text-muted')).toBeNull()

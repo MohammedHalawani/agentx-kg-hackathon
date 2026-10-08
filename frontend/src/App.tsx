@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react'
-import { motion } from 'motion/react'
+import { motion, useReducedMotion } from 'motion/react'
 import { AppShell } from './components/layout/AppShell'
 import type { ViewKey } from './components/layout/types'
 import { IntakeView } from './components/views/IntakeView'
-import { DecisionsView } from './components/views/DecisionsView'
+import { OperationsDecisionsView } from './components/views/OperationsDecisionsView'
 import { ExploreView } from './components/views/ExploreView'
+import { AuditView } from './components/views/AuditView'
+import type { ExploreShipment } from './types/explore'
 
 export default function App() {
   const [scope, setScope] = useState<string>('')
   const [view, setView] = useState<ViewKey>('intake')
+  const [selectedShipment, setSelectedShipment] = useState<ExploreShipment | null>(null)
+  const reduce = useReducedMotion()
 
   useEffect(() => {
     fetch('/meta')
@@ -25,11 +29,19 @@ export default function App() {
           className="h-full"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.15, ease: 'easeOut' }}
+          transition={{ duration: reduce ? 0 : 0.15, ease: 'easeOut' }}
         >
-          {view === 'intake' && <IntakeView />}
-          {view === 'decisions' && <DecisionsView />}
-          {view === 'explore' && <ExploreView />}
+          {view === 'intake' && <IntakeView selectedShipment={selectedShipment} onClearShipment={() => setSelectedShipment(null)} />}
+          {view === 'decisions' && <OperationsDecisionsView />}
+          {view === 'explore' && (
+            <ExploreView
+              onOpenCase={(shipment) => {
+                setSelectedShipment(shipment)
+                setView('intake')
+              }}
+            />
+          )}
+          {view === 'audit' && <AuditView />}
         </motion.div>
       </AppShell>
     </div>

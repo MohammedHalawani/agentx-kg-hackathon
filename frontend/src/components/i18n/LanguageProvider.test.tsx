@@ -69,14 +69,14 @@ describe('document language attributes', () => {
     expect(document.documentElement.lang).toBe('ar')
   })
 
-  it('keeps the frame left-to-right in Arabic', () => {
+  it('mirrors the frame right-to-left in Arabic', () => {
     localStorage.setItem('agentx-language', 'ar')
     render(
       <LanguageProvider>
         <span />
       </LanguageProvider>,
     )
-    expect(document.documentElement.dir).toBe('ltr')
+    expect(document.documentElement.dir).toBe('rtl')
   })
 
   it('marks the document English when English is selected', () => {
