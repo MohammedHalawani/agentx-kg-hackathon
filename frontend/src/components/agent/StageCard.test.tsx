@@ -45,3 +45,19 @@ describe('StageCard i18n (I04)', () => {
     expect(screen.queryByText('Verdict')).toBeNull()
   })
 })
+
+describe('StageCard observed outcome semantics', () => {
+  afterEach(() => localStorage.removeItem('agentx-language'))
+
+  it.each([
+    ['en', 'outcome pending verification', 'did not work'],
+    ['ar', 'النتيجة بانتظار التحقق', 'لم ينجح'],
+  ])('shows an unverified retrieved record as pending in %s', (language, pendingLabel, failedLabel) => {
+    localStorage.setItem('agentx-language', language)
+    const stage: Stage = { stage: 'retrieve', label: 'Evidence collected', lane: 'Retrieval', arabic: '', is_agent: false, loop: 0, detail: { similar_cases: 1, precedent: [{ failure_id: 'F-PENDING', category: 'hub_delay', action: 'Contact hub', success: null, score: 0.9 }] } }
+    const { container } = render(<LanguageProvider><ul><StageCard stage={stage} index={0} /></ul></LanguageProvider>)
+    expect(container.textContent).toContain(pendingLabel)
+    expect(container.textContent).not.toContain(failedLabel)
+    expect(container.querySelector('.text-chart-good')).toBeNull()
+  })
+})

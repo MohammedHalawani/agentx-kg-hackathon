@@ -39,7 +39,7 @@ export function AgentProse({ text }: { text: string }) {
 
   // Until the translation lands, the agent's own words - never a spinner or a blank line.
   const shown = isArabic ? translated ?? text : text
-  // dir="auto" because the shell stays LTR in both languages; the paragraph itself flips.
+  // Mixed identifiers and untranslated fallback prose keep their own content direction.
   return (
     <span dir="auto" className="inline-block">
       {shown}

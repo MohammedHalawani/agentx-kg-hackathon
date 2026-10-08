@@ -1,0 +1,4080 @@
+{
+  "timestamp": "2026-10-08T16:02:22.676947+00:00",
+  "count": 60,
+  "kind": "offline display/persistence regression replay, not a new model benchmark",
+  "model_calls": 0,
+  "database_calls": 0,
+  "operator_source_sha256": "fcf936cc9ea629de678c52f2f42d26e07daea56929808c3a2a2cda7423a45454",
+  "limitations": "Original choices/verdicts retained. Internal reasoning, semantic correctness and Arabic display translation are not re-evaluated.",
+  "records": [
+    {
+      "case_id": "case-01",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "address_conflict",
+          "confidence": 0.92,
+          "priority": "high",
+          "rationale": "Model hypothesis: address_conflict; requires evidence verification. Recorded delivery attempts: 2 of 2 permitted (budget exhausted). Recorded timeline span: 1.75 days against 3-day policy SLA (within SLA). Distinct recorded address values: 1; compare versions and attempt evidence."
+        },
+        "recommendation": {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "grounded_in": [
+            "RES-e8c312b756",
+            "RES-ffd61bfb73"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-e8c312b756",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-ffd61bfb73",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "reject",
+          "score": 0.2,
+          "reason": "Agent review rejected the proposal. Reconsider the diagnosis/action or obtain human verification; the model's policy interpretation is not an authoritative rule. Recorded delivery attempts: 2 of 2 permitted (budget exhausted). Recorded timeline span: 1.75 days against 3-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-01",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "address_conflict",
+          "confidence": 0.88,
+          "priority": "high",
+          "rationale": "Model hypothesis: address_conflict; requires evidence verification. Recorded delivery attempts: 2 of 2 permitted (budget exhausted). Recorded timeline span: 1.75 days against 3-day policy SLA (within SLA). Distinct recorded address values: 1; compare versions and attempt evidence."
+        },
+        "recommendation": {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "grounded_in": [
+            "RES-e8c312b756",
+            "RES-ffd61bfb73"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-e8c312b756",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-ffd61bfb73",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "reject",
+          "score": 0.2,
+          "reason": "Agent review rejected the proposal. Reconsider the diagnosis/action or obtain human verification; the model's policy interpretation is not an authoritative rule. Recorded delivery attempts: 2 of 2 permitted (budget exhausted). Recorded timeline span: 1.75 days against 3-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-02",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "recipient_unavailable",
+          "confidence": 0.8,
+          "priority": "high",
+          "rationale": "Model hypothesis: recipient_unavailable; requires evidence verification. Recorded delivery attempts: 2 of 1 permitted (budget exhausted). Recorded timeline span: 2.33 days against 1-day policy SLA (breached). Complaint statements are reports, not independently verified operational facts."
+        },
+        "recommendation": {
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "grounded_in": [
+            "RES-bc8ffd4617",
+            "RES-0325b77228"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-bc8ffd4617",
+              "category": "recipient_unavailable",
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-0325b77228",
+              "category": "recipient_unavailable",
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "reject",
+          "score": 0.0,
+          "reason": "Retry budget exhausted (2 of 1 permitted attempt(s) used - EXHAUSTED, re-delivery not admissible.) but the proposed action is another delivery retry. Propose a different approach or escalate.",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-02",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "recipient_unavailable",
+          "confidence": 0.86,
+          "priority": "high",
+          "rationale": "Model hypothesis: recipient_unavailable; requires evidence verification. Recorded delivery attempts: 2 of 1 permitted (budget exhausted). Recorded timeline span: 2.33 days against 1-day policy SLA (breached). Complaint statements are reports, not independently verified operational facts."
+        },
+        "recommendation": {
+          "action": "تسليم لجهة بديلة بموافقة العميل",
+          "grounded_in": [
+            "RES-526613c65c",
+            "RES-2e031da97e"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-526613c65c",
+              "category": "recipient_unavailable",
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-2e031da97e",
+              "category": "recipient_unavailable",
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.9,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 2 of 1 permitted (budget exhausted). Recorded timeline span: 2.33 days against 1-day policy SLA (breached).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-03",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "recipient_unavailable",
+          "confidence": 0.6,
+          "priority": "high",
+          "rationale": "Model hypothesis: recipient_unavailable; requires evidence verification. Recorded delivery attempts: 2 of 3 permitted (budget remains). Recorded timeline span: 2.08 days against 5-day policy SLA (within SLA). Complaint statements are reports, not independently verified operational facts."
+        },
+        "recommendation": {
+          "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+          "grounded_in": [
+            "RES-1022ee04d5"
+          ],
+          "rationale": "Cited observed synthetic histories: 1; exact-action matches: 1. Matching cited outcomes: 1/1 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "tried": 2,
+              "succeeded": 1,
+              "rate": 0.5
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-1022ee04d5",
+              "category": "escalation:recipient_unavailable",
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.9,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 2 of 3 permitted (budget remains). Recorded timeline span: 2.08 days against 5-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-03",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "recipient_unavailable",
+          "confidence": 0.7,
+          "priority": "medium",
+          "rationale": "Model hypothesis: recipient_unavailable; requires evidence verification. Recorded delivery attempts: 2 of 3 permitted (budget remains). Recorded timeline span: 2.08 days against 5-day policy SLA (within SLA). Complaint statements are reports, not independently verified operational facts."
+        },
+        "recommendation": {
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "grounded_in": [
+            "RES-bc8ffd4617"
+          ],
+          "rationale": "Cited observed synthetic histories: 1; exact-action matches: 1. Matching cited outcomes: 1/1 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "tried": 2,
+              "succeeded": 1,
+              "rate": 0.5
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-bc8ffd4617",
+              "category": "recipient_unavailable",
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.9,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 2 of 3 permitted (budget remains). Recorded timeline span: 2.08 days against 5-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-04",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "failed_attempt_weight_mismatch",
+          "confidence": 0.3,
+          "priority": "medium",
+          "rationale": "Model hypothesis: failed_attempt_weight_mismatch; requires evidence verification. Recorded delivery attempts: 2 of 3 permitted (budget remains). Recorded timeline span: 1.79 days against 5-day policy SLA (within SLA). This context has no measured barcode, weight or gate observations to establish that subtype."
+        },
+        "recommendation": {
+          "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+          "grounded_in": [
+            "RES-bdf72e2665"
+          ],
+          "rationale": "Cited observed synthetic histories: 1; exact-action matches: 1. Matching cited outcomes: 1/1 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+              "tried": 2,
+              "succeeded": 1,
+              "rate": 0.5
+            },
+            {
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "tried": 1,
+              "succeeded": 0,
+              "rate": 0.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-bdf72e2665",
+              "category": "failed_attempt_weight_mismatch",
+              "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "reject",
+          "score": 0.3,
+          "reason": "Agent review rejected the proposal. Reconsider the diagnosis/action or obtain human verification; the model's policy interpretation is not an authoritative rule. Recorded delivery attempts: 2 of 3 permitted (budget remains). Recorded timeline span: 1.79 days against 5-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-04",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "address_conflict",
+          "confidence": 0.6,
+          "priority": "medium",
+          "rationale": "Model hypothesis: address_conflict; requires evidence verification. Recorded delivery attempts: 2 of 3 permitted (budget remains). Recorded timeline span: 1.79 days against 5-day policy SLA (within SLA). Distinct recorded address values: 1; compare versions and attempt evidence."
+        },
+        "recommendation": {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "grounded_in": [
+            "RES-e8c312b756",
+            "RES-ffd61bfb73"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "tried": 1,
+              "succeeded": 0,
+              "rate": 0.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-e8c312b756",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-ffd61bfb73",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.85,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 2 of 3 permitted (budget remains). Recorded timeline span: 1.79 days against 5-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-05",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "failed_attempt_barcode_mismatch",
+          "confidence": 0.25,
+          "priority": "high",
+          "rationale": "Model hypothesis: failed_attempt_barcode_mismatch; requires evidence verification. Recorded delivery attempts: 2 of 3 permitted (budget remains). Recorded timeline span: 1.92 days against 5-day policy SLA (within SLA). This context has no measured barcode, weight or gate observations to establish that subtype."
+        },
+        "recommendation": {
+          "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+          "grounded_in": [
+            "RES-e1976c486d",
+            "RES-fb2a32f195"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تصعيد الحالة للمشرف واتخاذ إجراء مركب لتصحيح العنوان وإعادة التسليم",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 1,
+              "succeeded": 0,
+              "rate": 0.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-e1976c486d",
+              "category": "failed_attempt_barcode_mismatch",
+              "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-fb2a32f195",
+              "category": "failed_attempt_barcode_mismatch",
+              "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.8,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 2 of 3 permitted (budget remains). Recorded timeline span: 1.92 days against 5-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-05",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "failed_attempt_barcode_mismatch",
+          "confidence": 0.4,
+          "priority": "medium",
+          "rationale": "Model hypothesis: failed_attempt_barcode_mismatch; requires evidence verification. Recorded delivery attempts: 2 of 3 permitted (budget remains). Recorded timeline span: 1.92 days against 5-day policy SLA (within SLA). This context has no measured barcode, weight or gate observations to establish that subtype."
+        },
+        "recommendation": {
+          "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+          "grounded_in": [
+            "RES-e1976c486d",
+            "RES-fb2a32f195"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تصعيد الحالة للمشرف واتخاذ إجراء مركب لتصحيح العنوان وإعادة التسليم",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 1,
+              "succeeded": 0,
+              "rate": 0.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-e1976c486d",
+              "category": "failed_attempt_barcode_mismatch",
+              "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-fb2a32f195",
+              "category": "failed_attempt_barcode_mismatch",
+              "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "reject",
+          "score": 0.28,
+          "reason": "Agent review rejected the proposal. Reconsider the diagnosis/action or obtain human verification; the model's policy interpretation is not an authoritative rule. Recorded delivery attempts: 2 of 3 permitted (budget remains). Recorded timeline span: 1.92 days against 5-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-06",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "hub_delay",
+          "confidence": 0.6,
+          "priority": "low",
+          "rationale": "Model hypothesis: hub_delay; requires evidence verification. Recorded delivery attempts: 0 of 3 permitted (budget remains). Recorded timeline span: 1.71 days against 5-day policy SLA (within SLA). A HUB_DELAY event is recorded; causal attribution still requires review."
+        },
+        "recommendation": {
+          "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+          "grounded_in": [
+            "RES-a2dc8540ae",
+            "RES-05753d5d1c"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "استبدال الملصق وإعادة فحص الشحنة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "tried": 3,
+              "succeeded": 2,
+              "rate": 0.667
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-a2dc8540ae",
+              "category": "hub_delay",
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-05753d5d1c",
+              "category": "hub_delay",
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.92,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 0 of 3 permitted (budget remains). Recorded timeline span: 1.71 days against 5-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-06",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "hub_delay",
+          "confidence": 0.9,
+          "priority": "medium",
+          "rationale": "Model hypothesis: hub_delay; requires evidence verification. Recorded delivery attempts: 0 of 3 permitted (budget remains). Recorded timeline span: 1.71 days against 5-day policy SLA (within SLA). A HUB_DELAY event is recorded; causal attribution still requires review."
+        },
+        "recommendation": {
+          "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+          "grounded_in": [
+            "RES-a2dc8540ae",
+            "RES-05753d5d1c"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "استبدال الملصق وإعادة فحص الشحنة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "tried": 3,
+              "succeeded": 2,
+              "rate": 0.667
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-a2dc8540ae",
+              "category": "hub_delay",
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-05753d5d1c",
+              "category": "hub_delay",
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.85,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 0 of 3 permitted (budget remains). Recorded timeline span: 1.71 days against 5-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-07",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "failed_attempt_wrong_gate",
+          "confidence": 0.7,
+          "priority": "medium",
+          "rationale": "Model hypothesis: failed_attempt_wrong_gate; requires evidence verification. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 1.17 days against 5-day policy SLA (within SLA). This context has no measured barcode, weight or gate observations to establish that subtype."
+        },
+        "recommendation": {
+          "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+          "grounded_in": [
+            "RES-62b146c76d",
+            "RES-dfe314b349"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 1. Matching cited outcomes: 1/1 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "استبدال الملصق وإعادة فحص الشحنة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-62b146c76d",
+              "category": "failed_attempt_wrong_gate",
+              "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-dfe314b349",
+              "category": "escalation:failed_attempt_wrong_gate",
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.9,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 1.17 days against 5-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-07",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "address_conflict",
+          "confidence": 0.75,
+          "priority": "medium",
+          "rationale": "Model hypothesis: address_conflict; requires evidence verification. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 1.17 days against 5-day policy SLA (within SLA). Distinct recorded address values: 2; compare versions and attempt evidence."
+        },
+        "recommendation": {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "grounded_in": [
+            "RES-e8c312b756",
+            "RES-ffd61bfb73"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-e8c312b756",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-ffd61bfb73",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.95,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 1.17 days against 5-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-08",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "recipient_unavailable",
+          "confidence": 0.7,
+          "priority": "medium",
+          "rationale": "Model hypothesis: recipient_unavailable; requires evidence verification. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 0.92 days against 3-day policy SLA (within SLA). Complaint statements are reports, not independently verified operational facts."
+        },
+        "recommendation": {
+          "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+          "grounded_in": [
+            "RES-60699c577c"
+          ],
+          "rationale": "Cited observed synthetic histories: 1; exact-action matches: 1. Matching cited outcomes: 1/1 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-60699c577c",
+              "category": "recipient_unavailable",
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.95,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 0.92 days against 3-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-08",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "recipient_unavailable",
+          "confidence": 0.86,
+          "priority": "medium",
+          "rationale": "Model hypothesis: recipient_unavailable; requires evidence verification. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 0.92 days against 3-day policy SLA (within SLA). Complaint statements are reports, not independently verified operational facts."
+        },
+        "recommendation": {
+          "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+          "grounded_in": [
+            "RES-60699c577c"
+          ],
+          "rationale": "Cited observed synthetic histories: 1; exact-action matches: 1. Matching cited outcomes: 1/1 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-60699c577c",
+              "category": "recipient_unavailable",
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.96,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 0.92 days against 3-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-09",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "recipient_unavailable",
+          "confidence": 0.8,
+          "priority": "medium",
+          "rationale": "Model hypothesis: recipient_unavailable; requires evidence verification. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 1.0 days against 3-day policy SLA (within SLA). Complaint statements are reports, not independently verified operational facts."
+        },
+        "recommendation": {
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "grounded_in": [
+            "RES-bc8ffd4617",
+            "RES-0325b77228"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "tried": 2,
+              "succeeded": 1,
+              "rate": 0.5
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-bc8ffd4617",
+              "category": "recipient_unavailable",
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-0325b77228",
+              "category": "recipient_unavailable",
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.95,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 1.0 days against 3-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-09",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "recipient_unavailable",
+          "confidence": 0.78,
+          "priority": "medium",
+          "rationale": "Model hypothesis: recipient_unavailable; requires evidence verification. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 1.0 days against 3-day policy SLA (within SLA). Complaint statements are reports, not independently verified operational facts."
+        },
+        "recommendation": {
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "grounded_in": [
+            "RES-bc8ffd4617",
+            "RES-0325b77228"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "tried": 2,
+              "succeeded": 1,
+              "rate": 0.5
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-bc8ffd4617",
+              "category": "recipient_unavailable",
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-0325b77228",
+              "category": "recipient_unavailable",
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.92,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 1.0 days against 3-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-10",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "failed_attempt_weight_mismatch",
+          "confidence": 0.4,
+          "priority": "high",
+          "rationale": "Model hypothesis: failed_attempt_weight_mismatch; requires evidence verification. Recorded delivery attempts: 1 of 1 permitted (budget exhausted). Recorded timeline span: 1.04 days against 1-day policy SLA (breached). This context has no measured barcode, weight or gate observations to establish that subtype."
+        },
+        "recommendation": {
+          "action": "استبدال الملصق وإعادة فحص الشحنة",
+          "grounded_in": [
+            "RES-6cc351a31c",
+            "RES-bdf72e2665"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 1. Matching cited outcomes: 1/1 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "استبدال الملصق وإعادة فحص الشحنة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+              "tried": 2,
+              "succeeded": 1,
+              "rate": 0.5
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-bdf72e2665",
+              "category": "failed_attempt_weight_mismatch",
+              "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-6cc351a31c",
+              "category": "failed_attempt_weight_mismatch",
+              "action": "استبدال الملصق وإعادة فحص الشحنة",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.9,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 1 permitted (budget exhausted). Recorded timeline span: 1.04 days against 1-day policy SLA (breached).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-10",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "address_conflict",
+          "confidence": 0.68,
+          "priority": "high",
+          "rationale": "Model hypothesis: address_conflict; requires evidence verification. Recorded delivery attempts: 1 of 1 permitted (budget exhausted). Recorded timeline span: 1.04 days against 1-day policy SLA (breached). Distinct recorded address values: 1; compare versions and attempt evidence."
+        },
+        "recommendation": {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "grounded_in": [
+            "RES-e8c312b756",
+            "RES-ffd61bfb73"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "استبدال الملصق وإعادة فحص الشحنة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-e8c312b756",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-ffd61bfb73",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "reject",
+          "score": 0.15,
+          "reason": "Agent review rejected the proposal. Reconsider the diagnosis/action or obtain human verification; the model's policy interpretation is not an authoritative rule. Recorded delivery attempts: 1 of 1 permitted (budget exhausted). Recorded timeline span: 1.04 days against 1-day policy SLA (breached).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-11",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "address_conflict",
+          "confidence": 0.6,
+          "priority": "high",
+          "rationale": "Model hypothesis: address_conflict; requires evidence verification. Recorded delivery attempts: 1 of 1 permitted (budget exhausted). Recorded timeline span: 1.08 days against 1-day policy SLA (breached). Distinct recorded address values: 1; compare versions and attempt evidence."
+        },
+        "recommendation": {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "grounded_in": [
+            "RES-e8c312b756",
+            "RES-ffd61bfb73"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-e8c312b756",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-ffd61bfb73",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.9,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 1 permitted (budget exhausted). Recorded timeline span: 1.08 days against 1-day policy SLA (breached).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-11",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "address_conflict",
+          "confidence": 0.66,
+          "priority": "high",
+          "rationale": "Model hypothesis: address_conflict; requires evidence verification. Recorded delivery attempts: 1 of 1 permitted (budget exhausted). Recorded timeline span: 1.08 days against 1-day policy SLA (breached). Distinct recorded address values: 1; compare versions and attempt evidence."
+        },
+        "recommendation": {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "grounded_in": [
+            "RES-e8c312b756",
+            "RES-ffd61bfb73"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-e8c312b756",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-ffd61bfb73",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "reject",
+          "score": 0.12,
+          "reason": "Agent review rejected the proposal. Reconsider the diagnosis/action or obtain human verification; the model's policy interpretation is not an authoritative rule. Recorded delivery attempts: 1 of 1 permitted (budget exhausted). Recorded timeline span: 1.08 days against 1-day policy SLA (breached).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-12",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "recipient_unavailable",
+          "confidence": 0.6,
+          "priority": "high",
+          "rationale": "Model hypothesis: recipient_unavailable; requires evidence verification. Recorded delivery attempts: 0 of 1 permitted (budget remains). Recorded timeline span: 1.75 days against 1-day policy SLA (breached). Complaint statements are reports, not independently verified operational facts."
+        },
+        "recommendation": {
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "grounded_in": [
+            "RES-bc8ffd4617",
+            "RES-0325b77228"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-bc8ffd4617",
+              "category": "recipient_unavailable",
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-0325b77228",
+              "category": "recipient_unavailable",
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.95,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 0 of 1 permitted (budget remains). Recorded timeline span: 1.75 days against 1-day policy SLA (breached).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-12",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "hub_delay",
+          "confidence": 0.85,
+          "priority": "high",
+          "rationale": "Model hypothesis: hub_delay; requires evidence verification. Recorded delivery attempts: 0 of 1 permitted (budget remains). Recorded timeline span: 1.75 days against 1-day policy SLA (breached). A HUB_DELAY event is recorded; causal attribution still requires review."
+        },
+        "recommendation": {
+          "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+          "grounded_in": [
+            "RES-a2dc8540ae",
+            "RES-05753d5d1c"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "tried": 3,
+              "succeeded": 2,
+              "rate": 0.667
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-a2dc8540ae",
+              "category": "hub_delay",
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-05753d5d1c",
+              "category": "hub_delay",
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.86,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 0 of 1 permitted (budget remains). Recorded timeline span: 1.75 days against 1-day policy SLA (breached).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-13",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "address_conflict",
+          "confidence": 0.9,
+          "priority": "medium",
+          "rationale": "Model hypothesis: address_conflict; requires evidence verification. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 1.0 days against 5-day policy SLA (within SLA). Distinct recorded address values: 2; compare versions and attempt evidence."
+        },
+        "recommendation": {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "grounded_in": [
+            "RES-e8c312b756",
+            "RES-ffd61bfb73"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-e8c312b756",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-ffd61bfb73",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.95,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 1.0 days against 5-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-13",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "address_conflict",
+          "confidence": 0.85,
+          "priority": "medium",
+          "rationale": "Model hypothesis: address_conflict; requires evidence verification. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 1.0 days against 5-day policy SLA (within SLA). Distinct recorded address values: 2; compare versions and attempt evidence."
+        },
+        "recommendation": {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "grounded_in": [
+            "RES-e8c312b756",
+            "RES-ffd61bfb73"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-e8c312b756",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-ffd61bfb73",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.95,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 1.0 days against 5-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-14",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "recipient_unavailable",
+          "confidence": 0.9,
+          "priority": "medium",
+          "rationale": "Model hypothesis: recipient_unavailable; requires evidence verification. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 0.96 days against 3-day policy SLA (within SLA). Complaint statements are reports, not independently verified operational facts."
+        },
+        "recommendation": {
+          "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+          "grounded_in": [
+            "RES-13e79b5e29",
+            "RES-91c9fa4e29"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 3,
+              "succeeded": 3,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-13e79b5e29",
+              "category": "recipient_unavailable",
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-91c9fa4e29",
+              "category": "recipient_unavailable",
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.95,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 0.96 days against 3-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-14",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "recipient_unavailable",
+          "confidence": 0.9,
+          "priority": "medium",
+          "rationale": "Model hypothesis: recipient_unavailable; requires evidence verification. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 0.96 days against 3-day policy SLA (within SLA). Complaint statements are reports, not independently verified operational facts."
+        },
+        "recommendation": {
+          "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+          "grounded_in": [
+            "RES-13e79b5e29",
+            "RES-91c9fa4e29"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 3,
+              "succeeded": 3,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-13e79b5e29",
+              "category": "recipient_unavailable",
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-91c9fa4e29",
+              "category": "recipient_unavailable",
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.97,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 0.96 days against 3-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-15",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "recipient_unavailable",
+          "confidence": 0.6,
+          "priority": "medium",
+          "rationale": "Model hypothesis: recipient_unavailable; requires evidence verification. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 0.67 days against 3-day policy SLA (within SLA). Complaint statements are reports, not independently verified operational facts."
+        },
+        "recommendation": {
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "grounded_in": [
+            "RES-bc8ffd4617"
+          ],
+          "rationale": "Cited observed synthetic histories: 1; exact-action matches: 1. Matching cited outcomes: 1/1 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تصعيد الحالة للمشرف واتخاذ إجراء مركب لتصحيح العنوان وإعادة التسليم",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-bc8ffd4617",
+              "category": "recipient_unavailable",
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.9,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 0.67 days against 3-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-15",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "recipient_unavailable",
+          "confidence": 0.6,
+          "priority": "medium",
+          "rationale": "Model hypothesis: recipient_unavailable; requires evidence verification. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 0.67 days against 3-day policy SLA (within SLA). Complaint statements are reports, not independently verified operational facts."
+        },
+        "recommendation": {
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "grounded_in": [
+            "RES-bc8ffd4617"
+          ],
+          "rationale": "Cited observed synthetic histories: 1; exact-action matches: 1. Matching cited outcomes: 1/1 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تصعيد الحالة للمشرف واتخاذ إجراء مركب لتصحيح العنوان وإعادة التسليم",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-bc8ffd4617",
+              "category": "recipient_unavailable",
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.95,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 0.67 days against 3-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-16",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "failed_attempt_wrong_gate",
+          "confidence": 0.3,
+          "priority": "low",
+          "rationale": "Model hypothesis: failed_attempt_wrong_gate; requires evidence verification. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 0.83 days against 3-day policy SLA (within SLA). This context has no measured barcode, weight or gate observations to establish that subtype."
+        },
+        "recommendation": {
+          "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+          "grounded_in": [
+            "RES-dfe314b349",
+            "RES-b2c33a9759",
+            "RES-64d9df1d1c"
+          ],
+          "rationale": "Cited observed synthetic histories: 3; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "تسريع الشحنة عبر خط نقل مباشر",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "استبدال الملصق وإعادة فحص الشحنة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-dfe314b349",
+              "category": "escalation:failed_attempt_wrong_gate",
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-b2c33a9759",
+              "category": "escalation:recipient_unavailable",
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-64d9df1d1c",
+              "category": "escalation:failed_attempt_wrong_gate",
+              "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "reject",
+          "score": 0.2,
+          "reason": "Agent review rejected the proposal. Reconsider the diagnosis/action or obtain human verification; the model's policy interpretation is not an authoritative rule. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 0.83 days against 3-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-16",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "address_conflict",
+          "confidence": 0.3,
+          "priority": "medium",
+          "rationale": "Model hypothesis: address_conflict; requires evidence verification. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 0.83 days against 3-day policy SLA (within SLA). Distinct recorded address values: 1; compare versions and attempt evidence."
+        },
+        "recommendation": {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "grounded_in": [
+            "RES-e8c312b756",
+            "RES-ffd61bfb73",
+            "RES-06cdd01086"
+          ],
+          "rationale": "Cited observed synthetic histories: 3; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "تسريع الشحنة عبر خط نقل مباشر",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-e8c312b756",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-06cdd01086",
+              "category": "address_conflict",
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-ffd61bfb73",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "reject",
+          "score": 0.32,
+          "reason": "Agent review rejected the proposal. Reconsider the diagnosis/action or obtain human verification; the model's policy interpretation is not an authoritative rule. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 0.83 days against 3-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-17",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "address_conflict",
+          "confidence": 0.7,
+          "priority": "medium",
+          "rationale": "Model hypothesis: address_conflict; requires evidence verification. Recorded delivery attempts: 1 of 1 permitted (budget exhausted). Recorded timeline span: 1.12 days against 1-day policy SLA (breached). Distinct recorded address values: 1; compare versions and attempt evidence."
+        },
+        "recommendation": {
+          "action": "التواصل مع العميل لتحديد الموقع عبر الإحداثيات",
+          "grounded_in": [
+            "RES-7fa9023aa0"
+          ],
+          "rationale": "Cited observed synthetic histories: 1; exact-action matches: 1. Matching cited outcomes: 1/1 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "التواصل مع العميل لتحديد الموقع عبر الإحداثيات",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-7fa9023aa0",
+              "category": "address_conflict",
+              "action": "التواصل مع العميل لتحديد الموقع عبر الإحداثيات",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.9,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 1 permitted (budget exhausted). Recorded timeline span: 1.12 days against 1-day policy SLA (breached).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-17",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "address_conflict",
+          "confidence": 0.65,
+          "priority": "high",
+          "rationale": "Model hypothesis: address_conflict; requires evidence verification. Recorded delivery attempts: 1 of 1 permitted (budget exhausted). Recorded timeline span: 1.12 days against 1-day policy SLA (breached). Distinct recorded address values: 1; compare versions and attempt evidence."
+        },
+        "recommendation": {
+          "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+          "grounded_in": [
+            "RES-be5fb79e20",
+            "RES-06cdd01086"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "التواصل مع العميل لتحديد الموقع عبر الإحداثيات",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-be5fb79e20",
+              "category": "address_conflict",
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-06cdd01086",
+              "category": "address_conflict",
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "reject",
+          "score": 0.0,
+          "reason": "Retry budget exhausted (1 of 1 permitted attempt(s) used - EXHAUSTED, re-delivery not admissible.) but the proposed action is another delivery retry. Propose a different approach or escalate.",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-18",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "hub_delay",
+          "confidence": 0.92,
+          "priority": "high",
+          "rationale": "Model hypothesis: hub_delay; requires evidence verification. Recorded delivery attempts: 0 of 2 permitted (budget remains). Recorded timeline span: 2.79 days against 3-day policy SLA (within SLA). A HUB_DELAY event is recorded; causal attribution still requires review."
+        },
+        "recommendation": {
+          "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+          "grounded_in": [
+            "RES-a2dc8540ae",
+            "RES-8480f85f26",
+            "RES-05753d5d1c"
+          ],
+          "rationale": "Cited observed synthetic histories: 3; exact-action matches: 3. Matching cited outcomes: 3/3 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "tried": 4,
+              "succeeded": 3,
+              "rate": 0.75
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-a2dc8540ae",
+              "category": "hub_delay",
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-8480f85f26",
+              "category": "hub_delay",
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-05753d5d1c",
+              "category": "hub_delay",
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.92,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 0 of 2 permitted (budget remains). Recorded timeline span: 2.79 days against 3-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-18",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "hub_delay",
+          "confidence": 0.85,
+          "priority": "high",
+          "rationale": "Model hypothesis: hub_delay; requires evidence verification. Recorded delivery attempts: 0 of 2 permitted (budget remains). Recorded timeline span: 2.79 days against 3-day policy SLA (within SLA). A HUB_DELAY event is recorded; causal attribution still requires review."
+        },
+        "recommendation": {
+          "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+          "grounded_in": [
+            "RES-a2dc8540ae",
+            "RES-8480f85f26",
+            "RES-05753d5d1c"
+          ],
+          "rationale": "Cited observed synthetic histories: 3; exact-action matches: 3. Matching cited outcomes: 3/3 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "tried": 4,
+              "succeeded": 3,
+              "rate": 0.75
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-a2dc8540ae",
+              "category": "hub_delay",
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-8480f85f26",
+              "category": "hub_delay",
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-05753d5d1c",
+              "category": "hub_delay",
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.92,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 0 of 2 permitted (budget remains). Recorded timeline span: 2.79 days against 3-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-19",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "address_conflict",
+          "confidence": 0.92,
+          "priority": "medium",
+          "rationale": "Model hypothesis: address_conflict; requires evidence verification. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 1.21 days against 5-day policy SLA (within SLA). Distinct recorded address values: 2; compare versions and attempt evidence."
+        },
+        "recommendation": {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "grounded_in": [
+            "RES-e8c312b756",
+            "RES-ffd61bfb73"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-e8c312b756",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-ffd61bfb73",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.95,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 1.21 days against 5-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-19",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "address_conflict",
+          "confidence": 0.78,
+          "priority": "medium",
+          "rationale": "Model hypothesis: address_conflict; requires evidence verification. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 1.21 days against 5-day policy SLA (within SLA). Distinct recorded address values: 2; compare versions and attempt evidence."
+        },
+        "recommendation": {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "grounded_in": [
+            "RES-e8c312b756",
+            "RES-ffd61bfb73"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-e8c312b756",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-ffd61bfb73",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.95,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 1.21 days against 5-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-20",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "recipient_unavailable",
+          "confidence": 0.9,
+          "priority": "medium",
+          "rationale": "Model hypothesis: recipient_unavailable; requires evidence verification. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 0.92 days against 5-day policy SLA (within SLA). Complaint statements are reports, not independently verified operational facts."
+        },
+        "recommendation": {
+          "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+          "grounded_in": [
+            "RES-13e79b5e29",
+            "RES-7f2150d496"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 2,
+              "succeeded": 1,
+              "rate": 0.5
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-13e79b5e29",
+              "category": "recipient_unavailable",
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-7f2150d496",
+              "category": "recipient_unavailable",
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.95,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 0.92 days against 5-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-20",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "recipient_unavailable",
+          "confidence": 0.85,
+          "priority": "medium",
+          "rationale": "Model hypothesis: recipient_unavailable; requires evidence verification. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 0.92 days against 5-day policy SLA (within SLA). Complaint statements are reports, not independently verified operational facts."
+        },
+        "recommendation": {
+          "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+          "grounded_in": [
+            "RES-13e79b5e29",
+            "RES-7f2150d496"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 2,
+              "succeeded": 1,
+              "rate": 0.5
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-13e79b5e29",
+              "category": "recipient_unavailable",
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-7f2150d496",
+              "category": "recipient_unavailable",
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.95,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 0.92 days against 5-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-21",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "recipient_unavailable",
+          "confidence": 0.92,
+          "priority": "medium",
+          "rationale": "Model hypothesis: recipient_unavailable; requires evidence verification. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 1.21 days against 3-day policy SLA (within SLA). Complaint statements are reports, not independently verified operational facts."
+        },
+        "recommendation": {
+          "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+          "grounded_in": [
+            "RES-3baa2754ac",
+            "RES-b916d22b39"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-3baa2754ac",
+              "category": "recipient_unavailable",
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-b916d22b39",
+              "category": "recipient_unavailable",
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.95,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 1.21 days against 3-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-21",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "recipient_unavailable",
+          "confidence": 0.73,
+          "priority": "medium",
+          "rationale": "Model hypothesis: recipient_unavailable; requires evidence verification. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 1.21 days against 3-day policy SLA (within SLA). Complaint statements are reports, not independently verified operational facts."
+        },
+        "recommendation": {
+          "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+          "grounded_in": [
+            "RES-3baa2754ac",
+            "RES-b916d22b39"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-3baa2754ac",
+              "category": "recipient_unavailable",
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-b916d22b39",
+              "category": "recipient_unavailable",
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.85,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 1.21 days against 3-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-22",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "address_conflict",
+          "confidence": 0.4,
+          "priority": "medium",
+          "rationale": "Model hypothesis: address_conflict; requires evidence verification. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 0.88 days against 3-day policy SLA (within SLA). Distinct recorded address values: 1; compare versions and attempt evidence."
+        },
+        "recommendation": {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "grounded_in": [
+            "RES-fffec4c18c",
+            "RES-e8c312b756",
+            "RES-ffd61bfb73"
+          ],
+          "rationale": "Cited observed synthetic histories: 3; exact-action matches: 3. Matching cited outcomes: 3/3 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "tried": 3,
+              "succeeded": 3,
+              "rate": 1.0
+            },
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-fffec4c18c",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-e8c312b756",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-ffd61bfb73",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.85,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 0.88 days against 3-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-22",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "failed_attempt_barcode_mismatch",
+          "confidence": 0.55,
+          "priority": "medium",
+          "rationale": "Model hypothesis: failed_attempt_barcode_mismatch; requires evidence verification. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 0.88 days against 3-day policy SLA (within SLA). This context has no measured barcode, weight or gate observations to establish that subtype."
+        },
+        "recommendation": {
+          "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+          "grounded_in": [
+            "RES-fb2a32f195"
+          ],
+          "rationale": "Cited observed synthetic histories: 1; exact-action matches: 1. Matching cited outcomes: 1/1 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تصعيد الحالة للمشرف واتخاذ إجراء مركب لتصحيح العنوان وإعادة التسليم",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-fb2a32f195",
+              "category": "failed_attempt_barcode_mismatch",
+              "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.78,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 0.88 days against 3-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-23",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "address_conflict",
+          "confidence": 0.4,
+          "priority": "medium",
+          "rationale": "Model hypothesis: address_conflict; requires evidence verification. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 0.83 days against 3-day policy SLA (within SLA). Distinct recorded address values: 1; compare versions and attempt evidence."
+        },
+        "recommendation": {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "grounded_in": [
+            "RES-e8c312b756",
+            "RES-ffd61bfb73"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "استبدال الملصق وإعادة فحص الشحنة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-e8c312b756",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-ffd61bfb73",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.92,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 0.83 days against 3-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-23",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "failed_attempt_barcode_mismatch",
+          "confidence": 0.3,
+          "priority": "low",
+          "rationale": "Model hypothesis: failed_attempt_barcode_mismatch; requires evidence verification. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 0.83 days against 3-day policy SLA (within SLA). This context has no measured barcode, weight or gate observations to establish that subtype."
+        },
+        "recommendation": {
+          "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+          "grounded_in": [
+            "RES-e1976c486d",
+            "RES-fb2a32f195"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تصعيد الحالة للمشرف واتخاذ إجراء مركب لتصحيح العنوان وإعادة التسليم",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "استبدال الملصق وإعادة فحص الشحنة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-e1976c486d",
+              "category": "failed_attempt_barcode_mismatch",
+              "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-fb2a32f195",
+              "category": "failed_attempt_barcode_mismatch",
+              "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.78,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 2 permitted (budget remains). Recorded timeline span: 0.83 days against 3-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-24",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "hub_delay",
+          "confidence": 0.65,
+          "priority": "high",
+          "rationale": "Model hypothesis: hub_delay; requires evidence verification. Recorded delivery attempts: 0 of 3 permitted (budget remains). Recorded timeline span: 1.96 days against 5-day policy SLA (within SLA). A HUB_DELAY event is recorded; causal attribution still requires review."
+        },
+        "recommendation": {
+          "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+          "grounded_in": [
+            "RES-a2dc8540ae",
+            "RES-05753d5d1c"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "tried": 3,
+              "succeeded": 2,
+              "rate": 0.667
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-a2dc8540ae",
+              "category": "hub_delay",
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-05753d5d1c",
+              "category": "hub_delay",
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.9,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 0 of 3 permitted (budget remains). Recorded timeline span: 1.96 days against 5-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-24",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "hub_delay",
+          "confidence": 0.85,
+          "priority": "medium",
+          "rationale": "Model hypothesis: hub_delay; requires evidence verification. Recorded delivery attempts: 0 of 3 permitted (budget remains). Recorded timeline span: 1.96 days against 5-day policy SLA (within SLA). A HUB_DELAY event is recorded; causal attribution still requires review."
+        },
+        "recommendation": {
+          "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+          "grounded_in": [
+            "RES-a2dc8540ae",
+            "RES-05753d5d1c"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "tried": 3,
+              "succeeded": 2,
+              "rate": 0.667
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-a2dc8540ae",
+              "category": "hub_delay",
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-05753d5d1c",
+              "category": "hub_delay",
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.88,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 0 of 3 permitted (budget remains). Recorded timeline span: 1.96 days against 5-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-25",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "address_conflict",
+          "confidence": 0.92,
+          "priority": "medium",
+          "rationale": "Model hypothesis: address_conflict; requires evidence verification. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 1.0 days against 5-day policy SLA (within SLA). Distinct recorded address values: 2; compare versions and attempt evidence."
+        },
+        "recommendation": {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "grounded_in": [
+            "RES-e8c312b756",
+            "RES-ffd61bfb73"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+              "tried": 1,
+              "succeeded": 0,
+              "rate": 0.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-e8c312b756",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-ffd61bfb73",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.92,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 1.0 days against 5-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-25",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "address_conflict",
+          "confidence": 0.85,
+          "priority": "medium",
+          "rationale": "Model hypothesis: address_conflict; requires evidence verification. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 1.0 days against 5-day policy SLA (within SLA). Distinct recorded address values: 2; compare versions and attempt evidence."
+        },
+        "recommendation": {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "grounded_in": [
+            "RES-e8c312b756",
+            "RES-ffd61bfb73"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+              "tried": 1,
+              "succeeded": 0,
+              "rate": 0.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-e8c312b756",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-ffd61bfb73",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "reject",
+          "score": 0.0,
+          "reason": "Agent review rejected the proposal. Reconsider the diagnosis/action or obtain human verification; the model's policy interpretation is not an authoritative rule. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 1.0 days against 5-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-26",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "recipient_unavailable",
+          "confidence": 0.8,
+          "priority": "medium",
+          "rationale": "Model hypothesis: recipient_unavailable; requires evidence verification. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 0.92 days against 5-day policy SLA (within SLA). Complaint statements are reports, not independently verified operational facts."
+        },
+        "recommendation": {
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "grounded_in": [
+            "RES-bc8ffd4617",
+            "RES-0325b77228"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "تصعيد الحالة للمشرف واتخاذ إجراء مركب لتصحيح العنوان وإعادة التسليم",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-bc8ffd4617",
+              "category": "recipient_unavailable",
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-0325b77228",
+              "category": "recipient_unavailable",
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.95,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 0.92 days against 5-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-26",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "recipient_unavailable",
+          "confidence": 0.7,
+          "priority": "medium",
+          "rationale": "Model hypothesis: recipient_unavailable; requires evidence verification. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 0.92 days against 5-day policy SLA (within SLA). Complaint statements are reports, not independently verified operational facts."
+        },
+        "recommendation": {
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "grounded_in": [
+            "RES-bc8ffd4617",
+            "RES-0325b77228"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "تصعيد الحالة للمشرف واتخاذ إجراء مركب لتصحيح العنوان وإعادة التسليم",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-bc8ffd4617",
+              "category": "recipient_unavailable",
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-0325b77228",
+              "category": "recipient_unavailable",
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.95,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 0.92 days against 5-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-27",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "recipient_unavailable",
+          "confidence": 0.85,
+          "priority": "high",
+          "rationale": "Model hypothesis: recipient_unavailable; requires evidence verification. Recorded delivery attempts: 1 of 1 permitted (budget exhausted). Recorded timeline span: 0.83 days against 1-day policy SLA (within SLA). Complaint statements are reports, not independently verified operational facts."
+        },
+        "recommendation": {
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "grounded_in": [
+            "RES-ad40fc09db",
+            "RES-bc8ffd4617"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-ad40fc09db",
+              "category": "recipient_unavailable",
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-bc8ffd4617",
+              "category": "recipient_unavailable",
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "reject",
+          "score": 0.0,
+          "reason": "Retry budget exhausted (1 of 1 permitted attempt(s) used - EXHAUSTED, re-delivery not admissible.) but the proposed action is another delivery retry. Propose a different approach or escalate.",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-27",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "recipient_unavailable",
+          "confidence": 0.6,
+          "priority": "high",
+          "rationale": "Model hypothesis: recipient_unavailable; requires evidence verification. Recorded delivery attempts: 1 of 1 permitted (budget exhausted). Recorded timeline span: 0.83 days against 1-day policy SLA (within SLA). Complaint statements are reports, not independently verified operational facts."
+        },
+        "recommendation": {
+          "action": "تسليم لجهة بديلة بموافقة العميل",
+          "grounded_in": [
+            "RES-2e031da97e"
+          ],
+          "rationale": "Cited observed synthetic histories: 1; exact-action matches: 1. Matching cited outcomes: 1/1 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-2e031da97e",
+              "category": "recipient_unavailable",
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "reject",
+          "score": 0.22,
+          "reason": "Agent review rejected the proposal. Reconsider the diagnosis/action or obtain human verification; the model's policy interpretation is not an authoritative rule. Recorded delivery attempts: 1 of 1 permitted (budget exhausted). Recorded timeline span: 0.83 days against 1-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-28",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "failed_attempt_wrong_gate",
+          "confidence": 0.2,
+          "priority": "low",
+          "rationale": "Model hypothesis: failed_attempt_wrong_gate; requires evidence verification. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 0.83 days against 5-day policy SLA (within SLA). This context has no measured barcode, weight or gate observations to establish that subtype."
+        },
+        "recommendation": {
+          "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+          "grounded_in": [
+            "RES-dfe314b349",
+            "RES-64d9df1d1c"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 1. Matching cited outcomes: 1/1 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "استبدال الملصق وإعادة فحص الشحنة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-dfe314b349",
+              "category": "escalation:failed_attempt_wrong_gate",
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-64d9df1d1c",
+              "category": "escalation:failed_attempt_wrong_gate",
+              "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.9,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 0.83 days against 5-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-28",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "address_conflict",
+          "confidence": 0.66,
+          "priority": "medium",
+          "rationale": "Model hypothesis: address_conflict; requires evidence verification. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 0.83 days against 5-day policy SLA (within SLA). Distinct recorded address values: 1; compare versions and attempt evidence."
+        },
+        "recommendation": {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "grounded_in": [
+            "RES-e8c312b756",
+            "RES-ffd61bfb73"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-e8c312b756",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-ffd61bfb73",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.86,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 0.83 days against 5-day policy SLA (within SLA).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-29",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "address_conflict",
+          "confidence": 0.4,
+          "priority": "high",
+          "rationale": "Model hypothesis: address_conflict; requires evidence verification. Recorded delivery attempts: 1 of 1 permitted (budget exhausted). Recorded timeline span: 1.04 days against 1-day policy SLA (breached). Distinct recorded address values: 1; compare versions and attempt evidence."
+        },
+        "recommendation": {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "grounded_in": [
+            "RES-e8c312b756",
+            "RES-ffd61bfb73"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-e8c312b756",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-ffd61bfb73",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "reject",
+          "score": 0.2,
+          "reason": "Agent review rejected the proposal. Reconsider the diagnosis/action or obtain human verification; the model's policy interpretation is not an authoritative rule. Recorded delivery attempts: 1 of 1 permitted (budget exhausted). Recorded timeline span: 1.04 days against 1-day policy SLA (breached).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-29",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "address_conflict",
+          "confidence": 0.68,
+          "priority": "high",
+          "rationale": "Model hypothesis: address_conflict; requires evidence verification. Recorded delivery attempts: 1 of 1 permitted (budget exhausted). Recorded timeline span: 1.04 days against 1-day policy SLA (breached). Distinct recorded address values: 1; compare versions and attempt evidence."
+        },
+        "recommendation": {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "grounded_in": [
+            "RES-e8c312b756",
+            "RES-ffd61bfb73"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "tried": 2,
+              "succeeded": 2,
+              "rate": 1.0
+            },
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-e8c312b756",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-ffd61bfb73",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "reject",
+          "score": 0.15,
+          "reason": "Agent review rejected the proposal. Reconsider the diagnosis/action or obtain human verification; the model's policy interpretation is not an authoritative rule. Recorded delivery attempts: 1 of 1 permitted (budget exhausted). Recorded timeline span: 1.04 days against 1-day policy SLA (breached).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-30",
+      "model": "20b",
+      "operator_fields": {
+        "classification": {
+          "category": "hub_delay",
+          "confidence": 0.7,
+          "priority": "high",
+          "rationale": "Model hypothesis: hub_delay; requires evidence verification. Recorded delivery attempts: 0 of 1 permitted (budget remains). Recorded timeline span: 2.21 days against 1-day policy SLA (breached). A HUB_DELAY event is recorded; causal attribution still requires review."
+        },
+        "recommendation": {
+          "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+          "grounded_in": [
+            "RES-a2dc8540ae",
+            "RES-05753d5d1c"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "التواصل مع العميل لتحديد الموقع عبر الإحداثيات",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "tried": 3,
+              "succeeded": 2,
+              "rate": 0.667
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-a2dc8540ae",
+              "category": "hub_delay",
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-05753d5d1c",
+              "category": "hub_delay",
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.8,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 0 of 1 permitted (budget remains). Recorded timeline span: 2.21 days against 1-day policy SLA (breached).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "case-30",
+      "model": "120b",
+      "operator_fields": {
+        "classification": {
+          "category": "hub_delay",
+          "confidence": 0.85,
+          "priority": "high",
+          "rationale": "Model hypothesis: hub_delay; requires evidence verification. Recorded delivery attempts: 0 of 1 permitted (budget remains). Recorded timeline span: 2.21 days against 1-day policy SLA (breached). A HUB_DELAY event is recorded; causal attribution still requires review."
+        },
+        "recommendation": {
+          "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+          "grounded_in": [
+            "RES-a2dc8540ae",
+            "RES-05753d5d1c"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed.",
+          "candidates": [
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "التواصل مع العميل لتحديد الموقع عبر الإحداثيات",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "tried": 3,
+              "succeeded": 2,
+              "rate": 0.667
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-a2dc8540ae",
+              "category": "hub_delay",
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "success": true
+            },
+            {
+              "resolution_id": "RES-05753d5d1c",
+              "category": "hub_delay",
+              "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+              "success": true
+            }
+          ]
+        },
+        "review": {
+          "verdict": "accept",
+          "score": 0.86,
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 0 of 1 permitted (budget remains). Recorded timeline span: 2.21 days against 1-day policy SLA (breached).",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        }
+      }
+    }
+  ]
+}

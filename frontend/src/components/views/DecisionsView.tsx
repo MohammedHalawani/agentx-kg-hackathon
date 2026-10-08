@@ -98,7 +98,7 @@ function CaseCoverageCard({ resolved, open }: { resolved: number; open: number }
             className="h-1.5"
             trackClassName="h-1.5"
             segments={[
-              { value: resolved, variant: 'success' },
+              { value: resolved, variant: 'neutral' },
               { value: open, variant: 'pending' },
             ]}
           />
@@ -423,7 +423,7 @@ export function DecisionsView() {
           />
           <KpiCard
             label={t('decisions.kpi.historicalSuccess')}
-            value={`${overallRate}%`}
+            value={totalCases ? `${overallRate}%` : '—'}
             detail={t('decisions.kpi.historicalDetail', { won: totalWon, total: totalCases })}
             icon={<TrendingUp size={15} />}
           />

@@ -33,13 +33,12 @@ function readStoredLanguage(): Language {
   return 'en'
 }
 
-// `lang` is the hook the stylesheet uses: :root[lang='ar'] switches text blocks to
-// unicode-bidi: plaintext, so each one takes its direction from its own content (see
-// index.css). `dir` stays ltr on purpose - the frame does not mirror, only the text in it.
+// Text keeps content-aware bidi handling; the operator shell follows the chosen language.
+// Maps, graph canvases and identifiers retain their explicit local directions.
 function applyLanguage(language: Language) {
   const root = document.documentElement
   root.lang = language
-  root.dir = 'ltr'
+  root.dir = language === 'ar' ? 'rtl' : 'ltr'
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {

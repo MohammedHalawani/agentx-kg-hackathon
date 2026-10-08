@@ -98,7 +98,8 @@ export function useChatStream(): UseChatStream {
         history,
         {
           onText: (chunk) => patch((m) => ({ ...m, content: m.content + chunk })),
-          onReasoning: (chunk) => patch((m) => ({ ...m, reasoning: (m.reasoning ?? '') + chunk })),
+          // Provider reasoning is internal and must never be retained for operator display.
+          onReasoning: () => undefined,
           onStep: (step) => patch((m) => ({ ...m, steps: [...(m.steps ?? []), step] })),
           onArtifact: (artifact) => patch((m) => ({ ...m, artifact })),
           onError: (msg) =>

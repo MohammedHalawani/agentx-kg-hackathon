@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Box, Share2 } from 'lucide-react'
-import type { SubGraph } from '../../types/contract'
+import type { GraphNode, SubGraph } from '../../types/contract'
 import type { LayoutKey } from '../../lib/graphLayouts'
 import { useLanguage } from '@/components/i18n/LanguageProvider'
 import { cn } from '../../lib/cn'
@@ -14,6 +14,7 @@ interface GraphProps {
   graph: SubGraph
   layout?: LayoutKey
   onLayoutChange?: (layout: LayoutKey) => void
+  onNodeSelect?: (node: GraphNode) => void
 }
 
 export function Graph(props: GraphProps) {

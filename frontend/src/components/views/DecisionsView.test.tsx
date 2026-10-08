@@ -109,20 +109,21 @@ describe('DecisionsView metric semantics (M01–M05, D01)', () => {
     expect(partialSegments.length).toBe(2)
   })
 
-  it('splits coverage bar into resolved (success) and open (pending) segments', () => {
+  it('shows recorded resolution coverage neutrally instead of implying success', () => {
     renderDecisions()
 
     const coverageCard = screen.getByText('Case coverage').closest('[data-slot="card"]')
     expect(coverageCard).toBeTruthy()
 
-    const coverageSegments = coverageCard!.querySelectorAll('[data-variant="success"], [data-variant="pending"]')
+    const coverageSegments = coverageCard!.querySelectorAll('[data-variant="neutral"], [data-variant="pending"]')
     expect(coverageSegments.length).toBe(2)
+    expect(coverageCard!.querySelector('[data-variant="success"]')).toBeNull()
   })
 
   it('uses neutral styling for learning badge when agent writebacks exist', () => {
     renderDecisions()
 
-    const badge = screen.getByText(/3 agent precedent/)
+    const badge = screen.getByText(/3 agent recommendation/)
     expect(badge.className).not.toContain('text-chart-good')
     expect(badge.className).toContain('text-muted-foreground')
   })

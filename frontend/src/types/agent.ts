@@ -8,7 +8,7 @@ export interface Precedent {
   failure_id: string
   category: string
   action: string
-  success: boolean
+  success: boolean | null
   score: number
   case_summary?: string
   resolution_id?: string

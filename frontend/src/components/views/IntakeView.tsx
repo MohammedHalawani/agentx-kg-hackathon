@@ -9,6 +9,20 @@ import { AflDivider, StageCard } from '../agent/StageCard'
 import { CaseFile } from '../agent/CaseFile'
 import { cn } from '../../lib/cn'
 import type { Stage } from '../../types/agent'
+import type { ExploreShipment } from '../../types/explore'
+import { ExploreShipmentCard } from './ExploreShipmentCard'
+import { Graph } from '../artifacts/Graph'
+import type { SubGraph } from '../../types/contract'
+
+function SelectedCase({ shipment, unresolvedCase, onRun }: { shipment: ExploreShipment; unresolvedCase?: OpenCase; onRun: (text: string) => void }) {
+  const { t } = useLanguage()
+  const { data, loading, error } = useFetch<SubGraph>(`/graph?shipment_id=${encodeURIComponent(shipment.shipment_id)}`)
+  return <div className="mb-5 space-y-3">
+    <ExploreShipmentCard shipment={shipment} onOpenCase={unresolvedCase ? () => onRun(unresolvedCase.text) : undefined} actionLabel={t('explore.analyzeCase')} />
+    <p className="text-xs text-muted-foreground">{t(unresolvedCase ? 'explore.runExplanation' : 'explore.evidenceOnly')}</p>
+    <div className="h-80 overflow-hidden rounded-xl border border-border" dir="ltr">{loading ? <p role="status" className="p-4">{t('explore.loading')}</p> : error ? <p role="alert" className="p-4">{t('explore.error')}</p> : data?.nodes.length ? <Graph graph={data} /> : <p className="p-4">{t('explore.noGraphData')}</p>}</div>
+  </div>
+}
 
 interface OpenCase {
   failure_id: string
@@ -79,7 +93,7 @@ function renderTrace(stages: Stage[]) {
   return out
 }
 
-export function IntakeView() {
+export function IntakeView({ selectedShipment }: { selectedShipment?: ExploreShipment | null }) {
   const { stages, final, caseFile, busy, error, complaint, run, stop, reset } = useComplaintStream()
   const { data, loading, refetch } = useFetch<{ cases: OpenCase[] }>('/samples')
   const { t, rootCauseLabel, isArabic } = useLanguage()
@@ -108,6 +122,7 @@ export function IntakeView() {
               </span>
             </div>
             <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">{t('intake.description')}</p>
+            {selectedShipment && <SelectedCase shipment={selectedShipment} unresolvedCase={openCases.find(c => c.shipment_id === selectedShipment.shipment_id)} onRun={run} />}
 
             <div className="mt-5 space-y-2">
               {loading && Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)}

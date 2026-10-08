@@ -154,7 +154,7 @@ describe('IntakeView active-run lifecycle', () => {
     expect(document.querySelector('.text-muted')).toBeNull()
   })
 
-  it('renders success outcome and case file evidence pane', () => {
+  it('renders a recorded recommendation with pending operational outcome and case evidence', () => {
     mockStream.busy = false
     mockStream.complaint = 'Wrong address delivered'
     mockStream.stages = [sampleStage]
@@ -168,7 +168,9 @@ describe('IntakeView active-run lifecycle', () => {
 
     renderIntake()
 
-    expect(screen.getByText(/executed/i)).toBeTruthy()
+    expect(screen.getByText('Recommendation recorded')).toBeTruthy()
+    expect(screen.getByText(/Operational execution and outcome verification are pending/)).toBeTruthy()
+    expect(screen.queryByText(/^Executed$/i)).toBeNull()
     expect(screen.getByTestId('case-graph')).toBeTruthy()
     expect(screen.getByTestId('shipment-map')).toBeTruthy()
     expect(document.querySelector('.text-muted')).toBeNull()

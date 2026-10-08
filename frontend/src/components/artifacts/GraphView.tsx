@@ -44,10 +44,11 @@ interface GraphViewProps {
   // (SchemaView, BrainView) omit these and keep the built-in toggle - fully backward compatible.
   layout?: LayoutKey
   onLayoutChange?: (layout: LayoutKey) => void
+  onNodeSelect?: (node: GraphNode) => void
 }
 
 // the graph renders on the app's warm-light surface; nodes carry the color, edges stay quiet
-export function GraphView({ graph, layout: layoutProp, onLayoutChange }: GraphViewProps) {
+export function GraphView({ graph, layout: layoutProp, onLayoutChange, onNodeSelect }: GraphViewProps) {
   const { t, entityLabel, propertyLabel } = useLanguage()
   const { resolvedTheme } = useTheme()
   const [internalLayout, setInternalLayout] = useState<LayoutKey>('forceDirected')
@@ -211,7 +212,9 @@ export function GraphView({ graph, layout: layoutProp, onLayoutChange }: GraphVi
           nvlCallbacks={{ onLayoutDone, onZoomTransitionDone: syncCaptions }}
           mouseEventCallbacks={{
             onNodeClick: (node) => {
-              setSelected(byId.get(node.id) ?? null)
+              const selectedNode = byId.get(node.id)
+              setSelected(selectedNode ?? null)
+              if (selectedNode) onNodeSelect?.(selectedNode)
               const keep = adjacency.get(node.id) ?? EMPTY
               // Zoom to the node AND its neighbours: a node alone tells you nothing about
               // why it is there. Allowed closer than the old 1.75, which left a two-neighbour

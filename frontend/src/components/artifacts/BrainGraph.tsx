@@ -101,13 +101,14 @@ interface BrainGraphProps {
   graph: SubGraph
   layout?: LayoutKey
   onLayoutChange?: (layout: LayoutKey) => void
+  onNodeSelect?: (node: GraphNode) => void
 }
 
 // A 3D force-directed rendering of the same subgraph GraphView draws, themed to the app's surface
 // with the same node palette and visible edges. Cinematic on-scheme touches: the layout springs
 // out on load; clicking a node glides the camera to it, pins focus (unrelated nodes dim + shrink),
 // and fires signal particles down its links; the detail card renders the node's photo + a mini map.
-export function BrainGraph({ graph, layout: layoutProp, onLayoutChange }: BrainGraphProps) {
+export function BrainGraph({ graph, layout: layoutProp, onLayoutChange, onNodeSelect }: BrainGraphProps) {
   const { t, entityLabel, propertyLabel } = useLanguage()
   const entityInfo = useEntityInfo()
   const { resolvedTheme } = useTheme()
@@ -262,6 +263,7 @@ export function BrainGraph({ graph, layout: layoutProp, onLayoutChange }: BrainG
           onNodeClick={(n) => {
             const node = n as BNode
             setSelected(node.node)
+            onNodeSelect?.(node.node)
             flyTo(node)
           }}
           onBackgroundClick={() => {

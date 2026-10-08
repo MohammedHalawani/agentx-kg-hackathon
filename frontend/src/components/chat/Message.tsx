@@ -86,7 +86,6 @@ export function Message({ message, onInspect, isActiveArtifact, onSelectArtifact
       >
         <ReasoningTrace
           steps={message.steps ?? []}
-          reasoning={message.reasoning}
           working={Boolean(message.streaming) && !message.content}
           durationMs={message.artifact?.timing?.total_ms}
         />

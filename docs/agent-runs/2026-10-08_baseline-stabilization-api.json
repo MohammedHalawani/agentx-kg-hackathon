@@ -1,0 +1,77 @@
+{
+  "timestamp": "2026-10-08T16:20:15.330319+00:00",
+  "base": "http://127.0.0.1:8000",
+  "filters": {
+    "needs_attention": {
+      "total": 70,
+      "returned": 25,
+      "nodes": 303,
+      "relationships": 336,
+      "shipments": 25,
+      "truncated": false
+    },
+    "all": {
+      "total": 300,
+      "returned": 25,
+      "nodes": 328,
+      "relationships": 359,
+      "shipments": 25,
+      "truncated": false
+    },
+    "stalled": {
+      "total": 16,
+      "returned": 16,
+      "nodes": 195,
+      "relationships": 212,
+      "shipments": 16,
+      "truncated": false
+    },
+    "critical": {
+      "total": 28,
+      "returned": 25,
+      "nodes": 312,
+      "relationships": 346,
+      "shipments": 25,
+      "truncated": false
+    },
+    "delivered": {
+      "total": 80,
+      "returned": 25,
+      "nodes": 244,
+      "relationships": 275,
+      "shipments": 25,
+      "truncated": false
+    }
+  },
+  "schema": {
+    "labels": [
+      "Address",
+      "Courier",
+      "Customer",
+      "EscalatedCase",
+      "Event",
+      "FailureReason",
+      "Order",
+      "Outcome",
+      "Policy",
+      "Resolution",
+      "Shipment"
+    ],
+    "relationships": 11
+  },
+  "intake_cases": 73,
+  "decisions": {
+    "coverage": {
+      "resolved": 167,
+      "unresolved": 73,
+      "total": 240
+    },
+    "writebacks": {
+      "by_agent": 2,
+      "seeded": 165,
+      "pending": 2,
+      "total": 167
+    }
+  },
+  "verdict": "PASS"
+}

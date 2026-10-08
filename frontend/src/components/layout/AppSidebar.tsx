@@ -9,6 +9,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useSidebar,
 } from '@/components/ui/sidebar'
 import { useLanguage } from '@/components/i18n/LanguageProvider'
 import type { ViewKey } from './types'
@@ -26,10 +27,11 @@ export function AppSidebar({
   active: ViewKey
   onSelect: (view: ViewKey) => void
 }) {
-  const { t } = useLanguage()
+  const { t, isArabic } = useLanguage()
+  const { setOpenMobile } = useSidebar()
 
   return (
-    <Sidebar collapsible="icon" variant="sidebar">
+    <Sidebar collapsible="icon" variant="sidebar" side={isArabic ? 'right' : 'left'} dir={isArabic ? 'rtl' : 'ltr'}>
       <SidebarHeader className="border-b border-sidebar-border px-3 py-3">
         <div className="flex h-8 items-center gap-2 overflow-hidden group-data-[collapsible=icon]:justify-center">
           <img src="/favicon.svg" alt={t('common.application')} className="size-7 shrink-0" />
@@ -44,7 +46,7 @@ export function AppSidebar({
                   <SidebarMenuButton
                     isActive={active === key}
                     tooltip={t(labelKey)}
-                    onClick={() => onSelect(key)}
+                    onClick={() => { onSelect(key); setOpenMobile(false) }}
                     className="text-sidebar-foreground [&_svg]:text-current"
                   >
                     <Icon />

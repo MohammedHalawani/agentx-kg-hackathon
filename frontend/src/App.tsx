@@ -5,10 +5,12 @@ import type { ViewKey } from './components/layout/types'
 import { IntakeView } from './components/views/IntakeView'
 import { DecisionsView } from './components/views/DecisionsView'
 import { ExploreView } from './components/views/ExploreView'
+import type { ExploreShipment } from './types/explore'
 
 export default function App() {
   const [scope, setScope] = useState<string>('')
   const [view, setView] = useState<ViewKey>('intake')
+  const [selectedShipment, setSelectedShipment] = useState<ExploreShipment | null>(null)
 
   useEffect(() => {
     fetch('/meta')
@@ -27,9 +29,9 @@ export default function App() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.15, ease: 'easeOut' }}
         >
-          {view === 'intake' && <IntakeView />}
+          {view === 'intake' && <IntakeView selectedShipment={selectedShipment} />}
           {view === 'decisions' && <DecisionsView />}
-          {view === 'explore' && <ExploreView />}
+          {view === 'explore' && <ExploreView onOpenCase={(shipment) => { setSelectedShipment(shipment); setView('intake') }} />}
         </motion.div>
       </AppShell>
     </div>

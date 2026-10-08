@@ -6,6 +6,12 @@ import type { ChatMessage } from '../../hooks/useChatStream'
 // Regression guard: answers render as markdown (live during streaming), not raw text that snaps to
 // formatted at the end. A `**bold**` answer must produce a <strong>, not literal asterisks.
 describe('Message markdown rendering', () => {
+  it('never renders stored provider reasoning', () => {
+    const msg = { role: 'assistant', content: 'Final response', reasoning: 'Private provider reasoning' } as ChatMessage
+    const { container } = render(<Message message={msg} onInspect={() => {}} />)
+    expect(container.textContent).toContain('Final response')
+    expect(container.textContent).not.toContain('Private provider reasoning')
+  })
   it('renders markdown while the message is still streaming', () => {
     const msg = { role: 'assistant', content: '**Makkah**', streaming: true } as ChatMessage
     const { container } = render(<Message message={msg} onInspect={() => {}} />)

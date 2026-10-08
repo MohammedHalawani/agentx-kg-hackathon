@@ -49,8 +49,8 @@ describe('LanguageProvider display maps', () => {
 })
 
 // The stylesheet keys its Arabic text handling off <html lang> (see index.css:
-// :root[lang='ar'] sets unicode-bidi: plaintext), and deliberately does NOT mirror the
-// frame. Both halves of that contract are asserted here, because breaking either one is
+// :root[lang='ar'] sets unicode-bidi: plaintext), and mirrors the operator shell.
+// Both halves of that contract are asserted here, because breaking either one is
 // invisible in a component test and obvious only on screen.
 describe('document language attributes', () => {
   afterEach(() => {
@@ -69,14 +69,14 @@ describe('document language attributes', () => {
     expect(document.documentElement.lang).toBe('ar')
   })
 
-  it('keeps the frame left-to-right in Arabic', () => {
+  it('sets the Arabic frame right-to-left', () => {
     localStorage.setItem('agentx-language', 'ar')
     render(
       <LanguageProvider>
         <span />
       </LanguageProvider>,
     )
-    expect(document.documentElement.dir).toBe('ltr')
+    expect(document.documentElement.dir).toBe('rtl')
   })
 
   it('marks the document English when English is selected', () => {
@@ -87,6 +87,7 @@ describe('document language attributes', () => {
       </LanguageProvider>,
     )
     expect(document.documentElement.lang).toBe('en')
+    expect(document.documentElement.dir).toBe('ltr')
   })
 })
 
