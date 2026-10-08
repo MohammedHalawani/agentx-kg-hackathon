@@ -1,0 +1,1080 @@
+{
+  "schema_version": 1,
+  "review_type": "AI editorial review; not independently adjudicated human/SPL gold",
+  "rubric": "docs/evals/2026-10-07_gpt-oss-v1-quality-rubric.md",
+  "source": "blind-pairs.json only",
+  "model_blinding": "Model key, result folders, evaluator/helper source, latency and model metadata not inspected.",
+  "output_language_policy": "No required output language; production prompt language English. Score actual prose clarity; canonical Arabic actions do not establish Arabic explanation quality.",
+  "scope": "case-01 through case-15; append new case IDs only",
+  "reviewed_at": "2026-10-08T13:53:16.9486074+03:00",
+  "records": [
+    {
+      "case_id": "case-01",
+      "alias": "A",
+      "scores": {
+        "factual_fidelity": 1,
+        "evidence_concision": 1,
+        "action_review_consistency": 0,
+        "language_clarity": 2,
+        "uncertainty_lifecycle": 1
+      },
+      "critical_flags": [],
+      "notes": [
+        "Two recorded attempts equal the Standard limit2; cited redirect outcomes are2/2 observed successes.",
+        "Reviewer states any redirect is a new forbidden attempt, yet suggests a supervisor action containing redelivery. The packet supplies no blanket rule equating address verification/redirection with a plain retry.",
+        "Initial classifier said same-city precedent confirms the cause; final wording softens to 'points to' but the reviewer/recommendation scope conflict remains."
+      ],
+      "excerpts": [
+        {
+          "field": "review.reason",
+          "text": "any new delivery attempt—including a redirect—violates the retry budget rule"
+        }
+      ],
+      "earlier_visible_errors": {
+        "present": true,
+        "corrected": "partly",
+        "summary": "Causal certainty softened; repeated redirect/reviewer disagreement ends in escalation."
+      },
+      "complaint_language": "ar",
+      "native_prose_language": "en; canonical actions ar",
+      "prose_target": null,
+      "total": 5,
+      "ready_to_show": false
+    },
+    {
+      "case_id": "case-01",
+      "alias": "B",
+      "scores": {
+        "factual_fidelity": 1,
+        "evidence_concision": 1,
+        "action_review_consistency": 0,
+        "language_clarity": 2,
+        "uncertainty_lifecycle": 1
+      },
+      "critical_flags": [],
+      "notes": [
+        "Two attempts and exhausted limit2 are correct; both cited redirect cases are observed successes.",
+        "Final classification treats address cause as confirmed although the only own-shipment address is a single recorded version and mismatch is a customer report.",
+        "Reviewer unconditionally equates redirection with another attempt and offers cancellation/new shipment/depot pickup without recorded policy or capability support. This is an explanatory concern, not a measured false-rejection label."
+      ],
+      "excerpts": [
+        {
+          "field": "classification.rationale",
+          "text": "confirming a delivery problem tied to the address"
+        }
+      ],
+      "earlier_visible_errors": {
+        "present": true,
+        "corrected": false,
+        "summary": "Same redirection disagreement recurs after feedback; final dry disposition is escalation, not execution."
+      },
+      "complaint_language": "ar",
+      "native_prose_language": "en; canonical actions ar",
+      "prose_target": null,
+      "total": 5,
+      "ready_to_show": false
+    },
+    {
+      "case_id": "case-02",
+      "alias": "A",
+      "scores": {
+        "factual_fidelity": 0,
+        "evidence_concision": 0,
+        "action_review_consistency": 0,
+        "language_clarity": 2,
+        "uncertainty_lifecycle": 1
+      },
+      "critical_flags": [
+        "exhausted_retry_proposal_blocked"
+      ],
+      "notes": [
+        "Own evidence has2 attempts against limit1 and a2.33-day recorded span against SLA1; classification count/policy comparison is correct.",
+        "The final recommendation reverses the constraint into a requirement for a new attempt and says rescheduling satisfies an already breached SLA.",
+        "Reviewer correctly blocks the retry; the model repeats it after feedback and the final dry disposition escalates. This flag concerns the visible proposal, not a claimed executed action."
+      ],
+      "excerpts": [
+        {
+          "field": "recommendation.rationale",
+          "text": "the retry budget is exhausted so a new delivery attempt is required"
+        }
+      ],
+      "earlier_visible_errors": {
+        "present": true,
+        "corrected": false,
+        "summary": "Exhausted-budget reschedule is proposed in both iterations and rejected both times."
+      },
+      "complaint_language": "ar",
+      "native_prose_language": "en; canonical actions ar",
+      "prose_target": null,
+      "total": 3,
+      "ready_to_show": false
+    },
+    {
+      "case_id": "case-02",
+      "alias": "B",
+      "scores": {
+        "factual_fidelity": 1,
+        "evidence_concision": 1,
+        "action_review_consistency": 1,
+        "language_clarity": 2,
+        "uncertainty_lifecycle": 1
+      },
+      "critical_flags": [],
+      "notes": [
+        "Attempts2 and timeline2.33/SLA1 are correct; the two cited alternative-recipient outcomes are successes.",
+        "'Only one retry' is less precise than the policy's one permitted attempt. Consent remains an action condition, not recorded consent.",
+        "The revised action changes approach after a missing-citation rejection, but 'immediate solution' and blanket policy compliance lack recorded availability/authorization evidence. Acceptance alone is not correctness or real success."
+      ],
+      "excerpts": [
+        {
+          "field": "recommendation.rationale",
+          "text": "providing an immediate solution"
+        }
+      ],
+      "earlier_visible_errors": {
+        "present": true,
+        "corrected": "partly",
+        "summary": "Initial uncited notification action is replaced with an alternative-recipient action and valid citations; operational feasibility remains unverified."
+      },
+      "complaint_language": "ar",
+      "native_prose_language": "en; canonical actions ar",
+      "prose_target": null,
+      "total": 6,
+      "ready_to_show": false
+    },
+    {
+      "case_id": "case-03",
+      "alias": "A",
+      "scores": {
+        "factual_fidelity": 2,
+        "evidence_concision": 2,
+        "action_review_consistency": 1,
+        "language_clarity": 2,
+        "uncertainty_lifecycle": 2
+      },
+      "critical_flags": [],
+      "notes": [
+        "Own sequence contains2 attempts followed by FAILED events, limit3 and recorded span2.08 days/SLA5. Recipient absence is explicitly framed as likely.",
+        "The cited warehouse/courier coordination case is one observed success, so the scoped100% claim is numerically supported.",
+        "Warehouse coordination is more complex than the own evidence justifies; no hub problem is recorded. Recommendation needs a clearer link to the recipient contact gap."
+      ],
+      "excerpts": [
+        {
+          "field": "recommendation.action",
+          "text": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة"
+        }
+      ],
+      "earlier_visible_errors": {
+        "present": false,
+        "corrected": null,
+        "summary": "Single visible iteration."
+      },
+      "complaint_language": "ar",
+      "native_prose_language": "en; canonical actions ar",
+      "prose_target": null,
+      "total": 9,
+      "ready_to_show": false
+    },
+    {
+      "case_id": "case-03",
+      "alias": "B",
+      "scores": {
+        "factual_fidelity": 2,
+        "evidence_concision": 2,
+        "action_review_consistency": 2,
+        "language_clarity": 1,
+        "uncertainty_lifecycle": 2
+      },
+      "critical_flags": [],
+      "native_prose_language": "mixed en/ar",
+      "notes": [
+        "Attempt times22:00/05:00, one remaining attempt and unbreached SLA match the packet; cited rescheduling outcome is1/1 successful.",
+        "Rescheduling is relevant to suspected recipient unavailability and remains within recorded retry budget.",
+        "Arabic recommendation rationale is clear but 'إجراءً ذو' requires the small grammatical correction 'إجراءً ذا'. No output language was required, so Arabic prose is not penalized for its language choice."
+      ],
+      "excerpts": [
+        {
+          "field": "recommendation.rationale",
+          "text": "إجراءً ذو معدل نجاح 100%"
+        }
+      ],
+      "earlier_visible_errors": {
+        "present": false,
+        "corrected": null,
+        "summary": "Single visible iteration."
+      },
+      "complaint_language": "ar",
+      "prose_target": null,
+      "total": 9,
+      "ready_to_show": true
+    },
+    {
+      "case_id": "case-04",
+      "alias": "A",
+      "scores": {
+        "factual_fidelity": 2,
+        "evidence_concision": 1,
+        "action_review_consistency": 1,
+        "language_clarity": 2,
+        "uncertainty_lifecycle": 1
+      },
+      "critical_flags": [],
+      "notes": [
+        "Two attempts of limit3, recorded span1.79/SLA5 and2/2 cited address-action successes are correct.",
+        "Address/data cause is inferred from a generic data complaint, not invented as a recorded subtype. The packet has one address and no subtype observation.",
+        "An unconditional redirect and 'most reliable proven remedy' overstate a two-case history when the reported data error is unknown; verify the actual data discrepancy first."
+      ],
+      "excerpts": [
+        {
+          "field": "recommendation.rationale",
+          "text": "the most reliable proven remedy"
+        }
+      ],
+      "earlier_visible_errors": {
+        "present": false,
+        "corrected": null,
+        "summary": "Single visible iteration; reviewer accepts the underdetermined address remedy."
+      },
+      "complaint_language": "ar",
+      "native_prose_language": "en; canonical actions ar",
+      "prose_target": null,
+      "total": 7,
+      "ready_to_show": false
+    },
+    {
+      "case_id": "case-04",
+      "alias": "B",
+      "scores": {
+        "factual_fidelity": 2,
+        "evidence_concision": 1,
+        "action_review_consistency": 1,
+        "language_clarity": 2,
+        "uncertainty_lifecycle": 2
+      },
+      "critical_flags": [],
+      "notes": [
+        "Weight mismatch remains an explicitly low-confidence hypothesis, not a falsely recorded weight reading. Counts/SLA and the cited corrected-data outcome are supported.",
+        "No own-shipment observation distinguishes weight from barcode/address problems, so 'least unsupported' is not positive evidence and the proposed subtype remedy still needs verification.",
+        "Reviewer consistently requests concrete data-error evidence and the dry disposition escalates; this more cautious next step is preferable to treating a subtype as established."
+      ],
+      "excerpts": [
+        {
+          "field": "review.reason",
+          "text": "Provide concrete evidence of the specific data error"
+        }
+      ],
+      "earlier_visible_errors": {
+        "present": true,
+        "corrected": "partly",
+        "summary": "Initial address-specific action rejected; changed to another unconfirmed subtype and then escalated for verification."
+      },
+      "complaint_language": "ar",
+      "native_prose_language": "en; canonical actions ar",
+      "prose_target": null,
+      "total": 8,
+      "ready_to_show": false
+    },
+    {
+      "case_id": "case-05",
+      "alias": "A",
+      "scores": {
+        "factual_fidelity": 0,
+        "evidence_concision": 1,
+        "action_review_consistency": 1,
+        "language_clarity": 2,
+        "uncertainty_lifecycle": 1
+      },
+      "critical_flags": [
+        "fabricated_retry_budget_exhaustion"
+      ],
+      "notes": [
+        "Own evidence has2 DELIVERY_ATTEMPT events against limit3, with three FAILED events; classifier falsely says retry limit reached. Recommendation correctly says2 of3 used, creating an unresolved final contradiction.",
+        "No barcode observation exists; classifier calls barcode an unconfirmed low-confidence hypothesis rather than fabricating a recorded scan mismatch.",
+        "The two cited corrected-data outcomes are successful; acceptance does not repair the classifier's false urgency rationale."
+      ],
+      "excerpts": [
+        {
+          "field": "classification.rationale",
+          "text": "priority is high because the retry limit has been reached"
+        }
+      ],
+      "earlier_visible_errors": {
+        "present": true,
+        "corrected": "partly",
+        "summary": "Unsupported address action rejected, changed to an unconfirmed barcode hypothesis; new false retry-limit claim survives final acceptance."
+      },
+      "complaint_language": "ar",
+      "native_prose_language": "en; canonical actions ar",
+      "prose_target": null,
+      "total": 5,
+      "ready_to_show": false
+    },
+    {
+      "case_id": "case-05",
+      "alias": "B",
+      "scores": {
+        "factual_fidelity": 2,
+        "evidence_concision": 1,
+        "action_review_consistency": 1,
+        "language_clarity": 2,
+        "uncertainty_lifecycle": 2
+      },
+      "critical_flags": [],
+      "notes": [
+        "Two attempts of3, one remaining, recorded span1.92/SLA5 and2/2 cited outcomes are supported.",
+        "Barcode is a hypothesis from a generic data complaint, not a recorded mismatch. Review correctly notes missing specific proof and asks to verify shipment data before retry.",
+        "Recommendation still assumes a subtype-specific correction before proof; rejection/escalation protects against promoting that hypothesis into an accepted action."
+      ],
+      "excerpts": [
+        {
+          "field": "review.reason",
+          "text": "first verify the shipment data before scheduling a re‑delivery"
+        }
+      ],
+      "earlier_visible_errors": {
+        "present": true,
+        "corrected": "partly",
+        "summary": "Initial recipient hypothesis rejected; revised unconfirmed barcode action also rejected; verification requirement survives final escalation."
+      },
+      "complaint_language": "ar",
+      "native_prose_language": "en; canonical actions ar",
+      "prose_target": null,
+      "total": 8,
+      "ready_to_show": false
+    },
+    {
+      "case_id": "case-06",
+      "alias": "A",
+      "complaint_language": "ar",
+      "native_prose_language": "en; canonical actions ar",
+      "prose_target": null,
+      "scores": {
+        "factual_fidelity": 2,
+        "evidence_concision": 2,
+        "action_review_consistency": 2,
+        "language_clarity": 2,
+        "uncertainty_lifecycle": 2
+      },
+      "total": 10,
+      "critical_flags": [],
+      "notes": [
+        "Own SHP-0202 records HUB_DELAY at 2026-08-31T23:00, zero DELIVERY_ATTEMPT events and a 1.71-day span within Economy SLA5.",
+        "Notification/ETA action matches the recorded delay; its full used-bank results are2/3 successful, accurately stated rather than extrapolating cited2/2 to the bank.",
+        "Concise concrete causal basis and policy fit; no execution or fixed arrival time claimed."
+      ],
+      "excerpts": [],
+      "earlier_visible_errors": {
+        "present": false,
+        "corrected": null,
+        "summary": "Single visible iteration."
+      },
+      "ready_to_show": true
+    },
+    {
+      "case_id": "case-06",
+      "alias": "B",
+      "complaint_language": "ar",
+      "native_prose_language": "en; canonical actions ar",
+      "prose_target": null,
+      "scores": {
+        "factual_fidelity": 1,
+        "evidence_concision": 1,
+        "action_review_consistency": 2,
+        "language_clarity": 2,
+        "uncertainty_lifecycle": 1
+      },
+      "total": 7,
+      "critical_flags": [],
+      "notes": [
+        "Recorded HUB_DELAY, unbreached SLA and notification action rate66.7% (2/3) are supported.",
+        "Classification calls hub cause likely, but review upgrades it to 'clearly due to' without an own FailureReason linking delay to the later FAILED event.",
+        "Explanation adds generic category exclusions instead of maintaining the distinction between an observed delay and inferred failure cause."
+      ],
+      "excerpts": [
+        {
+          "field": "review.reason",
+          "text": "clearly due to a HUB_DELAY event"
+        }
+      ],
+      "earlier_visible_errors": {
+        "present": false,
+        "corrected": null,
+        "summary": "Single visible iteration."
+      },
+      "ready_to_show": false
+    },
+    {
+      "case_id": "case-07",
+      "alias": "A",
+      "complaint_language": "ar",
+      "native_prose_language": "en; canonical actions ar",
+      "prose_target": null,
+      "scores": {
+        "factual_fidelity": 2,
+        "evidence_concision": 2,
+        "action_review_consistency": 2,
+        "language_clarity": 2,
+        "uncertainty_lifecycle": 2
+      },
+      "total": 10,
+      "critical_flags": [],
+      "notes": [
+        "Own SHP-0055 contains two address versions (بلجرشي/الحضيري) and a customer location-mismatch report; one attempt of3 is recorded, with span1.17/SLA5.",
+        "Confirming address then redirecting is relevant; both RES-e8c312b756/RES-ffd61bfb73 record this action and successful outcomes.",
+        "Action, evidence and acceptance reason agree; no parcel-location proof or execution claim."
+      ],
+      "excerpts": [],
+      "earlier_visible_errors": {
+        "present": false,
+        "corrected": null,
+        "summary": "Single visible iteration."
+      },
+      "ready_to_show": true
+    },
+    {
+      "case_id": "case-07",
+      "alias": "B",
+      "complaint_language": "ar",
+      "native_prose_language": "en; canonical actions ar",
+      "prose_target": null,
+      "scores": {
+        "factual_fidelity": 0,
+        "evidence_concision": 1,
+        "action_review_consistency": 0,
+        "language_clarity": 2,
+        "uncertainty_lifecycle": 1
+      },
+      "total": 4,
+      "critical_flags": [
+        "misattributed_cited_action"
+      ],
+      "notes": [
+        "Wrong-gate hypothesis omits the stronger own evidence of two differing address versions; same-city/district wrong-gate precedent exists but does not establish this shipment's cause.",
+        "RES-62b146c76d is a successful courier reassignment, but RES-dfe314b349 used warehouse/courier coordination. 'Both ... used this action' is a false citation/action claim.",
+        "Reassignment does not explain how the recorded destination conflict will be checked. Acceptance does not repair the misattributed supporting action."
+      ],
+      "excerpts": [
+        {
+          "field": "recommendation.rationale",
+          "text": "Both precedent cases for the \"failed_attempt_wrong_gate\" category used this action with 100% success"
+        }
+      ],
+      "earlier_visible_errors": {
+        "present": false,
+        "corrected": null,
+        "summary": "Single visible iteration."
+      },
+      "ready_to_show": false
+    },
+    {
+      "case_id": "case-08",
+      "alias": "A",
+      "complaint_language": "ar",
+      "native_prose_language": "en; canonical actions ar",
+      "prose_target": null,
+      "scores": {
+        "factual_fidelity": 2,
+        "evidence_concision": 2,
+        "action_review_consistency": 2,
+        "language_clarity": 2,
+        "uncertainty_lifecycle": 2
+      },
+      "total": 10,
+      "critical_flags": [],
+      "notes": [
+        "Own SHP-0080 records one attempt of2, span0.92/SLA3, and customer-reported inability to answer.",
+        "Phone coordination addresses the reported contact gap; cited RES-60699c577c is one observed successful phone-coordination case, matching the scoped1/1 claim.",
+        "Rationale and reviewer agree on a permissible next step; availability is to be arranged rather than claimed already confirmed."
+      ],
+      "excerpts": [],
+      "earlier_visible_errors": {
+        "present": false,
+        "corrected": null,
+        "summary": "Single visible iteration."
+      },
+      "ready_to_show": true
+    },
+    {
+      "case_id": "case-08",
+      "alias": "B",
+      "complaint_language": "ar",
+      "native_prose_language": "en; canonical actions ar",
+      "prose_target": null,
+      "scores": {
+        "factual_fidelity": 2,
+        "evidence_concision": 1,
+        "action_review_consistency": 2,
+        "language_clarity": 2,
+        "uncertainty_lifecycle": 1
+      },
+      "total": 8,
+      "critical_flags": [],
+      "notes": [
+        "Attempt/budget/SLA and single cited phone-coordination success are supported; a same-courier recipient precedent is present in first-pass evidence.",
+        "Three-sentence recommendation repeats the action and invokes a general rule against plain redelivery for unavailability rather than specifying contact/availability conditions.",
+        "Reviewer upgrades customer inability to respond into a definite cause. This is modest overconfidence rather than a fabricated recorded failure subtype."
+      ],
+      "excerpts": [
+        {
+          "field": "review.reason",
+          "text": "failed due to recipient unavailability"
+        }
+      ],
+      "earlier_visible_errors": {
+        "present": false,
+        "corrected": null,
+        "summary": "Single visible iteration."
+      },
+      "ready_to_show": false
+    },
+    {
+      "case_id": "case-09",
+      "alias": "A",
+      "complaint_language": "ar",
+      "native_prose_language": "en; canonical actions ar",
+      "prose_target": null,
+      "scores": {
+        "factual_fidelity": 1,
+        "evidence_concision": 2,
+        "action_review_consistency": 1,
+        "language_clarity": 2,
+        "uncertainty_lifecycle": 1
+      },
+      "total": 7,
+      "critical_flags": [],
+      "notes": [
+        "SHP-0035 has one DELIVERY_ATTEMPT followed by FAILED, one remaining attempt and a 1-day span within SLA3; same-city/district recipient history exists.",
+        "Cited rescheduling outcomes RES-bc8ffd4617/RES-0325b77228 are 2/2 successes. Rescheduling is permitted but should follow clarification of recipient availability/contact.",
+        "Customer not meeting the courier is ambiguous; classifier calls it suggestive, but recommendation/review present recipient absence as established and 'fully justified' without requesting the missing evidence."
+      ],
+      "excerpts": [
+        {
+          "field": "review.reason",
+          "text": "The root cause is recipient_unavailable"
+        }
+      ],
+      "earlier_visible_errors": {
+        "present": false,
+        "corrected": null,
+        "summary": "Single visible iteration."
+      },
+      "ready_to_show": false
+    },
+    {
+      "case_id": "case-09",
+      "alias": "B",
+      "complaint_language": "ar",
+      "native_prose_language": "mixed en/ar",
+      "prose_target": null,
+      "scores": {
+        "factual_fidelity": 1,
+        "evidence_concision": 2,
+        "action_review_consistency": 1,
+        "language_clarity": 2,
+        "uncertainty_lifecycle": 1
+      },
+      "total": 7,
+      "critical_flags": [],
+      "notes": [
+        "Attempt count, remaining budget, unbreached SLA and two cited rescheduling successes are supported.",
+        "Arabic recommendation is clear, includes remaining attempt/SLA and exact IDs, with no required language being imposed.",
+        "Reviewer turns an ambiguous customer account into a definite failed attempt 'due to recipient unavailability'; availability/contact evidence remains missing before rescheduling."
+      ],
+      "excerpts": [
+        {
+          "field": "review.reason",
+          "text": "due to recipient unavailability"
+        }
+      ],
+      "earlier_visible_errors": {
+        "present": false,
+        "corrected": null,
+        "summary": "Single visible iteration."
+      },
+      "ready_to_show": false
+    },
+    {
+      "case_id": "case-10",
+      "alias": "A",
+      "complaint_language": "ar",
+      "native_prose_language": "mixed en/ar",
+      "prose_target": null,
+      "scores": {
+        "factual_fidelity": 1,
+        "evidence_concision": 1,
+        "action_review_consistency": 0,
+        "language_clarity": 1,
+        "uncertainty_lifecycle": 1
+      },
+      "total": 4,
+      "critical_flags": [],
+      "notes": [
+        "SHP-0023 has one attempt of limit1 and a 25-hour span against SLA1; both address-action citations are successful. Generic reported data trouble does not identify an address subtype.",
+        "After feedback the same address/redirection proposal remains; recommendation describes it as avoiding a plain attempt while reviewer categorically treats it as another delivery attempt. The packet does not establish that blanket equivalence.",
+        "Arabic wording 'امتلاء ميزانية' and 'يُسارع حل المشكلة' is awkward but understandable. Reviewer alternative refund/exception capability is a proposed possibility, not a documented policy."
+      ],
+      "excerpts": [
+        {
+          "field": "recommendation.rationale",
+          "text": "ويُسارع حل المشكلة دون محاولة توصيل عادية"
+        }
+      ],
+      "earlier_visible_errors": {
+        "present": true,
+        "corrected": false,
+        "summary": "Initial address hypothesis was explicitly unconfirmed; final confidence rises without new subtype evidence, while the same redirect/retry disagreement persists to escalation."
+      },
+      "ready_to_show": false
+    },
+    {
+      "case_id": "case-10",
+      "alias": "B",
+      "complaint_language": "ar",
+      "native_prose_language": "en; canonical actions ar",
+      "prose_target": null,
+      "scores": {
+        "factual_fidelity": 1,
+        "evidence_concision": 1,
+        "action_review_consistency": 1,
+        "language_clarity": 2,
+        "uncertainty_lifecycle": 1
+      },
+      "total": 6,
+      "critical_flags": [],
+      "notes": [
+        "Count/budget/SLA and relabel/recheck's one matching success are supported; no own weight observation is present and classification remains low confidence.",
+        "Review says the action is supported by multiple successful precedents for the same category. One matching action plus a different corrected-data remedy provide weak cross-action support, not an explicit false count or claim both used relabeling. This falls below the critical fabricated-hard-fact threshold.",
+        "Relabel/recheck avoids the earlier blocked retry, yet its applicability needs verification of the unspecified data error. Final recommendation/review overstate the inferred weight cause; acceptance is not independent correctness."
+      ],
+      "excerpts": [
+        {
+          "field": "review.reason",
+          "text": "supported by multiple successful precedents for the same failure category"
+        }
+      ],
+      "earlier_visible_errors": {
+        "present": true,
+        "corrected": "partly",
+        "summary": "Initial exhausted-budget redelivery is correctly blocked and replaced by relabel/recheck; final causal/citation overstatement remains."
+      },
+      "ready_to_show": false
+    },
+    {
+      "case_id": "case-11",
+      "alias": "A",
+      "complaint_language": "ar",
+      "native_prose_language": "en; canonical actions ar",
+      "prose_target": null,
+      "scores": {
+        "factual_fidelity": 0,
+        "evidence_concision": 0,
+        "action_review_consistency": 0,
+        "language_clarity": 2,
+        "uncertainty_lifecycle": 1
+      },
+      "total": 3,
+      "critical_flags": [
+        "unsupported_exclusive_cause_affecting_action"
+      ],
+      "notes": [
+        "SHP-0208 has one attempt of limit1 and a 26-hour span against SLA1; address citations are 2/2 successes, but no specific data error is recorded.",
+        "'The only data element that could cause a delivery failure is the address' is false within the supported barcode/weight/address vocabulary, and makes an unverified address remedy appear necessary.",
+        "First review rejects the same redirect action and asks to confirm without another attempt; final review accepts without a changed action or new own evidence. An already breached SLA cannot literally be met retroactively."
+      ],
+      "excerpts": [
+        {
+          "field": "classification.rationale",
+          "text": "the only data element that could cause a delivery failure is the address"
+        }
+      ],
+      "earlier_visible_errors": {
+        "present": true,
+        "corrected": false,
+        "summary": "Low-confidence address hypothesis becomes an exclusive causal assertion; reviewer changes rejection to acceptance of the same action without resolving its prior objection."
+      },
+      "ready_to_show": false
+    },
+    {
+      "case_id": "case-11",
+      "alias": "B",
+      "complaint_language": "ar",
+      "native_prose_language": "en; canonical actions ar",
+      "prose_target": null,
+      "scores": {
+        "factual_fidelity": 1,
+        "evidence_concision": 1,
+        "action_review_consistency": 0,
+        "language_clarity": 2,
+        "uncertainty_lifecycle": 1
+      },
+      "total": 5,
+      "critical_flags": [],
+      "notes": [
+        "One attempt, exhausted limit1 and SLA breach are supported; generic shipment-data complaint suggests a data problem but cannot distinguish address from weight/barcode.",
+        "Initial supervisor action explicitly includes redelivery and is blocked. Final address verification/redirection remains disputed rather than separating verification from any new delivery attempt.",
+        "Final reviewer proposes compensation/refund as examples without a recorded capability/rule. Escalation is a dry recommendation for human review, not an approved exception or executed remedy."
+      ],
+      "excerpts": [
+        {
+          "field": "review.reason",
+          "text": "Replace it with a non‑delivery remedy such as compensation, refund, or escalation"
+        }
+      ],
+      "earlier_visible_errors": {
+        "present": true,
+        "corrected": "partly",
+        "summary": "Explicit exhausted-budget redelivery blocked; replaced with verification/redirection but scope disagreement and absent subtype evidence remain."
+      },
+      "ready_to_show": false
+    },
+    {
+      "case_id": "case-12",
+      "alias": "A",
+      "complaint_language": "ar",
+      "native_prose_language": "en; canonical actions ar",
+      "prose_target": null,
+      "scores": {
+        "factual_fidelity": 0,
+        "evidence_concision": 0,
+        "action_review_consistency": 0,
+        "language_clarity": 2,
+        "uncertainty_lifecycle": 1
+      },
+      "total": 3,
+      "critical_flags": [],
+      "notes": [
+        "SHP-0213 records HUB_DELAY at 2026-07-04T02:00, zero DELIVERY_ATTEMPT events, and a 1.75-day span exceeding SLA1.",
+        "Classifier ignores the positive delay evidence and treats FAILED after OUT_FOR_DELIVERY as proof of a failed attempt, then infers recipient absence with no supporting customer availability account.",
+        "Both rescheduling citations are successes, and one permitted attempt remains because no attempt event is recorded; the failure is a wrong-cause remedy/evidence narrative, not an exhausted-budget retry.",
+        "Severity distinction: failed-attempt/recipient cause is an unsupported inference from recorded events, not an explicit invented DELIVERY_ATTEMPT ID/count. Factual/action scores remain0, but no critical fabricated-record flag is assigned."
+      ],
+      "excerpts": [
+        {
+          "field": "classification.rationale",
+          "text": "indicating a delivery attempt failed—most commonly due to the recipient being unavailable"
+        }
+      ],
+      "earlier_visible_errors": {
+        "present": false,
+        "corrected": null,
+        "summary": "Single visible iteration."
+      },
+      "ready_to_show": false
+    },
+    {
+      "case_id": "case-12",
+      "alias": "B",
+      "complaint_language": "ar",
+      "native_prose_language": "mixed en/ar",
+      "prose_target": null,
+      "scores": {
+        "factual_fidelity": 0,
+        "evidence_concision": 1,
+        "action_review_consistency": 2,
+        "language_clarity": 1,
+        "uncertainty_lifecycle": 1
+      },
+      "total": 5,
+      "critical_flags": [
+        "incorrect_historical_success_rate"
+      ],
+      "notes": [
+        "Recorded HUB_DELAY timestamp and 1.75-day span/SLA1 are correct; notification/ETA update addresses the observed delay without claiming execution or a fixed arrival time.",
+        "Recommendation correctly states 2 of3 prior notification successes but labels this 80%; actual rate is 66.7%. Reviewer accepts without correcting the arithmetic.",
+        "Arabic 'SLA مخترق' is understandable but less natural than describing the delivery deadline as exceeded; cause of the later FAILED event is inferred rather than separately recorded."
+      ],
+      "excerpts": [
+        {
+          "field": "recommendation.rationale",
+          "text": "نجح في 2 من 3 حالات سابقة (80% نجاح)"
+        }
+      ],
+      "earlier_visible_errors": {
+        "present": false,
+        "corrected": null,
+        "summary": "Single visible iteration."
+      },
+      "ready_to_show": false
+    },
+    {
+      "case_id": "case-13",
+      "alias": "A",
+      "complaint_language": "ar",
+      "native_prose_language": "en; canonical actions ar",
+      "prose_target": null,
+      "scores": {
+        "factual_fidelity": 2,
+        "evidence_concision": 1,
+        "action_review_consistency": 2,
+        "language_clarity": 2,
+        "uncertainty_lifecycle": 2
+      },
+      "total": 9,
+      "critical_flags": [],
+      "notes": [
+        "SHP-0123 has two address versions in different cities/districts, customer-reported location mismatch, one attempt of3 and a 1-day span within SLA5.",
+        "Confirming the correct address/redirecting is applicable, and both cited rows used that action successfully. Highest observed action rate is tied with other small samples, not proof of a unique winner.",
+        "Rationale is recoverable but relies mainly on the complaint rather than explicitly summarizing the stronger two-address evidence; its 100% statement is scoped to the two resolved cases."
+      ],
+      "excerpts": [],
+      "earlier_visible_errors": {
+        "present": false,
+        "corrected": null,
+        "summary": "Single visible iteration."
+      },
+      "ready_to_show": true
+    },
+    {
+      "case_id": "case-13",
+      "alias": "B",
+      "complaint_language": "ar",
+      "native_prose_language": "mixed en/ar",
+      "prose_target": null,
+      "scores": {
+        "factual_fidelity": 2,
+        "evidence_concision": 2,
+        "action_review_consistency": 2,
+        "language_clarity": 2,
+        "uncertainty_lifecycle": 1
+      },
+      "total": 9,
+      "critical_flags": [],
+      "notes": [
+        "Own two-address city/district conflict and customer location report are explicitly connected to diagnosis; remaining budget and 2/2 cited results are supported.",
+        "Clear Arabic recommendation aligns with address verification and conditional redirection; no target-language mismatch penalty applies.",
+        "Reviewer says rerouting 'succeeds 100% of the time', which overgeneralizes two synthetic outcomes. Replace with 'succeeded in the two cited cases'."
+      ],
+      "excerpts": [
+        {
+          "field": "review.reason",
+          "text": "succeeds 100% of the time"
+        }
+      ],
+      "earlier_visible_errors": {
+        "present": false,
+        "corrected": null,
+        "summary": "Single visible iteration."
+      },
+      "ready_to_show": false
+    },
+    {
+      "case_id": "case-14",
+      "alias": "A",
+      "complaint_language": "ar",
+      "native_prose_language": "en; canonical actions ar",
+      "prose_target": null,
+      "scores": {
+        "factual_fidelity": 2,
+        "evidence_concision": 2,
+        "action_review_consistency": 2,
+        "language_clarity": 2,
+        "uncertainty_lifecycle": 1
+      },
+      "total": 9,
+      "critical_flags": [],
+      "notes": [
+        "SHP-0082 has one attempt of2, span23 hours within SLA3, and customer-reported inability to answer; phone coordination is an applicable next step.",
+        "RES-13e79b5e29/RES-91c9fa4e29 both used phone coordination successfully, so the observed 2/2 result is correct.",
+        "Recommendation/review wording that these cases 'succeed' or 'resolves the issue with 100% success' needs explicit small-sample historical scope, rather than an apparent general guarantee."
+      ],
+      "excerpts": [
+        {
+          "field": "review.reason",
+          "text": "resolves the issue with 100% success"
+        }
+      ],
+      "earlier_visible_errors": {
+        "present": false,
+        "corrected": null,
+        "summary": "Single visible iteration."
+      },
+      "ready_to_show": false
+    },
+    {
+      "case_id": "case-14",
+      "alias": "B",
+      "complaint_language": "ar",
+      "native_prose_language": "en; canonical actions ar",
+      "prose_target": null,
+      "scores": {
+        "factual_fidelity": 2,
+        "evidence_concision": 1,
+        "action_review_consistency": 2,
+        "language_clarity": 2,
+        "uncertainty_lifecycle": 1
+      },
+      "total": 8,
+      "critical_flags": [],
+      "notes": [
+        "Recorded one attempt, remaining budget, SLA and two matching successful phone-coordination citations are supported.",
+        "Classification omits the useful customer report and instead lists absent categories; rationale is more generic than A's contact-gap connection.",
+        "'Most effective' and 'fully supporting' overstate tied 100% action rates from a tiny sample; confirmation/contact availability remains a recommendation rather than observed completion."
+      ],
+      "excerpts": [
+        {
+          "field": "recommendation.rationale",
+          "text": "the most effective way to resolve this type of issue within SLA"
+        }
+      ],
+      "earlier_visible_errors": {
+        "present": false,
+        "corrected": null,
+        "summary": "Single visible iteration."
+      },
+      "ready_to_show": false
+    },
+    {
+      "case_id": "case-15",
+      "alias": "A",
+      "complaint_language": "ar",
+      "native_prose_language": "en; canonical actions ar",
+      "prose_target": null,
+      "scores": {
+        "factual_fidelity": 1,
+        "evidence_concision": 2,
+        "action_review_consistency": 1,
+        "language_clarity": 2,
+        "uncertainty_lifecycle": 1
+      },
+      "total": 7,
+      "critical_flags": [],
+      "notes": [
+        "SHP-0002 has one attempt of2 and a 16-hour span within SLA3; the one cited rescheduling case succeeded.",
+        "Classifier appropriately says inference and moderate confidence: not meeting the courier does not prove recipient absence. Review subsequently states it as a definite cause.",
+        "Rescheduling is permitted but should follow verification of contact/availability. One observed success is not a population-level 100% guarantee."
+      ],
+      "excerpts": [
+        {
+          "field": "review.reason",
+          "text": "due to recipient unavailability"
+        }
+      ],
+      "earlier_visible_errors": {
+        "present": false,
+        "corrected": null,
+        "summary": "Single visible iteration."
+      },
+      "ready_to_show": false
+    },
+    {
+      "case_id": "case-15",
+      "alias": "B",
+      "complaint_language": "ar",
+      "native_prose_language": "mixed en/ar",
+      "prose_target": null,
+      "scores": {
+        "factual_fidelity": 0,
+        "evidence_concision": 0,
+        "action_review_consistency": 1,
+        "language_clarity": 1,
+        "uncertainty_lifecycle": 1
+      },
+      "total": 3,
+      "critical_flags": [
+        "fabricated_supporting_case_count"
+      ],
+      "notes": [
+        "Attempt/budget/SLA and the cited RES-bc8ffd4617 success are correct; classifier frames recipient absence as likely.",
+        "Arabic rationale claims five similar cases succeeded using this action. The used bank has five rows but only one rescheduling row; the other four used different actions. Review does not correct the inflated support.",
+        "Arabic rationale is a sentence fragment ('ووفقًا ... وهو') and should specify the next step with a main verb. Rescheduling still needs availability/contact verification."
+      ],
+      "excerpts": [
+        {
+          "field": "recommendation.rationale",
+          "text": "وفقًا لخمسة حالات سابقة مماثلة (RES-bc8ffd4617) التي نجحت باستخدام هذا الإجراء"
+        }
+      ],
+      "earlier_visible_errors": {
+        "present": false,
+        "corrected": null,
+        "summary": "Single visible iteration."
+      },
+      "ready_to_show": false
+    }
+  ],
+  "preferences": [
+    {
+      "case_id": "case-01",
+      "preference": "tie",
+      "reason": "Both retain the same unsupported redirect/retry interpretation and recommendation/review disagreement."
+    },
+    {
+      "case_id": "case-02",
+      "preference": "B",
+      "reason": "Changes approach and cites observed outcomes; A repeats a prohibited retry despite correct reviewer feedback."
+    },
+    {
+      "case_id": "case-03",
+      "preference": "B",
+      "reason": "Clear remaining-budget rescheduling next step; A introduces warehouse coordination without a recorded hub problem."
+    },
+    {
+      "case_id": "case-04",
+      "preference": "B",
+      "reason": "Final verification/escalation acknowledges generic data evidence cannot establish a specific cause."
+    },
+    {
+      "case_id": "case-05",
+      "preference": "B",
+      "reason": "Correct retry facts and a verification requirement; A falsely reports exhausted budget."
+    },
+    {
+      "case_id": "case-06",
+      "preference": "A",
+      "reason": "More concise concrete HUB_DELAY grounding and better separation of evidence from inferred causality."
+    },
+    {
+      "case_id": "case-07",
+      "preference": "A",
+      "reason": "Uses the two conflicting own addresses; B misattributes a cited action and overlooks that stronger evidence."
+    },
+    {
+      "case_id": "case-08",
+      "preference": "A",
+      "reason": "Direct contact-gap rationale with fewer generic assertions and less reviewer certainty."
+    },
+    {
+      "case_id": "case-09",
+      "preference": "B",
+      "reason": "Same substantive uncertainty defect; B states remaining attempt/SLA and exact supporting IDs more concretely in clear Arabic."
+    },
+    {
+      "case_id": "case-10",
+      "preference": "tie",
+      "reason": "A retains unsupported redirect/retry interpretation; B changes approach but misstates multiple-action support. Neither is operator-ready."
+    },
+    {
+      "case_id": "case-11",
+      "preference": "B",
+      "reason": "Avoids A's false exclusive-address assertion and unexplained acceptance flip; still needs a separate verification step."
+    },
+    {
+      "case_id": "case-12",
+      "preference": "B",
+      "reason": "Uses the recorded HUB_DELAY and relevant notification action; its 2/3=80% error must be corrected."
+    },
+    {
+      "case_id": "case-13",
+      "preference": "tie",
+      "reason": "Both address remedies are appropriate; B cites stronger own evidence, while A scopes its historical rate more carefully."
+    },
+    {
+      "case_id": "case-14",
+      "preference": "A",
+      "reason": "Explicitly connects the customer's inability to answer with phone coordination; B substitutes generic category exclusions."
+    },
+    {
+      "case_id": "case-15",
+      "preference": "A",
+      "reason": "Maintains one cited case rather than inventing five same-action successes; B also has an incomplete Arabic rationale."
+    }
+  ],
+  "limitations": [
+    "Only frozen packet evidence assessed; no external operational observations.",
+    "Review acceptance is not a correctness label; false-acceptance/rejection rates unavailable.",
+    "Dry accepted recommendation/escalation is not execution or human approval.",
+    "Small synthetic cited success samples are not population-level guarantees."
+  ],
+  "severity_review": "Before aggregate/key reveal, case-10 B citation wording classified as weak cross-action support rather than fabricated hard fact (factual score1; no critical flag). Case-12 A unsupported causal inference retains factual/action0 without a fabricated-record critical flag. Initial01–08 numeric scores and all other scores preserved.",
+  "validation": "30 unique records, 15 paired preferences; integer range, totals, readiness and exact final-output excerpts checked."
+}

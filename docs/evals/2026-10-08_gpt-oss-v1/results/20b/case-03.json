@@ -1,0 +1,468 @@
+{
+  "calls": [
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 8.9231,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "extract",
+      "usage": {
+        "input_tokens": 297,
+        "output_tokens": 787,
+        "total_tokens": 1084
+      }
+    },
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 4.4351,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "classify",
+      "usage": {
+        "input_tokens": 1483,
+        "output_tokens": 413,
+        "total_tokens": 1896
+      }
+    },
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 5.6268,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "recommend",
+      "usage": {
+        "input_tokens": 1138,
+        "output_tokens": 502,
+        "total_tokens": 1640
+      }
+    },
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 2.7693,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "review",
+      "usage": {
+        "input_tokens": 1518,
+        "output_tokens": 216,
+        "total_tokens": 1734
+      }
+    }
+  ],
+  "case_id": "case-03",
+  "dry_disposition": "accepted_recommendation",
+  "error_type": null,
+  "events": [
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "",
+        "detail": {
+          "category_hint": "recipient_unavailable",
+          "city": "ينبع",
+          "shipment_id": "SHP-0268"
+        },
+        "is_agent": false,
+        "label": "Entity Extraction",
+        "lane": "Input",
+        "loop": 0,
+        "stage": "extract"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "",
+        "detail": {
+          "live_failure_id": null,
+          "precedent": [
+            {
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "category": "recipient_unavailable",
+              "city": "ينبع",
+              "courier": "وليد الشهري",
+              "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+              "district": "حي الياسمين",
+              "failure_id": "FR-7ff3262d66",
+              "resolution_id": "RES-68a76b0f7d",
+              "rrf_score": 0.032266,
+              "score": 0.8193027973175049,
+              "success": false
+            },
+            {
+              "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+              "category": "escalation:failed_attempt_barcode_mismatch",
+              "city": "ينبع",
+              "courier": "مشعل السلمي",
+              "description": "محاولة تسليم فاشلة: عدم تطابق الباركود مع الشحنة",
+              "district": "حي الواحة",
+              "failure_id": "FR-7a9b789d87",
+              "resolution_id": "RES-60b344eb99",
+              "rrf_score": 0.031545,
+              "score": 0.803795576095581,
+              "success": true
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "category": "escalation:recipient_unavailable",
+              "city": "ينبع",
+              "courier": "فيصل الجهني",
+              "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+              "district": "حي الورود",
+              "failure_id": "FR-fba1462900",
+              "resolution_id": "RES-1022ee04d5",
+              "rrf_score": 0.031281,
+              "score": 0.816326379776001,
+              "success": true
+            }
+          ],
+          "similar_cases": 5
+        },
+        "is_agent": false,
+        "label": "Vector KNN + Graph → RRF",
+        "lane": "Hybrid Retrieval",
+        "loop": 0,
+        "stage": "retrieve"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "المصنّف",
+        "detail": {
+          "category": "recipient_unavailable",
+          "confidence": 0.6,
+          "priority": "high",
+          "rationale": "The shipment had two recorded delivery attempts that both resulted in FAILED events with no other failure reason documented, and the customer reports not meeting the courier. Similar past cases in the same city frequently involve recipient unavailability, making it the most likely root cause."
+        },
+        "is_agent": true,
+        "label": "Root-cause classification",
+        "lane": "Classification",
+        "loop": 0,
+        "stage": "classify"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "المُوصي",
+        "detail": {
+          "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+          "candidates": [
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "rate": 0.5,
+              "succeeded": 1,
+              "tried": 2
+            }
+          ],
+          "grounded_cases": [
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "category": "escalation:recipient_unavailable",
+              "resolution_id": "RES-1022ee04d5",
+              "success": true
+            }
+          ],
+          "grounded_in": [
+            "RES-1022ee04d5"
+          ],
+          "rationale": "The root cause is recipient_unavailable and the customer reports a failed delivery attempt. The action \"التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة\" has a 100% success rate in precedent RES-1022ee04d5 and is a high‑success, known vocabulary action that addresses this scenario without simply retrying delivery."
+        },
+        "is_agent": true,
+        "label": "Candidate actions",
+        "lane": "Recommendation",
+        "loop": 0,
+        "stage": "recommend"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "المراجع",
+        "detail": {
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ],
+          "reason": "The action \"التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة\" aligns with the root cause (recipient_unavailable), satisfies retry and SLA constraints, and matches a successful precedent (RES-1022ee04d5).",
+          "score": 0.9,
+          "verdict": "accept"
+        },
+        "is_agent": true,
+        "label": "Validation",
+        "lane": "Evaluation",
+        "loop": 0,
+        "stage": "review",
+        "verdict": "accept"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "",
+        "detail": {
+          "resolution_id": "DRY-RECOMMENDATION-NOT-PERSISTED"
+        },
+        "is_agent": false,
+        "label": "Write-back",
+        "lane": "Output",
+        "loop": 0,
+        "stage": "writeback"
+      }
+    },
+    {
+      "kind": "final",
+      "payload": {
+        "case_file": null,
+        "classification": {
+          "category": "recipient_unavailable",
+          "confidence": 0.6,
+          "priority": "high",
+          "rationale": "The shipment had two recorded delivery attempts that both resulted in FAILED events with no other failure reason documented, and the customer reports not meeting the courier. Similar past cases in the same city frequently involve recipient unavailability, making it the most likely root cause."
+        },
+        "disposition": "execute",
+        "escalation": null,
+        "loops": 0,
+        "recommendation": {
+          "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+          "candidates": [
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "rate": 0.5,
+              "succeeded": 1,
+              "tried": 2
+            }
+          ],
+          "grounded_cases": [
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "category": "escalation:recipient_unavailable",
+              "resolution_id": "RES-1022ee04d5",
+              "success": true
+            }
+          ],
+          "grounded_in": [
+            "RES-1022ee04d5"
+          ],
+          "rationale": "The root cause is recipient_unavailable and the customer reports a failed delivery attempt. The action \"التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة\" has a 100% success rate in precedent RES-1022ee04d5 and is a high‑success, known vocabulary action that addresses this scenario without simply retrying delivery."
+        },
+        "resolution_id": "DRY-RECOMMENDATION-NOT-PERSISTED",
+        "review": {
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ],
+          "reason": "The action \"التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة\" aligns with the root cause (recipient_unavailable), satisfies retry and SLA constraints, and matches a successful precedent (RES-1022ee04d5).",
+          "score": 0.9,
+          "verdict": "accept"
+        }
+      }
+    }
+  ],
+  "final": {
+    "case_file": null,
+    "classification": {
+      "category": "recipient_unavailable",
+      "confidence": 0.6,
+      "priority": "high",
+      "rationale": "The shipment had two recorded delivery attempts that both resulted in FAILED events with no other failure reason documented, and the customer reports not meeting the courier. Similar past cases in the same city frequently involve recipient unavailability, making it the most likely root cause."
+    },
+    "disposition": "execute",
+    "escalation": null,
+    "loops": 0,
+    "recommendation": {
+      "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+      "candidates": [
+        {
+          "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+          "rate": 1.0,
+          "succeeded": 1,
+          "tried": 1
+        },
+        {
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "rate": 1.0,
+          "succeeded": 1,
+          "tried": 1
+        },
+        {
+          "action": "تسليم لجهة بديلة بموافقة العميل",
+          "rate": 1.0,
+          "succeeded": 1,
+          "tried": 1
+        },
+        {
+          "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+          "rate": 0.5,
+          "succeeded": 1,
+          "tried": 2
+        }
+      ],
+      "grounded_cases": [
+        {
+          "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+          "category": "escalation:recipient_unavailable",
+          "resolution_id": "RES-1022ee04d5",
+          "success": true
+        }
+      ],
+      "grounded_in": [
+        "RES-1022ee04d5"
+      ],
+      "rationale": "The root cause is recipient_unavailable and the customer reports a failed delivery attempt. The action \"التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة\" has a 100% success rate in precedent RES-1022ee04d5 and is a high‑success, known vocabulary action that addresses this scenario without simply retrying delivery."
+    },
+    "resolution_id": "DRY-RECOMMENDATION-NOT-PERSISTED",
+    "review": {
+      "checked_against": [
+        "evidence",
+        "business_rules",
+        "sla",
+        "historical_outcomes"
+      ],
+      "reason": "The action \"التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة\" aligns with the root cause (recipient_unavailable), satisfies retry and SLA constraints, and matches a successful precedent (RES-1022ee04d5).",
+      "score": 0.9,
+      "verdict": "accept"
+    }
+  },
+  "gold_hash": "c14a7728540a35ab56f514aac98a38561e388070edf124146f124495c2c21f05",
+  "language": "ar",
+  "latency_seconds": 21.7668,
+  "metrics": {
+    "accepted_seeded_cause_disagreement_proxy": true,
+    "actual_native_prose_language": "en",
+    "afl_changed_seeded_cause_hit_to_miss_proxy": false,
+    "afl_corrected_seeded_cause_miss_proxy": false,
+    "afl_retry": false,
+    "any_recorded_shipment_base_cause_agreement": false,
+    "application_field_fallback_or_normalization": false,
+    "arabic_canonical_action": true,
+    "base_cause_agreement": false,
+    "base_cause_valid_model_agreement": false,
+    "escalated": false,
+    "expected_seeded_action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+    "expected_seeded_category": "escalation:failed_attempt_wrong_gate",
+    "extraction_shipment_id_match": true,
+    "failed_attempt_family_agreement": false,
+    "final_classifier_model_output_valid": true,
+    "first_base_cause_agreement": false,
+    "first_predicted_category": "recipient_unavailable",
+    "native_prompt_prose_language": "en",
+    "no_grounding": false,
+    "plausibility_history_counts": {
+      "rate": 1.0,
+      "succeeded": 2,
+      "tried": 2
+    },
+    "predicted_action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+    "predicted_category": "recipient_unavailable",
+    "quality_not_independently_scored": true,
+    "raw_full_category_agreement_unsupported_escalation_prefix": false,
+    "recorded_delivery_attempts": 2,
+    "reject_reviews": 0,
+    "retrieval_category_match_proxy": 0.0,
+    "review_accepted": true,
+    "seeded_action_exact_agreement": true,
+    "synthetic_history_action_plausibility_proxy": true
+  },
+  "model": "openai/gpt-oss:20b",
+  "observed_success": null,
+  "provider_identity": {
+    "api_base_sha256": "d115cae79af69d9db470aba431e632ea28a39c4f3e2217b900da46e558662fe9",
+    "max_retries": 0,
+    "temperature": 0,
+    "timeout_seconds": 90
+  },
+  "runtime_hash": "5fa0ab93c2b4973192b28647a45d1137063c7378ed7c35a978ccd250637a0ca5",
+  "source_hashes": {
+    "_llm.py": "dac0c724a0ed294bb68ff1ebceef1b07e590037ec30fa8985a3f683f41dd2b95",
+    "classifier.py": "1c997d3df85946d874cfceb4aa75415f1076d7e3b2775bf70509e067790b018f",
+    "evaluator.py": "c9eeb8c5326c55a6a720f0b032080004800f008d2d6098891717305d089da0eb",
+    "extract.py": "c622e0827c46c16d227c11d223be7b515ce6af3a18a85c559f5976e5790e6d78",
+    "graph.py": "433ecd48a647438b4db03abb96d362dfa9e3eaedc65f2c2149fcf5b3e684d8cb",
+    "recommender.py": "2e44e65d7b68890cc39b9d0d6b522a96495e6904a6095b7ec8fcb0f1c0d41833",
+    "retrieve.py": "b22af973533b28bb48b7d51336ed9b8f581fac67b16e4fb90d7fd4ff8c2d6407",
+    "reviewer.py": "4de5d1d5d1ebc87657cb5d315826b646c1a00610c42f6c3c0f0b6d56a702d964",
+    "rules.py": "e4e9a6e8bd940072f2207bd4ff2bb0291c10c86f21f83288a10b5e0f7cc4764f",
+    "writeback.py": "bd09de25ca7c9bff1d6f89d6a58d122e3cb249331ffe1d3c7b1efdfec07270cd"
+  },
+  "stage_latencies": [
+    {
+      "latency_seconds": 8.9282,
+      "loop": 0,
+      "stage": "extract"
+    },
+    {
+      "latency_seconds": 0.0013,
+      "loop": 0,
+      "stage": "retrieve"
+    },
+    {
+      "latency_seconds": 4.4365,
+      "loop": 0,
+      "stage": "classify"
+    },
+    {
+      "latency_seconds": 5.6285,
+      "loop": 0,
+      "stage": "recommend"
+    },
+    {
+      "latency_seconds": 2.7714,
+      "loop": 0,
+      "stage": "review"
+    },
+    {
+      "latency_seconds": 0.0006,
+      "loop": 0,
+      "stage": "writeback"
+    }
+  ],
+  "timestamp": "2026-10-08T10:37:10.242597+00:00",
+  "version": "gpt-oss-v1-frozen-1",
+  "writeback_executed": false
+}

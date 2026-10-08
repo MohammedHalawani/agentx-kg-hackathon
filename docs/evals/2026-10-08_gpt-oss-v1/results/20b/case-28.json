@@ -1,0 +1,637 @@
+{
+  "calls": [
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 5.6167,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "extract",
+      "usage": {
+        "input_tokens": 288,
+        "output_tokens": 475,
+        "total_tokens": 763
+      }
+    },
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 6.5902,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "classify",
+      "usage": {
+        "input_tokens": 1343,
+        "output_tokens": 560,
+        "total_tokens": 1903
+      }
+    },
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 3.4394,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "recommend",
+      "usage": {
+        "input_tokens": 1126,
+        "output_tokens": 278,
+        "total_tokens": 1404
+      }
+    },
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 6.1293,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "review",
+      "usage": {
+        "input_tokens": 1416,
+        "output_tokens": 482,
+        "total_tokens": 1898
+      }
+    },
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 12.8523,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "classify",
+      "usage": {
+        "input_tokens": 1404,
+        "output_tokens": 1084,
+        "total_tokens": 2488
+      }
+    },
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 7.8012,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "recommend",
+      "usage": {
+        "input_tokens": 1168,
+        "output_tokens": 640,
+        "total_tokens": 1808
+      }
+    },
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 2.8056,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "review",
+      "usage": {
+        "input_tokens": 1449,
+        "output_tokens": 190,
+        "total_tokens": 1639
+      }
+    }
+  ],
+  "case_id": "case-28",
+  "dry_disposition": "accepted_recommendation",
+  "error_type": null,
+  "events": [
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "",
+        "detail": {
+          "city": "العارضة",
+          "shipment_id": "SHP-0245"
+        },
+        "is_agent": false,
+        "label": "Entity Extraction",
+        "lane": "Input",
+        "loop": 0,
+        "stage": "extract"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "",
+        "detail": {
+          "live_failure_id": null,
+          "precedent": [
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "category": "escalation:recipient_unavailable",
+              "city": "العلا",
+              "courier": "سلطان السبيعي",
+              "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+              "district": "حي العزيزية",
+              "failure_id": "FR-a73f1c908f",
+              "resolution_id": "RES-68156987d9",
+              "rrf_score": 0.016393,
+              "score": 0.8088734149932861,
+              "success": true
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "category": "recipient_unavailable",
+              "city": "الحناكية",
+              "courier": "يوسف الزهراني",
+              "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+              "district": "المنطقة الصناعية",
+              "failure_id": "FR-5d15bd05b1",
+              "resolution_id": "RES-2e031da97e",
+              "rrf_score": 0.016129,
+              "score": 0.8082181215286255,
+              "success": true
+            },
+            {
+              "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+              "category": "recipient_unavailable",
+              "city": "الشملي",
+              "courier": "محمد الفيفي",
+              "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+              "district": "حي الصناعية",
+              "failure_id": "FR-b389a7142a",
+              "resolution_id": "RES-13e79b5e29",
+              "rrf_score": 0.015873,
+              "score": 0.8076285123825073,
+              "success": true
+            }
+          ],
+          "similar_cases": 5
+        },
+        "is_agent": false,
+        "label": "Vector KNN + Graph → RRF",
+        "lane": "Hybrid Retrieval",
+        "loop": 0,
+        "stage": "retrieve"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "المصنّف",
+        "detail": {
+          "category": "address_conflict",
+          "confidence": 0.3,
+          "priority": "low",
+          "rationale": "The customer reports a “problem with shipment data” and no failure reason is recorded, suggesting an address‑related issue. No evidence of recipient absence or other failure types is present, so address_conflict is the most plausible root cause, albeit with low confidence."
+        },
+        "is_agent": true,
+        "label": "Root-cause classification",
+        "lane": "Classification",
+        "loop": 0,
+        "stage": "classify"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "المُوصي",
+        "detail": {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "candidates": [
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "rate": 1.0,
+              "succeeded": 2,
+              "tried": 2
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            }
+          ],
+          "grounded_cases": [
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "category": "address_conflict",
+              "resolution_id": "RES-e8c312b756",
+              "success": true
+            },
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "category": "address_conflict",
+              "resolution_id": "RES-ffd61bfb73",
+              "success": true
+            }
+          ],
+          "grounded_in": [
+            "RES-e8c312b756",
+            "RES-ffd61bfb73"
+          ],
+          "rationale": "The root cause is classified as address_conflict and the highest‑success precedent actions for this category are confirming the correct address with the customer and redirecting the shipment. This action has a 100 % success rate in the historical data and aligns with the known action vocabulary and business rules."
+        },
+        "is_agent": true,
+        "label": "Candidate actions",
+        "lane": "Recommendation",
+        "loop": 0,
+        "stage": "recommend"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "المراجع",
+        "detail": {
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ],
+          "reason": "The evidence does not indicate an address conflict; the failure reason is unspecified, so confirming the address is not justified. First identify the specific shipment data issue before taking action.",
+          "score": 0.2,
+          "verdict": "reject"
+        },
+        "is_agent": true,
+        "label": "Validation",
+        "lane": "Evaluation",
+        "loop": 1,
+        "stage": "review",
+        "verdict": "reject"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "المصنّف",
+        "detail": {
+          "category": "failed_attempt_wrong_gate",
+          "confidence": 0.2,
+          "priority": "low",
+          "rationale": "The shipment has a single DELIVERY_ATTEMPT followed by a generic FAILED event with no recorded failure reason. No evidence indicates address conflict, recipient unavailability, weight mismatch, barcode mismatch, or hub delay. Thus the most neutral classification for an unspecified data issue is failed_attempt_wrong_gate, but confidence is low due to lack of supporting facts."
+        },
+        "is_agent": true,
+        "label": "Root-cause classification",
+        "lane": "Classification",
+        "loop": 1,
+        "stage": "classify"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "المُوصي",
+        "detail": {
+          "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+          "candidates": [
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "rate": 1.0,
+              "succeeded": 2,
+              "tried": 2
+            },
+            {
+              "action": "استبدال الملصق وإعادة فحص الشحنة",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            }
+          ],
+          "grounded_cases": [
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "category": "escalation:failed_attempt_wrong_gate",
+              "resolution_id": "RES-dfe314b349",
+              "success": true
+            },
+            {
+              "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+              "category": "escalation:failed_attempt_wrong_gate",
+              "resolution_id": "RES-64d9df1d1c",
+              "success": true
+            }
+          ],
+          "grounded_in": [
+            "RES-dfe314b349",
+            "RES-64d9df1d1c"
+          ],
+          "rationale": "Both precedent cases for the \"failed_attempt_wrong_gate\" category used this escalation action with 100 % success, and it has the highest number of successful precedents among the available options, making it the most reliable next step."
+        },
+        "is_agent": true,
+        "label": "Candidate actions",
+        "lane": "Recommendation",
+        "loop": 1,
+        "stage": "recommend"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "المراجع",
+        "detail": {
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ],
+          "reason": "The action aligns with the high‑success precedent for the \"failed_attempt_wrong_gate\" category and satisfies all business rules; no contradictory evidence or rule violations are present.",
+          "score": 0.9,
+          "verdict": "accept"
+        },
+        "is_agent": true,
+        "label": "Validation",
+        "lane": "Evaluation",
+        "loop": 1,
+        "stage": "review",
+        "verdict": "accept"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "",
+        "detail": {
+          "resolution_id": "DRY-RECOMMENDATION-NOT-PERSISTED"
+        },
+        "is_agent": false,
+        "label": "Write-back",
+        "lane": "Output",
+        "loop": 1,
+        "stage": "writeback"
+      }
+    },
+    {
+      "kind": "final",
+      "payload": {
+        "case_file": null,
+        "classification": {
+          "category": "failed_attempt_wrong_gate",
+          "confidence": 0.2,
+          "priority": "low",
+          "rationale": "The shipment has a single DELIVERY_ATTEMPT followed by a generic FAILED event with no recorded failure reason. No evidence indicates address conflict, recipient unavailability, weight mismatch, barcode mismatch, or hub delay. Thus the most neutral classification for an unspecified data issue is failed_attempt_wrong_gate, but confidence is low due to lack of supporting facts."
+        },
+        "disposition": "execute",
+        "escalation": null,
+        "loops": 1,
+        "recommendation": {
+          "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+          "candidates": [
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "rate": 1.0,
+              "succeeded": 2,
+              "tried": 2
+            },
+            {
+              "action": "استبدال الملصق وإعادة فحص الشحنة",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            }
+          ],
+          "grounded_cases": [
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "category": "escalation:failed_attempt_wrong_gate",
+              "resolution_id": "RES-dfe314b349",
+              "success": true
+            },
+            {
+              "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+              "category": "escalation:failed_attempt_wrong_gate",
+              "resolution_id": "RES-64d9df1d1c",
+              "success": true
+            }
+          ],
+          "grounded_in": [
+            "RES-dfe314b349",
+            "RES-64d9df1d1c"
+          ],
+          "rationale": "Both precedent cases for the \"failed_attempt_wrong_gate\" category used this escalation action with 100 % success, and it has the highest number of successful precedents among the available options, making it the most reliable next step."
+        },
+        "resolution_id": "DRY-RECOMMENDATION-NOT-PERSISTED",
+        "review": {
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ],
+          "reason": "The action aligns with the high‑success precedent for the \"failed_attempt_wrong_gate\" category and satisfies all business rules; no contradictory evidence or rule violations are present.",
+          "score": 0.9,
+          "verdict": "accept"
+        }
+      }
+    }
+  ],
+  "final": {
+    "case_file": null,
+    "classification": {
+      "category": "failed_attempt_wrong_gate",
+      "confidence": 0.2,
+      "priority": "low",
+      "rationale": "The shipment has a single DELIVERY_ATTEMPT followed by a generic FAILED event with no recorded failure reason. No evidence indicates address conflict, recipient unavailability, weight mismatch, barcode mismatch, or hub delay. Thus the most neutral classification for an unspecified data issue is failed_attempt_wrong_gate, but confidence is low due to lack of supporting facts."
+    },
+    "disposition": "execute",
+    "escalation": null,
+    "loops": 1,
+    "recommendation": {
+      "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+      "candidates": [
+        {
+          "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+          "rate": 1.0,
+          "succeeded": 2,
+          "tried": 2
+        },
+        {
+          "action": "استبدال الملصق وإعادة فحص الشحنة",
+          "rate": 1.0,
+          "succeeded": 1,
+          "tried": 1
+        },
+        {
+          "action": "تسليم لجهة بديلة بموافقة العميل",
+          "rate": 1.0,
+          "succeeded": 1,
+          "tried": 1
+        },
+        {
+          "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+          "rate": 1.0,
+          "succeeded": 1,
+          "tried": 1
+        }
+      ],
+      "grounded_cases": [
+        {
+          "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+          "category": "escalation:failed_attempt_wrong_gate",
+          "resolution_id": "RES-dfe314b349",
+          "success": true
+        },
+        {
+          "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+          "category": "escalation:failed_attempt_wrong_gate",
+          "resolution_id": "RES-64d9df1d1c",
+          "success": true
+        }
+      ],
+      "grounded_in": [
+        "RES-dfe314b349",
+        "RES-64d9df1d1c"
+      ],
+      "rationale": "Both precedent cases for the \"failed_attempt_wrong_gate\" category used this escalation action with 100 % success, and it has the highest number of successful precedents among the available options, making it the most reliable next step."
+    },
+    "resolution_id": "DRY-RECOMMENDATION-NOT-PERSISTED",
+    "review": {
+      "checked_against": [
+        "evidence",
+        "business_rules",
+        "sla",
+        "historical_outcomes"
+      ],
+      "reason": "The action aligns with the high‑success precedent for the \"failed_attempt_wrong_gate\" category and satisfies all business rules; no contradictory evidence or rule violations are present.",
+      "score": 0.9,
+      "verdict": "accept"
+    }
+  },
+  "gold_hash": "c14a7728540a35ab56f514aac98a38561e388070edf124146f124495c2c21f05",
+  "language": "en",
+  "latency_seconds": 45.2522,
+  "metrics": {
+    "accepted_seeded_cause_disagreement_proxy": true,
+    "actual_native_prose_language": "en",
+    "afl_changed_seeded_cause_hit_to_miss_proxy": false,
+    "afl_corrected_seeded_cause_miss_proxy": false,
+    "afl_retry": true,
+    "any_recorded_shipment_base_cause_agreement": false,
+    "application_field_fallback_or_normalization": false,
+    "arabic_canonical_action": true,
+    "base_cause_agreement": false,
+    "base_cause_valid_model_agreement": false,
+    "escalated": false,
+    "expected_seeded_action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+    "expected_seeded_category": "failed_attempt_barcode_mismatch",
+    "extraction_shipment_id_match": true,
+    "failed_attempt_family_agreement": true,
+    "final_classifier_model_output_valid": true,
+    "first_base_cause_agreement": false,
+    "first_predicted_category": "address_conflict",
+    "native_prompt_prose_language": "en",
+    "no_grounding": false,
+    "plausibility_history_counts": null,
+    "predicted_action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+    "predicted_category": "failed_attempt_wrong_gate",
+    "quality_not_independently_scored": true,
+    "raw_full_category_agreement_unsupported_escalation_prefix": false,
+    "recorded_delivery_attempts": 1,
+    "reject_reviews": 1,
+    "retrieval_category_match_proxy": 0.0,
+    "review_accepted": true,
+    "seeded_action_exact_agreement": false,
+    "synthetic_history_action_plausibility_proxy": false
+  },
+  "model": "openai/gpt-oss:20b",
+  "observed_success": null,
+  "provider_identity": {
+    "api_base_sha256": "d115cae79af69d9db470aba431e632ea28a39c4f3e2217b900da46e558662fe9",
+    "max_retries": 0,
+    "temperature": 0,
+    "timeout_seconds": 90
+  },
+  "runtime_hash": "5fa0ab93c2b4973192b28647a45d1137063c7378ed7c35a978ccd250637a0ca5",
+  "source_hashes": {
+    "_llm.py": "dac0c724a0ed294bb68ff1ebceef1b07e590037ec30fa8985a3f683f41dd2b95",
+    "classifier.py": "1c997d3df85946d874cfceb4aa75415f1076d7e3b2775bf70509e067790b018f",
+    "evaluator.py": "c9eeb8c5326c55a6a720f0b032080004800f008d2d6098891717305d089da0eb",
+    "extract.py": "c622e0827c46c16d227c11d223be7b515ce6af3a18a85c559f5976e5790e6d78",
+    "graph.py": "433ecd48a647438b4db03abb96d362dfa9e3eaedc65f2c2149fcf5b3e684d8cb",
+    "recommender.py": "2e44e65d7b68890cc39b9d0d6b522a96495e6904a6095b7ec8fcb0f1c0d41833",
+    "retrieve.py": "b22af973533b28bb48b7d51336ed9b8f581fac67b16e4fb90d7fd4ff8c2d6407",
+    "reviewer.py": "4de5d1d5d1ebc87657cb5d315826b646c1a00610c42f6c3c0f0b6d56a702d964",
+    "rules.py": "e4e9a6e8bd940072f2207bd4ff2bb0291c10c86f21f83288a10b5e0f7cc4764f",
+    "writeback.py": "bd09de25ca7c9bff1d6f89d6a58d122e3cb249331ffe1d3c7b1efdfec07270cd"
+  },
+  "stage_latencies": [
+    {
+      "latency_seconds": 5.6219,
+      "loop": 0,
+      "stage": "extract"
+    },
+    {
+      "latency_seconds": 0.0012,
+      "loop": 0,
+      "stage": "retrieve"
+    },
+    {
+      "latency_seconds": 6.5915,
+      "loop": 0,
+      "stage": "classify"
+    },
+    {
+      "latency_seconds": 3.4414,
+      "loop": 0,
+      "stage": "recommend"
+    },
+    {
+      "latency_seconds": 6.1313,
+      "loop": 1,
+      "stage": "review"
+    },
+    {
+      "latency_seconds": 12.8536,
+      "loop": 1,
+      "stage": "classify"
+    },
+    {
+      "latency_seconds": 7.8029,
+      "loop": 1,
+      "stage": "recommend"
+    },
+    {
+      "latency_seconds": 2.8075,
+      "loop": 1,
+      "stage": "review"
+    },
+    {
+      "latency_seconds": 0.0006,
+      "loop": 1,
+      "stage": "writeback"
+    }
+  ],
+  "timestamp": "2026-10-08T10:52:01.623884+00:00",
+  "version": "gpt-oss-v1-frozen-1",
+  "writeback_executed": false
+}

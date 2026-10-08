@@ -1,0 +1,222 @@
+{
+  "timestamp": "2026-10-08T15:51:16.918734+00:00",
+  "reviewers": [
+    {
+      "source": "blind-scores-01-15.json",
+      "review_type": "AI editorial review; not independently adjudicated human/SPL gold",
+      "model_blinding": "Model key, result folders, evaluator/helper source, latency and model metadata not inspected."
+    },
+    {
+      "source": "blind-scores-16-30.json",
+      "review_type": "model-blind agent editorial quality review",
+      "model_blinding": "Neutral per-case A/B aliases; no model key, result folders, reports, evaluator source, token or latency metadata consulted during scoring. Earlier implementation knowledge does not identify aliases."
+    }
+  ],
+  "scope": "60 outputs / 30 paired synthetic cases; model-blind AI editorial review, not independent human/SPL gold",
+  "models": {
+    "openai/gpt-oss:20b": {
+      "reviewed": 30,
+      "dimensions": {
+        "factual_fidelity": {
+          "assessed": 30,
+          "not_assessable": 0,
+          "mean": 0.967,
+          "score_distribution": {
+            "1": 13,
+            "0": 9,
+            "2": 8
+          },
+          "below_two": 22
+        },
+        "evidence_concision": {
+          "assessed": 30,
+          "not_assessable": 0,
+          "mean": 1.2,
+          "score_distribution": {
+            "1": 18,
+            "0": 3,
+            "2": 9
+          },
+          "below_two": 21
+        },
+        "action_review_consistency": {
+          "assessed": 30,
+          "not_assessable": 0,
+          "mean": 1.033,
+          "score_distribution": {
+            "0": 10,
+            "1": 9,
+            "2": 11
+          },
+          "below_two": 19
+        },
+        "language_clarity": {
+          "assessed": 30,
+          "not_assessable": 0,
+          "mean": 2,
+          "score_distribution": {
+            "2": 30
+          },
+          "below_two": 0
+        },
+        "uncertainty_lifecycle": {
+          "assessed": 30,
+          "not_assessable": 0,
+          "mean": 1.033,
+          "score_distribution": {
+            "1": 21,
+            "2": 5,
+            "0": 4
+          },
+          "below_two": 25
+        }
+      },
+      "mean_total": 6.233,
+      "total_assessed": 30,
+      "total_not_assessable": 0,
+      "ready_to_show": 2,
+      "critical_flag_cases": 11,
+      "critical_flags": {
+        "exhausted_retry_proposal_blocked": 1,
+        "fabricated_retry_budget_exhaustion": 1,
+        "misattributed_cited_action": 1,
+        "unsupported_exclusive_cause_affecting_action": 1,
+        "fabricated_operational_visit_location": 2,
+        "fabricated_same_city_precedent": 1,
+        "unsupported_causal_certainty_affecting_accepted_action": 1,
+        "exhausted_budget_retry_proposed_but_rejected": 1,
+        "fabricated_cited_action_success_count": 1,
+        "exhausted_budget_rescheduling_suggested_in_reject_reason": 1
+      },
+      "native_prose_languages": {
+        "en; canonical actions ar": 15,
+        "en": 15
+      },
+      "by_complaint_language": {
+        "ar": {
+          "n": 18,
+          "assessed": 18,
+          "not_assessable": 0,
+          "mean_language_clarity": 2,
+          "ready_to_show": 1
+        },
+        "en": {
+          "n": 12,
+          "assessed": 12,
+          "not_assessable": 0,
+          "mean_language_clarity": 2,
+          "ready_to_show": 1
+        }
+      }
+    },
+    "openai/gpt-oss:120b": {
+      "reviewed": 30,
+      "dimensions": {
+        "factual_fidelity": {
+          "assessed": 30,
+          "not_assessable": 0,
+          "mean": 1.333,
+          "score_distribution": {
+            "1": 12,
+            "2": 14,
+            "0": 4
+          },
+          "below_two": 16
+        },
+        "evidence_concision": {
+          "assessed": 30,
+          "not_assessable": 0,
+          "mean": 1.467,
+          "score_distribution": {
+            "1": 14,
+            "2": 15,
+            "0": 1
+          },
+          "below_two": 15
+        },
+        "action_review_consistency": {
+          "assessed": 30,
+          "not_assessable": 0,
+          "mean": 1.2,
+          "score_distribution": {
+            "0": 7,
+            "1": 10,
+            "2": 13
+          },
+          "below_two": 17
+        },
+        "language_clarity": {
+          "assessed": 30,
+          "not_assessable": 0,
+          "mean": 1.867,
+          "score_distribution": {
+            "2": 26,
+            "1": 4
+          },
+          "below_two": 4
+        },
+        "uncertainty_lifecycle": {
+          "assessed": 30,
+          "not_assessable": 0,
+          "mean": 1.133,
+          "score_distribution": {
+            "1": 20,
+            "2": 7,
+            "0": 3
+          },
+          "below_two": 23
+        }
+      },
+      "mean_total": 7,
+      "total_assessed": 30,
+      "total_not_assessable": 0,
+      "ready_to_show": 5,
+      "critical_flag_cases": 8,
+      "critical_flags": {
+        "incorrect_historical_success_rate": 1,
+        "fabricated_supporting_case_count": 1,
+        "exhausted_budget_retry_proposed_but_rejected": 1,
+        "unsupported_exclusive_category_claim_affecting_accepted_action": 1,
+        "fabricated_operational_visit_location": 1,
+        "exhausted_budget_delivery_proposed_but_rejected": 1,
+        "unsupported_causal_certainty_affecting_accepted_action": 1,
+        "unsupported_enterprise_cancellation_refund_action_suggestion": 1
+      },
+      "native_prose_languages": {
+        "en; canonical actions ar": 9,
+        "mixed en/ar": 6,
+        "en": 14,
+        "mixed_en_ar": 1
+      },
+      "by_complaint_language": {
+        "ar": {
+          "n": 18,
+          "assessed": 18,
+          "not_assessable": 0,
+          "mean_language_clarity": 1.778,
+          "ready_to_show": 5
+        },
+        "en": {
+          "n": 12,
+          "assessed": 12,
+          "not_assessable": 0,
+          "mean_language_clarity": 2,
+          "ready_to_show": 0
+        }
+      }
+    }
+  },
+  "paired_preferences": {
+    "tie": 6,
+    "openai/gpt-oss:120b": 19,
+    "openai/gpt-oss:20b": 5
+  },
+  "false_acceptance_rate": null,
+  "false_rejection_rate": null,
+  "limitations": [
+    "Two agent reviewers split the cases; each reviewed both aliases on the same case.",
+    "No output language required; English prompts and Arabic actions are not a prose target.",
+    "Ready-to-show is an editorial threshold, not a safety or correctness guarantee.",
+    "Critical flags can concern blocked or earlier proposals, not executed actions."
+  ]
+}

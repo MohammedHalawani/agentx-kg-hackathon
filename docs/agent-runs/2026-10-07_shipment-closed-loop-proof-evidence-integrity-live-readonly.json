@@ -1,0 +1,194 @@
+{
+  "proof_type": "read_only_live_model_with_recorded_event_fact_prompt_and_count_guard",
+  "timestamp": "2026-10-07T22:43:13.046128+03:00",
+  "shipment_id": "SHP-0017",
+  "model": "openai/gpt-oss:20b",
+  "actual_recorded_delivery_attempts": 2,
+  "policy_retry_limit": 2,
+  "stages": [
+    {
+      "stage": "classify",
+      "label": "Root-cause classification",
+      "lane": "Classification",
+      "arabic": "المصنّف",
+      "is_agent": true,
+      "loop": 0,
+      "detail": {
+        "category": "address_conflict",
+        "confidence": 0.95,
+        "priority": "high",
+        "rationale": "The recorded failure explicitly lists the category as \"escalation:address_conflict\" and the customer complaint states the delivery location did not match their current address. Two delivery attempts have already failed, exceeding the retry limit and approaching the SLA deadline."
+      }
+    },
+    {
+      "stage": "recommend",
+      "label": "Candidate actions",
+      "lane": "Recommendation",
+      "arabic": "المُوصي",
+      "is_agent": true,
+      "loop": 0,
+      "detail": {
+        "action": "تصعيد الحالة للمشرف واتخاذ إجراء مركب لتصحيح العنوان وإعادة التسليم",
+        "grounded_in": [
+          "RES-3ccd779290"
+        ],
+        "rationale": "The case matches the high‑confidence address_conflict category and the retry budget is exhausted, so a plain re‑delivery is inadmissible. Escalating to a supervisor for a composite address correction and rescheduling has a 100 % historical success rate and aligns with the precedent RES‑3ccd779290.",
+        "candidates": [
+          {
+            "action": "تصعيد الحالة للمشرف واتخاذ إجراء مركب لتصحيح العنوان وإعادة التسليم",
+            "tried": 1,
+            "succeeded": 1,
+            "rate": 1.0
+          },
+          {
+            "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+            "tried": 1,
+            "succeeded": 1,
+            "rate": 1.0
+          },
+          {
+            "action": "التواصل مع العميل لتحديد الموقع عبر الإحداثيات",
+            "tried": 1,
+            "succeeded": 1,
+            "rate": 1.0
+          },
+          {
+            "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+            "tried": 1,
+            "succeeded": 1,
+            "rate": 1.0
+          },
+          {
+            "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+            "tried": 1,
+            "succeeded": 1,
+            "rate": 1.0
+          }
+        ],
+        "grounded_cases": [
+          {
+            "resolution_id": "RES-3ccd779290",
+            "category": "escalation:address_conflict",
+            "action": "تصعيد الحالة للمشرف واتخاذ إجراء مركب لتصحيح العنوان وإعادة التسليم",
+            "success": true
+          }
+        ]
+      }
+    },
+    {
+      "stage": "review",
+      "label": "Validation",
+      "lane": "Evaluation",
+      "arabic": "المراجع",
+      "is_agent": true,
+      "loop": 0,
+      "detail": {
+        "verdict": "reject",
+        "score": 0.0,
+        "reason": "Retry budget exhausted (2 of 2 permitted attempt(s) used - EXHAUSTED, re-delivery not admissible.) but the proposed action is another delivery retry. Propose a different approach or escalate.",
+        "checked_against": [
+          "evidence",
+          "business_rules",
+          "sla",
+          "historical_outcomes"
+        ]
+      },
+      "verdict": "reject"
+    },
+    {
+      "stage": "classify",
+      "label": "Root-cause classification",
+      "lane": "Classification",
+      "arabic": "المصنّف",
+      "is_agent": true,
+      "loop": 1,
+      "detail": {
+        "category": "address_conflict",
+        "confidence": 0.95,
+        "priority": "high",
+        "rationale": "The recorded failure explicitly lists \"escalation:address_conflict\" and the event history shows two delivery attempts (the policy retry limit of 2) have been exhausted, leaving no further retry options. The shipment is already marked FAILED and the SLA of 3 days has been breached, warranting a high‑priority escalation to correct the address before re‑attempting delivery."
+      }
+    },
+    {
+      "stage": "recommend",
+      "label": "Candidate actions",
+      "lane": "Recommendation",
+      "arabic": "المُوصي",
+      "is_agent": true,
+      "loop": 1,
+      "detail": {
+        "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+        "grounded_in": [
+          "RES-11116f5b7b"
+        ],
+        "rationale": "The root cause is an address conflict and the retry budget is exhausted, so escalation is required.  RES‑11116f5b7b, which used this exact action for the same category, succeeded 100 % of the time, making it the most reliable next step.",
+        "candidates": [
+          {
+            "action": "تصعيد الحالة للمشرف واتخاذ إجراء مركب لتصحيح العنوان وإعادة التسليم",
+            "tried": 1,
+            "succeeded": 1,
+            "rate": 1.0
+          },
+          {
+            "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+            "tried": 1,
+            "succeeded": 1,
+            "rate": 1.0
+          },
+          {
+            "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+            "tried": 2,
+            "succeeded": 2,
+            "rate": 1.0
+          },
+          {
+            "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+            "tried": 1,
+            "succeeded": 1,
+            "rate": 1.0
+          }
+        ],
+        "grounded_cases": [
+          {
+            "resolution_id": "RES-11116f5b7b",
+            "category": "escalation:address_conflict",
+            "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+            "success": true
+          }
+        ]
+      }
+    },
+    {
+      "stage": "review",
+      "label": "Validation",
+      "lane": "Evaluation",
+      "arabic": "المراجع",
+      "is_agent": true,
+      "loop": 1,
+      "detail": {
+        "verdict": "accept",
+        "score": 0.92,
+        "reason": "The action is an escalation that aligns with the exhausted retry budget and the address conflict root cause, and it is supported by a successful precedent (RES‑11116f5b7b) for the same category, satisfying the business rules and evidence.",
+        "checked_against": [
+          "evidence",
+          "business_rules",
+          "sla",
+          "historical_outcomes"
+        ]
+      },
+      "verdict": "accept"
+    }
+  ],
+  "feedback": [
+    "Retry budget exhausted (2 of 2 permitted attempt(s) used - EXHAUSTED, re-delivery not admissible.) but the proposed action is another delivery retry. Propose a different approach or escalate."
+  ],
+  "count_contradiction_on_final": null,
+  "final_review": "accept",
+  "final_disposition": "accepted_recommendation_no_writeback",
+  "writeback_executed": false,
+  "observed_success": null,
+  "elapsed_seconds": 49.32,
+  "limitations": [
+    "Only explicitly detectable recorded attempt-count contradictions are deterministically checked; broader final-summary fidelity requires evaluation."
+  ]
+}

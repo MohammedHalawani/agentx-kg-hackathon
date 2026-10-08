@@ -1,0 +1,502 @@
+{
+  "calls": [
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 3.8476,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "extract",
+      "usage": {
+        "input_tokens": 298,
+        "output_tokens": 346,
+        "total_tokens": 644
+      }
+    },
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 5.6003,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "classify",
+      "usage": {
+        "input_tokens": 1409,
+        "output_tokens": 503,
+        "total_tokens": 1912
+      }
+    },
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 6.062,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "recommend",
+      "usage": {
+        "input_tokens": 1182,
+        "output_tokens": 530,
+        "total_tokens": 1712
+      }
+    },
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 2.4738,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "review",
+      "usage": {
+        "input_tokens": 1523,
+        "output_tokens": 215,
+        "total_tokens": 1738
+      }
+    }
+  ],
+  "case_id": "case-07",
+  "dry_disposition": "accepted_recommendation",
+  "error_type": null,
+  "events": [
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "",
+        "detail": {
+          "category_hint": "address_conflict",
+          "shipment_id": "SHP-0055"
+        },
+        "is_agent": false,
+        "label": "Entity Extraction",
+        "lane": "Input",
+        "loop": 0,
+        "stage": "extract"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "",
+        "detail": {
+          "live_failure_id": null,
+          "precedent": [
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "category": "recipient_unavailable",
+              "city": "بلجرشي",
+              "courier": "تركي الغامدي",
+              "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+              "district": "حي الشطيبة",
+              "failure_id": "FR-38974df8af",
+              "resolution_id": "RES-a5c8837459",
+              "rrf_score": 0.032787,
+              "score": 0.8127789497375488,
+              "success": true
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "category": "recipient_unavailable",
+              "city": "املج",
+              "courier": "خالد القحطاني",
+              "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+              "district": "حي الصيادية",
+              "failure_id": "FR-7b413307aa",
+              "resolution_id": "RES-b5983a1ad2",
+              "rrf_score": 0.016129,
+              "score": 0.8111621141433716,
+              "success": true
+            },
+            {
+              "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+              "category": "failed_attempt_wrong_gate",
+              "city": "بلجرشي",
+              "courier": "مشعل السلمي",
+              "description": "محاولة تسليم فاشلة: بوابة دخول خاطئة",
+              "district": "حي الشطيبة",
+              "failure_id": "FR-b4b9f3b8bb",
+              "resolution_id": "RES-62b146c76d",
+              "rrf_score": 0.016129,
+              "score": null,
+              "success": true
+            }
+          ],
+          "similar_cases": 5
+        },
+        "is_agent": false,
+        "label": "Vector KNN + Graph → RRF",
+        "lane": "Hybrid Retrieval",
+        "loop": 0,
+        "stage": "retrieve"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "المصنّف",
+        "detail": {
+          "category": "failed_attempt_wrong_gate",
+          "confidence": 0.7,
+          "priority": "medium",
+          "rationale": "The shipment had a single DELIVERY_ATTEMPT followed by a FAILED event, and the customer reports the courier’s stated location did not match the usual address, indicating a wrong gate issue. A similar past case in the same city/district was resolved as a failed_attempt_wrong_gate."
+        },
+        "is_agent": true,
+        "label": "Root-cause classification",
+        "lane": "Classification",
+        "loop": 0,
+        "stage": "classify"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "المُوصي",
+        "detail": {
+          "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+          "candidates": [
+            {
+              "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "استبدال الملصق وإعادة فحص الشحنة",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            }
+          ],
+          "grounded_cases": [
+            {
+              "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+              "category": "failed_attempt_wrong_gate",
+              "resolution_id": "RES-62b146c76d",
+              "success": true
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "category": "escalation:failed_attempt_wrong_gate",
+              "resolution_id": "RES-dfe314b349",
+              "success": true
+            }
+          ],
+          "grounded_in": [
+            "RES-62b146c76d",
+            "RES-dfe314b349"
+          ],
+          "rationale": "Both precedent cases for the \"failed_attempt_wrong_gate\" category used this action with 100% success, and the retry budget is still available, so reassigning to a different courier is the most reliable next step."
+        },
+        "is_agent": true,
+        "label": "Candidate actions",
+        "lane": "Recommendation",
+        "loop": 0,
+        "stage": "recommend"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "المراجع",
+        "detail": {
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ],
+          "reason": "The action to reassign the shipment to another courier for a retry is supported by a successful precedent (RES-62b146c76d) and aligns with the business rules (retry budget available, SLA met).",
+          "score": 0.9,
+          "verdict": "accept"
+        },
+        "is_agent": true,
+        "label": "Validation",
+        "lane": "Evaluation",
+        "loop": 0,
+        "stage": "review",
+        "verdict": "accept"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "",
+        "detail": {
+          "resolution_id": "DRY-RECOMMENDATION-NOT-PERSISTED"
+        },
+        "is_agent": false,
+        "label": "Write-back",
+        "lane": "Output",
+        "loop": 0,
+        "stage": "writeback"
+      }
+    },
+    {
+      "kind": "final",
+      "payload": {
+        "case_file": null,
+        "classification": {
+          "category": "failed_attempt_wrong_gate",
+          "confidence": 0.7,
+          "priority": "medium",
+          "rationale": "The shipment had a single DELIVERY_ATTEMPT followed by a FAILED event, and the customer reports the courier’s stated location did not match the usual address, indicating a wrong gate issue. A similar past case in the same city/district was resolved as a failed_attempt_wrong_gate."
+        },
+        "disposition": "execute",
+        "escalation": null,
+        "loops": 0,
+        "recommendation": {
+          "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+          "candidates": [
+            {
+              "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "استبدال الملصق وإعادة فحص الشحنة",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            }
+          ],
+          "grounded_cases": [
+            {
+              "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+              "category": "failed_attempt_wrong_gate",
+              "resolution_id": "RES-62b146c76d",
+              "success": true
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "category": "escalation:failed_attempt_wrong_gate",
+              "resolution_id": "RES-dfe314b349",
+              "success": true
+            }
+          ],
+          "grounded_in": [
+            "RES-62b146c76d",
+            "RES-dfe314b349"
+          ],
+          "rationale": "Both precedent cases for the \"failed_attempt_wrong_gate\" category used this action with 100% success, and the retry budget is still available, so reassigning to a different courier is the most reliable next step."
+        },
+        "resolution_id": "DRY-RECOMMENDATION-NOT-PERSISTED",
+        "review": {
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ],
+          "reason": "The action to reassign the shipment to another courier for a retry is supported by a successful precedent (RES-62b146c76d) and aligns with the business rules (retry budget available, SLA met).",
+          "score": 0.9,
+          "verdict": "accept"
+        }
+      }
+    }
+  ],
+  "final": {
+    "case_file": null,
+    "classification": {
+      "category": "failed_attempt_wrong_gate",
+      "confidence": 0.7,
+      "priority": "medium",
+      "rationale": "The shipment had a single DELIVERY_ATTEMPT followed by a FAILED event, and the customer reports the courier’s stated location did not match the usual address, indicating a wrong gate issue. A similar past case in the same city/district was resolved as a failed_attempt_wrong_gate."
+    },
+    "disposition": "execute",
+    "escalation": null,
+    "loops": 0,
+    "recommendation": {
+      "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+      "candidates": [
+        {
+          "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+          "rate": 1.0,
+          "succeeded": 1,
+          "tried": 1
+        },
+        {
+          "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+          "rate": 1.0,
+          "succeeded": 1,
+          "tried": 1
+        },
+        {
+          "action": "تسليم لجهة بديلة بموافقة العميل",
+          "rate": 1.0,
+          "succeeded": 1,
+          "tried": 1
+        },
+        {
+          "action": "استبدال الملصق وإعادة فحص الشحنة",
+          "rate": 1.0,
+          "succeeded": 1,
+          "tried": 1
+        },
+        {
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "rate": 1.0,
+          "succeeded": 1,
+          "tried": 1
+        }
+      ],
+      "grounded_cases": [
+        {
+          "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+          "category": "failed_attempt_wrong_gate",
+          "resolution_id": "RES-62b146c76d",
+          "success": true
+        },
+        {
+          "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+          "category": "escalation:failed_attempt_wrong_gate",
+          "resolution_id": "RES-dfe314b349",
+          "success": true
+        }
+      ],
+      "grounded_in": [
+        "RES-62b146c76d",
+        "RES-dfe314b349"
+      ],
+      "rationale": "Both precedent cases for the \"failed_attempt_wrong_gate\" category used this action with 100% success, and the retry budget is still available, so reassigning to a different courier is the most reliable next step."
+    },
+    "resolution_id": "DRY-RECOMMENDATION-NOT-PERSISTED",
+    "review": {
+      "checked_against": [
+        "evidence",
+        "business_rules",
+        "sla",
+        "historical_outcomes"
+      ],
+      "reason": "The action to reassign the shipment to another courier for a retry is supported by a successful precedent (RES-62b146c76d) and aligns with the business rules (retry budget available, SLA met).",
+      "score": 0.9,
+      "verdict": "accept"
+    }
+  },
+  "gold_hash": "c14a7728540a35ab56f514aac98a38561e388070edf124146f124495c2c21f05",
+  "language": "ar",
+  "latency_seconds": 17.9956,
+  "metrics": {
+    "accepted_seeded_cause_disagreement_proxy": true,
+    "actual_native_prose_language": "en",
+    "afl_changed_seeded_cause_hit_to_miss_proxy": false,
+    "afl_corrected_seeded_cause_miss_proxy": false,
+    "afl_retry": false,
+    "any_recorded_shipment_base_cause_agreement": false,
+    "application_field_fallback_or_normalization": false,
+    "arabic_canonical_action": true,
+    "base_cause_agreement": false,
+    "base_cause_valid_model_agreement": false,
+    "escalated": false,
+    "expected_seeded_action": "تصحيح العنوان في النظام وإعادة الجدولة",
+    "expected_seeded_category": "address_conflict",
+    "extraction_shipment_id_match": true,
+    "failed_attempt_family_agreement": false,
+    "final_classifier_model_output_valid": true,
+    "first_base_cause_agreement": false,
+    "first_predicted_category": "failed_attempt_wrong_gate",
+    "native_prompt_prose_language": "en",
+    "no_grounding": false,
+    "plausibility_history_counts": null,
+    "predicted_action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+    "predicted_category": "failed_attempt_wrong_gate",
+    "quality_not_independently_scored": true,
+    "raw_full_category_agreement_unsupported_escalation_prefix": false,
+    "recorded_delivery_attempts": 1,
+    "reject_reviews": 0,
+    "retrieval_category_match_proxy": 0.0,
+    "review_accepted": true,
+    "seeded_action_exact_agreement": false,
+    "synthetic_history_action_plausibility_proxy": false
+  },
+  "model": "openai/gpt-oss:20b",
+  "observed_success": null,
+  "provider_identity": {
+    "api_base_sha256": "d115cae79af69d9db470aba431e632ea28a39c4f3e2217b900da46e558662fe9",
+    "max_retries": 0,
+    "temperature": 0,
+    "timeout_seconds": 90
+  },
+  "runtime_hash": "5fa0ab93c2b4973192b28647a45d1137063c7378ed7c35a978ccd250637a0ca5",
+  "source_hashes": {
+    "_llm.py": "dac0c724a0ed294bb68ff1ebceef1b07e590037ec30fa8985a3f683f41dd2b95",
+    "classifier.py": "1c997d3df85946d874cfceb4aa75415f1076d7e3b2775bf70509e067790b018f",
+    "evaluator.py": "c9eeb8c5326c55a6a720f0b032080004800f008d2d6098891717305d089da0eb",
+    "extract.py": "c622e0827c46c16d227c11d223be7b515ce6af3a18a85c559f5976e5790e6d78",
+    "graph.py": "433ecd48a647438b4db03abb96d362dfa9e3eaedc65f2c2149fcf5b3e684d8cb",
+    "recommender.py": "2e44e65d7b68890cc39b9d0d6b522a96495e6904a6095b7ec8fcb0f1c0d41833",
+    "retrieve.py": "b22af973533b28bb48b7d51336ed9b8f581fac67b16e4fb90d7fd4ff8c2d6407",
+    "reviewer.py": "4de5d1d5d1ebc87657cb5d315826b646c1a00610c42f6c3c0f0b6d56a702d964",
+    "rules.py": "e4e9a6e8bd940072f2207bd4ff2bb0291c10c86f21f83288a10b5e0f7cc4764f",
+    "writeback.py": "bd09de25ca7c9bff1d6f89d6a58d122e3cb249331ffe1d3c7b1efdfec07270cd"
+  },
+  "stage_latencies": [
+    {
+      "latency_seconds": 3.8526,
+      "loop": 0,
+      "stage": "extract"
+    },
+    {
+      "latency_seconds": 0.0013,
+      "loop": 0,
+      "stage": "retrieve"
+    },
+    {
+      "latency_seconds": 5.6016,
+      "loop": 0,
+      "stage": "classify"
+    },
+    {
+      "latency_seconds": 6.0637,
+      "loop": 0,
+      "stage": "recommend"
+    },
+    {
+      "latency_seconds": 2.4756,
+      "loop": 0,
+      "stage": "review"
+    },
+    {
+      "latency_seconds": 0.0005,
+      "loop": 0,
+      "stage": "writeback"
+    }
+  ],
+  "timestamp": "2026-10-08T10:39:49.153103+00:00",
+  "version": "gpt-oss-v1-frozen-1",
+  "writeback_executed": false
+}

@@ -1,0 +1,962 @@
+[
+  {
+    "failure_id": "FR-ce529f8cd3",
+    "shipment_id": "SHP-0001"
+  },
+  {
+    "failure_id": "FR-23167b5637",
+    "shipment_id": "SHP-0002"
+  },
+  {
+    "failure_id": "FR-c6c80b7014",
+    "shipment_id": "SHP-0004"
+  },
+  {
+    "failure_id": "FR-0a2322f61e",
+    "shipment_id": "SHP-0006"
+  },
+  {
+    "failure_id": "FR-01dd422180",
+    "shipment_id": "SHP-0007"
+  },
+  {
+    "failure_id": "FR-80eb483511",
+    "shipment_id": "SHP-0008"
+  },
+  {
+    "failure_id": "FR-06b69c2da0",
+    "shipment_id": "SHP-0010"
+  },
+  {
+    "failure_id": "FR-7a9b789d87",
+    "shipment_id": "SHP-0012"
+  },
+  {
+    "failure_id": "FR-8c8481338a",
+    "shipment_id": "SHP-0012"
+  },
+  {
+    "failure_id": "FR-f3f3464343",
+    "shipment_id": "SHP-0013"
+  },
+  {
+    "failure_id": "FR-3d18851d13",
+    "shipment_id": "SHP-0014"
+  },
+  {
+    "failure_id": "FR-664b7ec43c",
+    "shipment_id": "SHP-0015"
+  },
+  {
+    "failure_id": "FR-0cf4c1b277",
+    "shipment_id": "SHP-0016"
+  },
+  {
+    "failure_id": "FR-f2c0f251b3",
+    "shipment_id": "SHP-0016"
+  },
+  {
+    "failure_id": "FR-151991b528",
+    "shipment_id": "SHP-0017"
+  },
+  {
+    "failure_id": "FR-2e08fa4539",
+    "shipment_id": "SHP-0017"
+  },
+  {
+    "failure_id": "FR-dc71193b5a",
+    "shipment_id": "SHP-0019"
+  },
+  {
+    "failure_id": "FR-7264c2826f",
+    "shipment_id": "SHP-0020"
+  },
+  {
+    "failure_id": "FR-2ba47b3fe5",
+    "shipment_id": "SHP-0021"
+  },
+  {
+    "failure_id": "FR-7d243af4d6",
+    "shipment_id": "SHP-0023"
+  },
+  {
+    "failure_id": "FR-c1f539796d",
+    "shipment_id": "SHP-0024"
+  },
+  {
+    "failure_id": "FR-17cc8662e9",
+    "shipment_id": "SHP-0025"
+  },
+  {
+    "failure_id": "FR-bddf201dfc",
+    "shipment_id": "SHP-0026"
+  },
+  {
+    "failure_id": "FR-44a501c24c",
+    "shipment_id": "SHP-0027"
+  },
+  {
+    "failure_id": "FR-c159b99643",
+    "shipment_id": "SHP-0028"
+  },
+  {
+    "failure_id": "FR-9d339e3888",
+    "shipment_id": "SHP-0029"
+  },
+  {
+    "failure_id": "FR-a73f1c908f",
+    "shipment_id": "SHP-0031"
+  },
+  {
+    "failure_id": "FR-dcf18eebc8",
+    "shipment_id": "SHP-0031"
+  },
+  {
+    "failure_id": "FR-2524ef69e3",
+    "shipment_id": "SHP-0032"
+  },
+  {
+    "failure_id": "FR-05d5f8a701",
+    "shipment_id": "SHP-0033"
+  },
+  {
+    "failure_id": "FR-056d999db8",
+    "shipment_id": "SHP-0035"
+  },
+  {
+    "failure_id": "FR-5d15bd05b1",
+    "shipment_id": "SHP-0036"
+  },
+  {
+    "failure_id": "FR-35252237d3",
+    "shipment_id": "SHP-0037"
+  },
+  {
+    "failure_id": "FR-19962c7779",
+    "shipment_id": "SHP-0038"
+  },
+  {
+    "failure_id": "FR-1fe14de7e3",
+    "shipment_id": "SHP-0039"
+  },
+  {
+    "failure_id": "FR-c21960e4cb",
+    "shipment_id": "SHP-0041"
+  },
+  {
+    "failure_id": "FR-2cb719215e",
+    "shipment_id": "SHP-0042"
+  },
+  {
+    "failure_id": "FR-56b12c96e3",
+    "shipment_id": "SHP-0043"
+  },
+  {
+    "failure_id": "FR-40e3a1c939",
+    "shipment_id": "SHP-0045"
+  },
+  {
+    "failure_id": "FR-bbcd019c15",
+    "shipment_id": "SHP-0046"
+  },
+  {
+    "failure_id": "FR-2c389b70f0",
+    "shipment_id": "SHP-0047"
+  },
+  {
+    "failure_id": "FR-74c29dceae",
+    "shipment_id": "SHP-0048"
+  },
+  {
+    "failure_id": "FR-c8474f4822",
+    "shipment_id": "SHP-0049"
+  },
+  {
+    "failure_id": "FR-caada3d6a2",
+    "shipment_id": "SHP-0052"
+  },
+  {
+    "failure_id": "FR-27a29782e4",
+    "shipment_id": "SHP-0054"
+  },
+  {
+    "failure_id": "FR-a2721a83b6",
+    "shipment_id": "SHP-0055"
+  },
+  {
+    "failure_id": "FR-7ff3262d66",
+    "shipment_id": "SHP-0056"
+  },
+  {
+    "failure_id": "FR-b3cba3b4ee",
+    "shipment_id": "SHP-0057"
+  },
+  {
+    "failure_id": "FR-5b4cae014c",
+    "shipment_id": "SHP-0058"
+  },
+  {
+    "failure_id": "FR-8874b7bdf3",
+    "shipment_id": "SHP-0059"
+  },
+  {
+    "failure_id": "FR-ff5a25d6a4",
+    "shipment_id": "SHP-0059"
+  },
+  {
+    "failure_id": "FR-7d599255d0",
+    "shipment_id": "SHP-0060"
+  },
+  {
+    "failure_id": "FR-bf74f5cd54",
+    "shipment_id": "SHP-0061"
+  },
+  {
+    "failure_id": "FR-8f0fa2fa46",
+    "shipment_id": "SHP-0062"
+  },
+  {
+    "failure_id": "FR-c389cdb9cf",
+    "shipment_id": "SHP-0064"
+  },
+  {
+    "failure_id": "FR-cd3cbf5f8d",
+    "shipment_id": "SHP-0065"
+  },
+  {
+    "failure_id": "FR-494dc2fb29",
+    "shipment_id": "SHP-0066"
+  },
+  {
+    "failure_id": "FR-e58dd8c113",
+    "shipment_id": "SHP-0067"
+  },
+  {
+    "failure_id": "FR-30b7cb4aa0",
+    "shipment_id": "SHP-0068"
+  },
+  {
+    "failure_id": "FR-b2549d2c17",
+    "shipment_id": "SHP-0070"
+  },
+  {
+    "failure_id": "FR-06e17dd099",
+    "shipment_id": "SHP-0072"
+  },
+  {
+    "failure_id": "FR-b9f7701820",
+    "shipment_id": "SHP-0073"
+  },
+  {
+    "failure_id": "FR-1a3b7a1d29",
+    "shipment_id": "SHP-0074"
+  },
+  {
+    "failure_id": "FR-21af43807d",
+    "shipment_id": "SHP-0075"
+  },
+  {
+    "failure_id": "FR-f887eaa238",
+    "shipment_id": "SHP-0077"
+  },
+  {
+    "failure_id": "FR-99fd8abcd0",
+    "shipment_id": "SHP-0078"
+  },
+  {
+    "failure_id": "FR-c5d5bc31d2",
+    "shipment_id": "SHP-0079"
+  },
+  {
+    "failure_id": "FR-72db405355",
+    "shipment_id": "SHP-0080"
+  },
+  {
+    "failure_id": "FR-c25e4ba84c",
+    "shipment_id": "SHP-0081"
+  },
+  {
+    "failure_id": "FR-63aaafe449",
+    "shipment_id": "SHP-0082"
+  },
+  {
+    "failure_id": "FR-9b722ab369",
+    "shipment_id": "SHP-0083"
+  },
+  {
+    "failure_id": "FR-836ae998c8",
+    "shipment_id": "SHP-0084"
+  },
+  {
+    "failure_id": "FR-42a9e31bf2",
+    "shipment_id": "SHP-0085"
+  },
+  {
+    "failure_id": "FR-f635b16ba0",
+    "shipment_id": "SHP-0086"
+  },
+  {
+    "failure_id": "FR-1e43f71a31",
+    "shipment_id": "SHP-0088"
+  },
+  {
+    "failure_id": "FR-a17477e9a1",
+    "shipment_id": "SHP-0088"
+  },
+  {
+    "failure_id": "FR-2c8e535251",
+    "shipment_id": "SHP-0089"
+  },
+  {
+    "failure_id": "FR-9d1c7dfa58",
+    "shipment_id": "SHP-0089"
+  },
+  {
+    "failure_id": "FR-136c7b5de4",
+    "shipment_id": "SHP-0091"
+  },
+  {
+    "failure_id": "FR-e127ae9f0e",
+    "shipment_id": "SHP-0092"
+  },
+  {
+    "failure_id": "FR-c4f16fe8f1",
+    "shipment_id": "SHP-0093"
+  },
+  {
+    "failure_id": "FR-7e721032ab",
+    "shipment_id": "SHP-0094"
+  },
+  {
+    "failure_id": "FR-a5a3c5327c",
+    "shipment_id": "SHP-0096"
+  },
+  {
+    "failure_id": "FR-b6e962cc2a",
+    "shipment_id": "SHP-0097"
+  },
+  {
+    "failure_id": "FR-71ef7fe202",
+    "shipment_id": "SHP-0098"
+  },
+  {
+    "failure_id": "FR-b5e35614d5",
+    "shipment_id": "SHP-0099"
+  },
+  {
+    "failure_id": "FR-f4e5345b15",
+    "shipment_id": "SHP-0100"
+  },
+  {
+    "failure_id": "FR-ef5edfb661",
+    "shipment_id": "SHP-0101"
+  },
+  {
+    "failure_id": "FR-491d30160d",
+    "shipment_id": "SHP-0102"
+  },
+  {
+    "failure_id": "FR-f3b4ff1bcb",
+    "shipment_id": "SHP-0103"
+  },
+  {
+    "failure_id": "FR-f260faf750",
+    "shipment_id": "SHP-0104"
+  },
+  {
+    "failure_id": "FR-c374656e82",
+    "shipment_id": "SHP-0106"
+  },
+  {
+    "failure_id": "FR-afe57e57b6",
+    "shipment_id": "SHP-0111"
+  },
+  {
+    "failure_id": "FR-53961a66a6",
+    "shipment_id": "SHP-0112"
+  },
+  {
+    "failure_id": "FR-715738ab5a",
+    "shipment_id": "SHP-0113"
+  },
+  {
+    "failure_id": "FR-80feb69d98",
+    "shipment_id": "SHP-0114"
+  },
+  {
+    "failure_id": "FR-d0e8b7a72f",
+    "shipment_id": "SHP-0115"
+  },
+  {
+    "failure_id": "FR-118a35ffc4",
+    "shipment_id": "SHP-0116"
+  },
+  {
+    "failure_id": "FR-ff5ac212ea",
+    "shipment_id": "SHP-0116"
+  },
+  {
+    "failure_id": "FR-4256fd5f56",
+    "shipment_id": "SHP-0117"
+  },
+  {
+    "failure_id": "FR-7ecd18a82d",
+    "shipment_id": "SHP-0118"
+  },
+  {
+    "failure_id": "FR-8385d678a4",
+    "shipment_id": "SHP-0119"
+  },
+  {
+    "failure_id": "FR-865fe1858b",
+    "shipment_id": "SHP-0120"
+  },
+  {
+    "failure_id": "FR-38097487fd",
+    "shipment_id": "SHP-0121"
+  },
+  {
+    "failure_id": "FR-51b5b827e5",
+    "shipment_id": "SHP-0123"
+  },
+  {
+    "failure_id": "FR-4f874f36ed",
+    "shipment_id": "SHP-0125"
+  },
+  {
+    "failure_id": "FR-99905879b6",
+    "shipment_id": "SHP-0125"
+  },
+  {
+    "failure_id": "FR-c0412eb405",
+    "shipment_id": "SHP-0130"
+  },
+  {
+    "failure_id": "FR-b086feaed8",
+    "shipment_id": "SHP-0131"
+  },
+  {
+    "failure_id": "FR-1a30d9c69f",
+    "shipment_id": "SHP-0133"
+  },
+  {
+    "failure_id": "FR-ca34be7c1c",
+    "shipment_id": "SHP-0133"
+  },
+  {
+    "failure_id": "FR-89913d790f",
+    "shipment_id": "SHP-0134"
+  },
+  {
+    "failure_id": "FR-77d1070c92",
+    "shipment_id": "SHP-0135"
+  },
+  {
+    "failure_id": "FR-af2eb7d119",
+    "shipment_id": "SHP-0136"
+  },
+  {
+    "failure_id": "FR-2a4cd73163",
+    "shipment_id": "SHP-0137"
+  },
+  {
+    "failure_id": "FR-cbc9be1b56",
+    "shipment_id": "SHP-0138"
+  },
+  {
+    "failure_id": "FR-40b276ff4a",
+    "shipment_id": "SHP-0139"
+  },
+  {
+    "failure_id": "FR-3fc80a76d4",
+    "shipment_id": "SHP-0141"
+  },
+  {
+    "failure_id": "FR-dfc4018cdf",
+    "shipment_id": "SHP-0144"
+  },
+  {
+    "failure_id": "FR-62794d508a",
+    "shipment_id": "SHP-0146"
+  },
+  {
+    "failure_id": "FR-84e8e974df",
+    "shipment_id": "SHP-0147"
+  },
+  {
+    "failure_id": "FR-2e65e1f59c",
+    "shipment_id": "SHP-0149"
+  },
+  {
+    "failure_id": "FR-4fb61f0370",
+    "shipment_id": "SHP-0150"
+  },
+  {
+    "failure_id": "FR-020bcf7fc2",
+    "shipment_id": "SHP-0151"
+  },
+  {
+    "failure_id": "FR-fba1462900",
+    "shipment_id": "SHP-0151"
+  },
+  {
+    "failure_id": "FR-3b891086ff",
+    "shipment_id": "SHP-0153"
+  },
+  {
+    "failure_id": "FR-59c6f597bb",
+    "shipment_id": "SHP-0154"
+  },
+  {
+    "failure_id": "FR-c6fe82e77b",
+    "shipment_id": "SHP-0155"
+  },
+  {
+    "failure_id": "FR-9c6115c5f4",
+    "shipment_id": "SHP-0156"
+  },
+  {
+    "failure_id": "FR-897010b31f",
+    "shipment_id": "SHP-0159"
+  },
+  {
+    "failure_id": "FR-5b1f75d314",
+    "shipment_id": "SHP-0161"
+  },
+  {
+    "failure_id": "FR-196c0cbc9f",
+    "shipment_id": "SHP-0162"
+  },
+  {
+    "failure_id": "FR-e7c5aeeda9",
+    "shipment_id": "SHP-0162"
+  },
+  {
+    "failure_id": "FR-ca78a7ce55",
+    "shipment_id": "SHP-0163"
+  },
+  {
+    "failure_id": "FR-c8e667baf3",
+    "shipment_id": "SHP-0164"
+  },
+  {
+    "failure_id": "FR-522a7eb9a8",
+    "shipment_id": "SHP-0165"
+  },
+  {
+    "failure_id": "FR-ea43a1fec1",
+    "shipment_id": "SHP-0166"
+  },
+  {
+    "failure_id": "FR-6f2c6749b3",
+    "shipment_id": "SHP-0167"
+  },
+  {
+    "failure_id": "FR-002a3192bc",
+    "shipment_id": "SHP-0168"
+  },
+  {
+    "failure_id": "FR-69daf7310a",
+    "shipment_id": "SHP-0169"
+  },
+  {
+    "failure_id": "FR-1b2a976e60",
+    "shipment_id": "SHP-0170"
+  },
+  {
+    "failure_id": "FR-6f6b188775",
+    "shipment_id": "SHP-0173"
+  },
+  {
+    "failure_id": "FR-7ada642f64",
+    "shipment_id": "SHP-0173"
+  },
+  {
+    "failure_id": "FR-10a28de29e",
+    "shipment_id": "SHP-0175"
+  },
+  {
+    "failure_id": "FR-701ea6c1e4",
+    "shipment_id": "SHP-0176"
+  },
+  {
+    "failure_id": "FR-38974df8af",
+    "shipment_id": "SHP-0177"
+  },
+  {
+    "failure_id": "FR-fcc7dcdf17",
+    "shipment_id": "SHP-0178"
+  },
+  {
+    "failure_id": "FR-61620562a6",
+    "shipment_id": "SHP-0179"
+  },
+  {
+    "failure_id": "FR-ae1c2c2e72",
+    "shipment_id": "SHP-0180"
+  },
+  {
+    "failure_id": "FR-14f1d11017",
+    "shipment_id": "SHP-0181"
+  },
+  {
+    "failure_id": "FR-702f8b023e",
+    "shipment_id": "SHP-0182"
+  },
+  {
+    "failure_id": "FR-9d20bcb013",
+    "shipment_id": "SHP-0183"
+  },
+  {
+    "failure_id": "FR-f026c2f932",
+    "shipment_id": "SHP-0184"
+  },
+  {
+    "failure_id": "FR-a00748c7fc",
+    "shipment_id": "SHP-0185"
+  },
+  {
+    "failure_id": "FR-a32f2af94e",
+    "shipment_id": "SHP-0186"
+  },
+  {
+    "failure_id": "FR-0c1bd3da96",
+    "shipment_id": "SHP-0187"
+  },
+  {
+    "failure_id": "FR-94c17e6eca",
+    "shipment_id": "SHP-0191"
+  },
+  {
+    "failure_id": "FR-980e629a87",
+    "shipment_id": "SHP-0192"
+  },
+  {
+    "failure_id": "FR-a068133b90",
+    "shipment_id": "SHP-0193"
+  },
+  {
+    "failure_id": "FR-bee7b1d755",
+    "shipment_id": "SHP-0193"
+  },
+  {
+    "failure_id": "FR-6a5cfbf8db",
+    "shipment_id": "SHP-0194"
+  },
+  {
+    "failure_id": "FR-62382658ba",
+    "shipment_id": "SHP-0195"
+  },
+  {
+    "failure_id": "FR-ac3eee944f",
+    "shipment_id": "SHP-0196"
+  },
+  {
+    "failure_id": "FR-21d1edca80",
+    "shipment_id": "SHP-0197"
+  },
+  {
+    "failure_id": "FR-7c241dab45",
+    "shipment_id": "SHP-0198"
+  },
+  {
+    "failure_id": "FR-d1a0bf0911",
+    "shipment_id": "SHP-0199"
+  },
+  {
+    "failure_id": "FR-2f6f06ddc6",
+    "shipment_id": "SHP-0201"
+  },
+  {
+    "failure_id": "FR-afe5005c9e",
+    "shipment_id": "SHP-0201"
+  },
+  {
+    "failure_id": "FR-f72040630b",
+    "shipment_id": "SHP-0202"
+  },
+  {
+    "failure_id": "FR-fc317b7664",
+    "shipment_id": "SHP-0203"
+  },
+  {
+    "failure_id": "FR-d4a43773ca",
+    "shipment_id": "SHP-0204"
+  },
+  {
+    "failure_id": "FR-1e1b0163d3",
+    "shipment_id": "SHP-0206"
+  },
+  {
+    "failure_id": "FR-4049b1e8f4",
+    "shipment_id": "SHP-0208"
+  },
+  {
+    "failure_id": "FR-ba995f462b",
+    "shipment_id": "SHP-0209"
+  },
+  {
+    "failure_id": "FR-1bca44e24c",
+    "shipment_id": "SHP-0210"
+  },
+  {
+    "failure_id": "FR-d385608b6b",
+    "shipment_id": "SHP-0211"
+  },
+  {
+    "failure_id": "FR-1704a1b0f6",
+    "shipment_id": "SHP-0213"
+  },
+  {
+    "failure_id": "FR-12fa7b596f",
+    "shipment_id": "SHP-0214"
+  },
+  {
+    "failure_id": "FR-a88101b606",
+    "shipment_id": "SHP-0215"
+  },
+  {
+    "failure_id": "FR-d6fd70cd61",
+    "shipment_id": "SHP-0217"
+  },
+  {
+    "failure_id": "FR-911ddec485",
+    "shipment_id": "SHP-0218"
+  },
+  {
+    "failure_id": "FR-ba5acbc796",
+    "shipment_id": "SHP-0219"
+  },
+  {
+    "failure_id": "FR-b389a7142a",
+    "shipment_id": "SHP-0221"
+  },
+  {
+    "failure_id": "FR-94e663f0f5",
+    "shipment_id": "SHP-0222"
+  },
+  {
+    "failure_id": "FR-de9e557995",
+    "shipment_id": "SHP-0224"
+  },
+  {
+    "failure_id": "FR-1d69625c08",
+    "shipment_id": "SHP-0225"
+  },
+  {
+    "failure_id": "FR-030af469e0",
+    "shipment_id": "SHP-0227"
+  },
+  {
+    "failure_id": "FR-376691e0c7",
+    "shipment_id": "SHP-0228"
+  },
+  {
+    "failure_id": "FR-66094e6627",
+    "shipment_id": "SHP-0229"
+  },
+  {
+    "failure_id": "FR-e03fd89e89",
+    "shipment_id": "SHP-0231"
+  },
+  {
+    "failure_id": "FR-15f0a1d7d8",
+    "shipment_id": "SHP-0233"
+  },
+  {
+    "failure_id": "FR-98f4e6f570",
+    "shipment_id": "SHP-0234"
+  },
+  {
+    "failure_id": "FR-960cd3ca38",
+    "shipment_id": "SHP-0236"
+  },
+  {
+    "failure_id": "FR-510ca3b99d",
+    "shipment_id": "SHP-0237"
+  },
+  {
+    "failure_id": "FR-7b413307aa",
+    "shipment_id": "SHP-0238"
+  },
+  {
+    "failure_id": "FR-4378a3699e",
+    "shipment_id": "SHP-0239"
+  },
+  {
+    "failure_id": "FR-2a0bb8be8a",
+    "shipment_id": "SHP-0240"
+  },
+  {
+    "failure_id": "FR-bfcf483048",
+    "shipment_id": "SHP-0240"
+  },
+  {
+    "failure_id": "FR-336bef8183",
+    "shipment_id": "SHP-0241"
+  },
+  {
+    "failure_id": "FR-2b24e533e7",
+    "shipment_id": "SHP-0243"
+  },
+  {
+    "failure_id": "FR-8d0e6b193d",
+    "shipment_id": "SHP-0245"
+  },
+  {
+    "failure_id": "FR-807c4870f4",
+    "shipment_id": "SHP-0248"
+  },
+  {
+    "failure_id": "FR-b60a98d7da",
+    "shipment_id": "SHP-0250"
+  },
+  {
+    "failure_id": "FR-ab303d5110",
+    "shipment_id": "SHP-0253"
+  },
+  {
+    "failure_id": "FR-11fef36daa",
+    "shipment_id": "SHP-0254"
+  },
+  {
+    "failure_id": "FR-8af5fd96fc",
+    "shipment_id": "SHP-0255"
+  },
+  {
+    "failure_id": "FR-7376390d95",
+    "shipment_id": "SHP-0256"
+  },
+  {
+    "failure_id": "FR-abc5854078",
+    "shipment_id": "SHP-0257"
+  },
+  {
+    "failure_id": "FR-81e3541786",
+    "shipment_id": "SHP-0259"
+  },
+  {
+    "failure_id": "FR-530015f7bd",
+    "shipment_id": "SHP-0261"
+  },
+  {
+    "failure_id": "FR-cf2d190711",
+    "shipment_id": "SHP-0263"
+  },
+  {
+    "failure_id": "FR-2b63521013",
+    "shipment_id": "SHP-0264"
+  },
+  {
+    "failure_id": "FR-78251bf4cb",
+    "shipment_id": "SHP-0265"
+  },
+  {
+    "failure_id": "FR-b4b9f3b8bb",
+    "shipment_id": "SHP-0267"
+  },
+  {
+    "failure_id": "FR-20f7affb49",
+    "shipment_id": "SHP-0268"
+  },
+  {
+    "failure_id": "FR-7eeda4eb33",
+    "shipment_id": "SHP-0268"
+  },
+  {
+    "failure_id": "FR-5608e6d233",
+    "shipment_id": "SHP-0269"
+  },
+  {
+    "failure_id": "FR-80e38c5092",
+    "shipment_id": "SHP-0269"
+  },
+  {
+    "failure_id": "FR-314b233851",
+    "shipment_id": "SHP-0270"
+  },
+  {
+    "failure_id": "FR-ae9257148e",
+    "shipment_id": "SHP-0271"
+  },
+  {
+    "failure_id": "FR-de41eb3ec0",
+    "shipment_id": "SHP-0273"
+  },
+  {
+    "failure_id": "FR-e817a9da17",
+    "shipment_id": "SHP-0274"
+  },
+  {
+    "failure_id": "FR-155da4f8b2",
+    "shipment_id": "SHP-0275"
+  },
+  {
+    "failure_id": "FR-ce1d1cea57",
+    "shipment_id": "SHP-0275"
+  },
+  {
+    "failure_id": "FR-f3f529d116",
+    "shipment_id": "SHP-0276"
+  },
+  {
+    "failure_id": "FR-58e6b6089a",
+    "shipment_id": "SHP-0278"
+  },
+  {
+    "failure_id": "FR-d6c38492f4",
+    "shipment_id": "SHP-0279"
+  },
+  {
+    "failure_id": "FR-ef41caa78b",
+    "shipment_id": "SHP-0280"
+  },
+  {
+    "failure_id": "FR-5e7cfc73a7",
+    "shipment_id": "SHP-0281"
+  },
+  {
+    "failure_id": "FR-74fbcc36ef",
+    "shipment_id": "SHP-0282"
+  },
+  {
+    "failure_id": "FR-d962bc0ee5",
+    "shipment_id": "SHP-0282"
+  },
+  {
+    "failure_id": "FR-67d3d0e5f5",
+    "shipment_id": "SHP-0283"
+  },
+  {
+    "failure_id": "FR-94c352cb69",
+    "shipment_id": "SHP-0285"
+  },
+  {
+    "failure_id": "FR-f5fc96477e",
+    "shipment_id": "SHP-0286"
+  },
+  {
+    "failure_id": "FR-b714e2b14b",
+    "shipment_id": "SHP-0287"
+  },
+  {
+    "failure_id": "FR-75e1205ba4",
+    "shipment_id": "SHP-0291"
+  },
+  {
+    "failure_id": "FR-8271581a9e",
+    "shipment_id": "SHP-0293"
+  },
+  {
+    "failure_id": "FR-2e758d0865",
+    "shipment_id": "SHP-0296"
+  },
+  {
+    "failure_id": "FR-9622f5a7aa",
+    "shipment_id": "SHP-0297"
+  },
+  {
+    "failure_id": "FR-a96361aa04",
+    "shipment_id": "SHP-0298"
+  }
+]

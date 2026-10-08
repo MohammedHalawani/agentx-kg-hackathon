@@ -1,0 +1,243 @@
+{
+  "timestamp": "2026-10-08T10:54:34.454755+00:00",
+  "target": "shipments",
+  "local_bolt": true,
+  "llm_model": "openai/gpt-oss:20b",
+  "embedding_dimensions": 1024,
+  "llm_key_configured": true,
+  "labels": [
+    {
+      "labels": [
+        "Event"
+      ],
+      "count": 1780
+    },
+    {
+      "labels": [
+        "Address"
+      ],
+      "count": 355
+    },
+    {
+      "labels": [
+        "Customer"
+      ],
+      "count": 300
+    },
+    {
+      "labels": [
+        "Order"
+      ],
+      "count": 300
+    },
+    {
+      "labels": [
+        "Shipment"
+      ],
+      "count": 300
+    },
+    {
+      "labels": [
+        "FailureReason"
+      ],
+      "count": 240
+    },
+    {
+      "labels": [
+        "Resolution"
+      ],
+      "count": 167
+    },
+    {
+      "labels": [
+        "Outcome"
+      ],
+      "count": 167
+    },
+    {
+      "labels": [
+        "Courier"
+      ],
+      "count": 25
+    },
+    {
+      "labels": [
+        "Policy"
+      ],
+      "count": 3
+    },
+    {
+      "labels": [
+        "EscalatedCase"
+      ],
+      "count": 1
+    }
+  ],
+  "relationships": [
+    {
+      "type": "HAS_EVENT",
+      "count": 1780
+    },
+    {
+      "type": "DELIVERED_TO",
+      "count": 355
+    },
+    {
+      "type": "LIVES_AT",
+      "count": 300
+    },
+    {
+      "type": "HAS_SHIPMENT",
+      "count": 300
+    },
+    {
+      "type": "PLACED_BY",
+      "count": 300
+    },
+    {
+      "type": "ASSIGNED_TO",
+      "count": 300
+    },
+    {
+      "type": "GOVERNED_BY",
+      "count": 300
+    },
+    {
+      "type": "CAUSED_BY",
+      "count": 240
+    },
+    {
+      "type": "RESOLVES_WITH",
+      "count": 167
+    },
+    {
+      "type": "HAD_OUTCOME",
+      "count": 167
+    },
+    {
+      "type": "ESCALATES",
+      "count": 1
+    }
+  ],
+  "split": [
+    {
+      "total": 240,
+      "resolved": 167,
+      "open": 73
+    }
+  ],
+  "indexes": [
+    {
+      "name": "failurereason_case_summary",
+      "type": "VECTOR",
+      "state": "ONLINE",
+      "options": {
+        "indexConfig": {
+          "vector.dimensions": 1024,
+          "vector.default_search_expansion_factor": 3.0,
+          "vector.hnsw.m": 16,
+          "vector.quantization.type": "BINARY",
+          "vector.similarity_function": "COSINE",
+          "vector.hnsw.ef_construction": 100
+        }
+      }
+    }
+  ],
+  "statuses": [
+    {
+      "status": "FAILED",
+      "count": 220
+    },
+    {
+      "status": "DELIVERED",
+      "count": 80
+    }
+  ],
+  "categories": [
+    {
+      "category": "address_conflict",
+      "count": 55
+    },
+    {
+      "category": "failed_attempt_wrong_gate",
+      "count": 15
+    },
+    {
+      "category": "hub_delay",
+      "count": 35
+    },
+    {
+      "category": "failed_attempt_weight_mismatch",
+      "count": 23
+    },
+    {
+      "category": "escalation:failed_attempt_barcode_mismatch",
+      "count": 3
+    },
+    {
+      "category": "escalation:address_conflict",
+      "count": 11
+    },
+    {
+      "category": "failed_attempt_barcode_mismatch",
+      "count": 17
+    },
+    {
+      "category": "escalation:hub_delay",
+      "count": 8
+    },
+    {
+      "category": "escalation:recipient_unavailable",
+      "count": 10
+    },
+    {
+      "category": "escalation:failed_attempt_wrong_gate",
+      "count": 5
+    },
+    {
+      "category": "recipient_unavailable",
+      "count": 55
+    },
+    {
+      "category": "escalation:failed_attempt_weight_mismatch",
+      "count": 3
+    }
+  ],
+  "agent_outcomes": [
+    {
+      "failure_id": "FR-030af469e0",
+      "resolution_id": "RES-3f6cb49673",
+      "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+      "timestamp": "2026-10-07T21:56:54",
+      "outcome_id": "OUT-040d90e150",
+      "success": null,
+      "status": "pending"
+    },
+    {
+      "failure_id": "FR-c6c80b7014",
+      "resolution_id": "RES-e4cc1359bc2150f182c7c46364cf2361",
+      "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+      "timestamp": "2026-10-07T19:45:36+00:00",
+      "outcome_id": "OUT-5282f6931e9f57ffaa2f44b5cf8aaf6f",
+      "success": null,
+      "status": "pending"
+    }
+  ],
+  "shp0227": [
+    {
+      "shipment_id": "SHP-0227",
+      "failure_id": "FR-030af469e0",
+      "category": "recipient_unavailable",
+      "resolution_id": "RES-3f6cb49673",
+      "source": "agent_pipeline",
+      "success": null,
+      "status": "pending"
+    }
+  ],
+  "synthetic_signature": [
+    {
+      "shipments": 300,
+      "synthetic_ids": 300
+    }
+  ]
+}

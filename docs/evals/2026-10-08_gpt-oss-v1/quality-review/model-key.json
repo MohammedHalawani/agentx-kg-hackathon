@@ -1,0 +1,122 @@
+{
+  "case-01": {
+    "A": "openai/gpt-oss:20b",
+    "B": "openai/gpt-oss:120b"
+  },
+  "case-02": {
+    "A": "openai/gpt-oss:20b",
+    "B": "openai/gpt-oss:120b"
+  },
+  "case-03": {
+    "A": "openai/gpt-oss:20b",
+    "B": "openai/gpt-oss:120b"
+  },
+  "case-04": {
+    "A": "openai/gpt-oss:120b",
+    "B": "openai/gpt-oss:20b"
+  },
+  "case-05": {
+    "A": "openai/gpt-oss:20b",
+    "B": "openai/gpt-oss:120b"
+  },
+  "case-06": {
+    "A": "openai/gpt-oss:120b",
+    "B": "openai/gpt-oss:20b"
+  },
+  "case-07": {
+    "A": "openai/gpt-oss:120b",
+    "B": "openai/gpt-oss:20b"
+  },
+  "case-08": {
+    "A": "openai/gpt-oss:120b",
+    "B": "openai/gpt-oss:20b"
+  },
+  "case-09": {
+    "A": "openai/gpt-oss:20b",
+    "B": "openai/gpt-oss:120b"
+  },
+  "case-10": {
+    "A": "openai/gpt-oss:120b",
+    "B": "openai/gpt-oss:20b"
+  },
+  "case-11": {
+    "A": "openai/gpt-oss:20b",
+    "B": "openai/gpt-oss:120b"
+  },
+  "case-12": {
+    "A": "openai/gpt-oss:20b",
+    "B": "openai/gpt-oss:120b"
+  },
+  "case-13": {
+    "A": "openai/gpt-oss:20b",
+    "B": "openai/gpt-oss:120b"
+  },
+  "case-14": {
+    "A": "openai/gpt-oss:120b",
+    "B": "openai/gpt-oss:20b"
+  },
+  "case-15": {
+    "A": "openai/gpt-oss:20b",
+    "B": "openai/gpt-oss:120b"
+  },
+  "case-16": {
+    "A": "openai/gpt-oss:120b",
+    "B": "openai/gpt-oss:20b"
+  },
+  "case-17": {
+    "A": "openai/gpt-oss:20b",
+    "B": "openai/gpt-oss:120b"
+  },
+  "case-18": {
+    "A": "openai/gpt-oss:20b",
+    "B": "openai/gpt-oss:120b"
+  },
+  "case-19": {
+    "A": "openai/gpt-oss:120b",
+    "B": "openai/gpt-oss:20b"
+  },
+  "case-20": {
+    "A": "openai/gpt-oss:120b",
+    "B": "openai/gpt-oss:20b"
+  },
+  "case-21": {
+    "A": "openai/gpt-oss:20b",
+    "B": "openai/gpt-oss:120b"
+  },
+  "case-22": {
+    "A": "openai/gpt-oss:120b",
+    "B": "openai/gpt-oss:20b"
+  },
+  "case-23": {
+    "A": "openai/gpt-oss:120b",
+    "B": "openai/gpt-oss:20b"
+  },
+  "case-24": {
+    "A": "openai/gpt-oss:120b",
+    "B": "openai/gpt-oss:20b"
+  },
+  "case-25": {
+    "A": "openai/gpt-oss:120b",
+    "B": "openai/gpt-oss:20b"
+  },
+  "case-26": {
+    "A": "openai/gpt-oss:120b",
+    "B": "openai/gpt-oss:20b"
+  },
+  "case-27": {
+    "A": "openai/gpt-oss:20b",
+    "B": "openai/gpt-oss:120b"
+  },
+  "case-28": {
+    "A": "openai/gpt-oss:120b",
+    "B": "openai/gpt-oss:20b"
+  },
+  "case-29": {
+    "A": "openai/gpt-oss:20b",
+    "B": "openai/gpt-oss:120b"
+  },
+  "case-30": {
+    "A": "openai/gpt-oss:120b",
+    "B": "openai/gpt-oss:20b"
+  }
+}

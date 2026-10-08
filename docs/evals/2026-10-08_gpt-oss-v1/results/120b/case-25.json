@@ -1,0 +1,645 @@
+{
+  "calls": [
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 1.2159,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "extract",
+      "usage": {
+        "input_tokens": 287,
+        "output_tokens": 186,
+        "total_tokens": 473
+      }
+    },
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 2.058,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "classify",
+      "usage": {
+        "input_tokens": 1419,
+        "output_tokens": 334,
+        "total_tokens": 1753
+      }
+    },
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 2.3766,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "recommend",
+      "usage": {
+        "input_tokens": 1094,
+        "output_tokens": 407,
+        "total_tokens": 1501
+      }
+    },
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 1.8334,
+      "malformed_json": true,
+      "missing_declared_fields": [],
+      "stage": "review",
+      "usage": {
+        "input_tokens": 1453,
+        "output_tokens": 247,
+        "total_tokens": 1700
+      }
+    },
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 2.9837,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "classify",
+      "usage": {
+        "input_tokens": 1462,
+        "output_tokens": 405,
+        "total_tokens": 1867
+      }
+    },
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 1.7319,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "recommend",
+      "usage": {
+        "input_tokens": 1089,
+        "output_tokens": 292,
+        "total_tokens": 1381
+      }
+    },
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 1.6788,
+      "malformed_json": true,
+      "missing_declared_fields": [],
+      "stage": "review",
+      "usage": {
+        "input_tokens": 1443,
+        "output_tokens": 198,
+        "total_tokens": 1641
+      }
+    }
+  ],
+  "case_id": "case-25",
+  "dry_disposition": "escalation_required",
+  "error_type": null,
+  "events": [
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "",
+        "detail": {
+          "category_hint": "address_conflict",
+          "city": "سراة عبيدة",
+          "shipment_id": "SHP-0118"
+        },
+        "is_agent": false,
+        "label": "Entity Extraction",
+        "lane": "Input",
+        "loop": 0,
+        "stage": "extract"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "",
+        "detail": {
+          "live_failure_id": null,
+          "precedent": [
+            {
+              "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+              "category": "failed_attempt_wrong_gate",
+              "city": "سراة عبيدة",
+              "courier": "زياد الحارثي",
+              "description": "محاولة تسليم فاشلة: بوابة دخول خاطئة",
+              "district": "حي النور",
+              "failure_id": "FR-cd3cbf5f8d",
+              "resolution_id": "RES-612b949b4c",
+              "rrf_score": 0.030478,
+              "score": 0.8005903959274292,
+              "success": false
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "category": "recipient_unavailable",
+              "city": "احد المسارحة",
+              "courier": "فهد الشمري",
+              "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+              "district": "حي العمارية",
+              "failure_id": "FR-1d69625c08",
+              "resolution_id": "RES-0325b77228",
+              "rrf_score": 0.016393,
+              "score": 0.8096145987510681,
+              "success": true
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "category": "escalation:recipient_unavailable",
+              "city": "صوير",
+              "courier": "عبدالله الحربي",
+              "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+              "district": "حي الربوة",
+              "failure_id": "FR-e7c5aeeda9",
+              "resolution_id": "RES-eae158957d",
+              "rrf_score": 0.016129,
+              "score": 0.8072868585586548,
+              "success": true
+            }
+          ],
+          "similar_cases": 5
+        },
+        "is_agent": false,
+        "label": "Vector KNN + Graph → RRF",
+        "lane": "Hybrid Retrieval",
+        "loop": 0,
+        "stage": "retrieve"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "المصنّف",
+        "detail": {
+          "category": "address_conflict",
+          "confidence": 0.78,
+          "priority": "medium",
+          "rationale": "The shipment has two address versions and the customer reports the courier went to a different location than usual, indicating an address mismatch; the failure event has no recorded reason, supporting this root cause."
+        },
+        "is_agent": true,
+        "label": "Root-cause classification",
+        "lane": "Classification",
+        "loop": 0,
+        "stage": "classify"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "المُوصي",
+        "detail": {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "candidates": [
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "rate": 1.0,
+              "succeeded": 2,
+              "tried": 2
+            },
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+              "rate": 0.0,
+              "succeeded": 0,
+              "tried": 1
+            }
+          ],
+          "grounded_cases": [
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "category": "address_conflict",
+              "resolution_id": "RES-e8c312b756",
+              "success": true
+            },
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "category": "address_conflict",
+              "resolution_id": "RES-ffd61bfb73",
+              "success": true
+            }
+          ],
+          "grounded_in": [
+            "RES-e8c312b756",
+            "RES-ffd61bfb73"
+          ],
+          "rationale": "Address conflict cases with this action have a 100% success rate (2/2) and the SLA and retry budget are still open, so confirming the correct address with the customer and redirecting the shipment is the most reliable next step."
+        },
+        "is_agent": true,
+        "label": "Candidate actions",
+        "lane": "Recommendation",
+        "loop": 0,
+        "stage": "recommend"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "المراجع",
+        "detail": {
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ],
+          "reason": "Reviewer output could not be parsed; rejecting rather than writing an unverified action.",
+          "score": 0.0,
+          "verdict": "reject"
+        },
+        "is_agent": true,
+        "label": "Validation",
+        "lane": "Evaluation",
+        "loop": 1,
+        "stage": "review",
+        "verdict": "reject"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "المصنّف",
+        "detail": {
+          "category": "address_conflict",
+          "confidence": 0.85,
+          "priority": "medium",
+          "rationale": "The shipment records two different address versions and the customer reports the courier went to a different place than usual, indicating an address mismatch; no other failure reason is recorded."
+        },
+        "is_agent": true,
+        "label": "Root-cause classification",
+        "lane": "Classification",
+        "loop": 1,
+        "stage": "classify"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "المُوصي",
+        "detail": {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "candidates": [
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "rate": 1.0,
+              "succeeded": 2,
+              "tried": 2
+            },
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+              "rate": 0.0,
+              "succeeded": 0,
+              "tried": 1
+            }
+          ],
+          "grounded_cases": [
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "category": "address_conflict",
+              "resolution_id": "RES-e8c312b756",
+              "success": true
+            },
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "category": "address_conflict",
+              "resolution_id": "RES-ffd61bfb73",
+              "success": true
+            }
+          ],
+          "grounded_in": [
+            "RES-e8c312b756",
+            "RES-ffd61bfb73"
+          ],
+          "rationale": "Address conflict cases with 100% success used this action; retry budget is still available and SLA is not breached, so confirming the correct address with the client and redirecting the shipment is the most effective next step."
+        },
+        "is_agent": true,
+        "label": "Candidate actions",
+        "lane": "Recommendation",
+        "loop": 1,
+        "stage": "recommend"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "المراجع",
+        "detail": {
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ],
+          "reason": "Reviewer output could not be parsed; rejecting rather than writing an unverified action.",
+          "score": 0.0,
+          "verdict": "reject"
+        },
+        "is_agent": true,
+        "label": "Validation",
+        "lane": "Evaluation",
+        "loop": 2,
+        "stage": "review",
+        "verdict": "reject"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "",
+        "is_agent": false,
+        "label": "Escalate",
+        "lane": "Output",
+        "loop": 2,
+        "stage": "escalate"
+      }
+    },
+    {
+      "kind": "final",
+      "payload": {
+        "case_file": null,
+        "classification": {
+          "category": "address_conflict",
+          "confidence": 0.85,
+          "priority": "medium",
+          "rationale": "The shipment records two different address versions and the customer reports the courier went to a different place than usual, indicating an address mismatch; no other failure reason is recorded."
+        },
+        "disposition": "escalate",
+        "escalation": {
+          "escalation_id": "DRY-NOT-FILED",
+          "team": "human_review"
+        },
+        "loops": 2,
+        "recommendation": {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "candidates": [
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "rate": 1.0,
+              "succeeded": 2,
+              "tried": 2
+            },
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+              "rate": 0.0,
+              "succeeded": 0,
+              "tried": 1
+            }
+          ],
+          "grounded_cases": [
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "category": "address_conflict",
+              "resolution_id": "RES-e8c312b756",
+              "success": true
+            },
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "category": "address_conflict",
+              "resolution_id": "RES-ffd61bfb73",
+              "success": true
+            }
+          ],
+          "grounded_in": [
+            "RES-e8c312b756",
+            "RES-ffd61bfb73"
+          ],
+          "rationale": "Address conflict cases with 100% success used this action; retry budget is still available and SLA is not breached, so confirming the correct address with the client and redirecting the shipment is the most effective next step."
+        },
+        "resolution_id": null,
+        "review": {
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ],
+          "reason": "Reviewer output could not be parsed; rejecting rather than writing an unverified action.",
+          "score": 0.0,
+          "verdict": "reject"
+        }
+      }
+    }
+  ],
+  "final": {
+    "case_file": null,
+    "classification": {
+      "category": "address_conflict",
+      "confidence": 0.85,
+      "priority": "medium",
+      "rationale": "The shipment records two different address versions and the customer reports the courier went to a different place than usual, indicating an address mismatch; no other failure reason is recorded."
+    },
+    "disposition": "escalate",
+    "escalation": {
+      "escalation_id": "DRY-NOT-FILED",
+      "team": "human_review"
+    },
+    "loops": 2,
+    "recommendation": {
+      "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+      "candidates": [
+        {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "rate": 1.0,
+          "succeeded": 2,
+          "tried": 2
+        },
+        {
+          "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+          "rate": 1.0,
+          "succeeded": 1,
+          "tried": 1
+        },
+        {
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "rate": 1.0,
+          "succeeded": 1,
+          "tried": 1
+        },
+        {
+          "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+          "rate": 0.0,
+          "succeeded": 0,
+          "tried": 1
+        }
+      ],
+      "grounded_cases": [
+        {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "category": "address_conflict",
+          "resolution_id": "RES-e8c312b756",
+          "success": true
+        },
+        {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "category": "address_conflict",
+          "resolution_id": "RES-ffd61bfb73",
+          "success": true
+        }
+      ],
+      "grounded_in": [
+        "RES-e8c312b756",
+        "RES-ffd61bfb73"
+      ],
+      "rationale": "Address conflict cases with 100% success used this action; retry budget is still available and SLA is not breached, so confirming the correct address with the client and redirecting the shipment is the most effective next step."
+    },
+    "resolution_id": null,
+    "review": {
+      "checked_against": [
+        "evidence",
+        "business_rules",
+        "sla",
+        "historical_outcomes"
+      ],
+      "reason": "Reviewer output could not be parsed; rejecting rather than writing an unverified action.",
+      "score": 0.0,
+      "verdict": "reject"
+    }
+  },
+  "gold_hash": "c14a7728540a35ab56f514aac98a38561e388070edf124146f124495c2c21f05",
+  "language": "en",
+  "latency_seconds": 13.8957,
+  "metrics": {
+    "accepted_seeded_cause_disagreement_proxy": false,
+    "actual_native_prose_language": "en",
+    "afl_changed_seeded_cause_hit_to_miss_proxy": false,
+    "afl_corrected_seeded_cause_miss_proxy": false,
+    "afl_retry": true,
+    "any_recorded_shipment_base_cause_agreement": true,
+    "application_field_fallback_or_normalization": true,
+    "arabic_canonical_action": true,
+    "base_cause_agreement": true,
+    "base_cause_valid_model_agreement": true,
+    "escalated": true,
+    "expected_seeded_action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+    "expected_seeded_category": "address_conflict",
+    "extraction_shipment_id_match": true,
+    "failed_attempt_family_agreement": true,
+    "final_classifier_model_output_valid": true,
+    "first_base_cause_agreement": true,
+    "first_predicted_category": "address_conflict",
+    "native_prompt_prose_language": "en",
+    "no_grounding": false,
+    "plausibility_history_counts": {
+      "rate": 0.929,
+      "succeeded": 13,
+      "tried": 14
+    },
+    "predicted_action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+    "predicted_category": "address_conflict",
+    "quality_not_independently_scored": true,
+    "raw_full_category_agreement_unsupported_escalation_prefix": true,
+    "recorded_delivery_attempts": 1,
+    "reject_reviews": 2,
+    "retrieval_category_match_proxy": 0.0,
+    "review_accepted": false,
+    "seeded_action_exact_agreement": true,
+    "synthetic_history_action_plausibility_proxy": true
+  },
+  "model": "openai/gpt-oss:120b",
+  "observed_success": null,
+  "provider_identity": {
+    "api_base_sha256": "d115cae79af69d9db470aba431e632ea28a39c4f3e2217b900da46e558662fe9",
+    "max_retries": 0,
+    "temperature": 0,
+    "timeout_seconds": 90
+  },
+  "runtime_hash": "5fa0ab93c2b4973192b28647a45d1137063c7378ed7c35a978ccd250637a0ca5",
+  "source_hashes": {
+    "_llm.py": "dac0c724a0ed294bb68ff1ebceef1b07e590037ec30fa8985a3f683f41dd2b95",
+    "classifier.py": "1c997d3df85946d874cfceb4aa75415f1076d7e3b2775bf70509e067790b018f",
+    "evaluator.py": "c9eeb8c5326c55a6a720f0b032080004800f008d2d6098891717305d089da0eb",
+    "extract.py": "c622e0827c46c16d227c11d223be7b515ce6af3a18a85c559f5976e5790e6d78",
+    "graph.py": "433ecd48a647438b4db03abb96d362dfa9e3eaedc65f2c2149fcf5b3e684d8cb",
+    "recommender.py": "2e44e65d7b68890cc39b9d0d6b522a96495e6904a6095b7ec8fcb0f1c0d41833",
+    "retrieve.py": "b22af973533b28bb48b7d51336ed9b8f581fac67b16e4fb90d7fd4ff8c2d6407",
+    "reviewer.py": "4de5d1d5d1ebc87657cb5d315826b646c1a00610c42f6c3c0f0b6d56a702d964",
+    "rules.py": "e4e9a6e8bd940072f2207bd4ff2bb0291c10c86f21f83288a10b5e0f7cc4764f",
+    "writeback.py": "bd09de25ca7c9bff1d6f89d6a58d122e3cb249331ffe1d3c7b1efdfec07270cd"
+  },
+  "stage_latencies": [
+    {
+      "latency_seconds": 1.2215,
+      "loop": 0,
+      "stage": "extract"
+    },
+    {
+      "latency_seconds": 0.0015,
+      "loop": 0,
+      "stage": "retrieve"
+    },
+    {
+      "latency_seconds": 2.0593,
+      "loop": 0,
+      "stage": "classify"
+    },
+    {
+      "latency_seconds": 2.3783,
+      "loop": 0,
+      "stage": "recommend"
+    },
+    {
+      "latency_seconds": 1.8351,
+      "loop": 1,
+      "stage": "review"
+    },
+    {
+      "latency_seconds": 2.985,
+      "loop": 1,
+      "stage": "classify"
+    },
+    {
+      "latency_seconds": 1.7336,
+      "loop": 1,
+      "stage": "recommend"
+    },
+    {
+      "latency_seconds": 1.6806,
+      "loop": 2,
+      "stage": "review"
+    },
+    {
+      "latency_seconds": 0.0006,
+      "loop": 2,
+      "stage": "escalate"
+    }
+  ],
+  "timestamp": "2026-10-08T10:49:57.386249+00:00",
+  "version": "gpt-oss-v1-frozen-1",
+  "writeback_executed": false
+}

@@ -1,0 +1,80 @@
+{
+  "extracted": {
+    "shipment_id": "SHP-0004",
+    "tracking_id": null,
+    "city": null,
+    "district": null,
+    "courier": null,
+    "category_hint": "address_conflict"
+  },
+  "classification": {
+    "category": "address_conflict",
+    "confidence": 0.95,
+    "priority": "high",
+    "rationale": "The recorded failure event explicitly lists category \"address_conflict\" and the delivery attempt failed on the same day, matching the complaint that the registered address was incorrect."
+  },
+  "recommendation": {
+    "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+    "grounded_in": [
+      "RES-aabecb4593",
+      "RES-e8c312b756"
+    ],
+    "rationale": "The root cause is an address conflict and the retry budget is exhausted, so a plain re‑delivery is not allowed. The action “تأكيد العنوان الصحيح مع العميل وإعادة التوجيه” has a 100 % success rate in precedent cases (RES‑aabecb4593, RES‑e8c312b756) and is listed in the known vocabulary, making it the most reliable next step to resolve the delivery failure while expediting the shipment.",
+    "candidates": [
+      {
+        "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+        "tried": 1,
+        "succeeded": 1,
+        "rate": 1.0
+      },
+      {
+        "action": "التواصل مع العميل لتحديد الموقع عبر الإحداثيات",
+        "tried": 1,
+        "succeeded": 1,
+        "rate": 1.0
+      },
+      {
+        "action": "إعادة جدولة التسليم في يوم آخر",
+        "tried": 1,
+        "succeeded": 1,
+        "rate": 1.0
+      },
+      {
+        "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+        "tried": 2,
+        "succeeded": 2,
+        "rate": 1.0
+      }
+    ],
+    "grounded_cases": [
+      {
+        "resolution_id": "RES-aabecb4593",
+        "category": "address_conflict",
+        "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+        "success": true
+      },
+      {
+        "resolution_id": "RES-e8c312b756",
+        "category": "address_conflict",
+        "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+        "success": true
+      }
+    ]
+  },
+  "review": {
+    "verdict": "accept",
+    "score": 0.92,
+    "reason": "The action “تأكيد العنوان الصحيح مع العميل وإعادة التوجيه” directly addresses the address conflict, aligns with the exhausted retry budget (it does not constitute a new delivery attempt), and has 100 % success in the cited precedent cases, satisfying both evidence and business rules.",
+    "checked_against": [
+      "evidence",
+      "business_rules",
+      "sla",
+      "historical_outcomes"
+    ]
+  },
+  "disposition": "execute",
+  "resolution_id": "RES-e4cc1359bc2150f182c7c46364cf2361",
+  "escalation": null,
+  "loops": 0,
+  "execution_confirmed": false
+}

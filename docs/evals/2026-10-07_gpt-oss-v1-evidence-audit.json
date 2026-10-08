@@ -1,0 +1,177 @@
+{
+  "timestamp": "2026-10-07T19:54:49.584532+00:00",
+  "dataset": "local synthetic recorded history",
+  "recorded_failure_histories": 165,
+  "model_local_projection": {
+    "shipment": [
+      "shipment_id",
+      "tracking_id",
+      "order_id",
+      "carrier",
+      "status"
+    ],
+    "event": [
+      "event_id",
+      "event_type",
+      "timestamp"
+    ],
+    "policy": [
+      "policy_id",
+      "name",
+      "sla_days",
+      "retry_limit"
+    ],
+    "addresses": [
+      "address_id",
+      "full_address",
+      "district",
+      "city",
+      "lat",
+      "lng",
+      "version"
+    ]
+  },
+  "categories": {
+    "address_conflict": {
+      "histories": 52,
+      "policies": {
+        "sla=1,retry=1": 16,
+        "sla=5,retry=3": 18,
+        "sla=3,retry=2": 18
+      },
+      "shipment_fields": [
+        "carrier",
+        "order_id",
+        "shipment_id",
+        "status",
+        "tracking_id"
+      ],
+      "event_fields": [
+        "event_id",
+        "event_type",
+        "timestamp"
+      ]
+    },
+    "failed_attempt_barcode_mismatch": {
+      "histories": 9,
+      "policies": {
+        "sla=5,retry=3": 2,
+        "sla=3,retry=2": 4,
+        "sla=1,retry=1": 3
+      },
+      "shipment_fields": [
+        "carrier",
+        "order_id",
+        "shipment_id",
+        "status",
+        "tracking_id"
+      ],
+      "event_fields": [
+        "event_id",
+        "event_type",
+        "timestamp"
+      ]
+    },
+    "failed_attempt_weight_mismatch": {
+      "histories": 17,
+      "policies": {
+        "sla=5,retry=3": 5,
+        "sla=3,retry=2": 5,
+        "sla=1,retry=1": 7
+      },
+      "shipment_fields": [
+        "carrier",
+        "order_id",
+        "shipment_id",
+        "status",
+        "tracking_id"
+      ],
+      "event_fields": [
+        "event_id",
+        "event_type",
+        "timestamp"
+      ]
+    },
+    "failed_attempt_wrong_gate": {
+      "histories": 15,
+      "policies": {
+        "sla=3,retry=2": 5,
+        "sla=5,retry=3": 5,
+        "sla=1,retry=1": 5
+      },
+      "shipment_fields": [
+        "carrier",
+        "order_id",
+        "shipment_id",
+        "status",
+        "tracking_id"
+      ],
+      "event_fields": [
+        "event_id",
+        "event_type",
+        "timestamp"
+      ]
+    },
+    "hub_delay": {
+      "histories": 27,
+      "policies": {
+        "sla=1,retry=1": 11,
+        "sla=3,retry=2": 5,
+        "sla=5,retry=3": 11
+      },
+      "shipment_fields": [
+        "carrier",
+        "order_id",
+        "shipment_id",
+        "status",
+        "tracking_id"
+      ],
+      "event_fields": [
+        "event_id",
+        "event_type",
+        "timestamp"
+      ]
+    },
+    "recipient_unavailable": {
+      "histories": 45,
+      "policies": {
+        "sla=1,retry=1": 11,
+        "sla=5,retry=3": 17,
+        "sla=3,retry=2": 17
+      },
+      "shipment_fields": [
+        "carrier",
+        "order_id",
+        "shipment_id",
+        "status",
+        "tracking_id"
+      ],
+      "event_fields": [
+        "event_id",
+        "event_type",
+        "timestamp"
+      ]
+    }
+  },
+  "shared_event_type_signatures": [
+    {
+      "event_types": [
+        "CREATED",
+        "DELIVERY_ATTEMPT",
+        "FAILED",
+        "IN_TRANSIT",
+        "OUT_FOR_DELIVERY",
+        "PICKED_UP"
+      ],
+      "categories": [
+        "address_conflict",
+        "failed_attempt_barcode_mismatch",
+        "failed_attempt_weight_mismatch",
+        "failed_attempt_wrong_gate",
+        "hub_delay",
+        "recipient_unavailable"
+      ]
+    }
+  ],
+  "interpretation": "Shared event-type signatures do not prove all evidence is identical: timestamps, addresses and complaint symptoms can differ. However the model projection has no measured weight, observed barcode, gate scan or contact-attempt outcome. Removing the seeded FailureReason label therefore leaves some subtypes underidentified. Do not claim all benchmark misses could be solved by increasing model size."
+}

@@ -1,0 +1,838 @@
+{
+  "timestamp": "2026-10-07T22:38:04.402844+03:00",
+  "corrected_accept": {
+    "proof_type": "deterministic_fixture_real_compiled_langgraph_and_reviewer_rules",
+    "external_io": "mocked final model JSON, read retrieval, case file, and writeback; no DB writes",
+    "live_model_rejection": false,
+    "complaint": "Shipment SHP-9001 had two failed attempts; the current recipient address differs from the order address.",
+    "policy": {
+      "policy_id": "POL-FIXTURE",
+      "retry_limit": 2,
+      "sla_days": 3
+    },
+    "business_rule_findings": [
+      {
+        "rule": "sla",
+        "passed": false,
+        "detail": "4.0 days elapsed against a 3-day SLA - BREACHED."
+      },
+      {
+        "rule": "retry_budget",
+        "passed": false,
+        "detail": "2 of 2 permitted attempt(s) used - EXHAUSTED, re-delivery not admissible."
+      },
+      {
+        "rule": "precedent_strength",
+        "passed": true,
+        "detail": "2/2 comparable cases succeeded (100%)."
+      }
+    ],
+    "initial_diagnosis": {
+      "category": "recipient_unavailable",
+      "confidence": 0.8,
+      "priority": "high",
+      "rationale": "Address versions and failed attempts require correction."
+    },
+    "initial_recommendation": {
+      "action": "إعادة جدولة التسليم في يوم آخر",
+      "grounded_in": [
+        "RES-HISTORY-1"
+      ],
+      "rationale": "Change approach after exhausted attempts; cite a verified historical outcome.",
+      "candidates": [
+        {
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "tried": 1,
+          "succeeded": 1,
+          "rate": 1.0
+        },
+        {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "tried": 1,
+          "succeeded": 1,
+          "rate": 1.0
+        }
+      ],
+      "grounded_cases": [
+        {
+          "resolution_id": "RES-HISTORY-1",
+          "category": "recipient_unavailable",
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "success": true
+        }
+      ]
+    },
+    "initial_review": {
+      "verdict": "reject",
+      "score": 0.0,
+      "reason": "Retry budget exhausted (2 of 2 permitted attempt(s) used - EXHAUSTED, re-delivery not admissible.) but the proposed action is another delivery retry. Propose a different approach or escalate.",
+      "checked_against": [
+        "evidence",
+        "business_rules",
+        "sla",
+        "historical_outcomes"
+      ]
+    },
+    "feedback": [
+      "Retry budget exhausted (2 of 2 permitted attempt(s) used - EXHAUSTED, re-delivery not admissible.) but the proposed action is another delivery retry. Propose a different approach or escalate."
+    ],
+    "feedback_in_second_classifier_prompt": true,
+    "second_diagnosis": {
+      "category": "address_conflict",
+      "confidence": 0.8,
+      "priority": "high",
+      "rationale": "Address versions and failed attempts require correction."
+    },
+    "second_recommendation": {
+      "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+      "grounded_in": [
+        "RES-HISTORY-2"
+      ],
+      "rationale": "Change approach after exhausted attempts; cite a verified historical outcome.",
+      "candidates": [
+        {
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "tried": 1,
+          "succeeded": 1,
+          "rate": 1.0
+        },
+        {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "tried": 1,
+          "succeeded": 1,
+          "rate": 1.0
+        }
+      ],
+      "grounded_cases": [
+        {
+          "resolution_id": "RES-HISTORY-2",
+          "category": "address_conflict",
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "success": true
+        }
+      ]
+    },
+    "stages": [
+      {
+        "stage": "extract",
+        "label": "Entity Extraction",
+        "lane": "Input",
+        "arabic": "",
+        "is_agent": false,
+        "loop": 0,
+        "detail": {
+          "shipment_id": "SHP-9001"
+        }
+      },
+      {
+        "stage": "retrieve",
+        "label": "Vector KNN + Graph → RRF",
+        "lane": "Hybrid Retrieval",
+        "arabic": "",
+        "is_agent": false,
+        "loop": 0,
+        "detail": {
+          "similar_cases": 2,
+          "live_failure_id": "FR-FIXTURE-1",
+          "precedent": [
+            {
+              "failure_id": "FR-HISTORY-1",
+              "resolution_id": "RES-HISTORY-1",
+              "category": "recipient_unavailable",
+              "description": null,
+              "city": null,
+              "district": null,
+              "courier": null,
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "success": true,
+              "score": null,
+              "rrf_score": null
+            },
+            {
+              "failure_id": "FR-HISTORY-2",
+              "resolution_id": "RES-HISTORY-2",
+              "category": "address_conflict",
+              "description": null,
+              "city": null,
+              "district": null,
+              "courier": null,
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true,
+              "score": null,
+              "rrf_score": null
+            }
+          ]
+        }
+      },
+      {
+        "stage": "classify",
+        "label": "Root-cause classification",
+        "lane": "Classification",
+        "arabic": "المصنّف",
+        "is_agent": true,
+        "loop": 0,
+        "detail": {
+          "category": "recipient_unavailable",
+          "confidence": 0.8,
+          "priority": "high",
+          "rationale": "Address versions and failed attempts require correction."
+        }
+      },
+      {
+        "stage": "recommend",
+        "label": "Candidate actions",
+        "lane": "Recommendation",
+        "arabic": "المُوصي",
+        "is_agent": true,
+        "loop": 0,
+        "detail": {
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "grounded_in": [
+            "RES-HISTORY-1"
+          ],
+          "rationale": "Change approach after exhausted attempts; cite a verified historical outcome.",
+          "candidates": [
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-HISTORY-1",
+              "category": "recipient_unavailable",
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "success": true
+            }
+          ]
+        }
+      },
+      {
+        "stage": "review",
+        "label": "Validation",
+        "lane": "Evaluation",
+        "arabic": "المراجع",
+        "is_agent": true,
+        "loop": 1,
+        "detail": {
+          "verdict": "reject",
+          "score": 0.0,
+          "reason": "Retry budget exhausted (2 of 2 permitted attempt(s) used - EXHAUSTED, re-delivery not admissible.) but the proposed action is another delivery retry. Propose a different approach or escalate.",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        },
+        "verdict": "reject"
+      },
+      {
+        "stage": "classify",
+        "label": "Root-cause classification",
+        "lane": "Classification",
+        "arabic": "المصنّف",
+        "is_agent": true,
+        "loop": 1,
+        "detail": {
+          "category": "address_conflict",
+          "confidence": 0.8,
+          "priority": "high",
+          "rationale": "Address versions and failed attempts require correction."
+        }
+      },
+      {
+        "stage": "recommend",
+        "label": "Candidate actions",
+        "lane": "Recommendation",
+        "arabic": "المُوصي",
+        "is_agent": true,
+        "loop": 1,
+        "detail": {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "grounded_in": [
+            "RES-HISTORY-2"
+          ],
+          "rationale": "Change approach after exhausted attempts; cite a verified historical outcome.",
+          "candidates": [
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-HISTORY-2",
+              "category": "address_conflict",
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true
+            }
+          ]
+        }
+      },
+      {
+        "stage": "review",
+        "label": "Validation",
+        "lane": "Evaluation",
+        "arabic": "المراجع",
+        "is_agent": true,
+        "loop": 1,
+        "detail": {
+          "verdict": "accept",
+          "score": 0.9,
+          "reason": "Corrected action avoids another retry and cites matching precedent.",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        },
+        "verdict": "accept"
+      },
+      {
+        "stage": "writeback",
+        "label": "Write-back",
+        "lane": "Output",
+        "arabic": "",
+        "is_agent": false,
+        "loop": 1,
+        "detail": {
+          "resolution_id": "RES-FIXTURE-ACCEPTED"
+        }
+      }
+    ],
+    "final": {
+      "case_file": null,
+      "escalation": null,
+      "disposition": "execute",
+      "resolution_id": "RES-FIXTURE-ACCEPTED",
+      "loops": 1,
+      "classification": {
+        "category": "address_conflict",
+        "confidence": 0.8,
+        "priority": "high",
+        "rationale": "Address versions and failed attempts require correction."
+      },
+      "recommendation": {
+        "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+        "grounded_in": [
+          "RES-HISTORY-2"
+        ],
+        "rationale": "Change approach after exhausted attempts; cite a verified historical outcome.",
+        "candidates": [
+          {
+            "action": "إعادة جدولة التسليم في يوم آخر",
+            "tried": 1,
+            "succeeded": 1,
+            "rate": 1.0
+          },
+          {
+            "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+            "tried": 1,
+            "succeeded": 1,
+            "rate": 1.0
+          }
+        ],
+        "grounded_cases": [
+          {
+            "resolution_id": "RES-HISTORY-2",
+            "category": "address_conflict",
+            "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+            "success": true
+          }
+        ]
+      },
+      "review": {
+        "verdict": "accept",
+        "score": 0.9,
+        "reason": "Corrected action avoids another retry and cites matching precedent.",
+        "checked_against": [
+          "evidence",
+          "business_rules",
+          "sla",
+          "historical_outcomes"
+        ]
+      }
+    },
+    "resolution_write_mock_calls": 1,
+    "escalation_write_mock_calls": 0,
+    "observed_operational_success": null
+  },
+  "bounded_escalation": {
+    "proof_type": "deterministic_fixture_real_compiled_langgraph_and_reviewer_rules",
+    "external_io": "mocked final model JSON, read retrieval, case file, and writeback; no DB writes",
+    "live_model_rejection": false,
+    "complaint": "Shipment SHP-9001 had two failed attempts; the current recipient address differs from the order address.",
+    "policy": {
+      "policy_id": "POL-FIXTURE",
+      "retry_limit": 2,
+      "sla_days": 3
+    },
+    "business_rule_findings": [
+      {
+        "rule": "sla",
+        "passed": false,
+        "detail": "4.0 days elapsed against a 3-day SLA - BREACHED."
+      },
+      {
+        "rule": "retry_budget",
+        "passed": false,
+        "detail": "2 of 2 permitted attempt(s) used - EXHAUSTED, re-delivery not admissible."
+      },
+      {
+        "rule": "precedent_strength",
+        "passed": true,
+        "detail": "2/2 comparable cases succeeded (100%)."
+      }
+    ],
+    "initial_diagnosis": {
+      "category": "recipient_unavailable",
+      "confidence": 0.8,
+      "priority": "high",
+      "rationale": "Address versions and failed attempts require correction."
+    },
+    "initial_recommendation": {
+      "action": "إعادة جدولة التسليم في يوم آخر",
+      "grounded_in": [
+        "RES-HISTORY-1"
+      ],
+      "rationale": "Change approach after exhausted attempts; cite a verified historical outcome.",
+      "candidates": [
+        {
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "tried": 1,
+          "succeeded": 1,
+          "rate": 1.0
+        },
+        {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "tried": 1,
+          "succeeded": 1,
+          "rate": 1.0
+        }
+      ],
+      "grounded_cases": [
+        {
+          "resolution_id": "RES-HISTORY-1",
+          "category": "recipient_unavailable",
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "success": true
+        }
+      ]
+    },
+    "initial_review": {
+      "verdict": "reject",
+      "score": 0.0,
+      "reason": "Retry budget exhausted (2 of 2 permitted attempt(s) used - EXHAUSTED, re-delivery not admissible.) but the proposed action is another delivery retry. Propose a different approach or escalate.",
+      "checked_against": [
+        "evidence",
+        "business_rules",
+        "sla",
+        "historical_outcomes"
+      ]
+    },
+    "feedback": [
+      "Retry budget exhausted (2 of 2 permitted attempt(s) used - EXHAUSTED, re-delivery not admissible.) but the proposed action is another delivery retry. Propose a different approach or escalate."
+    ],
+    "feedback_in_second_classifier_prompt": true,
+    "second_diagnosis": {
+      "category": "recipient_unavailable",
+      "confidence": 0.8,
+      "priority": "high",
+      "rationale": "Address versions and failed attempts require correction."
+    },
+    "second_recommendation": {
+      "action": "إعادة جدولة التسليم في يوم آخر",
+      "grounded_in": [
+        "RES-HISTORY-1"
+      ],
+      "rationale": "Change approach after exhausted attempts; cite a verified historical outcome.",
+      "candidates": [
+        {
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "tried": 1,
+          "succeeded": 1,
+          "rate": 1.0
+        },
+        {
+          "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+          "tried": 1,
+          "succeeded": 1,
+          "rate": 1.0
+        }
+      ],
+      "grounded_cases": [
+        {
+          "resolution_id": "RES-HISTORY-1",
+          "category": "recipient_unavailable",
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "success": true
+        }
+      ]
+    },
+    "stages": [
+      {
+        "stage": "extract",
+        "label": "Entity Extraction",
+        "lane": "Input",
+        "arabic": "",
+        "is_agent": false,
+        "loop": 0,
+        "detail": {
+          "shipment_id": "SHP-9001"
+        }
+      },
+      {
+        "stage": "retrieve",
+        "label": "Vector KNN + Graph → RRF",
+        "lane": "Hybrid Retrieval",
+        "arabic": "",
+        "is_agent": false,
+        "loop": 0,
+        "detail": {
+          "similar_cases": 2,
+          "live_failure_id": "FR-FIXTURE-1",
+          "precedent": [
+            {
+              "failure_id": "FR-HISTORY-1",
+              "resolution_id": "RES-HISTORY-1",
+              "category": "recipient_unavailable",
+              "description": null,
+              "city": null,
+              "district": null,
+              "courier": null,
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "success": true,
+              "score": null,
+              "rrf_score": null
+            },
+            {
+              "failure_id": "FR-HISTORY-2",
+              "resolution_id": "RES-HISTORY-2",
+              "category": "address_conflict",
+              "description": null,
+              "city": null,
+              "district": null,
+              "courier": null,
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "success": true,
+              "score": null,
+              "rrf_score": null
+            }
+          ]
+        }
+      },
+      {
+        "stage": "classify",
+        "label": "Root-cause classification",
+        "lane": "Classification",
+        "arabic": "المصنّف",
+        "is_agent": true,
+        "loop": 0,
+        "detail": {
+          "category": "recipient_unavailable",
+          "confidence": 0.8,
+          "priority": "high",
+          "rationale": "Address versions and failed attempts require correction."
+        }
+      },
+      {
+        "stage": "recommend",
+        "label": "Candidate actions",
+        "lane": "Recommendation",
+        "arabic": "المُوصي",
+        "is_agent": true,
+        "loop": 0,
+        "detail": {
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "grounded_in": [
+            "RES-HISTORY-1"
+          ],
+          "rationale": "Change approach after exhausted attempts; cite a verified historical outcome.",
+          "candidates": [
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-HISTORY-1",
+              "category": "recipient_unavailable",
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "success": true
+            }
+          ]
+        }
+      },
+      {
+        "stage": "review",
+        "label": "Validation",
+        "lane": "Evaluation",
+        "arabic": "المراجع",
+        "is_agent": true,
+        "loop": 1,
+        "detail": {
+          "verdict": "reject",
+          "score": 0.0,
+          "reason": "Retry budget exhausted (2 of 2 permitted attempt(s) used - EXHAUSTED, re-delivery not admissible.) but the proposed action is another delivery retry. Propose a different approach or escalate.",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        },
+        "verdict": "reject"
+      },
+      {
+        "stage": "classify",
+        "label": "Root-cause classification",
+        "lane": "Classification",
+        "arabic": "المصنّف",
+        "is_agent": true,
+        "loop": 1,
+        "detail": {
+          "category": "recipient_unavailable",
+          "confidence": 0.8,
+          "priority": "high",
+          "rationale": "Address versions and failed attempts require correction."
+        }
+      },
+      {
+        "stage": "recommend",
+        "label": "Candidate actions",
+        "lane": "Recommendation",
+        "arabic": "المُوصي",
+        "is_agent": true,
+        "loop": 1,
+        "detail": {
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "grounded_in": [
+            "RES-HISTORY-1"
+          ],
+          "rationale": "Change approach after exhausted attempts; cite a verified historical outcome.",
+          "candidates": [
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            },
+            {
+              "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+              "tried": 1,
+              "succeeded": 1,
+              "rate": 1.0
+            }
+          ],
+          "grounded_cases": [
+            {
+              "resolution_id": "RES-HISTORY-1",
+              "category": "recipient_unavailable",
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "success": true
+            }
+          ]
+        }
+      },
+      {
+        "stage": "review",
+        "label": "Validation",
+        "lane": "Evaluation",
+        "arabic": "المراجع",
+        "is_agent": true,
+        "loop": 2,
+        "detail": {
+          "verdict": "reject",
+          "score": 0.0,
+          "reason": "Retry budget exhausted (2 of 2 permitted attempt(s) used - EXHAUSTED, re-delivery not admissible.) but the proposed action is another delivery retry. Propose a different approach or escalate.",
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ]
+        },
+        "verdict": "reject"
+      },
+      {
+        "stage": "escalate",
+        "label": "Escalate",
+        "lane": "Output",
+        "arabic": "",
+        "is_agent": false,
+        "loop": 2
+      }
+    ],
+    "final": {
+      "case_file": null,
+      "escalation": {
+        "escalation_id": "ESC-FIXTURE",
+        "team": "human_review"
+      },
+      "disposition": "escalate",
+      "resolution_id": null,
+      "loops": 2,
+      "classification": {
+        "category": "recipient_unavailable",
+        "confidence": 0.8,
+        "priority": "high",
+        "rationale": "Address versions and failed attempts require correction."
+      },
+      "recommendation": {
+        "action": "إعادة جدولة التسليم في يوم آخر",
+        "grounded_in": [
+          "RES-HISTORY-1"
+        ],
+        "rationale": "Change approach after exhausted attempts; cite a verified historical outcome.",
+        "candidates": [
+          {
+            "action": "إعادة جدولة التسليم في يوم آخر",
+            "tried": 1,
+            "succeeded": 1,
+            "rate": 1.0
+          },
+          {
+            "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+            "tried": 1,
+            "succeeded": 1,
+            "rate": 1.0
+          }
+        ],
+        "grounded_cases": [
+          {
+            "resolution_id": "RES-HISTORY-1",
+            "category": "recipient_unavailable",
+            "action": "إعادة جدولة التسليم في يوم آخر",
+            "success": true
+          }
+        ]
+      },
+      "review": {
+        "verdict": "reject",
+        "score": 0.0,
+        "reason": "Retry budget exhausted (2 of 2 permitted attempt(s) used - EXHAUSTED, re-delivery not admissible.) but the proposed action is another delivery retry. Propose a different approach or escalate.",
+        "checked_against": [
+          "evidence",
+          "business_rules",
+          "sla",
+          "historical_outcomes"
+        ]
+      }
+    },
+    "resolution_write_mock_calls": 0,
+    "escalation_write_mock_calls": 1,
+    "observed_operational_success": null
+  },
+  "missing_grounding": {
+    "proof_type": "deterministic_fixture_real_compiled_langgraph_and_reviewer_rules",
+    "external_io": "mocked final model JSON, read retrieval, case file, and writeback; no DB writes",
+    "live_model_rejection": false,
+    "complaint": "Shipment SHP-9001 had two failed attempts; the current recipient address differs from the order address.",
+    "policy": {
+      "policy_id": "POL-FIXTURE",
+      "retry_limit": 2,
+      "sla_days": 3
+    },
+    "business_rule_findings": [
+      {
+        "rule": "sla",
+        "passed": false,
+        "detail": "4.0 days elapsed against a 3-day SLA - BREACHED."
+      },
+      {
+        "rule": "retry_budget",
+        "passed": false,
+        "detail": "2 of 2 permitted attempt(s) used - EXHAUSTED, re-delivery not admissible."
+      },
+      {
+        "rule": "precedent_strength",
+        "passed": true,
+        "detail": "2/2 comparable cases succeeded (100%)."
+      }
+    ],
+    "initial_diagnosis": null,
+    "initial_recommendation": null,
+    "initial_review": null,
+    "feedback": [],
+    "feedback_in_second_classifier_prompt": false,
+    "second_diagnosis": null,
+    "second_recommendation": null,
+    "stages": [
+      {
+        "stage": "extract",
+        "label": "Entity Extraction",
+        "lane": "Input",
+        "arabic": "",
+        "is_agent": false,
+        "loop": 0,
+        "detail": {
+          "shipment_id": "SHP-9001"
+        }
+      },
+      {
+        "stage": "retrieve",
+        "label": "Vector KNN + Graph → RRF",
+        "lane": "Hybrid Retrieval",
+        "arabic": "",
+        "is_agent": false,
+        "loop": 0,
+        "detail": {
+          "similar_cases": 0,
+          "live_failure_id": "FR-FIXTURE-1",
+          "precedent": []
+        }
+      },
+      {
+        "stage": "escalate",
+        "label": "Escalate",
+        "lane": "Output",
+        "arabic": "",
+        "is_agent": false,
+        "loop": 0
+      }
+    ],
+    "final": {
+      "case_file": null,
+      "escalation": {
+        "escalation_id": "ESC-FIXTURE",
+        "team": "human_review"
+      },
+      "disposition": "escalate",
+      "resolution_id": null,
+      "loops": 0,
+      "classification": null,
+      "recommendation": null,
+      "review": null
+    },
+    "resolution_write_mock_calls": 0,
+    "escalation_write_mock_calls": 1,
+    "observed_operational_success": null
+  }
+}
