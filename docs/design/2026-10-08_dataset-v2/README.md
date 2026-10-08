@@ -1,5 +1,10 @@
 # Dataset V2 — logistics intelligence foundation
 
+Implementation update: the subsequent foundation request supersedes the proposed 600
+size below with configurable generation and a main 2000 / 1200-history / 400-development /
+400-held-out profile. See [frozen implementation contracts](../../dataset-v2/contracts.md).
+The dated proposal below remains the original design record.
+
 Proposal recorded 2026-10-08, Asia/Riyadh. **DESIGN ONLY.** No generator, new graph,
 queue worker, GPS integration, outcome endpoint, email integration or major UI redesign
 is implemented in this run. The current `shipments` graph remains V1. This proposal

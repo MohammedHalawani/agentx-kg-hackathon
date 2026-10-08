@@ -19,6 +19,7 @@ wheels/
 
 # Local / generated
 .env
+artifacts/dataset-v2/
 
 # Sensitive data: CSVs + photos are filled in locally, never committed
 data/*.csv
