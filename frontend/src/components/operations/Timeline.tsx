@@ -2,7 +2,7 @@ import { useLanguage } from '@/components/i18n/LanguageProvider'
 import type { AuditEvent } from '@/contracts/operations'
 import { cn } from '@/lib/cn'
 
-export function Timeline({ events }: { events: AuditEvent[] }) {
+export function Timeline({ events, onOpenCase }: { events: AuditEvent[]; onOpenCase?: (shipmentId: string, caseId: string) => void }) {
   const { t, isArabic } = useLanguage()
   return (
     <ol className="space-y-3" dir={isArabic ? 'rtl' : 'ltr'}>
@@ -26,11 +26,12 @@ export function Timeline({ events }: { events: AuditEvent[] }) {
             {event.actor}
             {event.model ? ` · ${event.model}` : ''}
           </p>
+          {event.caseId && onOpenCase && <button type="button" onClick={() => onOpenCase(event.shipmentId, event.caseId!)} className="mt-2 rounded border border-border px-2 py-1 text-xs">{t('explore.openCase')}</button>}
           {(event.decision || event.result) && (
-            <p className={cn('mt-1 text-xs', event.decision && 'text-foreground')}>
-              {event.decision && <span>{event.decision}</span>}
-              {event.result && <span className="text-muted-foreground"> — {event.result}</span>}
-            </p>
+            <div className={cn('mt-1 text-xs', event.decision && 'text-foreground')}>
+              {event.decision && <span>{t(`ops.actions.${event.decision}`) === `ops.actions.${event.decision}` ? event.decision : t(`ops.actions.${event.decision}`)}</span>}
+              {event.result && <details className="mt-2 text-muted-foreground"><summary className="cursor-pointer">{t('ops.audit.detail')}</summary><p className="mt-1" dir="auto">{event.result}</p></details>}
+            </div>
           )}
         </li>
       ))}

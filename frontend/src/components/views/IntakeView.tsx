@@ -26,7 +26,6 @@ import { SimulationPanel } from '@/components/intake/SimulationPanel'
 import { cn } from '../../lib/cn'
 import { operationalLabelKey } from '@/lib/operationalStates'
 import type { ExploreShipment } from '../../types/explore'
-import { ExploreShipmentCard } from './ExploreShipmentCard'
 
 function Outcome({
   disposition,
@@ -85,7 +84,7 @@ const DEFAULT_FILTERS: IntakeFilters = {
   cause: 'all',
 }
 
-export function IntakeView({ selectedShipment, onClearShipment }: { selectedShipment?: ExploreShipment | null; onClearShipment?: () => void }) {
+export function IntakeView({ selectedShipment, onClearShipment }: { selectedShipment?: Pick<ExploreShipment, 'shipment_id' | 'case_id'> | null; onClearShipment?: () => void }) {
   const { stages, final, caseFile, busy, error, complaint, stop, reset } = useComplaintStream()
   const { t, isArabic, rootCauseLabel } = useLanguage()
   const worker = useOperationsControl<WorkerStatus>('worker')
@@ -173,7 +172,7 @@ export function IntakeView({ selectedShipment, onClearShipment }: { selectedShip
                   className="rounded-md border border-border bg-card px-2 py-1.5 text-sm"
                 >
                   <option value="all">{t('ops.filters.all')}</option>
-                  {cities.map((city) => <option key={city} value={city}>{city}</option>)}
+                  {cities.map((city) => <option key={city} value={city}>{t(`cities.${city}`)}</option>)}
                 </select>
               </FilterField>
               <FilterField label={t('ops.filters.cause')}>
@@ -194,10 +193,6 @@ export function IntakeView({ selectedShipment, onClearShipment }: { selectedShip
             />
             {filters.timePreset === 'custom' && <div className="flex flex-wrap gap-2"><label>{t('ops.filters.from')} <input type="date" value={from} onChange={e => { setFrom(e.target.value); pager.reset() }} /></label><label>{t('ops.filters.to')} <input type="date" value={to} onChange={e => { setTo(e.target.value); pager.reset() }} /></label></div>}
 
-            {selectedShipment && (
-              <ExploreShipmentCard shipment={selectedShipment} onOpenCase={() => undefined} actionLabel={t('explore.analyzeCase')} />
-            )}
-
             {worker.data && <ProcessQueuePanel
               running={workerRunning}
               onToggle={() => void worker.command(workerRunning ? 'pause' : 'start')}
@@ -205,7 +200,7 @@ export function IntakeView({ selectedShipment, onClearShipment }: { selectedShip
               onStep={() => void worker.command('tick')}
               concurrency={1}
               processingId={worker.data?.worker?.active_case_id ?? null}
-              queueDepth={page.total}
+              queueDepth={(data?.metadata?.buckets?.OPEN ?? 0) + (data?.metadata?.buckets?.REOPENED ?? 0)}
               needsReview={adaptBuckets(data?.metadata?.buckets).needsReview}
             />}
             {worker.error && <ErrorState onRetry={worker.refetch} />}
@@ -222,7 +217,7 @@ export function IntakeView({ selectedShipment, onClearShipment }: { selectedShip
               disabled={simulation.pending || !simulation.data || Boolean(simulation.error)}
               eventCount={simulation.data?.simulator?.event_count}
               asOf={simulation.data?.as_of}
-              onStep={() => void simulation.command('tick', { seconds: 60 })}
+              onStep={() => void simulation.command('tick', { seconds: 60, speed: simulationRunning ? simulation.data!.simulator.speed : speed, replay_mode: simulationRunning ? simulation.data!.simulator.replay_mode : replayMode })}
             />}
             {simulation.error && <ErrorState onRetry={simulation.refetch} />}
             {simulation.loading && !simulation.data && <LoadingState label={t('ops.loading')} />}

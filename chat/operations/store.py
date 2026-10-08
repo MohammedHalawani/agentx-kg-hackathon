@@ -214,14 +214,22 @@ class OperationsStore:
             else: self.tick(step=True)
         return self.status()
 
-    def tick(self, seconds=1, *, step=False, manual=False):
+    def tick(self, seconds=1, *, step=False, manual=False, speed=None, replay_mode=None):
         if type(seconds) not in (int, float) or not math.isfinite(seconds) or not 0 < seconds <= 86400:
             raise OperationsConflict("Invalid bounded simulation advance")
+        if speed is not None and (type(speed) is not int or speed not in SPEEDS):
+            raise OperationsConflict("Invalid simulation speed")
+        if replay_mode is not None and replay_mode not in ("timeline","compressed"):
+            raise OperationsConflict("Invalid replay mode")
+        if not manual and (speed is not None or replay_mode is not None):
+            raise OperationsConflict("Replay settings require a manual operator step")
         def replay_tx(tx):
             c = self._control(tx, lock=True)
+            if speed is not None:c["speed"]=speed
+            if replay_mode is not None:c["replay_mode"]=replay_mode
             if c["simulator_state"] != "running" and not step and not manual:
                 return {"events_replayed": 0, "as_of": c["as_of"], "case_ids": []}
-            compressed=step or (c["simulator_state"]=="running" and c.get("replay_mode")=="compressed" and not manual)
+            compressed=step or (c.get("replay_mode")=="compressed" and (c["simulator_state"]=="running" or manual))
             target = min(instant(c["as_of"]) + timedelta(seconds=seconds*c["speed"]), instant(c["end_at"]))
             # Step traverses the next recorded event even across a quiet time interval.
             rows = list(tx.run("MATCH (e:V2Entity {dataset_id:$dataset,split:'development'}) "
@@ -452,6 +460,7 @@ class OperationsStore:
             if verified["resolved"]:
                 self._audit(tx,case,"CASE_RESOLVED",when,actor=actor_id,old=old)
                 notification_id=identity("notification",outcome_id)
+                self._audit(tx,case,"NOTIFICATION_QUEUED",when,result="Queued for the dry-run notifier only.",actor=actor_id)
                 self._put(tx,"OpsNotification",{"entity_id":notification_id,"shipment_id":case["shipment_id"],"case_id":case_id,
                     "recorded_at":when,"trigger":"case_resolved","mode":"dry_run","status":"DRY_RUN","external_calls":0})
                 self._link(tx,"OPS_NOTIFIED",case_id,notification_id,case["shipment_id"],when)

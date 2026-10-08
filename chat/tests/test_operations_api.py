@@ -81,6 +81,14 @@ class OperationsAPITests(unittest.TestCase):
         self.assertEqual(self.client.post("/cases/DEMO-CASE-01/decision",json={**body,"actor_id":"AI"},headers=self.headers()).status_code,422)
         self.assertEqual(self.client.post("/cases/DEMO-CASE-01/decision",json={**body,"expected_version":True},headers=self.headers()).status_code,422)
 
+    def test_manual_replay_applies_selected_speed_and_mode(self):
+        self.store.tick.return_value={"events_replayed":0}
+        headers=self.headers()
+        self.assertEqual(self.client.post("/simulation/tick",json={"seconds":60,"speed":60,"replay_mode":"compressed"},headers=headers).status_code,200)
+        self.store.tick.assert_called_once_with(seconds=60.0,manual=True,speed=60,replay_mode="compressed")
+        for speed in (True,1.0,"1",2):
+            self.assertEqual(self.client.post("/simulation/tick",json={"speed":speed},headers=headers).status_code,422)
+
     def test_verified_outcome_routes_bind_case_outcome_and_version(self):
         self.store.verify_outcome.return_value={"resolved":True,"verification_status":"VERIFIED"}
         body={"expected_version":3,"idempotency_key":"verify_01"}

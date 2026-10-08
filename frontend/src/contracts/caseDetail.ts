@@ -8,7 +8,8 @@ export interface RouteSegment { segment_id: string; sequence?: number; points: L
 export type RouteLayers = Partial<Record<Exclude<RouteLayerKey, 'expected_route'>, LayerPoint[]>> & { expected_route?: (LayerPoint | RouteSegment)[] }
 export type RouteLayerKey = 'expected_route' | 'actual_route' | 'vehicle_path' | 'custody_points' | 'hub_stops' | 'delivery_attempts'
 export interface ShipmentDetail {
-  shipment_id: string; case_id?: string; workflow_state?: CaseWorkflowState; state_version?: number; version?: number; as_of?: string; synthetic?: boolean
+  shipment_id: string; case_id?: string; workflow_state?: CaseWorkflowState; state_version?: number; version?: number; as_of?: string; investigated_at?: string; synthetic?: boolean
+  run?: { recorded_at?: string; mode?: string; result?: { trace?: { iteration: number; mode: string; review: { verdict: string; feedback?: string }; proposal?: { action?: string; action_en?: string; action_ar?: string } }[] } } | null
   evidence: { nodes: EvidenceNode[]; edges: EvidenceEdge[] }
   recommendation_id?: string | null
   recommendation?: { action?: string; action_en?: string; action_ar?: string; summary_en?: string; summary_ar?: string; evidence_ids?: string[] } | null
@@ -17,7 +18,7 @@ export interface ShipmentDetail {
   decisions?: { decision?: string; occurred_at?: string }[]
   executions?: { receipt_ref?: string; action_type?: string; occurred_at?: string }[]
   precedents?: { shipment_id: string; action: string; success: boolean | null; verified_at?: string; evidence_ids?: string[]; synthetic?: boolean }[]
-  reasoning?: { precedents?: ShipmentDetail['precedents']; workflow_state?: CaseWorkflowState | 'NO_EXCEPTION'; assessment?: { operational_status?: string; needs_attention?: boolean; cause_codes?: string[] }; recommendations?: { action?: string; action_en?: string; action_ar?: string; rationale?: string; explanation_en?: string; explanation_ar?: string }[]; diagnoses?: { code?: string; category?: string; summary?: string; summary_en?: string; summary_ar?: string; evidence_ids?: string[]; explanation_en?: string; explanation_ar?: string }[]; warnings?: string[] }
+  reasoning?: { as_of?: string; precedents?: ShipmentDetail['precedents']; workflow_state?: CaseWorkflowState | 'NO_EXCEPTION'; assessment?: { operational_status?: string; needs_attention?: boolean; cause_codes?: string[]; expected_vs_actual?: { milestone_id?: string; latest_at?: string; actual_at?: string; late?: boolean; missing_due?: boolean }[] }; recommendations?: { action?: string; action_en?: string; action_ar?: string; rationale?: string; explanation_en?: string; explanation_ar?: string }[]; diagnoses?: { code?: string; category?: string; summary?: string; summary_en?: string; summary_ar?: string; evidence_ids?: string[]; explanation_en?: string; explanation_ar?: string }[]; warnings?: string[] }
   route_layers?: { layers: RouteLayers; truncated?: Record<string, boolean> }
 }
 export function evidenceGraph(detail: ShipmentDetail): SubGraph {

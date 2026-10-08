@@ -13,7 +13,7 @@ import { EmptyState } from '@/components/operations/EmptyState'
 import { LoadingState } from '@/components/operations/LoadingState'
 import { ErrorState } from '@/components/operations/ErrorState'
 
-export function AuditView() {
+export function AuditView({ onOpenCase }: { onOpenCase?: (shipmentId: string, caseId: string) => void }) {
   const { t, isArabic } = useLanguage()
   const [filters, setFilters] = useState({ search: '', event_type: 'all', actor: '', model: '', workflow_state: 'all', shipment_id: '', case_id: '' })
   const [time, setTime] = useState<TimeRangePreset | 'all'>('all')
@@ -43,7 +43,7 @@ export function AuditView() {
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
         {loading ? <LoadingState label={t('ops.audit.loading')} /> : error ? <ErrorState onRetry={refetch} /> : !data?.items.length ? <EmptyState title={t('ops.audit.emptyTitle')} description={t('ops.audit.emptyDescription')} /> : <>
-          <Timeline events={data.items.map(adaptAudit)} />
+          <Timeline events={data.items.map(adaptAudit)} onOpenCase={onOpenCase} />
           <div className="mt-4"><CursorPagination total={data.filtered_total} limit={limit} cursorStart={offset} nextCursor={data.next_cursor} prevCursor={pager.hasPrevious ? 'visited-page' : null} onNext={() => pager.next(data.next_cursor, limit)} onPrev={() => pager.previous(limit)} onLimitChange={n => { setLimit(n); pager.reset() }} /></div>
         </>}
       </div>

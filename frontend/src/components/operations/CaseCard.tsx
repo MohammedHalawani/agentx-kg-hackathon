@@ -5,6 +5,7 @@ import { CaseWorkflowBadge } from './StatusBadge'
 import { PriorityBadge } from './PriorityBadge'
 import { OperationalStatusBadge } from './StatusBadge'
 import { cn } from '@/lib/cn'
+import { operationalLabelKey } from '@/lib/operationalStates'
 
 export function CaseCard({
   caseRow,
@@ -28,7 +29,7 @@ export function CaseCard({
     >
       <span className="min-w-0 flex-1" dir={isArabic ? 'rtl' : undefined}>
         <span className="block truncate text-sm text-ink group-hover:text-accent-foreground" dir="auto">
-          {caseRow.issueSummary}
+          {caseRow.operationalStatus ? t(operationalLabelKey(caseRow.operationalStatus)) : caseRow.category ? rootCauseLabel(caseRow.category) : caseRow.issueSummary}
         </span>
         <span className="mt-1 flex flex-wrap items-center gap-2">
           <span className="font-mono text-[11px] text-muted-foreground group-hover:text-accent-foreground/80" dir="ltr">
@@ -39,7 +40,7 @@ export function CaseCard({
               {rootCauseLabel(caseRow.category)}
             </span>
           )}
-          {caseRow.city && <span className="text-[11px] text-muted-foreground" dir="auto">{caseRow.city}</span>}
+          {caseRow.city && <span className="text-[11px] text-muted-foreground" dir="auto">{t(`cities.${caseRow.city}`)}</span>}
         </span>
         <span className="mt-1.5 flex flex-wrap gap-1.5">
           <PriorityBadge priority={caseRow.priority} />

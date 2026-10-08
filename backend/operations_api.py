@@ -195,7 +195,10 @@ def _simulation_speed(value):
 class SimulationStart(StrictBody):
     speed: Annotated[Literal[1,10,60],BeforeValidator(_simulation_speed)]=10
     replay_mode: Literal["timeline","compressed"]="timeline"
-class TickBody(StrictBody):seconds: float=Field(default=60,gt=0,le=86400,allow_inf_nan=False)
+class TickBody(StrictBody):
+    seconds: float=Field(default=60,gt=0,le=86400,allow_inf_nan=False)
+    speed: Annotated[Literal[1,10,60],BeforeValidator(_simulation_speed)]|None=None
+    replay_mode: Literal["timeline","compressed"]|None=None
 
 
 @router.post("/worker/start")
@@ -238,7 +241,8 @@ def pause_simulation(request: Request):
 @router.post("/simulation/tick")
 def tick_simulation(request: Request,body: TickBody):
     authority.authorize(request)
-    return invoke(get_runtime().store.tick,seconds=body.seconds,manual=True)
+    settings={key:value for key,value in {"speed":body.speed,"replay_mode":body.replay_mode}.items() if value is not None}
+    return invoke(get_runtime().store.tick,seconds=body.seconds,manual=True,**settings)
 
 
 class DecisionBody(StrictBody):

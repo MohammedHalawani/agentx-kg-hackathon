@@ -11,7 +11,7 @@ import type { ExploreShipment } from './types/explore'
 export default function App() {
   const [scope, setScope] = useState<string>('')
   const [view, setView] = useState<ViewKey>('intake')
-  const [selectedShipment, setSelectedShipment] = useState<ExploreShipment | null>(null)
+  const [selectedShipment, setSelectedShipment] = useState<Pick<ExploreShipment, 'shipment_id' | 'case_id'> | null>(null)
   const reduce = useReducedMotion()
 
   useEffect(() => {
@@ -41,7 +41,7 @@ export default function App() {
               }}
             />
           )}
-          {view === 'audit' && <AuditView />}
+          {view === 'audit' && <AuditView onOpenCase={(shipmentId, caseId) => { setSelectedShipment({ shipment_id: shipmentId, case_id: caseId }); setView('intake') }} />}
         </motion.div>
       </AppShell>
     </div>

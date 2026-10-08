@@ -36,4 +36,3 @@ def decode_cursor(value, binding):
     if instant(decoded["timestamp"])>instant(decoded["snapshot"]) or len(decoded["id"])>160:
         raise ValueError("Invalid cursor chronology or identity")
     return decoded
-

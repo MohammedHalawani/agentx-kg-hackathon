@@ -111,7 +111,7 @@ describe('IntakeView metadata contrast (H01)', () => {
 
   it('pairs accent hover background with accent-foreground on case buttons (H02)', () => {
     renderIntake()
-    const caseBtn = screen.getByText('Sample complaint text').closest('button')
+    const caseBtn = screen.getByText('SHP-0001').closest('button')
     expect(caseBtn?.className).toContain('hover:bg-accent')
     expect(caseBtn?.className).toContain('hover:text-accent-foreground')
     expect(caseBtn?.className).toContain('group')

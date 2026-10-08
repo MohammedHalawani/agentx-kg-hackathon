@@ -186,6 +186,17 @@ class StoreTests(unittest.TestCase):
         for speed in (0,2,True,100):
             with self.assertRaises(OperationsConflict):store.control("simulator","start",speed=speed)
         self.assertTrue(any("WHERE (time > $cursor OR" in q for q in driver.queries))
+    def test_paused_manual_replay_persists_selected_settings_without_starting_background(self):
+        store,driver=self.make()
+        result=store.tick(seconds=60,manual=True,speed=10,replay_mode="compressed")
+        self.assertGreater(result["events_replayed"],0)
+        status=store.status()["simulator"]
+        self.assertEqual(status["state"],"paused")
+        self.assertEqual(status["speed"],10)
+        self.assertEqual(status["replay_mode"],"compressed")
+        self.assertLessEqual(result["events_replayed"],100)
+        with self.assertRaises(OperationsConflict):store.tick(manual=True,speed=True)
+
     def test_pure_cursor_bounds_and_missing_grounding_rejection(self):
         rows=[{"time":"2026-09-01T00:00:00+00:00","id":str(i)} for i in range(3)]
         planned=replay_plan(rows,{"time":rows[0]["time"],"id":"0"},rows[0]["time"],1)

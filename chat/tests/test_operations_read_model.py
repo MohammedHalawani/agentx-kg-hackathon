@@ -132,6 +132,18 @@ class EvidenceTests(unittest.TestCase):
         self.assertTrue(all(set(d["evidence_ids"])<=ids for d in result["diagnoses"]))
         self.assertTrue(all(r["requires_approval"] and r["status"]=="PROPOSED" for r in result["recommendations"]))
 
+    def test_case_refresh_exposes_new_evidence_without_overwriting_prior_investigation(self):
+        reader,_=make_reader(lambda q,p:[{"shipment_id":"DEMO-SHP-18","as_of":"2026-09-01T02:00:00+00:00","workflow_state":"AWAITING_OUTCOME","state_version":4}])
+        reader.shipment_detail=lambda sid,asof:{"shipment_id":sid,"as_of":asof,"evidence":{"nodes":[{"id":"LATER-PROOF"}],"edges":[]}}
+        class Store:
+            def case_detail(self,case_id):return {"workflow_state":"AWAITING_OUTCOME","state_version":4,"as_of":"2026-09-01T02:00:00+00:00","run":{"recorded_at":"2026-09-01T01:00:00+00:00"}}
+        reader.store=Store()
+        result=reader.case_detail("DEMO-OPS-CASE-X")
+        self.assertEqual(result["as_of"], reader.clock())
+        self.assertEqual(result["investigated_at"], "2026-09-01T01:00:00+00:00")
+        self.assertEqual(result["workflow_state"], "AWAITING_OUTCOME")
+        self.assertEqual(result["evidence"]["nodes"][0]["id"], "LATER-PROOF")
+
     def test_generic_discrepancy_and_milestone_delay_do_not_claim_sla_risk(self):
         for code in ("BARCODE_MISMATCH","WEIGHT_MISMATCH","PROOF_INSUFFICIENT","CUSTODY_GAP","JOURNEY_DELAY","MISSED_MILESTONE","TRAFFIC_DELAY"):
             self.assertEqual(operational_status([code]),"NEEDS_ATTENTION")
@@ -237,6 +249,8 @@ class EvidenceTests(unittest.TestCase):
             self.assertIn(guard,query)
         self.assertEqual(params["candidate_limit"],20)
         self.assertEqual(params["precedent_limit"],5)
+        reader.historical_precedents("DEMO-SHP-18",["ADDRESS_CONFLICT"],as_of="2026-09-01T02:00:00+00:00")
+        self.assertEqual(driver.calls[-1][1]["snapshot"].isoformat(), "2026-09-01T02:00:00+00:00")
         with self.assertRaises(ValueError):reader.historical_precedents("DEMO-X",["GOLD_CAUSE"])
 
     def test_read_only_fence_and_explicit_target(self):

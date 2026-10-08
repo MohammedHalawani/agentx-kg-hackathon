@@ -3,7 +3,8 @@ import { useRef, useState } from 'react'
 import { BrainCircuit, Map, Maximize2, RefreshCw, RotateCcw, Workflow } from 'lucide-react'
 import { useLanguage } from '@/components/i18n/LanguageProvider'
 import { useExploreData } from '@/hooks/useExploreData'
-import { evidenceGraph, type ShipmentDetail, type RouteLayerKey } from '@/contracts/caseDetail'
+import { evidenceGraph, type ShipmentDetail } from '@/contracts/caseDetail'
+import { ShipmentRouteMap } from '@/components/operations/ShipmentRouteMap'
 import { CursorPagination } from '@/components/operations/Pagination'
 import { ErrorState } from '@/components/operations/ErrorState'
 import { SHIPMENT_FILTERS, type ExploreShipment, type ShipmentFilter } from '../../types/explore'
@@ -21,7 +22,7 @@ function ShipmentGraph({ shipmentId }: { shipmentId: string }) {
   const { t } = useLanguage()
   if (loading) return <div role="status" className="grid h-full place-items-center">{t('explore.loading')}</div>
   if (error) return <ErrorState onRetry={refetch} />
-  if (!data?.evidence.nodes.length) {
+  if (!data?.evidence?.nodes.length) {
     return (
       <div role="status" className="grid h-full place-items-center">
         <button type="button" onClick={refetch} className="rounded-lg border border-border px-3 py-2 text-sm">
@@ -33,14 +34,12 @@ function ShipmentGraph({ shipmentId }: { shipmentId: string }) {
   return <Graph graph={evidenceGraph(data)} />
 }
 
-const LAYERS: RouteLayerKey[] = ['expected_route', 'actual_route', 'vehicle_path', 'custody_points', 'hub_stops', 'delivery_attempts']
 function ShipmentMap({ shipment, onSelect }: { shipment: ExploreShipment; onSelect: (s: ExploreShipment) => void }) {
   const { data, loading, error, refetch } = useFetch<ShipmentDetail>(`/shipments/${encodeURIComponent(shipment.shipment_id)}/context`)
   const { t } = useLanguage()
-  const [visible, setVisible] = useState<RouteLayerKey[]>(['expected_route', 'custody_points'])
   if (loading) return <div role="status">{t('explore.loading')}</div>
-  if (error) return <ErrorState onRetry={refetch} />
-  return <div className="flex h-full min-h-96 flex-col"><div className="flex flex-wrap gap-3 bg-card p-2 text-xs">{LAYERS.map(key => <label key={key} className="flex items-center gap-1"><input type="checkbox" checked={visible.includes(key)} onChange={e => setVisible(prev => e.target.checked ? [...prev, key] : prev.filter(k => k !== key))} />{t(`ops.layers.${key}`)}</label>)}</div><div className="min-h-80 flex-1"><ExploreMap shipments={[shipment]} selected={shipment} onSelect={onSelect} layers={data?.route_layers?.layers} visibleLayers={visible} /></div></div>
+  if (error || (data && !data.evidence?.nodes)) return <ErrorState onRetry={refetch} />
+  return data ? <ShipmentRouteMap detail={data} shipment={shipment} onSelect={onSelect} /> : null
 }
 
 export function ExploreView({ onOpenCase }: { onOpenCase?: (shipment: ExploreShipment) => void }) {
@@ -140,7 +139,7 @@ export function ExploreView({ onOpenCase }: { onOpenCase?: (shipment: ExploreShi
               {[25, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
             </select>
           </label>
-          {(['city', 'cause', 'service_type', 'shipment_class'] as const).map(key => <label key={key} className="text-xs">{t(`ops.filters.${key}`)} <select value={extraFilters[key]} onChange={e => { setExtraFilters(f => ({ ...f, [key]: e.target.value })); pager.reset(); setSelectedId(null) }} className="rounded border border-border bg-card p-1"><option value="all">{t('ops.filters.all')}</option>{(data?.metadata?.filter_choices?.[key] ?? []).map(value => <option key={value} value={value}>{key === 'cause' ? rootCauseLabel(value) : value}</option>)}</select></label>)}
+          {(['city', 'cause', 'service_type', 'shipment_class'] as const).map(key => <label key={key} className="text-xs">{t(`ops.filters.${key}`)} <select value={extraFilters[key]} onChange={e => { setExtraFilters(f => ({ ...f, [key]: e.target.value })); pager.reset(); setSelectedId(null) }} className="rounded border border-border bg-card p-1"><option value="all">{t('ops.filters.all')}</option>{(data?.metadata?.filter_choices?.[key] ?? []).map(value => <option key={value} value={value}>{key === 'cause' ? rootCauseLabel(value) : key === 'city' ? t(`cities.${value}`) : value}</option>)}</select></label>)}
         </div>
       )}
 
@@ -190,7 +189,7 @@ export function ExploreView({ onOpenCase }: { onOpenCase?: (shipment: ExploreShi
                     >
                       <span dir="ltr" className="block font-mono text-xs font-semibold">{s.shipment_id}</span>
                       <ShipmentStatus shipment={s} />
-                      {s.city && <span dir="auto" className="block text-xs text-muted-foreground">{s.city}</span>}
+                      {s.city && <span dir="auto" className="block text-xs text-muted-foreground">{t(`cities.${s.city}`)}</span>}
                     </button>
                   </li>
                 ))}

@@ -45,7 +45,7 @@ WHERE datetime(a.recorded_at) <= $snapshot AND datetime(a.occurred_at) <= $snaps
   AND ($model IS NULL OR a.model=$model)
   AND ($workflow_state IS NULL OR a.to_state=$workflow_state)
   AND ($from_at IS NULL OR datetime(a.occurred_at) >= $from_at) AND ($to_at IS NULL OR datetime(a.occurred_at) <= $to_at)
-  AND ($search IS NULL OR toLower(a.entity_id + ' ' + a.shipment_id) CONTAINS $search)
+  AND ($search IS NULL OR toLower(a.entity_id + ' ' + a.shipment_id + ' ' + coalesce(a.case_id,'') + ' ' + coalesce(a.actor_id,'') + ' ' + coalesce(a.model,'')) CONTAINS $search)
 WITH a,s,a.occurred_at AS sort_time,a.entity_id AS sort_id
 """
 EXPLORE_BASE = """
@@ -370,19 +370,19 @@ class OperationsReader:
             world.edges[row["id"]] = Edge(row["id"], row["kind"], row["start"], row["end"], row["props"])
         return public_evidence(world, shipment_id, cutoff)
 
-    def historical_precedents(self, shipment_id, codes, limit=5):
+    def historical_precedents(self, shipment_id, codes, limit=5, as_of=None):
         if type(limit) is not int or not 1 <= limit <= 10 or set(codes) - CAUSES:
             raise ValueError("Invalid historical retrieval request")
         if not codes:
             return []
-        rows = self._run(PRECEDENTS, shipment_id=shipment_id, codes=sorted(set(codes)), snapshot=self.clock(),
+        rows = self._run(PRECEDENTS, shipment_id=shipment_id, codes=sorted(set(codes)), snapshot=as_of or self.clock(),
                          candidate_limit=20, precedent_limit=limit, evidence_kinds=sorted(OBSERVATIONS))
         return [row["item"] for row in rows if type(row["item"].get("success")) is bool]
 
     def shipment_detail(self, shipment_id, as_of=None):
         evidence = self.evidence(shipment_id, as_of)
         reasoning = triage(evidence, self.config)
-        reasoning["precedents"] = self.historical_precedents(shipment_id, reasoning["assessment"]["supported_codes"])
+        reasoning["precedents"] = self.historical_precedents(shipment_id, reasoning["assessment"]["supported_codes"], as_of=evidence["as_of"])
         return {"shipment_id": shipment_id, "as_of": evidence["as_of"], "synthetic": True,
                 "evidence": evidence, "reasoning": reasoning, "route_layers": route_layers(evidence, self.config)}
 
@@ -393,13 +393,16 @@ class OperationsReader:
         if not rows:
             raise LookupError("Operational case not found")
         row=rows[0]
-        detail={"case_id":case_id,**row,**self.shipment_detail(row["shipment_id"],row["as_of"])}
+        # Evidence follows the live replay clock so post-action observations can
+        # be inspected. The recorded investigation remains separately dated.
+        detail={"case_id":case_id,**row,**self.shipment_detail(row["shipment_id"],self.clock())}
         if self.store is not None and hasattr(self.store,"case_detail"):
             ledger=self.store.case_detail(case_id)
             # Stored workflow/approvals/outcomes are authoritative. Fresh triage is
             # a proposal and cannot silently replace an existing human decision.
-            for key in ("workflow_state","state_version","priority","operational_status","as_of","recommendation_id",
+            for key in ("workflow_state","state_version","priority","operational_status","recommendation_id",
                         "last_run_id","recommendation","review","outcome","decisions","executions","run"):
                 if key in ledger:
                     detail[key]=ledger[key]
+            detail["investigated_at"]=(ledger.get("run") or {}).get("recorded_at")
         return detail
