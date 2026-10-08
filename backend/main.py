@@ -16,6 +16,7 @@ from typing import Literal
 
 # reuse the chat package (agent, queries, registry, csv_data) without copying it
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "chat"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, RedirectResponse, Response, StreamingResponse
@@ -32,6 +33,11 @@ from llm.pipeline import graph as pipeline_graph
 
 log = logging.getLogger("suhail")
 app = FastAPI(title="AgentX / Suhail — Shipment Exception Resolution")
+
+# V2 operations is the product surface. V1 remains available on explicitly scoped
+# diagnostic routes and keeps its own unchanged database configuration.
+from backend.operations_api import router as operations_router
+app.include_router(operations_router)
 
 
 @app.get("/favicon.ico", include_in_schema=False)
@@ -170,7 +176,7 @@ async def chat(req: ChatRequest) -> StreamingResponse:
     raise HTTPException(410, "Legacy domain chat is retired; use shipment Intake and Explore.")
 
 
-@app.get("/samples")
+@app.get("/v1/samples")
 def samples() -> Response:
     """The open-case worklist the intake view runs from. Read live on every call, so a case
     resolved by a previous run has already dropped out by the time the list is re-fetched."""
@@ -179,7 +185,8 @@ def samples() -> Response:
 
 @app.get("/meta")
 def meta() -> dict:
-    return {"scope": "Shipment exception investigation and reviewed recommendations over a logistics knowledge graph"}
+    return {"scope": "Synthetic logistics operations — evidence, reviewed actions and verified outcomes",
+            "dataset": "V2", "synthetic": True, "triage_mode": "deterministic_evidence_rules"}
 
 
 # --- Agent: one complaint -> the live pipeline trace ---------------------------------------
@@ -230,7 +237,7 @@ async def _stream_complaint(text: str) -> AsyncIterator[str]:
         await worker
 
 
-@app.post("/complaint")
+@app.post("/v1/complaint")
 async def complaint(req: ComplaintRequest) -> StreamingResponse:
     return StreamingResponse(
         _stream_complaint(req.text),
@@ -264,7 +271,7 @@ async def translate_texts(req: TranslateRequest) -> dict:
 
 # --- Decisions: the case queue and whether the closed loop is working ----------------------
 
-@app.get("/cases")
+@app.get("/v1/cases")
 def cases_overview() -> Response:
     return _SafeJSON(cases.overview())
 
@@ -276,7 +283,7 @@ def registry_lookup(label: str, q: str | None = None) -> Response:
 
 # --- Explore: Graph and Schema lenses -------------------------------------------------------
 
-@app.get("/explore")
+@app.get("/v1/explore")
 def explore_shipments(
     filter: Literal["needs_attention", "all", "stalled", "critical", "delivered"] = "needs_attention",
     limit: int = Query(default=25, ge=1, le=explore.MAX_LIMIT),
@@ -285,7 +292,7 @@ def explore_shipments(
     return _SafeJSON(explore.overview(filter, limit))
 
 
-@app.get("/graph")
+@app.get("/v1/graph")
 def graph(shipment_id: str | None = Query(default=None, min_length=1, max_length=64)) -> Response:
     """A shipment's curated evidence, or the default attention shipment selection."""
     data = (explore.shipment_graph([shipment_id]) if shipment_id
@@ -293,7 +300,7 @@ def graph(shipment_id: str | None = Query(default=None, min_length=1, max_length
     return _SafeJSON(data)
 
 
-@app.get("/schema")
+@app.get("/v1/schema")
 def schema_view() -> dict:
     """The live shipment data model as a graph for the Schema view."""
     return query_runner.schema_graph()

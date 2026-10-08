@@ -88,14 +88,14 @@ class ShipmentExploreTests(unittest.TestCase):
         from backend.main import app
         from fastapi.testclient import TestClient
         client = TestClient(app)
-        self.assertEqual(client.get("/explore?filter=lost").status_code, 422)
-        self.assertEqual(client.get("/explore?limit=51").status_code, 422)
-        self.assertEqual(client.get("/explore?limit=0").status_code, 422)
-        self.assertEqual(client.get("/graph?shipment_id=").status_code, 422)
+        self.assertEqual(client.get("/v1/explore?filter=lost").status_code, 422)
+        self.assertEqual(client.get("/v1/explore?limit=51").status_code, 422)
+        self.assertEqual(client.get("/v1/explore?limit=0").status_code, 422)
+        self.assertEqual(client.get("/v1/graph?shipment_id=").status_code, 422)
         with patch.object(explore, "overview", return_value={"shipments": [], "counts": {"all": 0}, "graph": {"nodes": [], "relationships": []}}):
-            self.assertEqual(client.get("/explore").json()["shipments"], [])
+            self.assertEqual(client.get("/v1/explore").json()["shipments"], [])
         with patch.object(explore, "shipment_graph", return_value={"nodes": [], "relationships": []}) as graph:
-            self.assertEqual(client.get("/graph?shipment_id=unknown").status_code, 200)
+            self.assertEqual(client.get("/v1/graph?shipment_id=unknown").status_code, 200)
             graph.assert_called_once_with(["unknown"])
 
 

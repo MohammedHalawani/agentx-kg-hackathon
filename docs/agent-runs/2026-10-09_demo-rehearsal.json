@@ -1,0 +1,292 @@
+{
+  "checks": {
+    "afl_review_rejection_revised": true,
+    "automatic_sequential_worker": true,
+    "bounded_explore": true,
+    "concurrent_requests_distinct_claims": true,
+    "heldout_withheld": true,
+    "invalid_limit_refused": true,
+    "notifications_dry_run": true,
+    "single_resolution_audit": true,
+    "stable_cursor_no_duplicate": true,
+    "unauthorized_control_refused": true
+  },
+  "decisions": {
+    "as_of": "2026-09-11T14:01:00+00:00",
+    "development": {
+      "case_counts": {
+        "AWAITING_APPROVAL": 4,
+        "HUMAN_REVIEW": 2,
+        "OPEN": 24,
+        "RESOLVED": 1
+      },
+      "denominator": "verified non-invalidated observed outcomes only",
+      "failed": 0,
+      "outcome_count": 1,
+      "pending_outcome_count": 0,
+      "succeeded": 1,
+      "verified_outcome_count": 1,
+      "verified_success_rate": 1.0
+    },
+    "history": {
+      "denominator": "verified non-invalidated observed outcomes only",
+      "failed": 0,
+      "succeeded": 80,
+      "verified_outcome_count": 80,
+      "verified_success_rate": 1.0
+    },
+    "limitations": [
+      "Synthetic fixture outcomes are not measured model performance.",
+      "Healthy shipments without outcome records are excluded from outcome-rate denominators."
+    ],
+    "synthetic": true
+  },
+  "final_status": {
+    "as_of": "2026-09-11T14:01:00+00:00",
+    "demo": true,
+    "notifications": {
+      "external_calls": 0,
+      "mode": "dry_run"
+    },
+    "simulator": {
+      "cursor": {
+        "id": "DEMO-CASE-dfc38f4ab0883705ab5c80e8",
+        "time": "2026-09-11T14:01:00+00:00"
+      },
+      "end_at": "2026-10-21T00:00:00+00:00",
+      "event_count": 4211,
+      "replay_mode": "timeline",
+      "speed": 1,
+      "state": "paused"
+    },
+    "synthetic": true,
+    "worker": {
+      "active_case_id": null,
+      "concurrency": 1,
+      "processed_count": 7,
+      "state": "paused"
+    }
+  },
+  "provider_calls": 0,
+  "status": "PASS",
+  "stories": {
+    "address": {
+      "case_id": "DEMO-OPS-CASE-7495be0eb8ce5933723a5cc9",
+      "codes": [
+        "ADDRESS_CONFLICT",
+        "MISSED_MILESTONE"
+      ],
+      "custody": [
+        {
+          "conflicting": false,
+          "gap_event_ids": [],
+          "last_corroborated_event_id": "DEMO-SHP-001727-CUST-01-09",
+          "last_corroborated_holder_id": "DEMO-DEPOT-JED-01",
+          "package_id": "DEMO-SHP-001727-PKG-01",
+          "parcel_location_from_gps": null
+        }
+      ],
+      "delivery_assessment": [
+        {
+          "alternatives": [],
+          "assessment": "NO_DELIVERY_PROOF",
+          "package_id": "DEMO-SHP-001727-PKG-01",
+          "proofs": [],
+          "recipient_report_ids": []
+        }
+      ],
+      "lost": false,
+      "next_session_priority": true,
+      "requires_human_review": false,
+      "shipment_id": "DEMO-SHP-001727",
+      "workflow_state": "AWAITING_APPROVAL"
+    },
+    "afl": {
+      "case_id": "DEMO-OPS-CASE-b316dff7706924024a1a11d8",
+      "shipment_id": "DEMO-SHP-000762",
+      "trace": [
+        {
+          "iteration": 0,
+          "mode": "explicit_deterministic_rejection_fixture",
+          "proposal": {
+            "action": "Certify parcel delivery from vehicle GPS.",
+            "action_code": "MARK_DELIVERED_FROM_GPS",
+            "evidence_ids": [],
+            "requires_approval": false,
+            "resolves": true
+          },
+          "review": {
+            "feedback": "Vehicle GPS cannot establish parcel delivery. Revise to an evidence-bound investigation action.",
+            "verdict": "reject"
+          }
+        },
+        {
+          "feedback_received": "Vehicle GPS cannot establish parcel delivery. Revise to an evidence-bound investigation action.",
+          "iteration": 1,
+          "mode": "deterministic_evidence_guard",
+          "proposal": {
+            "action": "Check the observed journey against contextual milestone deadlines.",
+            "action_ar": "قارن الرحلة المرصودة بمواعيد المعالم المتوقعة ضمن سياق الخدمة.",
+            "action_code": "JOURNEY_DELAY",
+            "action_en": "Check the observed journey against contextual milestone deadlines.",
+            "code": "JOURNEY_DELAY",
+            "evidence_ids": [
+              "DEMO-SHP-000762-CUST-01-04",
+              "DEMO-SHP-000762-CUST-01-05",
+              "DEMO-SHP-000762-CUST-01-06",
+              "DEMO-SHP-000762-EM-01-04",
+              "DEMO-SHP-000762-EM-01-05",
+              "DEMO-SHP-000762-EM-01-06"
+            ],
+            "requires_approval": true,
+            "resolves": false,
+            "status": "PROPOSED"
+          },
+          "review": {
+            "feedback": "Bound evidence supports this investigation proposal; operator approval and an independent verified outcome remain required.",
+            "verdict": "accept"
+          }
+        }
+      ],
+      "workflow_state": "AWAITING_APPROVAL"
+    },
+    "custody": {
+      "case_id": "DEMO-OPS-CASE-8c0359765f025e62b3fa69d2",
+      "codes": [
+        "MISSED_MILESTONE",
+        "UNRECONCILED_CUSTODY"
+      ],
+      "custody": [
+        {
+          "conflicting": false,
+          "gap_event_ids": [],
+          "last_corroborated_event_id": "DEMO-SHP-000044-CUST-01-05",
+          "last_corroborated_holder_id": "DEMO-VEH-LMV-HOF-0007",
+          "package_id": "DEMO-SHP-000044-PKG-01",
+          "parcel_location_from_gps": null
+        }
+      ],
+      "delivery_assessment": [
+        {
+          "alternatives": [],
+          "assessment": "NO_DELIVERY_PROOF",
+          "package_id": "DEMO-SHP-000044-PKG-01",
+          "proofs": [],
+          "recipient_report_ids": []
+        }
+      ],
+      "lost": false,
+      "next_session_priority": false,
+      "requires_human_review": true,
+      "shipment_id": "DEMO-SHP-000044",
+      "workflow_state": "HUMAN_REVIEW"
+    },
+    "dispute": {
+      "case_id": "DEMO-OPS-CASE-a918c8903f85e01730c0df56",
+      "codes": [
+        "DELIVERY_DISPUTE"
+      ],
+      "custody": [
+        {
+          "conflicting": false,
+          "gap_event_ids": [],
+          "last_corroborated_event_id": "DEMO-SHP-001241-CUST-01-09",
+          "last_corroborated_holder_id": "DEMO-SHP-001241-RECIPIENT",
+          "package_id": "DEMO-SHP-001241-PKG-01",
+          "parcel_location_from_gps": null
+        }
+      ],
+      "delivery_assessment": [
+        {
+          "alternatives": [
+            "possible_misdelivery",
+            "conflicting_evidence",
+            "insufficient_evidence",
+            "human_review"
+          ],
+          "assessment": "CONFLICTING_EVIDENCE",
+          "package_id": "DEMO-SHP-001241-PKG-01",
+          "proofs": [
+            {
+              "corroborated": true,
+              "evidence_ids": [
+                "DEMO-SHP-001241-ATT-01-1",
+                "DEMO-SHP-001241-AUTH-01",
+                "DEMO-SHP-001241-HANDOFF-EV-01",
+                "DEMO-SHP-001241-PHOTO-01",
+                "DEMO-SHP-001241-PROOF-01",
+                "DEMO-SHP-001241-SIGN-01"
+              ],
+              "proof_id": "DEMO-SHP-001241-PROOF-01",
+              "reasons": [],
+              "synthetic": true
+            }
+          ],
+          "recipient_report_ids": [
+            "DEMO-SHP-001241-REPORT-01"
+          ]
+        }
+      ],
+      "lost": false,
+      "next_session_priority": false,
+      "requires_human_review": true,
+      "shipment_id": "DEMO-SHP-001241",
+      "workflow_state": "HUMAN_REVIEW"
+    },
+    "traffic": {
+      "case_id": "DEMO-OPS-CASE-0cf483b96684b08a5ba81697",
+      "codes": [
+        "MISSED_MILESTONE",
+        "TRAFFIC_DELAY"
+      ],
+      "custody": [
+        {
+          "conflicting": false,
+          "gap_event_ids": [],
+          "last_corroborated_event_id": "DEMO-SHP-000126-CUST-01-09",
+          "last_corroborated_holder_id": "DEMO-DEPOT-HOF-01",
+          "package_id": "DEMO-SHP-000126-PKG-01",
+          "parcel_location_from_gps": null
+        },
+        {
+          "conflicting": false,
+          "gap_event_ids": [],
+          "last_corroborated_event_id": "DEMO-SHP-000126-CUST-02-09",
+          "last_corroborated_holder_id": "DEMO-DEPOT-HOF-01",
+          "package_id": "DEMO-SHP-000126-PKG-02",
+          "parcel_location_from_gps": null
+        }
+      ],
+      "delivery_assessment": [
+        {
+          "alternatives": [],
+          "assessment": "NO_DELIVERY_PROOF",
+          "package_id": "DEMO-SHP-000126-PKG-01",
+          "proofs": [],
+          "recipient_report_ids": []
+        },
+        {
+          "alternatives": [],
+          "assessment": "NO_DELIVERY_PROOF",
+          "package_id": "DEMO-SHP-000126-PKG-02",
+          "proofs": [],
+          "recipient_report_ids": []
+        }
+      ],
+      "lost": false,
+      "next_session_priority": true,
+      "requires_human_review": false,
+      "shipment_id": "DEMO-SHP-000126",
+      "workflow_state": "AWAITING_APPROVAL"
+    },
+    "verified_delivery": {
+      "case_id": "DEMO-OPS-CASE-b316dff7706924024a1a11d8",
+      "outcome_id": "DEMO-OPS-OUTCOME-845128f8df9a6911a5b2b148",
+      "proof_after_operator_action": true,
+      "shipment_id": "DEMO-SHP-000762",
+      "verification_status": "VERIFIED",
+      "workflow_state": "RESOLVED"
+    }
+  },
+  "synthetic": true
+}
