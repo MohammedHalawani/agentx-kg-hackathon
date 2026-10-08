@@ -1,4 +1,4 @@
-import { Compass, GitBranch, Inbox } from 'lucide-react'
+import { ClipboardList, Compass, GitBranch, Inbox } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -18,6 +18,7 @@ const NAV: { key: ViewKey; labelKey: string; icon: typeof Inbox }[] = [
   { key: 'intake', labelKey: 'nav.intake', icon: Inbox },
   { key: 'decisions', labelKey: 'nav.decisions', icon: GitBranch },
   { key: 'explore', labelKey: 'nav.explore', icon: Compass },
+  { key: 'audit', labelKey: 'nav.audit', icon: ClipboardList },
 ]
 
 export function AppSidebar({

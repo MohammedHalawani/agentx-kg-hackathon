@@ -1,4 +1,5 @@
 import type { GraphNode, GraphRel } from './contract'
+import type { CaseWorkflowState } from '@/contracts/operations'
 
 // Mirrors the payloads chat/llm/pipeline/graph.py's stream_complaint() emits over SSE.
 // The vocabulary (lane, arabic, is_agent) comes from that file's STAGE_META, which in turn
@@ -76,6 +77,7 @@ export interface CaseFile {
 }
 
 export interface FinalResult {
+  workflow_state?: CaseWorkflowState
 
   disposition: 'execute' | 'escalate' | null
   resolution_id: string | null

@@ -1,11 +1,13 @@
 import { useLanguage } from '@/components/i18n/LanguageProvider'
 import { shipmentVisualState, type ExploreShipment } from '../../types/explore'
 import { SHIPMENT_STATE_STYLE } from '../../lib/shipmentStyles'
+import { OperationalStatusBadge } from '@/components/operations/StatusBadge'
 
 export function ShipmentStatus({ shipment }: { shipment: ExploreShipment }) {
-  const { t } = useLanguage()
+  const { t, rootCauseLabel } = useLanguage()
   const state = shipmentVisualState(shipment)
   const { Icon, className } = SHIPMENT_STATE_STYLE[state]
+  if (shipment.operational_status) return <span className="inline-flex flex-wrap items-center gap-1.5"><OperationalStatusBadge status={shipment.operational_status} /><span className="text-xs text-muted-foreground" dir="auto">{t(`explore.statuses.${shipment.status}`) === `explore.statuses.${shipment.status}` ? shipment.status : t(`explore.statuses.${shipment.status}`)}</span>{shipment.operational_status === 'NEEDS_ATTENTION' && <span className="text-xs" dir="auto">{shipment.root_causes.map(rootCauseLabel).join(' · ')}</span>}</span>
   return <span className="inline-flex items-center gap-1.5 text-xs"><Icon size={14} className={className} aria-hidden="true" />{t(`explore.states.${state}`)} <span dir="auto" className="text-muted-foreground">({t(`explore.statuses.${shipment.status}`) === `explore.statuses.${shipment.status}` ? shipment.status : t(`explore.statuses.${shipment.status}`)})</span></span>
 }
 

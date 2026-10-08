@@ -65,7 +65,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     (rawKey: string) => {
       const escalated = rawKey.startsWith('escalation:')
       const base = escalated ? rawKey.slice('escalation:'.length) : rawKey
-      const normalized = base.replace(/_/g, ' ')
+      const normalized = base.replace(/_/g, ' ').toLowerCase()
       const translated =
         messages[language].rootCauses[normalized as keyof typeof messages.en.rootCauses]
       const display = translated ?? normalized

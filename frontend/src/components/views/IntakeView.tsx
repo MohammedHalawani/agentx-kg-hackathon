@@ -1,37 +1,32 @@
-import { useEffect } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
-import { ArrowUpRight, CheckCircle2, Loader2, Play, RotateCcw, Square } from 'lucide-react'
+import { useCursorPage } from '@/hooks/useCursorPage'
+import { useEffect, useState } from 'react'
+import { motion } from 'motion/react'
+import { ArrowUpRight, CheckCircle2, RotateCcw, Square } from 'lucide-react'
 import { useComplaintStream } from '../../hooks/useComplaintStream'
-import { useFetch } from '../../hooks/useFetch'
+import { useOperationsPage } from '@/hooks/useOperationsPage'
 import { useLanguage } from '@/components/i18n/LanguageProvider'
-import { Skeleton } from '../ui/skeleton'
-import { AflDivider, StageCard } from '../agent/StageCard'
-import { CaseFile } from '../agent/CaseFile'
+import { useOperationsControl, type WorkerStatus, type SimulationStatus, type SimulationSpeed, type ReplayMode } from '@/hooks/useQueueSimulation'
+import {
+  activeWorkflowState,
+} from '@/adapters/v1SamplesAdapter'
+import { adaptCase, adaptBuckets, dateBounds, pageQuery, type ApiCase } from '@/adapters/operationsApi'
+import type { IntakeFilters, OperationsCase } from '@/contracts/operations'
+import { CaseList } from '@/components/operations/CaseList'
+import { QueueCounter } from '@/components/operations/QueueCounter'
+import { FilterBar, FilterField } from '@/components/operations/FilterBar'
+import { SearchInput } from '@/components/operations/SearchInput'
+import { DateRangeSelector } from '@/components/operations/DateRangeSelector'
+import { CursorPagination } from '@/components/operations/Pagination'
+import { LoadingState } from '@/components/operations/LoadingState'
+import { ErrorState } from '@/components/operations/ErrorState'
+import { OperationsCaseDetail } from '@/components/intake/OperationsCaseDetail'
+import { CaseWorkspace } from '@/components/intake/CaseWorkspace'
+import { ProcessQueuePanel } from '@/components/intake/ProcessQueuePanel'
+import { SimulationPanel } from '@/components/intake/SimulationPanel'
 import { cn } from '../../lib/cn'
-import type { Stage } from '../../types/agent'
+import { operationalLabelKey } from '@/lib/operationalStates'
 import type { ExploreShipment } from '../../types/explore'
 import { ExploreShipmentCard } from './ExploreShipmentCard'
-import { Graph } from '../artifacts/Graph'
-import type { SubGraph } from '../../types/contract'
-
-function SelectedCase({ shipment, unresolvedCase, onRun }: { shipment: ExploreShipment; unresolvedCase?: OpenCase; onRun: (text: string) => void }) {
-  const { t } = useLanguage()
-  const { data, loading, error } = useFetch<SubGraph>(`/graph?shipment_id=${encodeURIComponent(shipment.shipment_id)}`)
-  return <div className="mb-5 space-y-3">
-    <ExploreShipmentCard shipment={shipment} onOpenCase={unresolvedCase ? () => onRun(unresolvedCase.text) : undefined} actionLabel={t('explore.analyzeCase')} />
-    <p className="text-xs text-muted-foreground">{t(unresolvedCase ? 'explore.runExplanation' : 'explore.evidenceOnly')}</p>
-    <div className="h-80 overflow-hidden rounded-xl border border-border" dir="ltr">{loading ? <p role="status" className="p-4">{t('explore.loading')}</p> : error ? <p role="alert" className="p-4">{t('explore.error')}</p> : data?.nodes.length ? <Graph graph={data} /> : <p className="p-4">{t('explore.noGraphData')}</p>}</div>
-  </div>
-}
-
-interface OpenCase {
-  failure_id: string
-  shipment_id: string
-  category: string
-  city?: string
-  courier?: string
-  text: string
-}
 
 function Outcome({
   disposition,
@@ -54,7 +49,7 @@ function Outcome({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        'ms-[116px] flex items-start gap-3 rounded-xl border p-3',
+        'mt-4 flex items-start gap-3 rounded-xl border p-3',
         executed ? 'border-chart-good/40 bg-chart-good/5' : 'border-chart-warning/40 bg-chart-warning/5',
       )}
     >
@@ -81,126 +76,191 @@ function Outcome({
   )
 }
 
-function renderTrace(stages: Stage[]) {
-  const out = []
-  for (let i = 0; i < stages.length; i++) {
-    const s = stages[i]
-    out.push(<StageCard key={`${s.stage}-${s.loop}-${i}`} stage={s} index={i} />)
-    const isRejectedReview = s.stage === 'review' && s.verdict === 'reject'
-    const nextIsRetry = stages[i + 1] && stages[i + 1].stage === 'classify'
-    if (isRejectedReview && nextIsRetry) out.push(<AflDivider key={`afl-${i}`} reason={s.detail?.reason} />)
-  }
-  return out
+const DEFAULT_FILTERS: IntakeFilters = {
+  search: '',
+  timePreset: 'all',
+  priority: 'all',
+  city: 'all',
+  status: 'all',
+  cause: 'all',
 }
 
-export function IntakeView({ selectedShipment }: { selectedShipment?: ExploreShipment | null }) {
-  const { stages, final, caseFile, busy, error, complaint, run, stop, reset } = useComplaintStream()
-  const { data, loading, refetch } = useFetch<{ cases: OpenCase[] }>('/samples')
-  const { t, rootCauseLabel, isArabic } = useLanguage()
-  const openCases = data?.cases ?? []
+export function IntakeView({ selectedShipment, onClearShipment }: { selectedShipment?: ExploreShipment | null; onClearShipment?: () => void }) {
+  const { stages, final, caseFile, busy, error, complaint, stop, reset } = useComplaintStream()
+  const { t, isArabic, rootCauseLabel } = useLanguage()
+  const worker = useOperationsControl<WorkerStatus>('worker')
+  const simulation = useOperationsControl<SimulationStatus>('simulation')
+  const [filters, setFilters] = useState<IntakeFilters>(DEFAULT_FILTERS)
+  const [operationalStatus, setOperationalStatus] = useState('all')
+  const [limit, setLimit] = useState(25)
+  const pager = useCursorPage()
+  const cursor = pager.cursor
+  const cursorStart = pager.offset
+  const [selectedCase, setSelectedCase] = useState<OperationsCase | null>(null)
+  const [snapshot, setSnapshot] = useState<string | undefined>()
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
+  const query = pageQuery({ search: filters.search, priority: filters.priority, city: filters.city, workflow_state: filters.status, operational_status: operationalStatus, cause: filters.cause, limit, cursor, ...dateBounds(filters.timePreset, snapshot, from, to) })
+  const { data, loading, error: queueError, refetch } = useOperationsPage<ApiCase>(`/cases/queue?${query}`)
+  const page = { items: (data?.items ?? []).map(adaptCase), total: data?.filtered_total ?? 0, nextCursor: data?.next_cursor ?? null, prevCursor: data?.previous_cursor ?? null }
+  const cities = data?.metadata?.filter_choices?.city ?? data?.metadata?.filter_choices?.cities ?? []
+  const causes = data?.metadata?.filter_choices?.cause ?? data?.metadata?.filter_choices?.causes ?? []
+  const [speed, setSpeed] = useState<SimulationSpeed>(1)
+  const [replayMode, setReplayMode] = useState<ReplayMode>('timeline')
+  const workerRunning = worker.data?.worker?.state?.toLowerCase() === 'running'
+  const simulationRunning = simulation.data?.simulator?.state?.toLowerCase() === 'running'
+
+  const workflowState = final?.workflow_state ?? activeWorkflowState('OPEN', {
+    busy,
+    hasRecommendation: stages.some((s) => s.stage === 'recommend'),
+    hasReview: stages.some((s) => s.stage === 'review'),
+    finalDisposition: final?.disposition ?? null,
+  })
 
   useEffect(() => {
     if (final) refetch()
   }, [final, refetch])
+  useEffect(() => {
+    if (!cursor) refetch()
+  }, [worker.data?.worker?.processed_count, simulation.data?.as_of, cursor, refetch])
 
   const started = stages.length > 0 || busy || Boolean(error)
 
+  const runCase = (caseRow: OperationsCase) => {
+    setSelectedCase(caseRow)
+  }
+
   return (
     <div className="flex h-full flex-col">
-      <div className={cn('min-h-0 flex-1 px-6 py-5', started ? 'overflow-hidden' : 'overflow-y-auto')}>
-        {/* Arabic flips these text columns, not the app frame. Alignment alone cannot fix
-            a row like the title (heading + count) or a case card's metadata line: those are
-            flex items, and only direction decides which end they start from. */}
-        {!started ? (
-          <div className="mx-auto max-w-3xl" dir={isArabic ? 'rtl' : undefined}>
-            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <h2 className="font-display text-xl font-bold text-ink">{t('intake.title')}</h2>
-              <span className="text-sm text-muted-foreground">
-                {loading
-                  ? t('intake.loading')
-                  : t('intake.awaiting', { count: openCases.length })}
-              </span>
-            </div>
-            <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">{t('intake.description')}</p>
-            {selectedShipment && <SelectedCase shipment={selectedShipment} unresolvedCase={openCases.find(c => c.shipment_id === selectedShipment.shipment_id)} onRun={run} />}
+      <div className={cn('min-h-0 flex-1 px-4 py-4 sm:px-6 sm:py-5', started ? 'overflow-hidden' : 'overflow-y-auto')}>
+        {selectedCase || selectedShipment ? <OperationsCaseDetail caseId={selectedCase?.caseId ?? selectedShipment?.case_id ?? undefined} shipmentId={selectedCase?.shipmentId ?? selectedShipment!.shipment_id} onBack={() => { setSelectedCase(null); onClearShipment?.(); refetch() }} /> : !started ? (
+          <div className="mx-auto max-w-5xl space-y-4" dir={isArabic ? 'rtl' : undefined}>
+            <header>
+              <h2 className="font-display text-xl font-bold text-ink">{t('ops.intake.title')}</h2>
+              <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{t('ops.intake.subtitle')}</p>
+            </header>
 
-            <div className="mt-5 space-y-2">
-              {loading && Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)}
+            {data && <section aria-label={t('ops.queue.title')}>
+              <h3 className="mb-2 text-sm font-semibold">{t('ops.queue.needsAttention')}</h3>
+              <QueueCounter
+                counts={adaptBuckets(data?.metadata?.buckets)}
+              />
+            </section>}
 
-              {!loading && openCases.length === 0 && (
-                <div className="rounded-xl border border-hairline bg-panel px-4 py-8 text-center">
-                  <p className="text-sm font-medium text-ink">{t('intake.emptyTitle')}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{t('intake.emptyDescription')}</p>
-                </div>
-              )}
-
-              {openCases.map((c) => (
-                <button
-                  key={c.failure_id}
-                  onClick={() => run(c.text)}
-                  className="group flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-start transition-colors hover:border-primary/35 hover:bg-accent hover:text-accent-foreground"
+            <FilterBar>
+              <FilterField label={t('ops.filters.operational_status')}><select value={operationalStatus} onChange={e => { setOperationalStatus(e.target.value); pager.reset() }} className="rounded-md border border-border bg-card p-1.5"><option value="all">{t('ops.filters.all')}</option>{(data?.metadata?.filter_choices?.operational_status ?? []).map(status => <option key={status} value={status}>{t(operationalLabelKey(status))}</option>)}</select></FilterField>
+              <SearchInput
+                value={filters.search}
+                onChange={(search) => { setFilters((f) => ({ ...f, search })); pager.reset() }}
+                placeholder={t('ops.intake.search')}
+              />
+              <FilterField label={t('ops.filters.priority')}>
+                <select
+                  value={filters.priority}
+                  onChange={(e) => { setFilters((f) => ({ ...f, priority: e.target.value as IntakeFilters['priority'] })); pager.reset() }}
+                  className="rounded-md border border-border bg-card px-2 py-1.5 text-sm"
                 >
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm text-ink group-hover:text-accent-foreground" dir="auto">
-                      {c.text}
-                    </span>
-                    {/* The one row in the card that text-align cannot reach: these are flex
-                        items, so their order comes from direction, not from alignment. In
-                        Arabic it reads right-to-left with the complaint above it; the id keeps
-                        its own dir="ltr" so SHP-0270 is never reordered internally. */}
-                    <span
-                      className="mt-0.5 flex flex-wrap gap-x-2 text-[11px] text-muted-foreground group-hover:text-accent-foreground/80"
-                    >
-                      <span className="font-mono" dir="ltr">
-                        {c.shipment_id}
-                      </span>
-                      <span>{rootCauseLabel(c.category)}</span>
-                      {c.city && <span dir="auto">{c.city}</span>}
-                      {c.courier && <span dir="auto">{c.courier}</span>}
-                    </span>
-                  </span>
-                  <Play size={14} className="shrink-0 text-muted-foreground" />
-                </button>
-              ))}
-            </div>
+                  <option value="all">{t('ops.filters.all')}</option>
+                  <option value="high">{t('ops.priority.high')}</option>
+                  <option value="medium">{t('ops.priority.medium')}</option>
+                  <option value="low">{t('ops.priority.low')}</option>
+                </select>
+              </FilterField>
+              <FilterField label={t('ops.filters.city')}>
+                <select
+                  value={filters.city}
+                  onChange={(e) => { setFilters((f) => ({ ...f, city: e.target.value })); pager.reset() }}
+                  className="rounded-md border border-border bg-card px-2 py-1.5 text-sm"
+                >
+                  <option value="all">{t('ops.filters.all')}</option>
+                  {cities.map((city) => <option key={city} value={city}>{city}</option>)}
+                </select>
+              </FilterField>
+              <FilterField label={t('ops.filters.cause')}>
+                <select
+                  value={filters.cause}
+                  onChange={(e) => { setFilters((f) => ({ ...f, cause: e.target.value })); pager.reset() }}
+                  className="rounded-md border border-border bg-card px-2 py-1.5 text-sm"
+                >
+                  <option value="all">{t('ops.filters.all')}</option>
+                  {causes.map((cause) => <option key={cause} value={cause}>{rootCauseLabel(cause)}</option>)}
+                </select>
+              </FilterField>
+              <FilterField label={t('ops.filters.workflow')}><select value={filters.status} onChange={e => { setFilters(f => ({ ...f, status: e.target.value as IntakeFilters['status'] })); pager.reset() }} className="rounded-md border border-border bg-card p-1.5"><option value="all">{t('ops.filters.all')}</option>{(data?.metadata?.filter_choices?.workflow_state ?? Object.keys(data?.metadata?.buckets ?? {})).map(s => <option key={s} value={s}>{t(`ops.states.${s}`)}</option>)}</select></FilterField>
+            </FilterBar>
+            <DateRangeSelector
+              value={filters.timePreset}
+              onChange={(timePreset) => { setFilters((f) => ({ ...f, timePreset })); setSnapshot(data?.metadata?.as_of); pager.reset() }}
+            />
+            {filters.timePreset === 'custom' && <div className="flex flex-wrap gap-2"><label>{t('ops.filters.from')} <input type="date" value={from} onChange={e => { setFrom(e.target.value); pager.reset() }} /></label><label>{t('ops.filters.to')} <input type="date" value={to} onChange={e => { setTo(e.target.value); pager.reset() }} /></label></div>}
+
+            {selectedShipment && (
+              <ExploreShipmentCard shipment={selectedShipment} onOpenCase={() => undefined} actionLabel={t('explore.analyzeCase')} />
+            )}
+
+            {worker.data && <ProcessQueuePanel
+              running={workerRunning}
+              onToggle={() => void worker.command(workerRunning ? 'pause' : 'start')}
+              disabled={worker.pending || !worker.data || Boolean(worker.error)}
+              onStep={() => void worker.command('tick')}
+              concurrency={1}
+              processingId={worker.data?.worker?.active_case_id ?? null}
+              queueDepth={page.total}
+              needsReview={adaptBuckets(data?.metadata?.buckets).needsReview}
+            />}
+            {worker.error && <ErrorState onRetry={worker.refetch} />}
+            {worker.loading && !worker.data && <LoadingState label={t('ops.loading')} />}
+
+            {simulation.data && <SimulationPanel
+              running={simulationRunning}
+              onRunningChange={(v) => void simulation.command(v ? 'start' : 'pause', v ? { speed, replay_mode: replayMode } : {})}
+              speed={simulationRunning ? simulation.data!.simulator.speed : speed}
+              onSpeedChange={(v) => { setSpeed(v); if (simulationRunning) void simulation.command('start', { speed: v, replay_mode: simulation.data?.simulator.replay_mode ?? replayMode }) }}
+              replayMode={simulationRunning ? simulation.data?.simulator.replay_mode ?? replayMode : replayMode}
+              onReplayModeChange={v => { setReplayMode(v); if (simulationRunning) void simulation.command('start', { speed: simulation.data?.simulator.speed ?? speed, replay_mode: v }) }}
+              events={[]}
+              disabled={simulation.pending || !simulation.data || Boolean(simulation.error)}
+              eventCount={simulation.data?.simulator?.event_count}
+              asOf={simulation.data?.as_of}
+              onStep={() => void simulation.command('tick', { seconds: 60 })}
+            />}
+            {simulation.error && <ErrorState onRetry={simulation.refetch} />}
+            {simulation.loading && !simulation.data && <LoadingState label={t('ops.loading')} />}
+
+            {loading ? (
+              <LoadingState label={t('intake.loading')} />
+            ) : queueError ? <ErrorState onRetry={refetch} /> : (
+              <>
+                <CaseList
+                  cases={page.items}
+                  onSelect={runCase}
+                  emptyTitle={t('intake.emptyTitle')}
+                  emptyDescription={t('intake.emptyDescription')}
+                />
+                <CursorPagination
+                  total={page.total}
+                  limit={limit}
+                  cursorStart={cursorStart}
+                  nextCursor={page.nextCursor}
+                  prevCursor={pager.hasPrevious ? 'visited-page' : null}
+                  onNext={() => pager.next(page.nextCursor, limit)}
+                  onPrev={() => pager.previous(limit)}
+                  onLimitChange={(n) => { setLimit(n); pager.reset() }}
+                />
+              </>
+            )}
           </div>
         ) : (
-          <div className="mx-auto flex h-full max-w-[1600px] flex-col gap-4 lg:flex-row">
-            {/* The trace flips with the language too. The case-file pane beside it does not:
-                it holds the graph and a Leaflet map, which position their own controls. */}
-            <div className="min-h-0 flex-1 overflow-y-auto lg:max-w-3xl" dir={isArabic ? 'rtl' : undefined}>
-              {complaint && (
-                <div className="mb-5 rounded-xl border border-hairline bg-panel p-3">
-                  <p className="mb-1 text-[11px] font-medium text-muted-foreground">{t('intake.complaint')}</p>
-                  <p className="text-sm text-ink" dir="auto">
-                    {complaint}
-                  </p>
-                </div>
-              )}
-
-              <ul className="relative">{renderTrace(stages)}</ul>
-
-              <AnimatePresence>
-                {busy && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="ms-[116px] flex items-center gap-2 py-2 text-xs text-muted-foreground"
-                  >
-                    <Loader2 size={13} className="animate-spin" />
-                    {stages.length === 0 ? t('intake.starting') : t('intake.working')}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {error && (
-                <div className="ms-[116px] rounded-lg border border-danger/40 bg-danger/5 px-3 py-2 text-xs text-danger">
-                  {error}
-                </div>
-              )}
-
-              {final?.disposition && (
+          <CaseWorkspace
+            workflowState={workflowState}
+            complaint={complaint}
+            stages={stages}
+            final={final}
+            caseFile={caseFile}
+            busy={busy}
+            error={error}
+            outcome={
+              final?.disposition ? (
                 <Outcome
                   disposition={final.disposition}
                   resolutionId={final.resolution_id}
@@ -208,15 +268,9 @@ export function IntakeView({ selectedShipment }: { selectedShipment?: ExploreShi
                   accepted={final.review?.verdict === 'accept'}
                   reviewed={Boolean(final.review)}
                 />
-              )}
-            </div>
-
-            {caseFile && (
-              <div className="min-h-[520px] flex-1 lg:min-h-0 lg:max-w-[640px]">
-                <CaseFile data={caseFile} />
-              </div>
-            )}
-          </div>
+              ) : null
+            }
+          />
         )}
       </div>
 
