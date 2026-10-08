@@ -100,7 +100,7 @@ def _prompt(state: PipelineState, cases: list[dict], success_rates: dict, findin
 def recommend(state: PipelineState) -> Recommendation:
     """Propose an action for the classified root cause, grounded in precedent and filtered
     through the business rules."""
-    cases = second_retrieval(state)
+    cases = [c for c in second_retrieval(state) if type(c.get("success")) is bool]
     local = (state.get("context") or {}).get("local_subgraph") or {}
     findings = rules.evaluate(local, cases)
     success_rates = rules.action_success_rate(cases)

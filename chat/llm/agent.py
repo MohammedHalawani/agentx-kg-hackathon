@@ -13,7 +13,7 @@ from functools import lru_cache
 from time import perf_counter
 
 from langchain_core.callbacks import BaseCallbackHandler, UsageMetadataCallbackHandler
-from langchain_core.messages import AIMessage, AIMessageChunk, HumanMessage, ToolMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langchain_core.messages.utils import count_tokens_approximately, trim_messages
 from langchain_core.tools import tool
 from langchain_litellm import ChatLiteLLM
@@ -21,6 +21,7 @@ from langgraph.prebuilt import create_react_agent
 
 import config
 from core import csv_data, query_runner
+from llm.pipeline._llm import message_text
 
 _SYSTEM = (
     "You answer questions about a steering-committee governance graph (mandates, tracks, "
@@ -143,7 +144,9 @@ def _this_turn(messages: list) -> list:
 
 def _answer_of(turn: list) -> str:
     return next(
-        (m.content for m in reversed(turn) if isinstance(m, AIMessage) and m.content),
+        (text for m in reversed(turn)
+         if isinstance(m, AIMessage) and not getattr(m, "tool_calls", None)
+         and (text := message_text(m.content))),
         "I couldn't find an answer.",
     )
 
@@ -178,34 +181,21 @@ def _step_of(tool_call: dict) -> dict:
     return {"tool": name, "label": _TOOL_STEPS.get(name, name), "detail": " · ".join(parts)}
 
 
-def _reasoning_delta(msg) -> str:
-    extra = getattr(msg, "additional_kwargs", None) or {}
-    rc = extra.get("reasoning_content") or extra.get("reasoning")
-    return rc if isinstance(rc, str) else ""
-
-
 def stream_agent(question: str, history: list[tuple[str, str]] | None = None):
-    """Generator: yields ('step', {...}) as the agent calls each tool, ('token', str) for
-    the answer as the model writes it, then ('artifact', extras) at the end."""
+    """Stream tool progress, then the normalized final assistant answer and artifact.
+
+    Provider deltas may split private tags across tokens. Buffering until the completed
+    assistant message is available prevents private text reaching SSE before normalization.
+    """
     timer, usage = _LLMTimer(), UsageMetadataCallbackHandler()
     t0 = perf_counter()
-    final_state, streamed = None, ""
+    final_state = None
     for mode, chunk in _agent().stream(
         {"messages": _prior(history) + [HumanMessage(question)]},
         config={"callbacks": [timer, usage]},
-        stream_mode=["messages", "updates", "values"],
+        stream_mode=["updates", "values"],
     ):
-        if mode == "messages":
-            msg, meta = chunk
-            if meta.get("langgraph_node") == "agent" and isinstance(msg, AIMessageChunk):
-                reasoning = _reasoning_delta(msg)
-                if reasoning:
-                    yield ("reasoning", reasoning)
-                text = msg.content if isinstance(msg.content, str) else ""
-                if text:
-                    streamed += text
-                    yield ("token", text)
-        elif mode == "updates":
+        if mode == "updates":
             for node, update in (chunk or {}).items():
                 if node != "agent" or not isinstance(update, dict):
                     continue
@@ -216,8 +206,7 @@ def stream_agent(question: str, history: list[tuple[str, str]] | None = None):
             final_state = chunk
     total_ms = round((perf_counter() - t0) * 1000)
     turn = _this_turn(final_state["messages"]) if final_state else []
-    if not streamed:
-        yield ("token", _answer_of(turn))
+    yield ("token", _answer_of(turn))
     yield ("artifact", _finalize(turn, timer, usage, total_ms))
 
 

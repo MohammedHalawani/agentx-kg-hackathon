@@ -43,7 +43,7 @@ def schema_graph() -> dict:
     """The data model as a graph (labels + relationship types) for the Schema view - reads
     Neo4j's own live schema, not docs/schema.yaml, so it can never drift from the real DB."""
     records, _, _ = get_driver().execute_query(
-        SCHEMA_CYPHER, routing_=RoutingControl.READ, database_=config.NEO4J_DATABASE
+        SCHEMA_CYPHER, routing_=RoutingControl.READ, database_=config.SHIPMENT_DATABASE
     )
     if not records:
         return {"nodes": [], "relationships": []}

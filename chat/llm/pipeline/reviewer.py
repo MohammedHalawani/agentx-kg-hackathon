@@ -8,14 +8,15 @@ Validates against the four things the diagram names:
   SLA                - the shipment's own Policy.sla_days, via the sla rule
   historical outcomes - did this action work on comparable cases, or is it a known failure?
 
-Two of those are enforced deterministically BEFORE the model is consulted: a retry-budget
-violation and a citation-free recommendation are hard rejects. The model is asked for
+Retry-budget violations, citation/category conflicts and detectable contradictory recorded
+attempt counts are enforced deterministically BEFORE the model is consulted. The model is asked for
 judgement, not permission - if it accepts something the rules forbid, the rules win. That
 ordering is deliberate: a small local model should not be the only thing standing between a
 bad recommendation and a graph write.
 """
 import json
 import logging
+import re
 
 from llm.pipeline import _llm, rules
 from llm.pipeline.state import PipelineState, Review
@@ -36,6 +37,10 @@ _SYSTEM = (
     "Reject when: the action contradicts a failed business rule; the evidence does not "
     "support the classified root cause; or comparable cases show this action usually fails. "
     "Accept when the action follows from the evidence and precedent supports it."
+    " Computed findings are authoritative. An exhausted retry budget blocks plain retry/"
+    "rescheduling/redelivery; address verification or redirection is not automatically a plain "
+    "retry. Do not invent blanket rules or enterprise cancellation/refund authority. Customer "
+    "statements and underidentified subtype guesses require verification, not causal certainty."
 )
 
 _DEFAULT: Review = {
@@ -45,16 +50,74 @@ _DEFAULT: Review = {
     "checked_against": CHECKS,
 }
 
+_NUMBER_WORDS = {word: number for number, word in enumerate(
+    ("zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"))}
+_COUNT = r"(?:\d+|zero|one|two|three|four|five|six|seven|eight|nine|ten)"
+_ATTEMPT_CLAIMS = (
+    re.compile(rf"\b(?P<count>{_COUNT})\s+(?P<kind>(?:(?:consecutive|failed|unsuccessful|delivery|recorded|previous|past)\s+){{1,4}})attempts?\b", re.I),
+    re.compile(rf"\b(?P<kind>(?:(?:consecutive|failed|unsuccessful|delivery|recorded|previous|past)\s+){{1,4}})attempts?\s*(?:\(\s*|:\s*)(?P<count>{_COUNT})\b", re.I),
+    re.compile(r"(?P<count>\d+)\s+(?P<kind>محاولات?\s+(?:التسليم|تسليم)(?:\s+فاشلة)?)"),
+    re.compile(r"(?P<kind>محاولات?\s+(?:التسليم|تسليم)(?:\s+فاشلة)?)\s*(?:\(\s*|:\s*)(?P<count>\d+)"),
+)
+_NONFACTUAL_PREFIX = re.compile(
+    r"\b(?:may|might|possibly|perhaps|approximately|about|around|roughly|at least|at most|"
+    r"up to|or|between|allows?|permits?|limit|budget|maximum|minimum|should|will|would|"
+    r"could|recommend\w*|propos\w*|plan\w*|schedul\w*|next|future|additional|customer reports|"
+    r"customer says|recipient reports|complaint says|historical cases|similar cases|"
+    r"precedent cases)\b|(?:ربما|قد|حوالي|تقريباً|تقريبا|يسمح|يوصي|مقترح|إضافية)", re.I)
+
+
+def _attempt_count_contradiction(state: PipelineState) -> str | None:
+    """Reject only clear final claims contradicted by this shipment's recorded attempts.
+
+    This is a narrow integrity guard, not a natural-language fact checker. Uncertain,
+    attributed, future and policy-allowance counts are left to review. A failed subset may
+    be smaller than the recorded attempt total; outcomes of each attempt are not supplied.
+    """
+    local = (state.get("context") or {}).get("local_subgraph") or {}
+    if not isinstance(local.get("shipment"), dict) or not isinstance(local.get("events"), list):
+        return None
+    rationale = (state.get("classification") or {}).get("rationale")
+    if not isinstance(rationale, str):
+        return None
+    actual = rules._attempts(local["events"])
+    for pattern in _ATTEMPT_CLAIMS:
+        for match in pattern.finditer(rationale):
+            # Restrict interpretation to the nearby clause; do not mistake an allowed or
+            # hypothetical future retry count for a claim about recorded history.
+            prefix = re.split(r"[.!?;؛\n]", rationale[:match.start()])[-1][-70:]
+            suffix = rationale[match.end():match.end() + 20]
+            if (_NONFACTUAL_PREFIX.search(prefix) or re.search(r"\d+\s*[-–]\s*$", prefix)
+                    or re.match(r"\s*(?:[-–]|to\b|or\b|should\b|will\b|would\b|could\b|"
+                                r"next\b|(?:are|is)\s+(?:planned|allowed|permitted|recommended|proposed)\b)", suffix, re.I)):
+                continue
+            token = match.group("count").lower()
+            claimed = _NUMBER_WORDS[token] if token in _NUMBER_WORDS else int(token)
+            subset = any(word in match.group("kind").lower() for word in ("failed", "unsuccessful", "فاشلة"))
+            if claimed == actual or (subset and claimed < actual):
+                continue
+            return (f"Evidence count contradiction: classification rationale claims {claimed} "
+                    f"delivery attempt(s), but this shipment has {actual} recorded DELIVERY_ATTEMPT "
+                    "event(s). Correct the rationale using the recorded count; do not invent "
+                    "additional attempts or assume every recorded attempt failed.")
+    return None
+
 
 def _hard_rejects(state: PipelineState, findings: list) -> list[str]:
     """Deterministic rejections that don't depend on the model's judgement."""
     reasons = []
     rec = state.get("recommendation") or {}
 
+    count_contradiction = _attempt_count_contradiction(state)
+    if count_contradiction:
+        reasons.append(count_contradiction)
+
     retry = next((f for f in findings if f["rule"] == "retry_budget"), None)
     if retry and not retry["passed"]:
         action = rec.get("action", "")
-        if any(tok in action for tok in rules.RETRY_ACTIONS):
+        action = action.casefold() if isinstance(action, str) else ""
+        action = re.sub(r"\bre[-‐‑]\s*deliver", "redeliver", action)
+        if any(tok.casefold() in action for tok in rules.RETRY_ACTIONS):
             reasons.append(
                 f"Retry budget exhausted ({retry['detail']}) but the proposed action is another "
                 "delivery retry. Propose a different approach or escalate."

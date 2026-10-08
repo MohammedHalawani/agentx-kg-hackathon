@@ -52,6 +52,7 @@ _VECTOR = """
 CALL db.index.vector.queryNodes($index, $k, $embedding)
 YIELD node AS f, score
 MATCH (f)-[:RESOLVES_WITH]->(r:Resolution)-[:HAD_OUTCOME]->(o:Outcome)
+WHERE o.success IN [true, false]
 RETURN f.failure_id    AS failure_id,
        f.category      AS category,
        f.description   AS description,
@@ -76,6 +77,7 @@ WHERE ($courier  IS NULL OR f.courier  = $courier)
   AND ($city     IS NULL OR f.city     = $city)
   AND ($district IS NULL OR f.district = $district)
   AND ($category IS NULL OR f.category = $category)
+  AND o.success IN [true, false]
 RETURN f.failure_id    AS failure_id,
        f.category      AS category,
        f.description   AS description,
@@ -150,14 +152,14 @@ def vector_search(query_text: str, k: int = VECTOR_TOP_K,
             # given. Never set in normal operation, where the live failure is unresolved and
             # therefore absent from the index anyway.
             hits = [h for h in hits if h.get("failure_id") != exclude_failure_id]
-        kept = [h for h in hits if (h.get("score") or 0) >= MIN_VECTOR_SCORE]
+        kept = [h for h in hits if type(h.get("success")) is bool
+                and (h.get("score") or 0) >= MIN_VECTOR_SCORE]
         if len(kept) < len(hits):
             log.info("dropped %d/%d vector hit(s) below the %.2f similarity floor",
                      len(hits) - len(kept), len(hits), MIN_VECTOR_SCORE)
         return kept
     except Exception as exc:
-        log.warning("vector_search unavailable (%s: %s) - continuing graph-only",
-                    type(exc).__name__, exc)
+        log.warning("vector_search unavailable (%s) - continuing graph-only", type(exc).__name__)
         return []
 
 
@@ -184,7 +186,7 @@ def graph_traversal(extracted: ExtractedComplaint, k: int = GRAPH_TOP_K,
     })
     if exclude_failure_id:
         rows = [r for r in rows if r.get("failure_id") != exclude_failure_id]
-    return rows
+    return [r for r in rows if type(r.get("success")) is bool]
 
 
 def local_subgraph(extracted: ExtractedComplaint) -> dict:

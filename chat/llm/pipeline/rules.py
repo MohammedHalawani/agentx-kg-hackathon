@@ -107,7 +107,7 @@ def precedent_strength(similar_cases: list[dict]) -> RuleFinding:
     """Did the actions taken on comparable cases actually work? A precedent set that mostly
     FAILED is a reason to distrust the obvious recommendation, and is exactly the signal a
     pure similarity search throws away."""
-    cases = [c for c in (similar_cases or []) if c.get("success") is not None]
+    cases = [c for c in (similar_cases or []) if type(c.get("success")) is bool]
     if not cases:
         return {"rule": "precedent_strength", "passed": True,
                 "detail": "No comparable resolved cases with recorded outcomes."}
@@ -133,7 +133,7 @@ def action_success_rate(similar_cases: list[dict]) -> dict[str, dict]:
         # counts neither way. Treating it as a success would let the agent's own choices
         # inflate their track record; treating it as a failure would punish them for not
         # having been verified yet. Excluding it keeps the rate a measure of observed reality.
-        if case.get("success") is None:
+        if type(case.get("success")) is not bool:
             continue
         s = stats.setdefault(action, {"tried": 0, "succeeded": 0, "rate": 0.0})
         s["tried"] += 1

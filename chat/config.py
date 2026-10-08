@@ -30,10 +30,17 @@ CHAT_DATABASE = os.getenv("CHAT_DATABASE", "neo4j")
 # LLM is routed through LiteLLM, so any provider works: a hosted API
 # (openai/gpt-4o-mini, anthropic/claude-..., gemini/...) or a local endpoint
 # (ollama/llama3.1, or openai/<model> + LLM_API_BASE for vLLM/LM Studio).
-# LLM_API_KEY falls back to OPENAI_API_KEY; local models need no key.
-LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o-mini")
-LLM_API_KEY = os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY")
-LLM_API_BASE = os.getenv("LLM_API_BASE")  # set for a local/self-hosted endpoint
+# LLM_API_KEY falls back to OPENAI_API_KEY, then OLLAMA_API_KEY (Cloud).
+# Local models need no key; model and base are passed through for LiteLLM routing.
+LLM_MODEL = os.getenv("LLM_MODEL", "openai/gpt-oss:120b")
+LLM_API_KEY = (
+    os.getenv("LLM_API_KEY")
+    or os.getenv("OPENAI_API_KEY")
+    or os.getenv("OLLAMA_API_KEY")
+)
+LLM_API_BASE = os.getenv("LLM_API_BASE") or (
+    "https://ollama.com/v1" if LLM_MODEL.startswith("openai/gpt-oss:") else None
+)
 
 # --- Embeddings: vector search over fulltext-eligible node text (see scripts/embed_backfill.py).
 # Also routed through LiteLLM. Defaults to a local Ollama embedding model - must be pulled
@@ -43,7 +50,7 @@ EMBEDDING_API_BASE = os.getenv("EMBEDDING_API_BASE", "http://localhost:11434")
 EMBEDDING_DIMENSIONS = int(os.getenv("EMBEDDING_DIMENSIONS", "1024"))  # bge-m3's output size
 
 # --- Shipment-complaint pipeline (llm/pipeline/): its own database, same Neo4j server/creds
-# as above - keeps it from ever mixing with the governance graph or chat history. Loaded from
+# as above - keeps shipment evidence separate from legacy domain data or chat history. Loaded from
 # Saudi-Arabia-Regions-Cities-and-Districts/shipment_kg/shipment_dataset.dump (sibling repo).
 SHIPMENT_DATABASE = os.getenv("SHIPMENT_DATABASE", "shipments")
 

@@ -1,11 +1,8 @@
-"""FastAPI backend for the steering-committee governance chat + dashboard + filter + map app.
+"""AgentX / Suhail shipment exception investigation API.
 
-Three independent data paths, none of which generate Cypher on the fly:
-- /chat streams the two-tool LLM agent (chat/llm/agent.py) over SSE.
-- /dashboard and /filter/* run frozen, pre-vetted queries from docs/queries.txt
-  (chat/core/queries.py + query_runner.py) - no LLM involved.
-- /incidents and /track-status parse the three map CSVs directly (chat/core/csv_data.py) -
-  no Neo4j involved.
+Explore/schema/cases read the shipment KG; complaint analysis can record a pending
+recommendation or escalation. Conversation memory remains separate infrastructure.
+Legacy governance chat/registry endpoints are retired, not silently repointed.
 """
 import asyncio
 import json
@@ -20,22 +17,26 @@ from typing import Literal
 # reuse the chat package (agent, queries, registry, csv_data) without copying it
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "chat"))
 
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse, Response, StreamingResponse
+from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.responses import JSONResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from neo4j.exceptions import ServiceUnavailable
 from pydantic import BaseModel, Field
 
 import config
-from core import query_runner, registry, threads
+from core import explore, query_runner, threads
 from llm.agent import stream_agent
 from llm import translate
 from llm.pipeline import cases
 from llm.pipeline import graph as pipeline_graph
-from view import subgraph
 
-log = logging.getLogger("steerco-kg")
-app = FastAPI(title="Steering-Committee Governance KG")
+log = logging.getLogger("suhail")
+app = FastAPI(title="AgentX / Suhail — Shipment Exception Resolution")
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon() -> Response:
+    return RedirectResponse("/favicon.svg")
 
 
 class Turn(BaseModel):
@@ -130,9 +131,9 @@ async def _stream(req: ChatRequest) -> AsyncIterator[str]:
             loop.call_soon_threadsafe(
                 queue.put_nowait, ("error", "The graph database isn't reachable right now.")
             )
-        except Exception:
+        except Exception as exc:
             errored = True
-            log.exception("chat request failed")
+            log.warning("chat request failed (%s)", type(exc).__name__)
             loop.call_soon_threadsafe(
                 queue.put_nowait, ("error", "Something went wrong answering that. Please try again.")
             )
@@ -153,8 +154,6 @@ async def _stream(req: ChatRequest) -> AsyncIterator[str]:
             kind, payload = item
             if kind == "token":
                 yield _sse("text", {"text": payload})
-            elif kind == "reasoning":
-                yield _sse("reasoning", {"text": payload})
             elif kind == "step":
                 yield _sse("step", payload)
             elif kind == "artifact":
@@ -168,11 +167,7 @@ async def _stream(req: ChatRequest) -> AsyncIterator[str]:
 
 @app.post("/chat")
 async def chat(req: ChatRequest) -> StreamingResponse:
-    return StreamingResponse(
-        _stream(req),
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-    )
+    raise HTTPException(410, "Legacy domain chat is retired; use shipment Intake and Explore.")
 
 
 @app.get("/samples")
@@ -184,7 +179,7 @@ def samples() -> Response:
 
 @app.get("/meta")
 def meta() -> dict:
-    return {"scope": "Autonomous shipment-complaint resolution over a Neo4j knowledge graph"}
+    return {"scope": "Shipment exception investigation and reviewed recommendations over a logistics knowledge graph"}
 
 
 # --- Agent: one complaint -> the live pipeline trace ---------------------------------------
@@ -213,7 +208,7 @@ async def _stream_complaint(text: str) -> AsyncIterator[str]:
             loop.call_soon_threadsafe(
                 queue.put_nowait, ("error", "The graph database isn't reachable right now."))
         except Exception as exc:
-            log.exception("complaint pipeline failed")
+            log.warning("complaint pipeline failed (%s)", type(exc).__name__)
             loop.call_soon_threadsafe(
                 queue.put_nowait, ("error", f"The pipeline failed: {type(exc).__name__}"))
         finally:
@@ -228,7 +223,7 @@ async def _stream_complaint(text: str) -> AsyncIterator[str]:
             kind, payload = item
             if kind == "error":
                 yield _sse("error", {"message": payload})
-            else:
+            elif kind in {"stage", "case_file", "final"}:
                 yield _sse(kind, payload)
         yield _sse("done", {})
     finally:
@@ -276,23 +271,31 @@ def cases_overview() -> Response:
 
 @app.get("/registry/{label}")
 def registry_lookup(label: str, q: str | None = None) -> Response:
-    try:
-        return _SafeJSON({"options": registry.registry_options(label, q=q)})
-    except ValueError as exc:
-        raise HTTPException(404, str(exc)) from exc
+    raise HTTPException(410, "Legacy governance registries are retired from the logistics API.")
 
 
 # --- Explore: Graph and Schema lenses -------------------------------------------------------
 
+@app.get("/explore")
+def explore_shipments(
+    filter: Literal["needs_attention", "all", "stalled", "critical", "delivered"] = "needs_attention",
+    limit: int = Query(default=25, ge=1, le=explore.MAX_LIMIT),
+) -> Response:
+    """One shared shipment selection for the map, graph, and evidence list."""
+    return _SafeJSON(explore.overview(filter, limit))
+
+
 @app.get("/graph")
-def graph() -> Response:
-    """A fresh, connected cross-section of the domain graph for the Explore graph view."""
-    return _SafeJSON(subgraph.connected_sample_graph() or {"nodes": [], "relationships": []})
+def graph(shipment_id: str | None = Query(default=None, min_length=1, max_length=64)) -> Response:
+    """A shipment's curated evidence, or the default attention shipment selection."""
+    data = (explore.shipment_graph([shipment_id]) if shipment_id
+            else explore.overview()["graph"])
+    return _SafeJSON(data)
 
 
 @app.get("/schema")
 def schema_view() -> dict:
-    """The data model as a graph for the Schema view."""
+    """The live shipment data model as a graph for the Schema view."""
     return query_runner.schema_graph()
 
 

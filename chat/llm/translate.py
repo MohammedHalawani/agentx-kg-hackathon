@@ -1,13 +1,13 @@
-"""Display-only translation of the agent's free-text reasoning into Arabic.
+"""Display-only translation of operator-facing evidence summaries into Arabic.
 
-STRICTLY a presentation concern. The pipeline keeps reasoning, classifying and writing back
+STRICTLY a presentation concern. The pipeline classifies and writes back
 in its own language: nothing here touches a system prompt, a confidence score, an evidence
 id or anything that reaches the graph. The UI asks for a translated *copy* of a rationale
 when the viewer has set the interface to Arabic, and that copy is never fed back into the
 pipeline or persisted.
 
 Why not just ask the agent for Arabic in the first place: the classifier and reviewer are
-graded on reasoning quality against an English-language graph vocabulary
+graded against an English-language graph vocabulary
 (FailureReason.category, Resolution.action). Making the model produce its justification in
 another language changes the tokens it reasons in, which is a real risk to that quality for
 a purely cosmetic gain. Translating afterwards leaves the decision path untouched.
@@ -24,7 +24,7 @@ from functools import lru_cache
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from llm.pipeline._llm import model
+from llm.pipeline._llm import final_text, message_text, model
 
 log = logging.getLogger("llm.translate")
 
@@ -75,6 +75,7 @@ def to_arabic(text: str) -> str:
     """The Arabic rendering of one piece of agent prose, or the original text unchanged if it
     cannot be translated safely. Memoized on the exact source string: the same rationale is
     translated once per process however many times the UI re-renders or re-opens the case."""
+    text = final_text(text)
     source = text.strip()
     if not source:
         return text
@@ -87,9 +88,9 @@ def to_arabic(text: str) -> str:
 
     try:
         resp = model().invoke([SystemMessage(SYSTEM), HumanMessage(USER.format(text=source))])
-        out = (resp.content if isinstance(resp.content, str) else str(resp.content)).strip()
-    except Exception:
-        log.exception("translation call failed; keeping the original text")
+        out = message_text(getattr(resp, "content", None))
+    except Exception as exc:
+        log.warning("translation call failed (%s); keeping the original text", type(exc).__name__)
         return text
 
     if not out or not _ARABIC_RE.search(out) or not _keeps_literals(source, out):

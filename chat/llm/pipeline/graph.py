@@ -32,7 +32,7 @@ from functools import lru_cache
 
 from langgraph.graph import END, StateGraph
 
-from llm.pipeline import cases, classifier, extract, recommender, retrieve, reviewer, writeback
+from llm.pipeline import _llm, cases, classifier, extract, operator_output, recommender, retrieve, reviewer, writeback
 from llm.pipeline.state import PipelineState
 
 log = logging.getLogger("pipeline.graph")
@@ -257,8 +257,46 @@ STAGE_META: dict[str, dict[str, str]] = {
 # The UI badges these differently - extract/retrieve are plumbing, these three decide.
 AGENT_NODES = frozenset({"classify", "recommend", "review"})
 
+_DISPLAY_FIELDS = {
+    "extract": ("shipment_id", "tracking_id", "city", "district", "courier", "category_hint"),
+    "classify": ("category", "confidence", "priority", "rationale"),
+    "recommend": ("action", "grounded_in", "rationale", "candidates", "grounded_cases"),
+    "review": ("verdict", "score", "reason", "checked_against"),
+    "precedent": ("failure_id", "resolution_id", "category", "description", "city", "district",
+                  "courier", "action", "success", "score", "rrf_score"),
+    "candidates": ("action", "tried", "succeeded", "rate"),
+    "grounded_cases": ("resolution_id", "category", "action", "success"),
+}
 
-def _summarize(node: str, update: dict, loop: int) -> dict:
+
+def _display_detail(stage: str, value: dict | None) -> dict | None:
+    """Application fields only, never arbitrary provider metadata or content blocks."""
+    if not isinstance(value, dict):
+        return None
+    out = {}
+    for key in _DISPLAY_FIELDS[stage]:
+        item = value.get(key)
+        if isinstance(item, str):
+            out[key] = _llm.final_text(item)
+        elif item is None or isinstance(item, (int, float, bool)):
+            out[key] = item
+        elif isinstance(item, list):
+            if key in ("candidates", "grounded_cases"):
+                out[key] = [_display_detail(key, row) for row in item if isinstance(row, dict)]
+            else:
+                out[key] = [_llm.final_text(row) for row in item if isinstance(row, str)]
+    return out
+
+
+def _operator_detail(stage: str, value: dict | None, state: dict) -> dict | None:
+    detail = _display_detail(stage, value)
+    if detail is not None and stage in ("classify", "recommend", "review"):
+        key = "reason" if stage == "review" else "rationale"
+        detail[key] = operator_output.summary(stage, value or {}, state)
+    return detail
+
+
+def _summarize(node: str, update: dict, loop: int, state: dict | None = None) -> dict:
     """One node's state update, flattened into the compact shape the trace renders. Only
     what a reader needs to see the decision being made - never the whole state, which
     carries the full retrieved subgraph and would dwarf the trace."""
@@ -272,20 +310,21 @@ def _summarize(node: str, update: dict, loop: int) -> dict:
         "loop": loop,
     }
     if node == "extract" and (e := update.get("extracted")):
-        out["detail"] = {k: v for k, v in e.items() if k != "raw_text" and v}
+        out["detail"] = {k: v for k, v in (_display_detail("extract", e) or {}).items() if v}
     elif node == "retrieve" and (c := update.get("context")):
         out["detail"] = {
             "similar_cases": len(c.get("similar_cases") or []),
             "live_failure_id": c.get("live_failure_id"),
-            "precedent": (c.get("similar_cases") or [])[:3],
+            "precedent": [_display_detail("precedent", row)
+                          for row in (c.get("similar_cases") or [])[:3] if isinstance(row, dict)],
         }
     elif node == "classify" and (c := update.get("classification")):
-        out["detail"] = dict(c)
+        out["detail"] = _operator_detail("classify", c, state or update)
     elif node == "recommend" and (r := update.get("recommendation")):
-        out["detail"] = dict(r)
+        out["detail"] = _operator_detail("recommend", r, state or update)
     elif node == "review" and (r := update.get("review")):
-        out["detail"] = dict(r)
-        out["verdict"] = r.get("verdict")
+        out["detail"] = _operator_detail("review", r, state or update)
+        out["verdict"] = out["detail"].get("verdict")
     elif node == "writeback":
         out["detail"] = {"resolution_id": update.get("resolution_id")}
     return out
@@ -311,7 +350,7 @@ def stream_complaint(complaint_text: str):
         for node, update in step.items():
             merged.update(update or {})
             loop = merged.get("loop_count") or 0
-            yield "stage", _summarize(node, update or {}, loop)
+            yield "stage", _summarize(node, update or {}, loop, merged)
             # Send the evidence as soon as it exists rather than holding it until the end -
             # it is what the reader looks at while the run is still going.
             if (update or {}).get("case_file"):
@@ -322,7 +361,7 @@ def stream_complaint(complaint_text: str):
         "disposition": merged.get("disposition"),
         "resolution_id": merged.get("resolution_id"),
         "loops": merged.get("loop_count") or 0,
-        "classification": merged.get("classification"),
-        "recommendation": merged.get("recommendation"),
-        "review": merged.get("review"),
+        "classification": _operator_detail("classify", merged.get("classification"), merged),
+        "recommendation": _operator_detail("recommend", merged.get("recommendation"), merged),
+        "review": _operator_detail("review", merged.get("review"), merged),
     }

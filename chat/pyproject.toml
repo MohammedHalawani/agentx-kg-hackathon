@@ -1,7 +1,7 @@
 [project]
 name = "steerco-kg-chat"
 version = "0.1.0"
-description = "Chat + dashboard + filter + map app over the steering-committee governance Neo4j graph"
+description = "AgentX / Suhail shipment exception investigation with Neo4j and LangGraph"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115",

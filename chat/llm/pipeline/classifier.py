@@ -9,7 +9,7 @@ which is why the feedback edge targets this stage and not that one.
 import json
 import logging
 
-from llm.pipeline import _llm
+from llm.pipeline import _llm, rules
 from llm.pipeline.extract import CATEGORIES
 from llm.pipeline.state import Classification, PipelineState
 
@@ -27,7 +27,11 @@ _SYSTEM = (
     "Base the category on the shipment's own event history and failure record where "
     "available; use the similar past cases as supporting evidence, not as the answer. "
     "Lower your confidence when the evidence is thin or the similar cases disagree. "
-    "Raise the priority when the delivery has already failed repeatedly or breached its SLA."
+    "Raise the priority when the delivery has already failed repeatedly or breached its SLA. "
+    "Use AUTHORITATIVE RECORDED EVENT FACTS for counts and policy values. Never invent "
+    "delivery-attempt counts, elapsed days, or retry limits. DELIVERY_ATTEMPT count is the "
+    "number of recorded attempts, not proof that every attempt failed. If a fact is not "
+    "recorded, say it is unknown; do not turn customer statements into verified graph facts."
 )
 
 _DEFAULT: Classification = {
@@ -44,6 +48,20 @@ def _prompt(state: PipelineState) -> str:
     parts = [f"COMPLAINT:\n{state['complaint_text']}"]
 
     if local:
+        events = local.get("events") or []
+        policy = local.get("policy") or {}
+        parts.append("AUTHORITATIVE RECORDED EVENT FACTS:\n" + json.dumps({
+            "delivery_attempts": rules._attempts(events),
+            "recorded_event_count": len(events),
+            "policy_retry_limit": policy.get("retry_limit"),
+            "policy_sla_days": policy.get("sla_days"),
+            "recorded_timeline_span_days": rules._days_open(events),
+            "recorded_sources": {
+                "delivery_attempts": "this shipment's Event.event_type == DELIVERY_ATTEMPT",
+                "policy": "this shipment's GOVERNED_BY Policy",
+                "failure": "this shipment's event-linked live FailureReason",
+            },
+        }, ensure_ascii=False, default=str))
         parts.append(
             "THIS SHIPMENT:\n" + json.dumps(
                 {
@@ -89,7 +107,7 @@ def classify(state: PipelineState) -> Classification:
     out = _llm.ask_json(_SYSTEM, _prompt(state), default=dict(_DEFAULT))
 
     if out.get("category") not in CATEGORIES:
-        log.warning("classifier returned unknown category %r - keeping default", out.get("category"))
+        log.warning("classifier returned unsupported category - keeping default")
         out["category"] = _DEFAULT["category"]
         out["confidence"] = min(float(out.get("confidence") or 0.0), 0.3)
     if out.get("priority") not in ("low", "medium", "high"):

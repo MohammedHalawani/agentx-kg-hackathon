@@ -38,12 +38,15 @@ from core.query_runner import get_driver  # noqa: E402
 VECTOR_INDEX_NAME = "failurereason_case_summary"
 BATCH_SIZE = 64
 
-# Only the resolved cases carry a case_summary (see shipment_kg/generate_shipment_kg.py) -
-# that property being non-null IS the definition of "this case is usable precedent", so it
-# is the whole filter here.
+# A recorded recommendation can carry case_summary without an observed outcome. Only
+# boolean, observed outcomes are eligible precedent; pending decisions never self-certify.
 _PENDING = """
 MATCH (f:FailureReason)
 WHERE f.case_summary IS NOT NULL AND trim(f.case_summary) <> ''
+  AND EXISTS {
+    MATCH (f)-[:RESOLVES_WITH]->(:Resolution)-[:HAD_OUTCOME]->(o:Outcome)
+    WHERE o.success IN [true, false]
+  }
   {skip_embedded}
 RETURN f.failure_id AS id, f.case_summary AS text
 """
@@ -51,6 +54,10 @@ RETURN f.failure_id AS id, f.case_summary AS text
 _WRITE = """
 UNWIND $rows AS row
 MATCH (f:FailureReason {failure_id: row.id})
+WHERE EXISTS {
+  MATCH (f)-[:RESOLVES_WITH]->(:Resolution)-[:HAD_OUTCOME]->(o:Outcome)
+  WHERE o.success IN [true, false]
+}
 CALL db.create.setNodeVectorProperty(f, 'embedding', row.vec)
 """
 
@@ -67,7 +74,7 @@ OPTIONS {{indexConfig: {{
 def fetch_pending(force: bool) -> list[dict]:
     """[{id, text}] for every resolved FailureReason not yet embedded (or all of them when
     --force was passed)."""
-    cypher = _PENDING.format(skip_embedded="" if force else "AND f.embedding IS NULL")
+    cypher = _PENDING.replace("{skip_embedded}", "" if force else "AND f.embedding IS NULL")
     records, _, _ = get_driver().execute_query(
         cypher, routing_=RoutingControl.READ, database_=config.SHIPMENT_DATABASE
     )
