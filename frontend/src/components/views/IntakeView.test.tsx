@@ -21,8 +21,9 @@ vi.mock('../../hooks/useComplaintStream', () => ({
   useComplaintStream: () => mockStream,
 }))
 
+const seenUrls = vi.hoisted(() => [] as string[])
 vi.mock('../../hooks/useFetch', () => ({
-  useFetch: (url: string) => ({
+  useFetch: (url: string) => (seenUrls.push(url), {
     data: url.includes('workflow_state=') ? { items: [], filtered_total: 0, next_cursor: null, previous_cursor: null, metadata: {} } : url.startsWith('/cases/queue') ? {
       items: [
         {
@@ -107,6 +108,13 @@ describe('IntakeView metadata contrast (H01)', () => {
   it('discloses synthetic simulation data', () => {
     renderIntake()
     expect(screen.getAllByText(/Synthetic operational data/i).length).toBeGreaterThan(0)
+  })
+
+  it('defaults Intake to Active work while counters span every state', () => {
+    renderIntake()
+    expect(seenUrls.some(u => u.startsWith('/cases/queue?scope=active'))).toBe(true)
+    expect(seenUrls).toContain('/cases/queue?limit=25&scope=all')
+    expect(screen.getByRole('radio', { name: 'Active' }).getAttribute('aria-checked')).toBe('true')
   })
 
   it('renders the queue as a data table row (H02)', () => {

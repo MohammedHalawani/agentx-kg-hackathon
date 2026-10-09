@@ -5,7 +5,7 @@ from operations.reasoning import evidence_world
 from operations.lifecycle import OperationsConflict, require_actor
 
 OUTCOME_TYPES = frozenset(("delivery_verified", "address_corrected", "barcode_corrected", "weight_remeasured",
-                          "returned_to_depot", "dispute_unresolved", "insufficient_evidence"))
+                          "returned_to_depot", "dispute_unresolved", "insufficient_evidence", "custody_reconciled"))
 
 
 def validate_observation(context, evidence_ids, outcome_type, success):

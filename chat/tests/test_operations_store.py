@@ -42,6 +42,15 @@ class Tx:
                 due=instant(n.properties["latest_at"])+timedelta(seconds=n.properties.get("grace_seconds") or 0)
                 if p["previous"]<due<=p["now"]:sids.add(n.properties["shipment_id"])
             return Result([{"sid":x} for x in sorted(sids)])
+        if q.startswith("MATCH(c:OpsEntity:OpsCase {dataset_id:$dataset,split:'development',workflow_state:'AWAITING_OUTCOME'})"):
+            out=[]
+            for k,v in self.ledger.values():
+                if k!="OpsCase" or v["workflow_state"]!="AWAITING_OUTCOME":continue
+                ex=[e for kk,e in self.ledger.values() if kk=="OpsExecution" and e["case_id"]==v["entity_id"] and e.get("authority")=="AUTO_POLICY"]
+                for e in ex:
+                    if v.get("outcome_checked_as_of") is None or v["as_of"]>v["outcome_checked_as_of"] or e["deadline_at"]<=p["clock"]:
+                        out.append({"case":copy.deepcopy(v),"execution":copy.deepcopy(e)})
+            return Result(sorted(out,key=lambda r:str(r["case"]["as_of"]))[:p["limit"]])
         if "(m:_V2Import)" in q:return Result([{"props":self.driver.marker}])
         if q.startswith("MATCH (s:V2Entity:Shipment"):
             node=self.driver.world.nodes.get(p["id"])

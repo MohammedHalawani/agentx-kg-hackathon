@@ -118,6 +118,7 @@ export function IntakeView({
   const [filters, setFilters] = useState<IntakeFilters>(DEFAULT_FILTERS)
   const [operationalStatus, setOperationalStatus] = useState('all')
   const [limit, setLimit] = useState(25)
+  const [scope, setScope] = useState<'active' | 'resolved' | 'all'>('active')
   const pager = useCursorPage()
   const cursor = pager.cursor
   const cursorStart = pager.offset
@@ -125,14 +126,15 @@ export function IntakeView({
   const [snapshot, setSnapshot] = useState<string | undefined>()
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
-  const query = pageQuery({ search: filters.search, priority: filters.priority, city: filters.city, workflow_state: filters.status, operational_status: operationalStatus, cause: filters.cause, limit, cursor, ...dateBounds(filters.timePreset, snapshot, from, to) })
+  const query = pageQuery({ scope, search: filters.search, priority: filters.priority, city: filters.city, workflow_state: filters.status, operational_status: operationalStatus, cause: filters.cause, limit, cursor, ...dateBounds(filters.timePreset, snapshot, from, to) })
   const { data, loading, error: queueError, refetch } = useOperationsPage<ApiCase>(`/cases/queue?${query}`)
   const queueRefreshing = loading && data != null
   const queueInitialLoad = loading && !data
   const page = { items: (data?.items ?? []).map(adaptCase), total: data?.filtered_total ?? 0, nextCursor: data?.next_cursor ?? null, prevCursor: data?.previous_cursor ?? null }
   // Unfiltered lifecycle totals for counters and the Human attention rail, independent of table filters.
-  const unfiltered = query === 'limit=25'
-  const totals = useOperationsPage<ApiCase>('/cases/queue?limit=25', !unfiltered)
+  // Counters span every lifecycle state, including resolved work outside the Active view.
+  const unfiltered = false
+  const totals = useOperationsPage<ApiCase>('/cases/queue?limit=25&scope=all', !unfiltered)
   const totalBuckets = (unfiltered ? data : totals.data)?.metadata?.buckets ?? {}
   const bucketCounts = adaptBuckets(totalBuckets)
   const [railCollapsed, setRailCollapsed] = useState(false)
@@ -229,6 +231,15 @@ export function IntakeView({
             <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1 space-y-4">
 
+            <div role="radiogroup" aria-label={t('ops.scope.label')} className="inline-flex rounded-lg border border-border bg-card p-0.5" data-testid="intake-scope">
+              {(['active', 'resolved', 'all'] as const).map(value => (
+                <button key={value} type="button" role="radio" aria-checked={scope === value}
+                  onClick={() => { setScope(value); pager.reset() }}
+                  className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${scope === value ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+                  {t(`ops.scope.${value}`)}
+                </button>
+              ))}
+            </div>
             <IntakeToolbar
               filters={filters}
               operationalStatus={operationalStatus}

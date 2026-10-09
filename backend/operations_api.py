@@ -50,7 +50,9 @@ class OperationsRuntime:
         dataset_config=Config(**manifest["config"])
         self.reader=OperationsReader(driver,DEFAULT_DATABASE,dataset_config.dataset_id,dataset_config,
                                      lambda:self.store.status()["as_of"])
-        self.store=OperationsStore(driver,DEFAULT_DATABASE,dataset_config.dataset_id,dataset_config,reader=self.reader)
+        from operations import agents
+        self.store=OperationsStore(driver,DEFAULT_DATABASE,dataset_config.dataset_id,dataset_config,reader=self.reader,
+                                   agents=agents if agents.enabled() else None)
         self.reader.store=self.store
         self.store.initialize()
         self._stop=threading.Event()
@@ -70,6 +72,7 @@ class OperationsRuntime:
                 status=self.store.status()
                 if status["simulator"]["state"]=="running":self.store.tick(seconds=elapsed)
                 if status["session"]["monitor_pending"]:self.store.monitor_step()
+                if status["session"]["case_source"]=="monitor":self.store.outcome_step()
                 if status["worker"]["state"]=="running" and now-last_case>=pace:
                     if self.store.process_one().get("processed"):last_case=time.monotonic()
             except Exception as error:
@@ -153,9 +156,9 @@ def pipeline_follows(previous,current):
 @router.get("/cases/queue")
 def queue(cursor: str|None=Query(None,max_length=2048),limit: PageLimit=25,
           workflow_state: str|None=None,operational_status: str|None=None,priority: str|None=None,
-          city: str|None=None,cause: str|None=None,search: str|None=None,
+          city: str|None=None,cause: str|None=None,search: str|None=None,scope: Literal["active","resolved","all"]="active",
           from_at: str|None=Query(None,alias="from"),to_at: str|None=Query(None,alias="to")):
-    return invoke(get_runtime().reader.queue,cursor=cursor,limit=limit,workflow_state=workflow_state,
+    return invoke(get_runtime().reader.queue,cursor=cursor,limit=limit,workflow_state=workflow_state,scope=scope,
                   operational_status=operational_status,priority=priority,city=city,cause=cause,search=search,
                   from_at=from_at,to_at=to_at)
 

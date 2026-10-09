@@ -23,6 +23,14 @@ function Glyph({ status }: { status: StepStatus }) {
   }
 }
 
+/** Which engine actually produced a stage: model roles only when the recorded event says so. */
+function engineKey(step: string, agent?: string): string {
+  if (agent === 'deterministic_fallback') return 'fallback'
+  if (agent === 'gpt-oss') return step === 'diagnose' ? 'investigator' : step === 'recommend' ? 'planner' : 'reviewer'
+  if (agent === 'authority_policy') return 'authority'
+  return ({ collect: 'rules', graph: 'neo4j', diagnose: 'rules', precedent: 'graphrag', recommend: 'rules', review: 'guard', route: 'routing', outcome: 'verifier' } as Record<string, string>)[step] ?? 'rules'
+}
+
 function StepDetail({ detail, step, onEvidence }: { detail: ShipmentDetail; step: DisplayStep; onEvidence: () => void }) {
   const { t, isArabic, entityLabel, rootCauseLabel } = useLanguage()
   const pipeline = detail.pipeline
@@ -37,6 +45,7 @@ function StepDetail({ detail, step, onEvidence }: { detail: ShipmentDetail; step
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
       <strong>{t(`ops.pipeline.full.${step.key}`)}</strong>
       <span className="text-muted-foreground">{t(`ops.pipeline.states.${step.status}`)}</span>
+      {settled && <span data-testid="stage-engine" className="rounded border border-border px-1.5 py-px text-[10px] text-muted-foreground">{t(`ops.pipeline.engine.${engineKey(step.key, (out as { agent?: string } | undefined)?.agent)}`)}</span>}
       <span>{t('ops.pipeline.relevant', { count: ids.length })}</span>
       {out?.nodes != null && <span>{t('ops.pipeline.retrieved', { nodes: out.nodes, edges: out.relationships ?? 0 })}</span>}
       {out?.verified_precedents != null && <span>{t('ops.pipeline.precedents', { count: out.verified_precedents })}</span>}
@@ -46,9 +55,17 @@ function StepDetail({ detail, step, onEvidence }: { detail: ShipmentDetail; step
     {step.key === 'collect' && <p className="font-mono" dir="ltr">{detail.shipment_id}</p>}
     {step.key === 'graph' && out?.categories && <p className="text-muted-foreground">{Object.entries(out.categories).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([kind, count]) => `${entityLabel(kind)} ${count}`).join(' · ')}</p>}
     {step.key === 'diagnose' && !!out?.diagnoses?.length && <p>{out.diagnoses.map(d => rootCauseLabel(d.code ?? '')).join(' · ')}</p>}
+    {step.key === 'diagnose' && (out as { investigation?: { primary_hypothesis: string; confidence: string; summary: string } } | undefined)?.investigation && (() => {
+      const inv = (out as { investigation: { primary_hypothesis: string; confidence: string; summary: string } }).investigation
+      return <p dir="auto"><span className="font-medium">{rootCauseLabel(inv.primary_hypothesis)}</span> · {t('ops.pipeline.confidence', { level: inv.confidence })}{!isArabic && <> · {inv.summary}</>}</p>
+    })()}
     {step.key === 'recommend' && out?.proposal && <p dir="auto">{isArabic ? out.proposal.action_ar ?? t('ops.workspace.rejectedGpsProposal') : out.proposal.action_en ?? out.proposal.action}</p>}
     {step.key === 'review' && out?.verdict && <p dir="auto">{t(`ops.review.${out.verdict}`)} · {isArabic ? t(out.verdict === 'accept' ? 'ops.overview.reviewGuard' : 'ops.workspace.gpsGuard') : out.feedback}</p>}
     {step.key === 'route' && out?.workflow_state && <p>{t('ops.pipeline.routedTo', { state: t(`ops.states.${out.workflow_state}`) })} · {t('ops.transition.noSkipToResolved')}</p>}
+    {step.key === 'route' && (out as { authority?: { risk_class: string; action_type: string } } | undefined)?.authority && (() => {
+      const a = (out as { authority: { risk_class: string; action_type: string } }).authority
+      return <p><span className="font-medium">{t(`ops.authority.${a.risk_class}`)}</span> · <span className="font-mono" dir="ltr">{a.action_type}</span></p>
+    })()}
     {step.key === 'outcome' && <p>{t(detail.decisions?.some(d => d.decision === 'approve') ? 'ops.pipeline.operatorRecorded' : ['AWAITING_APPROVAL', 'HUMAN_REVIEW'].includes(detail.workflow_state ?? '') ? 'ops.pipeline.operatorWaiting' : 'ops.automation.noDecision')} · {t(outcomeVerified ? 'ops.actions.verified' : detail.outcome ? 'ops.actions.observed' : 'ops.pipeline.outcomeWaiting')} · {t('ops.pipeline.outcomeRule')}</p>}
     {['recommend', 'review'].includes(step.key) && rejected > 0 && <details className="pt-1">
       <summary className="cursor-pointer font-medium">{t('ops.pipeline.loop', { count: rejected })}</summary>
@@ -65,7 +82,7 @@ export function InvestigationPipeline({ detail, selected, onSelect, onEvidence }
   return <section className="space-y-2 rounded-xl border border-border bg-card p-3" aria-label={t('ops.pipeline.title')}>
     <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
       <h3 className="text-sm font-semibold">{t('ops.pipeline.title')}</h3>
-      <span className="text-[11px] text-muted-foreground">{t('ops.pipeline.stageMode')}</span>
+      <span className="text-[11px] text-muted-foreground">{t(detail.pipeline?.events.some(e => (e.output as { agent?: string }).agent === 'gpt-oss') ? 'ops.pipeline.stageModeAgents' : 'ops.pipeline.stageMode')}</span>
       {(() => {
         // Live = running now or not started yet; otherwise this is a recorded (completed) run.
         const status = detail.pipeline?.status

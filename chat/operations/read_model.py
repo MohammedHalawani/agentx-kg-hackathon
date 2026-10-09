@@ -26,6 +26,9 @@ MATCH (c:OpsCase {dataset_id:$dataset_id,split:'development'})
 MATCH (s:V2Entity:Shipment {entity_id:c.shipment_id,dataset_id:$dataset_id,split:'development'})
 WHERE datetime(c.recorded_at) <= $snapshot AND datetime(c.opened_at) <= $snapshot
   AND ($workflow_state IS NULL OR c.workflow_state=$workflow_state)
+  AND ($scope IS NULL OR $scope='all'
+       OR ($scope='active' AND NOT (coalesce(c.is_terminal,false) OR c.workflow_state='RESOLVED'))
+       OR ($scope='resolved' AND (coalesce(c.is_terminal,false) OR c.workflow_state='RESOLVED')))
   AND ($operational_status IS NULL OR c.operational_status=$operational_status)
   AND ($priority IS NULL OR c.priority=$priority)
   AND ($city IS NULL OR c.city=$city)
@@ -295,7 +298,9 @@ class OperationsReader:
                              "filters": filters, **(metadata or {})}}
 
     def queue(self, *, cursor=None, limit=25, **filters):
-        filters = self._filters(filters, ("workflow_state", "operational_status", "priority", "city", "cause", "from_at", "to_at", "search"))
+        filters = self._filters(filters, ("workflow_state", "operational_status", "priority", "city", "cause", "from_at", "to_at", "search", "scope"))
+        if filters["scope"] not in (None, "active", "resolved", "all"):
+            raise ValueError("Invalid scope")
         result = self._page("queue", QUEUE_BASE, QUEUE_PROJECTION, filters, limit, cursor,
                             {"filter_choices": {"workflow_state": sorted(CASE_STATES), "operational_status":sorted(OPERATIONAL_STATUSES), "priority": ["low", "medium", "high", "unknown"], "cause": sorted(CAUSES)}})
         snapshot = result["metadata"]["as_of"]

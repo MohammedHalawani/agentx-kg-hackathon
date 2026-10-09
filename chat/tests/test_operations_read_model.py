@@ -78,7 +78,7 @@ class PaginationTests(unittest.TestCase):
 
     def test_cursor_snapshot_frozen_and_future_cursor_rejected(self):
         reader,_=make_reader(lambda q,p:[{"total":0}] if "AS total" in q else [],clock="2026-10-01T00:00:00+00:00")
-        filters=reader._filters({},("workflow_state","operational_status","priority","city","cause","from_at","to_at","search"))
+        filters=reader._filters({},("workflow_state","operational_status","priority","city","cause","from_at","to_at","search","scope"))
         binding=fingerprint("queue",reader.dataset_id,filters,25)
         cursor=encode_cursor(binding,"2026-09-01T00:00:00+00:00","DEMO-A","2026-10-02T00:00:00+00:00")
         with self.assertRaises(ValueError):reader.queue(cursor=cursor)
@@ -127,7 +127,7 @@ class PaginationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"ahead of execution time"):reader.audit(cursor=future)
         future_source=encode_cursor(binding,"2026-09-01T00:00:00+00:00","DEMO-A","2026-09-12T00:00:00+00:00",datetime.now(timezone.utc).isoformat())
         with self.assertRaisesRegex(ValueError,"ahead of the logical clock"):reader.audit(cursor=future_source)
-        queue_filters=reader._filters({},("workflow_state","operational_status","priority","city","cause","from_at","to_at","search"))
+        queue_filters=reader._filters({},("workflow_state","operational_status","priority","city","cause","from_at","to_at","search","scope"))
         queue_cursor=encode_cursor(fingerprint("queue",reader.dataset_id,queue_filters,25),"2026-09-01T00:00:00+00:00","DEMO-A","2026-09-10T00:00:00+00:00",datetime.now(timezone.utc).isoformat())
         with self.assertRaisesRegex(ValueError,"only supported by Audit"):reader.queue(cursor=queue_cursor)
         valid=encode_cursor(binding,"2026-09-01T00:00:00+00:00","DEMO-A","2026-09-10T00:00:00+00:00",datetime.now(timezone.utc).isoformat())

@@ -18,6 +18,7 @@ CONTROL_ID = "DEMO-OPS-CONTROL"
 
 
 MONITOR_QUEUE_LIMIT = 500
+AUTO_OUTCOME_WINDOW_HOURS = 72
 
 
 def monitor_enqueue(queue, shipment_ids):
@@ -40,18 +41,20 @@ def identity(kind, *parts):
 
 
 def temporal_properties(props):
-    fields = UTC_FIELDS | {"initial_as_of", "cursor_time", "claim_at", "observed_at", "source_occurred_at"}
+    fields = UTC_FIELDS | {"initial_as_of", "cursor_time", "claim_at", "observed_at", "source_occurred_at",
+                           "outcome_checked_as_of", "deadline_at", "closed_at", "session_started_at", "last_processed_at"}
     return {key: instant(value) if key in fields and isinstance(value, str) else value for key, value in props.items()}
 
 
 class OperationsStore:
-    def __init__(self, driver, database, dataset_id, config=None, reader=None, *, uri="bolt://localhost:7687", protected=()):
+    def __init__(self, driver, database, dataset_id, config=None, reader=None, *, uri="bolt://localhost:7687", protected=(), agents=None):
         target_guard(uri, database, protected)
         if database != "shipments-v2-demo" or not str(dataset_id).startswith("DEMO-"):
             raise OperationsConflict("Operations requires the fixed audited local shadow")
         self.driver, self.database, self.dataset_id = driver, database, dataset_id
         self.config = config or Config(dataset_id=dataset_id)
         self.reader = reader
+        self.agents = agents  # operations.agents (GPT-OSS roles) or None for deterministic-only triage
         self._subscribers={}
         self._subscribers_lock=threading.RLock()
 
@@ -378,6 +381,58 @@ class OperationsStore:
         self._execute(reset_tx,write=True)
         return self.status()
 
+    def outcome_step(self, limit=3):
+        """Verify automatically executed actions from evidence that arrived after them (live sessions only)."""
+        from operations.outcome_engine import evaluate, EVIDENCE_ACTIONS
+        from operations.reasoning import evidence_world
+        def due(tx):
+            c=self._control(tx)
+            if c.get("case_source")!="monitor":return [],c["as_of"]
+            rows=tx.run("MATCH(c:OpsEntity:OpsCase {dataset_id:$dataset,split:'development',workflow_state:'AWAITING_OUTCOME'}) "
+                "MATCH(e:OpsEntity:OpsExecution {case_id:c.entity_id,authority:'AUTO_POLICY'}) "
+                "WHERE c.outcome_checked_as_of IS NULL OR c.as_of > c.outcome_checked_as_of OR e.deadline_at <= $clock "
+                "RETURN properties(c) AS case,properties(e) AS execution ORDER BY c.as_of LIMIT $limit",
+                dataset=self.dataset_id,clock=instant(c["as_of"]),limit=limit)
+            return [(public_value(r["case"]),public_value(r["execution"])) for r in rows],c["as_of"]
+        items,clock=self._execute(due)
+        results=[]
+        for case,execution in items:
+            context=self._reader().evidence(case["shipment_id"],clock)
+            verdict=evaluate(evidence_world(context,self.config),case["shipment_id"],execution,context["as_of"])
+            def record(tx,case=case,execution=execution,verdict=verdict):
+                c=self._control(tx,lock=True);current=self._case(tx,case["entity_id"]);when=c["as_of"]
+                if current["workflow_state"]!="AWAITING_OUTCOME":return None
+                if verdict["status"]=="pending":
+                    current["outcome_checked_as_of"]=current["as_of"];self._put(tx,"OpsCase",current,update=True);return None
+                success=verdict["status"]=="success";outcome_id=identity("outcome","auto",execution["entity_id"],when)
+                self._put(tx,"OpsOutcome",{"entity_id":outcome_id,"shipment_id":current["shipment_id"],"case_id":current["entity_id"],
+                    "execution_id":execution["entity_id"],"action_code":execution["action_code"],"success":success,
+                    "outcome_type":verdict["outcome_type"],"evidence_ids":verdict["evidence_ids"],"verification_status":"VERIFIED",
+                    "verified_at":when,"verifier_id":"SUHAIL-OUTCOME-VERIFIER","invalidated":False,"observed_at":when,
+                    "reason":verdict["reason"],"recorded_at":when,"occurred_at":when})
+                self._link(tx,"OPS_HAS_OUTCOME",current["entity_id"],outcome_id,current["shipment_id"],when)
+                self._audit(tx,current,"OUTCOME_OBSERVED",when,actor="SUHAIL-OUTCOME-VERIFIER",result=verdict["reason"])
+                old=current["workflow_state"]
+                if success:
+                    current.update(workflow_state="RESOLVED",operational_status="RESOLVED",is_terminal=True,closed_at=when,
+                                   verified_outcome_id=outcome_id,state_version=current["state_version"]+1)
+                    self._put(tx,"OpsCase",current,update=True)
+                    self._audit(tx,current,"OUTCOME_VERIFIED",when,actor="SUHAIL-OUTCOME-VERIFIER",old=old,
+                                result=f"{execution['action_type']} succeeded: {verdict['reason']}")
+                    self._audit(tx,current,"CASE_RESOLVED",when,actor="SUHAIL-OUTCOME-VERIFIER",old=old,
+                                result="Resolved from independently observed later evidence; no human action.")
+                    self._audit(tx,current,"NOTIFICATION_QUEUED",when,actor="SUHAIL-OUTCOME-VERIFIER",result="Dry run only; zero external sends.")
+                else:
+                    destination="NEEDS_EVIDENCE" if execution["action_type"] in EVIDENCE_ACTIONS and verdict["outcome_type"]!="dispute_unresolved" else "HUMAN_REVIEW"
+                    current.update(workflow_state=destination,state_version=current["state_version"]+1)
+                    self._put(tx,"OpsCase",current,update=True)
+                    self._audit(tx,current,"OUTCOME_FAILED",when,actor="SUHAIL-OUTCOME-VERIFIER",old=old,
+                                result=f"{execution['action_type']} not confirmed: {verdict['reason']} Routed to {destination}.")
+                return {"case_id":current["entity_id"],"workflow_state":current["workflow_state"]}
+            result=self._execute(record,write=True)
+            if result:results.append(result)
+        return results
+
     def _update_cases_for_event(self,tx,row,p,sid,when):
         cases=list(tx.run("MATCH(c:OpsCase {shipment_id:$sid,dataset_id:$dataset,split:'development'}) RETURN properties(c) AS props",
                           sid=sid,dataset=self.dataset_id))
@@ -387,7 +442,7 @@ class OperationsStore:
                 case["as_of"]=when
                 case["state_version"]+=1
                 if "RecipientReport" in row["labels"] and case["workflow_state"]=="RESOLVED":
-                    case.update(workflow_state="REOPENED",state_version=case["state_version"]+1)
+                    case.update(workflow_state="REOPENED",state_version=case["state_version"]+1,is_terminal=False,closed_at=None,verified_outcome_id=None)
                     self._invalidate_outcomes(tx,case)
                     self._audit(tx,case,"CASE_REOPENED",when,result="A new attributed recipient report reopens investigation.",actor="DEMO-SIMULATOR")
                 self._put(tx,"OpsCase",case,update=True)
@@ -437,7 +492,10 @@ class OperationsStore:
                 self._put(tx,"OpsRecommendation",{"entity_id":recommendation_id,"shipment_id":case["shipment_id"],
                     "case_id":case["entity_id"],"run_id":run_id,"recorded_at":when,"action_code":proposal["action_code"],
                     "action":proposal["action"],"action_en":proposal.get("action_en",proposal["action"]),
-                    "action_ar":proposal.get("action_ar"),"evidence_ids":proposal["evidence_ids"],"status":"PROPOSED","requires_approval":True})
+                    "action_ar":proposal.get("action_ar"),"evidence_ids":proposal["evidence_ids"],"status":"PROPOSED","requires_approval":True,
+                    "action_type":proposal.get("action_type"),"risk_class":(analysis.get("authority") or {}).get("risk_class"),
+                    "authority_reason":(analysis.get("authority") or {}).get("reason"),
+                    "agent_mode":((proposal.get("planner") or {}).get("mode")) or analysis["mode"]})
                 self._link(tx,"OPS_PROPOSES",run_id,recommendation_id,case["shipment_id"],when)
             for item in analysis["trace"]:
                 review_id=identity("review",run_id,item["iteration"])
@@ -454,9 +512,33 @@ class OperationsStore:
                 self._put(tx,"OpsCase",current,update=True)
                 self._audit(tx,current,"RECOMMENDATION_READY",when,old=old,result="Reviewed proposal only; no execution or verified outcome.")
                 old=current["workflow_state"]
+            authority=analysis.get("authority") or {}
+            if recommendation_id and analysis["review"]["verdict"]=="accept" and authority.get("risk_class")=="AUTO":
+                if control.get("case_source")!="monitor":raise OperationsConflict("Automatic execution is limited to synthetic live sessions")
+                execution_id=identity("execution","auto",recommendation_id)
+                deadline=(instant(when)+timedelta(hours=AUTO_OUTCOME_WINDOW_HOURS)).isoformat()
+                self._put(tx,"OpsExecution",{"entity_id":execution_id,"shipment_id":case["shipment_id"],"case_id":case["entity_id"],
+                    "decision_id":None,"action_code":analysis["proposal"]["action_code"],"action_type":authority["action_type"],
+                    "authority":"AUTO_POLICY","receipt_ref":"synthetic-receipt:"+execution_id,"status":"ACKNOWLEDGED",
+                    "mode":"synthetic_auto_no_external_call","expected_result":analysis["proposal"].get("action"),
+                    "deadline_at":deadline,"idempotency_key":execution_id,"recorded_at":when,"occurred_at":when})
+                self._link(tx,"OPS_INITIATES",recommendation_id,execution_id,case["shipment_id"],when)
+                self._audit(tx,current,"ACTION_AUTHORIZED",when,actor="SUHAIL-AUTHORITY-POLICY",old=current["workflow_state"],
+                            result=f"AUTO · {authority['action_type']} · {authority['reason']}")
+                current.update(workflow_state="ACTION_INITIATED",state_version=current["state_version"]+1)
+                self._put(tx,"OpsCase",current,update=True)
+                self._audit(tx,current,"ACTION_INITIATED",when,actor="SUHAIL-SYNTHETIC-EXECUTOR",old="RECOMMENDATION_READY",
+                            result=f"{authority['action_type']} · synthetic receipt; no external call. Awaiting later evidence until {deadline}.")
+                old="ACTION_INITIATED"
+            elif authority:
+                self._audit(tx,current,"AUTHORITY_ROUTED",when,actor="SUHAIL-AUTHORITY-POLICY",old=old,
+                            result=f"{authority.get('risk_class')} · {authority.get('action_type')} · {authority.get('reason')}")
             current.update(workflow_state=analysis["result"]["workflow_state"],state_version=current["state_version"]+1,
                 last_run_id=run_id,recommendation_id=recommendation_id,claim_id=None,claim_at=None,
                 cause_codes=analysis["result"]["operational_labels"],operational_status=analysis["result"]["operational_status"])
+            primary=(analysis.get("investigation") or {}).get("primary_hypothesis")
+            diagnosis=next((d for d in analysis["result"]["diagnoses"] if d["code"]==primary),None) or next(iter(analysis["result"]["diagnoses"]),None)
+            if diagnosis:current["issue_summary"]=diagnosis.get("summary_en") or diagnosis["summary"]  # Neutral rule text, not model prose.
             self._put(tx,"OpsCase",current,update=True)
             if analysis["afl"]["fixture"]:self._audit(tx,current,"AFL_RETRY",when,result="Explicit deterministic hard rejection carried into revised investigation proposal.")
             control.update(worker_claim=None,claim_at=None,processed_count=control["processed_count"]+1,
@@ -470,7 +552,8 @@ class OperationsStore:
             analysis,result=investigate(case["shipment_id"],case["as_of"],self.config,self.reader.evidence,
                 lambda sid,codes:self.reader.historical_precedents(sid,codes,as_of=case['as_of']),
                 commit=lambda a:self._execute(lambda tx:finish(tx,a),write=True),
-                on_event=lambda event,events:self._record_stage(case,event,events),afl_scenario=fixture)
+                on_event=lambda event,events:self._record_stage(case,event,events),afl_scenario=fixture,
+                agents=self.agents if not fixture else None,live_session=status["session"]["case_source"]=="monitor")
             analysis["writeback"]=result
             self._save_run_trace(case,analysis)
             return result
@@ -627,6 +710,7 @@ class OperationsStore:
                 self._audit(tx,case,"ACTION_INITIATED",when,actor=actor_id,old=old,
                             result="Synthetic receipt; no external logistics action executed.")
             case.update(workflow_state=destination,state_version=case["state_version"]+1)
+            if decision=="reopen":case.update(is_terminal=False,closed_at=None,verified_outcome_id=None)
             self._put(tx,"OpsCase",case,update=True)
             self._audit(tx,case,"OPERATOR_DECISION",when,decision=decision,actor=actor_id,old=old)
             if execution_id:
@@ -683,7 +767,7 @@ class OperationsStore:
             outcome.update(verification_status="VERIFIED",verified_at=when,verifier_id=actor_id,provenance="VERIFIED_OUTCOME")
             self._put(tx,"OpsOutcome",outcome,update=True)
             old=case["workflow_state"];case.update(workflow_state=verified["workflow_state"],state_version=case["state_version"]+1)
-            if verified["resolved"]:case["operational_status"]="RESOLVED"
+            if verified["resolved"]:case.update(operational_status="RESOLVED",is_terminal=True,closed_at=when,verified_outcome_id=outcome_id)
             self._put(tx,"OpsCase",case,update=True);self._audit(tx,case,"OUTCOME_VERIFIED",when,actor=actor_id,old=old)
             if verified["resolved"]:
                 self._audit(tx,case,"CASE_RESOLVED",when,actor=actor_id,old=old)
