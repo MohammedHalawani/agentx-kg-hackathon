@@ -59,6 +59,27 @@ function StepDetail({ detail, step, onEvidence }: { detail: ShipmentDetail; step
       const inv = (out as { investigation: { primary_hypothesis: string; confidence: string; summary: string } }).investigation
       return <p dir="auto"><span className="font-medium">{rootCauseLabel(inv.primary_hypothesis)}</span> · {t('ops.pipeline.confidence', { level: inv.confidence })}{!isArabic && <> · {inv.summary}</>}</p>
     })()}
+    {step.key === 'diagnose' && (() => {
+      // Each tool call the agent made is a recorded backend event; nothing here is replayed or scripted.
+      const calls = (pipeline?.events ?? []).filter(e => e.stage === 'classify' && (e.output as { kind?: string }).kind === 'tool_call')
+      const inv = (out as { investigation?: { hypotheses?: { cause: string; status: string; supporting_evidence_ids?: string[] }[] } } | undefined)?.investigation
+      if (!calls.length && !inv?.hypotheses?.length) return null
+      return <div className="space-y-1.5 pt-1">
+        {calls.length > 0 && <ol data-testid="agent-tool-calls" className="space-y-0.5" aria-label={t('ops.pipeline.toolCalls', { count: calls.length })}>
+          <li className="font-medium">{t('ops.pipeline.toolCalls', { count: calls.length })}</li>
+          {calls.map((e, i) => { const o = e.output as { tool?: string; purpose?: string; evidence_ids?: string[] }
+            return <li key={e.sequence} className="flex flex-wrap gap-x-2 text-muted-foreground">
+              <span className="font-mono text-[11px] text-foreground" dir="ltr">{i + 1}. {o.tool}</span>
+              <span>{t('ops.pipeline.toolEvidence', { count: o.evidence_ids?.length ?? 0 })}</span>
+              {!isArabic && o.purpose && <span dir="auto">· {o.purpose}</span>}
+            </li> })}
+        </ol>}
+        {!!inv?.hypotheses?.length && <ul data-testid="agent-hypotheses" className="flex flex-wrap gap-1.5" aria-label={t('ops.pipeline.hypotheses')}>
+          {inv.hypotheses.map(h => <li key={h.cause} className={`rounded-md border px-1.5 py-0.5 ${h.status === 'supported' ? 'border-chart-good/60 bg-chart-good/10' : h.status === 'refuted' ? 'border-border text-muted-foreground line-through' : 'border-chart-warning/60 bg-chart-warning/10'}`}>
+            {rootCauseLabel(h.cause)} · {t(`ops.pipeline.hypothesis.${h.status}`)}</li>)}
+        </ul>}
+      </div>
+    })()}
     {step.key === 'recommend' && out?.proposal && <p dir="auto">{isArabic ? out.proposal.action_ar ?? t('ops.workspace.rejectedGpsProposal') : out.proposal.action_en ?? out.proposal.action}</p>}
     {step.key === 'review' && out?.verdict && <p dir="auto">{t(`ops.review.${out.verdict}`)} · {isArabic ? t(out.verdict === 'accept' ? 'ops.overview.reviewGuard' : 'ops.workspace.gpsGuard') : out.feedback}</p>}
     {step.key === 'route' && out?.workflow_state && <p>{t('ops.pipeline.routedTo', { state: t(`ops.states.${out.workflow_state}`) })} · {t('ops.transition.noSkipToResolved')}</p>}

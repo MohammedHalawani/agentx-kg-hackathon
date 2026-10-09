@@ -68,9 +68,10 @@ class OperationsRuntime:
         dataset_config=Config(**manifest["config"])
         self.reader=OperationsReader(driver,self.database,dataset_config.dataset_id,dataset_config,
                                      lambda:self.store.status()["as_of"])
-        from operations import agents
+        from operations import agents,investigator
+        # GPT-OSS investigation agent (tool loop + independent reviewer); SUHAIL_V2_AGENTS=off runs rules only.
         self.store=OperationsStore(driver,self.database,dataset_config.dataset_id,dataset_config,reader=self.reader,
-                                   agents=agents if agents.enabled() else None)
+                                   agents=investigator if agents.enabled() else None)
         self.reader.store=self.store
         self.store.initialize()
         from operations.workers import WorkerPool

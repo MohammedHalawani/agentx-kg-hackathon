@@ -98,22 +98,36 @@ class AuthorityTests(unittest.TestCase):
         self.assertEqual(default_action("DELIVERY_DISPUTE"), "DELIVERY_DISPUTE_REVIEW")
 
 
-def fake_agents():
-    """The real agents module with a deterministic stand-in for the model call."""
-    def call(system, user, default):
-        facts = json.loads(user.split("\n\nYour previous")[0])["facts"]
-        top = facts["deterministic_signals"][0]
-        if "investigator" in system:
-            return {**default, "primary_hypothesis": top["code"], "supporting_evidence_ids": top["evidence_ids"][:5],
-                    "confidence": "medium", "sensitivity": "high" if top["requires_human_review"] else "low", "summary": "Supported by cited evidence."}
-        if "planner" in system:
-            return {**default, "action_type": default_action(top["code"]), "evidence_basis": top["evidence_ids"][:5],
-                    "expected_result": "Later evidence confirms recovery.", "reason": "Catalog action for the diagnosis."}
-        return {**default, "verdict": "ACCEPT", "feedback": "Supported and within policy."}
-    module = types.SimpleNamespace(facts=agents.facts, investigate=lambda p: agents.investigate(p, call=call),
-                                   plan=lambda p, i, feedback=None: agents.plan(p, i, call=call, feedback=feedback),
-                                   review=lambda p, i, pr: agents.review(p, i, pr, call=call))
-    return module
+def fake_agents(review_call=None):
+    """Test double for the GPT-OSS investigator: it really calls the tools, then concludes with the
+    cause the evidence rules support among the evidence it retrieved. Reviewer accepts unless replaced."""
+    from operations import investigator
+    from dataset_v2.derive import assess_shipment
+    def investigate(tools, on_step=None, feedback=None):
+        packages = [n.id for n in tools.world.nodes.values() if n.kind == "Package"]
+        plan = [("scans", {}), ("delivery_attempts", {}), ("vehicle_and_manifest", {})] + [("custody_chain", {"package_id": p}) for p in packages]
+        plan += [("journey", {"package_id": p}) for p in packages]
+        replies = [{"action": "call", "tool": t, "args": a, "purpose": "Inspect."} for t, a in plan[:investigator.MAX_TOOL_CALLS]]
+        def conclude(messages):
+            exceptions = assess_shipment(tools.world, tools.sid, tools.as_of)["exceptions"]
+            top = next((e for e in exceptions if set(e["evidence_ids"]) & tools.retrieved), None)
+            if top is None:
+                return {"action": "conclude", "primary_cause": "UNKNOWN", "confidence": "low", "missing_evidence": ["more evidence"],
+                        "recommended_action": "REQUEST_ADDITIONAL_EVIDENCE", "requires_physical_check": False, "summary": "Not enough evidence.",
+                        "hypotheses": [{"cause": "UNKNOWN", "status": "uncertain", "supporting_evidence_ids": [], "contradicting_evidence_ids": [], "assessment": "Unclear."}]}
+            ids = sorted(set(top["evidence_ids"]) & tools.retrieved)
+            return {"action": "conclude", "primary_cause": top["code"], "confidence": "medium", "missing_evidence": [],
+                    "recommended_action": default_action(top["code"]), "requires_physical_check": top["requires_human_review"],
+                    "summary": "Supported by cited evidence.", "hypotheses": [{"cause": top["code"], "status": "supported",
+                    "supporting_evidence_ids": ids, "contradicting_evidence_ids": [], "assessment": "Consistent with the records."}]}
+        def turn(messages, queue=list(replies) + [conclude]):
+            reply = queue.pop(0)
+            return reply(messages) if callable(reply) else reply
+        return investigator.investigate(tools, turn=turn, on_step=on_step, feedback=feedback)
+    def review(conclusion, records, checks, symptoms):
+        ask = review_call or (lambda system, user, default: {**default, "verdict": "ACCEPT", "feedback": "Supported and within policy."})
+        return investigator.review(conclusion, records, checks, symptoms, ask=ask)
+    return types.SimpleNamespace(investigate=investigate, review=review)
 
 
 class AgentPipelineTests(unittest.TestCase):
@@ -157,11 +171,8 @@ class ReviewerFailureTests(unittest.TestCase):
     def setUpClass(cls): cls.world = generate(Config(total=90))
 
     def test_unavailable_reviewer_blocks_auto_execution_and_records_degraded_review(self):
-        healthy = fake_agents()
-        def broken(p, i, pr):
-            def call(system, user, default): raise ConnectionError("unreachable")
-            return agents.review(p, i, pr, call=call)
-        module = types.SimpleNamespace(facts=healthy.facts, investigate=healthy.investigate, plan=healthy.plan, review=broken)
+        def unreachable(system, user, default): raise ConnectionError("unreachable")
+        module = fake_agents(review_call=unreachable)
         d = Driver(self.world)
         s = OperationsStore(d, "shipments-v2-demo", self.world.config.dataset_id, self.world.config, Reader(self.world), agents=module)
         s.initialize(); s.reset_session(); LiveSessionTests.run_world(self, s, rounds=400)

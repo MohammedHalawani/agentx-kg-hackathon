@@ -88,7 +88,7 @@ class OperationsStore:
             self.gateway = Gateway(driver, database, dataset_id)
         self.config = config or Config(dataset_id=dataset_id)
         self.reader = reader
-        self.agents = agents  # operations.agents (GPT-OSS roles) or None for deterministic-only triage
+        self.agents = agents  # operations.investigator (GPT-OSS tool loop + reviewer) or None for rules only
         self._subscribers={}
         self._subscribers_lock=threading.RLock()
 
@@ -661,10 +661,11 @@ class OperationsStore:
         from operations.graph import investigate
         try:
             analysis,result=investigate(case["shipment_id"],case["as_of"],self.config,self.reader.evidence,
-                lambda sid,codes:self.reader.historical_precedents(sid,codes,as_of=case['as_of']),
+                lambda sid,codes:self.reader.precedents(sid,codes,as_of=case['as_of']),
                 commit=lambda a:self._execute(lambda tx:finish(tx,a),write=True),
                 on_event=lambda event,events:self._record_stage(case,event,events),
-                agents=self.agents,live_session=True)
+                agents=self.agents,live_session=True,symptoms=case.get("symptom_codes") or [],
+                heartbeats=getattr(self.reader,"heartbeats",None))
             analysis["writeback"]=result
             self._save_run_trace(case,analysis)
             return result

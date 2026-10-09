@@ -391,6 +391,37 @@ class OperationsReader:
                          candidate_limit=20, precedent_limit=limit, evidence_kinds=sorted(OBSERVATIONS))
         return [row["item"] for row in rows if type(row["item"].get("success")) is bool]
 
+    def precedents(self, shipment_id, codes, limit=5, as_of=None):
+        """Trusted precedents only: verified, non-invalidated outcomes recorded before `as_of`.
+
+        Historical (imported) verified outcomes plus outcomes this live session verified itself;
+        never the shipment under investigation, never pending or merely observed outcomes."""
+        codes = sorted(set(codes) & CAUSES)
+        if not codes:
+            return []
+        rows = self.historical_precedents(shipment_id, codes, limit=limit, as_of=as_of)
+        live = self._run("MATCH (o:OpsEntity:OpsOutcome {dataset_id:$dataset_id,verification_status:'VERIFIED',invalidated:false}) "
+                         "MATCH (c:OpsEntity:OpsCase {entity_id:o.case_id}) "
+                         "WHERE o.shipment_id <> $shipment_id AND datetime(o.verified_at) <= $snapshot AND any(x IN coalesce(c.cause_codes,[]) WHERE x IN $codes) "
+                         "AND o.success IN [true,false] "
+                         "RETURN {shipment_id:o.shipment_id,case_id:c.entity_id,exception_codes:c.cause_codes,action_type:o.action_type,"
+                         "action:o.outcome_type,success:o.success,verified_at:o.verified_at,outcome_id:o.entity_id,source:'live_verified',synthetic:true} AS item "
+                         "ORDER BY o.verified_at DESC LIMIT $limit", shipment_id=shipment_id, codes=codes,
+                         snapshot=as_of or self.clock(), limit=limit)
+        return [*rows, *[r["item"] for r in live]][:limit * 2]
+
+    def heartbeats(self, device_id, since, until):
+        """Device telemetry recorded by `until` (bounded window); operational data, not shipment evidence."""
+        if not isinstance(device_id, str) or not device_id.startswith("DEMO-DEV-") or len(device_id) > 120:
+            raise ValueError("Invalid device identity")
+        if instant(until) > instant(self.clock()):
+            raise ValueError("Device window is ahead of the logical clock")
+        return self._run("MATCH (h:V2Entity:DeviceHeartbeat {dataset_id:$dataset_id,device_id:$device_id}) "
+                         "WHERE h.recorded_at <= $cutoff AND h.occurred_at >= $from_at AND h.occurred_at <= $cutoff "
+                         "RETURN h.entity_id AS entity_id,h.occurred_at AS occurred_at,h.pending_uploads AS pending_uploads,"
+                         "h.last_upload_at AS last_upload_at ORDER BY h.occurred_at DESC LIMIT 60",
+                         device_id=device_id, from_at=since, cutoff=until)
+
     def shipment_detail(self, shipment_id, as_of=None):
         evidence = self.evidence(shipment_id, as_of)
         reasoning = triage(evidence, self.config)

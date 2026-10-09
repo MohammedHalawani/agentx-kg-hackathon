@@ -1,0 +1,397 @@
+{
+ "summary": {
+  "model": "openai/gpt-oss:120b",
+  "cases": 9,
+  "root_cause_correct": 7,
+  "scored": 9,
+  "citations_valid": 9,
+  "mean_tool_calls": 5.7,
+  "mean_seconds": 31.5,
+  "degraded": 0,
+  "authority": {
+   "AUTO": 6,
+   "APPROVAL_REQUIRED": 0,
+   "HUMAN_REVIEW": 2,
+   "null": 1
+  }
+ },
+ "cases": [
+  {
+   "case_id": "DEMO-OPS-CASE-eec7ba6ed0c7b6b61e4bf559",
+   "shipment_id": "DEMO-SHP-000132",
+   "symptoms": [
+    "BARCODE_READ_DIFFERS"
+   ],
+   "seconds": 47.2,
+   "tool_calls": 4,
+   "tools": [
+    "scans",
+    "scans",
+    "custody_chain",
+    "policy"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "BARCODE_MISMATCH",
+   "confidence": "high",
+   "hypotheses": [
+    [
+     "BARCODE_MISMATCH",
+     "supported"
+    ]
+   ],
+   "action": "REQUEST_RESCAN",
+   "review": "ACCEPT",
+   "iterations": 2,
+   "degraded": [],
+   "unsupported_by_rules": false,
+   "authority": "AUTO",
+   "workflow_state": "AWAITING_OUTCOME",
+   "cited_within_retrieved": true,
+   "truth_recipe": "wrong_label_applied",
+   "truth_cause": "BARCODE_MISMATCH",
+   "acceptable": [
+    "BARCODE_MISMATCH"
+   ],
+   "cause_correct": true,
+   "key_evidence_cited": null
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-85e1b6a6e4d4b5254da788c9",
+   "shipment_id": "DEMO-SHP-000001",
+   "symptoms": [
+    "CUSTODY_TRANSFER_UNCONFIRMED",
+    "MILESTONE_OVERDUE",
+    "SESSION_END_UNRECONCILED"
+   ],
+   "seconds": 23.9,
+   "tool_calls": 6,
+   "tools": [
+    "shipment_overview",
+    "custody_chain",
+    "scans",
+    "delivery_attempts",
+    "device_status",
+    "device_status"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "CUSTODY_GAP",
+   "confidence": "high",
+   "hypotheses": [
+    [
+     "CUSTODY_GAP",
+     "supported"
+    ]
+   ],
+   "action": "INITIATE_CUSTODY_RECONCILIATION",
+   "review": "ACCEPT",
+   "iterations": 1,
+   "degraded": [],
+   "unsupported_by_rules": false,
+   "authority": "HUMAN_REVIEW",
+   "workflow_state": "HUMAN_REVIEW",
+   "cited_within_retrieved": true,
+   "truth_recipe": "contractor_unconfirmed_pickup",
+   "truth_cause": "CUSTODY_GAP",
+   "acceptable": [
+    "CUSTODY_GAP",
+    "UNRECONCILED_CUSTODY"
+   ],
+   "cause_correct": true,
+   "key_evidence_cited": true
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-b5fdfac0c3b5095e9e7d4a54",
+   "shipment_id": "DEMO-SHP-000103",
+   "symptoms": [
+    "MANIFEST_CUSTODY_CONFLICT"
+   ],
+   "seconds": 11.7,
+   "tool_calls": 4,
+   "tools": [
+    "shipment_overview",
+    "custody_chain",
+    "vehicle_and_manifest",
+    "scans"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "MANIFEST_CONFLICT",
+   "confidence": "medium",
+   "hypotheses": [
+    [
+     "MANIFEST_CONFLICT",
+     "supported"
+    ]
+   ],
+   "action": "MANIFEST_RECONCILIATION_REVIEW",
+   "review": "ACCEPT",
+   "iterations": 1,
+   "degraded": [],
+   "unsupported_by_rules": false,
+   "authority": "HUMAN_REVIEW",
+   "workflow_state": "HUMAN_REVIEW",
+   "cited_within_retrieved": true,
+   "truth_recipe": "conflicting_manifest",
+   "truth_cause": "MANIFEST_CONFLICT",
+   "acceptable": [
+    "MANIFEST_CONFLICT"
+   ],
+   "cause_correct": true,
+   "key_evidence_cited": true
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-6fda5c179fc8a7329ed709ea",
+   "shipment_id": "DEMO-SHP-000025",
+   "symptoms": [
+    "BARCODE_READ_DIFFERS"
+   ],
+   "seconds": 16.0,
+   "tool_calls": 6,
+   "tools": [
+    "scans",
+    "shipment_overview",
+    "scans",
+    "policy",
+    "custody_chain",
+    "journey"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "BARCODE_MISMATCH",
+   "confidence": "medium",
+   "hypotheses": [
+    [
+     "BARCODE_MISMATCH",
+     "supported"
+    ]
+   ],
+   "action": "REQUEST_RESCAN",
+   "review": "ACCEPT",
+   "iterations": 1,
+   "degraded": [],
+   "unsupported_by_rules": false,
+   "authority": "AUTO",
+   "workflow_state": "AWAITING_OUTCOME",
+   "cited_within_retrieved": true,
+   "truth_recipe": "different_barcode",
+   "truth_cause": "BARCODE_MISMATCH",
+   "acceptable": [
+    "BARCODE_MISMATCH"
+   ],
+   "cause_correct": true,
+   "key_evidence_cited": null
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-89e8cc22580ed17c45e34d3c",
+   "shipment_id": "DEMO-SHP-000095",
+   "symptoms": [
+    "WEIGHT_READ_DIFFERS"
+   ],
+   "seconds": 39.8,
+   "tool_calls": 5,
+   "tools": [
+    "shipment_overview",
+    "scans",
+    "custody_chain",
+    "device_status",
+    "journey"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "WEIGHT_MISMATCH",
+   "confidence": "high",
+   "hypotheses": [
+    [
+     "WEIGHT_MISMATCH",
+     "supported"
+    ]
+   ],
+   "action": "REQUEST_REWEIGH",
+   "review": "ACCEPT",
+   "iterations": 2,
+   "degraded": [],
+   "unsupported_by_rules": false,
+   "authority": "AUTO",
+   "workflow_state": "AWAITING_OUTCOME",
+   "cited_within_retrieved": true,
+   "truth_recipe": "declared_weight_wrong",
+   "truth_cause": "WEIGHT_MISMATCH",
+   "acceptable": [
+    "WEIGHT_MISMATCH"
+   ],
+   "cause_correct": true,
+   "key_evidence_cited": null
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-130d30acb7e5397546cbe56c",
+   "shipment_id": "DEMO-SHP-000068",
+   "symptoms": [
+    "CUSTODY_TRANSFER_UNCONFIRMED",
+    "MILESTONE_OVERDUE"
+   ],
+   "seconds": 21.0,
+   "tool_calls": 7,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "custody_chain",
+    "scans",
+    "device_status",
+    "vehicle_and_manifest",
+    "delivery_attempts"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "DELAYED_SYNC",
+   "confidence": "medium",
+   "hypotheses": [
+    [
+     "DELAYED_SYNC",
+     "supported"
+    ]
+   ],
+   "action": "REQUEST_DEVICE_SYNC",
+   "review": "ACCEPT",
+   "iterations": 1,
+   "degraded": [],
+   "unsupported_by_rules": false,
+   "authority": "AUTO",
+   "workflow_state": "AWAITING_OUTCOME",
+   "cited_within_retrieved": true,
+   "truth_recipe": "offline_device_sync",
+   "truth_cause": "DELAYED_SYNC",
+   "acceptable": [
+    "DELAYED_SYNC"
+   ],
+   "cause_correct": true,
+   "key_evidence_cited": false
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-f4d81aaf1acd73c66be01227",
+   "shipment_id": "DEMO-SHP-000027",
+   "symptoms": [
+    "DELIVERY_ATTEMPT_FAILED",
+    "MILESTONE_OVERDUE",
+    "SESSION_END_UNRECONCILED"
+   ],
+   "seconds": 40.6,
+   "tool_calls": 6,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "delivery_attempts",
+    "custody_chain",
+    "address_and_instructions",
+    "scans"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "CUSTODY_GAP",
+   "confidence": "high",
+   "hypotheses": [
+    [
+     "CUSTODY_GAP",
+     "supported"
+    ]
+   ],
+   "action": "INITIATE_CUSTODY_RECONCILIATION",
+   "review": "REVISE",
+   "iterations": 2,
+   "degraded": [],
+   "unsupported_by_rules": true,
+   "authority": null,
+   "workflow_state": "ESCALATED",
+   "cited_within_retrieved": true,
+   "truth_recipe": "contractor_unreturned",
+   "truth_cause": "UNRECONCILED_CUSTODY",
+   "acceptable": [
+    "UNRECONCILED_CUSTODY"
+   ],
+   "cause_correct": false,
+   "key_evidence_cited": true
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-549626508a38a17b5b569071",
+   "shipment_id": "DEMO-SHP-000100",
+   "symptoms": [
+    "WEIGHT_READ_DIFFERS"
+   ],
+   "seconds": 49.2,
+   "tool_calls": 6,
+   "tools": [
+    "shipment_overview",
+    "scans",
+    "scans",
+    "policy",
+    "custody_chain",
+    "journey"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "WEIGHT_MISMATCH",
+   "confidence": "high",
+   "hypotheses": [
+    [
+     "WEIGHT_MISMATCH",
+     "supported"
+    ]
+   ],
+   "action": "REQUEST_REWEIGH",
+   "review": "ACCEPT",
+   "iterations": 2,
+   "degraded": [],
+   "unsupported_by_rules": false,
+   "authority": "AUTO",
+   "workflow_state": "AWAITING_OUTCOME",
+   "cited_within_retrieved": true,
+   "truth_recipe": "different_weight",
+   "truth_cause": "WEIGHT_MISMATCH",
+   "acceptable": [
+    "WEIGHT_MISMATCH"
+   ],
+   "cause_correct": true,
+   "key_evidence_cited": null
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-0ebdbc268954b58629cff193",
+   "shipment_id": "DEMO-SHP-000129",
+   "symptoms": [
+    "MILESTONE_OVERDUE",
+    "SESSION_END_UNRECONCILED"
+   ],
+   "seconds": 34.2,
+   "tool_calls": 7,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "custody_chain",
+    "delivery_attempts",
+    "scans",
+    "vehicle_and_manifest",
+    "device_status"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "MISSED_MILESTONE",
+   "confidence": "medium",
+   "hypotheses": [
+    [
+     "MISSED_MILESTONE",
+     "supported"
+    ],
+    [
+     "DELAYED_SYNC",
+     "supported"
+    ]
+   ],
+   "action": "REQUEST_DEVICE_SYNC",
+   "review": "ACCEPT",
+   "iterations": 1,
+   "degraded": [],
+   "unsupported_by_rules": false,
+   "authority": "AUTO",
+   "workflow_state": "AWAITING_OUTCOME",
+   "cited_within_retrieved": true,
+   "truth_recipe": "absent_session_receipt",
+   "truth_cause": "UNRECONCILED_CUSTODY",
+   "acceptable": [
+    "UNRECONCILED_CUSTODY"
+   ],
+   "cause_correct": false,
+   "key_evidence_cited": null
+  }
+ ]
+}

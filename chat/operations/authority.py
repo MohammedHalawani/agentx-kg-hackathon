@@ -27,6 +27,12 @@ ACTIONS = {
     "DELIVERY_DISPUTE_REVIEW": ("HUMAN_REVIEW", {"DELIVERY_DISPUTE", "POSSIBLE_MISDELIVERY", "PROOF_INSUFFICIENT"}, True,
                                 "Human review of recipient report, bound proof, address and custody."),
     "CONFLICTING_CUSTODY_REVIEW": ("HUMAN_REVIEW", {"CONFLICTING_CUSTODY"}, True, "Human reconciliation of conflicting custody reports."),
+    "REQUEST_DEVICE_SYNC": ("AUTO", {"DELAYED_SYNC"}, True,
+                            "Ask the device to upload its buffered scans; the late-arriving records confirm the missing observations."),
+    "PHYSICAL_CUSTODY_CHECK": ("HUMAN_REVIEW", {"UNRECONCILED_CUSTODY", "CUSTODY_GAP", "CONFLICTING_CUSTODY", "MANIFEST_CONFLICT"}, True,
+                               "A person physically locates the parcel with its last corroborated holder."),
+    "MANIFEST_RECONCILIATION_REVIEW": ("HUMAN_REVIEW", {"MANIFEST_CONFLICT"}, True,
+                                       "A person reconciles the dispatch manifest with confirmed custody."),
     "COMPENSATION": ("PROHIBITED", set(), False, "Compensation or refund."),
     "LIABILITY_DETERMINATION": ("PROHIBITED", set(), False, "Liability, fraud or theft determination."),
 }
@@ -34,7 +40,8 @@ SENSITIVE_CODES = frozenset(("DELIVERY_DISPUTE", "POSSIBLE_MISDELIVERY", "CONFLI
 STATE = {"AUTO": "AWAITING_OUTCOME", "APPROVAL_REQUIRED": "AWAITING_APPROVAL", "HUMAN_REVIEW": "HUMAN_REVIEW", "PROHIBITED": "HUMAN_REVIEW"}
 
 
-def authorize(action_type, diagnosis_codes, *, review_verdict, evidence_conflict, synthetic, live_session, degraded=False):
+def authorize(action_type, diagnosis_codes, *, review_verdict, evidence_conflict, synthetic, live_session, degraded=False,
+              contractor_custody=False):
     """Return the risk class and the reason. Never AUTO outside a synthetic live session, and
     never AUTO without an explicit ACCEPT from the independent model reviewer (fail closed)."""
     entry = ACTIONS.get(action_type)
@@ -46,6 +53,8 @@ def authorize(action_type, diagnosis_codes, *, review_verdict, evidence_conflict
         return "HUMAN_REVIEW", "A model role failed or was unavailable; automatic execution is blocked and a person must review."
     if review_verdict in ("HUMAN_REVIEW", "ESCALATE"):
         return "HUMAN_REVIEW", "Reviewer requested human judgment."
+    if contractor_custody and risk != "PROHIBITED":
+        return "HUMAN_REVIEW", "The parcel's last corroborated holder is a contractor or independent driver; physical reconciliation needs a person."
     if codes & SENSITIVE_CODES:
         return "HUMAN_REVIEW", "Sensitive or rights-impacting evidence (dispute, misdelivery or conflicting custody)."
     if evidence_conflict:

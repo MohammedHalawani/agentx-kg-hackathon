@@ -31,46 +31,6 @@ class OperationsGraphTests(unittest.TestCase):
         self.assertEqual(sorted(e['recorded_at'] for e in seen),[e['recorded_at'] for e in seen])
         self.assertIsNone(result['outcome'])
 
-    def test_only_a_real_reviewer_rejection_causes_a_bounded_revision(self):
-        import types
-        from operations import agents
-        from operations.authority import default_action
-        verdicts=['REVISE','ACCEPT'];feedback_seen=[]
-        def call(system,user,default):
-            facts=json.loads(user.split("\n\nYour previous")[0])
-            top=facts["facts"]["deterministic_signals"][0]
-            if "investigator" in system:
-                return {**default,"primary_hypothesis":top["code"],"supporting_evidence_ids":top["evidence_ids"][:3],
-                        "confidence":"medium","sensitivity":"low","summary":"Supported by cited evidence."}
-            if "planner" in system:
-                feedback_seen.append(facts.get("reviewer_feedback"))
-                return {**default,"action_type":default_action(top["code"]),"evidence_basis":top["evidence_ids"][:3],
-                        "expected_result":"Later evidence confirms recovery.","reason":"Catalog action."}
-            return {**default,"verdict":verdicts.pop(0),"feedback":"Cite the custody evidence explicitly."}
-        module=types.SimpleNamespace(facts=agents.facts,investigate=lambda p:agents.investigate(p,call=call),
-            plan=lambda p,i,feedback=None:agents.plan(p,i,call=call,feedback=feedback),review=lambda p,i,pr:agents.review(p,i,pr,call=call))
-        result,events=self.run_graph(agents=module)
-        states=[(e['stage'],e['status']) for e in events]
-        self.assertIn(('review','REJECTED'),states)
-        self.assertIn(('recommend','RETRYING'),states)
-        self.assertEqual(len(result['trace']),2)
-        self.assertEqual(feedback_seen,[None,'Cite the custody evidence explicitly.'])
-        self.assertEqual(result['trace'][1]['feedback_received'],result['trace'][0]['review']['feedback'])
-        self.assertNotEqual(result['result']['workflow_state'],'RESOLVED')
-
-    def test_failed_investigator_routes_to_a_person_with_no_substituted_diagnosis(self):
-        import types
-        from operations import agents
-        def call(system,user,default):raise TimeoutError('slow provider')
-        module=types.SimpleNamespace(facts=agents.facts,investigate=lambda p:agents.investigate(p,call=call),
-            plan=lambda p,i,feedback=None:agents.plan(p,i,call=call,feedback=feedback),review=lambda p,i,pr:agents.review(p,i,pr,call=call))
-        result,events=self.run_graph(agents=module)
-        self.assertIn(('classify','DEGRADED'),[(e['stage'],e['status']) for e in events])
-        self.assertIsNone(result['investigation']['primary_hypothesis'])
-        self.assertEqual(result['result']['workflow_state'],'HUMAN_REVIEW')
-        self.assertEqual(result['authority']['risk_class'],'HUMAN_REVIEW')
-        self.assertEqual([d['role'] for d in result['degraded']],['investigator'])
-
     def test_without_a_reviewer_there_is_no_rejection_and_no_scripted_proposal(self):
         result,events=self.run_graph()
         self.assertNotIn(('review','REJECTED'),[(e['stage'],e['status']) for e in events])
