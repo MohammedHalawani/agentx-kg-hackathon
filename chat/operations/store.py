@@ -17,6 +17,24 @@ from operations.outcome import validate_observation, verify
 CONTROL_ID = "DEMO-OPS-CONTROL"
 
 
+MONITOR_QUEUE_LIMIT = 500
+
+
+def monitor_enqueue(queue, shipment_ids):
+    """Bounded, ordered, de-duplicated shipments awaiting an expected-vs-actual check."""
+    out = list(queue)
+    for sid in shipment_ids:
+        if sid and sid not in out:
+            out.append(sid)
+    return out[-MONITOR_QUEUE_LIMIT:]
+
+
+def monitor_finding(assessment):
+    """Deterministic monitor rule: open a case only when visible evidence shows an exception."""
+    codes = sorted({item["code"] for item in assessment.get("exceptions", [])})
+    return {"open": bool(codes), "codes": codes}
+
+
 def identity(kind, *parts):
     return "DEMO-OPS-" + kind.upper() + "-" + digest(parts)[:24]
 
@@ -164,7 +182,9 @@ class OperationsStore:
             tx.run("MERGE (n:OpsEntity:OpsControl {entity_id:$id}) ON CREATE SET n=$props "
                    "SET n.state_version=n.state_version RETURN n.state_version",
                    id=CONTROL_ID,props=temporal_properties(props)).consume()
-            initial=self._control(tx)["initial_as_of"]
+            control=self._control(tx)
+            if control.get("case_source")=="monitor":return  # Live session: only the monitor opens cases.
+            initial=control["initial_as_of"]
             rows = tx.run("MATCH (c:V2Entity:Case {dataset_id:$dataset,split:'development'}) "
                           "WHERE c.opened_at <= $clock RETURN properties(c) AS props", dataset=self.dataset_id, clock=instant(initial))
             for row in rows:
@@ -191,6 +211,9 @@ class OperationsStore:
                        # Most recent completed claim, so the live panel can show its recorded stages after the run.
                        "last_case_id": control.get("last_case_id"), "last_shipment_id": control.get("last_shipment_id"),
                        "last_workflow_state": control.get("last_workflow_state"), "last_processed_at": control.get("last_processed_at")},
+            "session": {"case_source": control.get("case_source", "dataset"), "session_id": control.get("session_id"),
+                        "started_at": control.get("session_started_at"), "monitor_pending": len(control.get("monitor_queue") or []),
+                        "monitor_checked": control.get("monitor_checked", 0), "monitor_opened": control.get("monitor_opened", 0)},
             "simulator": {"state": control["simulator_state"], "speed": control["speed"], "replay_mode":control.get("replay_mode","timeline"), "event_count": control["event_count"],
                           "cursor": {"time": control["cursor_time"], "id": control["cursor_id"]}, "end_at": control["end_at"]},
             "notifications": {"mode": "dry_run", "external_calls": 0}}
@@ -200,7 +223,7 @@ class OperationsStore:
         if component not in {"worker", "simulator"} or action not in {"start", "pause", "step"}:
             raise OperationsConflict("Invalid operations control")
         if speed is not None and (type(speed) is not int or speed not in SPEEDS):
-            raise OperationsConflict("Simulation speed must be 1,10 or60")
+            raise OperationsConflict("Simulation speed must be 1, 10, 60, 600 or 3600")
         if replay_mode is not None and (component!="simulator" or replay_mode not in {"timeline","compressed"}):
             raise OperationsConflict("Replay mode must be timeline or compressed")
         def control_tx(tx):
@@ -248,7 +271,8 @@ class OperationsStore:
                 "AND ($step OR time <= $target) RETURN properties(e) AS props,labels(e) AS labels,time "
                 "ORDER BY time,e.entity_id LIMIT 100", dataset=self.dataset_id, kinds=sorted(EVENT_KINDS),
                 cursor=instant(c["cursor_time"]), id=c["cursor_id"], target=target, step=compressed))
-            case_ids=[]
+            case_ids=[];monitor=c.get("case_source")=="monitor";touched=[]
+            previous=instant(c["as_of"])
             for row in rows:
                 p=public_value(row["props"]); when=public_value(row["time"])
                 sid=p.get("shipment_id") or p.get("holdout_group")
@@ -259,31 +283,115 @@ class OperationsStore:
                         "event_kind":next(k for k in row["labels"] if k in EVENT_KINDS),"source_occurred_at":p.get("occurred_at",p.get("opened_at",when)),
                         "occurred_at":when,"recorded_at":when})
                     if "Case" in row["labels"]:
-                        case_id=self._seed_case(tx,p,when);case_ids.append(case_id)
+                        # Dataset Case labels are scenario truth; a live session never reads them.
+                        if not monitor:case_id=self._seed_case(tx,p,when);case_ids.append(case_id)
+                    elif monitor and sid:
+                        touched.append(sid)
+                        self._update_cases_for_event(tx,row,p,sid,when)
                     else:
-                        cases=list(tx.run("MATCH(c:OpsCase {shipment_id:$sid,dataset_id:$dataset,split:'development'}) RETURN properties(c) AS props",
-                                          sid=sid,dataset=self.dataset_id))
-                        for item in cases:
-                            case=public_value(item["props"])
-                            if instant(when)>instant(case["as_of"]):
-                                case["as_of"]=when
-                                case["state_version"]+=1
-                                if "RecipientReport" in row["labels"] and case["workflow_state"]=="RESOLVED":
-                                    case.update(workflow_state="REOPENED",state_version=case["state_version"]+1)
-                                    self._invalidate_outcomes(tx,case)
-                                    self._audit(tx,case,"CASE_REOPENED",when,result="A new attributed recipient report reopens investigation.",actor="DEMO-SIMULATOR")
-                                self._put(tx,"OpsCase",case,update=True)
-                            self._audit(tx,case,"SIMULATION_EVENT",when,result=next(k for k in row["labels"] if k in EVENT_KINDS),key=p["entity_id"],actor="DEMO-SIMULATOR")
+                        self._update_cases_for_event(tx,row,p,sid,when)
                     c["event_count"]+=1
                 c.update(cursor_time=when,cursor_id=p["entity_id"])
             # A full batch retains its last committed timestamp; no unreplayed future becomes visible.
             if rows:c["as_of"]=max(c["as_of"],c["cursor_time"])
             if len(rows)<100 and not compressed:c["as_of"]=target.isoformat()
+            if monitor:
+                # A missed milestone produces no event: also check shipments whose deadline just passed.
+                due=[r["sid"] for r in tx.run("MATCH (m:V2Entity:ExpectedMilestone {dataset_id:$dataset,split:'development'}) "
+                    "WITH m,m.latest_at+duration({seconds:coalesce(m.grace_seconds,0)}) AS due "
+                    "WHERE due > $previous AND due <= $now RETURN DISTINCT m.shipment_id AS sid LIMIT 200",
+                    dataset=self.dataset_id,previous=previous,now=instant(c["as_of"]))]
+                c["monitor_queue"]=monitor_enqueue(c.get("monitor_queue") or [],[*touched,*due])
             self._put(tx,"OpsControl",c,update=True)
             return {"events_replayed":len(rows),"as_of":c["as_of"],"case_ids":case_ids}
         result=self._execute(replay_tx,write=True)
         result["status"]=self.status()
         return result
+
+    def monitor_step(self, limit=5):
+        """Check queued shipments against visible evidence only (events <= scenario clock)."""
+        def take(tx):
+            c=self._control(tx,lock=True)
+            queue=list(c.get("monitor_queue") or [])
+            if c.get("case_source")!="monitor" or not queue:return None,c["as_of"]
+            c["monitor_queue"]=queue[limit:];self._put(tx,"OpsControl",c,update=True)
+            return queue[:limit],c["as_of"]
+        batch,clock=self._execute(take,write=True)
+        if not batch:return {"checked":0,"opened":[]}
+        from dataset_v2.derive import assess_shipment
+        from operations.reasoning import evidence_world
+        findings=[]
+        for sid in batch:
+            try:context=self._reader().evidence(sid,clock)
+            except LookupError:continue  # Shipment not yet visible at this snapshot.
+            assessment=assess_shipment(evidence_world(context,self.config),sid,context["as_of"])
+            findings.append((sid,monitor_finding(assessment),context["as_of"]))
+        def record(tx):
+            c=self._control(tx,lock=True);opened=[]
+            for sid,finding,as_of in findings:
+                c["monitor_checked"]=c.get("monitor_checked",0)+1
+                if not finding["open"]:continue
+                active=[r for r in tx.run("MATCH(c:OpsCase {shipment_id:$sid,dataset_id:$dataset,split:'development'}) RETURN properties(c) AS props",
+                        sid=sid,dataset=self.dataset_id)]
+                if active:continue  # Existing case already follows this shipment's new evidence.
+                opened.append(self._open_monitored_case(tx,sid,finding["codes"],as_of,c.get("session_id")))
+                c["monitor_opened"]=c.get("monitor_opened",0)+1
+            self._put(tx,"OpsControl",c,update=True)
+            return opened
+        opened=self._execute(record,write=True)
+        return {"checked":len(findings),"opened":opened}
+
+    def _open_monitored_case(self,tx,sid,codes,when,session_id):
+        from operations.reasoning import operational_status
+        identifier=identity("case","monitor",session_id,sid)
+        status=operational_status(codes)
+        row=tx.run("MATCH(s:V2Entity:Shipment {entity_id:$sid,dataset_id:$dataset,split:'development'}) RETURN s.destination_city AS city",
+                   sid=sid,dataset=self.dataset_id).single()
+        case=self._put(tx,"OpsCase",{"entity_id":identifier,"shipment_id":sid,"source_case_id":None,"opened_by":"MONITOR",
+            "session_id":session_id,"workflow_state":"OPEN","operational_status":status,
+            "priority":"high" if status in {"CRITICAL","UNRECONCILED_CUSTODY","DELIVERY_DISPUTE"} else "medium",
+            "cause_codes":codes,"city":row["city"] if row else "","opened_at":when,"recorded_at":when,"as_of":when,"state_version":0,
+            "issue_summary":"Monitor detected an expected-vs-actual divergence in visible evidence; automatic investigation pending."})
+        self._link(tx,"OPS_ABOUT",identifier,sid,sid,when)
+        self._audit(tx,case,"CASE_OPENED",when,result="Monitor: "+", ".join(codes),actor="SUHAIL-MONITOR")
+        return identifier
+
+    def reset_session(self, actor_id="DEMO-OPERATOR-LOCAL"):
+        """Start a fresh live session: clear derived operational ledger (never V2 evidence) and rewind the clock."""
+        require_actor(actor_id)
+        def reset_tx(tx):
+            c=self._control(tx,lock=True)
+            if c.get("worker_claim"):raise OperationsConflict("Pause auto-triage before starting a new session")
+            row=tx.run("MATCH (e:V2Entity {dataset_id:$dataset,split:'development'}) WHERE e.occurred_at IS NOT NULL "
+                       "RETURN min(e.occurred_at) AS start",dataset=self.dataset_id).single()
+            start=public_value(row["start"]) if row and row["start"] else c["initial_as_of"]
+            start=start.isoformat() if hasattr(start,"isoformat") else str(start)
+            start=(instant(start)-timedelta(seconds=1)).isoformat()
+            tx.run("MATCH (n:OpsEntity {dataset_id:$dataset,split:'development'}) WHERE NOT n:OpsControl DETACH DELETE n",
+                   dataset=self.dataset_id).consume()
+            session=identity("session",c["state_version"],start)
+            c.update(as_of=start,initial_as_of=start,cursor_time=start,cursor_id="",simulator_state="paused",worker_state="paused",
+                     worker_claim=None,claim_at=None,claim_shipment_id=None,processed_count=0,event_count=0,
+                     last_case_id=None,last_shipment_id=None,last_workflow_state=None,last_processed_at=None,
+                     case_source="monitor",session_id=session,session_started_at=start,monitor_queue=[],monitor_checked=0,monitor_opened=0)
+            self._put(tx,"OpsControl",c,update=True)
+        self._execute(reset_tx,write=True)
+        return self.status()
+
+    def _update_cases_for_event(self,tx,row,p,sid,when):
+        cases=list(tx.run("MATCH(c:OpsCase {shipment_id:$sid,dataset_id:$dataset,split:'development'}) RETURN properties(c) AS props",
+                          sid=sid,dataset=self.dataset_id))
+        for item in cases:
+            case=public_value(item["props"])
+            if instant(when)>instant(case["as_of"]):
+                case["as_of"]=when
+                case["state_version"]+=1
+                if "RecipientReport" in row["labels"] and case["workflow_state"]=="RESOLVED":
+                    case.update(workflow_state="REOPENED",state_version=case["state_version"]+1)
+                    self._invalidate_outcomes(tx,case)
+                    self._audit(tx,case,"CASE_REOPENED",when,result="A new attributed recipient report reopens investigation.",actor="DEMO-SIMULATOR")
+                self._put(tx,"OpsCase",case,update=True)
+            self._audit(tx,case,"SIMULATION_EVENT",when,result=next(k for k in row["labels"] if k in EVENT_KINDS),key=p["entity_id"],actor="DEMO-SIMULATOR")
 
     def process_one(self, case_id=None, *, manual=False, review_scenario=False):
         def claim(tx):
@@ -304,7 +412,9 @@ class OperationsStore:
         case=self._execute(claim,write=True)
         if not case:return {"processed":False,"outcome":None}
         self._reader()
-        fixture=review_scenario or self.status()["worker"]["processed_count"]==0
+        status=self.status()
+        # The scripted review rehearsal never runs implicitly inside a live monitor session.
+        fixture=review_scenario or (status["worker"]["processed_count"]==0 and status["session"]["case_source"]!="monitor")
         def finish(tx,analysis):
             control=self._control(tx,lock=True);current=self._case(tx,case["entity_id"])
             if current.get("claim_id")!=case["claim_id"] or current["workflow_state"]!="INVESTIGATING":

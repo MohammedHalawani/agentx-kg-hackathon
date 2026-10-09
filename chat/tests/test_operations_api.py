@@ -81,6 +81,13 @@ class OperationsAPITests(unittest.TestCase):
         self.assertEqual(self.client.post("/cases/DEMO-CASE-01/decision",json={**body,"actor_id":"AI"},headers=self.headers()).status_code,422)
         self.assertEqual(self.client.post("/cases/DEMO-CASE-01/decision",json={**body,"expected_version":True},headers=self.headers()).status_code,422)
 
+    def test_new_live_session_requires_server_authority(self):
+        self.assertIn(self.client.post("/simulation/reset").status_code,(401,403))
+        self.store.reset_session.assert_not_called()
+        self.store.reset_session.return_value={"session":{"case_source":"monitor"}}
+        self.assertEqual(self.client.post("/simulation/reset",headers=self.headers()).status_code,200)
+        self.store.reset_session.assert_called_once_with(actor_id="DEMO-OPERATOR-LOCAL")
+
     def test_manual_replay_applies_selected_speed_and_mode(self):
         self.store.tick.return_value={"events_replayed":0}
         headers=self.headers()

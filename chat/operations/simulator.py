@@ -1,7 +1,7 @@
 """Bounded deterministic replay planning; no random data, clocks or external effects."""
 from dataset_v2.contracts import instant
 
-SPEEDS = frozenset((1, 10, 60))
+SPEEDS = frozenset((1, 10, 60, 600, 3600))
 EVENT_KINDS = frozenset(("ScanEvent", "CustodyEvent", "DeliveryAttempt", "ContactAttempt", "GPSObservation",
                        "TrafficObservation", "DeliveryProof", "AuthenticationEvidence", "SignatureEvidence",
                        "PhotoEvidence", "HandoffEvidence", "RecipientReport", "DepotReconciliation", "StatusEvent", "Case"))

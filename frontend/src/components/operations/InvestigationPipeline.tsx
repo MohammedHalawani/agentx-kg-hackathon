@@ -66,6 +66,15 @@ export function InvestigationPipeline({ detail, selected, onSelect, onEvidence }
     <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
       <h3 className="text-sm font-semibold">{t('ops.pipeline.title')}</h3>
       <span className="text-[11px] text-muted-foreground">{t('ops.pipeline.stageMode')}</span>
+      {(() => {
+        // Live = running now or not started yet; otherwise this is a recorded (completed) run.
+        const status = detail.pipeline?.status
+        const live = status === 'RUNNING' || (!detail.run && detail.workflow_state && ['OPEN', 'REOPENED', 'INVESTIGATING'].includes(detail.workflow_state))
+        return <span data-testid="run-kind" className={`rounded-md border px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide ${live ? 'border-primary/50 bg-primary/10 text-primary' : 'border-border text-muted-foreground'}`}>
+          {live && <span className="me-1 inline-block size-1.5 animate-pulse rounded-full bg-primary align-middle" aria-hidden="true" />}
+          {t(live ? 'ops.pipeline.liveRun' : 'ops.pipeline.recordedRun')}
+        </span>
+      })()}
       <span className="ms-auto text-[11px] text-muted-foreground">{t('ops.automation.inspectOnly')}</span>
     </div>
     <ol className="flex overflow-x-auto pb-1" aria-label={t('ops.pipeline.stages')}>

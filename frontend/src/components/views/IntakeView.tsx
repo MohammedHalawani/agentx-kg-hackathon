@@ -24,6 +24,7 @@ import { ProcessQueuePanel } from '@/components/intake/ProcessQueuePanel'
 import { SimulationPanel } from '@/components/intake/SimulationPanel'
 import { NowProcessingPanel, useLiveWorkerStatus } from '@/components/intake/NowProcessingPanel'
 import { HumanAttentionRail } from '@/components/intake/HumanAttentionRail'
+import { LiveSessionBar } from '@/components/intake/LiveSessionBar'
 import { cn } from '../../lib/cn'
 import type { ExploreShipment } from '../../types/explore'
 
@@ -178,6 +179,13 @@ export function IntakeView({
               <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{t('ops.intake.subtitle')}</p>
             </header>
 
+            <LiveSessionBar
+              status={simulation.data}
+              running={simulationRunning}
+              pending={simulation.pending}
+              onToggle={() => void simulation.command(simulationRunning ? 'pause' : 'start', simulationRunning ? {} : { speed: 600, replay_mode: 'timeline' })}
+              onReset={async () => { await simulation.command('reset'); worker.refetch(); pager.reset(); refetch() }}
+            />
             <section aria-label={t('ops.queue.title')}>
               <div className="mb-2 flex flex-wrap items-center gap-2" role="status">
                 <h3 className="text-sm font-semibold">

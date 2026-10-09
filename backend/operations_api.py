@@ -69,6 +69,7 @@ class OperationsRuntime:
             try:
                 status=self.store.status()
                 if status["simulator"]["state"]=="running":self.store.tick(seconds=elapsed)
+                if status["session"]["monitor_pending"]:self.store.monitor_step()
                 if status["worker"]["state"]=="running" and now-last_case>=pace:
                     if self.store.process_one().get("processed"):last_case=time.monotonic()
             except Exception as error:
@@ -246,11 +247,11 @@ def _simulation_speed(value):
 
 
 class SimulationStart(StrictBody):
-    speed: Annotated[Literal[1,10,60],BeforeValidator(_simulation_speed)]=10
+    speed: Annotated[Literal[1,10,60,600,3600],BeforeValidator(_simulation_speed)]=10
     replay_mode: Literal["timeline","compressed"]="timeline"
 class TickBody(StrictBody):
     seconds: float=Field(default=60,gt=0,le=86400,allow_inf_nan=False)
-    speed: Annotated[Literal[1,10,60],BeforeValidator(_simulation_speed)]|None=None
+    speed: Annotated[Literal[1,10,60,600,3600],BeforeValidator(_simulation_speed)]|None=None
     replay_mode: Literal["timeline","compressed"]|None=None
 
 
@@ -289,6 +290,12 @@ def start_simulation(request: Request,body: SimulationStart):
 def pause_simulation(request: Request):
     actor=authority.authorize(request)
     return invoke(get_runtime().store.control,"simulator","pause",actor_id=actor["actor_id"])
+
+
+@router.post("/simulation/reset")
+def reset_session(request: Request):
+    actor=authority.authorize(request)
+    return invoke(get_runtime().store.reset_session,actor_id=actor["actor_id"])
 
 
 @router.post("/simulation/tick")

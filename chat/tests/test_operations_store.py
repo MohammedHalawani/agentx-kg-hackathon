@@ -28,6 +28,20 @@ class Tx:
     def __init__(self, driver, ledger):self.driver,self.ledger=driver,ledger
     def run(self,q,**p):
         self.driver.queries.append(q)
+        if "min(e.occurred_at)" in q:
+            times=[instant(n.properties["occurred_at"]) for n in self.driver.world.nodes.values()
+                   if n.properties.get("split")=="development" and n.properties.get("occurred_at")]
+            return Result([{"start":min(times)}])
+        if "DETACH DELETE" in q:
+            for key in [k for k,(kind,_) in self.ledger.items() if kind!="OpsControl"]:del self.ledger[key]
+            return Result()
+        if q.startswith("MATCH (m:V2Entity:ExpectedMilestone"):
+            sids=set()
+            for n in self.driver.world.of_kind("ExpectedMilestone"):
+                if n.properties.get("split")!="development":continue
+                due=instant(n.properties["latest_at"])+timedelta(seconds=n.properties.get("grace_seconds") or 0)
+                if p["previous"]<due<=p["now"]:sids.add(n.properties["shipment_id"])
+            return Result([{"sid":x} for x in sorted(sids)])
         if "(m:_V2Import)" in q:return Result([{"props":self.driver.marker}])
         if q.startswith("MATCH (s:V2Entity:Shipment"):
             node=self.driver.world.nodes.get(p["id"])
@@ -296,3 +310,57 @@ class StoreTests(unittest.TestCase):
 
 
 if __name__=="__main__":unittest.main()
+
+
+class LiveSessionTests(unittest.TestCase):
+    """Fresh-case runtime: only the monitor opens cases, from evidence visible at the scenario clock."""
+    @classmethod
+    def setUpClass(cls):cls.world=generate(Config(total=90))
+    def live(self):
+        d=Driver(self.world);s=OperationsStore(d,"shipments-v2-demo",self.world.config.dataset_id,self.world.config,Reader(self.world))
+        s.initialize();s.reset_session();return s,d
+    def cases(self,d):return [v for k,v in d.ledger.values() if k=="OpsCase"]
+    def run_world(self,s,rounds=400):
+        for _ in range(rounds):
+            r=s.tick(seconds=86400,manual=True,speed=60)
+            while s.status()["session"]["monitor_pending"]:s.monitor_step()
+            if not r["events_replayed"] and s.status()["as_of"]>=s.status()["simulator"]["end_at"]:break
+
+    def test_reset_starts_empty_before_first_event_and_keeps_v2_evidence(self):
+        s,d=self.live()
+        status=s.status()
+        self.assertEqual(status["session"]["case_source"],"monitor")
+        self.assertEqual(self.cases(d),[])
+        self.assertEqual(status["worker"]["processed_count"],0)
+        first=min(instant(n.properties["occurred_at"]) for n in self.world.nodes.values()
+                  if n.properties.get("split")=="development" and n.properties.get("occurred_at"))
+        self.assertLess(instant(status["as_of"]),first)
+        s.initialize();self.assertEqual(self.cases(d),[])  # Restart never re-seeds dataset cases.
+
+    def test_monitor_opens_cases_only_from_visible_exceptions_never_dataset_labels(self):
+        from dataset_v2.derive import assess_shipment
+        s,d=self.live();self.run_world(s)
+        opened=self.cases(d)
+        self.assertTrue(opened)
+        healthy=0
+        for case in opened:
+            case=dict(case,opened_at=case["opened_at"].isoformat() if hasattr(case["opened_at"],"isoformat") else case["opened_at"])
+            self.assertEqual(case["opened_by"],"MONITOR");self.assertIsNone(case.get("source_case_id"))
+            context=public_evidence(self.world,case["shipment_id"],case["opened_at"])
+            # No future leakage: nothing observed after the moment the case opened.
+            for node in context["nodes"]:
+                when=node["properties"].get("occurred_at")
+                if when:self.assertLessEqual(instant(when),instant(case["opened_at"]))
+            self.assertTrue(assess_shipment(evidence_world(context,self.world.config),case["shipment_id"],case["opened_at"])["exceptions"])
+        with_case={c["shipment_id"] for c in opened}
+        for sh in self.world.of_kind("Shipment"):
+            if sh.properties["split"]!="development" or sh.id in with_case:continue
+            context=public_evidence(self.world,sh.id,s.status()["as_of"])
+            if not assess_shipment(evidence_world(context,self.world.config),sh.id,context["as_of"])["exceptions"]:healthy+=1
+        self.assertGreater(healthy,0)  # Healthy shipments progress without a case.
+
+    def test_live_worker_investigates_monitor_case_without_scripted_rehearsal(self):
+        s,d=self.live();self.run_world(s,rounds=40)
+        self.assertTrue(self.cases(d))
+        result=s.process_one(manual=True)
+        self.assertTrue(result["processed"]);self.assertFalse(result["afl"]["fixture"])

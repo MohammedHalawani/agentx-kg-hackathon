@@ -52,6 +52,8 @@ export function SimulationPanel({
             <option value={1}>1×</option>
             <option value={10}>10×</option>
             <option value={60}>60×</option>
+            <option value={600}>600×</option>
+            <option value={3600}>3600×</option>
           </select>
         </div>
       </header>
