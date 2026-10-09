@@ -58,7 +58,7 @@ describe('Case lifecycle authority', () => {
       { sequence: 2, stage: 'review', status: 'REJECTED', iteration: 1, recorded_at: '2026-10-09T01:00:01Z', evidence_as_of: '2026-09-11T14:01:00Z', output: { evidence_ids: ['PROOF'], verdict: 'reject' } },
     ] }
     render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
-    fireEvent.click(screen.getByRole('button', { name: /Identify references.*Completed/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Collect references.*Completed/ }))
     expect(screen.getByTestId('highlighted-graph').getAttribute('data-ids')).toContain('SYN-1')
     expect(screen.getByTestId('highlighted-graph').getAttribute('data-ids')).not.toContain('PROOF')
     fireEvent.click(screen.getByRole('button', { name: /Safety review.*Rejected/ }))
@@ -83,6 +83,37 @@ describe('Case lifecycle authority', () => {
     expect(mock.post).not.toHaveBeenCalled()
     fireEvent.click(screen.getByRole('button', { name: 'Re-analyze case' }))
     await waitFor(() => expect(mock.post).toHaveBeenCalledWith('/cases/CASE-1/reanalyze', expect.objectContaining({ expected_version: 3 })))
+  })
+
+  it('switches Balanced, Map and Graph focus explicitly and remembers the choice for the session', () => {
+    sessionStorage.clear()
+    const { unmount } = render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
+    const layout = () => document.querySelector('[data-focus]')!.getAttribute('data-focus')
+    expect(layout()).toBe('balanced')
+    expect(screen.getByText(/This stage reads best on the route map/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('radio', { name: 'Graph focus' }))
+    expect(layout()).toBe('graph')
+    expect(screen.queryByText(/This stage reads best/)).toBeNull()
+    unmount()
+    render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
+    expect(layout()).toBe('graph')
+    expect(mock.post).not.toHaveBeenCalled()
+  })
+  it('opens Evidence on cited key evidence and focuses the graph on it without running anything', () => {
+    mock.data.evidence = { nodes: [{ id: 'PROOF', kind: 'DeliveryProof', properties: {} }, { id: 'REPORT', kind: 'RecipientReport', properties: { report_code: 'NOT_RECEIVED' } }, { id: 'HUB', kind: 'Hub', properties: {} }], edges: [] }
+    mock.data.reasoning = { workflow_state: 'HUMAN_REVIEW', diagnoses: [{ code: 'DELIVERY_DISPUTE', evidence_ids: ['PROOF', 'REPORT'] }] }
+    render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
+    fireEvent.click(screen.getByRole('button', { name: 'Evidence' }))
+    expect(screen.getByRole('tab', { name: /Key evidence/ }).getAttribute('aria-selected')).toBe('true')
+    expect(screen.getAllByText(/Cited by diagnosis: Delivery dispute/)).toHaveLength(2)
+    expect(screen.queryByText('HUB')).toBeNull()
+    fireEvent.click(screen.getByRole('tab', { name: /Full inventory/ }))
+    expect(screen.getByText(/Regional hub/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('tab', { name: /Key evidence/ }))
+    fireEvent.click(screen.getAllByRole('button', { name: 'Show in graph' })[0])
+    expect(screen.getByTestId('highlighted-graph').getAttribute('data-ids')).toBe('PROOF')
+    expect(screen.getByText(/Highlighting 1 selected evidence/)).toBeTruthy()
+    expect(mock.post).not.toHaveBeenCalled()
   })
 
 })

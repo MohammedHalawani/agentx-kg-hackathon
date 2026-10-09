@@ -8,6 +8,8 @@ export interface RouteSegment { segment_id: string; sequence?: number; points: L
 export type RouteLayers = Partial<Record<Exclude<RouteLayerKey, 'expected_route'>, LayerPoint[]>> & { expected_route?: (LayerPoint | RouteSegment)[] }
 export type RouteLayerKey = 'expected_route' | 'actual_route' | 'vehicle_path' | 'custody_points' | 'hub_stops' | 'delivery_attempts' | 'traffic'
 export type PipelineStage = 'extract' | 'retrieve' | 'classify' | 'retrieve_context' | 'recommend' | 'review' | 'writeback' | 'escalate'
+/** Recorded graph stages plus the operational outcome gate, which is not a LangGraph node. */
+export type InspectStage = PipelineStage | 'outcome'
 export interface PipelineEvent { sequence: number; stage: PipelineStage; status: string; iteration: number; recorded_at: string; evidence_as_of: string; output: { evidence_ids?: string[]; edge_ids?: string[]; nodes?: number; relationships?: number; categories?: Record<string,number>; verified_precedents?: number; verdict?: string; feedback?: string; workflow_state?: string; diagnoses?: NonNullable<ShipmentDetail['reasoning']>['diagnoses']; proposal?: ShipmentDetail['recommendation'] } }
 export interface Pipeline { topology: { nodes: PipelineStage[]; edges: { source:string; target:string; conditional:boolean }[]; engine:string; mode:string; retry_limit:number }; events: PipelineEvent[]; source: string; status: string }
 export interface ShipmentDetail {

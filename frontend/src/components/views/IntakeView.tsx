@@ -134,14 +134,14 @@ export function IntakeView({ selectedShipment, onClearShipment }: { selectedShip
     <div className="flex h-full flex-col">
       <div className={cn('min-h-0 flex-1 px-4 py-4 sm:px-6 sm:py-5', started ? 'overflow-hidden' : 'overflow-y-auto')}>
         {selectedCase || selectedShipment ? <OperationsCaseDetail caseId={selectedCase?.caseId ?? selectedShipment?.case_id ?? undefined} shipmentId={selectedCase?.shipmentId ?? selectedShipment!.shipment_id} onBack={() => { setSelectedCase(null); onClearShipment?.(); refetch() }} /> : !started ? (
-          <div className="mx-auto max-w-5xl space-y-4" dir={isArabic ? 'rtl' : undefined}>
+          <div className="mx-auto max-w-6xl space-y-4" dir={isArabic ? 'rtl' : undefined}>
             <header>
               <h2 className="font-display text-xl font-bold text-ink">{t('ops.intake.title')}</h2>
               <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{t('ops.intake.subtitle')}</p>
             </header>
 
             {data && <section aria-label={t('ops.queue.title')}>
-              <div className="mb-2 flex flex-wrap items-center gap-2" role="status"><h3 className="text-sm font-semibold">{t('ops.automation.autoTriage')}: {t(`ops.automation.${worker.error?'UNAVAILABLE':worker.data?workerRunning?'RUNNING':'PAUSED':'UNAVAILABLE'}`)}</h3>{worker.data?.worker?.active_case_id&&<span className="font-mono text-xs" dir="ltr">{worker.data.worker.active_case_id}</span>}</div><p className="mb-2 text-xs text-muted-foreground">{t('ops.automation.queueContinues')}</p>
+              <div className="mb-2 flex flex-wrap items-center gap-2" role="status"><h3 className="text-sm font-semibold">{t('ops.automation.autoTriage')}: {t(`ops.automation.${worker.error?'UNAVAILABLE':worker.data?workerRunning?'RUNNING':'PAUSED':'UNAVAILABLE'}`)}</h3>{worker.data?.worker?.active_case_id&&<span className="font-mono text-xs" dir="ltr">{worker.data.worker.active_case_id}</span>}{worker.data&&<button type="button" disabled={worker.pending||Boolean(worker.error)} onClick={() => void worker.command(workerRunning ? 'pause' : 'start')} className={`ms-auto rounded-lg px-3 py-1 text-xs font-medium disabled:opacity-50 ${workerRunning?'border border-border bg-card':'bg-primary text-primary-foreground'}`}>{t(workerRunning?'ops.queue.pause':'ops.queue.start')}</button>}</div><p className="mb-2 text-xs text-muted-foreground">{t('ops.automation.queueContinues')}</p>
               <QueueCounter
                 counts={adaptBuckets(data?.metadata?.buckets)}
               />
@@ -196,7 +196,7 @@ export function IntakeView({ selectedShipment, onClearShipment }: { selectedShip
             {filters.timePreset === 'custom' && <div className="flex flex-wrap gap-2"><label>{t('ops.filters.from')} <input type="date" value={from} onChange={e => { setFrom(e.target.value); pager.reset() }} /></label><label>{t('ops.filters.to')} <input type="date" value={to} onChange={e => { setTo(e.target.value); pager.reset() }} /></label></div>}
 
             </ResponsiveDisclosure>
-            <ResponsiveDisclosure title={t('ops.disclosure.controls')}>
+            <ResponsiveDisclosure title={t('ops.disclosure.controls')} defaultOpen={false}>
             {worker.data && <ProcessQueuePanel
               running={workerRunning}
               onToggle={() => void worker.command(workerRunning ? 'pause' : 'start')}

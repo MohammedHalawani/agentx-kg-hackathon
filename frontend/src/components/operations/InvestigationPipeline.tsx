@@ -1,35 +1,96 @@
-import { CheckCircle2, Circle, LoaderCircle, RotateCcw, ShieldAlert } from 'lucide-react'
+import { ArrowUpRight, Check, Hourglass, LoaderCircle, Minus, RotateCcw, X } from 'lucide-react'
 import { useLanguage } from '@/components/i18n/LanguageProvider'
-import type { PipelineStage, ShipmentDetail } from '@/contracts/caseDetail'
+import type { InspectStage, ShipmentDetail } from '@/contracts/caseDetail'
 import { stageEvidence } from '@/lib/pipelineEvidence'
+import { pipelineSteps, type DisplayStep, type StepStatus } from '@/lib/pipelineSteps'
 
-export function InvestigationPipeline({ detail, selected, onSelect, onEvidence }: { detail:ShipmentDetail; selected:PipelineStage; onSelect:(s:PipelineStage)=>void; onEvidence:()=>void }) {
+const REACHED: StepStatus[] = ['COMPLETED', 'RUNNING', 'RETRYING', 'REJECTED', 'HUMAN_REVIEW', 'ESCALATED', 'FAILED', 'UNRECORDED', 'WAITING']
+
+function Glyph({ status }: { status: StepStatus }) {
+  const base = 'flex size-7 shrink-0 items-center justify-center rounded-full border text-[13px] font-bold transition-colors duration-200 motion-reduce:transition-none'
+  switch (status) {
+    case 'COMPLETED': return <span className={`${base} border-chart-good bg-chart-good text-white`}><Check size={14} strokeWidth={3} /></span>
+    case 'UNRECORDED': return <span className={`${base} border-chart-good/60 bg-card text-chart-good`}><Check size={14} strokeWidth={2.5} /></span>
+    case 'RUNNING': return <span className={`${base} border-primary bg-primary text-primary-foreground ring-4 ring-primary/20`}><LoaderCircle size={14} className="animate-spin motion-reduce:animate-none" /></span>
+    case 'RETRYING': return <span className={`${base} border-chart-warning bg-chart-warning text-white ring-4 ring-chart-warning/20`}><RotateCcw size={13} strokeWidth={2.5} /></span>
+    case 'REJECTED': return <span className={`${base} border-chart-warning bg-chart-warning text-white`}><X size={14} strokeWidth={3} /></span>
+    case 'HUMAN_REVIEW': return <span className={`${base} border-chart-orange bg-chart-orange text-white`} aria-hidden="true">!</span>
+    case 'ESCALATED': return <span className={`${base} border-chart-orange bg-chart-orange text-white`}><ArrowUpRight size={14} strokeWidth={2.5} /></span>
+    case 'FAILED': return <span className={`${base} border-destructive bg-destructive text-white`}><X size={14} strokeWidth={3} /></span>
+    case 'WAITING': return <span className={`${base} border-dashed border-muted-foreground/60 bg-card text-muted-foreground`}><Hourglass size={12} /></span>
+    case 'SKIPPED': return <span className={`${base} border-dashed border-border bg-card text-muted-foreground`}><Minus size={12} /></span>
+    default: return <span className={`${base} border-border bg-card`} />
+  }
+}
+
+function StepDetail({ detail, step, onEvidence }: { detail: ShipmentDetail; step: DisplayStep; onEvidence: () => void }) {
   const { t, isArabic, entityLabel, rootCauseLabel } = useLanguage()
   const pipeline = detail.pipeline
-  const stages = pipeline?.topology.nodes ?? []
-  const output = pipeline?.events.filter(e => e.stage === selected && !['RUNNING','RETRYING'].includes(e.status)).at(-1)
-  const ids = stageEvidence(detail,selected)
-  const retries = pipeline?.events.filter(e => e.status === 'REJECTED') ?? []
-  return <section className="space-y-1.5 rounded-xl border border-border bg-card p-3" aria-label={t('ops.pipeline.title')}>
-    <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-sm font-semibold">{t('ops.pipeline.title')}</h3><span className="text-xs text-muted-foreground">{t('ops.pipeline.stageMode')}</span></div>
-    <p className="text-[11px] text-muted-foreground">{t('ops.automation.inspectOnly')}</p>
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8" role="group" aria-label={t('ops.pipeline.stages')}>
-      {stages.map(stage => {
-        const last = pipeline?.events.filter(e => e.stage === stage).at(-1)
-        const status = last?.status ?? (stage === 'escalate' && pipeline?.status === 'REVIEWED' ? 'SKIPPED' : pipeline?.source === 'earlier_run' && detail.run ? 'UNRECORDED' : 'QUEUED')
-        const Icon = status === 'COMPLETED' ? CheckCircle2 : status === 'RUNNING' ? LoaderCircle : status === 'RETRYING' ? RotateCcw : ['REJECTED','FAILED'].includes(status) ? ShieldAlert : Circle
-        return <button key={stage} type="button" aria-label={`${t(`ops.pipeline.stagesNames.${stage}`)} · ${t(`ops.pipeline.states.${status}`)} · ${t('ops.automation.inspect')}`} aria-pressed={selected===stage} data-stage={stage} data-stage-status={status} onClick={()=>onSelect(stage)} className={`min-w-0 rounded-lg border p-1.5 text-start focus-visible:outline-2 focus-visible:outline-ring ${selected===stage?'border-primary/50 bg-muted/40':'border-border'}`}><span className="flex items-center gap-1 text-[11px] font-medium"><Icon size={13} className={`shrink-0 ${status==='RUNNING'?'animate-spin motion-reduce:animate-none':''}`} aria-hidden="true" />{t(`ops.pipeline.stagesNames.${stage}`)}</span><span className="mt-0.5 block text-[9px] text-muted-foreground">{t(`ops.pipeline.states.${status}`)}</span></button>
-      })}
+  const settled = step.stage === 'outcome' ? undefined
+    : pipeline?.events.filter(e => e.stage === step.stage && !['RUNNING', 'RETRYING'].includes(e.status)).at(-1)
+  const out = settled?.output
+  const ids = stageEvidence(detail, step.stage)
+  const loop = pipeline?.events.filter(e => ['recommend', 'review'].includes(e.stage) && !['RUNNING', 'RETRYING'].includes(e.status)) ?? []
+  const rejected = pipeline?.events.filter(e => e.status === 'REJECTED').length ?? 0
+  const outcomeVerified = detail.outcome?.verification_status === 'VERIFIED' && !detail.outcome.invalidated
+  return <div key={step.key} className="space-y-1 rounded-lg bg-muted/40 px-3 py-2 text-xs motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-200">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+      <strong>{t(`ops.pipeline.full.${step.key}`)}</strong>
+      <span className="text-muted-foreground">{t(`ops.pipeline.states.${step.status}`)}</span>
+      <span>{t('ops.pipeline.relevant', { count: ids.length })}</span>
+      {out?.nodes != null && <span>{t('ops.pipeline.retrieved', { nodes: out.nodes, edges: out.relationships ?? 0 })}</span>}
+      {out?.verified_precedents != null && <span>{t('ops.pipeline.precedents', { count: out.verified_precedents })}</span>}
+      {settled?.recorded_at && <time className="text-[10px] text-muted-foreground" dir="ltr" title={settled.recorded_at} dateTime={settled.recorded_at}>{new Date(settled.recorded_at).toLocaleTimeString('en-GB', { timeZone: 'UTC' })} UTC</time>}
+      <button type="button" onClick={onEvidence} className="ms-auto text-primary underline underline-offset-2">{t('ops.pipeline.fullEvidence')}</button>
     </div>
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs"><strong>{t(`ops.pipeline.stagesNames.${selected}`)}</strong><span>{t('ops.pipeline.relevant', { count:ids.length })}</span>{output?.output.diagnoses?.slice(0,3).map((d,i)=><span key={i} className="text-muted-foreground">{rootCauseLabel(d.code??'')}</span>)}{output?.output.nodes != null && <span>{t('ops.pipeline.retrieved',{nodes:output.output.nodes,edges:output.output.relationships??0})}</span>}{output?.output.verified_precedents != null && <span>{t('ops.pipeline.precedents',{count:output.output.verified_precedents})}</span>}{output?.recorded_at&&<time className="text-[10px] text-muted-foreground" dir="ltr" title={output.recorded_at} dateTime={output.recorded_at}>{new Date(output.recorded_at).toLocaleTimeString('en-GB',{timeZone:'UTC'})} UTC</time>}<button type="button" onClick={onEvidence} className="ms-auto text-primary underline underline-offset-2">{t('ops.pipeline.fullEvidence')}</button></div>
-    {output?.output.categories && <p className="text-xs text-muted-foreground">{Object.entries(output.output.categories).slice(0,8).map(([kind,count])=>`${entityLabel(kind)} ${count}`).join(' · ')}</p>}
-    {selected==='extract' && <p className="font-mono text-xs" dir="ltr">{detail.shipment_id}</p>}
-    {output?.output.proposal && <p className="text-xs" dir="auto">{isArabic?output.output.proposal.action_ar??t('ops.workspace.rejectedGpsProposal'):output.output.proposal.action_en??output.output.proposal.action}</p>}
-    {output?.output.verdict && <p className="text-xs" dir="auto">{t(`ops.review.${output.output.verdict}`)} · {isArabic?t(output.output.verdict==='accept'?'ops.review.accept':'ops.workspace.gpsGuard'):output.output.feedback}</p>}
-    {output?.output.workflow_state && <p className="text-xs">{t(`ops.states.${output.output.workflow_state}`)} · {t('ops.transition.noSkipToResolved')}</p>}
+    {step.key === 'collect' && <p className="font-mono" dir="ltr">{detail.shipment_id}</p>}
+    {step.key === 'graph' && out?.categories && <p className="text-muted-foreground">{Object.entries(out.categories).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([kind, count]) => `${entityLabel(kind)} ${count}`).join(' · ')}</p>}
+    {step.key === 'diagnose' && !!out?.diagnoses?.length && <p>{out.diagnoses.map(d => rootCauseLabel(d.code ?? '')).join(' · ')}</p>}
+    {step.key === 'recommend' && out?.proposal && <p dir="auto">{isArabic ? out.proposal.action_ar ?? t('ops.workspace.rejectedGpsProposal') : out.proposal.action_en ?? out.proposal.action}</p>}
+    {step.key === 'review' && out?.verdict && <p dir="auto">{t(`ops.review.${out.verdict}`)} · {isArabic ? t(out.verdict === 'accept' ? 'ops.overview.reviewGuard' : 'ops.workspace.gpsGuard') : out.feedback}</p>}
+    {step.key === 'route' && out?.workflow_state && <p>{t('ops.pipeline.routedTo', { state: t(`ops.states.${out.workflow_state}`) })} · {t('ops.transition.noSkipToResolved')}</p>}
+    {step.key === 'outcome' && <p>{t(detail.decisions?.some(d => d.decision === 'approve') ? 'ops.pipeline.operatorRecorded' : ['AWAITING_APPROVAL', 'HUMAN_REVIEW'].includes(detail.workflow_state ?? '') ? 'ops.pipeline.operatorWaiting' : 'ops.automation.noDecision')} · {t(outcomeVerified ? 'ops.actions.verified' : detail.outcome ? 'ops.actions.observed' : 'ops.pipeline.outcomeWaiting')} · {t('ops.pipeline.outcomeRule')}</p>}
+    {['recommend', 'review'].includes(step.key) && rejected > 0 && <details className="pt-1">
+      <summary className="cursor-pointer font-medium">{t('ops.pipeline.loop', { count: rejected })}</summary>
+      <ol className="mt-1 flex flex-wrap items-center gap-1.5" aria-label={t('ops.pipeline.revision')}>{loop.map((e, i) => <li key={e.sequence} className="flex items-center gap-1.5"><span className={`rounded-md border px-1.5 py-0.5 ${e.status === 'REJECTED' ? 'border-chart-warning/60 bg-chart-warning/10' : 'border-border bg-card'}`}>{t(`ops.pipeline.short.${e.stage === 'recommend' ? 'recommend' : 'review'}`)} {e.stage === 'recommend' ? e.iteration + 1 : e.iteration} · {t(`ops.pipeline.states.${e.status}`)}</span>{i < loop.length - 1 && <span aria-hidden="true" className="text-muted-foreground">{isArabic ? '←' : '→'}</span>}</li>)}</ol>
+      <p className="mt-1 text-muted-foreground">{t('ops.workspace.gpsGuard')}</p>
+    </details>}
+  </div>
+}
 
-    {!!retries.length && <details className="text-xs"><summary className="cursor-pointer font-medium">{t('ops.pipeline.loop',{count:retries.length})}</summary><ol className="mt-2 flex flex-wrap gap-2" aria-label={t('ops.pipeline.revision')} dir={isArabic?'rtl':'ltr'}>{pipeline?.events.filter(e=>['recommend','review'].includes(e.stage)&&!['RUNNING','RETRYING'].includes(e.status)).map(e=><li key={e.sequence} className="rounded-lg border border-border p-2">{t(`ops.pipeline.stagesNames.${e.stage}`)} {e.stage==='recommend'?e.iteration+1:e.iteration} · {t(`ops.pipeline.states.${e.status}`)} <span aria-hidden="true">{isArabic?'←':'→'}</span></li>)}</ol><p className="mt-2 text-muted-foreground">{t('ops.workspace.gpsGuard')}</p></details>}
-    {!pipeline?.events.length && detail.run && <p className="text-xs text-muted-foreground">{t('ops.pipeline.earlier')}</p>}
-    <p className="text-xs text-muted-foreground">{t('ops.pipeline.gates')}: {t(detail.decisions?.some(d=>d.decision==='approve')?'ops.pipeline.operatorRecorded':['AWAITING_APPROVAL','HUMAN_REVIEW'].includes(detail.workflow_state??'')?'ops.pipeline.operatorWaiting':'ops.automation.noDecision')} · {t(detail.outcome?.verification_status==='VERIFIED'&&!detail.outcome.invalidated?'ops.actions.verified':detail.outcome?'ops.actions.observed':'ops.pipeline.outcomeWaiting')}</p>
+export function InvestigationPipeline({ detail, selected, onSelect, onEvidence }: { detail: ShipmentDetail; selected: InspectStage; onSelect: (s: InspectStage) => void; onEvidence: () => void }) {
+  const { t } = useLanguage()
+  const steps = pipelineSteps(detail)
+  const current = steps.find(s => s.stage === selected) ?? steps.find(s => s.key === 'diagnose')!
+  return <section className="space-y-2 rounded-xl border border-border bg-card p-3" aria-label={t('ops.pipeline.title')}>
+    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+      <h3 className="text-sm font-semibold">{t('ops.pipeline.title')}</h3>
+      <span className="text-[11px] text-muted-foreground">{t('ops.pipeline.stageMode')}</span>
+      <span className="ms-auto text-[11px] text-muted-foreground">{t('ops.automation.inspectOnly')}</span>
+    </div>
+    <ol className="flex overflow-x-auto pb-1" aria-label={t('ops.pipeline.stages')}>
+      {steps.map((step, i) => {
+        const reached = REACHED.includes(step.status)
+        const gate = step.key === 'outcome'
+        const line = (on: boolean, dashed: boolean) => `absolute top-3.5 h-0.5 ${dashed ? 'border-t-2 border-dashed bg-transparent ' + (on ? 'border-chart-good/70' : 'border-border') : on ? 'bg-chart-good/70' : 'bg-border'}`
+        const isSelected = current.key === step.key
+        return <li key={step.key} className="relative flex min-w-[4.25rem] flex-1 flex-col items-center">
+          {i > 0 && <span aria-hidden="true" className={`${line(reached, gate)} start-0 w-1/2`} />}
+          {i < steps.length - 1 && <span aria-hidden="true" className={`${line(REACHED.includes(steps[i + 1].status), steps[i + 1].key === 'outcome')} end-0 w-1/2`} />}
+          <button type="button" data-stage={step.stage} data-step={step.key} data-stage-status={step.status} aria-pressed={isSelected}
+            aria-label={`${t(`ops.pipeline.full.${step.key}`)} · ${t(`ops.pipeline.states.${step.status}`)}${step.revisions ? ` · ${t('ops.pipeline.loop', { count: step.revisions })}` : ''} · ${t('ops.automation.inspect')}`}
+            title={`${t(`ops.pipeline.full.${step.key}`)} — ${t(`ops.pipeline.states.${step.status}`)}`}
+            onClick={() => onSelect(step.stage)}
+            className={`relative z-10 flex flex-col items-center gap-1 rounded-lg px-1.5 pb-1 focus-visible:outline-2 focus-visible:outline-ring ${isSelected ? 'bg-primary/10' : 'hover:bg-muted/60'}`}>
+            <span className={`rounded-full ${isSelected ? 'ring-2 ring-primary ring-offset-2 ring-offset-card' : ''}`}><Glyph status={step.status} /></span>
+            {step.revisions > 0 && <span aria-hidden="true" className="absolute -top-1 end-0 rounded-full bg-chart-warning px-1 text-[9px] font-semibold leading-4 text-white">↺{step.revisions}</span>}
+            <span className={`text-[11px] leading-tight ${isSelected ? 'font-semibold' : 'font-medium'}`}>{t(`ops.pipeline.short.${step.key}`)}</span>
+            <span className="text-[9px] leading-tight text-muted-foreground">{t(`ops.pipeline.states.${step.status}`)}</span>
+          </button>
+        </li>
+      })}
+    </ol>
+    <StepDetail detail={detail} step={current} onEvidence={onEvidence} />
+    {!detail.pipeline?.events.length && detail.run && <p className="text-[11px] text-muted-foreground">{t('ops.pipeline.earlier')}</p>}
   </section>
 }
