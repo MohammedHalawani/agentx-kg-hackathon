@@ -9,11 +9,13 @@ export function AppShell({
   view,
   onViewChange,
   scope,
+  scopeLoading,
   children,
 }: {
   view: ViewKey
   onViewChange: (view: ViewKey) => void
   scope: string
+  scopeLoading?: boolean
   children: ReactNode
 }) {
   return (
@@ -21,8 +23,8 @@ export function AppShell({
       <SidebarProvider defaultOpen className="!min-h-0 h-full">
         <AppSidebar active={view} onSelect={onViewChange} />
         <SidebarInset className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <AppHeader view={view} scope={scope} />
-          <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
+          <AppHeader view={view} scope={scope} scopeLoading={scopeLoading} />
+          <div className="min-h-0 flex-1 overflow-hidden bg-background">{children}</div>
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>

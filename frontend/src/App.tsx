@@ -10,6 +10,7 @@ import type { ExploreShipment } from './types/explore'
 
 export default function App() {
   const [scope, setScope] = useState<string>('')
+  const [scopeLoading, setScopeLoading] = useState(true)
   const [view, setView] = useState<ViewKey>('intake')
   const [selectedShipment, setSelectedShipment] = useState<Pick<ExploreShipment, 'shipment_id' | 'case_id'> | null>(null)
   const reduce = useReducedMotion()
@@ -19,11 +20,12 @@ export default function App() {
       .then((r) => r.json())
       .then((d: { scope?: string }) => setScope(d.scope ?? ''))
       .catch(() => undefined)
+      .finally(() => setScopeLoading(false))
   }, [])
 
   return (
     <div className="h-full">
-      <AppShell view={view} onViewChange={setView} scope={scope}>
+      <AppShell view={view} onViewChange={setView} scope={scope} scopeLoading={scopeLoading}>
         <motion.div
           key={view}
           className="h-full"
