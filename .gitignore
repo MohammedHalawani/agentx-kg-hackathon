@@ -25,3 +25,14 @@ artifacts/dataset-v2/
 data/*.csv
 data/photos/*
 !data/photos/.gitkeep
+
+# Browser-automation scratch, vendored tool installs and runtime backups (never evidence by default).
+# Curated test evidence is added explicitly with `git add -f` under docs/agent-runs/evidence/.
+.playwright-mcp/
+node_modules/
+test-results/
+playwright-report/
+*.log
+artifacts/
+docs/agent-runs/evidence/**/*.png
+docs/agent-runs/evidence/**/*.mjs
