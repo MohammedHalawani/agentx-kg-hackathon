@@ -178,6 +178,112 @@ class ReviewerOutageRecordTests(_Store):
         self.assertFalse([v for k, v in driver.ledger.values() if k == "OpsExecution"])
 
 
+class AuthorityPolicyTests(unittest.TestCase):
+    def test_prohibited_is_never_relabelled_whatever_the_other_inputs(self):
+        from operations.authority import authorize
+        for action in ("COMPENSATION", "LIABILITY_DETERMINATION"):
+            for degraded in (False, True):
+                for verdict in ("ACCEPT", "UNAVAILABLE", "HUMAN_REVIEW", "ESCALATE", None):
+                    for contractor in (False, True):
+                        for conflict in (False, True):
+                            for codes in ((), ("DELIVERY_DISPUTE",)):
+                                risk, _ = authorize(action, codes, review_verdict=verdict, evidence_conflict=conflict, synthetic=True,
+                                                    live_session=True, degraded=degraded, contractor_custody=contractor)
+                                self.assertEqual(risk, "PROHIBITED")
+
+    def test_execution_permission_for_every_action_path_and_decision(self):
+        from operations.authority import ACTIONS, execution_permission
+        for action, (base, *_rest) in ACTIONS.items():
+            for decided in ("AUTO", "APPROVAL_REQUIRED", "HUMAN_REVIEW", "PROHIBITED", None):
+                auto, _, _ = execution_permission(action, "AUTO_POLICY", decided)
+                approved, _, _ = execution_permission(action, "OPERATOR_APPROVAL", decided)
+                self.assertEqual(auto, base == "AUTO" and decided == "AUTO", (action, decided))
+                self.assertEqual(approved, base in ("AUTO", "APPROVAL_REQUIRED") and decided != "PROHIBITED", (action, decided))
+        self.assertFalse(execution_permission("NOT_AN_ACTION", "OPERATOR_APPROVAL", "AUTO")[0])
+        self.assertFalse(execution_permission("REQUEST_RESCAN", "SOMETHING_ELSE", "AUTO")[0])
+
+
+class AuthorityAtExecutionTests(_Store):
+    """The policy is re-checked on every path: operator approval, the automatic switch and dispatch."""
+    def case_with(self, action, risk, state):
+        store, driver, result = self.processed()
+        case_id = result["case_id"]
+        def tamper(tx):
+            case = tx.ledger[case_id][1]
+            case["workflow_state"] = state
+            recommendation = tx.ledger[case["recommendation_id"]][1]
+            recommendation.update(action_type=action, risk_class=risk)
+        driver.execute_write(tamper)
+        return store, driver, store.case_detail(case_id)
+
+    def executions(self, driver):
+        return [v for k, v in driver.ledger.values() if k == "OpsExecution"]
+
+    def audit(self, driver):
+        return [v["event_type"] for k, v in driver.ledger.values() if k == "OpsAudit"]
+
+    def test_operator_may_authorize_auto_and_approval_class_actions(self):
+        for action, risk, state in (("REQUEST_RESCAN", "HUMAN_REVIEW", "HUMAN_REVIEW"),
+                                    ("RETURN_TO_SENDER", "APPROVAL_REQUIRED", "AWAITING_APPROVAL")):
+            store, driver, case = self.case_with(action, risk, state)
+            approved = store.decide(case["case_id"], "approve", "DEMO-OPERATOR-LOCAL", case["state_version"], "approve-" + action[:12])
+            self.assertEqual(approved["workflow_state"], "AWAITING_OUTCOME")
+            [execution] = self.executions(driver)
+            self.assertEqual((execution["action_type"], execution["authority"], execution["decided_risk"], execution["permission_rule"]),
+                             (action, "OPERATOR_APPROVAL", risk, "AUTH-19-operator-approved"))
+
+    def test_no_click_executes_a_person_only_or_prohibited_action(self):
+        for action, risk, rule in (("PHYSICAL_CUSTODY_CHECK", "HUMAN_REVIEW", "AUTH-12-human-review-action"),
+                                   ("COMPENSATION", "AUTO", "AUTH-13-prohibited"),
+                                   ("LIABILITY_DETERMINATION", "PROHIBITED", "AUTH-13-prohibited"),
+                                   ("REQUEST_RESCAN", "PROHIBITED", "AUTH-13-prohibited")):
+            store, driver, case = self.case_with(action, risk, "HUMAN_REVIEW")
+            with self.assertRaises(OperationsConflict) as refused:
+                store.decide(case["case_id"], "approve", "DEMO-OPERATOR-LOCAL", case["state_version"], "approve-" + action[:12])
+            self.assertIn(rule, str(refused.exception))
+            self.assertEqual(self.executions(driver), [])
+            self.assertIn("APPROVAL_REFUSED", self.audit(driver))
+            self.assertEqual(store.case_detail(case["case_id"])["workflow_state"], "HUMAN_REVIEW")
+            store.execute_step()
+            self.assertEqual(self.executions(driver), [])
+
+    def test_dispatch_refuses_an_execution_the_policy_does_not_allow_whatever_wrote_it(self):
+        calls = []
+        class Adapter:
+            def respond(self, execution, now):
+                calls.append(execution["action_type"]); return {"acknowledged": True, "behaviour": "test"}
+        for action, path, decided in (("COMPENSATION", "AUTO_POLICY", "AUTO"), ("REQUEST_RESCAN", "AUTO_POLICY", "APPROVAL_REQUIRED"),
+                                      ("PHYSICAL_CUSTODY_CHECK", "OPERATOR_APPROVAL", "HUMAN_REVIEW"), ("REQUEST_RESCAN", "AUTO_POLICY", None)):
+            store, driver, result = self.processed()
+            store.adapter = Adapter()
+            case_id = result["case_id"]
+            def plant(tx):
+                tx.ledger["DEMO-OPS-EXECUTION-PLANTED"] = ("OpsExecution", {
+                    "entity_id": "DEMO-OPS-EXECUTION-PLANTED", "case_id": case_id, "shipment_id": result.get("shipment_id") or tx.ledger[case_id][1]["shipment_id"],
+                    "action_type": action, "authority": path, "decided_risk": decided, "status": "AUTHORIZED", "dataset_id": self.world.config.dataset_id,
+                    "split": "development", "synthetic": True, "recorded_at": tx.ledger[case_id][1]["recorded_at"], "expected_evidence_json": "[]"})
+            driver.execute_write(plant)
+            store.execute_step()
+            self.assertEqual(calls, [], (action, path, decided))
+            planted = driver.ledger["DEMO-OPS-EXECUTION-PLANTED"][1]
+            self.assertEqual(planted["status"], "REFUSED")
+            self.assertIn("EXECUTION_REFUSED", self.audit(driver))
+
+    def test_automatic_switch_runs_nothing_the_policy_did_not_decide_auto(self):
+        from tests import test_investigator as ti
+        store, driver = self.make()
+        fake = ti.FakeInvestigator(lambda tools: [("shipment_overview", {})], ["ACCEPT"])
+        fake.cause, fake.action = "BARCODE_MISMATCH", "REQUEST_RESCAN"
+        store.agents = fake
+        store.control("worker", "start")
+        result = store.process_one()
+        self.assertTrue(result["processed"])
+        authority = store.case_detail(result["case_id"])["run"]["result"]["authority"]
+        self.assertNotEqual(authority["risk_class"], "AUTO")  # Not a live session: the policy never decides AUTO here.
+        store.execute_step()
+        self.assertEqual(self.executions(driver), [])
+
+
 class ExceptionClearanceTests(_Store):
     """A verified action resolves the case only when the exception itself is gone."""
     def verify_with(self, exceptions):

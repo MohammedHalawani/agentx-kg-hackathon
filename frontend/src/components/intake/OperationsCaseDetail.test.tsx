@@ -69,6 +69,14 @@ describe('Case lifecycle authority', () => {
     expect(screen.getByTestId('review-verdict').getAttribute('data-verdict')).toBe('review_unavailable')
     mock.data.review = undefined
   })
+  it('offers no approval for an action only a person can carry out', () => {
+    mock.data.workflow_state = 'HUMAN_REVIEW'
+    mock.data.recommendation = { action_en: 'Physically locate the parcel', action_type: 'PHYSICAL_CUSTODY_CHECK', risk_class: 'HUMAN_REVIEW', approvable: false, approval_rule: 'AUTH-12-human-review-action' }
+    mock.data.recommendation_id = 'REC-1'
+    render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
+    expect(screen.getByRole('button', { name: 'Approve action' }).hasAttribute('disabled')).toBe(true)
+    expect(screen.getByTestId('approval-blocked').textContent).toContain('A person carries out this action')
+  })
   it('shows graph and recommendation in Overview before approval controls', () => {
     mock.data.recommendation = { action_en: 'Compare bound custody evidence' }
     render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)

@@ -69,11 +69,14 @@ def authorize(action_type, diagnosis_codes, *, review_verdict, evidence_conflict
     if entry is None:
         return "HUMAN_REVIEW", "Unknown action type; a person must decide."
     risk, addresses, _, _ = entry
+    if risk == "PROHIBITED":
+        # Checked first so that no other branch can relabel it: never executed, whoever approves.
+        return "PROHIBITED", "Money, liability or blame decisions are never automated."
     if degraded or review_verdict == "UNAVAILABLE":
         return "HUMAN_REVIEW", "A model role failed or was unavailable; automatic execution is blocked and a person must review."
     if review_verdict in ("HUMAN_REVIEW", "ESCALATE"):
         return "HUMAN_REVIEW", "Reviewer requested human judgment."
-    if contractor_custody and risk != "PROHIBITED":
+    if contractor_custody:
         return "HUMAN_REVIEW", "The parcel's last corroborated holder is a contractor or independent driver; physical reconciliation needs a person."
     if codes & SENSITIVE_CODES:
         return "HUMAN_REVIEW", "Sensitive or rights-impacting evidence (dispute, misdelivery or conflicting custody)."
@@ -89,6 +92,35 @@ def authorize(action_type, diagnosis_codes, *, review_verdict, evidence_conflict
                   "APPROVAL_REQUIRED": "Action changes destination or service; operator authorization required.",
                   "HUMAN_REVIEW": "Sensitive judgment reserved for a person.",
                   "PROHIBITED": "Money, liability or blame decisions are never automated."}[risk]
+
+
+EXECUTION_PATHS = ("AUTO_POLICY", "OPERATOR_APPROVAL")
+
+
+def execution_permission(action_type, path, decided_risk):
+    """Re-checked whenever an action is about to be authorized for execution and again before it is
+    dispatched, on every path. Returns (allowed, rule_id, reason).
+
+    AUTO_POLICY: the automatic switch may run only an AUTO-class action the policy decided AUTO.
+    OPERATOR_APPROVAL: a person may authorize AUTO or APPROVAL_REQUIRED actions, including on a case the
+    policy sent to human review (the person is that review). HUMAN_REVIEW-class actions are carried out by
+    a person, never by the system, and PROHIBITED actions never execute, whoever approves."""
+    entry = ACTIONS.get(action_type)
+    if entry is None:
+        return False, "AUTH-01-unknown-action", "Unknown action type; nothing executes."
+    base = entry[0]
+    if base == "PROHIBITED" or decided_risk == "PROHIBITED":
+        return False, "AUTH-13-prohibited", "Money, liability or blame actions never execute, whoever approves."
+    if base == "HUMAN_REVIEW":
+        return False, "AUTH-12-human-review-action", ("A person carries out this action; the system never executes it. "
+                                                       "Record the person's verified finding instead.")
+    if path == "AUTO_POLICY":
+        if base == "AUTO" and decided_risk == "AUTO":
+            return True, "AUTH-10-auto-allowlist", "AUTO-class action decided AUTO by the authority policy."
+        return False, "AUTH-18-auto-not-decided", "Automatic execution needs an AUTO-class action decided AUTO by the authority policy."
+    if path == "OPERATOR_APPROVAL":
+        return True, "AUTH-19-operator-approved", "A person approved an action the policy allows a person to authorize."
+    return False, "AUTH-00-unclassified", "Unknown execution path; nothing executes."
 
 
 def default_action(code):

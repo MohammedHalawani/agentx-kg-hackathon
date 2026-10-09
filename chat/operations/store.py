@@ -589,11 +589,16 @@ class OperationsStore:
             if result:results.append(result)
         return results
 
-    def _authorize_execution(self,tx,case,execution_id,source_id,proposal,action_type,authority,when,*,decision_id,closure="AUTO"):
-        """Record an authorized action for the execution adapter. Authorization is not execution or success."""
+    def _authorize_execution(self,tx,case,execution_id,source_id,proposal,action_type,authority,when,*,decision_id,decided_risk,closure="AUTO"):
+        """Record an authorized action for the execution adapter. Authorization is not execution or success.
+        The authority policy is re-checked here on every path; the caller has already refused what it denies."""
+        from operations.authority import execution_permission
+        allowed,rule,reason=execution_permission(action_type,authority,decided_risk)
+        if not allowed:raise OperationsConflict(f"{rule}: {reason}")
         target=(proposal.get("target") if isinstance(proposal.get("target"),dict) else None) or json.loads(proposal.get("target_json") or "{}")
         self._put(tx,"OpsExecution",{"entity_id":execution_id,"shipment_id":case["shipment_id"],"case_id":case["entity_id"],
             "decision_id":decision_id,"action_code":proposal.get("action_code"),"action_type":action_type,"authority":authority,
+            "decided_risk":decided_risk,"permission_rule":rule,
             "status":"AUTHORIZED","expected_result":proposal.get("action"),"idempotency_key":execution_id,"closure":closure,
             "target_device":target.get("device_id"),"expected_evidence_json":canonical(target.get("expected_evidence") or []),
             "case_opened_at":case.get("opened_at"),
@@ -611,7 +616,22 @@ class OperationsStore:
             return rows,c["as_of"]
         rows,clock=self._execute(claim,write=True)
         done=[]
+        from operations.authority import execution_permission
         for execution in rows:
+            allowed,rule,reason=execution_permission(execution.get("action_type"),execution.get("authority"),execution.get("decided_risk"))
+            if not allowed:
+                # Defence in depth: whatever wrote it, an execution the policy does not allow is never dispatched.
+                def refuse(tx,execution=execution,rule=rule,reason=reason):
+                    c=self._control(tx,lock=True);when=c["as_of"]
+                    current=self._get(tx,"OpsExecution",execution["entity_id"]);current.update(status="REFUSED",permission_rule=rule)
+                    self._put(tx,"OpsExecution",current,update=True)
+                    case=self._case(tx,current["case_id"]);old=case["workflow_state"]
+                    if not case.get("is_terminal"):
+                        case.update(workflow_state="HUMAN_REVIEW",state_version=case["state_version"]+1);self._put(tx,"OpsCase",case,update=True)
+                    self._audit(tx,case,"EXECUTION_REFUSED",when,actor="SUHAIL-AUTHORITY-POLICY",key=rule,old=old,
+                                result=f"{execution.get('action_type')} · {rule} · {reason} Nothing was dispatched.")
+                self._execute(refuse,write=True)
+                continue
             execution["expected_evidence"]=json.loads(execution.get("expected_evidence_json") or "[]")
             if self.adapter is not None:
                 try:receipt=self.adapter.respond(execution,clock);mode="synthetic_operational_simulator"
@@ -726,10 +746,18 @@ class OperationsStore:
                     continue
                 self._audit(tx,current,"MODEL_DEGRADED",when,actor="SUHAIL-"+item["role"].upper(),key=item["role"],
                             result=f"{item['role']} unavailable ({item.get('error') or 'no valid output'}); automatic execution blocked.")
-            if recommendation_id and analysis["review"]["verdict"]=="accept" and authority.get("risk_class")=="AUTO" and not analysis.get("degraded"):
+            from operations.authority import execution_permission
+            auto=(recommendation_id and analysis["review"]["verdict"]=="accept" and authority.get("risk_class")=="AUTO"
+                  and not analysis.get("degraded"))
+            if auto and not execution_permission(authority.get("action_type"),"AUTO_POLICY",authority.get("risk_class"))[0]:
+                auto=False
+                self._audit(tx,current,"EXECUTION_REFUSED",when,actor="SUHAIL-AUTHORITY-POLICY",key="AUTH-18-auto-not-decided",
+                            result=f"{authority.get('action_type')} is not an AUTO-class action; nothing runs automatically.")
+            if auto:
                 execution_id=identity("execution","auto",recommendation_id)
                 self._authorize_execution(tx,current,execution_id,recommendation_id,analysis["proposal"],authority["action_type"],
-                                          "AUTO_POLICY",when,decision_id=None,closure=authority.get("closure","AUTO"))
+                                          "AUTO_POLICY",when,decision_id=None,decided_risk=authority.get("risk_class"),
+                                          closure=authority.get("closure","AUTO"))
                 self._audit(tx,current,"ACTION_AUTHORIZED",when,actor="SUHAIL-AUTHORITY-POLICY",old=current["workflow_state"],
                             result=f"AUTO · {authority['action_type']} · {authority['reason']}")
                 current.update(workflow_state="ACTION_INITIATED",state_version=current["state_version"]+1)
@@ -945,14 +973,22 @@ class OperationsStore:
             when=control["as_of"];decision_id=identity("decision",command);execution_id=None
             recommendation=self._get(tx,"OpsRecommendation",case.get("recommendation_id",""))
             if decision=="approve" and not recommendation:raise OperationsConflict("Approval requires a reviewed grounded recommendation")
+            if decision=="approve":
+                from operations.authority import execution_permission
+                action=recommendation.get("action_type") or "REQUEST_ADDITIONAL_EVIDENCE"
+                allowed,rule,reason=execution_permission(action,"OPERATOR_APPROVAL",recommendation.get("risk_class"))
+                if not allowed:
+                    self._audit(tx,case,"APPROVAL_REFUSED",when,actor=actor_id,key=rule,old=old,
+                                result=f"{action} · {rule} · {reason} The case state is unchanged; nothing was authorized.")
+                    return {"refused":True,"rule_id":rule,"reason":reason}
             self._put(tx,"OpsDecision",{"entity_id":decision_id,"shipment_id":case["shipment_id"],"case_id":case_id,
                 "recommendation_id":case.get("recommendation_id"),"decision":decision,"actor_id":actor_id,
                 "expected_version":expected_version,"idempotency_key":idempotency_key,"recorded_at":when,"occurred_at":when})
             self._link(tx,"OPS_HAS_DECISION",case_id,decision_id,case["shipment_id"],when)
             if decision=="approve":
                 execution_id=identity("execution",decision_id)
-                self._authorize_execution(tx,case,execution_id,decision_id,recommendation,recommendation.get("action_type") or "REQUEST_ADDITIONAL_EVIDENCE",
-                                          "OPERATOR_APPROVAL",when,decision_id=decision_id)
+                self._authorize_execution(tx,case,execution_id,decision_id,recommendation,action,"OPERATOR_APPROVAL",when,
+                                          decision_id=decision_id,decided_risk=recommendation.get("risk_class"))
             if execution_id:
                 case.update(workflow_state="ACTION_INITIATED",state_version=case["state_version"]+1)
                 self._put(tx,"OpsCase",case,update=True)
@@ -971,7 +1007,11 @@ class OperationsStore:
                 "decision_id":decision_id,"execution_id":execution_id,"outcome":None,"idempotent":False}
             self._save_command(tx,case,command,request_hash,"decision",idempotency_key,result,when)
             return result
-        return self._execute(decision_tx,write=True)
+        result=self._execute(decision_tx,write=True)
+        if result.get("refused"):
+            # The refusal is audited (committed above); the caller gets a conflict, and nothing executes.
+            raise OperationsConflict(f"{result['rule_id']}: {result['reason']}")
+        return result
 
     def request_verification(self,case_id,actor_id,expected_version,idempotency_key):
         """An operator may ask the independent verifier to check now. Nobody can declare success:
@@ -1001,6 +1041,12 @@ class OperationsStore:
                 order="n.iteration DESC," if kind=="OpsReview" else ""
                 return [public_value(row["props"]) for row in tx.run(f"MATCH(n:OpsEntity:{kind} {{case_id:$case_id,dataset_id:$dataset}}) RETURN properties(n) AS props ORDER BY {order}n.recorded_at DESC,n.entity_id DESC LIMIT 20",case_id=case_id,dataset=self.dataset_id)]
             recommendation=self._get(tx,"OpsRecommendation",case.get("recommendation_id",""))
+            if recommendation:
+                # Whether a person's approval may make the system carry this action out (the same check approval runs).
+                from operations.authority import execution_permission
+                allowed,rule,_=execution_permission(recommendation.get("action_type") or "REQUEST_ADDITIONAL_EVIDENCE","OPERATOR_APPROVAL",
+                                                    recommendation.get("risk_class"))
+                recommendation={**recommendation,"approvable":allowed,"approval_rule":rule}
             runs=linked("OpsRun");reviews=linked("OpsReview");outcomes=linked("OpsOutcome")
             if runs:runs[0]["result"]=json.loads(runs[0].pop("result_json"))
             if outcomes:outcomes[0]["outcome_id"]=outcomes[0]["entity_id"]

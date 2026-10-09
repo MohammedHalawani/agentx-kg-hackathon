@@ -19,7 +19,7 @@ export interface ShipmentDetail {
   pipeline?: Pipeline
   ledger_graph?: { nodes: EvidenceNode[]; edges: EvidenceEdge[] }
   recommendation_id?: string | null
-  recommendation?: { action?: string; action_en?: string; action_ar?: string; summary_en?: string; summary_ar?: string; evidence_ids?: string[] } | null
+  recommendation?: { action?: string; action_en?: string; action_ar?: string; summary_en?: string; summary_ar?: string; evidence_ids?: string[]; action_type?: string; risk_class?: string; approvable?: boolean; approval_rule?: string } | null
   review?: { verdict?: string; feedback?: string; summary_en?: string; summary_ar?: string; model_verdict?: string | null; degraded?: boolean; mode?: string } | null
   outcome?: { outcome_id?: string; id?: string; invalidated?: boolean; verification_status?: string; success?: boolean | null; outcome_type?: string; evidence_ids?: string[]; rule_id?: string; reason?: string; verifier_id?: string; exception_cleared?: boolean | null; remaining_symptoms?: string[] } | null
   decisions?: { decision?: string; occurred_at?: string }[]
