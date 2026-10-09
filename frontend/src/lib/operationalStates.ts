@@ -18,6 +18,7 @@ export interface OperationalVisual {
   token: string
   Icon: LucideIcon
   labelKey: string
+  hintKey?: string
   pattern?: 'solid' | 'dashed' | 'dot'
 }
 
@@ -27,7 +28,7 @@ export function operationalLabelKey(status: string): string {
 
 export const OPERATIONAL_STATUS_VISUAL: Record<OperationalShipmentStatus, OperationalVisual> = {
   ON_TIME: { token: '--color-chart-good', Icon: PackageCheck, labelKey: 'ops.status.onTime', pattern: 'solid' },
-  NEEDS_ATTENTION: { token: '--color-chart-warning', Icon: HelpCircle, labelKey: 'ops.status.needsAttention', pattern: 'dashed' },
+  NEEDS_ATTENTION: { token: '--color-chart-warning', Icon: HelpCircle, labelKey: 'ops.status.needsAttention', hintKey: 'ops.statusHints.needsAttention', pattern: 'dashed' },
   SLA_RISK: { token: '--color-chart-warning', Icon: Timer, labelKey: 'ops.status.slaRisk', pattern: 'dashed' },
   CRITICAL: { token: '--color-danger', Icon: AlertTriangle, labelKey: 'ops.status.critical', pattern: 'solid' },
   UNRECONCILED_CUSTODY: { token: '--color-chart-orange', Icon: ShieldAlert, labelKey: 'ops.status.unreconciledCustody', pattern: 'dot' },
@@ -43,14 +44,14 @@ export const CASE_WORKFLOW_VISUAL: Record<CaseWorkflowState, OperationalVisual> 
   INVESTIGATING: { token: '--color-chart-blue', Icon: Clock3, labelKey: 'ops.case.investigating' },
   NEEDS_EVIDENCE: { token: '--color-chart-warning', Icon: HelpCircle, labelKey: 'ops.case.needsEvidence' },
   RECOMMENDATION_READY: { token: '--color-chart-aqua', Icon: PackageCheck, labelKey: 'ops.case.recommendationReady' },
-  AWAITING_APPROVAL: { token: '--color-chart-warning', Icon: Scale, labelKey: 'ops.case.awaitingApproval' },
+  AWAITING_APPROVAL: { token: '--color-chart-warning', Icon: Scale, labelKey: 'ops.case.awaitingApproval', hintKey: 'ops.caseHints.awaitingApproval' },
   ACTION_INITIATED: { token: '--color-chart-blue', Icon: Truck, labelKey: 'ops.case.actionInitiated' },
   REJECTED: { token: '--color-chart-warning', Icon: Scale, labelKey: 'ops.case.rejected' },
-  HUMAN_REVIEW: { token: '--color-chart-orange', Icon: UserX, labelKey: 'ops.case.humanReview' },
-  AWAITING_OUTCOME: { token: '--color-chart-warning', Icon: Timer, labelKey: 'ops.case.awaitingOutcome' },
+  HUMAN_REVIEW: { token: '--color-chart-orange', Icon: UserX, labelKey: 'ops.case.humanReview', hintKey: 'ops.caseHints.humanReview' },
+  AWAITING_OUTCOME: { token: '--color-chart-warning', Icon: Timer, labelKey: 'ops.case.awaitingOutcome', hintKey: 'ops.caseHints.awaitingOutcome' },
   ESCALATED: { token: '--color-danger', Icon: AlertTriangle, labelKey: 'ops.case.escalated' },
   REOPENED: { token: '--color-chart-blue', Icon: HelpCircle, labelKey: 'ops.case.reopened' },
-  RESOLVED: { token: '--color-chart-good', Icon: CheckCircle2, labelKey: 'ops.case.resolved' },
+  RESOLVED: { token: '--color-chart-good', Icon: CheckCircle2, labelKey: 'ops.case.resolved', hintKey: 'ops.caseHints.resolved' },
 }
 
 /** Recommendation / review completion must not imply RESOLVED — only verified outcomes may. */

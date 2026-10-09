@@ -1,7 +1,7 @@
 import { useLanguage } from '@/components/i18n/LanguageProvider'
 import { shipmentVisualState, type ExploreShipment } from '../../types/explore'
 import { SHIPMENT_STATE_STYLE } from '../../lib/shipmentStyles'
-import { OperationalStatusBadge } from '@/components/operations/StatusBadge'
+import { CaseWorkflowBadge, OperationalStatusBadge } from '@/components/operations/StatusBadge'
 
 export function ShipmentStatus({ shipment }: { shipment: ExploreShipment }) {
   const { t, rootCauseLabel } = useLanguage()
@@ -23,7 +23,10 @@ export function ExploreShipmentCard({ shipment, onOpenCase, actionLabel }: { shi
   return (
     <section aria-label={t('explore.shipmentDetails')} dir={isArabic ? 'rtl' : 'ltr'} className="space-y-3 rounded-xl border border-border bg-card p-3 text-sm">
       <h3 className="font-mono font-semibold" dir="ltr">{shipment.shipment_id}</h3>
-      <ShipmentStatus shipment={shipment} />
+      <div className="flex flex-wrap items-center gap-2">
+        <ShipmentStatus shipment={shipment} />
+        {shipment.workflow_state && <CaseWorkflowBadge state={shipment.workflow_state} />}
+      </div>
       <dl className="space-y-2 text-xs">
         {fields.map(([label, value]) => <div key={label}><dt className="text-muted-foreground">{label}</dt><dd dir="auto" className="mt-0.5 break-words">{value}</dd></div>)}
       </dl>
