@@ -45,10 +45,12 @@ interface GraphViewProps {
   layout?: LayoutKey
   onLayoutChange?: (layout: LayoutKey) => void
   onNodeSelect?: (node: GraphNode) => void
+  highlightedIds?: readonly string[]
+  compact?:boolean
 }
 
 // the graph renders on the app's warm-light surface; nodes carry the color, edges stay quiet
-export function GraphView({ graph, layout: layoutProp, onLayoutChange, onNodeSelect }: GraphViewProps) {
+export function GraphView({ graph, layout: layoutProp, onLayoutChange, onNodeSelect, highlightedIds, compact }: GraphViewProps) {
   const { t, entityLabel, propertyLabel } = useLanguage()
   const { resolvedTheme } = useTheme()
   const [internalLayout, setInternalLayout] = useState<LayoutKey>('forceDirected')
@@ -101,13 +103,15 @@ export function GraphView({ graph, layout: layoutProp, onLayoutChange, onNodeSel
         captions: [],
         color: colors[labelOf(n)],
         size: sizeById.get(n.id),
+        activated: highlightedIds?.includes(n.id),
+        disabled: !!highlightedIds?.length && !highlightedIds.includes(n.id),
       })),
-    [graph, colors, sizeById],
+    [graph, colors, sizeById, highlightedIds],
   )
   // no edge captions: on the canvas renderer they'd clutter a dense graph — arrows carry direction
   const rels: NvlRel[] = useMemo(
-    () => graph.relationships.map((r) => ({ id: r.id, from: r.from, to: r.to })),
-    [graph],
+    () => graph.relationships.map((r) => ({ id: r.id, from: r.from, to: r.to, disabled:!!highlightedIds?.length && !(highlightedIds.includes(r.from)&&highlightedIds.includes(r.to)),width:highlightedIds?.includes(r.from)&&highlightedIds.includes(r.to)?2:1 })),
+    [graph,highlightedIds],
   )
 
   const renderer = graph.nodes.length > CANVAS_MAX_NODES ? 'webgl' : 'canvas'
@@ -127,15 +131,16 @@ export function GraphView({ graph, layout: layoutProp, onLayoutChange, onNodeSel
         id: n.id,
         color: colors[labelOf(n)],
         size: sizeById.get(n.id),
+        activated: highlightedIds?.includes(n.id),
         // NVL's canvas renderer draws a caption character by character, which strips Arabic
         // joining and lays the letters out left-to-right; shapeForCanvas pre-shapes and
         // reorders so they render correctly. Latin captions pass through untouched.
         captions: labelsRef.current ? [{ value: shapeForCanvas(n.caption) }] : [],
-        disabled: keep ? !(n.id === focus || keep.has(n.id)) : false,
+        disabled: keep ? !(n.id === focus || keep.has(n.id)) : !!highlightedIds?.length && !highlightedIds.includes(n.id),
       })),
-      [],
+      graph.relationships.map(r=>({id:r.id,disabled:!!highlightedIds?.length && !(highlightedIds.includes(r.from)&&highlightedIds.includes(r.to)),width:highlightedIds?.includes(r.from)&&highlightedIds.includes(r.to)?2:1})),
     )
-  }, [graph, colors, sizeById, adjacency])
+  }, [graph, colors, sizeById, adjacency, highlightedIds])
 
   const setLabels = useCallback(
     (show: boolean) => {
@@ -167,7 +172,7 @@ export function GraphView({ graph, layout: layoutProp, onLayoutChange, onNodeSel
     // a complaint run - is scaled up until a handful of nodes fill the pane and every edge
     // runs off the edge of it. FIT_MAX_ZOOM keeps the whole shape on screen at a readable
     // size, which is the point of fitting rather than zooming.
-    nvlRef.current?.fit(graph.nodes.map((n) => n.id), { maxZoom: FIT_MAX_ZOOM })
+    nvlRef.current?.fit(graph.nodes.map((n) => n.id), { animated: false, maxZoom: FIT_MAX_ZOOM })
     syncCaptions()
     setReady(true)
   }, [graph, syncCaptions])
@@ -270,7 +275,7 @@ export function GraphView({ graph, layout: layoutProp, onLayoutChange, onNodeSel
       )}
 
       <div className="pointer-events-none absolute left-3 top-3 flex max-w-[55%] flex-wrap gap-x-3 gap-y-1 rounded-lg border border-border bg-card/90 px-2.5 py-1.5 text-[11px] text-foreground backdrop-blur">
-        {orderedLabels.map((l) => (
+        {(compact?orderedLabels.slice(0,4):orderedLabels).map((l) => (
           <span
             key={l}
             title={entityInfo(l)}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { divIcon } from 'leaflet'
 import { MapContainer, Marker, Polyline, TileLayer, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -16,7 +16,7 @@ function ViewportBounds({ coordinates }: { coordinates: string }) {
   return null
 }
 
-export function ExploreMap({ shipments, selected, onSelect, layers, visibleLayers = [] }: { shipments: ExploreShipment[]; selected: ExploreShipment | null; onSelect: (shipment: ExploreShipment) => void; layers?: RouteLayers; visibleLayers?: RouteLayerKey[] }) {
+export function ExploreMap({ shipments, selected, onSelect, layers, visibleLayers = [], highlightedIds }: { shipments: ExploreShipment[]; selected: ExploreShipment | null; onSelect: (shipment: ExploreShipment) => void; layers?: RouteLayers; visibleLayers?: RouteLayerKey[]; highlightedIds?:readonly string[] }) {
   const { t } = useLanguage()
   const { resolvedTheme } = useTheme()
   const [addressGroup, setAddressGroup] = useState<ExploreShipment[]>([])
@@ -48,7 +48,7 @@ export function ExploreMap({ shipments, selected, onSelect, layers, visibleLayer
   }, new Map()).entries()]
   const origin = selected?.origin
   return (
-    <div className="relative h-full min-h-80" aria-label={t('explore.mapHint')}>
+    <div className="relative h-full min-h-40" aria-label={t('explore.mapHint')} data-map-highlight-count={layerPoints.filter(p=>highlightedIds?.includes(p.evidence_id??p.entity_id??'')).length}>
       <MapContainer bounds={bounds} boundsOptions={{ padding: [35, 35], maxZoom: 11 }} className="h-full w-full" scrollWheelZoom>
         <ViewportBounds coordinates={JSON.stringify(bounds)} />
         <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
@@ -63,14 +63,22 @@ export function ExploreMap({ shipments, selected, onSelect, layers, visibleLayer
           const points = pointsFor(key)
           if (key === 'expected_route') return (layers?.expected_route ?? []).map((segment, i) => {
             const pts = ('points' in segment ? segment.points : [segment]).filter(validPoint)
-            return pts.length > 1 ? <Polyline key={`${key}-${i}`} positions={pts.map(p => [p.lat, p.lng])} pathOptions={{ color: cssVar('--color-chart-blue'), weight: 3, dashArray: '5 6' }} /> : null
+            const relevant=highlightedIds?.includes('segment_id' in segment?segment.segment_id:'')||pts.some(p=>highlightedIds?.includes(p.evidence_id??p.entity_id??''))
+            return pts.length > 1 ? <Polyline key={`${key}-${i}`} positions={pts.map(p => [p.lat, p.lng])} pathOptions={{ color: cssVar('--color-chart-blue'), weight: relevant?3:2, opacity:highlightedIds?.length&&!relevant?0.45:1, dashArray: '5 6' }} /> : null
           })
           if (key === 'vehicle_path') return [...new Set(points.map(p => p.vehicle_id))].map(vehicle => {
             const pts = points.filter(p => p.vehicle_id === vehicle)
-            return pts.length > 1 ? <Polyline key={vehicle ?? key} positions={pts.map(p => [p.lat, p.lng])} pathOptions={{ color: cssVar('--color-chart-orange'), weight: 3, dashArray: '2 6' }} /> : null
+            return pts.length > 1 ? <Polyline key={vehicle ?? key} positions={pts.map(p => [p.lat, p.lng])} pathOptions={{ color: cssVar('--color-chart-orange'), weight: 1.5, dashArray: '2 6' }} /> : null
           })
-          // Corroborated stops are discrete observations, never an interpolated parcel path.
-          return points.map((p, i) => <Marker key={`${key}-${i}`} position={[p.lat, p.lng]} icon={icons.normal} title={`${t(`ops.layers.${key}`)} · ${p.entity_id ?? ''} · ${p.occurred_at ?? ''}`} alt={t(`ops.layers.${key}`)} />)
+          const sorted=[...points].sort((a,b)=>(a.occurred_at??'').localeCompare(b.occurred_at??''))
+          const paths=key==='actual_route'?[...new Set(sorted.map(p=>p.package_id))].map(pkg=>sorted.filter(p=>p.package_id===pkg)):[]
+          const glyph=({custody_points:'□',actual_route:'□',hub_stops:'▣',delivery_attempts:'⌖',traffic:'!'} as Record<string,string>)[key]??'·'
+          return <Fragment key={key}>{paths.map((pts,i)=>pts.length>1?<Polyline key={`custody-${i}`} positions={pts.map(p=>[p.lat,p.lng])} pathOptions={{color:cssVar('--color-chart-good'),weight:2}} />:null)}{points.map((p,i)=>{
+            const relevant=highlightedIds?.includes(p.evidence_id??p.entity_id??'')
+            const last=key==='custody_points'&&p===sorted.at(-1)
+            const icon=divIcon({className:'',iconSize:[24,24],iconAnchor:[12,12],html:`<span style="display:grid;place-items:center;width:24px;height:24px;border:${relevant||last?3:1}px solid ${cssVar(key==='traffic'?'--color-chart-warning':relevant?'--color-primary':'--color-muted-foreground')};background:${cssVar('--color-card')};border-radius:${key==='hub_stops'?'4px':'50%'};font-weight:bold">${glyph}</span>`})
+            return <Marker key={`${key}-${i}`} position={[p.lat,p.lng]} icon={icon} opacity={highlightedIds?.length&&!relevant&&!last?0.45:1} title={`${t(`ops.layers.${key}`)} · ${last?t('ops.layers.lastCustody'):''} · ${p.entity_id??''} · ${p.occurred_at??''}`} alt={t(`ops.layers.${key}`)} />
+          })}</Fragment>
         })}
         {origin && <>
           <Marker position={[origin.lat, origin.lng]} icon={icons.normal} title={t(origin.approximate ? 'explore.originApproximate' : 'explore.origin')} alt={t('explore.origin')} />

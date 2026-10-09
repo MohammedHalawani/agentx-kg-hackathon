@@ -62,6 +62,7 @@ export interface QueueBucketCounts {
   open: number
   investigating: number
   needsReview: number
+  needsEvidence?: number
   awaitingApproval: number
   awaitingOutcome: number
   resolved: number
@@ -97,6 +98,8 @@ export interface AuditEvent {
   model?: string | null
   decision?: string | null
   result?: string | null
+  stage?: string
+  stageStatus?: string
   /** When true, row comes from demo fixtures — not live backend. */
   fixture?: boolean
 }

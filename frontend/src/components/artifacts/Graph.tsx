@@ -15,6 +15,8 @@ interface GraphProps {
   layout?: LayoutKey
   onLayoutChange?: (layout: LayoutKey) => void
   onNodeSelect?: (node: GraphNode) => void
+  highlightedIds?: readonly string[]
+  compact?:boolean
 }
 
 export function Graph(props: GraphProps) {
@@ -32,7 +34,7 @@ export function Graph(props: GraphProps) {
   }
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative h-full w-full" data-highlight-count={props.highlightedIds?.length ?? 0}>
       {renderer === 'brain' ? <BrainGraph {...props} /> : <GraphView {...props} />}
 
       <div className="absolute bottom-3 left-1/2 z-10 inline-flex -translate-x-1/2 gap-0.5 rounded-lg border border-border bg-card/90 p-0.5 text-[11px] text-muted-foreground shadow-sm backdrop-blur">

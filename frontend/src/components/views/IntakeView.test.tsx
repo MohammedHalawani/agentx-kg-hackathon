@@ -104,9 +104,9 @@ describe('IntakeView metadata contrast (H01)', () => {
     expect(screen.getByText(/Operations intake|استقبال العمليات/)).toBeTruthy()
   })
 
-  it('labels simulation panel as demo-only', () => {
+  it('discloses synthetic simulation data', () => {
     renderIntake()
-    expect(screen.getAllByText(/DEMO — synthetic operational data/i).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/Synthetic operational data/i).length).toBeGreaterThan(0)
   })
 
   it('pairs accent hover background with accent-foreground on case buttons (H02)', () => {

@@ -12,5 +12,5 @@ export function useExploreData(filter: ShipmentFilter, limit: number, cursor: st
   const { data: response, loading, error, refetch } = useOperationsPage<ApiExploreShipment>(`/explore?${pageQuery({ filter, limit, cursor, ...filters })}`)
   const shipments: ExploreShipment[] = (response?.items ?? []).map(s => ({ ...s, priority: s.priority ?? null, operational_status: s.operational_status, root_causes: s.cause_codes ?? [], needs_attention: Boolean(s.case_id && s.workflow_state !== 'RESOLVED'), stalled: s.operational_status === 'HUB_DELAY', critical: s.operational_status === 'CRITICAL', delivered: s.status === 'DELIVERED', origin: s.origin ?? null, destinations: s.destination ? [s.destination] : [], last_event: null }))
   const data: ExploreData | null = response ? { shipments, counts: {}, filter, limit, total: response.filtered_total, returned: shipments.length, truncated: Boolean(response.next_cursor), graph: { nodes: shipments.map(s => ({ id: s.shipment_id, labels: ['Shipment'], caption: s.shipment_id, properties: { status: s.status, operational_status: s.operational_status ?? '' } })), relationships: [] }, next_cursor: response.next_cursor, previous_cursor: response.previous_cursor, metadata: response.metadata } : null
-  return { data, loading, error, refetch, isFixture: false }
+  return { data, loading, error, refetch }
 }

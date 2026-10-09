@@ -4,31 +4,30 @@ import { cn } from '@/lib/cn'
 
 type BucketKey = keyof QueueBucketCounts
 
-const BUCKETS: { key: BucketKey; labelKey: string; fixtureOnly?: boolean }[] = [
+const BUCKETS: { key: BucketKey; labelKey: string }[] = [
   { key: 'open', labelKey: 'ops.queue.open' },
-  { key: 'investigating', labelKey: 'ops.queue.investigating', fixtureOnly: true },
-  { key: 'needsReview', labelKey: 'ops.queue.needsReview', fixtureOnly: true },
-  { key: 'awaitingApproval', labelKey: 'ops.queue.awaitingApproval', fixtureOnly: true },
-  { key: 'awaitingOutcome', labelKey: 'ops.queue.awaitingOutcome', fixtureOnly: true },
-  { key: 'resolved', labelKey: 'ops.queue.resolved', fixtureOnly: true },
+  { key: 'investigating', labelKey: 'ops.queue.investigating' },
+  { key: 'needsReview', labelKey: 'ops.queue.needsReview' },
+  { key: 'needsEvidence', labelKey: 'ops.queue.needsEvidence' },
+  { key: 'awaitingApproval', labelKey: 'ops.queue.awaitingApproval' },
+  { key: 'awaitingOutcome', labelKey: 'ops.queue.awaitingOutcome' },
+  { key: 'resolved', labelKey: 'ops.queue.resolved' },
 ]
 
 export function QueueCounter({
   counts,
   active,
   onSelect,
-  showFixtureBuckets,
 }: {
   counts: QueueBucketCounts
   active?: BucketKey
   onSelect?: (key: BucketKey) => void
-  showFixtureBuckets?: boolean
 }) {
   const { t } = useLanguage()
   return (
-    <div className="flex flex-wrap gap-2" role="group" aria-label={t('ops.queue.title')}>
+    <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap" role="group" aria-label={t('ops.queue.title')}>
       {BUCKETS.map(({ key, labelKey }) => {
-        const value = counts[key]
+        const value = counts[key] ?? 0
         const dimmed = value === 0
         return (
           <button
@@ -38,16 +37,14 @@ export function QueueCounter({
             onClick={() => onSelect?.(key)}
             aria-pressed={active === key}
             className={cn(
-              'min-w-[7rem] rounded-xl border px-3 py-2 text-start transition-colors focus-visible:outline-2 focus-visible:outline-ring',
+              'min-w-0 sm:min-w-[7rem] rounded-xl border px-3 py-2 text-start transition-colors focus-visible:outline-2 focus-visible:outline-ring',
               active === key ? 'border-primary bg-primary/10' : 'border-border bg-card',
               dimmed && 'opacity-60',
             )}
           >
             <p className="text-[11px] text-muted-foreground">{t(labelKey)}</p>
             <p className="text-lg font-semibold tabular-nums text-foreground" dir="ltr">{value}</p>
-            {showFixtureBuckets && (
-              <p className="text-[10px] text-muted-foreground">{t('ops.fixture.badge')}</p>
-            )}
+
           </button>
         )
       })}

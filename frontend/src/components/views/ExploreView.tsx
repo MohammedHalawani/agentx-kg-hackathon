@@ -53,11 +53,11 @@ export function ExploreView({ onOpenCase }: { onOpenCase?: (shipment: ExploreShi
   const [extraFilters, setExtraFilters] = useState({ city: 'all', cause: 'all', service_type: 'all', shipment_class: 'all' })
   const rootRef = useRef<HTMLDivElement>(null)
   const { t, isArabic, rootCauseLabel } = useLanguage()
-  const { data, loading, error, refetch, isFixture } = useExploreData(filter, limit, cursor, extraFilters)
+  const { data, loading, error, refetch } = useExploreData(filter, limit, cursor, extraFilters)
   const selected = data?.shipments.find((s) => s.shipment_id === selectedId) ?? null
 
   const lenses = [
-    { key: 'map' as const, Icon: Map, disabled: isFixture && lens === 'map' },
+    { key: 'map' as const, Icon: Map, disabled: false },
     { key: 'graph' as const, Icon: BrainCircuit },
     { key: 'schema' as const, Icon: Workflow },
   ]
@@ -102,7 +102,6 @@ export function ExploreView({ onOpenCase }: { onOpenCase?: (shipment: ExploreShi
             <Maximize2 size={15} aria-hidden="true" />
           </button>
         )}
-        {isFixture && <span className="text-[11px] font-medium uppercase tracking-wide text-chart-warning">{t('ops.fixture.badge')}</span>}
       </div>
 
       {lens !== 'schema' && (
@@ -173,7 +172,6 @@ export function ExploreView({ onOpenCase }: { onOpenCase?: (shipment: ExploreShi
                 {t('explore.showing', { returned: data.returned, total: data.total })}
                 {data.truncated && ` · ${t('explore.bounded')}`}
               </p>
-              {isFixture && <p className="text-xs text-muted-foreground">{t('explore.synthetic')}</p>}
               {selected && onOpenCase && <ExploreShipmentCard shipment={selected} onOpenCase={onOpenCase} />}
               <ul className="space-y-1">
                 {data.shipments.map((s) => (

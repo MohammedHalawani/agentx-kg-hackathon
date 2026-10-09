@@ -10,7 +10,7 @@ vi.mock('./SchemaView', () => ({ SchemaView: () => <div>Schema</div> }))
 
 const shipment: ExploreShipment = { shipment_id: 'SHP-0004', status: 'FAILED', priority: 'high', root_causes: ['hub_delay'], needs_attention: true, critical: true, stalled: true, delivered: false, last_event: { event_type: 'HUB_DELAY', timestamp: '2026-01-01' }, origin: null, destinations: [], city: 'Riyadh' }
 const apiPage = { items: [{ ...shipment, cause_codes: shipment.root_causes, operational_status: 'HUB_DELAY', case_id: 'CASE-4', workflow_state: 'OPEN' }], filtered_total: 70, next_cursor: null, previous_cursor: null }
-const detail = { shipment_id: shipment.shipment_id, evidence: { nodes: [{ id: 'n1', kind: 'Shipment', properties: { shipment_id: shipment.shipment_id } }], edges: [] } }
+const detail = { shipment_id: shipment.shipment_id, evidence: { nodes: [{ id: shipment.shipment_id, kind: 'Shipment', properties: { shipment_id: shipment.shipment_id } }], edges: [] } }
 
 beforeEach(() => localStorage.setItem('agentx-language', 'en'))
 afterEach(() => { vi.unstubAllGlobals(); localStorage.clear() })

@@ -102,13 +102,15 @@ interface BrainGraphProps {
   layout?: LayoutKey
   onLayoutChange?: (layout: LayoutKey) => void
   onNodeSelect?: (node: GraphNode) => void
+  highlightedIds?: readonly string[]
+  compact?:boolean
 }
 
 // A 3D force-directed rendering of the same subgraph GraphView draws, themed to the app's surface
 // with the same node palette and visible edges. Cinematic on-scheme touches: the layout springs
 // out on load; clicking a node glides the camera to it, pins focus (unrelated nodes dim + shrink),
 // and fires signal particles down its links; the detail card renders the node's photo + a mini map.
-export function BrainGraph({ graph, layout: layoutProp, onLayoutChange, onNodeSelect }: BrainGraphProps) {
+export function BrainGraph({ graph, layout: layoutProp, onLayoutChange, onNodeSelect, highlightedIds }: BrainGraphProps) {
   const { t, entityLabel, propertyLabel } = useLanguage()
   const entityInfo = useEntityInfo()
   const { resolvedTheme } = useTheme()
@@ -200,8 +202,8 @@ export function BrainGraph({ graph, layout: layoutProp, onLayoutChange, onNodeSe
   // hover takes precedence for transient exploration; otherwise the clicked node stays in focus
   const focusId = hoverId ?? selected?.id ?? null
   const neighbours = focusId ? adjacency.get(focusId) : undefined
-  const isLit = (id: string): boolean => !focusId || id === focusId || Boolean(neighbours?.has(id))
-  const linkOn = (l: BLink): boolean => endId(l.source) === focusId || endId(l.target) === focusId
+  const isLit = (id: string): boolean => focusId ? id === focusId || Boolean(neighbours?.has(id)) : !highlightedIds?.length || highlightedIds.includes(id)
+  const linkOn = (l: BLink): boolean => focusId ? endId(l.source) === focusId || endId(l.target) === focusId : !!highlightedIds?.length && highlightedIds.includes(endId(l.source)) && highlightedIds.includes(endId(l.target))
   // a link's own colour = the blend of the two nodes it connects (two-tone web, not uniform grey)
   const linkBase = (l: BLink): string =>
     mix(nodeColorById.get(endId(l.source)) ?? scene.link, nodeColorById.get(endId(l.target)) ?? scene.link, 0.5)
@@ -248,7 +250,7 @@ export function BrainGraph({ graph, layout: layoutProp, onLayoutChange, onNodeSe
             if (!focusId) return mix(base, scene.bg, 0.35) // calm tinted web at rest
             return linkOn(link) ? scene.signal : mix(base, scene.bg, 0.85) // active path pops; rest recede
           }}
-          linkWidth={(l) => (focusId && linkOn(l as BLink) ? 1.4 : 0.6)}
+          linkWidth={(l) => (linkOn(l as BLink) ? 1.4 : 0.4)}
           linkCurvature={(l) => (l as BLink).curvature}
           linkCurveRotation={(l) => (l as BLink).rotation}
           linkOpacity={0.65}

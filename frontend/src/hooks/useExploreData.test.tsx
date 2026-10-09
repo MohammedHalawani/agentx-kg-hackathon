@@ -9,7 +9,7 @@ describe('Explore operational source', () => {
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.data).toBeNull()
     expect(result.current.error).toBe('request_failed')
-    expect(result.current.isFixture).toBe(false)
+    expect(result.current).not.toHaveProperty('isFixture')
   })
   it('preserves backend workflow and does not resolve delivered disputes', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ items: [{ shipment_id: 'DEMO-1', status: 'DELIVERED', operational_status: 'DELIVERY_DISPUTE', workflow_state: 'HUMAN_REVIEW', case_id: 'CASE-1' }], filtered_total: 1, next_cursor: null, previous_cursor: null }) }))

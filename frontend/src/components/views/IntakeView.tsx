@@ -11,6 +11,7 @@ import {
 } from '@/adapters/v1SamplesAdapter'
 import { adaptCase, adaptBuckets, dateBounds, pageQuery, type ApiCase } from '@/adapters/operationsApi'
 import type { IntakeFilters, OperationsCase } from '@/contracts/operations'
+import { ResponsiveDisclosure } from '@/components/operations/ResponsiveDisclosure'
 import { CaseList } from '@/components/operations/CaseList'
 import { QueueCounter } from '@/components/operations/QueueCounter'
 import { FilterBar, FilterField } from '@/components/operations/FilterBar'
@@ -140,12 +141,13 @@ export function IntakeView({ selectedShipment, onClearShipment }: { selectedShip
             </header>
 
             {data && <section aria-label={t('ops.queue.title')}>
-              <h3 className="mb-2 text-sm font-semibold">{t('ops.queue.needsAttention')}</h3>
+              <div className="mb-2 flex flex-wrap items-center gap-2" role="status"><h3 className="text-sm font-semibold">{t('ops.automation.autoTriage')}: {t(`ops.automation.${worker.error?'UNAVAILABLE':worker.data?workerRunning?'RUNNING':'PAUSED':'UNAVAILABLE'}`)}</h3>{worker.data?.worker?.active_case_id&&<span className="font-mono text-xs" dir="ltr">{worker.data.worker.active_case_id}</span>}</div><p className="mb-2 text-xs text-muted-foreground">{t('ops.automation.queueContinues')}</p>
               <QueueCounter
                 counts={adaptBuckets(data?.metadata?.buckets)}
               />
             </section>}
 
+            <ResponsiveDisclosure title={t('ops.disclosure.filters')}>
             <FilterBar>
               <FilterField label={t('ops.filters.operational_status')}><select value={operationalStatus} onChange={e => { setOperationalStatus(e.target.value); pager.reset() }} className="rounded-md border border-border bg-card p-1.5"><option value="all">{t('ops.filters.all')}</option>{(data?.metadata?.filter_choices?.operational_status ?? []).map(status => <option key={status} value={status}>{t(operationalLabelKey(status))}</option>)}</select></FilterField>
               <SearchInput
@@ -193,6 +195,8 @@ export function IntakeView({ selectedShipment, onClearShipment }: { selectedShip
             />
             {filters.timePreset === 'custom' && <div className="flex flex-wrap gap-2"><label>{t('ops.filters.from')} <input type="date" value={from} onChange={e => { setFrom(e.target.value); pager.reset() }} /></label><label>{t('ops.filters.to')} <input type="date" value={to} onChange={e => { setTo(e.target.value); pager.reset() }} /></label></div>}
 
+            </ResponsiveDisclosure>
+            <ResponsiveDisclosure title={t('ops.disclosure.controls')}>
             {worker.data && <ProcessQueuePanel
               running={workerRunning}
               onToggle={() => void worker.command(workerRunning ? 'pause' : 'start')}
@@ -222,6 +226,7 @@ export function IntakeView({ selectedShipment, onClearShipment }: { selectedShip
             {simulation.error && <ErrorState onRetry={simulation.refetch} />}
             {simulation.loading && !simulation.data && <LoadingState label={t('ops.loading')} />}
 
+            </ResponsiveDisclosure>
             {loading ? (
               <LoadingState label={t('intake.loading')} />
             ) : queueError ? <ErrorState onRetry={refetch} /> : (

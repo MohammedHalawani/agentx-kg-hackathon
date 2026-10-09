@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LanguageProvider } from '../i18n/LanguageProvider'
 import { IntakeView } from './IntakeView'
@@ -6,6 +6,7 @@ import type { ExploreShipment } from '../../types/explore'
 const { post } = vi.hoisted(() => ({ post: vi.fn() }))
 vi.mock('@/lib/operationsClient', () => ({ operationsPost: post }))
 vi.mock('../artifacts/Graph', () => ({ Graph: () => <div>Shipment evidence graph</div> }))
+vi.mock('@/components/operations/ShipmentRouteMap', () => ({ ShipmentRouteMap: () => <div>Shipment route evidence</div> }))
 const shipment: ExploreShipment = { shipment_id: 'SHP-0004', status: 'IN_TRANSIT', priority: 'high', root_causes: ['HUB_DELAY'], needs_attention: true, critical: false, stalled: true, delivered: false, last_event: null, origin: null, destinations: [] }
 function setup(active: boolean) {
   localStorage.setItem('agentx-language', 'en')
@@ -18,14 +19,14 @@ function setup(active: boolean) {
 }
 afterEach(() => { post.mockReset(); vi.unstubAllGlobals(); localStorage.clear() })
 describe('Explore → V2 Intake inspection', () => {
-  it('reads a canonical case on navigation and investigates only after the operator action', async () => {
+  it('reads a canonical queued case without requiring operator pipeline steps', async () => {
     const fetchMock = setup(true)
-    await screen.findByRole('button', { name: 'Start investigation' })
+    await screen.findByText(/Queued for automatic sequential triage/)
     expect(post).not.toHaveBeenCalled()
     expect(fetchMock.mock.calls.some(([url]) => url === '/cases/CASE-4')).toBe(true)
     expect(fetchMock.mock.calls.some(([url]) => url.startsWith('/v1/') || url === '/samples')).toBe(false)
-    fireEvent.click(screen.getByRole('button', { name: 'Start investigation' }))
-    await waitFor(() => expect(post).toHaveBeenCalledWith('/cases/CASE-4/investigate', expect.objectContaining({ expected_version: 1 })))
+    expect(screen.queryByRole('button', { name: 'Start investigation' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Approve action' })).toBeNull()
   })
   it('keeps a shipment without an active case evidence-only', async () => {
     const fetchMock = setup(false)

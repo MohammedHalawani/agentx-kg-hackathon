@@ -19,7 +19,7 @@ export function Timeline({ events, onOpenCase }: { events: AuditEvent[]; onOpenC
             )}
           </div>
           <p className="mt-1 font-medium">
-            {t(`ops.audit.events.${event.eventType}`)}
+            {event.stage ? `${t(`ops.pipeline.stagesNames.${event.stage}`)} · ${t(`ops.pipeline.states.${event.stageStatus}`)}` : t(`ops.audit.events.${event.eventType}`)}
             <span className="ms-2 font-mono text-xs text-muted-foreground" dir="ltr">{event.shipmentId}</span>
           </p>
           <p className="text-xs text-muted-foreground">

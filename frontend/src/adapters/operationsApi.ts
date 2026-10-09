@@ -16,13 +16,13 @@ export function adaptCase(row: ApiCase): OperationsCase {
   return { caseId: row.case_id, shipmentId: row.shipment_id, issueSummary: row.issue_summary, city: row.city, category: row.category, priority: row.priority, workflowState: row.workflow_state, operationalStatus: row.operational_status, openedAt: row.opened_at }
 }
 export interface ApiAuditEvent {
-  id: string; timestamp: string; shipment_id: string; case_id?: string; event_type: string; actor: string; model?: string; decision?: string; result?: string; synthetic?: boolean
+  id: string; timestamp: string; shipment_id: string; case_id?: string; event_type: string; actor: string; model?: string; decision?: string; result?: string; synthetic?: boolean; stage?:string; stage_status?:string
 }
 export function adaptAudit(row: ApiAuditEvent): AuditEvent {
-  return { id: row.id, timestamp: row.timestamp, shipmentId: row.shipment_id, caseId: row.case_id, eventType: row.event_type as AuditEvent['eventType'], actor: row.actor, model: row.model, decision: row.decision, result: row.result }
+  return { id: row.id, timestamp: row.timestamp, shipmentId: row.shipment_id, caseId: row.case_id, eventType: row.event_type as AuditEvent['eventType'], actor: row.actor, model: row.model, decision: row.decision, result: row.result, stage:row.stage,stageStatus:row.stage_status }
 }
 export function adaptBuckets(b: Record<string, number> = {}): QueueBucketCounts {
-  return { open: b.OPEN ?? b.open ?? 0, investigating: b.INVESTIGATING ?? b.investigating ?? 0, needsReview: (b.HUMAN_REVIEW ?? b.needs_review ?? 0) + (b.NEEDS_EVIDENCE ?? 0), awaitingApproval: b.AWAITING_APPROVAL ?? b.awaiting_approval ?? 0, awaitingOutcome: b.AWAITING_OUTCOME ?? b.awaiting_outcome ?? 0, resolved: b.RESOLVED ?? b.resolved ?? 0 }
+  return { open: (b.OPEN ?? b.open ?? 0) + (b.REOPENED ?? 0), investigating: b.INVESTIGATING ?? b.investigating ?? 0, needsReview: b.HUMAN_REVIEW ?? b.needs_review ?? 0, needsEvidence: b.NEEDS_EVIDENCE ?? 0, awaitingApproval: b.AWAITING_APPROVAL ?? b.awaiting_approval ?? 0, awaitingOutcome: b.AWAITING_OUTCOME ?? b.awaiting_outcome ?? 0, resolved: b.RESOLVED ?? b.resolved ?? 0 }
 }
 export function pageQuery(values: Record<string, string | number | null | undefined>): string {
   const p = new URLSearchParams()
