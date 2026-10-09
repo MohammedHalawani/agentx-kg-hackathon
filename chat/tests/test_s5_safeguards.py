@@ -95,6 +95,60 @@ class ReceiptLeakTests(unittest.TestCase):
             self.assertNotIn(term.lower(), text)
 
 
+class SimulatorTargetingTests(unittest.TestCase):
+    """The simulated field answers only the device or facility a request reaches."""
+    @classmethod
+    def setUpClass(cls):
+        from tests import test_outcome_verification as tov
+        cls.world, cls.truth = tov.Fixture.get()
+
+    def simulator(self):
+        from operations.reasoning import public_evidence
+        from operations.simulation import OperationalSimulator
+        world, sent = self.world, {"enqueued": [], "rescheduled": []}
+
+        class Gateway:
+            def enqueue(self, items): sent["enqueued"].extend(items)
+            def pending_feed_ids(self, ids): return list(ids)
+            def reschedule(self, ids, at): sent["rescheduled"].extend(ids); return len(ids)
+
+        class Reader:
+            def evidence(self, sid, at): return public_evidence(world, sid, at)
+        return OperationalSimulator(Gateway(), Reader(), self.truth, world.config), sent
+
+    def offline(self):
+        from dataset_v2.contracts import instant, iso
+        from datetime import timedelta
+        sid, row = next((s, r) for s, r in self.truth.items() if r["split"] == "development" and r["recipe"] == "offline_device_sync")
+        at = iso(instant(row["physical"]["offline_from"]) + timedelta(hours=3))
+        return sid, row, at
+
+    def test_only_the_targeted_device_answers_a_sync(self):
+        sid, row, at = self.offline()
+        device = row["physical"]["device_id"]
+        for target, uploads in ((device, True), ("DEMO-DEV-APP-SOMEONE-ELSE", False), (None, False)):
+            simulator, sent = self.simulator()
+            simulator.respond({"shipment_id": sid, "action_type": "REQUEST_DEVICE_SYNC", "target_device": target,
+                               "expected_evidence": [], "entity_id": "X"}, at)
+            self.assertEqual(bool(sent["rescheduled"]), uploads, target)
+            beats = [m["source_event_id"] for m in sent["enqueued"] if m["channel"] == "MDM"]
+            self.assertTrue(all(target and b.startswith(target) for b in beats), (target, beats))
+            self.assertFalse([b for b in beats if b.startswith(device)] if target != device else [])
+
+    def test_a_check_finds_the_parcel_only_at_a_facility_the_request_reached(self):
+        sid, row, at = self.offline()
+        depot = row["physical"]["depot_id"]
+        simulator, sent = self.simulator()
+        simulator.respond({"shipment_id": sid, "action_type": "REQUEST_HUB_CHECK", "expected_evidence": [], "entity_id": "X"}, at)
+        self.assertFalse([m for m in sent["enqueued"] if depot.removeprefix("DEMO-") in m["payload_json"]])  # Only its upstream holder was asked.
+        simulator, sent = self.simulator()
+        simulator.respond({"shipment_id": sid, "action_type": "REQUEST_HUB_CHECK", "entity_id": "X",
+                           "expected_evidence": [{"package_id": "P", "predicate": "RECEIVED", "location_id": depot}]}, at)
+        scans = [m for m in sent["enqueued"] if m["channel"] == "SPL_CORE"]
+        self.assertTrue(scans)
+        self.assertTrue(all("DEMO-DEV-CHK-" in m["payload_json"] and row["physical"]["device_id"] not in m["payload_json"] for m in scans))
+
+
 class _Store(unittest.TestCase):
     """Reuses the store test fixtures without re-running their tests."""
     setUpClass = classmethod(lambda cls: setattr(cls, "world", generate(Config(total=90))))

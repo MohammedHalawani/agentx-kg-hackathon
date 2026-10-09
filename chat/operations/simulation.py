@@ -80,8 +80,10 @@ class OperationalSimulator:
         return session.properties.get("depot_id") if session else None
 
     def _scan(self, sid, package, facility, when, *, barcode=None, weight=None, kind="RESCAN"):
+        # Requested checks are made with the facility's check workflow device, never with a handheld the
+        # system may be showing as silent.
         props = {"package_id": package.id, "readable": True, "confidence": .99, "facility_id": facility,
-                 "device_ref": "DEMO-DEV-HH-" + facility.removeprefix("DEMO-"), "observation_type": kind,
+                 "device_ref": "DEMO-DEV-CHK-" + facility.removeprefix("DEMO-"), "observation_type": kind,
                  "observed_barcode": barcode if barcode is not None else package.properties.get("manifest_barcode"),
                  "calibrated": weight is not None}
         if weight is not None:
@@ -90,18 +92,21 @@ class OperationalSimulator:
 
     # -- action responses --------------------------------------------------------------------
     def _request_device_sync(self, world, sid, physical, now, at, execution):
-        device = physical.get("device_id")
-        items = []
-        if physical.get("device") == "buffered_upload":
+        """Only the device the request targeted answers. The field state decides whether that device holds
+        buffered scans, never which device answers: a request to the wrong device (or to none) leaves the
+        offline handheld offline, and its scans arrive at its natural reconnect."""
+        target = execution.get("target_device")
+        if not target:
+            return []
+        if (physical.get("device") == "buffered_upload" and physical.get("device_id") == target
+                and instant(physical["offline_from"]) <= now < instant(physical["natural_reconnect_at"])):
             feed_ids = self.gateway.pending_feed_ids(physical.get("buffered_event_ids", []))
             if feed_ids:
                 self.gateway.reschedule(feed_ids, iso(at))
-        if device or execution.get("target_device"):
-            beat = Node(f"{device or execution['target_device']}-HB-SIM-{at.strftime('%Y%m%dT%H%M')}", "DeviceHeartbeat",
-                        {"occurred_at": iso(at), "recorded_at": iso(at), "device_id": device or execution["target_device"], "connectivity": "ONLINE",
-                         "pending_uploads": 0, "last_upload_at": iso(at), "source_ref": "synthetic:simulator-response"})
-            items.append(message(beat, "MDM", iso(at)))
-        return items
+        beat = Node(f"{target}-HB-SIM-{at.strftime('%Y%m%dT%H%M')}", "DeviceHeartbeat",
+                    {"occurred_at": iso(at), "recorded_at": iso(at), "device_id": target, "connectivity": "ONLINE",
+                     "pending_uploads": 0, "last_upload_at": iso(at), "source_ref": "synthetic:simulator-response"})
+        return [message(beat, "MDM", iso(at))]
 
     def _request_rescan(self, world, sid, physical, now, at, execution):
         items = []
@@ -131,16 +136,23 @@ class OperationalSimulator:
             items.append(message(self._scan(sid, package, facility, at, weight=weight, kind="REWEIGH"), "SPL_CORE", iso(at + timedelta(seconds=40))))
         return items
 
-    def _located(self, world, sid, physical, at, custody):
+    def _located(self, world, sid, physical, at, custody, execution):
+        """The request reaches the facilities the system can name from visible evidence: the last corroborated
+        holder (else the session depot) and the expected location of each missing observation. The field
+        state decides only whether the parcel is at one of them; if it is elsewhere, nobody finds it."""
         if physical.get("parcel") == "retained_by_contractor" or physical.get("contractor") == "unresponsive":
             return []  # Nobody answers: no messages follow.
+        expected = {e.get("location_id") for e in execution.get("expected_evidence") or []
+                    if isinstance(e, dict) and e.get("location_id")}
         items = []
         for package in self._packages(world):
+            holder = self._holder_facility(world, package.id)
+            asked = {f for f in (holder, *expected) if f}
             # Where the parcel physically is: at the depot when it was left there, returned unscanned, or received
             # by a handheld that was offline; otherwise at its last corroborated facility.
             at_depot = physical.get("parcel") in ("left_at_depot", "returned_unscanned") or physical.get("device") == "buffered_upload"
-            facility = (physical.get("depot_id") if at_depot else None) or self._holder_facility(world, package.id)
-            if not facility:
+            facility = (physical.get("depot_id") if at_depot else None) or holder
+            if not facility or facility not in asked:
                 continue
             scan = self._scan(sid, package, facility, at, kind="CUSTODY_CHECK_SCAN")
             items.append(message(scan, "SPL_CORE", iso(at + timedelta(seconds=30))))
@@ -155,10 +167,10 @@ class OperationalSimulator:
         return items
 
     def _request_hub_check(self, world, sid, physical, now, at, execution):
-        return self._located(world, sid, physical, at, custody=False)
+        return self._located(world, sid, physical, at, custody=False, execution=execution)
 
     def _initiate_custody_reconciliation(self, world, sid, physical, now, at, execution):
-        return self._located(world, sid, physical, at, custody=True)
+        return self._located(world, sid, physical, at, custody=True, execution=execution)
 
     def _request_address_confirmation(self, world, sid, physical, now, at, execution):
         if physical.get("recipient") not in ("confirms_address",):
