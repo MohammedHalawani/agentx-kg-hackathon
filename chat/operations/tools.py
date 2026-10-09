@@ -40,7 +40,7 @@ class InvestigationTools:
         self.cutoff = instant(self.as_of)
         self.symptoms = list(symptoms)
         self._heartbeats = heartbeats or (lambda device_id, since, until: [])
-        self._precedents = precedents or (lambda cause: [])
+        self._precedent_source = precedents or (lambda cause: [])
         self.retrieved = set()
         self.calls = []
         self.external = {}        # retrieved records that are not shipment evidence (device heartbeats), by id
@@ -272,7 +272,7 @@ class InvestigationTools:
                 "evidence_ids": [n.id for n in (policy, service) if n]}
 
     def _precedents(self, cause):
-        rows = list(self._precedents(cause))[:8]
+        rows = list(self._precedent_source(cause))[:8]
         tally = {}
         for row in rows:
             entry = tally.setdefault(row.get("action_type"), {"verified_success": 0, "verified_failure": 0})
