@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 // and the views mount on demand. Aborts the in-flight request on unmount or refetch so a slow
 // response can't set state late. `refetch()` re-runs the same GET (e.g. a "load a different
 // random sample" button on an endpoint that returns something new each call).
-export function useFetch<T>(url: string, keepDataOnRefresh = false): { data: T | null; loading: boolean; error: string | null; refetch: () => void } {
+export function useFetch<T>(url: string, keepDataOnRefresh = false, enabled = true): { data: T | null; loading: boolean; error: string | null; refetch: () => void } {
   const [data, setData] = useState<T | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -13,6 +13,10 @@ export function useFetch<T>(url: string, keepDataOnRefresh = false): { data: T |
   const lastUrl = useRef<string | null>(null)
 
   useEffect(() => {
+    if (!enabled) {
+      setLoading(false)
+      return
+    }
     const ctrl = new AbortController()
     ctrlRef.current = ctrl
     setLoading(true)
@@ -30,7 +34,7 @@ export function useFetch<T>(url: string, keepDataOnRefresh = false): { data: T |
         if (!ctrl.signal.aborted) { setData(null); setError('request_failed'); setLoading(false) }
       })
     return () => ctrl.abort()
-  }, [url, tick, keepDataOnRefresh])
+  }, [url, tick, keepDataOnRefresh, enabled])
 
   const refetch = useCallback(() => {
     ctrlRef.current?.abort()

@@ -31,7 +31,7 @@ vi.mock('../../hooks/useFetch', () => ({
           category: 'address_conflict',
           city: 'Riyadh',
           courier: 'Courier A',
-          issue_summary: 'Sample complaint text',
+          issue_summary: '',
           priority: 'medium', workflow_state: 'OPEN',
         },
       ], filtered_total: 1, next_cursor: null, previous_cursor: null, metadata: { buckets: { OPEN: 1 }, filter_choices: { city: ['Riyadh'], cause: ['address_conflict'] } },
@@ -109,12 +109,10 @@ describe('IntakeView metadata contrast (H01)', () => {
     expect(screen.getAllByText(/Synthetic operational data/i).length).toBeGreaterThan(0)
   })
 
-  it('pairs accent hover background with accent-foreground on case buttons (H02)', () => {
+  it('renders the queue as a data table row (H02)', () => {
     renderIntake()
-    const caseBtn = screen.getByText('SHP-0001').closest('button')
-    expect(caseBtn?.className).toContain('hover:bg-accent')
-    expect(caseBtn?.className).toContain('hover:text-accent-foreground')
-    expect(caseBtn?.className).toContain('group')
+    const row = screen.getByText('SHP-0001').closest('tr')
+    expect(row?.className).toContain('cursor-pointer')
   })
 })
 

@@ -11,9 +11,11 @@ export function ProcessQueuePanel({
   simulation,
   disabled,
   onStep,
+  hideToggle,
 }: {
   running: boolean
   onToggle: () => void
+  hideToggle?: boolean
   concurrency: number
   processingId: string | null
   queueDepth: number
@@ -32,15 +34,17 @@ export function ProcessQueuePanel({
             <p className="text-[11px] font-medium uppercase tracking-wide text-chart-warning">{t('ops.simulation.label')}</p>
           )}
         </div>
-        <button
-          type="button"
-          onClick={onToggle}
-          disabled={disabled}
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-40"
-        >
-          {running ? <Pause size={14} /> : <Play size={14} />}
-          {running ? t('ops.queue.pause') : t('ops.queue.start')}
-        </button>
+        {!hideToggle && (
+          <button
+            type="button"
+            onClick={onToggle}
+            disabled={disabled}
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-40"
+          >
+            {running ? <Pause size={14} /> : <Play size={14} />}
+            {running ? t('ops.queue.pause') : t('ops.queue.start')}
+          </button>
+        )}
       </div>
       {onStep && <button type="button" disabled={disabled || running} onClick={onStep} className="mt-2 rounded-lg border border-border px-3 py-1.5 text-xs disabled:opacity-40">{t('ops.queue.step')}</button>}
       <dl className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">

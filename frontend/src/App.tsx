@@ -33,7 +33,20 @@ export default function App() {
           animate={{ opacity: 1 }}
           transition={{ duration: reduce ? 0 : 0.15, ease: 'easeOut' }}
         >
-          {view === 'intake' && <IntakeView selectedShipment={selectedShipment} onClearShipment={() => setSelectedShipment(null)} />}
+          {view === 'intake' && (
+            <IntakeView
+              selectedShipment={selectedShipment}
+              onClearShipment={() => setSelectedShipment(null)}
+              onExploreShipment={(row) => {
+                setSelectedShipment({ shipment_id: row.shipmentId, case_id: row.caseId })
+                setView('explore')
+              }}
+              onOpenAudit={(row) => {
+                setSelectedShipment({ shipment_id: row.shipmentId, case_id: row.caseId })
+                setView('audit')
+              }}
+            />
+          )}
           {view === 'decisions' && <OperationsDecisionsView />}
           {view === 'explore' && (
             <ExploreView

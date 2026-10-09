@@ -1,7 +1,7 @@
 import { useCursorPage } from '@/hooks/useCursorPage'
 import { useEffect, useState } from 'react'
 import { motion } from 'motion/react'
-import { ArrowUpRight, CheckCircle2, RotateCcw, Square } from 'lucide-react'
+import { ArrowUpRight, CheckCircle2, Loader2, RotateCcw, Square } from 'lucide-react'
 import { useComplaintStream } from '../../hooks/useComplaintStream'
 import { useOperationsPage } from '@/hooks/useOperationsPage'
 import { useLanguage } from '@/components/i18n/LanguageProvider'
@@ -10,13 +10,11 @@ import {
   activeWorkflowState,
 } from '@/adapters/v1SamplesAdapter'
 import { adaptCase, adaptBuckets, dateBounds, pageQuery, type ApiCase } from '@/adapters/operationsApi'
-import type { IntakeFilters, OperationsCase } from '@/contracts/operations'
+import type { IntakeFilters, OperationsCase, QueueBucketCounts } from '@/contracts/operations'
 import { ResponsiveDisclosure } from '@/components/operations/ResponsiveDisclosure'
-import { CaseList } from '@/components/operations/CaseList'
 import { QueueCounter } from '@/components/operations/QueueCounter'
-import { FilterBar, FilterField } from '@/components/operations/FilterBar'
-import { SearchInput } from '@/components/operations/SearchInput'
-import { DateRangeSelector } from '@/components/operations/DateRangeSelector'
+import { IntakeToolbar } from '@/components/operations/IntakeToolbar'
+import { QueueCasesTable } from '@/components/operations/QueueCasesTable'
 import { CursorPagination } from '@/components/operations/Pagination'
 import { LoadingState } from '@/components/operations/LoadingState'
 import { ErrorState } from '@/components/operations/ErrorState'
@@ -25,7 +23,6 @@ import { CaseWorkspace } from '@/components/intake/CaseWorkspace'
 import { ProcessQueuePanel } from '@/components/intake/ProcessQueuePanel'
 import { SimulationPanel } from '@/components/intake/SimulationPanel'
 import { cn } from '../../lib/cn'
-import { operationalLabelKey } from '@/lib/operationalStates'
 import type { ExploreShipment } from '../../types/explore'
 
 function Outcome({
@@ -76,6 +73,21 @@ function Outcome({
   )
 }
 
+type BucketKey = keyof QueueBucketCounts
+
+function workflowForBucket(key: BucketKey): IntakeFilters['status'] {
+  const map: Partial<Record<BucketKey, IntakeFilters['status']>> = {
+    open: 'OPEN',
+    investigating: 'INVESTIGATING',
+    needsReview: 'HUMAN_REVIEW',
+    needsEvidence: 'NEEDS_EVIDENCE',
+    awaitingApproval: 'AWAITING_APPROVAL',
+    awaitingOutcome: 'AWAITING_OUTCOME',
+    resolved: 'RESOLVED',
+  }
+  return map[key] ?? 'all'
+}
+
 const DEFAULT_FILTERS: IntakeFilters = {
   search: '',
   timePreset: 'all',
@@ -85,9 +97,19 @@ const DEFAULT_FILTERS: IntakeFilters = {
   cause: 'all',
 }
 
-export function IntakeView({ selectedShipment, onClearShipment }: { selectedShipment?: Pick<ExploreShipment, 'shipment_id' | 'case_id'> | null; onClearShipment?: () => void }) {
+export function IntakeView({
+  selectedShipment,
+  onClearShipment,
+  onExploreShipment,
+  onOpenAudit,
+}: {
+  selectedShipment?: Pick<ExploreShipment, 'shipment_id' | 'case_id'> | null
+  onClearShipment?: () => void
+  onExploreShipment?: (row: OperationsCase) => void
+  onOpenAudit?: (row: OperationsCase) => void
+}) {
   const { stages, final, caseFile, busy, error, complaint, stop, reset } = useComplaintStream()
-  const { t, isArabic, rootCauseLabel } = useLanguage()
+  const { t, isArabic } = useLanguage()
   const worker = useOperationsControl<WorkerStatus>('worker')
   const simulation = useOperationsControl<SimulationStatus>('simulation')
   const [filters, setFilters] = useState<IntakeFilters>(DEFAULT_FILTERS)
@@ -102,7 +124,11 @@ export function IntakeView({ selectedShipment, onClearShipment }: { selectedShip
   const [to, setTo] = useState('')
   const query = pageQuery({ search: filters.search, priority: filters.priority, city: filters.city, workflow_state: filters.status, operational_status: operationalStatus, cause: filters.cause, limit, cursor, ...dateBounds(filters.timePreset, snapshot, from, to) })
   const { data, loading, error: queueError, refetch } = useOperationsPage<ApiCase>(`/cases/queue?${query}`)
+  const queueRefreshing = loading && data != null
+  const queueInitialLoad = loading && !data
   const page = { items: (data?.items ?? []).map(adaptCase), total: data?.filtered_total ?? 0, nextCursor: data?.next_cursor ?? null, prevCursor: data?.previous_cursor ?? null }
+  const bucketCounts = adaptBuckets(data?.metadata?.buckets)
+  const [activeBucket, setActiveBucket] = useState<BucketKey | undefined>()
   const cities = data?.metadata?.filter_choices?.city ?? data?.metadata?.filter_choices?.cities ?? []
   const causes = data?.metadata?.filter_choices?.cause ?? data?.metadata?.filter_choices?.causes ?? []
   const [speed, setSpeed] = useState<SimulationSpeed>(1)
@@ -140,66 +166,66 @@ export function IntakeView({ selectedShipment, onClearShipment }: { selectedShip
               <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{t('ops.intake.subtitle')}</p>
             </header>
 
-            {data && <section aria-label={t('ops.queue.title')}>
-              <div className="mb-2 flex flex-wrap items-center gap-2" role="status"><h3 className="text-sm font-semibold">{t('ops.automation.autoTriage')}: {t(`ops.automation.${worker.error?'UNAVAILABLE':worker.data?workerRunning?'RUNNING':'PAUSED':'UNAVAILABLE'}`)}</h3>{worker.data?.worker?.active_case_id&&<span className="font-mono text-xs" dir="ltr">{worker.data.worker.active_case_id}</span>}{worker.data&&<button type="button" disabled={worker.pending||Boolean(worker.error)} onClick={() => void worker.command(workerRunning ? 'pause' : 'start')} className={`ms-auto rounded-lg px-3 py-1 text-xs font-medium disabled:opacity-50 ${workerRunning?'border border-border bg-card':'bg-primary text-primary-foreground'}`}>{t(workerRunning?'ops.queue.pause':'ops.queue.start')}</button>}</div><p className="mb-2 text-xs text-muted-foreground">{t('ops.automation.queueContinues')}</p>
+            <section aria-label={t('ops.queue.title')}>
+              <div className="mb-2 flex flex-wrap items-center gap-2" role="status">
+                <h3 className="text-sm font-semibold">
+                  {t('ops.automation.autoTriage')}: {t(`ops.automation.${worker.error ? 'UNAVAILABLE' : worker.data ? workerRunning ? 'RUNNING' : 'PAUSED' : 'UNAVAILABLE'}`)}
+                </h3>
+                {worker.data?.worker?.active_case_id && (
+                  <span className="font-mono text-xs text-muted-foreground" dir="ltr">{worker.data.worker.active_case_id}</span>
+                )}
+                {worker.data && (
+                  <button
+                    type="button"
+                    disabled={worker.pending || Boolean(worker.error)}
+                    onClick={() => void worker.command(workerRunning ? 'pause' : 'start')}
+                    className={cn(
+                      'ms-auto inline-flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-medium disabled:opacity-50',
+                      workerRunning ? 'border border-border bg-card' : 'bg-primary text-primary-foreground',
+                    )}
+                  >
+                    {worker.pending ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : null}
+                    {t(workerRunning ? 'ops.queue.pause' : 'ops.queue.start')}
+                  </button>
+                )}
+              </div>
+              <p className="mb-2 text-xs text-muted-foreground">{t('ops.automation.queueContinues')}</p>
               <QueueCounter
-                counts={adaptBuckets(data?.metadata?.buckets)}
+                counts={bucketCounts}
+                active={activeBucket}
+                onSelect={(key) => {
+                  const next = workflowForBucket(key)
+                  setActiveBucket(key)
+                  setFilters((f) => ({ ...f, status: next }))
+                  pager.reset()
+                }}
               />
-            </section>}
+            </section>
 
-            <ResponsiveDisclosure title={t('ops.disclosure.filters')}>
-            <FilterBar>
-              <FilterField label={t('ops.filters.operational_status')}><select value={operationalStatus} onChange={e => { setOperationalStatus(e.target.value); pager.reset() }} className="rounded-md border border-border bg-card p-1.5"><option value="all">{t('ops.filters.all')}</option>{(data?.metadata?.filter_choices?.operational_status ?? []).map(status => <option key={status} value={status}>{t(operationalLabelKey(status))}</option>)}</select></FilterField>
-              <SearchInput
-                value={filters.search}
-                onChange={(search) => { setFilters((f) => ({ ...f, search })); pager.reset() }}
-                placeholder={t('ops.intake.search')}
-              />
-              <FilterField label={t('ops.filters.priority')}>
-                <select
-                  value={filters.priority}
-                  onChange={(e) => { setFilters((f) => ({ ...f, priority: e.target.value as IntakeFilters['priority'] })); pager.reset() }}
-                  className="rounded-md border border-border bg-card px-2 py-1.5 text-sm"
-                >
-                  <option value="all">{t('ops.filters.all')}</option>
-                  <option value="high">{t('ops.priority.high')}</option>
-                  <option value="medium">{t('ops.priority.medium')}</option>
-                  <option value="low">{t('ops.priority.low')}</option>
-                </select>
-              </FilterField>
-              <FilterField label={t('ops.filters.city')}>
-                <select
-                  value={filters.city}
-                  onChange={(e) => { setFilters((f) => ({ ...f, city: e.target.value })); pager.reset() }}
-                  className="rounded-md border border-border bg-card px-2 py-1.5 text-sm"
-                >
-                  <option value="all">{t('ops.filters.all')}</option>
-                  {cities.map((city) => <option key={city} value={city}>{t(`cities.${city}`)}</option>)}
-                </select>
-              </FilterField>
-              <FilterField label={t('ops.filters.cause')}>
-                <select
-                  value={filters.cause}
-                  onChange={(e) => { setFilters((f) => ({ ...f, cause: e.target.value })); pager.reset() }}
-                  className="rounded-md border border-border bg-card px-2 py-1.5 text-sm"
-                >
-                  <option value="all">{t('ops.filters.all')}</option>
-                  {causes.map((cause) => <option key={cause} value={cause}>{rootCauseLabel(cause)}</option>)}
-                </select>
-              </FilterField>
-              <FilterField label={t('ops.filters.workflow')}><select value={filters.status} onChange={e => { setFilters(f => ({ ...f, status: e.target.value as IntakeFilters['status'] })); pager.reset() }} className="rounded-md border border-border bg-card p-1.5"><option value="all">{t('ops.filters.all')}</option>{(data?.metadata?.filter_choices?.workflow_state ?? Object.keys(data?.metadata?.buckets ?? {})).map(s => <option key={s} value={s}>{t(`ops.states.${s}`)}</option>)}</select></FilterField>
-            </FilterBar>
-            <DateRangeSelector
-              value={filters.timePreset}
-              onChange={(timePreset) => { setFilters((f) => ({ ...f, timePreset })); setSnapshot(data?.metadata?.as_of); pager.reset() }}
+            <IntakeToolbar
+              filters={filters}
+              operationalStatus={operationalStatus}
+              operationalChoices={data?.metadata?.filter_choices?.operational_status ?? []}
+              cities={cities}
+              causes={causes}
+              workflowChoices={data?.metadata?.filter_choices?.workflow_state ?? Object.keys(data?.metadata?.buckets ?? {})}
+              onFiltersChange={(patch) => { setFilters((f) => ({ ...f, ...patch })); setActiveBucket(undefined); pager.reset() }}
+              onOperationalStatusChange={(value) => { setOperationalStatus(value); pager.reset() }}
+              onTimePresetChange={(timePreset) => { setFilters((f) => ({ ...f, timePreset })); setSnapshot(data?.metadata?.as_of); pager.reset() }}
+              customFrom={from}
+              customTo={to}
+              onCustomFrom={(v) => { setFrom(v); pager.reset() }}
+              onCustomTo={(v) => { setTo(v); pager.reset() }}
+              limit={limit}
+              onLimitChange={(n) => { setLimit(n); pager.reset() }}
+              onRefresh={refetch}
+              refreshing={queueRefreshing}
             />
-            {filters.timePreset === 'custom' && <div className="flex flex-wrap gap-2"><label>{t('ops.filters.from')} <input type="date" value={from} onChange={e => { setFrom(e.target.value); pager.reset() }} /></label><label>{t('ops.filters.to')} <input type="date" value={to} onChange={e => { setTo(e.target.value); pager.reset() }} /></label></div>}
-
-            </ResponsiveDisclosure>
             <ResponsiveDisclosure title={t('ops.disclosure.controls')} defaultOpen={false}>
             {worker.data && <ProcessQueuePanel
               running={workerRunning}
               onToggle={() => void worker.command(workerRunning ? 'pause' : 'start')}
+              hideToggle
               disabled={worker.pending || !worker.data || Boolean(worker.error)}
               onStep={() => void worker.command('tick')}
               concurrency={1}
@@ -227,15 +253,21 @@ export function IntakeView({ selectedShipment, onClearShipment }: { selectedShip
             {simulation.loading && !simulation.data && <LoadingState label={t('ops.loading')} />}
 
             </ResponsiveDisclosure>
-            {loading ? (
+            {queueInitialLoad ? (
               <LoadingState label={t('intake.loading')} />
             ) : queueError ? <ErrorState onRetry={refetch} /> : (
               <>
-                <CaseList
+                <QueueCasesTable
                   cases={page.items}
-                  onSelect={runCase}
+                  refreshing={queueRefreshing}
                   emptyTitle={t('intake.emptyTitle')}
                   emptyDescription={t('intake.emptyDescription')}
+                  actions={{
+                    onOpen: runCase,
+                    onCopyId: (row) => void navigator.clipboard?.writeText(row.caseId),
+                    onExplore: onExploreShipment,
+                    onAudit: onOpenAudit,
+                  }}
                 />
                 <CursorPagination
                   total={page.total}
