@@ -134,6 +134,8 @@ KINDS = frozenset((
     "PhotoEvidence", "HandoffEvidence", "RecipientReport", "DepotReconciliation", "StatusEvent",
     "Policy", "Exception", "Case", "EvidenceSnapshot", "AnalysisRun", "Recommendation", "Review",
     "OperatorDecision", "ActionExecution", "Resolution", "Outcome", "Notification", "AuditEvent",
+    # Live network (DEMO-SUHAIL-LIVE): carriers, devices, dispatch manifests and device telemetry.
+    "Provider", "Device", "Manifest", "DeviceHeartbeat",
 ))
 RELATIONSHIPS = frozenset((
     "IN_CITY", "OWNS", "OPERATES", "STORED_AT", "ALLOCATES", "SENDS", "RECEIVES", "HAS_PACKAGE",
@@ -147,6 +149,7 @@ RELATIONSHIPS = frozenset((
     "HAS_EXCEPTION", "SUPPORTED_BY", "USES_SNAPSHOT", "HAS_RUN", "PROPOSES", "REVIEWED_BY",
     "HAS_DECISION", "INITIATES", "RESOLVED_BY", "HAS_OUTCOME", "VERIFIED_BY", "CITES",
     "HAS_NOTIFICATION", "HAS_AUDIT", "OBSERVED_BY", "NEXT_SESSION", "FOR_PACKAGE",
+    "WORKS_FOR", "OPERATED_BY", "USES_DEVICE", "HAS_MANIFEST", "LISTS",
 ))
 UTC_FIELDS = frozenset((
     "occurred_at", "recorded_at", "effective_at", "valid_from", "valid_to", "earliest_at",

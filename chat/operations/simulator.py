@@ -4,7 +4,7 @@ from dataset_v2.contracts import instant
 SPEEDS = frozenset((1, 10, 60, 600, 3600))
 EVENT_KINDS = frozenset(("ScanEvent", "CustodyEvent", "DeliveryAttempt", "ContactAttempt", "GPSObservation",
                        "TrafficObservation", "DeliveryProof", "AuthenticationEvidence", "SignatureEvidence",
-                       "PhotoEvidence", "HandoffEvidence", "RecipientReport", "DepotReconciliation", "StatusEvent"))
+                       "PhotoEvidence", "HandoffEvidence", "RecipientReport", "DepotReconciliation", "StatusEvent", "Manifest"))
 
 
 def replay_plan(events, cursor, target, limit=100):

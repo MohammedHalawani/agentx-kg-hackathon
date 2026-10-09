@@ -151,7 +151,9 @@ def custody_corroborated(world, event, cutoff):
     return bool(valid)
 
 
-def assess_shipment(world: World, sid: str, as_of: str | None = None, *, _index=None) -> dict:
+def assess_shipment(world: World, sid: str, as_of: str | None = None, *, _index=None, detection_allowance_seconds=0) -> dict:
+    """detection_allowance_seconds: extra wait a live monitor gives provider uploads before calling an
+    expected observation missing (normal ingestion lag must not open cases). Zero for offline use."""
     index = _index or EvidenceIndex(world)
     shipment = world.nodes.get(sid)
     if shipment is None or shipment.kind != "Shipment":
@@ -233,6 +235,18 @@ def assess_shipment(world: World, sid: str, as_of: str | None = None, *, _index=
             else:
                 holder, last_id = ep.get("to_id"), event.id
                 confirmed_ids.add(event.id)
+        # Dispatch manifests: the latest published version of an assignment's manifest must still list
+        # a package whose physical loading onto that assignment was corroborated.
+        latest = {}
+        for manifest in observations.get("Manifest", []):
+            key = manifest.properties.get("assignment_id")
+            if key and (key not in latest or (manifest.properties.get("version") or 0) > (latest[key].properties.get("version") or 0)):
+                latest[key] = manifest
+        for event in events:
+            manifest = latest.get(event.properties.get("assignment_id"))
+            if (manifest is not None and event.id in confirmed_ids and event.properties.get("event_type") == "LOADED"
+                    and package_id not in (manifest.properties.get("package_ids") or [])):
+                flag("MANIFEST_CONFLICT", [manifest.id, event.id], "Latest dispatch manifest omits a package whose loading was corroborated", True)
         custodians.append({"package_id": package_id, "last_corroborated_holder_id": holder,
                            "last_corroborated_event_id": last_id, "gap_event_ids": gaps,
                            "conflicting": conflicting, "parcel_location_from_gps": None})
@@ -247,7 +261,7 @@ def assess_shipment(world: World, sid: str, as_of: str | None = None, *, _index=
                           and event.id in confirmed_ids]
             observed = min((timestamp(n.properties["occurred_at"]) for n in candidates), default=None)
             grace = number(mp.get("grace_seconds")) or 0
-            due = latest is not None and cutoff > latest + timedelta(seconds=grace)
+            due = latest is not None and cutoff > latest + timedelta(seconds=grace + detection_allowance_seconds)
             late = observed is not None and latest is not None and observed > latest + timedelta(seconds=grace)
             comparisons.append({"predicate": mp.get("predicate"), "package_id": package_id, "milestone_id": milestone.id,
                                 "location_id": mp.get("location_id"), "earliest_at": mp.get("earliest_at"), "latest_at": mp.get("latest_at"),
@@ -296,7 +310,7 @@ def assess_shipment(world: World, sid: str, as_of: str | None = None, *, _index=
             # Only assess sessions actually allocated this package.
             assigned = any(n.properties.get("session_id") == session.id and package_id in n.properties.get("package_ids", []) for n in owned.get("VehicleAssignment", []))
             end = timestamp(sp.get("end_at"))
-            if not assigned or end is None or cutoff <= end + timedelta(seconds=number(sp.get("grace_seconds")) or 0):
+            if not assigned or end is None or cutoff <= end + timedelta(seconds=(number(sp.get("grace_seconds")) or 0) + detection_allowance_seconds):
                 continue
             reconciled = False
             for reconciliation in observations.get("DepotReconciliation", []):

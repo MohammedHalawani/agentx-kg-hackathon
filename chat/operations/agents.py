@@ -16,7 +16,8 @@ from operations.authority import ACTIONS, default_action
 
 CAUSES = ("BARCODE_MISMATCH", "WEIGHT_MISMATCH", "CUSTODY_GAP", "CONFLICTING_CUSTODY", "MISSED_MILESTONE", "JOURNEY_DELAY",
           "TRAFFIC_DELAY", "ADDRESS_CONFLICT", "WRONG_GATE", "RECIPIENT_UNAVAILABLE", "DELIVERY_DISPUTE", "PROOF_INSUFFICIENT",
-          "UNRECONCILED_CUSTODY", "INSUFFICIENT_EVIDENCE", "SLA_RISK", "HUB_DELAY", "ROUTE_DELAY", "POSSIBLE_MISDELIVERY")
+          "UNRECONCILED_CUSTODY", "INSUFFICIENT_EVIDENCE", "SLA_RISK", "HUB_DELAY", "ROUTE_DELAY", "POSSIBLE_MISDELIVERY",
+          "DELAYED_SYNC", "MANIFEST_CONFLICT")
 VERDICTS = ("ACCEPT", "REVISE", "HUMAN_REVIEW", "ESCALATE")
 BLAME = re.compile(r"\b(driver|courier|employee|customer|recipient)\s+(lost|stole|lied|is lying|was negligent|is responsible|is to blame)\b|\b(theft|stolen|fraud|fraudulent)\b", re.I)
 GPS_DELIVERY = re.compile(r"\bgps\b[^.]{0,80}\b(proves?|confirms?|establish(es)?|shows?)\b[^.]{0,40}\b(deliver|parcel|package)", re.I)

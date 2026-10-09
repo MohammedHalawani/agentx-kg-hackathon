@@ -9,13 +9,13 @@ from dataset_v2.contracts import World, instant
 OBSERVATIONS=frozenset(("ScanEvent","CustodyEvent","DeliveryAttempt","ContactAttempt",
     "GPSObservation","TrafficObservation","DeliveryProof","AuthenticationEvidence",
     "SignatureEvidence","PhotoEvidence","HandoffEvidence","RecipientReport",
-    "DepotReconciliation","StatusEvent","LocationPin"))
+    "DepotReconciliation","StatusEvent","LocationPin","Manifest"))
 CONTEXT=frozenset(("Shipment","Package","Customer","Organization","InventoryRecord",
     "Address","AddressVersion","DeliveryInstruction","Route","RouteSegment",
     "RouteMilestone","JourneyPlan","ExpectedMilestone","DeliverySession","VehicleAssignment"))
 CATALOG=frozenset(("City","Organization","OrganizationWarehouse","FulfillmentWarehouse",
     "Branch","Hub","SortingCenter","DeliveryDepot","ShipmentType","ServiceLevel",
-    "HandlingRequirement","Vehicle","VehicleType","Driver","Policy"))
+    "HandlingRequirement","Vehicle","VehicleType","Driver","Policy","Provider","Device"))
 PRIVATE=frozenset(("split","holdout_group","recipe_id","intended_healthy","assessment"))
 
 
