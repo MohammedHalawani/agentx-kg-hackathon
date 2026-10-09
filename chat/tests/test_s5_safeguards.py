@@ -59,7 +59,7 @@ class TruthIsolationTests(unittest.TestCase):
 class ReceiptLeakTests(unittest.TestCase):
     def test_receipts_depend_on_the_action_alone_and_carry_no_answer_key_wording(self):
         from dataset_v2.contracts import canonical
-        from dataset_v2.live_bundle import truth_vocabulary
+        from dataset_v2.live_bundle import truth_state_words, truth_vocabulary
         from operations.reasoning import public_evidence
         from operations.simulation import RECEIPTS, OperationalSimulator
         from dataset_v2.feed import reconstitute, split_feed
@@ -93,6 +93,11 @@ class ReceiptLeakTests(unittest.TestCase):
         self.assertIn("retained by contractor", vocabulary)
         for term in vocabulary:
             self.assertNotIn(term.lower(), text)
+        import re
+        words = truth_state_words(truth)
+        self.assertTrue({"misread", "miscalibrated", "unreachable", "unresponsive"} <= set(words))
+        for word in words:
+            self.assertIsNone(re.search(r"\b" + re.escape(word) + r"\b", text, re.I), word)
 
 
 class SimulatorTargetingTests(unittest.TestCase):

@@ -107,6 +107,22 @@ def truth_vocabulary(truth):
     return sorted(terms | {t.replace("_", " ") for t in terms if "_" in t} | set(_LEGACY_RECEIPT_PHRASES))
 
 
+# Truth field names that are not ordinary words.
+_TRUTH_KEYS = ("offline_from", "last_activity_at", "last_mile_vehicle_ownership", "last_mile_provider_id", "foundation_recipe")
+
+
+def truth_state_words(truth):
+    """Evaluation only: single-word physical field states (misread, miscalibrated, unreachable, unresponsive)
+    and truth field names. Ordinary words that a model may legitimately use, so they are scanned as whole
+    words in text no model wrote."""
+    words = set(_TRUTH_KEYS)
+    for row in truth.values():
+        for value in (row.get("physical") or {}).values():
+            if isinstance(value, str) and "_" not in value and not value.startswith("DEMO-") and value.isalpha():
+                words.add(value)
+    return sorted(words)
+
+
 def read_live_bundle(directory):
     items = read_feed(directory)
     return read_bundle(directory, validator=lambda world: validate_live_bundle(world, items)), items

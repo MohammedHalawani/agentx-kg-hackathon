@@ -1,6 +1,11 @@
 """S5: end-to-end scenarios A-F and measured metrics, on an isolated Neo4j test database.
 
-Phases (run in order; each recreates shipments-v2-demo-test from a fresh live bundle):
+Order. On the pipeline database: pipeline, then accounting, human and checks (checks last, so its
+answer-key scan sees everything the other phases wrote). heldout, reviewer and concurrency each recreate
+their database, so run them on the twin (SUHAIL_TEST_DATABASE=shipments-v2-demo-test2). accounting, human
+and checks refuse to run on a ledger that is not the one pipeline.json in --out describes.
+
+Phases:
   pipeline   live split replayed hour by hour through the gateway, monitor, real GPT-OSS
              investigation (tool loop + reviewer), authority, execution adapter (synthetic
              operational simulator) and the independent verifier. Scenarios A, B, C, E + metrics.
@@ -15,8 +20,10 @@ Phases (run in order; each recreates shipments-v2-demo-test from a fresh live bu
              symptom naming and the second-cause credit contribute to the score.
   human      on the same database: scenario C's human path (a person's verified finding) and both approval
              outcomes (a person-only action refused, an approvable action executed).
-Every results file carries a provenance block (commit, dirty flag, bundle hashes, model, prompt hashes,
-model calls by the model name the provider reported); model phases refuse to run on uncommitted code.
+Every results file carries a provenance block (commit and dirty flag at start, and whether the tree
+changed during the run; bundle hashes, model, prompt hashes, model calls by the model name the provider
+reported). Phases that run product code (pipeline, heldout, reviewer, concurrency, human) refuse to run on
+uncommitted tracked changes; checks and accounting only read, and record the flag.
 
 Truth is read only to score after each phase (and by the simulator, which plays the field).
 Usage (from chat/): uv run python ../scripts/s5_scenarios.py --phase pipeline --out ../docs/evals/2026-10-09_s5
@@ -43,6 +50,7 @@ logging.getLogger("neo4j").setLevel(logging.ERROR)
 ROOT = Path(__file__).resolve().parents[1]
 # Every model call LiteLLM completes or fails during a phase, by the model name the provider reported.
 MODEL_CALLS = {"succeeded": {}, "failed": {}, "total_tokens": 0}
+CODE_STATE = {}  # Commit and dirty flag captured in main() before any phase imports product code.
 
 
 def record_model_calls():
@@ -72,8 +80,10 @@ def provenance(phase, started_at, *, bundle_dir=None, manifest_hash=None):
     from dataset_v2.contracts import digest
     from dataset_v2.network import NETWORK_VERSION
     from operations import investigator
-    commit, dirty = git_state()
-    record = {"phase": phase, "commit": commit, "dirty_tree": dirty, "started_at": started_at,
+    commit, dirty = CODE_STATE.get("commit"), CODE_STATE.get("dirty")
+    now_commit, now_dirty = git_state()
+    record = {"phase": phase, "commit": commit, "dirty_tree": dirty,
+              "tree_changed_during_run": (now_commit, now_dirty) != (commit, dirty), "started_at": started_at,
               "finished_at": datetime.now(timezone.utc).isoformat(), "configured_model": config.LLM_MODEL,
               "model_api_base": config.LLM_API_BASE, "database": TEST_DATABASE, "generator": NETWORK_VERSION,
               "investigator_prompt_sha256": digest(investigator.SYSTEM), "reviewer_prompt_sha256": digest(investigator.REVIEWER_SYSTEM),
@@ -132,6 +142,7 @@ def step_loop(store, *, investigate=True, max_hours=None):
 
 
 def case_rows(driver, truth):
+    from dataset_v2.contracts import instant
     cases = ledger(driver, "OpsCase")
     runs = {}
     for run in ledger(driver, "OpsRun"):
@@ -145,6 +156,10 @@ def case_rows(driver, truth):
     decisions = {d["case_id"] for d in ledger(driver, "OpsDecision")}
     opening = {a["case_id"]: sorted(x.strip() for x in a["result"].split(":", 1)[1].split(","))
                for a in ledger(driver, "OpsAudit") if a.get("event_type") == "CASE_OPENED" and ":" in (a.get("result") or "")}
+    key_ids = sorted({k for c in cases for k in truth[c["shipment_id"]].get("key_evidence") or []})
+    with driver.session(database=TEST_DATABASE, default_access_mode="READ") as session:
+        ingested = {r["id"]: iso(r["at"]) for r in session.run(
+            "MATCH (n:V2Entity) WHERE n.entity_id IN $ids RETURN n.entity_id AS id, n.recorded_at AS at", ids=key_ids)}
     rows = []
     for case in cases:
         row = truth[case["shipment_id"]]
@@ -152,6 +167,9 @@ def case_rows(driver, truth):
         analysis = json.loads(last[-1]["result_json"]) if last and last[-1].get("result_json") else {}
         inv = analysis.get("investigation") or {}
         cited = {i for h in inv.get("hypotheses") or [] for i in h.get("supporting_evidence_ids", []) + h.get("contradicting_evidence_ids", [])}
+        snapshot = next((e.get("evidence_as_of") for e in analysis.get("pipeline_events") or [] if e.get("evidence_as_of")), None)
+        # Key evidence the investigation could have seen: ingested by the time of its evidence snapshot.
+        key_visible = {k for k in row.get("key_evidence") or [] if snapshot and ingested.get(k) and instant(ingested[k]) <= instant(iso(snapshot))}
         retrieved = set(inv.get("retrieved_evidence_ids") or [])
         execs = executions.get(case["entity_id"], [])
         outs = outcomes.get(case["entity_id"], [])
@@ -171,7 +189,8 @@ def case_rows(driver, truth):
             "outcomes": [{"type": o.get("outcome_type"), "success": o.get("success"), "verifier": o.get("verifier_id")} for o in outs],
             "final_state": case["workflow_state"], "human_decision": case["entity_id"] in decisions,
             "citations_within_retrieved": cited <= retrieved, "cited": len(cited),
-            "key_evidence_cited": (bool(cited & set(row.get("key_evidence") or [])) if row.get("key_evidence") else None),
+            "key_evidence_cited": (bool(cited & key_visible) if key_visible else None),
+            "key_evidence_not_yet_ingested": bool(row.get("key_evidence")) and not key_visible,
             # Scoring only:
             "truth_recipe": row["recipe"], "truth_healthy": row["healthy"], "truth_cause": row["root_cause"],
             "acceptable_causes": row["acceptable_causes"], "expected_resolution": row["expected_resolution"]})
@@ -188,8 +207,16 @@ def metrics(rows, truth):
     resolved = [r for r in rows if r["final_state"] == "RESOLVED"]
     false_resolutions = [r for r in resolved if r["truth_healthy"] or r["expected_resolution"] != "AUTO"
                          or r["primary_cause"] not in (r["acceptable_causes"] or [])]
-    auto_eligible = [sid for sid in abnormal if live[sid]["expected_resolution"] == "AUTO"]
-    auto_resolved_eligible = [r for r in resolved if r["shipment_id"] in auto_eligible and not r["human_decision"]]
+    from operations.authority import HUMAN_FLOOR_SYMPTOMS
+    auto_eligible = {sid for sid in abnormal if live[sid]["expected_resolution"] == "AUTO"}
+    by_shipment = {}
+    for r in rows:
+        by_shipment.setdefault(r["shipment_id"], []).append(r)
+    # A shipment counts only when every one of its cases ended resolved with no human decision.
+    clean = {sid for sid in auto_eligible if by_shipment.get(sid)
+             and all(r["final_state"] == "RESOLVED" and not r["human_decision"] for r in by_shipment[sid])}
+    floored = {sid for sid in auto_eligible if any(set(r.get("opening_symptoms") or r["symptoms"] or []) & HUMAN_FLOOR_SYMPTOMS
+                                                   for r in by_shipment.get(sid, []))}
     wrong_auto = [r for r in auto_exec if r["primary_cause"] not in (r["acceptable_causes"] or [])]
     wrong_routed_to_human = [r for r in scored if r not in correct and r["authority"] in ("HUMAN_REVIEW", "APPROVAL_REQUIRED")]
     return {
@@ -202,13 +229,18 @@ def metrics(rows, truth):
         "evidence_correctness": {"citations_within_retrieved": sum(r["citations_within_retrieved"] for r in investigated),
                                  "investigations": len(investigated),
                                  "key_evidence_cited": sum(bool(r["key_evidence_cited"]) for r in investigated if r["key_evidence_cited"] is not None),
-                                 "with_key_evidence_defined": sum(r["key_evidence_cited"] is not None for r in investigated)},
+                                 "with_key_evidence_visible_at_investigation": sum(r["key_evidence_cited"] is not None for r in investigated),
+                                 "key_evidence_not_yet_ingested_at_investigation": sum(bool(r.get("key_evidence_not_yet_ingested")) for r in investigated)},
         "automatic_actions_executed": len(auto_exec),
         "automatic_actions_with_wrong_cause": len(wrong_auto),
         "automatic_resolution_success": {"auto_executed_and_verified_resolved": sum(r["final_state"] == "RESOLVED" for r in auto_exec),
                                          "auto_executed": len(auto_exec),
                                          "rate": round(sum(r["final_state"] == "RESOLVED" for r in auto_exec) / len(auto_exec), 3) if auto_exec else None},
-        "auto_eligible_scenarios_resolved_without_human": {"resolved": len(auto_resolved_eligible), "eligible": len(auto_eligible)},
+        "auto_eligible_shipments_resolved_without_human": {
+            "resolved": len(clean), "eligible": len(auto_eligible),
+            "eligible_without_a_human_floor_symptom": len(auto_eligible - floored), "resolved_among_those": len(clean - floored),
+            "note": "per shipment: every case of the shipment ended RESOLVED with no human decision; a human-floor symptom "
+                    "(session end unreconciled, conflicting reports, manifest conflict, recipient report) never closes automatically"},
         "false_resolution": {"count": len(false_resolutions), "resolved": len(resolved),
                              "rate": round(len(false_resolutions) / len(resolved), 3) if resolved else None,
                              "cases": [[r["case_id"], r["truth_recipe"], r["primary_cause"]] for r in false_resolutions]},
@@ -222,6 +254,24 @@ def bundle_dir(tmp):
     return Path(tmp.name) / "bundle"
 
 
+def ledger_identity(driver):
+    with driver.session(database=TEST_DATABASE, default_access_mode="READ") as session:
+        session_id = session.run("MATCH (c:OpsEntity:OpsControl) RETURN c.session_id AS s").single()["s"]
+    return {"session_id": session_id, "cases": len(ledger(driver, "OpsCase")), "runs": len(ledger(driver, "OpsRun"))}
+
+
+def require_pipeline_ledger(out, driver):
+    """accounting, human and checks read the ledger a pipeline run left; refuse any other ledger."""
+    source = out / "pipeline.json"
+    if not source.exists():
+        raise SystemExit(f"{source} is missing: run --phase pipeline into this --out first.")
+    expected = json.loads(source.read_text(encoding="utf-8")).get("ledger")
+    found = ledger_identity(driver)
+    if not expected or any(found[k] != expected[k] for k in ("session_id", "cases", "runs")):
+        raise SystemExit(f"{TEST_DATABASE} holds a different ledger ({found}) from {source} ({expected}).")
+    return found
+
+
 def phase_pipeline(out, total, started_at):
     from operations import investigator
     driver, bundle, truth, tmp = build_test_database(total=total)
@@ -231,7 +281,7 @@ def phase_pipeline(out, total, started_at):
     step_loop(store)
     rows = case_rows(driver, truth)
     result = {"phase": "pipeline", "model": config.LLM_MODEL, "wall_seconds": round(time.perf_counter() - started),
-              "provenance": provenance("pipeline", started_at, bundle_dir=bundle_dir(tmp)),
+              "provenance": provenance("pipeline", started_at, bundle_dir=bundle_dir(tmp)), "ledger": ledger_identity(driver),
               "metrics": metrics(rows, truth), "cases": rows}
     (out / "pipeline.json").write_text(json.dumps(result, indent=1, default=str), encoding="utf-8")
     tmp.cleanup()
@@ -363,12 +413,12 @@ def phase_concurrency(out, total, seconds, started_at):
     return result
 
 
-def phase_checks(out, total, started_at):
+def phase_checks(out, _total, started_at):
     """On the database the pipeline phase left behind: public ids, authority switch, trigger coverage, and a
     scan of every receipt, outcome, audit entry, review, recommendation and case API response for answer-key words."""
     from core.query_runner import get_driver
     from dataset_v2.contracts import Config
-    from dataset_v2.live_bundle import truth_vocabulary
+    from dataset_v2.live_bundle import truth_state_words, truth_vocabulary
     from operations.identifiers import public_value
     from operations.read_model import OperationsReader
     driver = get_driver()
@@ -377,6 +427,8 @@ def phase_checks(out, total, started_at):
         manifest = json.loads(imported["m"])
         clock = iso(session.run("MATCH (c:OpsEntity:OpsControl) RETURN c.as_of AS a").single()["a"])
     cfg = Config(**manifest["config"])
+    total = cfg.total  # The imported dataset's own size, not a command-line guess.
+    identity = require_pipeline_ledger(out, driver)
     from operations.store import OperationsStore
     reader = OperationsReader(driver, TEST_DATABASE, cfg.dataset_id, cfg, clock=lambda: clock)
     # Read-only use of the ledger (no initialize, no reset): the case detail an operator would open.
@@ -406,22 +458,45 @@ def phase_checks(out, total, started_at):
                 else:
                     unresolved_ids.append([case["entity_id"], key])
     audits = ledger(driver, "OpsAudit")
-    decisions = {a["case_id"]: json.loads(a["result"]) for a in audits if a.get("event_type") == "AUTHORITY_DECISION" and a["result"].startswith("{")}
-    approvals = {d["case_id"] for d in ledger(driver, "OpsDecision") if d.get("decision") == "approve"}
-    bypass = []
+    decisions = [a for a in audits if a.get("event_type") == "AUTHORITY_DECISION"]
+    # Each execution is matched to what authorized it: an automatic one to the authority decision of the run
+    # whose recommendation initiated it, an operator one to its own approve decision.
+    from operations.authority import ACTIONS
+    with driver.session(database=TEST_DATABASE, default_access_mode="READ") as session:
+        initiated = {r["e"]: r["s"] for r in session.run(
+            "MATCH (s:OpsEntity)-[:OPS_INITIATES]->(e:OpsEntity:OpsExecution) RETURN s.entity_id AS s, e.entity_id AS e")}
+    recommendations = {r["entity_id"]: r for r in ledger(driver, "OpsRecommendation")}
+    run_authority = {r["entity_id"]: (json.loads(r.get("result_json") or "{}").get("authority") or {}) for r in ledger(driver, "OpsRun")}
+    approve_decisions = {d["entity_id"]: d for d in ledger(driver, "OpsDecision") if d.get("decision") == "approve"}
+    bypass, checked = [], []
     for e in ledger(driver, "OpsExecution"):
-        if e.get("authority") == "AUTO_POLICY" and (decisions.get(e["case_id"]) or {}).get("risk_class") != "AUTO":
+        base = (ACTIONS.get(e.get("action_type")) or ("?",))[0]
+        if e.get("authority") == "AUTO_POLICY":
+            recommendation = recommendations.get(initiated.get(e["entity_id"]) or "") or {}
+            decided = run_authority.get(recommendation.get("run_id") or "", {})
+            ok = base == "AUTO" and decided.get("risk_class") == "AUTO" and e.get("decided_risk") == "AUTO"
+        else:
+            decision = approve_decisions.get(e.get("decision_id") or "")
+            ok = bool(decision) and decision["case_id"] == e["case_id"] and base in ("AUTO", "APPROVAL_REQUIRED")
+        checked.append({"execution": e["entity_id"], "authority": e.get("authority"), "action_type": e.get("action_type"),
+                        "status": e.get("status"), "permission_rule": e.get("permission_rule"), "authorized_by_its_own_decision": ok})
+        if not ok:
             bypass.append(e["entity_id"])
-        if e.get("authority") != "AUTO_POLICY" and e["case_id"] not in approvals:
-            bypass.append(e["entity_id"])
-    triggers = {}
+    opening = {}
+    for a in audits:  # What opened each case (the final symptom set grows after opening).
+        if a.get("event_type") == "CASE_OPENED" and ":" in (a.get("result") or ""):
+            for symptom in a["result"].split(":", 1)[1].split(","):
+                opening[symptom.strip()] = opening.get(symptom.strip(), 0) + 1
+    final_sets = {}
     for case in cases:
         for symptom in case.get("symptom_codes") or []:
-            triggers[symptom] = triggers.get(symptom, 0) + 1
+            final_sets[symptom] = final_sets.get(symptom, 0) + 1
     for case in cases:  # Cases never investigated are served by the API too.
         if not runs.get(case["entity_id"]):
             api_details.append(json.dumps(public_value(reader.case_detail(case["entity_id"])), default=str, ensure_ascii=False))
-    vocabulary = [t.lower() for t in truth_vocabulary(scoring_truth(total, imported["h"]))]
+    truth = scoring_truth(total, imported["h"])
+    vocabulary = [t.lower() for t in truth_vocabulary(truth)]
+    state_words = truth_state_words(truth)
     sources = {"execution_receipts": [e.get("adapter_result_json") for e in ledger(driver, "OpsExecution")],
                "outcomes": [json.dumps({k: o.get(k) for k in ("outcome_type", "reason", "expected_effect", "rule_id")}) for o in ledger(driver, "OpsOutcome")],
                "audit": [a.get("result") for a in audits],
@@ -429,6 +504,7 @@ def phase_checks(out, total, started_at):
                "recommendations": [json.dumps({k: r.get(k) for k in ("action", "action_en", "action_ar", "authority_reason")}, ensure_ascii=False)
                                    for r in ledger(driver, "OpsRecommendation")],
                "case_api_responses": api_details}
+    sources["commands"] = [c.get("result_json") for c in ledger(driver, "OpsCommand")]
     leaks = []
     for source, texts in sources.items():
         for text in texts:
@@ -437,14 +513,25 @@ def phase_checks(out, total, started_at):
                 at = lowered.find(term)
                 if at >= 0:
                     leaks.append({"source": source, "term": term, "excerpt": (text or "")[max(0, at - 60):at + len(term) + 60]})
+    # Single-word field states and truth field names, as whole words, in text that no model wrote (receipts,
+    # outcomes, commands and non-model audit entries): models may use ordinary words like "misread".
+    import re
+    pattern = re.compile(r"\b(" + "|".join(re.escape(w) for w in state_words) + r")\b", re.I) if state_words else None
+    machine = {"execution_receipts": sources["execution_receipts"], "outcomes": sources["outcomes"], "commands": sources["commands"],
+               "audit": [a.get("result") for a in audits if a.get("event_type") not in ("PIPELINE_STAGE", "AUTHORITY_DECISION", "RECOMMENDATION_READY")]}
+    for source, texts in machine.items():
+        for text in texts:
+            for match in (pattern.finditer(text or "") if pattern else []):
+                leaks.append({"source": source, "term": match.group(0), "excerpt": (text or "")[max(0, match.start() - 60):match.end() + 60]})
     result = {"phase": "checks", "public_id_resolution": {"cited": cited_total, "resolve_to_case_evidence": resolvable,
               "device_telemetry_citations": telemetry_cited, "unresolved": cited_total - resolvable - telemetry_cited,
               "unresolved_ids": unresolved_ids[:50]},
-              "authority_bypass_executions": bypass, "executions": len(ledger(driver, "OpsExecution")),
-              "authority_decisions_recorded": len(decisions), "trigger_symptoms": triggers,
-              "answer_key_scan": {"terms": len(vocabulary), "records_scanned": {k: len(v) for k, v in sources.items()},
+              "authority_bypass_executions": bypass, "executions": len(ledger(driver, "OpsExecution")), "executions_checked": checked,
+              "authority_decisions_recorded": len(decisions), "opening_trigger_symptoms": opening, "final_symptom_sets": final_sets,
+              "answer_key_scan": {"terms": len(vocabulary), "state_words": state_words,
+                                  "records_scanned": {k: len(v) for k, v in sources.items()},
                                   "leaks": leaks[:100], "leak_count": len(leaks)},
-              "provenance": provenance("checks", started_at, manifest_hash=imported["h"])}
+              "ledger": identity, "provenance": provenance("checks", started_at, manifest_hash=imported["h"])}
     (out / "checks.json").write_text(json.dumps(result, indent=1, default=str), encoding="utf-8")
     return result
 
@@ -468,10 +555,12 @@ def end_state(row):
 def scoring_transparency(rows, truth):
     """How much the opening symptom names give away, and how much the second-cause credit adds.
 
-    The monitor maps rule codes to symptoms (operations.store.SYMPTOMS); ten of the twelve symptoms map
-    back to a single diagnosis label. A case is "one_label" when every opening symptom maps back to one
-    label, "multi_label" otherwise. Scoring is per shipment: any acceptable cause of the shipment counts
-    on every case of that shipment."""
+    The monitor maps deterministic rule codes to symptoms (operations.store.SYMPTOMS); ten of the twelve
+    symptoms come from exactly one rule code. The diagnosis labels are wider than the rule codes (delayed
+    sync, hub delay, route delay, SLA risk and possible misdelivery have no rule code), so a symptom's
+    single rule code is not necessarily the answer. What is reported: accuracy when an opening symptom's
+    single rule code is an acceptable cause vs not, and how often the diagnosis equals that rule code.
+    Scoring is per shipment: any acceptable cause of the shipment counts on every case of that shipment."""
     from operations.store import SYMPTOMS
     inverse = {}
     for cause, symptom in SYMPTOMS.items():
@@ -490,8 +579,6 @@ def scoring_transparency(rows, truth):
         good = sum(r["primary_cause"] in acceptable(r, with_second) for r in group)
         return {"correct": good, "cases": len(group), "rate": round(good / len(group), 3) if group else None}
 
-    one_label = [r for r in scored if all(len(inverse.get(x, ())) == 1 for x in opening(r))]
-    multi_label = [r for r in scored if r not in one_label]
     named = [r for r in scored if any(len(inverse.get(x, ())) == 1 and inverse[x] & acceptable(r) for x in opening(r))]
     strict = [r for r in scored if any(len(inverse.get(x, ())) == 1 and r["primary_cause"] in inverse[x] for x in opening(r))]
     inclusive = [r for r in scored if any(r["primary_cause"] in inverse.get(x, ()) for x in opening(r))]
@@ -503,10 +590,9 @@ def scoring_transparency(rows, truth):
         for x in opening(r):
             triggers[x] = triggers.get(x, 0) + 1
     return {
-        "symptom_map_one_to_one": sorted(x for x, causes in inverse.items() if len(causes) == 1),
-        "symptom_map_multi_label": {x: sorted(c) for x, c in inverse.items() if len(c) > 1},
+        "symptoms_from_one_rule_code": sorted(x for x, causes in inverse.items() if len(causes) == 1),
+        "symptoms_from_several_rule_codes": {x: sorted(c) for x, c in inverse.items() if len(c) > 1},
         "accuracy_all": rate(scored),
-        "accuracy_one_label_symptom_cases": rate(one_label), "accuracy_multi_label_symptom_cases": rate(multi_label),
         "accuracy_when_an_opening_symptom_names_an_acceptable_cause": rate(named),
         "accuracy_when_no_opening_symptom_names_an_acceptable_cause": rate([r for r in scored if r not in named]),
         "diagnosis_equals_the_label_of_an_opening_symptom": {
@@ -525,7 +611,7 @@ def scoring_transparency(rows, truth):
         "scoring_unit": "per shipment: every case of a shipment is scored against all of that shipment's acceptable causes"}
 
 
-def phase_accounting(out, total, source, started_at):
+def phase_accounting(out, _total, source, started_at):
     """After a pipeline run, on the database it left: every wrong diagnosis's end state, whether each
     resolved case's exception was really gone at closure, and what happened to two-cause shipments."""
     from core.query_runner import get_driver
@@ -540,8 +626,9 @@ def phase_accounting(out, total, source, started_at):
     with driver.session(database=TEST_DATABASE, default_access_mode="READ") as session:
         imported = session.run("MATCH (m:_V2Import) RETURN m.manifest_json AS m, m.manifest_hash AS h").single()
         clock = iso(session.run("MATCH (c:OpsEntity:OpsControl) RETURN c.as_of AS a").single()["a"])
-    truth = scoring_truth(total, imported["h"])
     cfg = Config(**json.loads(imported["m"])["config"])
+    truth = scoring_truth(cfg.total, imported["h"])
+    identity = require_pipeline_ledger(out, driver)
     reader = OperationsReader(driver, TEST_DATABASE, cfg.dataset_id, cfg, clock=lambda: clock)
     cases = {c["entity_id"]: c for c in ledger(driver, "OpsCase")}
 
@@ -583,14 +670,14 @@ def phase_accounting(out, total, source, started_at):
               "resolved_cases": resolved,
               "resolved_with_standing_symptom_at_closure": [x["case_id"] for x in resolved if x["standing_symptoms_at_closure"]],
               "two_cause_shipments": two_cause,
-              "scoring_transparency": scoring_transparency(rows, truth),
+              "scoring_transparency": scoring_transparency(rows, truth), "ledger": identity,
               "provenance": provenance("accounting", started_at, manifest_hash=imported["h"]),
               "source_provenance": pipeline.get("provenance")}
     (out / source.replace("pipeline", "accounting")).write_text(json.dumps(result, indent=1, default=str), encoding="utf-8")
     return result
 
 
-def phase_human(out, total, started_at):
+def phase_human(out, _total, started_at):
     """On the database the pipeline left: the human path of scenario C and both approval outcomes.
 
     The harness plays the depot supervisor. Like the simulator, it reads the simulated field state to
@@ -606,8 +693,9 @@ def phase_human(out, total, started_at):
     with driver.session(database=TEST_DATABASE, default_access_mode="READ") as session:
         imported = session.run("MATCH (m:_V2Import) RETURN m.manifest_json AS m, m.manifest_hash AS h").single()
         clock = iso(session.run("MATCH (c:OpsEntity:OpsControl) RETURN c.as_of AS a").single()["a"])
-    truth = scoring_truth(total, imported["h"])
     cfg = Config(**json.loads(imported["m"])["config"])
+    truth = scoring_truth(cfg.total, imported["h"])
+    identity = require_pipeline_ledger(out, driver)
     reader = OperationsReader(driver, TEST_DATABASE, cfg.dataset_id, cfg, clock=lambda: clock)
     store = OperationsStore(driver, TEST_DATABASE, cfg.dataset_id, cfg, reader=reader)
     reader.store = store
@@ -618,10 +706,13 @@ def phase_human(out, total, started_at):
                                     "the session without a receipt scan."),
              "left_at_depot": ("parcel_located", "Physical check at the depot: the parcel is on site and was never loaded.")}
     findings, used = [], set()
+    # Re-runnable: a case this phase (or anyone) already closed by a person's finding is left alone.
+    handled = {o["case_id"] for o in ledger(driver, "OpsOutcome") if o.get("verification_status") == "HUMAN_VERIFIED"}
+    handled |= {c["case_id"] for c in ledger(driver, "OpsCommand") if str(c.get("idempotency_key") or "").startswith("s5-")}
     for case in sorted(ledger(driver, "OpsCase"), key=lambda c: iso(c["opened_at"])):
         physical = truth[case["shipment_id"]].get("physical") or {}
         kind = physical.get("parcel")
-        if case["workflow_state"] not in ("HUMAN_REVIEW", "ESCALATED") or kind not in finds or kind in used:
+        if case["workflow_state"] not in ("HUMAN_REVIEW", "ESCALATED") or kind not in finds or kind in used or case["entity_id"] in handled:
             continue
         used.add(kind)
         outcome_type, text = finds[kind]
@@ -639,18 +730,25 @@ def phase_human(out, total, started_at):
     from operations.authority import ACTIONS
     refusals, approvals = [], []
     recommendations = {r["entity_id"]: r for r in ledger(driver, "OpsRecommendation")}
+    def executions_of(case_id):
+        return sum(e["case_id"] == case_id for e in ledger(driver, "OpsExecution"))
+
     for case in ledger(driver, "OpsCase"):
         recommendation = recommendations.get(case.get("recommendation_id") or "")
-        if not recommendation or case["workflow_state"] not in ("HUMAN_REVIEW", "AWAITING_APPROVAL"):
+        if not recommendation or case["workflow_state"] not in ("HUMAN_REVIEW", "AWAITING_APPROVAL") or case["entity_id"] in handled:
             continue
-        base = ACTIONS.get(recommendation.get("action_type") or "REQUEST_ADDITIONAL_EVIDENCE", ("?",))[0]
+        base = (ACTIONS.get(recommendation.get("action_type")) or ("?",))[0]
         if base == "HUMAN_REVIEW" and len(refusals) < 2:
+            before = executions_of(case["entity_id"])
             try:
                 store.decide(case["entity_id"], "approve", "DEMO-OPERATOR-LOCAL", case["state_version"], "s5-refuse-" + case["entity_id"][-16:])
                 refusals.append({"case_id": case["entity_id"], "action_type": recommendation.get("action_type"), "refused": False})
             except OperationsConflict as error:
-                refusals.append({"case_id": case["entity_id"], "action_type": recommendation.get("action_type"), "refused": True, "reason": str(error),
-                                 "executions": sum(e["case_id"] == case["entity_id"] for e in ledger(driver, "OpsExecution"))})
+                rule = str(error).split(":", 1)[0]
+                refusals.append({"case_id": case["entity_id"], "action_type": recommendation.get("action_type"),
+                                 "refused_by_rule": rule if rule.startswith("AUTH-") else None, "reason": str(error),
+                                 "executions_before": before, "executions_after": executions_of(case["entity_id"]),
+                                 "state_after": next(c for c in ledger(driver, "OpsCase") if c["entity_id"] == case["entity_id"])["workflow_state"]})
         elif case["workflow_state"] == "AWAITING_APPROVAL" and base in ("AUTO", "APPROVAL_REQUIRED") and not approvals:
             decided = store.decide(case["entity_id"], "approve", "DEMO-OPERATOR-LOCAL", case["state_version"], "s5-approve-" + case["entity_id"][-16:])
             store.execute_step(limit=5)
@@ -660,7 +758,7 @@ def phase_human(out, total, started_at):
                               "authority": execution["authority"], "permission_rule": execution.get("permission_rule"),
                               "receipt": json.loads(execution.get("adapter_result_json") or "{}")})
     result = {"phase": "human", "database": TEST_DATABASE, "clock": clock, "human_findings": findings,
-              "approval_refusals": refusals, "approvals": approvals,
+              "approval_refusals": refusals, "approvals": approvals, "ledger": identity,
               "provenance": provenance("human", started_at, manifest_hash=imported["h"])}
     (out / "human.json").write_text(json.dumps(result, indent=1, default=str), encoding="utf-8")
     return result
@@ -677,7 +775,8 @@ def main():
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
     commit, dirty = git_state()
-    if dirty and not args.allow_dirty:
+    CODE_STATE.update(commit=commit, dirty=dirty)
+    if dirty and args.phase not in ("checks", "accounting") and not args.allow_dirty:
         raise SystemExit(f"Tracked files differ from {commit[:12]}; commit first so results name the exact code (or pass --allow-dirty).")
     started_at = datetime.now(timezone.utc).isoformat()
     record_model_calls()
