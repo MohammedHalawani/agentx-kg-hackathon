@@ -25,7 +25,7 @@ def main():
             nodes=rows("MATCH(n:V2Entity {dataset_id:$dataset}) RETURN count(n) AS count")[0]["count"]
             edges=rows("MATCH(a:V2Entity {dataset_id:$dataset})-[r]->(b:V2Entity {dataset_id:$dataset}) RETURN count(r) AS count")[0]["count"]
             splits={r["split"]:r["count"] for r in rows("MATCH(s:V2Entity:Shipment {dataset_id:$dataset}) RETURN s.split AS split,count(s) AS count")}
-            marker=rows("MATCH(m:_V2Import) RETURN m{.state,.manifest_hash,.dataset_id,.target_database} AS marker")[0]["marker"]
+            marker=rows("MATCH(m:_V2Import) RETURN m{.state,.manifest_hash,.dataset_id} AS marker")[0]["marker"]
             invalid=rows("MATCH(o:OpsEntity) WHERE o.dataset_id<>$dataset OR o.split<>'development' OR (NOT o:OpsControl AND NOT EXISTS { MATCH(s:V2Entity:Shipment {entity_id:o.shipment_id,dataset_id:$dataset,split:'development'}) }) RETURN count(o) AS count")[0]["count"]
             duplicates=rows("MATCH(r:OpsEventReceipt {dataset_id:$dataset}) WITH r.source_event_id AS source,count(r) AS count WHERE count>1 RETURN source,count")
             control=rows("MATCH(c:OpsControl {dataset_id:$dataset}) RETURN c.as_of AS as_of,c.worker_state AS worker_state,c.simulator_state AS simulator_state,c.worker_claim AS active_claim,c.event_count AS event_count,c.processed_count AS processed_count")[0]
