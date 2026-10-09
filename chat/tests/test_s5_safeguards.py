@@ -284,6 +284,38 @@ class AuthorityAtExecutionTests(_Store):
         self.assertEqual(self.executions(driver), [])
 
 
+class CurrentRunTests(_Store):
+    def test_case_view_serves_the_current_runs_review_never_an_earlier_pass(self):
+        from tests import test_investigator as ti
+        store, driver = self.make()
+        fake = ti.FakeInvestigator(lambda tools: [("shipment_overview", {})], ["REVISE", "ACCEPT", "UNAVAILABLE"])
+        fake.cause, fake.action = "BARCODE_MISMATCH", "REQUEST_RESCAN"
+        store.agents = fake
+        first = store.process_one(manual=True)
+        detail = store.case_detail(first["case_id"])
+        self.assertEqual(detail["review"]["verdict"], "accept")
+        store.request_reanalysis(first["case_id"], "DEMO-OPERATOR-LOCAL", detail["state_version"], "reanalyze-1")
+        second = store.process_one(case_id=first["case_id"], manual=True)
+        self.assertTrue(second["processed"])
+        detail = store.case_detail(first["case_id"])
+        self.assertEqual(detail["run"]["entity_id"], detail["last_run_id"])
+        self.assertEqual(detail["review"]["verdict"], "review_unavailable")
+        self.assertEqual([t["review"]["verdict"] for t in detail["run"]["result"]["trace"]], ["review_unavailable"])
+
+    def test_a_receipt_nobody_acknowledged_is_not_awaiting_an_outcome(self):
+        store, driver, result = self.processed()
+        case = store.case_detail(result["case_id"])
+        store.decide(case["case_id"], "approve", "DEMO-OPERATOR-LOCAL", case["state_version"], "approve-unack")
+        class Silent:
+            def respond(self, execution, now): return {"acknowledged": False, "behaviour": "No field system accepts this request type."}
+        store.adapter = Silent()
+        store.execute_step()
+        execution = next(v for k, v in driver.ledger.values() if k == "OpsExecution")
+        self.assertEqual(execution["status"], "NOT_ACKNOWLEDGED")
+        self.assertEqual(store.case_detail(case["case_id"])["workflow_state"], "HUMAN_REVIEW")
+        self.assertIn("ACTION_NOT_ACKNOWLEDGED", [v["event_type"] for k, v in driver.ledger.values() if k == "OpsAudit"])
+
+
 class ExceptionClearanceTests(_Store):
     """A verified action resolves the case only when the exception itself is gone."""
     def verify_with(self, exceptions):

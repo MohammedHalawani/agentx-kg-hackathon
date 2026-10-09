@@ -38,6 +38,7 @@ function Glyph({ status }: { status: string }) {
   if (status === 'RUNNING' || status === 'RETRYING') return <Loader2 size={12} className="animate-spin" aria-hidden="true" />
   if (status === 'REJECTED') return <RotateCcw size={12} aria-hidden="true" />
   if (status === 'FAILED') return <X size={12} aria-hidden="true" />
+  if (status === 'HUMAN_REVIEW' || status === 'DEGRADED') return <span aria-hidden="true" className="text-[11px] font-bold">!</span>
   return <Circle size={10} aria-hidden="true" />
 }
 
@@ -86,7 +87,7 @@ export function NowProcessingPanel({ status, running, onOpen }: {
               const s = stepState(events, stages)
               return (
                 <li key={key} className={cn('inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] transition-colors duration-300',
-                  s === 'COMPLETED' ? 'border-chart-good/40 text-foreground' : s === 'RUNNING' || s === 'RETRYING' ? 'border-primary bg-primary/10 text-primary' : s === 'REJECTED' ? 'border-chart-warning/50 text-chart-warning' : 'border-border text-muted-foreground')}>
+                  s === 'COMPLETED' ? 'border-chart-good/40 text-foreground' : s === 'RUNNING' || s === 'RETRYING' ? 'border-primary bg-primary/10 text-primary' : s === 'REJECTED' ? 'border-chart-warning/50 text-chart-warning' : s === 'HUMAN_REVIEW' || s === 'DEGRADED' ? 'border-chart-orange/50 text-chart-orange' : 'border-border text-muted-foreground')}>
                   <Glyph status={s} />{t(`ops.pipeline.short.${key}`)}
                 </li>
               )

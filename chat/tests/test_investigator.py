@@ -266,8 +266,10 @@ class GraphTests(Base):
 
     def test_reviewer_request_for_human_judgment_is_not_recorded_as_a_pass(self):
         for model_verdict in ("HUMAN_REVIEW", "ESCALATE"):
-            result, _, _ = self.run_case("different_barcode", "BARCODE_MISMATCH", "REQUEST_RESCAN", verdicts=(model_verdict,))
+            result, events, _ = self.run_case("different_barcode", "BARCODE_MISMATCH", "REQUEST_RESCAN", verdicts=(model_verdict,))
             self.assertEqual(result["review"]["verdict"], "human_review")
+            review_stage = [e for e in events if e["stage"] == "review" and e["status"] not in ("RUNNING", "RETRYING")]
+            self.assertEqual(review_stage[-1]["status"], "HUMAN_REVIEW")  # Not drawn as a completed (passed) review.
             self.assertEqual((result["authority"]["risk_class"], result["authority"]["rule_id"]), ("HUMAN_REVIEW", "AUTH-03-reviewer-human"))
 
     def test_no_rule_codes_are_given_to_the_investigator(self):

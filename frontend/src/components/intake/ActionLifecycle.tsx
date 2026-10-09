@@ -25,6 +25,8 @@ export function lifecycleStage(detail: ShipmentDetail): string | null {
   if (!execution) return detail.workflow_state === 'HUMAN_REVIEW' ? 'human_investigation' : null
   if (execution.status === 'AUTHORIZED' || execution.status === 'EXECUTING') return 'authorized'
   if (execution.status === 'ACKNOWLEDGED') return 'verification_pending'
+  if (execution.status === 'REFUSED') return 'refused'
+  if (execution.status === 'NOT_ACKNOWLEDGED') return 'not_acknowledged'
   return null
 }
 
@@ -45,7 +47,8 @@ export function ActionLifecycle({ detail, command, pending }: { detail: Shipment
     {stage && <p className="text-sm font-medium">{t(`ops.lifecycle.${stage}`)}</p>}
     {execution && <dl className="grid gap-x-3 gap-y-1 text-xs sm:grid-cols-2">
       <dt className="text-muted-foreground">{t('ops.lifecycle.action')}</dt><dd className="font-mono" dir="ltr">{execution.action_type}</dd>
-      <dt className="text-muted-foreground">{t('ops.lifecycle.authority')}</dt><dd>{t(`ops.lifecycle.by.${execution.authority === 'AUTO_POLICY' ? 'policy' : 'operator'}`)}</dd>
+      {stage !== 'refused' && <><dt className="text-muted-foreground">{t('ops.lifecycle.authority')}</dt><dd>{t(`ops.lifecycle.by.${execution.authority === 'AUTO_POLICY' ? 'policy' : 'operator'}`)}</dd></>}
+      {stage === 'refused' && execution.permission_rule && <><dt className="text-muted-foreground">{t('ops.lifecycle.refusedBy')}</dt><dd className="font-mono" dir="ltr">{execution.permission_rule}</dd></>}
       {execution.receipt_ref && <><dt className="text-muted-foreground">{t('ops.lifecycle.receipt')}</dt><dd className="break-all font-mono" dir="ltr">{execution.receipt_ref}</dd></>}
       {adapter.behaviour && <><dt className="text-muted-foreground">{t('ops.lifecycle.fieldResponse')}</dt><dd dir="auto">{adapter.behaviour}</dd></>}
       {execution.deadline_at && <><dt className="text-muted-foreground">{t('ops.lifecycle.deadline')}</dt><dd dir="ltr">{execution.deadline_at}</dd></>}

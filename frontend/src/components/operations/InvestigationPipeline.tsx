@@ -4,7 +4,7 @@ import type { InspectStage, ShipmentDetail } from '@/contracts/caseDetail'
 import { stageEvidence } from '@/lib/pipelineEvidence'
 import { pipelineSteps, type DisplayStep, type StepStatus } from '@/lib/pipelineSteps'
 
-const REACHED: StepStatus[] = ['COMPLETED', 'RUNNING', 'RETRYING', 'REJECTED', 'HUMAN_REVIEW', 'ESCALATED', 'FAILED', 'UNRECORDED', 'WAITING']
+const REACHED: StepStatus[] = ['COMPLETED', 'RUNNING', 'RETRYING', 'REJECTED', 'HUMAN_REVIEW', 'DEGRADED', 'ESCALATED', 'FAILED', 'UNRECORDED', 'WAITING']
 
 function Glyph({ status }: { status: StepStatus }) {
   const base = 'flex size-7 shrink-0 items-center justify-center rounded-full border text-[13px] font-bold transition-colors duration-200 motion-reduce:transition-none'
@@ -14,7 +14,8 @@ function Glyph({ status }: { status: StepStatus }) {
     case 'RUNNING': return <span className={`${base} border-primary bg-primary text-primary-foreground ring-2 ring-primary/25`}><LoaderCircle size={14} className="animate-spin motion-reduce:animate-none" /></span>
     case 'RETRYING': return <span className={`${base} border-chart-warning bg-chart-warning text-white ring-2 ring-chart-warning/25`}><RotateCcw size={13} strokeWidth={2.5} /></span>
     case 'REJECTED': return <span className={`${base} border-chart-warning bg-chart-warning text-white`}><X size={14} strokeWidth={3} /></span>
-    case 'HUMAN_REVIEW': return <span className={`${base} border-chart-orange bg-chart-orange text-white`} aria-hidden="true">!</span>
+    case 'HUMAN_REVIEW':
+    case 'DEGRADED': return <span className={`${base} border-chart-orange bg-chart-orange text-white`} aria-hidden="true">!</span>
     case 'ESCALATED': return <span className={`${base} border-chart-orange bg-chart-orange text-white`}><ArrowUpRight size={14} strokeWidth={2.5} /></span>
     case 'FAILED': return <span className={`${base} border-destructive bg-destructive text-white`}><X size={14} strokeWidth={3} /></span>
     case 'WAITING': return <span className={`${base} border-dashed border-muted-foreground/60 bg-card text-muted-foreground`}><Hourglass size={12} /></span>

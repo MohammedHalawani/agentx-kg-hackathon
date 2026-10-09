@@ -77,6 +77,20 @@ describe('Case lifecycle authority', () => {
     expect(screen.getByRole('button', { name: 'Approve action' }).hasAttribute('disabled')).toBe(true)
     expect(screen.getByTestId('approval-blocked').textContent).toContain('A person carries out this action')
   })
+  it('says a refused or unacknowledged execution was not dispatched or not accepted, never authorized', () => {
+    mock.data.workflow_state = 'HUMAN_REVIEW'
+    mock.data.outcome = null
+    mock.data.executions = [{ action_type: 'REQUEST_RESCAN', authority: 'AUTO_POLICY', status: 'REFUSED', permission_rule: 'AUTH-18-auto-not-decided' }]
+    const { unmount } = render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
+    expect(screen.getByText('Refused by the authority policy · nothing was dispatched')).toBeTruthy()
+    expect(screen.getByText('AUTH-18-auto-not-decided')).toBeTruthy()
+    expect(screen.queryByText('Authority policy (automatic)')).toBeNull()
+    unmount()
+    mock.data.executions = [{ action_type: 'RETURN_TO_SENDER', authority: 'OPERATOR_APPROVAL', status: 'NOT_ACKNOWLEDGED' }]
+    render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
+    expect(screen.getByText('Not acknowledged by any field system · nothing to verify, with a person')).toBeTruthy()
+    mock.data.executions = undefined
+  })
   it('shows graph and recommendation in Overview before approval controls', () => {
     mock.data.recommendation = { action_en: 'Compare bound custody evidence' }
     render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)

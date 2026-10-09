@@ -643,9 +643,19 @@ class OperationsStore:
                 current=self._get(tx,"OpsExecution",execution["entity_id"])
                 case=self._case(tx,current["case_id"])
                 deadline=(instant(when)+timedelta(hours=AUTO_OUTCOME_WINDOW_HOURS)).isoformat()
-                current.update(status="ACKNOWLEDGED",receipt_ref=f"{mode}:{execution['entity_id']}",mode=mode,executed_at=when,
-                               occurred_at=when,deadline_at=deadline,adapter_result_json=canonical(receipt))
+                acknowledged=receipt.get("acknowledged") is not False
+                current.update(status="ACKNOWLEDGED" if acknowledged else "NOT_ACKNOWLEDGED",receipt_ref=f"{mode}:{execution['entity_id']}",
+                               mode=mode,executed_at=when,occurred_at=when,deadline_at=deadline if acknowledged else None,
+                               adapter_result_json=canonical(receipt))
                 self._put(tx,"OpsExecution",current,update=True)
+                if not acknowledged:
+                    # Nothing was accepted by a field system: nothing can be verified, so a person takes the case.
+                    old=case["workflow_state"]
+                    if not case.get("is_terminal"):
+                        case.update(workflow_state="HUMAN_REVIEW",state_version=case["state_version"]+1);self._put(tx,"OpsCase",case,update=True)
+                    self._audit(tx,case,"ACTION_NOT_ACKNOWLEDGED",when,actor="SUHAIL-EXECUTION-ADAPTER",key=execution["entity_id"],old=old,
+                                result=f"{execution['action_type']} · {mode} · {receipt.get('behaviour')} Nothing to verify; routed to a person.")
+                    return execution["entity_id"]
                 if case["workflow_state"]=="ACTION_INITIATED":
                     case.update(workflow_state="AWAITING_OUTCOME",state_version=case["state_version"]+1);self._put(tx,"OpsCase",case,update=True)
                 self._audit(tx,case,"ACTION_EXECUTED",when,actor="SUHAIL-EXECUTION-ADAPTER",key=execution["entity_id"],
@@ -1047,12 +1057,17 @@ class OperationsStore:
                 allowed,rule,_=execution_permission(recommendation.get("action_type") or "REQUEST_ADDITIONAL_EVIDENCE","OPERATOR_APPROVAL",
                                                     recommendation.get("risk_class"))
                 recommendation={**recommendation,"approvable":allowed,"approval_rule":rule}
-            runs=linked("OpsRun");reviews=linked("OpsReview");outcomes=linked("OpsOutcome")
-            if runs:runs[0]["result"]=json.loads(runs[0].pop("result_json"))
+            runs=linked("OpsRun");outcomes=linked("OpsOutcome")
+            # The current investigation is the case's last run (ties on the paused clock must not pick an older one),
+            # and its review is that run's final round: an earlier run's pass never stands in for the current one.
+            last=public_value(case.get("last_run_id")) if case.get("last_run_id") else None
+            current=next((r for r in runs if r.get("entity_id")==last),None) or (None if last else (runs[0] if runs else None))
+            reviews=[r for r in linked("OpsReview") if current and r.get("run_id")==current.get("entity_id")]
+            if current:current["result"]=json.loads(current.pop("result_json"))
             if outcomes:outcomes[0]["outcome_id"]=outcomes[0]["entity_id"]
             return {"case_id":case_id,"shipment_id":case["shipment_id"],"workflow_state":case["workflow_state"],
                 "state_version":case["state_version"],"priority":case["priority"],"operational_status":case["operational_status"],
                 "as_of":case["as_of"],"recommendation_id":case.get("recommendation_id"),"last_run_id":case.get("last_run_id"),
                 "recommendation":recommendation,"review":reviews[0] if reviews else None,"outcome":outcomes[0] if outcomes else None,
-                "decisions":linked("OpsDecision"),"executions":linked("OpsExecution"),"run":runs[0] if runs else None,"synthetic":True}
+                "decisions":linked("OpsDecision"),"executions":linked("OpsExecution"),"run":current,"synthetic":True}
         return self._execute(read)

@@ -2,7 +2,7 @@ import type { InspectStage, PipelineEvent, ShipmentDetail } from '@/contracts/ca
 
 /** Compact display steps over the recorded LangGraph stages, plus the separate outcome gate. */
 export type StepKey = 'collect' | 'graph' | 'diagnose' | 'precedent' | 'recommend' | 'review' | 'route' | 'outcome'
-export type StepStatus = 'COMPLETED' | 'RUNNING' | 'QUEUED' | 'RETRYING' | 'REJECTED' | 'HUMAN_REVIEW' | 'WAITING' | 'ESCALATED' | 'SKIPPED' | 'FAILED' | 'UNRECORDED'
+export type StepStatus = 'COMPLETED' | 'RUNNING' | 'QUEUED' | 'RETRYING' | 'REJECTED' | 'HUMAN_REVIEW' | 'DEGRADED' | 'WAITING' | 'ESCALATED' | 'SKIPPED' | 'FAILED' | 'UNRECORDED'
 export interface DisplayStep { key: StepKey; stage: InspectStage; status: StepStatus; revisions: number; event?: PipelineEvent }
 
 const GRAPH_STEPS: [StepKey, InspectStage][] = [

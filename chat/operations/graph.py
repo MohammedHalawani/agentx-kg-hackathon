@@ -122,6 +122,7 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
                 raise
             merged = {**state, **update}
             status = ("REJECTED" if name == "review" and update["review"]["verdict"] == "reject" else
+                      "HUMAN_REVIEW" if name == "review" and update["review"]["verdict"] == "human_review" else
                       "DEGRADED" if len(update.get("degraded") or []) > len(state.get("degraded") or []) else "COMPLETED")
             emit(name, status, merged, output)
             return update
