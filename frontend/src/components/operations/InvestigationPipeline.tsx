@@ -81,7 +81,7 @@ function StepDetail({ detail, step, onEvidence }: { detail: ShipmentDetail; step
       </div>
     })()}
     {step.key === 'recommend' && out?.proposal && <p dir="auto">{isArabic ? out.proposal.action_ar ?? t('ops.workspace.rejectedGpsProposal') : out.proposal.action_en ?? out.proposal.action}</p>}
-    {step.key === 'review' && out?.verdict && <p dir="auto">{t(`ops.review.${out.verdict}`)} · {isArabic ? t(out.verdict === 'accept' ? 'ops.overview.reviewGuard' : 'ops.workspace.gpsGuard') : out.feedback}</p>}
+    {step.key === 'review' && out?.verdict && <p dir="auto">{t(`ops.review.${out.verdict}`)} · {isArabic ? t(out.verdict === 'accept' ? 'ops.overview.reviewGuard' : out.verdict === 'review_unavailable' ? 'ops.review.unavailableHint' : out.verdict === 'human_review' ? 'ops.review.humanHint' : 'ops.workspace.gpsGuard') : out.feedback}</p>}
     {step.key === 'route' && out?.workflow_state && <p>{t('ops.pipeline.routedTo', { state: t(`ops.states.${out.workflow_state}`) })} · {t('ops.transition.noSkipToResolved')}</p>}
     {step.key === 'route' && (out as { authority?: { risk_class: string; action_type: string } } | undefined)?.authority && (() => {
       const a = (out as { authority: { risk_class: string; action_type: string } }).authority

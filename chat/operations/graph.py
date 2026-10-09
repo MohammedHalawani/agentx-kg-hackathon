@@ -213,11 +213,17 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
             if s["proposal"] and verdict["verdict"] == "accept":
                 model_review = agents.review(inv, cited_records(inv, tools), checks["checks"], s.get("symptoms") or [])
                 if model_review["verdict"] == "UNAVAILABLE":
+                    # Failure, timeout or invalid output: recorded as an unavailable review, never as a pass.
                     degraded.append({"role": "reviewer", "error": model_review["validation_error"]})
-                    verdict = {**verdict, "model_verdict": "UNAVAILABLE", "degraded": True,
+                    verdict = {"verdict": "review_unavailable", "guard_verdict": verdict["verdict"], "model_verdict": "UNAVAILABLE",
+                               "degraded": True,
                                "feedback": "Independent model review could not be completed; automatic execution is blocked and a person must review."}
                 elif model_review["verdict"] == "REVISE":
                     verdict = {"verdict": "reject", "model_verdict": "REVISE", "feedback": model_review["feedback"] or "Reviewer requested a revision."}
+                elif model_review["verdict"] in ("HUMAN_REVIEW", "ESCALATE"):
+                    # The reviewer asked for a person to decide: not a pass either.
+                    verdict = {"verdict": "human_review", "guard_verdict": verdict["verdict"], "model_verdict": model_review["verdict"],
+                               "feedback": model_review["feedback"] or "The independent reviewer asked for a person to decide."}
                 else:
                     verdict = {**verdict, "model_verdict": model_review["verdict"], "feedback": model_review["feedback"] or verdict["feedback"]}
         trace = [*s["trace"], {"iteration": s.get("iteration", 0), "proposal": s["proposal"], "review": verdict,
@@ -237,7 +243,7 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
             authority = {"risk_class": "HUMAN_REVIEW", "reason": f"Model role unavailable ({roles}); automatic execution blocked.",
                          "action_type": (s.get("proposal") or {}).get("action_type"), "policy": "deterministic_action_authority"}
             state = {**s, "authority": authority, "result": {**s["result"], "workflow_state": "HUMAN_REVIEW"}}
-        elif s["review"]["verdict"] != "accept":
+        elif s["review"]["verdict"] not in ("accept", "human_review"):
             # Denials are policy decisions too: recorded with their rule and inputs.
             reason = ("Reviewer rejected the proposal after the bounded revision rounds." if s["proposal"]
                       else "No grounded proposal at this snapshot; evidence is needed first.")
@@ -269,7 +275,9 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
             "physical_execution": False, "outcome": None}
 
     def after_review(s):
-        if s["review"]["verdict"] == "accept": return "writeback"
+        # A pass, an unavailable review and a request for human judgment all go to the authority policy,
+        # which routes the last two to a person; only a rejection loops back for revision.
+        if s["review"]["verdict"] in ("accept", "review_unavailable", "human_review"): return "writeback"
         if s["iteration"] < MAX_REVIEW_ROUNDS and s.get("proposal"):
             return "classify" if agents and s["review"].get("model_verdict") == "REVISE" else "recommend"
         return "escalate"

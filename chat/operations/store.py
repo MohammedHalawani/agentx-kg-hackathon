@@ -57,6 +57,14 @@ SYMPTOM_STATUS = (("RECIPIENT_REPORTED_NOT_RECEIVED", "DELIVERY_DISPUTE"), ("CUS
 # Symptoms describing a condition that is still true at the clock (an observation still missing, custody
 # still unreconciled, a manifest still omitting a loaded package), as opposed to a past event that stays in
 # the record (a misread, a late scan). A case resolves only when none of these remain.
+# Arabic review summaries per stored verdict. An unavailable review or a request for human judgment is
+# never described as a pass.
+REVIEW_SUMMARY_AR = {
+    "accept": "تدعم الأدلة المقترح فقط. يلزم اعتماد المشغّل ونتيجة موثّقة مستقلة قبل الإغلاق.",
+    "reject": "رفضت مراجعة السلامة المقترح. يجب استخدام أدلة الشحنة وطلب اعتماد المشغّل؛ موقع المركبة لا يثبت تسليم الطرد.",
+    "review_unavailable": "تعذّر إكمال المراجعة المستقلة؛ أُوقف التنفيذ التلقائي ويجب أن يراجع شخص الحالة.",
+    "human_review": "طلب المراجع المستقل أن يقرر شخص؛ لا تنفيذ تلقائي.",
+}
 STANDING_SYMPTOMS = frozenset(("MILESTONE_OVERDUE", "SESSION_END_UNRECONCILED", "MANIFEST_CUSTODY_CONFLICT",
                                "CUSTODY_TRANSFER_UNCONFIRMED", "DELIVERY_PROOF_INCOMPLETE", "EVIDENCE_MISSING"))
 
@@ -700,8 +708,8 @@ class OperationsStore:
                 self._put(tx,"OpsReview",{"entity_id":review_id,"shipment_id":case["shipment_id"],"case_id":case["entity_id"],
                     "run_id":run_id,"recorded_at":when,"verdict":item["review"]["verdict"],"feedback":item["review"]["feedback"],
                     "summary_en":item["review"]["feedback"],
-                    "summary_ar":("تدعم الأدلة المقترح فقط. يلزم اعتماد المشغّل ونتيجة موثّقة مستقلة قبل الإغلاق."
-                                  if item["review"]["verdict"]=="accept" else "رفضت مراجعة السلامة المقترح. يجب استخدام أدلة الشحنة وطلب اعتماد المشغّل؛ موقع المركبة لا يثبت تسليم الطرد."),
+                    "summary_ar":REVIEW_SUMMARY_AR.get(item["review"]["verdict"],REVIEW_SUMMARY_AR["reject"]),
+                    "model_verdict":item["review"].get("model_verdict"),"degraded":bool(item["review"].get("degraded")),
                     "iteration":item["iteration"],"mode":item["mode"]})
                 self._link(tx,"OPS_REVIEWED_BY",run_id,review_id,case["shipment_id"],when)
             old=current["workflow_state"]

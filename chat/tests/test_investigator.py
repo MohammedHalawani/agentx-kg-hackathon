@@ -148,8 +148,14 @@ class LoopTests(Base):
 
     def test_reviewer_failure_is_unavailable_never_accept(self):
         def broken(system, user, default): raise ConnectionError("down")
-        review = investigator.review({"hypotheses": []}, {}, [], [], ask=broken)
-        self.assertEqual(review["verdict"], "UNAVAILABLE"); self.assertTrue(review["degraded"])
+        def slow(system, user, default): raise TimeoutError("slow")
+        def garbage(system, user, default): return {"verdict": "LOOKS_FINE", "feedback": 7}
+        def empty(system, user, default): return None
+        def not_text(system, user, default): return {"verdict": "ACCEPT", "feedback": 7}
+        def not_object(system, user, default): return ["ACCEPT"]
+        for ask in (broken, slow, garbage, empty, not_text, not_object):
+            review = investigator.review({"hypotheses": []}, {}, [], [], ask=ask)
+            self.assertEqual(review["verdict"], "UNAVAILABLE", ask.__name__); self.assertTrue(review["degraded"], ask.__name__)
 
 
 class FactCheckTests(Base):
@@ -192,6 +198,9 @@ class FakeInvestigator:
 
     def review(self, conclusion, records, checks, symptoms):
         verdict = self.verdicts.pop(0) if self.verdicts else "ACCEPT"
+        if verdict == "UNAVAILABLE":  # Same shape as investigator.review on failure, timeout or invalid output.
+            return {"verdict": "UNAVAILABLE", "feedback": "Independent model review could not be completed.", "unsupported_claims": [],
+                    "mode": "model_unavailable", "degraded": True, "validation_error": "TimeoutError"}
         return {"verdict": verdict, "feedback": "Re-check the scan device." if verdict == "REVISE" else "Supported.",
                 "unsupported_claims": [], "mode": "gpt-oss", "degraded": False, "validation_error": None}
 
@@ -244,6 +253,22 @@ class GraphTests(Base):
         self.assertEqual((result["authority"]["risk_class"], result["authority"]["closure"]), ("AUTO", "HUMAN"))
         self.assertTrue(result["authority"]["rule_id"].startswith("AUTH-"))
         self.assertIn("symptoms", result["authority"]["inputs"])
+
+    def test_reviewer_outage_is_recorded_as_unavailable_never_as_a_pass(self):
+        result, events, _ = self.run_case("different_barcode", "BARCODE_MISMATCH", "REQUEST_RESCAN", verdicts=("UNAVAILABLE",))
+        self.assertEqual(result["review"]["verdict"], "review_unavailable")
+        self.assertNotIn("accept", [item["review"]["verdict"] for item in result["trace"]])
+        self.assertEqual((result["authority"]["risk_class"], result["authority"]["rule_id"]), ("HUMAN_REVIEW", "AUTH-02-model-degraded"))
+        self.assertEqual(result["result"]["workflow_state"], "HUMAN_REVIEW")
+        review_stage = [e for e in events if e["stage"] == "review" and e["status"] not in ("RUNNING", "RETRYING")]
+        self.assertEqual(review_stage[-1]["status"], "DEGRADED")
+        self.assertEqual(review_stage[-1]["output"]["verdict"], "review_unavailable")
+
+    def test_reviewer_request_for_human_judgment_is_not_recorded_as_a_pass(self):
+        for model_verdict in ("HUMAN_REVIEW", "ESCALATE"):
+            result, _, _ = self.run_case("different_barcode", "BARCODE_MISMATCH", "REQUEST_RESCAN", verdicts=(model_verdict,))
+            self.assertEqual(result["review"]["verdict"], "human_review")
+            self.assertEqual((result["authority"]["risk_class"], result["authority"]["rule_id"]), ("HUMAN_REVIEW", "AUTH-03-reviewer-human"))
 
     def test_no_rule_codes_are_given_to_the_investigator(self):
         sid = self.shipment("different_barcode")

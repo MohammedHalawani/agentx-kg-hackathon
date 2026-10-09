@@ -131,7 +131,10 @@ def _ask(system, packet, extra, default, validate, call):
         except Exception as error:  # Timeouts, transport and provider errors: type only, never provider text.
             feedback = f"model call failed ({type(error).__name__})"
             continue
-        feedback = validate(out)
+        try:
+            feedback = validate(out) if isinstance(out, dict) else "output must be one JSON object"
+        except Exception as error:  # Malformed output is invalid output (fail closed), never a crash.
+            feedback = f"output failed validation ({type(error).__name__})"
         if not feedback:
             return out, "gpt-oss", None
     return None, "model_unavailable", feedback

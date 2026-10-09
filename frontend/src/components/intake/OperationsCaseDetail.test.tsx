@@ -59,6 +59,16 @@ describe('Case lifecycle authority', () => {
     expect(screen.getByText('A person’s verified finding: not resolved · escalated')).toBeTruthy()
     expect(screen.queryByText('Closed by a person with attached evidence (human-verified)')).toBeNull()
   })
+  it('shows an unavailable independent review as unavailable, never as a passed safety review', () => {
+    mock.data.workflow_state = 'HUMAN_REVIEW'
+    mock.data.review = { verdict: 'review_unavailable', model_verdict: 'UNAVAILABLE', degraded: true, summary_en: 'Independent model review could not be completed; automatic execution is blocked and a person must review.' }
+    render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
+    expect(screen.getByText('Independent review unavailable — routed to a person')).toBeTruthy()
+    expect(screen.getByText('Human review required — the independent review could not be completed.')).toBeTruthy()
+    expect(screen.queryByText('Safety review passed')).toBeNull()
+    expect(screen.getByTestId('review-verdict').getAttribute('data-verdict')).toBe('review_unavailable')
+    mock.data.review = undefined
+  })
   it('shows graph and recommendation in Overview before approval controls', () => {
     mock.data.recommendation = { action_en: 'Compare bound custody evidence' }
     render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)

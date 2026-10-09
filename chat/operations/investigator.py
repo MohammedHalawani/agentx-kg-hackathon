@@ -203,6 +203,8 @@ def review(conclusion, records, checks, symptoms, *, ask=None):
     def validate(out):
         if out.get("verdict") not in VERDICTS:
             return "verdict must be ACCEPT|REVISE|HUMAN_REVIEW|ESCALATE"
+        if not isinstance(out.get("feedback"), str) or not isinstance(out.get("unsupported_claims") or [], list):
+            return "feedback must be text and unsupported_claims a list"
         if BLAME.search(out.get("feedback") or "") or GPS_DELIVERY.search(out.get("feedback") or ""):
             return "feedback attributes blame or misuses GPS"
         return None

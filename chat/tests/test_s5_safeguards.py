@@ -116,6 +116,28 @@ class HumanClosureTests(_Store):
                                                    "Parcel found on shelf B4 during the depot check.", evidence, case["state_version"], "human-01")["idempotent"])
 
 
+class ReviewerOutageRecordTests(_Store):
+    def test_reviewer_outage_is_stored_and_served_as_unavailable_and_nothing_executes(self):
+        from tests import test_investigator as ti
+        store, driver = self.make()
+        fake = ti.FakeInvestigator(lambda tools: [("shipment_overview", {})], ["UNAVAILABLE"])
+        fake.cause, fake.action = "BARCODE_MISMATCH", "REQUEST_RESCAN"
+        store.agents = fake
+        result = store.process_one(manual=True)
+        self.assertTrue(result["processed"])
+        reviews = [v for k, v in driver.ledger.values() if k == "OpsReview"]
+        self.assertTrue(reviews)
+        self.assertTrue(all(r["verdict"] == "review_unavailable" and r["model_verdict"] == "UNAVAILABLE" and r["degraded"] for r in reviews))
+        self.assertNotIn("اجتازت", "".join(r["summary_ar"] for r in reviews))
+        detail = store.case_detail(result["case_id"])
+        self.assertEqual(detail["review"]["verdict"], "review_unavailable")
+        self.assertEqual(detail["workflow_state"], "HUMAN_REVIEW")
+        audit = [v["event_type"] for k, v in driver.ledger.values() if k == "OpsAudit"]
+        self.assertIn("MODEL_DEGRADED", audit)
+        self.assertNotIn("RECOMMENDATION_READY", audit)
+        self.assertFalse([v for k, v in driver.ledger.values() if k == "OpsExecution"])
+
+
 class ExceptionClearanceTests(_Store):
     """A verified action resolves the case only when the exception itself is gone."""
     def verify_with(self, exceptions):
