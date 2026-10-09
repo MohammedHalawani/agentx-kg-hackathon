@@ -16,7 +16,7 @@ def decision_state(state, decision):
         "reject": ({"AWAITING_APPROVAL", "HUMAN_REVIEW", "RECOMMENDATION_READY"}, "REJECTED"),
         "request_evidence": ({"OPEN", "AWAITING_APPROVAL", "HUMAN_REVIEW", "NEEDS_EVIDENCE", "RECOMMENDATION_READY"}, "NEEDS_EVIDENCE"),
         "escalate": ({"OPEN", "AWAITING_APPROVAL", "HUMAN_REVIEW", "NEEDS_EVIDENCE", "RECOMMENDATION_READY"}, "ESCALATED"),
-        "reopen": ({"RESOLVED", "REJECTED", "ESCALATED", "NEEDS_EVIDENCE", "HUMAN_REVIEW"}, "REOPENED"),
+        "reopen": ({"RESOLVED", "REJECTED", "ESCALATED"}, "REOPENED"),
     }
     sources, destination = allowed[decision]
     if state not in sources:

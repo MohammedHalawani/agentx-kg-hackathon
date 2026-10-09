@@ -1,4 +1,4 @@
-"""Loopback, same-origin capability for explicitly synthetic local demo controls.
+"""Loopback, same-origin capability for explicitly synthetic local operations controls.
 
 This is not production identity or an enterprise operator authorization system.
 The server chooses the actor/role; request bodies cannot promote agent recommendations
@@ -19,13 +19,13 @@ def _loopback(host):
     except ValueError:return False
 
 
-class LocalDemoAuthority:
+class LocalOperationsAuthority:
     def __init__(self):
         self._token=secrets.token_urlsafe(32)
 
     def _fence(self,request: Request):
         if not request.client or not _loopback(request.client.host) or not _loopback(request.url.hostname):
-            raise HTTPException(403,"Operations controls require a local demo connection")
+            raise HTTPException(403,"Operations controls require a local connection")
         origin=request.headers.get("origin")
         if origin:
             parsed=urlsplit(origin)
@@ -40,8 +40,8 @@ class LocalDemoAuthority:
 
     def session(self,request: Request):
         self._fence(request)
-        return {"token":self._token,"mode":"synthetic_local_demo","synthetic":True,
-                "actor_id":"DEMO-OPERATOR-LOCAL","role":"demo_operator",
+        return {"token":self._token,"mode":"synthetic_local_operations","synthetic":True,
+                "actor_id":"SYN-OPERATOR-LOCAL","role":"operator",
                 "scope":["triage_control","simulation_control","operator_decision","outcome_verification"],
                 "production_authority":False}
 
@@ -50,5 +50,5 @@ class LocalDemoAuthority:
         token=request.headers.get(TOKEN_HEADER,"")
         if len(token)>128 or not secrets.compare_digest(token,self._token):
             raise HTTPException(403,"A local operations session is required")
-        return {"actor_id":"DEMO-OPERATOR-LOCAL","role":"demo_operator",
+        return {"actor_id":"DEMO-OPERATOR-LOCAL","role":"operator",
                 "authority":"LOCAL_DEMO_OPERATOR","synthetic":True}

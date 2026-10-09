@@ -108,6 +108,34 @@ class OperationsAPITests(unittest.TestCase):
         self.reader.case_detail.side_effect=LookupError("heldout")
         self.assertEqual(self.client.get("/cases/DEMO-CASE-HIDDEN").status_code,404)
 
+    def test_reanalysis_authority_alias_and_idempotent_retry_do_not_repeat_run(self):
+        body={'expected_version':3,'idempotency_key':'reanalyze_01'}
+        route='/cases/SYN-CASE-01/reanalyze?review_scenario=true'
+        self.assertEqual(self.client.post(route,json=body).status_code,403)
+        self.store.request_reanalysis.assert_not_called()
+        self.store.request_reanalysis.side_effect=[{'idempotent':False,'workflow_state':'OPEN'},{'idempotent':True,'workflow_state':'OPEN'}]
+        self.store.process_one.return_value={'processed':True,'workflow_state':'HUMAN_REVIEW','outcome':None}
+        headers=self.headers()
+        first=self.client.post(route,json=body,headers=headers)
+        second=self.client.post(route,json=body,headers=headers)
+        self.assertEqual(first.status_code,200)
+        self.assertFalse(second.json()['analysis']['processed'])
+        self.store.process_one.assert_called_once_with(case_id='DEMO-CASE-01',review_scenario=True)
+        self.store.request_reanalysis.assert_called_with(case_id='DEMO-CASE-01',actor_id='DEMO-OPERATOR-LOCAL',**body)
+
+    def test_pipeline_topology_and_invisible_case_are_checked_before_stream(self):
+        self.assertEqual(self.client.get('/operations/pipeline').json()['engine'],'langgraph')
+        self.store.pipeline_state.side_effect=LookupError('not visible')
+        self.assertEqual(self.client.get('/cases/SYN-HIDDEN/events').status_code,404)
+        self.store.subscribe_pipeline.assert_not_called()
+
+    def test_reconnected_pipeline_never_regresses_to_queued_older_execution(self):
+        latest={'run_id':'RUN-1','state_version':7,'events':[1,2,3],'status':'REVIEWED'}
+        self.assertFalse(api.pipeline_follows(latest,{**latest,'events':[1,2]}))
+        self.assertFalse(api.pipeline_follows(latest,{**latest,'state_version':6}))
+        self.assertFalse(api.pipeline_follows(latest,{**latest,'status':'RUNNING'}))
+        self.assertTrue(api.pipeline_follows(latest,{**latest,'run_id':'RUN-2','state_version':8,'events':[1],'status':'RUNNING'}))
+
     def test_invalid_cursor_length_and_time_values_cannot_start_controls(self):
         self.assertEqual(self.client.get("/cases/queue?cursor="+"x"*2049).status_code,422)
         self.assertEqual(self.client.post("/simulation/start",json={"speed":11},headers=self.headers()).status_code,422)

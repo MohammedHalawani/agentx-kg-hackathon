@@ -16,7 +16,7 @@ def public_evidence(world, shipment_id, as_of=None):
     context = evidence_context(world, shipment_id, as_of)
     selected = {row["id"] for row in context["nodes"]}
     withheld = set(world.nodes) - selected
-    private = {"_v2_record_hash", "gold", "expected_cause", "expected_codes", "recipe", "chain_of_thought", "reasoning", "thinking"}
+    private = {"_v2_record_hash", "gold", "expected_cause", "expected_codes", "recipe", "chain_of_thought", "reasoning", "thinking", "provider_analysis", "analysis", "analysis_blocks", "reasoning_content", "scratchpad", "prompt", "system_prompt", "raw_response"}
     def clean(props):
         output = {}
         for key, value in props.items():
@@ -143,6 +143,13 @@ ARABIC = {
     "SLA_RISK": ("يمتد تقدير وقت السفر المتبقي إلى ما بعد الموعد الموعود؛ وهذا تقدير وليس تأكيدًا لوقت الوصول.", "راجع الموعد الموعود ونطاق وقت السفر المتبقي، وأكد مسارًا ممكنًا أو دورة تسليم مؤهلة."),
 }
 
+# Prefer the supported investigation cause over its downstream timing symptom.
+# This changes proposal selection only; every observation remains inspectable.
+ACTION_PRIORITY = {code:i for i,code in enumerate((
+    'DELIVERY_DISPUTE','CONFLICTING_CUSTODY','UNRECONCILED_CUSTODY','ADDRESS_CONFLICT','WRONG_GATE',
+    'BARCODE_MISMATCH','WEIGHT_MISMATCH','RECIPIENT_UNAVAILABLE','PROOF_INSUFFICIENT','CUSTODY_GAP',
+    'TRAFFIC_DELAY','MISSED_MILESTONE','JOURNEY_DELAY','SLA_RISK','INSUFFICIENT_EVIDENCE'))}
+
 
 def triage(context, config, precedents=()):
     world = evidence_world(context, config)
@@ -157,6 +164,7 @@ def triage(context, config, precedents=()):
         diagnoses.append({"code":"SLA_RISK","summary":"The remaining travel estimate extends beyond the visible service promise.",
                           "evidence_ids":[key for key in forecast["evidence_ids"] if key in known],
                           "certainty":"travel_window_estimate","requires_human_review":False})
+    diagnoses.sort(key=lambda d:(not d['requires_human_review'],ACTION_PRIORITY.get(d['code'],99)))
     for diagnosis in diagnoses:
         diagnosis["summary_en"]=diagnosis["summary"]
         diagnosis["summary_ar"]=ARABIC.get(diagnosis["code"],ARABIC["INSUFFICIENT_EVIDENCE"])[0]
@@ -210,7 +218,7 @@ def route_layers(context, config, max_points=200):
             if not incompatible and custody_corroborated(world,event,cutoff) and (holder is None or p.get("from_id")==holder):
                 accepted.add(event.id)
                 holder=p.get("to_id")
-    layers = {name: [] for name in ("expected_route", "actual_route", "vehicle_path", "custody_points", "hub_stops", "delivery_attempts")}
+    layers = {name: [] for name in ("expected_route", "actual_route", "vehicle_path", "custody_points", "hub_stops", "delivery_attempts", "traffic")}
     def point(node, source, observation=None):
         if node is None:
             return None
@@ -232,6 +240,13 @@ def route_layers(context, config, max_points=200):
             if pt:
                 pt["vehicle_id"] = p.get("vehicle_id")
                 layers["vehicle_path"].append(pt)
+        if node.kind == "TrafficObservation":
+            segment=nodes.get(p.get('segment_id'))
+            endpoint=nodes.get(segment.properties.get('from_id')) if segment else None
+            pt=point(endpoint,'traffic_context_at_route_reference',node)
+            if pt:
+                pt['delay_seconds']=p.get('delay_seconds')
+                layers['traffic'].append(pt)
         if node.kind == "CustodyEvent" and node.id in accepted:
             holder = nodes.get(p.get("to_id"))
             # Vehicle coordinate/GPS is deliberately never substituted for parcel custody.
@@ -241,6 +256,7 @@ def route_layers(context, config, max_points=200):
                 if proof and proof.kind == "DeliveryProof":
                     pt=point(proof,"corroborated_delivery_proof_location",node)
             if pt:
+                pt['package_id']=p.get('package_id')
                 layers["custody_points"].append(pt)
                 layers["actual_route"].append(pt)
                 if holder and holder.kind in ("Hub", "SortingCenter", "DeliveryDepot"):

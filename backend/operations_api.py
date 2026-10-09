@@ -1,11 +1,14 @@
-"""Real V2 operational routes; explicit local demo authority for all controls."""
+"""Real V2 operational routes; explicit local operations authority for all controls."""
 import json
 import logging
 import threading
 import time
+import asyncio
+import queue as event_queue
 from typing import Annotated,Literal
 
 from fastapi import APIRouter,HTTPException,Query,Request
+from fastapi.responses import StreamingResponse
 from pydantic import AfterValidator,BeforeValidator,BaseModel,ConfigDict,Field
 from neo4j.exceptions import Neo4jError,ServiceUnavailable
 
@@ -13,10 +16,11 @@ import config
 from core.query_runner import get_driver
 from dataset_v2.contracts import Config,SCHEMA_VERSION,digest
 from dataset_v2.load import DEFAULT_DATABASE,target_guard
-from backend.local_authority import LocalDemoAuthority
+from backend.local_authority import LocalOperationsAuthority
+from operations.identifiers import public_value,storage_value
 
 router=APIRouter()
-authority=LocalDemoAuthority()
+authority=LocalOperationsAuthority()
 log=logging.getLogger("suhail.operations")
 _runtime=None
 _runtime_lock=threading.Lock()
@@ -49,7 +53,7 @@ class OperationsRuntime:
         self.reader.store=self.store
         self.store.initialize()
         self._stop=threading.Event()
-        self.thread=threading.Thread(target=self._loop,name="suhail-local-demo",daemon=True)
+        self.thread=threading.Thread(target=self._loop,name="suhail-operations",daemon=True)
         self.thread.start()
 
     def _loop(self):
@@ -81,12 +85,12 @@ def get_runtime():
 
 
 def invoke(operation,*args,**kwargs):
-    try:return operation(*args,**kwargs)
+    try:return public_value(operation(*storage_value(args),**storage_value(kwargs)))
     except LookupError:raise HTTPException(404,"Operational case or shipment not found") from None
     except ValueError as error:
         # Stable validation errors are safe; arbitrary driver exception text is withheld.
-        if type(error).__name__=="OperationsConflict":raise HTTPException(409,str(error)) from None
-        raise HTTPException(422,str(error)) from None
+        if type(error).__name__=="OperationsConflict":raise HTTPException(409,public_value(str(error))) from None
+        raise HTTPException(422,public_value(str(error))) from None
     except (Neo4jError,ServiceUnavailable):raise HTTPException(503,"The V2 graph is unavailable") from None
     except RuntimeError:
         raise HTTPException(503,"V2 operations could not complete this request") from None
@@ -94,6 +98,50 @@ def invoke(operation,*args,**kwargs):
 
 @router.get("/operations/session")
 def local_session(request: Request):return authority.session(request)
+
+
+@router.get("/operations/pipeline")
+def pipeline_topology():
+    from operations.graph import topology
+    return topology()
+
+
+@router.get("/cases/{case_id}/events")
+async def case_events(case_id: str,request: Request):
+    store=get_runtime().store
+    invoke(store.pipeline_state,case_id)
+    async def stream():
+        previous=None
+        last_state=None
+        internal_id=storage_value(case_id)
+        listener=store.subscribe_pipeline(internal_id)
+        try:
+            state=await asyncio.to_thread(invoke,store.pipeline_state,case_id)
+            while not await request.is_disconnected():
+                payload=json.dumps(public_value(state),ensure_ascii=False,separators=(",",":"))
+                if payload!=previous and pipeline_follows(last_state,state):
+                    yield f'event: pipeline\ndata: {payload}\n\n'
+                    previous=payload
+                    last_state=state
+                try:state=await asyncio.to_thread(listener.get,True,1)
+                except event_queue.Empty:
+                    try:state=await asyncio.to_thread(invoke,store.pipeline_state,case_id)
+                    except HTTPException:
+                        yield 'event: unavailable\ndata: {"error":"pipeline_unavailable"}\n\n'
+                        return
+        finally:store.unsubscribe_pipeline(internal_id,listener)
+    return StreamingResponse(stream(),media_type="text/event-stream",headers={"Cache-Control":"no-cache","X-Accel-Buffering":"no"})
+
+
+def pipeline_follows(previous,current):
+    """A reconnect snapshot must not be followed by older queued stage events."""
+    if previous is None:return True
+    if current['state_version']<previous['state_version']:return False
+    if current.get('run_id')==previous.get('run_id'):
+        if len(current['events'])<len(previous['events']):return False
+        if (len(current['events'])==len(previous['events']) and previous['status'] in {'REVIEWED','ABORTED','FAILED'}
+            and current['status']=='RUNNING'):return False
+    return True
 
 
 @router.get("/cases/queue")
@@ -155,7 +203,7 @@ def schema_view():
     relationships=[{"id":edge.element_id,"type":edge.type,"from":edge.start_node.element_id,
                     "to":edge.end_node.element_id} for edge in row["relationships"]
                    if edge.start_node.element_id in ids and edge.end_node.element_id in ids]
-    return {"nodes":nodes,"relationships":relationships,"synthetic":True,"database":DEFAULT_DATABASE}
+    return {"nodes":nodes,"relationships":relationships,"synthetic":True,"database":"isolated_v2"}
 
 
 @router.get("/graph")
@@ -220,9 +268,9 @@ def step_worker(request: Request):
 
 
 @router.post("/cases/{case_id}/investigate")
-def investigate(case_id: str,request: Request):
+def investigate(case_id: str,request: Request, review_scenario: bool=False):
     authority.authorize(request)
-    return invoke(get_runtime().store.process_one,case_id=case_id)
+    return invoke(get_runtime().store.process_one,case_id=case_id,**({'review_scenario':True} if review_scenario else {}))
 
 
 @router.post("/simulation/start")
@@ -255,6 +303,21 @@ class DecisionBody(StrictBody):
 def decide(case_id: str,request: Request,body: DecisionBody):
     actor=authority.authorize(request)
     return invoke(get_runtime().store.decide,case_id=case_id,actor_id=actor["actor_id"],**body.model_dump())
+
+
+class ReanalysisBody(StrictBody):
+    expected_version: int=Field(ge=0)
+    idempotency_key: str=Field(min_length=8,max_length=128,pattern=r"^[A-Za-z0-9_-]+$")
+
+
+@router.post("/cases/{case_id}/reanalyze")
+def reanalyze(case_id: str,request: Request,body: ReanalysisBody,review_scenario: bool=False):
+    actor=authority.authorize(request)
+    store=get_runtime().store
+    requested=invoke(store.request_reanalysis,case_id=case_id,actor_id=actor['actor_id'],**body.model_dump())
+    result=({'processed':False,'reason':'idempotent_replay'} if requested.get('idempotent') else
+            invoke(store.process_one,case_id=case_id,**({'review_scenario':True} if review_scenario else {})))
+    return {'requested':requested,'analysis':result}
 
 
 class ObserveBody(StrictBody):

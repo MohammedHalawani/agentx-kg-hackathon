@@ -98,7 +98,7 @@ class Driver:
 class Reader:
     def __init__(self,world):self.world=world
     def evidence(self,sid,as_of):return public_evidence(self.world,sid,as_of)
-    def historical_precedents(self,sid,codes):return []
+    def historical_precedents(self,sid,codes,as_of=None):return []
 
 
 class StoreTests(unittest.TestCase):
@@ -133,6 +133,52 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(after,before)
         self.assertEqual(sum(kind=="OpsControl" for kind,_ in driver.ledger.values()),1)
 
+    def test_committed_stage_stream_matches_persistent_audit_and_releases_subscribers(self):
+        store,driver=self.make()
+        case_id=next(v['entity_id'] for kind,v in driver.ledger.values() if kind=='OpsCase')
+        listener=store.subscribe_pipeline(case_id)
+        result=store.process_one(case_id=case_id,review_scenario=True)
+        states=[]
+        while not listener.empty():states.append(listener.get_nowait())
+        events=store.pipeline_state(case_id)['events']
+        self.assertEqual([s['events'][-1]['sequence'] for s in states[:-1]],list(range(1,len(events)+1)))
+        self.assertEqual(states[0]['events'][-1]['status'],'RUNNING')
+        self.assertEqual(states[-1]['status'],'REVIEWED')
+        self.assertEqual(states[-1]['workflow_state'],result['workflow_state'])
+        audits=[v for kind,v in driver.ledger.values() if kind=='OpsAudit' and v.get('event_type')=='PIPELINE_STAGE']
+        self.assertEqual([(v['sequence'],v['stage'],v['stage_status'],v['wall_recorded_at']) for v in sorted(audits,key=lambda v:v['sequence'])],
+                         [(e['sequence'],e['stage'],e['status'],e['recorded_at']) for e in events])
+        store.unsubscribe_pipeline(case_id,listener)
+        self.assertFalse(store._subscribers)
+
+    def test_pending_reanalysis_is_explicit_versioned_and_distinct_from_reopening(self):
+        store,driver,result=self.processed()
+        case=store.case_detail(result['case_id'])
+        requested=store.request_reanalysis(case['case_id'],'DEMO-OPERATOR-LOCAL',case['state_version'],'reanalyze_01')
+        self.assertEqual(requested['workflow_state'],'OPEN')
+        self.assertTrue(store.request_reanalysis(case['case_id'],'DEMO-OPERATOR-LOCAL',case['state_version'],'reanalyze_01')['idempotent'])
+        self.assertTrue(store.process_one(case_id=case['case_id'])['processed'])
+        self.assertEqual(sum(k=='OpsRun' for k,_ in driver.ledger.values()),2)
+        latest=store.case_detail(case['case_id'])
+        with self.assertRaises(OperationsConflict):store.decide(case['case_id'],'reopen','DEMO-OPERATOR-LOCAL',latest['state_version'],'reopen_active')
+        with self.assertRaises(OperationsConflict):store.request_reanalysis(case['case_id'],'DEMO-OPERATOR-LOCAL',case['state_version'],'stale_analysis')
+        approved=store.decide(case['case_id'],'approve','DEMO-OPERATOR-LOCAL',latest['state_version'],'approve_pending')
+        with self.assertRaises(OperationsConflict):store.request_reanalysis(case['case_id'],'DEMO-OPERATOR-LOCAL',approved['state_version'],'during_outcome')
+
+    def test_human_review_does_not_block_automatic_next_case(self):
+        store,driver,first=self.processed()
+        driver.ledger[first['case_id']][1]['workflow_state']='HUMAN_REVIEW'
+        store.control('simulator','start',speed=60)
+        for _ in range(12):store.tick(seconds=86400)
+        store.control('simulator','pause')
+        store.control('worker','start')
+        second=store.process_one()
+        self.assertTrue(second['processed'])
+        self.assertNotEqual(second['case_id'],first['case_id'])
+        self.assertEqual(store.case_detail(first['case_id'])['workflow_state'],'HUMAN_REVIEW')
+        self.assertEqual(store.status()['worker']['state'],'running')
+        store.control('worker','pause')
+
     def test_sequential_claim_rejects_parallel_processing_and_stale_snapshot_requeues(self):
         store,driver=self.make();original=store.reader.evidence; nested=[]
         def changing_evidence(sid,as_of):
@@ -148,7 +194,9 @@ class StoreTests(unittest.TestCase):
         self.assertFalse(nested[0]["processed"])
         self.assertFalse(result["processed"]);self.assertEqual(result["reason"],"snapshot_changed")
         self.assertIsNone(store.status()["worker"]["active_case_id"])
-        self.assertEqual(sum(kind=="OpsRun" for kind,_ in driver.ledger.values()),0)
+        # A superseded snapshot keeps its real investigation trace, but records
+        # no accepted writeback and releases the case for a new claim.
+        self.assertEqual([p['status'] for kind,p in driver.ledger.values() if kind=='OpsRun'],['ABORTED'])
         store.reader.evidence=original
         self.assertTrue(store.process_one(case_id=result["case_id"])["processed"])
     def test_decision_idempotence_stale_version_and_approval_unresolved(self):

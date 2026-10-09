@@ -38,6 +38,7 @@ AUDIT_BASE = """
 MATCH (a:OpsAudit {dataset_id:$dataset_id,split:'development'})
 MATCH (s:V2Entity:Shipment {entity_id:a.shipment_id,dataset_id:$dataset_id,split:'development'})
 WHERE datetime(a.recorded_at) <= $snapshot AND datetime(a.occurred_at) <= $snapshot
+  AND coalesce(datetime(a.wall_recorded_at),a.occurred_at) <= $execution_snapshot
   AND ($shipment_id IS NULL OR a.shipment_id=$shipment_id)
   AND ($case_id IS NULL OR a.case_id=$case_id)
   AND ($event_type IS NULL OR a.event_type=$event_type)
@@ -46,7 +47,7 @@ WHERE datetime(a.recorded_at) <= $snapshot AND datetime(a.occurred_at) <= $snaps
   AND ($workflow_state IS NULL OR a.to_state=$workflow_state)
   AND ($from_at IS NULL OR datetime(a.occurred_at) >= $from_at) AND ($to_at IS NULL OR datetime(a.occurred_at) <= $to_at)
   AND ($search IS NULL OR toLower(a.entity_id + ' ' + a.shipment_id + ' ' + coalesce(a.case_id,'') + ' ' + coalesce(a.actor_id,'') + ' ' + coalesce(a.model,'')) CONTAINS $search)
-WITH a,s,a.occurred_at AS sort_time,a.entity_id AS sort_id
+WITH a,s,coalesce(datetime(a.wall_recorded_at),a.occurred_at) AS sort_time,a.entity_id AS sort_id
 """
 EXPLORE_BASE = """
 MATCH (s:V2Entity:Shipment {dataset_id:$dataset_id,split:'development'})
@@ -90,9 +91,9 @@ QUEUE_PROJECTION = """RETURN sort_time,sort_id,{case_id:c.entity_id,shipment_id:
  city:c.city,category:head(c.cause_codes),cause_codes:coalesce(c.cause_codes,[]),priority:c.priority,
  workflow_state:c.workflow_state,operational_status:c.operational_status,opened_at:c.opened_at,
  as_of:coalesce(c.as_of,s.as_of),state_version:c.state_version,synthetic:true} AS item"""
-AUDIT_PROJECTION = """RETURN sort_time,sort_id,{id:a.entity_id,timestamp:a.occurred_at,shipment_id:a.shipment_id,
+AUDIT_PROJECTION = """RETURN sort_time,sort_id,{id:a.entity_id,timestamp:coalesce(a.wall_recorded_at,a.occurred_at),scenario_time:a.occurred_at,shipment_id:a.shipment_id,
  case_id:a.case_id,event_type:a.event_type,actor:a.actor_id,decision:a.decision,result:a.result,
- from_state:a.from_state,to_state:a.to_state,model:a.model,synthetic:true} AS item"""
+ from_state:a.from_state,to_state:a.to_state,model:a.model,stage:a.stage,stage_status:a.stage_status,sequence:a.sequence,synthetic:true} AS item"""
 EXPLORE_PROJECTION = """
 OPTIONAL MATCH (av:V2Entity:AddressVersion {dataset_id:$dataset_id,holdout_group:s.entity_id})
 WHERE av.recorded_at <= view_cutoff AND av.valid_from <= view_cutoff
@@ -224,7 +225,7 @@ class OperationsReader:
         if not isinstance(database, str) or not re.fullmatch(r"shipments-v2-demo(?:-[a-z0-9-]+)?", database):
             raise ValueError("Operations requires an explicit isolated V2 target")
         if not isinstance(dataset_id, str) or not dataset_id.startswith("DEMO-"):
-            raise ValueError("Operations requires a DEMO dataset")
+            raise ValueError("Operations requires the audited synthetic storage namespace")
         self.driver, self.database, self.dataset_id = driver, database, dataset_id
         self.config = config or Config(dataset_id=dataset_id)
         if self.config.dataset_id != dataset_id:
@@ -236,7 +237,7 @@ class OperationsReader:
         # No injectable query fragments or write-capable driver calls in this module.
         if re.search(r"\b(CREATE|MERGE|DELETE|SET|REMOVE|DROP|LOAD|CALL)\b", query, re.I):
             raise ValueError("Read model rejected a non-read query")
-        params={key:instant(value) if key in {"snapshot","cutoff","from_at","to_at","after_time"} and value is not None else value
+        params={key:instant(value) if key in {"snapshot","cutoff","from_at","to_at","after_time","execution_snapshot"} and value is not None else value
                 for key,value in params.items()}
         with self.driver.session(database=self.database, default_access_mode="READ") as session:
             return session.execute_read(lambda tx: [normalize_values(dict(row)) for row in tx.run(query, dataset_id=self.dataset_id, **params)])
@@ -276,15 +277,21 @@ class OperationsReader:
         instant(snapshot)
         if instant(snapshot) > instant(self.clock()):
             raise ValueError("Cursor is ahead of the logical clock")
+        execution_snapshot=None
+        if route=='audit':
+            execution_snapshot=(decoded.get('sort_snapshot',decoded['snapshot']) if decoded else datetime.now(timezone.utc).isoformat())
+            if instant(execution_snapshot)>datetime.now(timezone.utc):raise ValueError('Cursor is ahead of execution time')
+        elif decoded and decoded['v']!=1:raise ValueError('Execution cursor is only supported by Audit')
         params = {**filters, "snapshot": snapshot, "after_time": decoded["timestamp"] if decoded else None,
                   "after_id": decoded["id"] if decoded else None, "fetch_limit": limit + 1}
+        if execution_snapshot:params['execution_snapshot']=execution_snapshot
         count = self._run(base + "RETURN count(*) AS total", **params)
         rows = self._run(base + KEYSET + projection + " ORDER BY sort_time ASC,sort_id ASC LIMIT $fetch_limit", **params)
         selected = rows[:limit]
-        next_cursor = encode_cursor(binding, selected[-1]["sort_time"], selected[-1]["sort_id"], snapshot) if len(rows) > limit else None
+        next_cursor = encode_cursor(binding, selected[-1]["sort_time"], selected[-1]["sort_id"], snapshot,execution_snapshot) if len(rows) > limit else None
         return {"items": [row["item"] for row in selected], "filtered_total": count[0]["total"] if count else 0,
                 "next_cursor": next_cursor, "previous_cursor": None,
-                "metadata": {"as_of": snapshot, "split": "development", "synthetic": True, "limit": limit,
+                "metadata": {"as_of": snapshot, **({'execution_as_of':execution_snapshot} if execution_snapshot else {}), "split": "development", "synthetic": True, "limit": limit,
                              "filters": filters, **(metadata or {})}}
 
     def queue(self, *, cursor=None, limit=25, **filters):
@@ -332,7 +339,7 @@ class OperationsReader:
             return {**row,"verified_success_rate":row.get("succeeded",0)/denominator if denominator else None,
                     "denominator":"verified non-invalidated observed outcomes only"}
         return {"as_of":snapshot,"synthetic":True,"development":{"case_counts":{r["state"]:r["count"] for r in states},**metrics(counts)},
-                "history":metrics(history),"limitations":["Synthetic fixture outcomes are not measured model performance.","Healthy shipments without outcome records are excluded from outcome-rate denominators."]}
+                "history":metrics(history),"limitations":["Synthetic outcomes are not measured model performance.","Healthy shipments without outcome records are excluded from outcome-rate denominators."]}
 
     def evidence(self, shipment_id, as_of=None):
         if not isinstance(shipment_id, str) or not shipment_id.startswith("DEMO-") or len(shipment_id) > 160:
@@ -405,4 +412,11 @@ class OperationsReader:
                 if key in ledger:
                     detail[key]=ledger[key]
             detail["investigated_at"]=(ledger.get("run") or {}).get("recorded_at")
+        from operations.graph import topology
+        saved=((detail.get("run") or {}).get("result") or {})
+        detail["pipeline"]={"topology":topology(),"events":saved.get("pipeline_events",[]),
+                            "source":"recorded_stage_events" if saved.get("pipeline_events") else "earlier_run",
+                            "status":(detail.get("run") or {}).get("status","QUEUED")}
+        if self.store is not None and hasattr(self.store,'case_graph'):
+            detail['ledger_graph']=self.store.case_graph(case_id,[n['id'] for n in detail['evidence']['nodes']])
         return detail

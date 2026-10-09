@@ -1,8 +1,10 @@
 """Mutable development ledger in the verified local shadow; never writes V2Entity."""
 from dataclasses import asdict
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 import json
 import math
+import queue
+import threading
 
 from dataset_v2.contracts import Config, canonical, digest, instant, UTC_FIELDS
 from dataset_v2.load import target_guard
@@ -28,10 +30,12 @@ class OperationsStore:
     def __init__(self, driver, database, dataset_id, config=None, reader=None, *, uri="bolt://localhost:7687", protected=()):
         target_guard(uri, database, protected)
         if database != "shipments-v2-demo" or not str(dataset_id).startswith("DEMO-"):
-            raise OperationsConflict("Operations requires the fixed local DEMO shadow")
+            raise OperationsConflict("Operations requires the fixed audited local shadow")
         self.driver, self.database, self.dataset_id = driver, database, dataset_id
         self.config = config or Config(dataset_id=dataset_id)
         self.reader = reader
+        self._subscribers={}
+        self._subscribers_lock=threading.RLock()
 
     def _execute(self, callback, *, write=False):
         with self.driver.session(database=self.database, default_access_mode="WRITE" if write else "READ") as session:
@@ -107,7 +111,7 @@ class OperationsStore:
     def _audit(self, tx, case, event_type, when, *, result="", actor="DEMO-RULE-WORKER", decision=None, old=None, key=None):
         audit_id = identity("audit", case["entity_id"], event_type, case["state_version"], key)
         self._put(tx, "OpsAudit", {"entity_id": audit_id, "shipment_id": case["shipment_id"], "case_id": case["entity_id"],
-            "event_type": event_type, "occurred_at": when, "recorded_at": when, "actor_id": actor, "decision": decision,
+            "event_type": event_type, "occurred_at": when, "recorded_at": when, "wall_recorded_at":datetime.now(timezone.utc).isoformat(), "actor_id": actor, "decision": decision,
             "result": result[:1000], "from_state": old, "to_state": case["workflow_state"]})
         self._link(tx, "OPS_HAS_AUDIT", case["entity_id"], audit_id, case["shipment_id"], when)
 
@@ -190,7 +194,7 @@ class OperationsStore:
     def control(self, component, action, speed=None, actor_id="DEMO-OPERATOR-LOCAL", replay_mode=None):
         require_actor(actor_id)
         if component not in {"worker", "simulator"} or action not in {"start", "pause", "step"}:
-            raise OperationsConflict("Invalid demo control")
+            raise OperationsConflict("Invalid operations control")
         if speed is not None and (type(speed) is not int or speed not in SPEEDS):
             raise OperationsConflict("Simulation speed must be 1,10 or60")
         if replay_mode is not None and (component!="simulator" or replay_mode not in {"timeline","compressed"}):
@@ -277,7 +281,7 @@ class OperationsStore:
         result["status"]=self.status()
         return result
 
-    def process_one(self, case_id=None, *, manual=False):
+    def process_one(self, case_id=None, *, manual=False, review_scenario=False):
         def claim(tx):
             control=self._control(tx,lock=True)
             if control.get("worker_claim") or (control["worker_state"]!="running" and not manual and case_id is None):return None
@@ -287,7 +291,8 @@ class OperationsStore:
                 dataset=self.dataset_id,clock=instant(control["as_of"]),id=case_id))
             if not rows:return None
             case=public_value(rows[0]["props"]); token=identity("claim",case["entity_id"],case["state_version"])
-            case.update(workflow_state="INVESTIGATING",state_version=case["state_version"]+1,claim_id=token,claim_at=control["as_of"])
+            case.update(workflow_state="INVESTIGATING",state_version=case["state_version"]+1,claim_id=token,claim_at=control["as_of"],as_of=control['as_of'],
+                        last_run_id=identity("run",case["entity_id"],token))
             control.update(worker_claim=case["entity_id"],claim_at=control["as_of"])
             self._put(tx,"OpsCase",case,update=True);self._put(tx,"OpsControl",control,update=True)
             self._audit(tx,case,"CASE_CLAIMED",case["as_of"])
@@ -295,18 +300,8 @@ class OperationsStore:
         case=self._execute(claim,write=True)
         if not case:return {"processed":False,"outcome":None}
         self._reader()
-        try:
-            context=self.reader.evidence(case["shipment_id"],case["as_of"])
-            from operations.reasoning import triage
-            baseline=triage(context,self.config)
-            precedents=self.reader.historical_precedents(case["shipment_id"],baseline["assessment"]["supported_codes"])
-            # One explicit reject/revise fixture per ledger, selected by ordinal before any provider call.
-            fixture=self.status()["worker"]["processed_count"]==0
-            analysis=analyze(context,self.config,precedents,afl_fixture=fixture)
-        except Exception:
-            self.control("worker","pause")
-            raise
-        def finish(tx):
+        fixture=review_scenario or self.status()["worker"]["processed_count"]==0
+        def finish(tx,analysis):
             control=self._control(tx,lock=True);current=self._case(tx,case["entity_id"])
             if current.get("claim_id")!=case["claim_id"] or current["workflow_state"]!="INVESTIGATING":
                 raise OperationsConflict("Worker claim was released or superseded")
@@ -320,7 +315,7 @@ class OperationsStore:
             when=control["as_of"];run_id=identity("run",current["entity_id"],case["claim_id"])
             self._put(tx,"OpsRun",{"entity_id":run_id,"shipment_id":case["shipment_id"],"case_id":case["entity_id"],
                 "recorded_at":when,"mode":analysis["mode"],"result_json":canonical(analysis),"iteration":len(analysis["trace"]),
-                "status":"REVIEWED","context_hash":analysis["context_hash"]})
+                "status":"RUNNING","context_hash":analysis["context_hash"]},update=True)
             self._link(tx,"OPS_HAS_RUN",case["entity_id"],run_id,case["shipment_id"],when)
             recommendation_id=None
             if analysis["proposal"]:
@@ -349,14 +344,110 @@ class OperationsStore:
                 last_run_id=run_id,recommendation_id=recommendation_id,claim_id=None,claim_at=None,
                 cause_codes=analysis["result"]["operational_labels"],operational_status=analysis["result"]["operational_status"])
             self._put(tx,"OpsCase",current,update=True)
-            for event in ("ANALYSIS_STARTED","EVIDENCE_RETRIEVED","CLASSIFICATION","RECOMMENDATION","REVIEW_VERDICT"):
-                self._audit(tx,current,event,when,result="Deterministic evidence-only triage; outcome unconfirmed.",old=old)
             if analysis["afl"]["fixture"]:self._audit(tx,current,"AFL_RETRY",when,result="Explicit deterministic hard rejection carried into revised investigation proposal.")
             control.update(worker_claim=None,claim_at=None,processed_count=control["processed_count"]+1)
             self._put(tx,"OpsControl",control,update=True)
             return {"processed":True,"case_id":current["entity_id"],"workflow_state":current["workflow_state"],
                     "state_version":current["state_version"],"run_id":run_id,"mode":analysis["mode"],"afl":analysis["afl"],"outcome":None}
-        return self._execute(finish,write=True)
+        from operations.graph import investigate
+        try:
+            analysis,result=investigate(case["shipment_id"],case["as_of"],self.config,self.reader.evidence,
+                lambda sid,codes:self.reader.historical_precedents(sid,codes,as_of=case['as_of']),
+                commit=lambda a:self._execute(lambda tx:finish(tx,a),write=True),
+                on_event=lambda event,events:self._record_stage(case,event,events),afl_scenario=fixture)
+            analysis["writeback"]=result
+            self._save_run_trace(case,analysis)
+            return result
+        except Exception:
+            self.control("worker","pause")
+            raise
+
+    def _record_stage(self,claimed,event,events):
+        def record(tx):
+            self._control(tx,lock=True)
+            case=self._case(tx,claimed["entity_id"])
+            run_id=claimed["last_run_id"]
+            if case.get("last_run_id")!=run_id:raise OperationsConflict("Investigation was superseded")
+            current=self._get(tx,"OpsRun",run_id)
+            trace=json.loads(current["result_json"]) if current else {}
+            trace["pipeline_events"]=events
+            self._put(tx,"OpsRun",{"entity_id":run_id,"shipment_id":case["shipment_id"],"case_id":case["entity_id"],
+                "recorded_at":claimed["as_of"],"mode":"deterministic_evidence_rules","result_json":canonical(trace),
+                "iteration":event["iteration"],"status":"FAILED" if event["status"]=="FAILED" else "RUNNING"},update=True)
+            self._link(tx,"OPS_HAS_RUN",case["entity_id"],run_id,case["shipment_id"],claimed["as_of"])
+            audit_id=run_id.replace("-RUN-","-STAGE-")+f'-{event["sequence"]:04d}'
+            self._put(tx,"OpsAudit",{"entity_id":audit_id,"shipment_id":case["shipment_id"],"case_id":case["entity_id"],
+                "run_id":run_id,"event_type":"PIPELINE_STAGE","stage":event["stage"],"stage_status":event["status"],
+                "sequence":event["sequence"],"wall_recorded_at":event["recorded_at"],
+                "occurred_at":claimed["as_of"],"recorded_at":claimed["as_of"],"actor_id":"DEMO-RULE-WORKER",
+                "to_state":case["workflow_state"],"result":event["stage"]+": "+event["status"]})
+            self._link(tx,"OPS_HAS_AUDIT",case["entity_id"],audit_id,case["shipment_id"],claimed["as_of"])
+            return {'run_id':run_id,'events':events,'workflow_state':case['workflow_state'],
+                    'state_version':case['state_version'],'status':'FAILED' if event['status']=='FAILED' else 'RUNNING'}
+        state=self._execute(record,write=True)
+        self._publish_pipeline(claimed['entity_id'],state)
+
+    def _save_run_trace(self,case,analysis):
+        def save(tx):
+            self._control(tx,lock=True)
+            run=self._get(tx,"OpsRun",case["last_run_id"])
+            run.update(result_json=canonical(analysis),status="REVIEWED" if analysis['writeback'].get('processed') else "ABORTED")
+            self._put(tx,"OpsRun",run,update=True)
+        self._execute(save,write=True)
+        with self._subscribers_lock:
+            subscribed=bool(self._subscribers.get(case['entity_id']))
+        if subscribed:self._publish_pipeline(case['entity_id'],self.pipeline_state(case['entity_id']))
+
+    def subscribe_pipeline(self,case_id):
+        listener=queue.Queue(maxsize=64)
+        with self._subscribers_lock:self._subscribers.setdefault(case_id,[]).append(listener)
+        return listener
+
+    def unsubscribe_pipeline(self,case_id,listener):
+        with self._subscribers_lock:
+            listeners=self._subscribers.get(case_id,[])
+            if listener in listeners:listeners.remove(listener)
+            if not listeners:self._subscribers.pop(case_id,None)
+
+    def _publish_pipeline(self,case_id,state):
+        with self._subscribers_lock:
+            for listener in self._subscribers.get(case_id,[]):
+                try:listener.put_nowait(state)
+                except queue.Full:
+                    try:listener.get_nowait()
+                    except queue.Empty:pass
+                    try:listener.put_nowait(state)
+                    except queue.Full:pass
+
+    def pipeline_state(self,case_id):
+        def read(tx):
+            case=self._case(tx,case_id)
+            run=self._get(tx,"OpsRun",case.get("last_run_id",""))
+            return {"workflow_state":case["workflow_state"],"state_version":case["state_version"],
+                    "run_id":case.get("last_run_id"),"status":run["status"] if run else "QUEUED",
+                    "events":json.loads(run["result_json"]).get("pipeline_events",[]) if run else []}
+        return self._execute(read)
+
+    def case_graph(self,case_id,evidence_ids):
+        def read(tx):
+            case=self._case(tx,case_id)
+            kinds=['OpsCase','OpsRun','OpsRecommendation','OpsReview','OpsDecision','OpsExecution','OpsOutcome']
+            rows=list(tx.run("MATCH (n:OpsEntity {dataset_id:$dataset,shipment_id:$sid}) "
+                "WHERE any(k IN labels(n) WHERE k IN $kinds) RETURN properties(n) AS props,labels(n) AS labels LIMIT 100",
+                dataset=self.dataset_id,sid=case['shipment_id'],kinds=kinds))
+            nodes=[]
+            for row in rows:
+                props=public_value(row['props'])
+                props={k:v for k,v in props.items() if k in {'entity_id','shipment_id','case_id','recorded_at','occurred_at','status',
+                    'workflow_state','verification_status','success','invalidated','action_code','action','action_en','action_ar','decision','verdict','mode','iteration'}}
+                nodes.append({'id':row['props']['entity_id'],'kind':next(k for k in row['labels'] if k in kinds),'properties':props})
+            ids=[n['id'] for n in nodes]
+            edges=[{'id':r['props']['edge_id'],'kind':r['kind'],'start':r['start'],'end':r['end'],'properties':{}}
+                for r in tx.run("MATCH (a:OpsEntity {dataset_id:$dataset})-[r]->(b) "
+                    "WHERE a.entity_id IN $ids AND b.entity_id IN $visible RETURN properties(r) AS props,type(r) AS kind,a.entity_id AS start,b.entity_id AS end LIMIT 500",
+                    dataset=self.dataset_id,ids=ids,visible=ids+evidence_ids)]
+            return {'nodes':nodes,'edges':edges}
+        return self._execute(read)
 
     def _command(self, tx, case, command_type, key, payload):
         if not isinstance(key,str) or not 1<=len(key)<=128:raise OperationsConflict("Idempotency key required")
@@ -371,6 +462,27 @@ class OperationsStore:
     def _save_command(self,tx,case,identifier,request_hash,kind,key,result,when):
         self._put(tx,"OpsCommand",{"entity_id":identifier,"shipment_id":case["shipment_id"],"case_id":case["entity_id"],
             "recorded_at":when,"command_type":kind,"idempotency_key":key,"request_hash":request_hash,"result_json":canonical(result)})
+
+    def request_reanalysis(self,case_id,actor_id,expected_version,idempotency_key):
+        """Explicit, versioned re-investigation of an open decision; never reopen it."""
+        require_actor(actor_id)
+        def request(tx):
+            control=self._control(tx,lock=True);case=self._case(tx,case_id)
+            payload={"actor_id":actor_id,"expected_version":expected_version}
+            command,request_hash,replay=self._command(tx,case,"reanalyze",idempotency_key,payload)
+            if replay:return replay
+            require_version(case,expected_version)
+            if case['workflow_state'] not in {'HUMAN_REVIEW','AWAITING_APPROVAL','RECOMMENDATION_READY','NEEDS_EVIDENCE'}:
+                raise OperationsConflict('Re-analysis requires an eligible pending decision or evidence request')
+            old=case['workflow_state'];when=control['as_of']
+            case.update(workflow_state='OPEN',state_version=case['state_version']+1,recommendation_id=None)
+            self._put(tx,'OpsCase',case,update=True)
+            self._audit(tx,case,'REANALYSIS_REQUESTED',when,actor=actor_id,old=old,
+                        result='Explicit re-analysis requested; previous investigation remains recorded.')
+            result={'case_id':case_id,'workflow_state':'OPEN','state_version':case['state_version'],'idempotent':False}
+            self._save_command(tx,case,command,request_hash,'reanalyze',idempotency_key,result,when)
+            return result
+        return self._execute(request,write=True)
 
     def decide(self,case_id,decision,actor_id,expected_version,idempotency_key):
         require_actor(actor_id)
@@ -390,14 +502,14 @@ class OperationsStore:
             if decision=="approve":
                 execution_id=identity("execution",decision_id)
                 self._put(tx,"OpsExecution",{"entity_id":execution_id,"shipment_id":case["shipment_id"],"case_id":case_id,
-                    "decision_id":decision_id,"action_code":recommendation["action_code"],"receipt_ref":"synthetic-demo-receipt:"+execution_id,
-                    "status":"ACKNOWLEDGED","mode":"local_demo_no_physical_execution","recorded_at":when,"occurred_at":when})
+                    "decision_id":decision_id,"action_code":recommendation["action_code"],"receipt_ref":"synthetic-receipt:"+execution_id,
+                    "status":"ACKNOWLEDGED","mode":"local_synthetic_no_physical_execution","recorded_at":when,"occurred_at":when})
                 self._link(tx,"OPS_INITIATES",decision_id,execution_id,case["shipment_id"],when)
             if execution_id:
                 case.update(workflow_state="ACTION_INITIATED",state_version=case["state_version"]+1)
                 self._put(tx,"OpsCase",case,update=True)
                 self._audit(tx,case,"ACTION_INITIATED",when,actor=actor_id,old=old,
-                            result="Synthetic demo receipt; no external logistics action executed.")
+                            result="Synthetic receipt; no external logistics action executed.")
             case.update(workflow_state=destination,state_version=case["state_version"]+1)
             self._put(tx,"OpsCase",case,update=True)
             self._audit(tx,case,"OPERATOR_DECISION",when,decision=decision,actor=actor_id,old=old)

@@ -39,6 +39,16 @@ def main():
             assert all(p["source"]=="vehicle_telemetry_only" for p in layers["vehicle_path"])
             precedents=detail["reasoning"]["precedents"]
             assert len(precedents)<=5 and all(type(p["success"]) is bool for p in precedents)
+            recommendations=detail["reasoning"]["recommendations"]
+            diagnoses=detail["reasoning"]["diagnoses"]
+            # A supported cause must precede its timing symptom in the proposal.
+            # These use the imported evidence, not administrative gold labels.
+            codes={d["code"] for d in diagnoses}
+            if not any(d["requires_human_review"] for d in diagnoses):
+                for cause in ("ADDRESS_CONFLICT","UNRECONCILED_CUSTODY","TRAFFIC_DELAY"):
+                    if cause in codes and "MISSED_MILESTONE" in codes:
+                        ordered=[r["code"] for r in recommendations]
+                        assert ordered.index(cause)<ordered.index("MISSED_MILESTONE")
             report["samples"].append({"recipe":recipe,"shipment_id":sid,"as_of":evidence["as_of"],
                 "nodes":len(evidence["nodes"]),"edges":len(evidence["edges"]),
                 "codes":detail["reasoning"]["assessment"]["supported_codes"],

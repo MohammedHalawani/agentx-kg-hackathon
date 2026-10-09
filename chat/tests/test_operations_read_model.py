@@ -4,7 +4,7 @@ import unittest
 
 from dataset_v2.contracts import Config
 from dataset_v2.contracts import instant
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from neo4j.time import DateTime
 from operations.pagination import decode_cursor, encode_cursor, fingerprint
 from operations.read_model import OperationsReader, ReadModelUnavailable, PRECEDENTS, OWN_NODES, SHARED_NODES, EDGES, normalize_values, SERVICE_CHOICES
@@ -92,6 +92,47 @@ class PaginationTests(unittest.TestCase):
         self.assertEqual(rows,[{"nested":{"at":"2026-09-01T00:00:00+00:00","list":["2026-09-01T00:00:00+00:00"]}}])
         self.assertIsInstance(driver.calls[0][1]["snapshot"],datetime)
         with self.assertRaises(ReadModelUnavailable):normalize_values(datetime(2026,9,1))
+
+    def test_audit_freezes_source_and_execution_clocks_across_pages(self):
+        source="2026-09-11T14:01:00+00:00"
+        wall=(datetime.now(timezone.utc)-timedelta(days=1)).isoformat()
+        dataset=[{"sort_time":wall,"sort_id":f"DEMO-AUDIT-{i:03}","scenario_time":source,"item":{"id":i}} for i in range(55)]
+        def handler(query,p):
+            if "execution_snapshot" not in p:return []
+            visible=[r for r in dataset if instant(r["sort_time"])<=p["execution_snapshot"] and instant(r["scenario_time"])<=p["snapshot"]]
+            if "count(*) AS total" in query:return [{"total":len(visible)}]
+            rows=[r for r in visible if p["after_time"] is None or (instant(r["sort_time"]),r["sort_id"])>(p["after_time"],p["after_id"])]
+            return sorted(rows,key=lambda r:(r["sort_time"],r["sort_id"]))[:p["fetch_limit"]]
+        reader,driver=make_reader(handler,clock=source)
+        first=reader.audit()
+        self.assertEqual(decode_cursor(first["next_cursor"],fingerprint("audit",reader.dataset_id,first["metadata"]["filters"],25))["v"],2)
+        cutoff=first["metadata"]["execution_as_of"]
+        dataset.append({"sort_time":(instant(cutoff)+timedelta(seconds=1)).isoformat(),"sort_id":"DEMO-LATE","scenario_time":source,"item":{"id":99}})
+        dataset.append({"sort_time":wall,"sort_id":"DEMO-FUTURE-SOURCE","scenario_time":"2026-09-12T00:00:00+00:00","item":{"id":100}})
+        second=reader.audit(cursor=first["next_cursor"])
+        last=reader.audit(cursor=second["next_cursor"])
+        self.assertEqual([r["id"] for page in (first,second,last) for r in page["items"]],list(range(55)))
+        self.assertIsNone(last["next_cursor"])
+        for page in (first,second,last):
+            self.assertEqual(page["filtered_total"],55)
+            self.assertEqual(page["metadata"]["as_of"],source)
+            self.assertEqual(page["metadata"]["execution_as_of"],cutoff)
+        self.assertTrue(all(isinstance(p["execution_snapshot"],datetime) and "<= $execution_snapshot" in q for q,p in driver.calls if "execution_snapshot" in p))
+
+    def test_execution_cursor_cannot_bypass_time_or_route_boundaries(self):
+        reader,_=make_reader(lambda q,p:[],clock="2026-09-11T00:00:00+00:00")
+        audit_filters=reader._filters({},("shipment_id","case_id","event_type","actor","model","workflow_state","from_at","to_at","search"))
+        binding=fingerprint("audit",reader.dataset_id,audit_filters,25)
+        future=encode_cursor(binding,"2026-09-01T00:00:00+00:00","DEMO-A","2026-09-10T00:00:00+00:00","2999-01-01T00:00:00+00:00")
+        with self.assertRaisesRegex(ValueError,"ahead of execution time"):reader.audit(cursor=future)
+        future_source=encode_cursor(binding,"2026-09-01T00:00:00+00:00","DEMO-A","2026-09-12T00:00:00+00:00",datetime.now(timezone.utc).isoformat())
+        with self.assertRaisesRegex(ValueError,"ahead of the logical clock"):reader.audit(cursor=future_source)
+        queue_filters=reader._filters({},("workflow_state","operational_status","priority","city","cause","from_at","to_at","search"))
+        queue_cursor=encode_cursor(fingerprint("queue",reader.dataset_id,queue_filters,25),"2026-09-01T00:00:00+00:00","DEMO-A","2026-09-10T00:00:00+00:00",datetime.now(timezone.utc).isoformat())
+        with self.assertRaisesRegex(ValueError,"only supported by Audit"):reader.queue(cursor=queue_cursor)
+        valid=encode_cursor(binding,"2026-09-01T00:00:00+00:00","DEMO-A","2026-09-10T00:00:00+00:00",datetime.now(timezone.utc).isoformat())
+        with self.assertRaises(ValueError):reader.audit(cursor=valid,limit=50)
+        with self.assertRaises(ValueError):reader.audit(cursor=valid,event_type="STAGE_COMPLETED")
 
     def test_rejected_filter_and_catalog_ids_or_aliases(self):
         def handler(query,params):

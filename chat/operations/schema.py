@@ -1,4 +1,4 @@
-"""Registered local-demo ledger vocabulary; immutable imports remain a separate graph."""
+"""Registered local operations ledger vocabulary; immutable imports remain a separate graph."""
 from dataset_v2.contracts import instant
 from datetime import datetime
 
@@ -21,7 +21,8 @@ FIELDS = {
                    "cursor_time", "cursor_id", "worker_claim", "claim_at", "processed_count", "event_count"},
     "OpsCase": {"source_case_id", "workflow_state", "operational_status", "priority", "cause_codes", "city", "opened_at",
                 "as_of", "state_version", "last_run_id", "recommendation_id", "issue_summary", "claim_id", "claim_at"},
-    "OpsAudit": {"case_id", "event_type", "actor_id", "decision", "result", "from_state", "to_state", "run_id"},
+    "OpsAudit": {"case_id", "event_type", "actor_id", "decision", "result", "from_state", "to_state", "run_id",
+                 "stage", "stage_status", "sequence", "wall_recorded_at"},
     "OpsEventReceipt": {"source_event_id", "event_kind", "source_occurred_at", "case_id"},
     "OpsRun": {"case_id", "mode", "result_json", "iteration", "status", "context_hash"},
     "OpsRecommendation": {"case_id", "run_id", "action_code", "action", "action_en", "action_ar", "evidence_ids", "status", "requires_approval"},
