@@ -9,9 +9,14 @@ Phases (run in order; each recreates shipments-v2-demo-test from a fresh live bu
   reviewer   scenario D: one case investigated with the reviewer pointed at an unreachable endpoint.
   concurrency scenario F: the separated workers run with the real model while the clock advances;
              ingestion and monitoring progress is sampled during each investigation.
-  checks     on the database a pipeline run left: public evidence ids, authority bypass, case triggers.
+  checks     on the database a pipeline run left: public evidence ids, authority bypass, case triggers, answer-key scan.
   accounting on the same database: every wrong diagnosis's end state, whether each resolved case's
-             exception was gone at closure, and what happened to shipments with two genuine causes.
+             exception was gone at closure, what happened to shipments with two genuine causes, and how much
+             symptom naming and the second-cause credit contribute to the score.
+  human      on the same database: scenario C's human path (a person's verified finding) and both approval
+             outcomes (a person-only action refused, an approvable action executed).
+Every results file carries a provenance block (commit, dirty flag, bundle hashes, model, prompt hashes,
+model calls by the model name the provider reported); model phases refuse to run on uncommitted code.
 
 Truth is read only to score after each phase (and by the simulator, which plays the field).
 Usage (from chat/): uv run python ../scripts/s5_scenarios.py --phase pipeline --out ../docs/evals/2026-10-09_s5
@@ -138,6 +143,8 @@ def case_rows(driver, truth):
     for o in ledger(driver, "OpsOutcome"):
         outcomes.setdefault(o["case_id"], []).append(o)
     decisions = {d["case_id"] for d in ledger(driver, "OpsDecision")}
+    opening = {a["case_id"]: sorted(x.strip() for x in a["result"].split(":", 1)[1].split(","))
+               for a in ledger(driver, "OpsAudit") if a.get("event_type") == "CASE_OPENED" and ":" in (a.get("result") or "")}
     rows = []
     for case in cases:
         row = truth[case["shipment_id"]]
@@ -150,7 +157,8 @@ def case_rows(driver, truth):
         outs = outcomes.get(case["entity_id"], [])
         rows.append({
             "case_id": case["entity_id"], "shipment_id": case["shipment_id"], "opened_at": iso(case["opened_at"]),
-            "symptoms": case.get("symptom_codes"), "investigations": len(last), "tool_calls": len(inv.get("steps") or []),
+            "symptoms": case.get("symptom_codes"), "opening_symptoms": opening.get(case["entity_id"]),
+            "investigations": len(last), "tool_calls": len(inv.get("steps") or []),
             "tools": [s["tool"] for s in inv.get("steps") or []], "mode": inv.get("mode"),
             "primary_cause": inv.get("primary_cause"), "confidence": inv.get("confidence"),
             "hypotheses": [[h["cause"], h["status"]] for h in inv.get("hypotheses") or []],
@@ -305,12 +313,20 @@ def phase_concurrency(out, total, seconds, started_at):
     # First: automatic investigation paused. Ingestion and monitoring must still progress.
     pool = WorkerPool(store).start()
     before = store.status()
-    time.sleep(60)
+    waited = 0
+    # Keep investigation paused until the monitor has opened at least two cases (bounded), so the check
+    # shows cases waiting while nothing investigates them.
+    while waited < 60 or (store.status()["session"]["monitor_opened"] - before["session"]["monitor_opened"] < 2 and waited < 300):
+        time.sleep(5)
+        waited += 5
     paused = store.status()
-    paused_check = {"events_ingested": paused["simulator"]["event_count"] - before["simulator"]["event_count"],
+    open_cases = [c for c in ledger(driver, "OpsCase") if c["workflow_state"] == "OPEN"]
+    paused_check = {"paused_seconds": waited, "events_ingested": paused["simulator"]["event_count"] - before["simulator"]["event_count"],
                     "monitor_checks": paused["session"]["monitor_checked"] - before["session"]["monitor_checked"],
                     "cases_opened": paused["session"]["monitor_opened"] - before["session"]["monitor_opened"],
-                    "investigations_run": paused["worker"]["processed_count"] - before["worker"]["processed_count"]}
+                    "cases_waiting_open": len(open_cases),
+                    "investigations_run": paused["worker"]["processed_count"] - before["worker"]["processed_count"],
+                    "runs_recorded": len(ledger(driver, "OpsRun"))}
     store.control("worker", "start")
     samples, stop = [], threading.Event()
     def sample():
@@ -449,6 +465,66 @@ def end_state(row):
     return "routed_to_a_person_" + row["final_state"].lower()
 
 
+def scoring_transparency(rows, truth):
+    """How much the opening symptom names give away, and how much the second-cause credit adds.
+
+    The monitor maps rule codes to symptoms (operations.store.SYMPTOMS); ten of the twelve symptoms map
+    back to a single diagnosis label. A case is "one_label" when every opening symptom maps back to one
+    label, "multi_label" otherwise. Scoring is per shipment: any acceptable cause of the shipment counts
+    on every case of that shipment."""
+    from operations.store import SYMPTOMS
+    inverse = {}
+    for cause, symptom in SYMPTOMS.items():
+        inverse.setdefault(symptom, set()).add(cause)
+    scored = [r for r in rows if not r["truth_healthy"] and (r["primary_cause"] is not None or r["degraded"])]
+
+    def opening(r):
+        return r.get("opening_symptoms") or r["symptoms"] or []
+
+    def acceptable(r, with_second=True):
+        second = truth[r["shipment_id"]].get("secondary_issue")
+        causes = set(r["acceptable_causes"] or [])
+        return causes if with_second or not second else causes - {second}
+
+    def rate(group, with_second=True):
+        good = sum(r["primary_cause"] in acceptable(r, with_second) for r in group)
+        return {"correct": good, "cases": len(group), "rate": round(good / len(group), 3) if group else None}
+
+    one_label = [r for r in scored if all(len(inverse.get(x, ())) == 1 for x in opening(r))]
+    multi_label = [r for r in scored if r not in one_label]
+    named = [r for r in scored if any(len(inverse.get(x, ())) == 1 and inverse[x] & acceptable(r) for x in opening(r))]
+    strict = [r for r in scored if any(len(inverse.get(x, ())) == 1 and r["primary_cause"] in inverse[x] for x in opening(r))]
+    inclusive = [r for r in scored if any(r["primary_cause"] in inverse.get(x, ()) for x in opening(r))]
+    correct = [r for r in scored if r["primary_cause"] in acceptable(r)]
+    only_sync = [r for r in scored if set(r["acceptable_causes"] or []) == {"DELAYED_SYNC"}]
+    resolved = [r for r in rows if r["final_state"] == "RESOLVED"]
+    triggers = {}
+    for r in rows:
+        for x in opening(r):
+            triggers[x] = triggers.get(x, 0) + 1
+    return {
+        "symptom_map_one_to_one": sorted(x for x, causes in inverse.items() if len(causes) == 1),
+        "symptom_map_multi_label": {x: sorted(c) for x, c in inverse.items() if len(c) > 1},
+        "accuracy_all": rate(scored),
+        "accuracy_one_label_symptom_cases": rate(one_label), "accuracy_multi_label_symptom_cases": rate(multi_label),
+        "accuracy_when_an_opening_symptom_names_an_acceptable_cause": rate(named),
+        "accuracy_when_no_opening_symptom_names_an_acceptable_cause": rate([r for r in scored if r not in named]),
+        "diagnosis_equals_the_label_of_an_opening_symptom": {
+            "strict_one_to_one": {"correct": sum(r in correct for r in strict), "wrong": sum(r not in correct for r in strict)},
+            "inclusive": {"correct": sum(r in correct for r in inclusive), "wrong": sum(r not in correct for r in inclusive)},
+            "correct_total": len(correct), "wrong_total": len(scored) - len(correct)},
+        "second_cause_credit": {
+            "source": "network.propagate_outages adds DELAYED_SYNC to acceptable_causes of abnormal shipments caught in another "
+                      "shipment's handheld outage window (secondary_issue); introduced in e4207f9 together with the run that used it",
+            "accuracy_with": rate(scored), "accuracy_without": rate(scored, with_second=False),
+            "resolved_on_a_wrong_cause_with": sum(r["primary_cause"] not in acceptable(r) for r in resolved),
+            "resolved_on_a_wrong_cause_without": sum(r["primary_cause"] not in acceptable(r, False) for r in resolved),
+            "cases_credited_only_by_it": [r["case_id"] for r in scored if r["primary_cause"] in acceptable(r) and r["primary_cause"] not in acceptable(r, False)]},
+        "delayed_sync_only_cases": rate(only_sync),
+        "opening_trigger_symptoms": triggers,
+        "scoring_unit": "per shipment: every case of a shipment is scored against all of that shipment's acceptable causes"}
+
+
 def phase_accounting(out, total, source, started_at):
     """After a pipeline run, on the database it left: every wrong diagnosis's end state, whether each
     resolved case's exception was really gone at closure, and what happened to two-cause shipments."""
@@ -506,8 +582,87 @@ def phase_accounting(out, total, source, started_at):
               "false_resolutions_on_wrong_cause": [r["case_id"] for r in wrong if end_state(r) == "executed_and_verified_resolved"],
               "resolved_cases": resolved,
               "resolved_with_standing_symptom_at_closure": [x["case_id"] for x in resolved if x["standing_symptoms_at_closure"]],
-              "two_cause_shipments": two_cause}
+              "two_cause_shipments": two_cause,
+              "scoring_transparency": scoring_transparency(rows, truth),
+              "provenance": provenance("accounting", started_at, manifest_hash=imported["h"]),
+              "source_provenance": pipeline.get("provenance")}
     (out / source.replace("pipeline", "accounting")).write_text(json.dumps(result, indent=1, default=str), encoding="utf-8")
+    return result
+
+
+def phase_human(out, total, started_at):
+    """On the database the pipeline left: the human path of scenario C and both approval outcomes.
+
+    The harness plays the depot supervisor. Like the simulator, it reads the simulated field state to
+    choose what a physical check would find, then records it through the same store call the dashboard
+    uses (HUMAN_VERIFIED, kept apart from evidence-verified outcomes). It also tries to approve a
+    person-only action (must be refused) and approves an action waiting for approval (must execute)."""
+    from core.query_runner import get_driver
+    from dataset_v2.contracts import Config
+    from operations.lifecycle import OperationsConflict
+    from operations.read_model import OperationsReader
+    from operations.store import OperationsStore
+    driver = get_driver()
+    with driver.session(database=TEST_DATABASE, default_access_mode="READ") as session:
+        imported = session.run("MATCH (m:_V2Import) RETURN m.manifest_json AS m, m.manifest_hash AS h").single()
+        clock = iso(session.run("MATCH (c:OpsEntity:OpsControl) RETURN c.as_of AS a").single()["a"])
+    truth = scoring_truth(total, imported["h"])
+    cfg = Config(**json.loads(imported["m"])["config"])
+    reader = OperationsReader(driver, TEST_DATABASE, cfg.dataset_id, cfg, clock=lambda: clock)
+    store = OperationsStore(driver, TEST_DATABASE, cfg.dataset_id, cfg, reader=reader)
+    reader.store = store
+    attach(store, truth)
+    finds = {"retained_by_contractor": ("parcel_not_found", "Physical check at the depot: the parcel is not on site; the independent driver "
+                                         "did not return it and does not answer."),
+             "returned_unscanned": ("returned_to_depot", "Physical check at the depot: the parcel is on the returns shelf; it came back after "
+                                    "the session without a receipt scan."),
+             "left_at_depot": ("parcel_located", "Physical check at the depot: the parcel is on site and was never loaded.")}
+    findings, used = [], set()
+    for case in sorted(ledger(driver, "OpsCase"), key=lambda c: iso(c["opened_at"])):
+        physical = truth[case["shipment_id"]].get("physical") or {}
+        kind = physical.get("parcel")
+        if case["workflow_state"] not in ("HUMAN_REVIEW", "ESCALATED") or kind not in finds or kind in used:
+            continue
+        used.add(kind)
+        outcome_type, text = finds[kind]
+        nodes = reader.evidence(case["shipment_id"], clock)["nodes"]
+        custody = sorted((n for n in nodes if n["kind"] == "CustodyEvent"), key=lambda n: str(n["properties"].get("occurred_at")))
+        evidence = [n["id"] for n in custody[-2:]] + [n["id"] for n in nodes if n["kind"] == "DeliverySession"][:1]
+        recorded = store.record_human_outcome(case["entity_id"], "DEMO-OPERATOR-LOCAL", outcome_type,
+                                              text + " (S5 harness acting as the depot supervisor.)", evidence, case["state_version"],
+                                              "s5-human-" + case["entity_id"][-16:])
+        outcome = next(o for o in ledger(driver, "OpsOutcome") if o.get("entity_id") == recorded["outcome_id"])
+        findings.append({"case_id": case["entity_id"], "truth_recipe": truth[case["shipment_id"]]["recipe"], "state_before": case["workflow_state"],
+                         "outcome_type": outcome_type, "evidence_ids": evidence, "state_after": recorded["workflow_state"],
+                         "verification_status": outcome["verification_status"], "verifier_id": outcome["verifier_id"],
+                         "exception_cleared": outcome.get("exception_cleared"), "rule_id": outcome.get("rule_id")})
+    from operations.authority import ACTIONS
+    refusals, approvals = [], []
+    recommendations = {r["entity_id"]: r for r in ledger(driver, "OpsRecommendation")}
+    for case in ledger(driver, "OpsCase"):
+        recommendation = recommendations.get(case.get("recommendation_id") or "")
+        if not recommendation or case["workflow_state"] not in ("HUMAN_REVIEW", "AWAITING_APPROVAL"):
+            continue
+        base = ACTIONS.get(recommendation.get("action_type") or "REQUEST_ADDITIONAL_EVIDENCE", ("?",))[0]
+        if base == "HUMAN_REVIEW" and len(refusals) < 2:
+            try:
+                store.decide(case["entity_id"], "approve", "DEMO-OPERATOR-LOCAL", case["state_version"], "s5-refuse-" + case["entity_id"][-16:])
+                refusals.append({"case_id": case["entity_id"], "action_type": recommendation.get("action_type"), "refused": False})
+            except OperationsConflict as error:
+                refusals.append({"case_id": case["entity_id"], "action_type": recommendation.get("action_type"), "refused": True, "reason": str(error),
+                                 "executions": sum(e["case_id"] == case["entity_id"] for e in ledger(driver, "OpsExecution"))})
+        elif case["workflow_state"] == "AWAITING_APPROVAL" and base in ("AUTO", "APPROVAL_REQUIRED") and not approvals:
+            decided = store.decide(case["entity_id"], "approve", "DEMO-OPERATOR-LOCAL", case["state_version"], "s5-approve-" + case["entity_id"][-16:])
+            store.execute_step(limit=5)
+            execution = next(e for e in ledger(driver, "OpsExecution") if e["entity_id"] == decided["execution_id"])
+            approvals.append({"case_id": case["entity_id"], "action_type": recommendation.get("action_type"), "risk_class": recommendation.get("risk_class"),
+                              "state_after_approval": decided["workflow_state"], "execution_status": execution["status"],
+                              "authority": execution["authority"], "permission_rule": execution.get("permission_rule"),
+                              "receipt": json.loads(execution.get("adapter_result_json") or "{}")})
+    result = {"phase": "human", "database": TEST_DATABASE, "clock": clock, "human_findings": findings,
+              "approval_refusals": refusals, "approvals": approvals,
+              "provenance": provenance("human", started_at, manifest_hash=imported["h"])}
+    (out / "human.json").write_text(json.dumps(result, indent=1, default=str), encoding="utf-8")
     return result
 
 
