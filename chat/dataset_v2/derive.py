@@ -329,7 +329,9 @@ def assess_shipment(world: World, sid: str, as_of: str | None = None, *, _index=
                 if rp.get("result") == "RETURNED":
                     failed, receipt = world.nodes.get(rp.get("attempt_id")), world.nodes.get(rp.get("receipt_id"))
                     reconciled |= (failed is not None and failed.properties.get("package_id") == package_id and failed.properties.get("disposition") == "FAILED"
-                                   and receipt is not None and receipt.id == last_id and holder == sp.get("depot_id"))
+                                   # Judged at the return itself: a later re-dispatch must not un-reconcile an accounted return.
+                                   and receipt is not None and receipt.kind == "CustodyEvent" and receipt.properties.get("to_id") == sp.get("depot_id")
+                                   and receipt.properties.get("package_id") == package_id and custody_corroborated(world, receipt, cutoff))
                     next_priority |= reconciled
             if not reconciled:
                 flag("UNRECONCILED_CUSTODY", [session.id, last_id], "No valid delivery proof or failed attempt plus corroborated depot receipt after session grace", True)

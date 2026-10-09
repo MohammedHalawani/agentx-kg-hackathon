@@ -22,6 +22,7 @@ from dataset_v2.contracts import Config, Provenance, instant, iso
 from dataset_v2.generate import Builder, NORMAL_RECIPES, PERTURBATIONS, close_custody_intervals, reopen_invalidated_cases, historical_outcomes
 
 LIVE_DATASET_ID = "DEMO-SUHAIL-LIVE-1"
+HEARTBEAT_MINUTES = 30  # Facility handheld telemetry cadence; silence across several beats is an outage signal.
 NETWORK_VERSION = "live-network-1"
 
 PROVIDERS = {
@@ -162,9 +163,7 @@ class LiveBuilder(Builder):
             healthy = round(count * config.normal_fraction)
             first_normal = [r for r in REQUIRED_LIVE if r in LIVE_NORMAL] if split == "development" else []
             first_abnormal = [r for r in REQUIRED_LIVE if r in LIVE_ABNORMAL] if split == "development" else []
-            # accounted_return ends at the planned next session without generating that delivery; in a live
-            # replay its promise would legitimately lapse, so it is kept out of the live split.
-            pool = [r for r in normal if not (split == "development" and r == "accounted_return")]
+            pool = normal
             recipes = (first_normal + [pool[i % len(pool)] for i in range(healthy - len(first_normal))]
                        + first_abnormal + [abnormal[i % len(abnormal)] for i in range(count - healthy - len(first_abnormal))])
             self.rng.shuffle(recipes)
@@ -274,7 +273,10 @@ def overlay(world, builder):
         apply = RECIPE_OVERLAYS.get(row["recipe"])
         if apply:
             apply(w, sid, row)
+        if row["recipe"] == "accounted_return":
+            _accounted_return(w, sid, row, builder)
     propagate_outages(w, truth)
+    fleet(w)  # Vehicles allocated by recipe overlays (next-session redelivery) get providers and devices too.
     for sid, row in truth.items():
         last_mile = next((a for a in _owned(w, sid, "VehicleAssignment") if a.properties.get("mode") == "last_mile"), None)
         vehicle = w.nodes[last_mile.properties["vehicle_id"]].properties if last_mile else {}
@@ -417,13 +419,94 @@ def _remove(w, removed):
                and e.properties.get("custody_event_id") not in removed and e.properties.get("end_evidence_id") not in removed}
 
 
+def _accounted_return(w, sid, row, builder):
+    """The agreed next session happens: the returned parcel is loaded again and delivered with bound proof."""
+    shipment = w.nodes[sid].properties
+    split = shipment["split"]
+    session = next(n for n in _owned(w, sid, "DeliverySession") if n.id.endswith("NEXT-SESSION"))
+    sp = session.properties
+    start, end = instant(sp["start_at"]), instant(sp["end_at"])
+    last_mile = next(a for a in _owned(w, sid, "VehicleAssignment") if a.properties.get("mode") == "last_mile")
+    lp = last_mile.properties
+    old_vehicle = w.nodes[lp["vehicle_id"]].properties
+    builder.operator = "INDEPENDENT" if old_vehicle.get("ownership") == "PRIVATE" else "SPL"
+    load_at = start + timedelta(minutes=30)
+    grace = timedelta(seconds=sp.get("grace_seconds") or 0)
+    vehicle = builder.vehicle("LARGE" if shipment["handling"] == "bulky" else "LMV", old_vehicle["base_city"], load_at, end + grace)
+    builder.operator = "SPL"
+    driver = w.nodes[vehicle].properties["driver_id"]
+    def n(kind, suffix, when=None, **props):
+        key = f"{sid}-{suffix}"
+        if when is not None:
+            props = {"occurred_at": iso(when), "recorded_at": iso(when), **props}
+        w.node(kind, key, shipment_id=sid, split=split, **props)
+        return key
+    assignment = n("VehicleAssignment", "ASSIGN-NEXT-SESSION", vehicle_id=vehicle, driver_id=driver, valid_from=iso(load_at),
+                   valid_to=iso(end + grace), package_ids=list(lp["package_ids"]), weight_kg=lp["weight_kg"], volume_m3=lp["volume_m3"],
+                   mode="last_mile", segment_id=lp["segment_id"], session_id=session.id)
+    for kind, end_id in (("USES_VEHICLE", vehicle), ("ASSIGNED_DRIVER", driver), ("ON_SEGMENT", lp["segment_id"]), ("IN_SESSION", session.id)):
+        w.edge(assignment, kind, end_id)
+    w.edge(vehicle, "HAS_ASSIGNMENT", assignment)
+    depot = sp["depot_id"]
+    recipient = shipment["recipient_id"]
+    address = w.nodes[shipment["current_address_version_id"]]
+    av = address.properties
+    delivered_at = load_at + timedelta(hours=2)
+    for pkg in lp["package_ids"]:
+        tag = pkg.rsplit("-", 1)[-1]
+        w.edge(assignment, "CARRIES", pkg)
+        def custody(seq, when, frm, to, event, device, proof=None, observation="HANDOVER_BARCODE_READ"):
+            raw = n("ScanEvent", f"RAW-NEXT-{tag}-{seq}", when, package_id=pkg, observed_barcode=w.nodes[pkg].properties["manifest_barcode"],
+                    readable=True, confidence=.99, calibrated=False, facility_id=depot if event != "DELIVERED" else None,
+                    device_ref=device, observation_type=observation, source_ref="synthetic:CORROBORATED:handover-observation")
+            key = n("CustodyEvent", f"CUST-NEXT-{tag}-{seq}", when, package_id=pkg, from_id=frm, to_id=to, event_type=event, source_event_id=raw,
+                    required_acknowledgments=2, received_acknowledgments=2, source_quality="CORROBORATED",
+                    source_ref="synthetic:CORROBORATED:handover-observation", facility_id=depot if event != "DELIVERED" else None,
+                    vehicle_id=vehicle, assignment_id=assignment, **({"proof_id": proof} if proof else {}))
+            w.edge(pkg, "HAS_SCAN", raw); w.edge(pkg, "HAS_CUSTODY_EVENT", key); w.edge(sid, "HAS_CUSTODY_EVENT", key)
+            w.edge(key, "OBSERVED_BY", raw); w.edge(key, "FROM_CUSTODIAN", frm); w.edge(key, "TO_CUSTODIAN", to)
+            return key
+        app = device_for_driver(driver)
+        custody(1, load_at, depot, vehicle, "LOADED", app, observation="CUSTODY_CONFIRMATION")
+        attempt = n("DeliveryAttempt", f"ATT-NEXT-{tag}", delivered_at, package_id=pkg, used_address_version_id=address.id,
+                    observed_gate="Gate 4", disposition="DELIVERED", failed_reason=None, session_id=session.id, assignment_id=assignment)
+        w.edge(sid, "HAS_ATTEMPT", attempt); w.edge(pkg, "HAS_ATTEMPT", attempt); w.edge(attempt, "USED_ADDRESS", address.id)
+        auth = n("AuthenticationEvidence", f"AUTH-NEXT-{tag}", delivered_at, package_id=pkg, attempt_id=attempt, method="SYNTHETIC_OTP",
+                 result="PASS", authorized_recipient_id=recipient, expires_at=iso(delivered_at + timedelta(minutes=5)),
+                 verification_policy="synthetic_bound_delivery_v1", secret_value_stored=False)
+        handoff = n("HandoffEvidence", f"HANDOFF-NEXT-{tag}", delivered_at, package_id=pkg, attempt_id=attempt, recipient_id=recipient,
+                    recipient_type="EXPECTED_RECIPIENT", authorization_ref=None)
+        photo = n("PhotoEvidence", f"PHOTO-NEXT-{tag}", delivered_at, package_id=pkg, attempt_id=attempt, address_version_id=address.id,
+                  lat=av["lat"], lng=av["lng"], accuracy_m=20., subject="door_metadata", media_ref=f"synthetic://{sid}/next-photo", no_image_generated=True)
+        proof = n("DeliveryProof", f"PROOF-NEXT-{tag}", delivered_at, package_id=pkg, attempt_id=attempt, address_version_id=address.id,
+                  lat=av["lat"], lng=av["lng"], accuracy_m=20., authentication_id=auth, signature_id=None, photo_id=photo, handoff_id=handoff,
+                  verification_policy="synthetic_bound_delivery_v1")
+        w.edge(attempt, "HAS_PROOF", proof)
+        for kind, end_id in (("HAS_AUTHENTICATION", auth), ("HAS_PHOTO", photo), ("HAS_HANDOFF", handoff)):
+            w.edge(proof, kind, end_id)
+        receipt = custody(2, delivered_at, vehicle, recipient, "DELIVERED", app, proof=proof)
+        recon = n("DepotReconciliation", f"RECON-NEXT-{tag}", delivered_at + timedelta(minutes=1), package_id=pkg, session_id=session.id,
+                  result="DELIVERED", proof_id=proof, receipt_id=receipt, attempt_id=attempt)
+        w.edge(sid, "HAS_RECONCILIATION", recon); w.edge(recon, "SUPPORTED_BY", proof)
+    status = n("StatusEvent", "STATUS-NEXT-SESSION", delivered_at, status="DELIVERED", assertion_source="synthetic_tracking")
+    w.edge(sid, "HAS_STATUS", status)
+    # A manifest for the new dispatch, like every other last-mile assignment.
+    published = load_at - timedelta(minutes=20)
+    manifest = n("Manifest", "ASSIGN-NEXT-SESSION-MANIFEST-V1", published, assignment_id=assignment, session_id=session.id,
+                 vehicle_id=vehicle, driver_id=driver, provider_id=w.nodes[vehicle].properties.get("provider_id", "DEMO-PROV-SPL"), version=1,
+                 package_ids=list(lp["package_ids"]), manifest_status="PUBLISHED")
+    w.edge(assignment, "HAS_MANIFEST", manifest)
+    for pkg in lp["package_ids"]:
+        w.edge(manifest, "LISTS", pkg)
+
+
 RECIPE_OVERLAYS = {"offline_device_sync": _offline_device_sync, "late_upload_within_tolerance": _late_upload_within_tolerance,
                    "contractor_unreturned": _contractor_unreturned, "contractor_unconfirmed_pickup": _contractor_unconfirmed_pickup,
                    "conflicting_manifest": _conflicting_manifest}
 
 
 def heartbeats(w, truth):
-    """Device telemetry: depot handhelds every 2h, independent-driver apps hourly while assigned.
+    """Device telemetry: depot handhelds every 30 min, independent-driver apps hourly while assigned.
 
     An offline handheld sends nothing until it reconnects; its first heartbeat then reports the
     uploads it had buffered. An unreturned contractor's app goes silent after the last attempt.
@@ -447,13 +530,13 @@ def heartbeats(w, truth):
     for depot in w.of_kind("DeliveryDepot"):
         device = device_for_facility(depot.id)
         windows = outages.get(device, [])
+        for a, b, pending in windows:  # The reconnect beat reports what was buffered; it wins over a regular beat.
+            beat(device, b, pending=pending, last_upload=a)
         when = start
         while when <= end:
             if not any(a <= when < b for a, b, _ in windows):
                 beat(device, when)
-            when += timedelta(hours=2)
-        for a, b, pending in windows:
-            beat(device, b, pending=pending, last_upload=a)
+            when += timedelta(minutes=HEARTBEAT_MINUTES)
     for assignment in w.of_kind("VehicleAssignment"):
         p = assignment.properties
         driver = w.nodes[p["driver_id"]].properties
