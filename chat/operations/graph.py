@@ -193,8 +193,9 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
                             "evidence_ids": basis, "requires_approval": True, "resolves": False, "target": action_target(tools_for(s)),
                             "planner": {"mode": inv["mode"], "action_type": action, "evidence_basis": basis}}
         elif s["result"]["recommendations"]:
+            from operations.authority import default_action
             r = s["result"]["recommendations"][0]
-            proposal = {**r, "action_code": r["code"], "resolves": False}
+            proposal = {**r, "action_code": r["code"], "action_type": default_action(r["code"]), "resolves": False}
         return {"proposal": proposal}, {"proposal": proposal, "evidence_ids": (proposal or {}).get("evidence_ids", []),
             "feedback_received": s.get("feedback"), "verified_precedents": len(s.get("precedents", [])),
             "agent": "authority_catalog" if agents else "evidence_rules"}

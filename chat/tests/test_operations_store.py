@@ -130,6 +130,11 @@ class Reader:
     def precedents(self,sid,codes,as_of=None):return []
 
 
+class Acknowledging:
+    """A field system that accepts every request and reports nothing back."""
+    def respond(self,execution,now):return {"acknowledged":True,"behaviour":"Request accepted."}
+
+
 class StoreTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):cls.world=generate(Config(total=90))
@@ -255,11 +260,14 @@ class StoreTests(unittest.TestCase):
         self.assertEqual((execution["status"],execution["authority"]),("AUTHORIZED","OPERATOR_APPROVAL"))  # Approval is not execution.
         self.assertEqual(store.execute_step(),[execution["entity_id"]])
         executed=next(v for kind,v in driver.ledger.values() if kind=="OpsExecution")
-        self.assertEqual((executed["status"],executed["mode"]),("ACKNOWLEDGED","no_adapter"))
+        # No adapter: nothing was sent, so nothing can be verified and a person takes the case.
+        self.assertEqual((executed["status"],executed["mode"]),("NOT_ACKNOWLEDGED","no_adapter"))
+        self.assertEqual(store.case_detail(case["case_id"])["workflow_state"],"HUMAN_REVIEW")
         self.assertEqual(store.execute_step(),[])  # Exactly once.
     def test_operator_cannot_declare_success_only_the_verifier_decides(self):
         store,driver,result=self.processed();case=store.case_detail(result["case_id"])
         approved=store.decide(case["case_id"],"approve","DEMO-OPERATOR-LOCAL",case["state_version"],"approve")
+        store.adapter=Acknowledging()
         store.execute_step()
         current=store.case_detail(case["case_id"])
         with self.assertRaises(TypeError):

@@ -713,10 +713,15 @@ class OperationsStore:
                         "state_version":current["state_version"],"outcome":None}
             if stale:
                 # Evidence kept arriving: record this investigation, but never act on a superseded snapshot.
-                analysis={**analysis,"authority":{**(analysis.get("authority") or {}),"risk_class":"HUMAN_REVIEW",
-                          "reason":"Evidence kept changing during repeated investigations; a person must review the latest evidence."},
-                          "result":{**analysis["result"],"workflow_state":"HUMAN_REVIEW"},"degraded":[*(analysis.get("degraded") or []),
-                          {"role":"snapshot","error":"evidence changed during investigation"}]}
+                # Only an actionable result is turned over to a person; a rejected (ESCALATED) or evidence-less
+                # (NEEDS_EVIDENCE) result keeps its state, so a rejected proposal never becomes approvable.
+                from operations.authority import rule_id as authority_rule
+                reason="Evidence kept changing during repeated investigations; a person must review the latest evidence."
+                state=analysis["result"]["workflow_state"]
+                analysis={**analysis,"authority":{**(analysis.get("authority") or {}),"risk_class":"HUMAN_REVIEW","reason":reason,
+                          "rule_id":authority_rule(reason)},
+                          "result":{**analysis["result"],"workflow_state":state if state in ("ESCALATED","NEEDS_EVIDENCE") else "HUMAN_REVIEW"},
+                          "degraded":[*(analysis.get("degraded") or []),{"role":"snapshot","error":"evidence changed during investigation"}]}
             when=control["as_of"];run_id=identity("run",current["entity_id"],case["claim_id"])
             self._put(tx,"OpsRun",{"entity_id":run_id,"shipment_id":case["shipment_id"],"case_id":case["entity_id"],
                 "recorded_at":when,"mode":analysis["mode"],"result_json":canonical(analysis),"iteration":len(analysis["trace"]),
@@ -759,10 +764,12 @@ class OperationsStore:
             from operations.authority import execution_permission
             auto=(recommendation_id and analysis["review"]["verdict"]=="accept" and authority.get("risk_class")=="AUTO"
                   and not analysis.get("degraded"))
-            if auto and not execution_permission(authority.get("action_type"),"AUTO_POLICY",authority.get("risk_class"))[0]:
+            permitted,refusal_rule,refusal_reason=execution_permission(authority.get("action_type"),"AUTO_POLICY",authority.get("risk_class"))
+            if auto and not permitted:
                 auto=False
-                self._audit(tx,current,"EXECUTION_REFUSED",when,actor="SUHAIL-AUTHORITY-POLICY",key="AUTH-18-auto-not-decided",
-                            result=f"{authority.get('action_type')} is not an AUTO-class action; nothing runs automatically.")
+                analysis={**analysis,"result":{**analysis["result"],"workflow_state":"HUMAN_REVIEW"}}
+                self._audit(tx,current,"EXECUTION_REFUSED",when,actor="SUHAIL-AUTHORITY-POLICY",key=refusal_rule,
+                            result=f"{authority.get('action_type')} · {refusal_rule} · {refusal_reason} Routed to a person.")
             if auto:
                 execution_id=identity("execution","auto",recommendation_id)
                 self._authorize_execution(tx,current,execution_id,recommendation_id,analysis["proposal"],authority["action_type"],
@@ -835,7 +842,11 @@ class OperationsStore:
         def save(tx):
             self._control(tx,lock=True)
             run=self._get(tx,"OpsRun",case["last_run_id"])
-            run.update(result_json=canonical(analysis),status="REVIEWED" if analysis['writeback'].get('processed') else "ABORTED")
+            # The writeback may have overridden the authority decision and destination (a superseded snapshot,
+            # a refused automatic execution); the stored run keeps what was actually decided.
+            decided=json.loads(run.get("result_json") or "{}") if analysis['writeback'].get('processed') else {}
+            kept={k:decided[k] for k in ("authority","result","degraded") if k in decided}
+            run.update(result_json=canonical({**analysis,**kept}),status="REVIEWED" if analysis['writeback'].get('processed') else "ABORTED")
             self._put(tx,"OpsRun",run,update=True)
         self._execute(save,write=True)
         with self._subscribers_lock:
@@ -985,12 +996,15 @@ class OperationsStore:
             if decision=="approve" and not recommendation:raise OperationsConflict("Approval requires a reviewed grounded recommendation")
             if decision=="approve":
                 from operations.authority import execution_permission
-                action=recommendation.get("action_type") or "REQUEST_ADDITIONAL_EVIDENCE"
+                action=recommendation.get("action_type")  # None (a legacy record): unknown action, refused.
                 allowed,rule,reason=execution_permission(action,"OPERATOR_APPROVAL",recommendation.get("risk_class"))
                 if not allowed:
-                    self._audit(tx,case,"APPROVAL_REFUSED",when,actor=actor_id,key=rule,old=old,
+                    self._audit(tx,case,"APPROVAL_REFUSED",when,actor=actor_id,key=f"{rule}:{command}",old=old,
                                 result=f"{action} · {rule} · {reason} The case state is unchanged; nothing was authorized.")
-                    return {"refused":True,"rule_id":rule,"reason":reason}
+                    refused={"refused":True,"rule_id":rule,"reason":reason}
+                    # Saved as the command's result, so a retry with the same key replays the refusal.
+                    self._save_command(tx,case,command,request_hash,"decision",idempotency_key,refused,when)
+                    return refused
             self._put(tx,"OpsDecision",{"entity_id":decision_id,"shipment_id":case["shipment_id"],"case_id":case_id,
                 "recommendation_id":case.get("recommendation_id"),"decision":decision,"actor_id":actor_id,
                 "expected_version":expected_version,"idempotency_key":idempotency_key,"recorded_at":when,"occurred_at":when})
@@ -1054,8 +1068,7 @@ class OperationsStore:
             if recommendation:
                 # Whether a person's approval may make the system carry this action out (the same check approval runs).
                 from operations.authority import execution_permission
-                allowed,rule,_=execution_permission(recommendation.get("action_type") or "REQUEST_ADDITIONAL_EVIDENCE","OPERATOR_APPROVAL",
-                                                    recommendation.get("risk_class"))
+                allowed,rule,_=execution_permission(recommendation.get("action_type"),"OPERATOR_APPROVAL",recommendation.get("risk_class"))
                 recommendation={**recommendation,"approvable":allowed,"approval_rule":rule}
             runs=linked("OpsRun");outcomes=linked("OpsOutcome")
             # The current investigation is the case's last run (ties on the paused clock must not pick an older one),

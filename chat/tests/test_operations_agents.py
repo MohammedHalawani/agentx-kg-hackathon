@@ -211,9 +211,11 @@ class OutcomeEngineTests(unittest.TestCase):
         outcomes = {v["entity_id"]: v for k, v in d.ledger.values() if k == "OpsOutcome"}
         executions = {v["entity_id"]: v for k, v in d.ledger.values() if k == "OpsExecution"}
         resolved = [c for c in cases if c["workflow_state"] == "RESOLVED"]
-        # No execution adapter here, so no field response: later unrelated evidence must not resolve anything.
+        # No execution adapter here, so nothing is sent and nothing is acknowledged: later evidence must not
+        # resolve anything, and each case goes to a person.
         self.assertTrue(executions)
-        self.assertTrue(all(e["status"] == "ACKNOWLEDGED" and e["mode"] == "no_adapter" for e in executions.values()))
+        self.assertTrue(all(e["status"] == "NOT_ACKNOWLEDGED" and e["mode"] == "no_adapter" for e in executions.values()))
+        self.assertEqual(resolved, [])
         for c in resolved:
             o = outcomes[c["verified_outcome_id"]]
             self.assertTrue(c["is_terminal"]); self.assertTrue(o["success"]); self.assertEqual(o["verifier_id"], "SUHAIL-OUTCOME-VERIFIER")

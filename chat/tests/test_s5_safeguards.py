@@ -323,19 +323,80 @@ class AuthorityAtExecutionTests(_Store):
             self.assertEqual(planted["status"], "REFUSED")
             self.assertIn("EXECUTION_REFUSED", self.audit(driver))
 
-    def test_automatic_switch_runs_nothing_the_policy_did_not_decide_auto(self):
+    def switch_run(self, action, decided):
+        """The automatic switch on, with the policy's decision forced, so the AUTO path itself is exercised."""
+        from unittest import mock
         from tests import test_investigator as ti
         store, driver = self.make()
         fake = ti.FakeInvestigator(lambda tools: [("shipment_overview", {})], ["ACCEPT"])
-        fake.cause, fake.action = "BARCODE_MISMATCH", "REQUEST_RESCAN"
+        fake.cause, fake.action = "BARCODE_MISMATCH", action
         store.agents = fake
         store.control("worker", "start")
-        result = store.process_one()
+        with mock.patch("operations.authority.authorize", return_value=(decided, "Low-risk, reversible, evidence-bound action within the synthetic automation allowlist.")), \
+             mock.patch("operations.authority.symptom_floor", side_effect=lambda risk, reason, action_type, symptoms: (risk, reason, "AUTO")):
+            result = store.process_one()
         self.assertTrue(result["processed"])
-        authority = store.case_detail(result["case_id"])["run"]["result"]["authority"]
-        self.assertNotEqual(authority["risk_class"], "AUTO")  # Not a live session: the policy never decides AUTO here.
-        store.execute_step()
+        return store, driver, result
+
+    def test_automatic_switch_executes_an_auto_class_action_decided_auto(self):
+        store, driver, result = self.switch_run("REQUEST_RESCAN", "AUTO")
+        [execution] = self.executions(driver)
+        self.assertEqual((execution["authority"], execution["decided_risk"], execution["permission_rule"]), ("AUTO_POLICY", "AUTO", "AUTH-10-auto-allowlist"))
+
+    def test_automatic_switch_never_runs_a_person_only_action_even_if_decided_auto(self):
+        store, driver, result = self.switch_run("PHYSICAL_CUSTODY_CHECK", "AUTO")
         self.assertEqual(self.executions(driver), [])
+        self.assertEqual(store.case_detail(result["case_id"])["workflow_state"], "HUMAN_REVIEW")
+        self.assertIn("EXECUTION_REFUSED", self.audit(driver))
+
+    def test_a_retried_refusal_is_refused_and_audited_again(self):
+        store, driver, case = self.case_with("PHYSICAL_CUSTODY_CHECK", "HUMAN_REVIEW", "HUMAN_REVIEW")
+        for key in ("refuse-a", "refuse-b", "refuse-a"):
+            with self.assertRaises(OperationsConflict) as refused:
+                store.decide(case["case_id"], "approve", "DEMO-OPERATOR-LOCAL", case["state_version"], key)
+            self.assertIn("AUTH-12-human-review-action", str(refused.exception))
+        self.assertEqual(self.audit(driver).count("APPROVAL_REFUSED"), 2)  # One per distinct command.
+
+    def test_a_recommendation_without_an_action_type_is_never_approved_as_a_stand_in(self):
+        store, driver, case = self.case_with(None, None, "HUMAN_REVIEW")
+        self.assertFalse(store.case_detail(case["case_id"])["recommendation"]["approvable"])
+        with self.assertRaises(OperationsConflict) as refused:
+            store.decide(case["case_id"], "approve", "DEMO-OPERATOR-LOCAL", case["state_version"], "approve-none")
+        self.assertIn("AUTH-01-unknown-action", str(refused.exception))
+        self.assertEqual(self.executions(driver), [])
+
+    def test_rules_only_recommendations_carry_their_catalog_action_and_authority(self):
+        store, driver, result = self.processed()  # Rules only (no model): the fixture's default.
+        recommendation = store.case_detail(result["case_id"])["recommendation"]
+        if recommendation:
+            from operations.authority import ACTIONS
+            self.assertIn(recommendation["action_type"], ACTIONS)
+            self.assertIsNotNone(recommendation["risk_class"])
+            self.assertNotEqual(recommendation["risk_class"], "AUTO")  # No independent model review: never automatic.
+
+    def test_a_superseded_snapshot_never_makes_a_rejected_proposal_approvable(self):
+        from tests import test_investigator as ti
+        from operations.store import MAX_SNAPSHOT_REFRESHES
+        store, driver = self.make()
+        case_id = next(k for k, (kind, v) in driver.ledger.items() if kind == "OpsCase")
+
+        class Moving(ti.FakeInvestigator):
+            def investigate(self, tools, on_step=None, feedback=None):
+                def bump(tx):  # Evidence arrives during every attempt.
+                    tx.ledger[case_id][1]["state_version"] += 1
+                driver.execute_write(bump)
+                return super().investigate(tools, on_step=on_step, feedback=feedback)
+        fake = Moving(lambda tools: [("shipment_overview", {})], ["REVISE", "REVISE"])
+        fake.cause, fake.action = "BARCODE_MISMATCH", "REQUEST_RESCAN"
+        store.agents = fake
+        def exhausted(tx):
+            tx.ledger[case_id][1]["snapshot_refreshes"] = MAX_SNAPSHOT_REFRESHES
+        driver.execute_write(exhausted)
+        store.process_one(case_id=case_id, manual=True)
+        detail = store.case_detail(case_id)
+        self.assertEqual(detail["workflow_state"], "ESCALATED")
+        authority = detail["run"]["result"]["authority"]
+        self.assertEqual(authority["rule_id"], "AUTH-15-superseded-snapshot")
 
 
 class CurrentRunTests(_Store):
@@ -382,6 +443,7 @@ class ExceptionClearanceTests(_Store):
                 if kind == "OpsExecution": e["closure"] = "AUTO"
                 if kind == "OpsCase": e["symptom_codes"] = ["MILESTONE_OVERDUE"]
         driver.execute_write(no_human_closure)
+        store.adapter = _store.Acknowledging()
         store.execute_step()
         current = store.case_detail(case["case_id"])
         verdict = {"status": "success", "outcome_type": "delayed_upload_received", "evidence_ids": [], "reason": "Late upload arrived.",
