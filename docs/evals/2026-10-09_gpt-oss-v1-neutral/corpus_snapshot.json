@@ -1,0 +1,1652 @@
+[
+  {
+    "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+    "category": "address_conflict",
+    "city": "ضرما",
+    "district": "حي العنقري",
+    "failure_id": "FR-ce529f8cd3",
+    "resolution_id": "RES-6d65468e9b",
+    "shipment_id": "SHP-0001",
+    "success": true
+  },
+  {
+    "action": "استبدال الملصق وإعادة فحص الشحنة",
+    "category": "failed_attempt_wrong_gate",
+    "city": "رنية",
+    "district": "حي كويكب",
+    "failure_id": "FR-23167b5637",
+    "resolution_id": "RES-341a1f7653",
+    "shipment_id": "SHP-0002",
+    "success": true
+  },
+  {
+    "action": "تسريع الشحنة عبر خط نقل مباشر",
+    "category": "hub_delay",
+    "city": "تبوك",
+    "district": "حي قرطبة",
+    "failure_id": "FR-0a2322f61e",
+    "resolution_id": "RES-af03e194ad",
+    "shipment_id": "SHP-0006",
+    "success": false
+  },
+  {
+    "action": "استبدال الملصق وإعادة فحص الشحنة",
+    "category": "failed_attempt_wrong_gate",
+    "city": "العقيق",
+    "district": "مخطط المطار",
+    "failure_id": "FR-01dd422180",
+    "resolution_id": "RES-f68260e2a2",
+    "shipment_id": "SHP-0007",
+    "success": true
+  },
+  {
+    "action": "التواصل مع العميل لتحديد الموقع عبر الإحداثيات",
+    "category": "address_conflict",
+    "city": "صفوى",
+    "district": "حي الريحان",
+    "failure_id": "FR-80eb483511",
+    "resolution_id": "RES-a792752c2e",
+    "shipment_id": "SHP-0008",
+    "success": true
+  },
+  {
+    "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+    "category": "failed_attempt_weight_mismatch",
+    "city": "الهفوف",
+    "district": "حي المزروع الاول",
+    "failure_id": "FR-06b69c2da0",
+    "resolution_id": "RES-04564655fc",
+    "shipment_id": "SHP-0010",
+    "success": true
+  },
+  {
+    "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+    "category": "escalation:failed_attempt_barcode_mismatch",
+    "city": "ينبع",
+    "district": "حي الواحة",
+    "failure_id": "FR-7a9b789d87",
+    "resolution_id": "RES-60b344eb99",
+    "shipment_id": "SHP-0012",
+    "success": true
+  },
+  {
+    "action": "تصعيد الحالة للمشرف واتخاذ إجراء مركب لتصحيح العنوان وإعادة التسليم",
+    "category": "escalation:address_conflict",
+    "city": "ينبع",
+    "district": "حي الواحة",
+    "failure_id": "FR-8c8481338a",
+    "resolution_id": "RES-53de2de98f",
+    "shipment_id": "SHP-0012",
+    "success": true
+  },
+  {
+    "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+    "category": "address_conflict",
+    "city": "نجران",
+    "district": "حي نهيقة",
+    "failure_id": "FR-f3f3464343",
+    "resolution_id": "RES-3ff9b8c71c",
+    "shipment_id": "SHP-0013",
+    "success": true
+  },
+  {
+    "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+    "category": "failed_attempt_barcode_mismatch",
+    "city": "تثليث",
+    "district": "حي الوجه",
+    "failure_id": "FR-3d18851d13",
+    "resolution_id": "RES-161bf38603",
+    "shipment_id": "SHP-0014",
+    "success": true
+  },
+  {
+    "action": "تصعيد الحالة للمشرف واتخاذ إجراء مركب لتصحيح العنوان وإعادة التسليم",
+    "category": "escalation:recipient_unavailable",
+    "city": "المدينة المنورة",
+    "district": "حي العزيزية",
+    "failure_id": "FR-0cf4c1b277",
+    "resolution_id": "RES-72fc024700",
+    "shipment_id": "SHP-0016",
+    "success": true
+  },
+  {
+    "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+    "category": "escalation:hub_delay",
+    "city": "المدينة المنورة",
+    "district": "حي العزيزية",
+    "failure_id": "FR-f2c0f251b3",
+    "resolution_id": "RES-757b9999dc",
+    "shipment_id": "SHP-0016",
+    "success": true
+  },
+  {
+    "action": "تسليم لجهة بديلة بموافقة العميل",
+    "category": "recipient_unavailable",
+    "city": "المدينة المنورة",
+    "district": "حي الصويدرة",
+    "failure_id": "FR-dc71193b5a",
+    "resolution_id": "RES-526613c65c",
+    "shipment_id": "SHP-0019",
+    "success": true
+  },
+  {
+    "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+    "category": "failed_attempt_barcode_mismatch",
+    "city": "رفحاء",
+    "district": "حي الفيصلية",
+    "failure_id": "FR-7d243af4d6",
+    "resolution_id": "RES-38e79f2081",
+    "shipment_id": "SHP-0023",
+    "success": true
+  },
+  {
+    "action": "التواصل مع العميل لتحديد الموقع عبر الإحداثيات",
+    "category": "address_conflict",
+    "city": "الطائف",
+    "district": "حي ج22",
+    "failure_id": "FR-bddf201dfc",
+    "resolution_id": "RES-b9efa203dc",
+    "shipment_id": "SHP-0026",
+    "success": true
+  },
+  {
+    "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+    "category": "failed_attempt_weight_mismatch",
+    "city": "جلاجل",
+    "district": "حي الصناعية",
+    "failure_id": "FR-c159b99643",
+    "resolution_id": "RES-151740339e",
+    "shipment_id": "SHP-0028",
+    "success": true
+  },
+  {
+    "action": "التواصل مع العميل لتحديد الموقع عبر الإحداثيات",
+    "category": "address_conflict",
+    "city": "العمران",
+    "district": "بلدة البطالية",
+    "failure_id": "FR-9d339e3888",
+    "resolution_id": "RES-32abe20b6f",
+    "shipment_id": "SHP-0029",
+    "success": false
+  },
+  {
+    "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+    "category": "escalation:recipient_unavailable",
+    "city": "العلا",
+    "district": "حي العزيزية",
+    "failure_id": "FR-a73f1c908f",
+    "resolution_id": "RES-68156987d9",
+    "shipment_id": "SHP-0031",
+    "success": true
+  },
+  {
+    "action": "تصعيد الحالة للمشرف واتخاذ إجراء مركب لتصحيح العنوان وإعادة التسليم",
+    "category": "escalation:failed_attempt_barcode_mismatch",
+    "city": "العلا",
+    "district": "حي العزيزية",
+    "failure_id": "FR-dcf18eebc8",
+    "resolution_id": "RES-f420f336c4",
+    "shipment_id": "SHP-0031",
+    "success": true
+  },
+  {
+    "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+    "category": "address_conflict",
+    "city": "الأضارع",
+    "district": "حي السلام",
+    "failure_id": "FR-2524ef69e3",
+    "resolution_id": "RES-19a8c4ad0a",
+    "shipment_id": "SHP-0032",
+    "success": true
+  },
+  {
+    "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+    "category": "failed_attempt_wrong_gate",
+    "city": "دارين",
+    "district": "حي الاندلس",
+    "failure_id": "FR-056d999db8",
+    "resolution_id": "RES-17cbddfa79",
+    "shipment_id": "SHP-0035",
+    "success": true
+  },
+  {
+    "action": "تسليم لجهة بديلة بموافقة العميل",
+    "category": "recipient_unavailable",
+    "city": "الحناكية",
+    "district": "المنطقة الصناعية",
+    "failure_id": "FR-5d15bd05b1",
+    "resolution_id": "RES-2e031da97e",
+    "shipment_id": "SHP-0036",
+    "success": true
+  },
+  {
+    "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+    "category": "hub_delay",
+    "city": "الدلم",
+    "district": "حي العذراء",
+    "failure_id": "FR-35252237d3",
+    "resolution_id": "RES-b4ae198298",
+    "shipment_id": "SHP-0037",
+    "success": true
+  },
+  {
+    "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+    "category": "address_conflict",
+    "city": "بدر",
+    "district": "حي الجديد",
+    "failure_id": "FR-19962c7779",
+    "resolution_id": "RES-fffec4c18c",
+    "shipment_id": "SHP-0038",
+    "success": true
+  },
+  {
+    "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+    "category": "hub_delay",
+    "city": "عنك",
+    "district": "حي البدر",
+    "failure_id": "FR-c21960e4cb",
+    "resolution_id": "RES-a2dc8540ae",
+    "shipment_id": "SHP-0041",
+    "success": true
+  },
+  {
+    "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+    "category": "failed_attempt_weight_mismatch",
+    "city": "الهفوف",
+    "district": "حي الصحافة",
+    "failure_id": "FR-2cb719215e",
+    "resolution_id": "RES-bc1e3a1dbe",
+    "shipment_id": "SHP-0042",
+    "success": true
+  },
+  {
+    "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+    "category": "hub_delay",
+    "city": "جلاجل",
+    "district": "حي البلد القديمة",
+    "failure_id": "FR-40e3a1c939",
+    "resolution_id": "RES-05753d5d1c",
+    "shipment_id": "SHP-0045",
+    "success": true
+  },
+  {
+    "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+    "category": "address_conflict",
+    "city": "الجفر",
+    "district": "حي مثلث الشرقية",
+    "failure_id": "FR-bbcd019c15",
+    "resolution_id": "RES-aabecb4593",
+    "shipment_id": "SHP-0046",
+    "success": true
+  },
+  {
+    "action": "إعادة توجيه الشحنة عبر مركز فرز بديل",
+    "category": "hub_delay",
+    "city": "الجموم",
+    "district": "حي الشهداء",
+    "failure_id": "FR-2c389b70f0",
+    "resolution_id": "RES-a500c6c567",
+    "shipment_id": "SHP-0047",
+    "success": true
+  },
+  {
+    "action": "إعادة جدولة التسليم في يوم آخر",
+    "category": "recipient_unavailable",
+    "city": "جدة",
+    "district": "حي الصفحة",
+    "failure_id": "FR-74c29dceae",
+    "resolution_id": "RES-072bdb9f2a",
+    "shipment_id": "SHP-0048",
+    "success": true
+  },
+  {
+    "action": "استبدال الملصق وإعادة فحص الشحنة",
+    "category": "failed_attempt_weight_mismatch",
+    "city": "الشملي",
+    "district": "حي الديرة",
+    "failure_id": "FR-c8474f4822",
+    "resolution_id": "RES-9b2534d961",
+    "shipment_id": "SHP-0049",
+    "success": true
+  },
+  {
+    "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+    "category": "address_conflict",
+    "city": "بلجرشي",
+    "district": "حي الشطيبة",
+    "failure_id": "FR-a2721a83b6",
+    "resolution_id": "RES-0d2d176fee",
+    "shipment_id": "SHP-0055",
+    "success": true
+  },
+  {
+    "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+    "category": "recipient_unavailable",
+    "city": "ينبع",
+    "district": "حي الياسمين",
+    "failure_id": "FR-7ff3262d66",
+    "resolution_id": "RES-68a76b0f7d",
+    "shipment_id": "SHP-0056",
+    "success": false
+  },
+  {
+    "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+    "category": "recipient_unavailable",
+    "city": "الجموم",
+    "district": "حي النسيم",
+    "failure_id": "FR-b3cba3b4ee",
+    "resolution_id": "RES-7a6abe6231",
+    "shipment_id": "SHP-0057",
+    "success": true
+  },
+  {
+    "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+    "category": "address_conflict",
+    "city": "المدينة المنورة",
+    "district": "حي الفريش",
+    "failure_id": "FR-5b4cae014c",
+    "resolution_id": "RES-f44eabd032",
+    "shipment_id": "SHP-0058",
+    "success": true
+  },
+  {
+    "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+    "category": "escalation:address_conflict",
+    "city": "خليص",
+    "district": "حي فازع",
+    "failure_id": "FR-8874b7bdf3",
+    "resolution_id": "RES-6646551baa",
+    "shipment_id": "SHP-0059",
+    "success": true
+  },
+  {
+    "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+    "category": "escalation:recipient_unavailable",
+    "city": "خليص",
+    "district": "حي فازع",
+    "failure_id": "FR-ff5a25d6a4",
+    "resolution_id": "RES-5ad94d63f3",
+    "shipment_id": "SHP-0059",
+    "success": true
+  },
+  {
+    "action": "تسليم لجهة بديلة بموافقة العميل",
+    "category": "recipient_unavailable",
+    "city": "النماص",
+    "district": "حي الفيصلية",
+    "failure_id": "FR-7d599255d0",
+    "resolution_id": "RES-fc9579f6f3",
+    "shipment_id": "SHP-0060",
+    "success": true
+  },
+  {
+    "action": "تسريع الشحنة عبر خط نقل مباشر",
+    "category": "hub_delay",
+    "city": "حوطة سدير",
+    "district": "حي النخيل",
+    "failure_id": "FR-c389cdb9cf",
+    "resolution_id": "RES-5d41325beb",
+    "shipment_id": "SHP-0064",
+    "success": true
+  },
+  {
+    "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+    "category": "failed_attempt_wrong_gate",
+    "city": "سراة عبيدة",
+    "district": "حي النور",
+    "failure_id": "FR-cd3cbf5f8d",
+    "resolution_id": "RES-612b949b4c",
+    "shipment_id": "SHP-0065",
+    "success": false
+  },
+  {
+    "action": "استبدال الملصق وإعادة فحص الشحنة",
+    "category": "failed_attempt_weight_mismatch",
+    "city": "رفحاء",
+    "district": "حي المحمدية",
+    "failure_id": "FR-494dc2fb29",
+    "resolution_id": "RES-6cc351a31c",
+    "shipment_id": "SHP-0066",
+    "success": true
+  },
+  {
+    "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+    "category": "address_conflict",
+    "city": "ضرما",
+    "district": "حي المنتزة",
+    "failure_id": "FR-30b7cb4aa0",
+    "resolution_id": "RES-78dfc38382",
+    "shipment_id": "SHP-0068",
+    "success": true
+  },
+  {
+    "action": "تسريع الشحنة عبر خط نقل مباشر",
+    "category": "hub_delay",
+    "city": "تثليث",
+    "district": "القوزية",
+    "failure_id": "FR-b9f7701820",
+    "resolution_id": "RES-2694b68613",
+    "shipment_id": "SHP-0073",
+    "success": true
+  },
+  {
+    "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+    "category": "hub_delay",
+    "city": "الحلوة",
+    "district": "حي الحزم",
+    "failure_id": "FR-1a3b7a1d29",
+    "resolution_id": "RES-ed6b120ce1",
+    "shipment_id": "SHP-0074",
+    "success": true
+  },
+  {
+    "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+    "category": "failed_attempt_weight_mismatch",
+    "city": "السليل",
+    "district": "حي الملك عبدالعزيز",
+    "failure_id": "FR-21af43807d",
+    "resolution_id": "RES-dfbda1e2c8",
+    "shipment_id": "SHP-0075",
+    "success": true
+  },
+  {
+    "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+    "category": "address_conflict",
+    "city": "بللحمر",
+    "district": "حي الفيصلية",
+    "failure_id": "FR-f887eaa238",
+    "resolution_id": "RES-5aef8c56db",
+    "shipment_id": "SHP-0077",
+    "success": true
+  },
+  {
+    "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+    "category": "recipient_unavailable",
+    "city": "دارين",
+    "district": "حي الاندلس",
+    "failure_id": "FR-72db405355",
+    "resolution_id": "RES-f085ab8540",
+    "shipment_id": "SHP-0080",
+    "success": true
+  },
+  {
+    "action": "تسليم لجهة بديلة بموافقة العميل",
+    "category": "recipient_unavailable",
+    "city": "خيبر",
+    "district": "حي الخالدية",
+    "failure_id": "FR-63aaafe449",
+    "resolution_id": "RES-57bbc81adf",
+    "shipment_id": "SHP-0082",
+    "success": true
+  },
+  {
+    "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+    "category": "recipient_unavailable",
+    "city": "خيبر",
+    "district": "حي سلطانة",
+    "failure_id": "FR-9b722ab369",
+    "resolution_id": "RES-91c9fa4e29",
+    "shipment_id": "SHP-0083",
+    "success": true
+  },
+  {
+    "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+    "category": "failed_attempt_weight_mismatch",
+    "city": "الخفجي",
+    "district": "حي الامير فهد بن سلمان",
+    "failure_id": "FR-f635b16ba0",
+    "resolution_id": "RES-20f0c73e7e",
+    "shipment_id": "SHP-0086",
+    "success": true
+  },
+  {
+    "action": "تصعيد الحالة للمشرف واتخاذ إجراء مركب لتصحيح العنوان وإعادة التسليم",
+    "category": "escalation:address_conflict",
+    "city": "الرين",
+    "district": "حي الرين الاعلى",
+    "failure_id": "FR-1e43f71a31",
+    "resolution_id": "RES-3ccd779290",
+    "shipment_id": "SHP-0088",
+    "success": true
+  },
+  {
+    "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+    "category": "escalation:hub_delay",
+    "city": "الرين",
+    "district": "حي الرين الاعلى",
+    "failure_id": "FR-a17477e9a1",
+    "resolution_id": "RES-8866b6a638",
+    "shipment_id": "SHP-0088",
+    "success": true
+  },
+  {
+    "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+    "category": "escalation:recipient_unavailable",
+    "city": "السودة",
+    "district": "حي الريحان",
+    "failure_id": "FR-2c8e535251",
+    "resolution_id": "RES-b2c33a9759",
+    "shipment_id": "SHP-0089",
+    "success": true
+  },
+  {
+    "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+    "category": "escalation:address_conflict",
+    "city": "السودة",
+    "district": "حي الريحان",
+    "failure_id": "FR-9d1c7dfa58",
+    "resolution_id": "RES-11116f5b7b",
+    "shipment_id": "SHP-0089",
+    "success": true
+  },
+  {
+    "action": "إعادة جدولة التسليم في يوم آخر",
+    "category": "recipient_unavailable",
+    "city": "الخرمة",
+    "district": "حي الروضة",
+    "failure_id": "FR-136c7b5de4",
+    "resolution_id": "RES-d1ece0e696",
+    "shipment_id": "SHP-0091",
+    "success": true
+  },
+  {
+    "action": "تسريع الشحنة عبر خط نقل مباشر",
+    "category": "hub_delay",
+    "city": "حرمة",
+    "district": "حي الروضة",
+    "failure_id": "FR-e127ae9f0e",
+    "resolution_id": "RES-659eef0d01",
+    "shipment_id": "SHP-0092",
+    "success": true
+  },
+  {
+    "action": "استبدال الملصق وإعادة فحص الشحنة",
+    "category": "failed_attempt_weight_mismatch",
+    "city": "بقعاء",
+    "district": "حي ج4",
+    "failure_id": "FR-c4f16fe8f1",
+    "resolution_id": "RES-2b2cc20522",
+    "shipment_id": "SHP-0093",
+    "success": true
+  },
+  {
+    "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+    "category": "address_conflict",
+    "city": "جواثا",
+    "district": "حي البستان",
+    "failure_id": "FR-7e721032ab",
+    "resolution_id": "RES-9c89f03f4e",
+    "shipment_id": "SHP-0094",
+    "success": true
+  },
+  {
+    "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+    "category": "failed_attempt_weight_mismatch",
+    "city": "النعيرية",
+    "district": "حي الفيصلية",
+    "failure_id": "FR-71ef7fe202",
+    "resolution_id": "RES-29eafb8553",
+    "shipment_id": "SHP-0098",
+    "success": true
+  },
+  {
+    "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+    "category": "address_conflict",
+    "city": "مهد الذهب",
+    "district": "حي الورود",
+    "failure_id": "FR-b5e35614d5",
+    "resolution_id": "RES-877d0b9dbd",
+    "shipment_id": "SHP-0099",
+    "success": true
+  },
+  {
+    "action": "إعادة جدولة التسليم في يوم آخر",
+    "category": "recipient_unavailable",
+    "city": "الشنان",
+    "district": "حي النهضة",
+    "failure_id": "FR-f4e5345b15",
+    "resolution_id": "RES-bc8ffd4617",
+    "shipment_id": "SHP-0100",
+    "success": true
+  },
+  {
+    "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+    "category": "failed_attempt_barcode_mismatch",
+    "city": "الشملي",
+    "district": "حي التعاون",
+    "failure_id": "FR-491d30160d",
+    "resolution_id": "RES-cf139101bb",
+    "shipment_id": "SHP-0102",
+    "success": true
+  },
+  {
+    "action": "استبدال الملصق وإعادة فحص الشحنة",
+    "category": "failed_attempt_barcode_mismatch",
+    "city": "الجفر",
+    "district": "حي الاسكان",
+    "failure_id": "FR-f3b4ff1bcb",
+    "resolution_id": "RES-5582314d66",
+    "shipment_id": "SHP-0103",
+    "success": true
+  },
+  {
+    "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+    "category": "failed_attempt_barcode_mismatch",
+    "city": "بدر",
+    "district": "حي الروضة",
+    "failure_id": "FR-f260faf750",
+    "resolution_id": "RES-e1976c486d",
+    "shipment_id": "SHP-0104",
+    "success": true
+  },
+  {
+    "action": "إعادة جدولة التسليم في يوم آخر",
+    "category": "recipient_unavailable",
+    "city": "المزاحمية",
+    "district": "حي الصقورية",
+    "failure_id": "FR-c374656e82",
+    "resolution_id": "RES-f374ba5b7b",
+    "shipment_id": "SHP-0106",
+    "success": true
+  },
+  {
+    "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+    "category": "address_conflict",
+    "city": "حائل",
+    "district": "حي النقرة قفار",
+    "failure_id": "FR-afe57e57b6",
+    "resolution_id": "RES-58c2a68b88",
+    "shipment_id": "SHP-0111",
+    "success": true
+  },
+  {
+    "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+    "category": "address_conflict",
+    "city": "الشنان",
+    "district": "حي الملك عبدالله",
+    "failure_id": "FR-53961a66a6",
+    "resolution_id": "RES-b8e91affe8",
+    "shipment_id": "SHP-0112",
+    "success": true
+  },
+  {
+    "action": "استبدال الملصق وإعادة فحص الشحنة",
+    "category": "failed_attempt_wrong_gate",
+    "city": "الخبر",
+    "district": "حي الثقبة",
+    "failure_id": "FR-715738ab5a",
+    "resolution_id": "RES-14ba3c5752",
+    "shipment_id": "SHP-0113",
+    "success": true
+  },
+  {
+    "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+    "category": "failed_attempt_barcode_mismatch",
+    "city": "ثول",
+    "district": "جامعة الملك عبدالله للعلوم والتقنية",
+    "failure_id": "FR-80feb69d98",
+    "resolution_id": "RES-7f2b2423e8",
+    "shipment_id": "SHP-0114",
+    "success": true
+  },
+  {
+    "action": "إعادة جدولة التسليم في يوم آخر",
+    "category": "recipient_unavailable",
+    "city": "رابغ",
+    "district": "حي الفرنيسية الشرقية",
+    "failure_id": "FR-d0e8b7a72f",
+    "resolution_id": "RES-5c6ba3530a",
+    "shipment_id": "SHP-0115",
+    "success": true
+  },
+  {
+    "action": "تصعيد الحالة للمشرف واتخاذ إجراء مركب لتصحيح العنوان وإعادة التسليم",
+    "category": "escalation:address_conflict",
+    "city": "الخرمة",
+    "district": "حي الناصرية",
+    "failure_id": "FR-118a35ffc4",
+    "resolution_id": "RES-b8a08f1666",
+    "shipment_id": "SHP-0116",
+    "success": true
+  },
+  {
+    "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+    "category": "escalation:hub_delay",
+    "city": "الخرمة",
+    "district": "حي الناصرية",
+    "failure_id": "FR-ff5ac212ea",
+    "resolution_id": "RES-a415c23247",
+    "shipment_id": "SHP-0116",
+    "success": true
+  },
+  {
+    "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+    "category": "failed_attempt_wrong_gate",
+    "city": "ضرية",
+    "district": "حي المنتزه",
+    "failure_id": "FR-4256fd5f56",
+    "resolution_id": "RES-b49ea77ad5",
+    "shipment_id": "SHP-0117",
+    "success": true
+  },
+  {
+    "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+    "category": "address_conflict",
+    "city": "سراة عبيدة",
+    "district": "حي الربوة",
+    "failure_id": "FR-7ecd18a82d",
+    "resolution_id": "RES-86ff3c5277",
+    "shipment_id": "SHP-0118",
+    "success": true
+  },
+  {
+    "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+    "category": "failed_attempt_weight_mismatch",
+    "city": "رنية",
+    "district": "حي الدعيكة",
+    "failure_id": "FR-8385d678a4",
+    "resolution_id": "RES-15048c66e7",
+    "shipment_id": "SHP-0119",
+    "success": true
+  },
+  {
+    "action": "تسريع الشحنة عبر خط نقل مباشر",
+    "category": "hub_delay",
+    "city": "النعيرية",
+    "district": "حي التشاليح",
+    "failure_id": "FR-865fe1858b",
+    "resolution_id": "RES-ec3c5ed5c7",
+    "shipment_id": "SHP-0120",
+    "success": true
+  },
+  {
+    "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+    "category": "address_conflict",
+    "city": "بقعاء",
+    "district": "حي الظهيره",
+    "failure_id": "FR-38097487fd",
+    "resolution_id": "RES-be5fb79e20",
+    "shipment_id": "SHP-0121",
+    "success": true
+  },
+  {
+    "action": "التواصل مع العميل لتحديد الموقع عبر الإحداثيات",
+    "category": "address_conflict",
+    "city": "صبيا",
+    "district": "الشواجرة والجرابية",
+    "failure_id": "FR-51b5b827e5",
+    "resolution_id": "RES-620457926b",
+    "shipment_id": "SHP-0123",
+    "success": true
+  },
+  {
+    "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+    "category": "escalation:recipient_unavailable",
+    "city": "مكة المكرمة",
+    "district": "حي الكوثر",
+    "failure_id": "FR-4f874f36ed",
+    "resolution_id": "RES-dcdea0bc85",
+    "shipment_id": "SHP-0125",
+    "success": true
+  },
+  {
+    "action": "تصعيد الحالة للمشرف واتخاذ إجراء مركب لتصحيح العنوان وإعادة التسليم",
+    "category": "escalation:address_conflict",
+    "city": "مكة المكرمة",
+    "district": "حي الكوثر",
+    "failure_id": "FR-99905879b6",
+    "resolution_id": "RES-7ca180c4e2",
+    "shipment_id": "SHP-0125",
+    "success": true
+  },
+  {
+    "action": "تسليم لجهة بديلة بموافقة العميل",
+    "category": "recipient_unavailable",
+    "city": "الطائف",
+    "district": "حي ج27",
+    "failure_id": "FR-c0412eb405",
+    "resolution_id": "RES-dd4a5011af",
+    "shipment_id": "SHP-0130",
+    "success": true
+  },
+  {
+    "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+    "category": "failed_attempt_wrong_gate",
+    "city": "محايل",
+    "district": "حي المقاعد",
+    "failure_id": "FR-b086feaed8",
+    "resolution_id": "RES-761619386d",
+    "shipment_id": "SHP-0131",
+    "success": true
+  },
+  {
+    "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+    "category": "escalation:address_conflict",
+    "city": "القيصومة",
+    "district": "حي المحمدية",
+    "failure_id": "FR-1a30d9c69f",
+    "resolution_id": "RES-b0ded0d642",
+    "shipment_id": "SHP-0133",
+    "success": false
+  },
+  {
+    "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+    "category": "escalation:failed_attempt_wrong_gate",
+    "city": "القيصومة",
+    "district": "حي المحمدية",
+    "failure_id": "FR-ca34be7c1c",
+    "resolution_id": "RES-dfe314b349",
+    "shipment_id": "SHP-0133",
+    "success": true
+  },
+  {
+    "action": "تسريع الشحنة عبر خط نقل مباشر",
+    "category": "hub_delay",
+    "city": "العمران",
+    "district": "قرية العمران الجنوبي",
+    "failure_id": "FR-77d1070c92",
+    "resolution_id": "RES-0b9a5a869c",
+    "shipment_id": "SHP-0135",
+    "success": false
+  },
+  {
+    "action": "استبدال الملصق وإعادة فحص الشحنة",
+    "category": "failed_attempt_weight_mismatch",
+    "city": "الجبيل",
+    "district": "حي الواحة",
+    "failure_id": "FR-2a4cd73163",
+    "resolution_id": "RES-f7f6228aa8",
+    "shipment_id": "SHP-0137",
+    "success": true
+  },
+  {
+    "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+    "category": "address_conflict",
+    "city": "ضرما",
+    "district": "حي البديع الشرقي",
+    "failure_id": "FR-cbc9be1b56",
+    "resolution_id": "RES-6678741e92",
+    "shipment_id": "SHP-0138",
+    "success": true
+  },
+  {
+    "action": "إعادة جدولة التسليم في يوم آخر",
+    "category": "recipient_unavailable",
+    "city": "نفي",
+    "district": "حي السعادة",
+    "failure_id": "FR-40b276ff4a",
+    "resolution_id": "RES-e04cf258c8",
+    "shipment_id": "SHP-0139",
+    "success": false
+  },
+  {
+    "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+    "category": "address_conflict",
+    "city": "الخفجي",
+    "district": "حي المروج",
+    "failure_id": "FR-dfc4018cdf",
+    "resolution_id": "RES-8b310e3133",
+    "shipment_id": "SHP-0144",
+    "success": true
+  },
+  {
+    "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+    "category": "address_conflict",
+    "city": "رنية",
+    "district": "حي ملهي",
+    "failure_id": "FR-62794d508a",
+    "resolution_id": "RES-e8c312b756",
+    "shipment_id": "SHP-0146",
+    "success": true
+  },
+  {
+    "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+    "category": "hub_delay",
+    "city": "ينبع",
+    "district": "حي الضباب",
+    "failure_id": "FR-84e8e974df",
+    "resolution_id": "RES-4836833512",
+    "shipment_id": "SHP-0147",
+    "success": false
+  },
+  {
+    "action": "استبدال الملصق وإعادة فحص الشحنة",
+    "category": "failed_attempt_wrong_gate",
+    "city": "بقعاء",
+    "district": "حي ج13",
+    "failure_id": "FR-2e65e1f59c",
+    "resolution_id": "RES-077c57bda7",
+    "shipment_id": "SHP-0149",
+    "success": true
+  },
+  {
+    "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+    "category": "recipient_unavailable",
+    "city": "المزاحمية",
+    "district": "حي طويق",
+    "failure_id": "FR-4fb61f0370",
+    "resolution_id": "RES-7f2150d496",
+    "shipment_id": "SHP-0150",
+    "success": true
+  },
+  {
+    "action": "تصعيد الحالة للمشرف واتخاذ إجراء مركب لتصحيح العنوان وإعادة التسليم",
+    "category": "escalation:address_conflict",
+    "city": "ينبع",
+    "district": "حي الورود",
+    "failure_id": "FR-020bcf7fc2",
+    "resolution_id": "RES-4a81a5649b",
+    "shipment_id": "SHP-0151",
+    "success": true
+  },
+  {
+    "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+    "category": "escalation:recipient_unavailable",
+    "city": "ينبع",
+    "district": "حي الورود",
+    "failure_id": "FR-fba1462900",
+    "resolution_id": "RES-1022ee04d5",
+    "shipment_id": "SHP-0151",
+    "success": true
+  },
+  {
+    "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+    "category": "failed_attempt_weight_mismatch",
+    "city": "الارطاوية",
+    "district": "حي الفيحاء",
+    "failure_id": "FR-3b891086ff",
+    "resolution_id": "RES-bdf72e2665",
+    "shipment_id": "SHP-0153",
+    "success": true
+  },
+  {
+    "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+    "category": "address_conflict",
+    "city": "الشنان",
+    "district": "حي النهضة",
+    "failure_id": "FR-59c6f597bb",
+    "resolution_id": "RES-06cdd01086",
+    "shipment_id": "SHP-0154",
+    "success": true
+  },
+  {
+    "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+    "category": "failed_attempt_weight_mismatch",
+    "city": "الهفوف",
+    "district": "حي جامعة الملك فيصل الثاني",
+    "failure_id": "FR-c6fe82e77b",
+    "resolution_id": "RES-3c7207908d",
+    "shipment_id": "SHP-0155",
+    "success": false
+  },
+  {
+    "action": "إعادة جدولة التسليم في يوم آخر",
+    "category": "recipient_unavailable",
+    "city": "مدينة الملك عبدالله الاقتصادية",
+    "district": "حي ريتان",
+    "failure_id": "FR-897010b31f",
+    "resolution_id": "RES-9d6e08f0a7",
+    "shipment_id": "SHP-0159",
+    "success": true
+  },
+  {
+    "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+    "category": "hub_delay",
+    "city": "مهد الذهب",
+    "district": "حي ج3",
+    "failure_id": "FR-5b1f75d314",
+    "resolution_id": "RES-ed9088b940",
+    "shipment_id": "SHP-0161",
+    "success": true
+  },
+  {
+    "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+    "category": "escalation:failed_attempt_wrong_gate",
+    "city": "صوير",
+    "district": "حي الربوة",
+    "failure_id": "FR-196c0cbc9f",
+    "resolution_id": "RES-d37dddf90a",
+    "shipment_id": "SHP-0162",
+    "success": true
+  },
+  {
+    "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+    "category": "escalation:recipient_unavailable",
+    "city": "صوير",
+    "district": "حي الربوة",
+    "failure_id": "FR-e7c5aeeda9",
+    "resolution_id": "RES-eae158957d",
+    "shipment_id": "SHP-0162",
+    "success": true
+  },
+  {
+    "action": "إعادة جدولة التسليم في يوم آخر",
+    "category": "recipient_unavailable",
+    "city": "نجران",
+    "district": "حي بئر أبين",
+    "failure_id": "FR-ca78a7ce55",
+    "resolution_id": "RES-0dfbf03083",
+    "shipment_id": "SHP-0163",
+    "success": true
+  },
+  {
+    "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+    "category": "address_conflict",
+    "city": "الظهران",
+    "district": "حي الحرس الوطني",
+    "failure_id": "FR-522a7eb9a8",
+    "resolution_id": "RES-7902045b70",
+    "shipment_id": "SHP-0165",
+    "success": false
+  },
+  {
+    "action": "إعادة جدولة التسليم في يوم آخر",
+    "category": "recipient_unavailable",
+    "city": "وادي الدواسر",
+    "district": "حي العليا",
+    "failure_id": "FR-6f2c6749b3",
+    "resolution_id": "RES-ae1f2ee8f1",
+    "shipment_id": "SHP-0167",
+    "success": true
+  },
+  {
+    "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+    "category": "address_conflict",
+    "city": "القيصومة",
+    "district": "حي الفيصلية",
+    "failure_id": "FR-002a3192bc",
+    "resolution_id": "RES-13f549ade1",
+    "shipment_id": "SHP-0168",
+    "success": true
+  },
+  {
+    "action": "إعادة توجيه الشحنة عبر مركز فرز بديل",
+    "category": "hub_delay",
+    "city": "الطائف",
+    "district": "حي الواسط",
+    "failure_id": "FR-69daf7310a",
+    "resolution_id": "RES-e607d83edb",
+    "shipment_id": "SHP-0169",
+    "success": true
+  },
+  {
+    "action": "التواصل مع العميل لتحديد الموقع عبر الإحداثيات",
+    "category": "address_conflict",
+    "city": "الغاط",
+    "district": "حي غرناطة",
+    "failure_id": "FR-701ea6c1e4",
+    "resolution_id": "RES-08dcc69973",
+    "shipment_id": "SHP-0176",
+    "success": true
+  },
+  {
+    "action": "تسليم لجهة بديلة بموافقة العميل",
+    "category": "recipient_unavailable",
+    "city": "بلجرشي",
+    "district": "حي الشطيبة",
+    "failure_id": "FR-38974df8af",
+    "resolution_id": "RES-a5c8837459",
+    "shipment_id": "SHP-0177",
+    "success": true
+  },
+  {
+    "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+    "category": "address_conflict",
+    "city": "حبونا",
+    "district": "حي حبونا",
+    "failure_id": "FR-61620562a6",
+    "resolution_id": "RES-cba5c3db6f",
+    "shipment_id": "SHP-0179",
+    "success": false
+  },
+  {
+    "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+    "category": "recipient_unavailable",
+    "city": "العيون",
+    "district": "بلدة الشقيق الغربية",
+    "failure_id": "FR-14f1d11017",
+    "resolution_id": "RES-1c9f96501b",
+    "shipment_id": "SHP-0181",
+    "success": true
+  },
+  {
+    "action": "إعادة جدولة التسليم في يوم آخر",
+    "category": "recipient_unavailable",
+    "city": "بقعاء",
+    "district": "حي بقعاء القديمه",
+    "failure_id": "FR-f026c2f932",
+    "resolution_id": "RES-ad40fc09db",
+    "shipment_id": "SHP-0184",
+    "success": true
+  },
+  {
+    "action": "تسليم لجهة بديلة بموافقة العميل",
+    "category": "recipient_unavailable",
+    "city": "جلاجل",
+    "district": "حي الشعيبة",
+    "failure_id": "FR-a00748c7fc",
+    "resolution_id": "RES-8c7b8c0209",
+    "shipment_id": "SHP-0185",
+    "success": true
+  },
+  {
+    "action": "تسليم لجهة بديلة بموافقة العميل",
+    "category": "recipient_unavailable",
+    "city": "الحناكية",
+    "district": "المنطقة الصناعية",
+    "failure_id": "FR-a32f2af94e",
+    "resolution_id": "RES-f993970202",
+    "shipment_id": "SHP-0186",
+    "success": true
+  },
+  {
+    "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+    "category": "address_conflict",
+    "city": "عنك",
+    "district": "حي البستان",
+    "failure_id": "FR-94c17e6eca",
+    "resolution_id": "RES-2daf136e51",
+    "shipment_id": "SHP-0191",
+    "success": true
+  },
+  {
+    "action": "التواصل مع العميل لتحديد الموقع عبر الإحداثيات",
+    "category": "address_conflict",
+    "city": "المدينة المنورة",
+    "district": "حي الدار",
+    "failure_id": "FR-6a5cfbf8db",
+    "resolution_id": "RES-768dcc913e",
+    "shipment_id": "SHP-0194",
+    "success": true
+  },
+  {
+    "action": "إعادة جدولة التسليم في يوم آخر",
+    "category": "recipient_unavailable",
+    "city": "قرية العليا",
+    "district": "حي الربيع",
+    "failure_id": "FR-62382658ba",
+    "resolution_id": "RES-524ec8c2c2",
+    "shipment_id": "SHP-0195",
+    "success": true
+  },
+  {
+    "action": "إعادة توجيه الشحنة عبر مركز فرز بديل",
+    "category": "hub_delay",
+    "city": "ينبع",
+    "district": "حي البثنة",
+    "failure_id": "FR-7c241dab45",
+    "resolution_id": "RES-50316fdc3d",
+    "shipment_id": "SHP-0198",
+    "success": true
+  },
+  {
+    "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+    "category": "recipient_unavailable",
+    "city": "محايل",
+    "district": "حي السلامة",
+    "failure_id": "FR-d1a0bf0911",
+    "resolution_id": "RES-3baa2754ac",
+    "shipment_id": "SHP-0199",
+    "success": true
+  },
+  {
+    "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+    "category": "hub_delay",
+    "city": "حريملاء",
+    "district": "حي الروضة",
+    "failure_id": "FR-f72040630b",
+    "resolution_id": "RES-f06a982ca8",
+    "shipment_id": "SHP-0202",
+    "success": true
+  },
+  {
+    "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+    "category": "address_conflict",
+    "city": "القوز",
+    "district": "حي القوز",
+    "failure_id": "FR-fc317b7664",
+    "resolution_id": "RES-c985b558fe",
+    "shipment_id": "SHP-0203",
+    "success": true
+  },
+  {
+    "action": "التواصل مع العميل لتحديد الموقع عبر الإحداثيات",
+    "category": "address_conflict",
+    "city": "تنومة",
+    "district": "حي النزهة",
+    "failure_id": "FR-d4a43773ca",
+    "resolution_id": "RES-a94069237f",
+    "shipment_id": "SHP-0204",
+    "success": true
+  },
+  {
+    "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+    "category": "hub_delay",
+    "city": "العقيق",
+    "district": "مخطط المطار",
+    "failure_id": "FR-1e1b0163d3",
+    "resolution_id": "RES-013a0acdc1",
+    "shipment_id": "SHP-0206",
+    "success": true
+  },
+  {
+    "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+    "category": "failed_attempt_weight_mismatch",
+    "city": "المرموثة",
+    "district": "فيضة السلمات",
+    "failure_id": "FR-4049b1e8f4",
+    "resolution_id": "RES-c149b65d9d",
+    "shipment_id": "SHP-0208",
+    "success": false
+  },
+  {
+    "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+    "category": "address_conflict",
+    "city": "تبوك",
+    "district": "حي رايس",
+    "failure_id": "FR-1bca44e24c",
+    "resolution_id": "RES-4765683a1c",
+    "shipment_id": "SHP-0210",
+    "success": true
+  },
+  {
+    "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+    "category": "hub_delay",
+    "city": "السودة",
+    "district": "حي ج 35",
+    "failure_id": "FR-1704a1b0f6",
+    "resolution_id": "RES-20cdfb1580",
+    "shipment_id": "SHP-0213",
+    "success": true
+  },
+  {
+    "action": "تسليم لجهة بديلة بموافقة العميل",
+    "category": "recipient_unavailable",
+    "city": "حريملاء",
+    "district": "حي الديرة",
+    "failure_id": "FR-a88101b606",
+    "resolution_id": "RES-33a4867db0",
+    "shipment_id": "SHP-0215",
+    "success": true
+  },
+  {
+    "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+    "category": "address_conflict",
+    "city": "محايل",
+    "district": "حي البصرة",
+    "failure_id": "FR-911ddec485",
+    "resolution_id": "RES-96150b8543",
+    "shipment_id": "SHP-0218",
+    "success": true
+  },
+  {
+    "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+    "category": "recipient_unavailable",
+    "city": "الشملي",
+    "district": "حي الصناعية",
+    "failure_id": "FR-b389a7142a",
+    "resolution_id": "RES-13e79b5e29",
+    "shipment_id": "SHP-0221",
+    "success": true
+  },
+  {
+    "action": "إعادة جدولة التسليم في يوم آخر",
+    "category": "recipient_unavailable",
+    "city": "احد المسارحة",
+    "district": "حي العمارية",
+    "failure_id": "FR-1d69625c08",
+    "resolution_id": "RES-0325b77228",
+    "shipment_id": "SHP-0225",
+    "success": true
+  },
+  {
+    "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+    "category": "recipient_unavailable",
+    "city": "القنفذة",
+    "district": "حي الشرقية",
+    "failure_id": "FR-e03fd89e89",
+    "resolution_id": "RES-f60c16fbd4",
+    "shipment_id": "SHP-0231",
+    "success": false
+  },
+  {
+    "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+    "category": "address_conflict",
+    "city": "الشملي",
+    "district": "حي الوادي",
+    "failure_id": "FR-98f4e6f570",
+    "resolution_id": "RES-499bad94c1",
+    "shipment_id": "SHP-0234",
+    "success": true
+  },
+  {
+    "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+    "category": "address_conflict",
+    "city": "الشنان",
+    "district": "حي العزيزية",
+    "failure_id": "FR-960cd3ca38",
+    "resolution_id": "RES-394c3eb85d",
+    "shipment_id": "SHP-0236",
+    "success": true
+  },
+  {
+    "action": "إعادة جدولة التسليم في يوم آخر",
+    "category": "recipient_unavailable",
+    "city": "املج",
+    "district": "حي الصيادية",
+    "failure_id": "FR-7b413307aa",
+    "resolution_id": "RES-b5983a1ad2",
+    "shipment_id": "SHP-0238",
+    "success": true
+  },
+  {
+    "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+    "category": "address_conflict",
+    "city": "حائل",
+    "district": "حي النقرة قفار",
+    "failure_id": "FR-4378a3699e",
+    "resolution_id": "RES-3a9eff1c24",
+    "shipment_id": "SHP-0239",
+    "success": false
+  },
+  {
+    "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+    "category": "escalation:failed_attempt_weight_mismatch",
+    "city": "نفي",
+    "district": "حي الفيحاء",
+    "failure_id": "FR-2a0bb8be8a",
+    "resolution_id": "RES-5455d32e12",
+    "shipment_id": "SHP-0240",
+    "success": false
+  },
+  {
+    "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+    "category": "escalation:hub_delay",
+    "city": "نفي",
+    "district": "حي الفيحاء",
+    "failure_id": "FR-bfcf483048",
+    "resolution_id": "RES-02f3213a8e",
+    "shipment_id": "SHP-0240",
+    "success": true
+  },
+  {
+    "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+    "category": "address_conflict",
+    "city": "سيهات",
+    "district": "حي الخليج",
+    "failure_id": "FR-336bef8183",
+    "resolution_id": "RES-ffd61bfb73",
+    "shipment_id": "SHP-0241",
+    "success": true
+  },
+  {
+    "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+    "category": "failed_attempt_barcode_mismatch",
+    "city": "العارضة",
+    "district": "حي النخيل",
+    "failure_id": "FR-8d0e6b193d",
+    "resolution_id": "RES-fb2a32f195",
+    "shipment_id": "SHP-0245",
+    "success": true
+  },
+  {
+    "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+    "category": "failed_attempt_weight_mismatch",
+    "city": "صبيا",
+    "district": "الحجرين",
+    "failure_id": "FR-807c4870f4",
+    "resolution_id": "RES-9226c4ebd8",
+    "shipment_id": "SHP-0248",
+    "success": true
+  },
+  {
+    "action": "إعادة جدولة التسليم في يوم آخر",
+    "category": "recipient_unavailable",
+    "city": "حائل",
+    "district": "حي ج2",
+    "failure_id": "FR-b60a98d7da",
+    "resolution_id": "RES-48355c6d27",
+    "shipment_id": "SHP-0250",
+    "success": true
+  },
+  {
+    "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+    "category": "failed_attempt_wrong_gate",
+    "city": "بقعاء",
+    "district": "حي ج15",
+    "failure_id": "FR-530015f7bd",
+    "resolution_id": "RES-42a43d0d2e",
+    "shipment_id": "SHP-0261",
+    "success": true
+  },
+  {
+    "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+    "category": "recipient_unavailable",
+    "city": "صوير",
+    "district": "حي العزيزية",
+    "failure_id": "FR-cf2d190711",
+    "resolution_id": "RES-b916d22b39",
+    "shipment_id": "SHP-0263",
+    "success": true
+  },
+  {
+    "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+    "category": "recipient_unavailable",
+    "city": "ينبع الصناعية",
+    "district": "حي الزهور",
+    "failure_id": "FR-2b63521013",
+    "resolution_id": "RES-757fa8cc55",
+    "shipment_id": "SHP-0264",
+    "success": true
+  },
+  {
+    "action": "تسليم لجهة بديلة بموافقة العميل",
+    "category": "recipient_unavailable",
+    "city": "العويقلية",
+    "district": "حي الأندلس",
+    "failure_id": "FR-78251bf4cb",
+    "resolution_id": "RES-8cecc95d8c",
+    "shipment_id": "SHP-0265",
+    "success": false
+  },
+  {
+    "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+    "category": "failed_attempt_wrong_gate",
+    "city": "بلجرشي",
+    "district": "حي الشطيبة",
+    "failure_id": "FR-b4b9f3b8bb",
+    "resolution_id": "RES-62b146c76d",
+    "shipment_id": "SHP-0267",
+    "success": true
+  },
+  {
+    "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+    "category": "escalation:hub_delay",
+    "city": "ينبع",
+    "district": "حي الامارة",
+    "failure_id": "FR-20f7affb49",
+    "resolution_id": "RES-c83bac4f86",
+    "shipment_id": "SHP-0268",
+    "success": true
+  },
+  {
+    "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+    "category": "escalation:failed_attempt_wrong_gate",
+    "city": "ينبع",
+    "district": "حي الامارة",
+    "failure_id": "FR-7eeda4eb33",
+    "resolution_id": "RES-594751a762",
+    "shipment_id": "SHP-0268",
+    "success": true
+  },
+  {
+    "action": "تسليم لجهة بديلة بموافقة العميل",
+    "category": "recipient_unavailable",
+    "city": "قرية العليا",
+    "district": "حي غرناطة",
+    "failure_id": "FR-e817a9da17",
+    "resolution_id": "RES-903fe86f75",
+    "shipment_id": "SHP-0274",
+    "success": true
+  },
+  {
+    "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+    "category": "escalation:hub_delay",
+    "city": "الخفجي",
+    "district": "حي الخزامى",
+    "failure_id": "FR-155da4f8b2",
+    "resolution_id": "RES-e80e2c8af3",
+    "shipment_id": "SHP-0275",
+    "success": true
+  },
+  {
+    "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+    "category": "escalation:address_conflict",
+    "city": "الخفجي",
+    "district": "حي الخزامى",
+    "failure_id": "FR-ce1d1cea57",
+    "resolution_id": "RES-625768672d",
+    "shipment_id": "SHP-0275",
+    "success": true
+  },
+  {
+    "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+    "category": "address_conflict",
+    "city": "طريف",
+    "district": "حي الروابي",
+    "failure_id": "FR-f3f529d116",
+    "resolution_id": "RES-46d743fa42",
+    "shipment_id": "SHP-0276",
+    "success": true
+  },
+  {
+    "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+    "category": "recipient_unavailable",
+    "city": "نجران",
+    "district": "حي الغويلا أ",
+    "failure_id": "FR-58e6b6089a",
+    "resolution_id": "RES-60699c577c",
+    "shipment_id": "SHP-0278",
+    "success": true
+  },
+  {
+    "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+    "category": "failed_attempt_wrong_gate",
+    "city": "ابها",
+    "district": "حي العقيق",
+    "failure_id": "FR-5e7cfc73a7",
+    "resolution_id": "RES-6fe9a2d176",
+    "shipment_id": "SHP-0281",
+    "success": true
+  },
+  {
+    "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+    "category": "escalation:failed_attempt_wrong_gate",
+    "city": "بقعاء",
+    "district": "حي ج16",
+    "failure_id": "FR-74fbcc36ef",
+    "resolution_id": "RES-64d9df1d1c",
+    "shipment_id": "SHP-0282",
+    "success": true
+  },
+  {
+    "action": "تصعيد الحالة للمشرف واتخاذ إجراء مركب لتصحيح العنوان وإعادة التسليم",
+    "category": "escalation:hub_delay",
+    "city": "بقعاء",
+    "district": "حي ج16",
+    "failure_id": "FR-d962bc0ee5",
+    "resolution_id": "RES-9b42426d77",
+    "shipment_id": "SHP-0282",
+    "success": true
+  },
+  {
+    "action": "التواصل مع العميل لتحديد الموقع عبر الإحداثيات",
+    "category": "address_conflict",
+    "city": "طبرجل",
+    "district": "حي حدرج",
+    "failure_id": "FR-67d3d0e5f5",
+    "resolution_id": "RES-70bea98151",
+    "shipment_id": "SHP-0283",
+    "success": true
+  },
+  {
+    "action": "تسريع الشحنة عبر خط نقل مباشر",
+    "category": "hub_delay",
+    "city": "حوطة سدير",
+    "district": "حي المصيف",
+    "failure_id": "FR-94c352cb69",
+    "resolution_id": "RES-49abb707f2",
+    "shipment_id": "SHP-0285",
+    "success": true
+  },
+  {
+    "action": "التواصل مع العميل لتحديد الموقع عبر الإحداثيات",
+    "category": "address_conflict",
+    "city": "الشملي",
+    "district": "حي الوادي",
+    "failure_id": "FR-f5fc96477e",
+    "resolution_id": "RES-a99a0c08a8",
+    "shipment_id": "SHP-0286",
+    "success": true
+  },
+  {
+    "action": "التواصل مع العميل لتحديد الموقع عبر الإحداثيات",
+    "category": "address_conflict",
+    "city": "بقعاء",
+    "district": "حي ج2",
+    "failure_id": "FR-b714e2b14b",
+    "resolution_id": "RES-7fa9023aa0",
+    "shipment_id": "SHP-0287",
+    "success": true
+  },
+  {
+    "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+    "category": "failed_attempt_weight_mismatch",
+    "city": "عقلة الصقور",
+    "district": "حي اليرموك",
+    "failure_id": "FR-75e1205ba4",
+    "resolution_id": "RES-c2f1e292af",
+    "shipment_id": "SHP-0291",
+    "success": true
+  },
+  {
+    "action": "إبلاغ العميل بالتأخير وتحديث موعد التسليم",
+    "category": "hub_delay",
+    "city": "النعيرية",
+    "district": "حي الربيع",
+    "failure_id": "FR-8271581a9e",
+    "resolution_id": "RES-8480f85f26",
+    "shipment_id": "SHP-0293",
+    "success": true
+  },
+  {
+    "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+    "category": "address_conflict",
+    "city": "الرياض",
+    "district": "حي السفارات",
+    "failure_id": "FR-2e758d0865",
+    "resolution_id": "RES-a3641e6438",
+    "shipment_id": "SHP-0296",
+    "success": true
+  },
+  {
+    "action": "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه",
+    "category": "address_conflict",
+    "city": "حائل",
+    "district": "حي النيصية",
+    "failure_id": "FR-9622f5a7aa",
+    "resolution_id": "RES-4d9d704703",
+    "shipment_id": "SHP-0297",
+    "success": true
+  },
+  {
+    "action": "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل",
+    "category": "recipient_unavailable",
+    "city": "الدوادمي",
+    "district": "منطقة الاستراحات",
+    "failure_id": "FR-a96361aa04",
+    "resolution_id": "RES-c87447aa3d",
+    "shipment_id": "SHP-0298",
+    "success": true
+  }
+]

@@ -1,0 +1,50 @@
+{
+  "complaint_mode": "neutral",
+  "corpus_hash": "07895cf7e1908d2dd8feac0f7300217e561009d1ca35cd77f5d5c6048648d408",
+  "escalation_seed_cases": 5,
+  "gold_hash": "c14a7728540a35ab56f514aac98a38561e388070edf124146f124495c2c21f05",
+  "language_counts": {
+    "ar": 18,
+    "en": 12
+  },
+  "limitations": [
+    "Barcode, weight and gate/contact outcome observations absent from local projection; some subtypes are underidentified.",
+    "Only base categories are supported outputs; full escalation-prefix agreement is separately penalized unsupported vocabulary.",
+    "History action plausibility and retrieval category matching are synthetic proxies, not independently adjudicated correctness.",
+    "False acceptance/rejection rates cannot be measured without independent adjudication.",
+    "Arabic complaints do not require Arabic explanations in native English production prompts; Arabic actions and Arabic prose measured separately."
+  ],
+  "max_retries": 0,
+  "membership_hash": "e5f9df263b61fcb3a556f5351a020b46cccccf42c0c6cd074fe9e54508047813",
+  "methodology": "controlled frozen classifier/recommender/reviewer/AFL benchmark; 30 identical case-language inputs across models (18AR/12EN, not same-case bilingual translations); synthetic seeded labels/actions and random outcomes, not independent human SPL gold; extraction measured but not used to alter frozen retrieval; casefile/writeback disabled",
+  "models": [
+    "openai/gpt-oss:20b",
+    "openai/gpt-oss:120b"
+  ],
+  "planned_cases_per_model": 30,
+  "prepared_at": "2026-10-09T14:32:52.732524+00:00",
+  "provider_identity": {
+    "api_base_sha256": "d115cae79af69d9db470aba431e632ea28a39c4f3e2217b900da46e558662fe9",
+    "max_retries": 0,
+    "temperature": 0,
+    "timeout_seconds": 90
+  },
+  "runtime_hash": "ee5b5e4253b5d2bbd36985d1386c0cb9065a101347e9a6d8f44767388f988f0a",
+  "sampling_seed": 42,
+  "source_hashes": {
+    "_llm.py": "11fefba68fc66bf0793521df3fb2508fcc5df8b85973263ceb21f705fcaaec52",
+    "classifier.py": "b65e1d8c5cfa0efd688a3d376a32935c1345b1424a883e357fe0ba8d3bc65507",
+    "evaluator.py": "5ab71203c167a56856738c92cfc98b2be9a3abf436f33ac09e47690aca3358c1",
+    "extract.py": "c622e0827c46c16d227c11d223be7b515ce6af3a18a85c559f5976e5790e6d78",
+    "graph.py": "55a56f06c7b6efd415192fdb6671662c25ed347814d5a94ce935f9dc3c786ddd",
+    "recommender.py": "2e44e65d7b68890cc39b9d0d6b522a96495e6904a6095b7ec8fcb0f1c0d41833",
+    "retrieve.py": "2db1e63d92327b9b9daaf182ca2dff50785a138c8dca07333f2da82811546b24",
+    "reviewer.py": "7a52d24e1375f0936726898ec78f93f96f1d93f3e77a8d4763e060120a605901",
+    "rules.py": "e4e9a6e8bd940072f2207bd4ff2bb0291c10c86f21f83288a10b5e0f7cc4764f",
+    "writeback.py": "8661a13a97b513f77e29226674f68a002ddd4ff6472b3c282d547cc1efcd5993"
+  },
+  "symptom_templates_hash": "086e7be6f3f3d953e83dc15a6292b5f0a55f7770343faefabed4f4d9848a41c4",
+  "temperature": 0,
+  "timeout_seconds": 90,
+  "version": "gpt-oss-v1-frozen-1"
+}

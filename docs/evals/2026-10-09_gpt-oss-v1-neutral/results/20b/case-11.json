@@ -1,0 +1,169 @@
+{
+  "calls": [
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 2.2915,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "extract",
+      "usage": {
+        "input_tokens": 286,
+        "output_tokens": 139,
+        "total_tokens": 425
+      }
+    }
+  ],
+  "case_id": "case-11",
+  "dry_disposition": "escalation_required",
+  "error_type": null,
+  "events": [
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "",
+        "detail": {
+          "shipment_id": "SHP-0208"
+        },
+        "is_agent": false,
+        "label": "Entity Extraction",
+        "lane": "Input",
+        "loop": 0,
+        "stage": "extract"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "",
+        "detail": {
+          "live_failure_id": null,
+          "precedent": [],
+          "similar_cases": 0
+        },
+        "is_agent": false,
+        "label": "Vector KNN + Graph → RRF",
+        "lane": "Hybrid Retrieval",
+        "loop": 0,
+        "stage": "retrieve"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "",
+        "is_agent": false,
+        "label": "Escalate",
+        "lane": "Output",
+        "loop": 0,
+        "stage": "escalate"
+      }
+    },
+    {
+      "kind": "final",
+      "payload": {
+        "case_file": null,
+        "classification": null,
+        "disposition": "escalate",
+        "escalation": {
+          "escalation_id": "DRY-NOT-FILED",
+          "team": "human_review"
+        },
+        "loops": 0,
+        "recommendation": null,
+        "resolution_id": null,
+        "review": null
+      }
+    }
+  ],
+  "final": {
+    "case_file": null,
+    "classification": null,
+    "disposition": "escalate",
+    "escalation": {
+      "escalation_id": "DRY-NOT-FILED",
+      "team": "human_review"
+    },
+    "loops": 0,
+    "recommendation": null,
+    "resolution_id": null,
+    "review": null
+  },
+  "gold_hash": "c14a7728540a35ab56f514aac98a38561e388070edf124146f124495c2c21f05",
+  "language": "ar",
+  "latency_seconds": 2.2979,
+  "metrics": {
+    "accepted_seeded_cause_disagreement_proxy": false,
+    "actual_native_prose_language": "empty",
+    "afl_changed_seeded_cause_hit_to_miss_proxy": false,
+    "afl_corrected_seeded_cause_miss_proxy": false,
+    "afl_retry": false,
+    "any_recorded_shipment_base_cause_agreement": false,
+    "application_field_fallback_or_normalization": false,
+    "arabic_canonical_action": false,
+    "base_cause_agreement": false,
+    "base_cause_valid_model_agreement": false,
+    "escalated": true,
+    "expected_seeded_action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+    "expected_seeded_category": "failed_attempt_weight_mismatch",
+    "extraction_shipment_id_match": true,
+    "failed_attempt_family_agreement": false,
+    "final_classifier_model_output_valid": false,
+    "first_base_cause_agreement": false,
+    "first_predicted_category": null,
+    "native_prompt_prose_language": "en",
+    "no_grounding": true,
+    "plausibility_history_counts": null,
+    "predicted_action": null,
+    "predicted_category": null,
+    "quality_not_independently_scored": true,
+    "raw_full_category_agreement_unsupported_escalation_prefix": false,
+    "recorded_delivery_attempts": 1,
+    "reject_reviews": 0,
+    "retrieval_category_match_proxy": null,
+    "review_accepted": false,
+    "seeded_action_exact_agreement": false,
+    "synthetic_history_action_plausibility_proxy": false
+  },
+  "model": "openai/gpt-oss:20b",
+  "observed_success": null,
+  "provider_identity": {
+    "api_base_sha256": "d115cae79af69d9db470aba431e632ea28a39c4f3e2217b900da46e558662fe9",
+    "max_retries": 0,
+    "temperature": 0,
+    "timeout_seconds": 90
+  },
+  "runtime_hash": "ee5b5e4253b5d2bbd36985d1386c0cb9065a101347e9a6d8f44767388f988f0a",
+  "source_hashes": {
+    "_llm.py": "11fefba68fc66bf0793521df3fb2508fcc5df8b85973263ceb21f705fcaaec52",
+    "classifier.py": "b65e1d8c5cfa0efd688a3d376a32935c1345b1424a883e357fe0ba8d3bc65507",
+    "evaluator.py": "5ab71203c167a56856738c92cfc98b2be9a3abf436f33ac09e47690aca3358c1",
+    "extract.py": "c622e0827c46c16d227c11d223be7b515ce6af3a18a85c559f5976e5790e6d78",
+    "graph.py": "55a56f06c7b6efd415192fdb6671662c25ed347814d5a94ce935f9dc3c786ddd",
+    "recommender.py": "2e44e65d7b68890cc39b9d0d6b522a96495e6904a6095b7ec8fcb0f1c0d41833",
+    "retrieve.py": "2db1e63d92327b9b9daaf182ca2dff50785a138c8dca07333f2da82811546b24",
+    "reviewer.py": "7a52d24e1375f0936726898ec78f93f96f1d93f3e77a8d4763e060120a605901",
+    "rules.py": "e4e9a6e8bd940072f2207bd4ff2bb0291c10c86f21f83288a10b5e0f7cc4764f",
+    "writeback.py": "8661a13a97b513f77e29226674f68a002ddd4ff6472b3c282d547cc1efcd5993"
+  },
+  "stage_latencies": [
+    {
+      "latency_seconds": 2.296,
+      "loop": 0,
+      "stage": "extract"
+    },
+    {
+      "latency_seconds": 0.0012,
+      "loop": 0,
+      "stage": "retrieve"
+    },
+    {
+      "latency_seconds": 0.0006,
+      "loop": 0,
+      "stage": "escalate"
+    }
+  ],
+  "timestamp": "2026-10-09T14:38:36.637165+00:00",
+  "version": "gpt-oss-v1-frozen-1",
+  "writeback_executed": false
+}

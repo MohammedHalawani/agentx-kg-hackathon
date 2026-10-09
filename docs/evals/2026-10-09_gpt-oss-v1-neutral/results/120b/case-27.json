@@ -1,0 +1,628 @@
+{
+  "calls": [
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 1.2966,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "extract",
+      "usage": {
+        "input_tokens": 281,
+        "output_tokens": 184,
+        "total_tokens": 465
+      }
+    },
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 2.1346,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "classify",
+      "usage": {
+        "input_tokens": 1343,
+        "output_tokens": 497,
+        "total_tokens": 1840
+      }
+    },
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 1.782,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "recommend",
+      "usage": {
+        "input_tokens": 1150,
+        "output_tokens": 375,
+        "total_tokens": 1525
+      }
+    },
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 2.7408,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "classify",
+      "usage": {
+        "input_tokens": 1413,
+        "output_tokens": 543,
+        "total_tokens": 1956
+      }
+    },
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 1.9629,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "recommend",
+      "usage": {
+        "input_tokens": 1141,
+        "output_tokens": 476,
+        "total_tokens": 1617
+      }
+    },
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 1.3716,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "review",
+      "usage": {
+        "input_tokens": 1479,
+        "output_tokens": 274,
+        "total_tokens": 1753
+      }
+    }
+  ],
+  "case_id": "case-27",
+  "dry_disposition": "accepted_recommendation",
+  "error_type": null,
+  "events": [
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "",
+        "detail": {
+          "city": "بقعاء",
+          "shipment_id": "SHP-0261"
+        },
+        "is_agent": false,
+        "label": "Entity Extraction",
+        "lane": "Input",
+        "loop": 0,
+        "stage": "extract"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "",
+        "detail": {
+          "live_failure_id": null,
+          "precedent": [
+            {
+              "action": "استبدال الملصق وإعادة فحص الشحنة",
+              "category": "failed_attempt_weight_mismatch",
+              "city": "بقعاء",
+              "courier": "سامي البقمي",
+              "description": "محاولة تسليم فاشلة: عدم تطابق وزن الشحنة مع السجل",
+              "district": "حي ج4",
+              "failure_id": "FR-c4f16fe8f1",
+              "resolution_id": "RES-2b2cc20522",
+              "rrf_score": 0.032787,
+              "score": 0.7893086075782776,
+              "success": true
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "category": "recipient_unavailable",
+              "city": "بقعاء",
+              "courier": "راشد البلوي",
+              "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+              "district": "حي بقعاء القديمه",
+              "failure_id": "FR-f026c2f932",
+              "resolution_id": "RES-ad40fc09db",
+              "rrf_score": 0.031754,
+              "score": 0.7848043441772461,
+              "success": true
+            },
+            {
+              "action": "تصحيح العنوان في النظام وإعادة الجدولة",
+              "category": "address_conflict",
+              "city": "بقعاء",
+              "courier": "فيصل الجهني",
+              "description": "تعارض في العنوان: نسخة العنوان المسجلة تختلف عن الموقع الفعلي للتسليم",
+              "district": "حي الظهيره",
+              "failure_id": "FR-38097487fd",
+              "resolution_id": "RES-be5fb79e20",
+              "rrf_score": 0.016129,
+              "score": null,
+              "success": true
+            }
+          ],
+          "similar_cases": 5
+        },
+        "is_agent": false,
+        "label": "Vector KNN + Graph → RRF",
+        "lane": "Hybrid Retrieval",
+        "loop": 0,
+        "stage": "retrieve"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "المصنّف",
+        "detail": {
+          "category": "recipient_unavailable",
+          "confidence": 0.32,
+          "priority": "high",
+          "rationale": "Model hypothesis: recipient_unavailable; requires evidence verification. Recorded delivery attempts: 1 of 1 permitted (budget exhausted). Recorded timeline span: 0.83 days against 1-day policy SLA (within SLA). Complaint statements are reports, not independently verified operational facts."
+        },
+        "is_agent": true,
+        "label": "Root-cause classification",
+        "lane": "Classification",
+        "loop": 0,
+        "stage": "classify"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "المُوصي",
+        "detail": {
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "candidates": [
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "rate": 1.0,
+              "succeeded": 2,
+              "tried": 2
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "استبدال الملصق وإعادة فحص الشحنة",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            }
+          ],
+          "grounded_cases": [
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "category": "recipient_unavailable",
+              "resolution_id": "RES-ad40fc09db",
+              "success": true
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "category": "recipient_unavailable",
+              "resolution_id": "RES-bc8ffd4617",
+              "success": true
+            }
+          ],
+          "grounded_in": [
+            "RES-ad40fc09db",
+            "RES-bc8ffd4617"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed."
+        },
+        "is_agent": true,
+        "label": "Candidate actions",
+        "lane": "Recommendation",
+        "loop": 0,
+        "stage": "recommend"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "المراجع",
+        "detail": {
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ],
+          "reason": "Retry budget exhausted (1 of 1 permitted attempt(s) used - EXHAUSTED, re-delivery not admissible.) but the proposed action is another delivery retry. Propose a different approach or escalate.",
+          "score": 0.0,
+          "verdict": "reject"
+        },
+        "is_agent": true,
+        "label": "Validation",
+        "lane": "Evaluation",
+        "loop": 1,
+        "stage": "review",
+        "verdict": "reject"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "المصنّف",
+        "detail": {
+          "category": "failed_attempt_wrong_gate",
+          "confidence": 0.32,
+          "priority": "high",
+          "rationale": "Model hypothesis: failed_attempt_wrong_gate; requires evidence verification. Recorded delivery attempts: 1 of 1 permitted (budget exhausted). Recorded timeline span: 0.83 days against 1-day policy SLA (within SLA). This context has no measured barcode, weight or gate observations to establish that subtype."
+        },
+        "is_agent": true,
+        "label": "Root-cause classification",
+        "lane": "Classification",
+        "loop": 1,
+        "stage": "classify"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "المُوصي",
+        "detail": {
+          "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+          "candidates": [
+            {
+              "action": "استبدال الملصق وإعادة فحص الشحنة",
+              "rate": 1.0,
+              "succeeded": 2,
+              "tried": 2
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            }
+          ],
+          "grounded_cases": [
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "category": "escalation:failed_attempt_wrong_gate",
+              "resolution_id": "RES-dfe314b349",
+              "success": true
+            },
+            {
+              "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+              "category": "escalation:failed_attempt_wrong_gate",
+              "resolution_id": "RES-64d9df1d1c",
+              "success": true
+            }
+          ],
+          "grounded_in": [
+            "RES-64d9df1d1c",
+            "RES-dfe314b349"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 1. Matching cited outcomes: 1/1 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed."
+        },
+        "is_agent": true,
+        "label": "Candidate actions",
+        "lane": "Recommendation",
+        "loop": 1,
+        "stage": "recommend"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "المراجع",
+        "detail": {
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ],
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 1 permitted (budget exhausted). Recorded timeline span: 0.83 days against 1-day policy SLA (within SLA).",
+          "score": 0.85,
+          "verdict": "accept"
+        },
+        "is_agent": true,
+        "label": "Validation",
+        "lane": "Evaluation",
+        "loop": 1,
+        "stage": "review",
+        "verdict": "accept"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "",
+        "detail": {
+          "resolution_id": "DRY-RECOMMENDATION-NOT-PERSISTED"
+        },
+        "is_agent": false,
+        "label": "Write-back",
+        "lane": "Output",
+        "loop": 1,
+        "stage": "writeback"
+      }
+    },
+    {
+      "kind": "final",
+      "payload": {
+        "case_file": null,
+        "classification": {
+          "category": "failed_attempt_wrong_gate",
+          "confidence": 0.32,
+          "priority": "high",
+          "rationale": "Model hypothesis: failed_attempt_wrong_gate; requires evidence verification. Recorded delivery attempts: 1 of 1 permitted (budget exhausted). Recorded timeline span: 0.83 days against 1-day policy SLA (within SLA). This context has no measured barcode, weight or gate observations to establish that subtype."
+        },
+        "disposition": "execute",
+        "escalation": null,
+        "loops": 1,
+        "recommendation": {
+          "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+          "candidates": [
+            {
+              "action": "استبدال الملصق وإعادة فحص الشحنة",
+              "rate": 1.0,
+              "succeeded": 2,
+              "tried": 2
+            },
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            },
+            {
+              "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            }
+          ],
+          "grounded_cases": [
+            {
+              "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+              "category": "escalation:failed_attempt_wrong_gate",
+              "resolution_id": "RES-dfe314b349",
+              "success": true
+            },
+            {
+              "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+              "category": "escalation:failed_attempt_wrong_gate",
+              "resolution_id": "RES-64d9df1d1c",
+              "success": true
+            }
+          ],
+          "grounded_in": [
+            "RES-64d9df1d1c",
+            "RES-dfe314b349"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 1. Matching cited outcomes: 1/1 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed."
+        },
+        "resolution_id": "DRY-RECOMMENDATION-NOT-PERSISTED",
+        "review": {
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ],
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 1 permitted (budget exhausted). Recorded timeline span: 0.83 days against 1-day policy SLA (within SLA).",
+          "score": 0.85,
+          "verdict": "accept"
+        }
+      }
+    }
+  ],
+  "final": {
+    "case_file": null,
+    "classification": {
+      "category": "failed_attempt_wrong_gate",
+      "confidence": 0.32,
+      "priority": "high",
+      "rationale": "Model hypothesis: failed_attempt_wrong_gate; requires evidence verification. Recorded delivery attempts: 1 of 1 permitted (budget exhausted). Recorded timeline span: 0.83 days against 1-day policy SLA (within SLA). This context has no measured barcode, weight or gate observations to establish that subtype."
+    },
+    "disposition": "execute",
+    "escalation": null,
+    "loops": 1,
+    "recommendation": {
+      "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+      "candidates": [
+        {
+          "action": "استبدال الملصق وإعادة فحص الشحنة",
+          "rate": 1.0,
+          "succeeded": 2,
+          "tried": 2
+        },
+        {
+          "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+          "rate": 1.0,
+          "succeeded": 1,
+          "tried": 1
+        },
+        {
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "rate": 1.0,
+          "succeeded": 1,
+          "tried": 1
+        },
+        {
+          "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+          "rate": 1.0,
+          "succeeded": 1,
+          "tried": 1
+        }
+      ],
+      "grounded_cases": [
+        {
+          "action": "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة",
+          "category": "escalation:failed_attempt_wrong_gate",
+          "resolution_id": "RES-dfe314b349",
+          "success": true
+        },
+        {
+          "action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+          "category": "escalation:failed_attempt_wrong_gate",
+          "resolution_id": "RES-64d9df1d1c",
+          "success": true
+        }
+      ],
+      "grounded_in": [
+        "RES-64d9df1d1c",
+        "RES-dfe314b349"
+      ],
+      "rationale": "Cited observed synthetic histories: 2; exact-action matches: 1. Matching cited outcomes: 1/1 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed."
+    },
+    "resolution_id": "DRY-RECOMMENDATION-NOT-PERSISTED",
+    "review": {
+      "checked_against": [
+        "evidence",
+        "business_rules",
+        "sla",
+        "historical_outcomes"
+      ],
+      "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 1 permitted (budget exhausted). Recorded timeline span: 0.83 days against 1-day policy SLA (within SLA).",
+      "score": 0.85,
+      "verdict": "accept"
+    }
+  },
+  "gold_hash": "c14a7728540a35ab56f514aac98a38561e388070edf124146f124495c2c21f05",
+  "language": "en",
+  "latency_seconds": 11.3141,
+  "metrics": {
+    "accepted_seeded_cause_disagreement_proxy": false,
+    "actual_native_prose_language": "en",
+    "afl_changed_seeded_cause_hit_to_miss_proxy": false,
+    "afl_corrected_seeded_cause_miss_proxy": true,
+    "afl_retry": true,
+    "any_recorded_shipment_base_cause_agreement": true,
+    "application_field_fallback_or_normalization": false,
+    "arabic_canonical_action": true,
+    "base_cause_agreement": true,
+    "base_cause_valid_model_agreement": true,
+    "escalated": false,
+    "expected_seeded_action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+    "expected_seeded_category": "failed_attempt_wrong_gate",
+    "extraction_shipment_id_match": true,
+    "failed_attempt_family_agreement": true,
+    "final_classifier_model_output_valid": true,
+    "first_base_cause_agreement": false,
+    "first_predicted_category": "recipient_unavailable",
+    "native_prompt_prose_language": "en",
+    "no_grounding": false,
+    "plausibility_history_counts": {
+      "rate": 1.0,
+      "succeeded": 1,
+      "tried": 1
+    },
+    "predicted_action": "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً",
+    "predicted_category": "failed_attempt_wrong_gate",
+    "quality_not_independently_scored": true,
+    "raw_full_category_agreement_unsupported_escalation_prefix": true,
+    "recorded_delivery_attempts": 1,
+    "reject_reviews": 1,
+    "retrieval_category_match_proxy": 0.2,
+    "review_accepted": true,
+    "seeded_action_exact_agreement": false,
+    "synthetic_history_action_plausibility_proxy": true
+  },
+  "model": "openai/gpt-oss:120b",
+  "observed_success": null,
+  "provider_identity": {
+    "api_base_sha256": "d115cae79af69d9db470aba431e632ea28a39c4f3e2217b900da46e558662fe9",
+    "max_retries": 0,
+    "temperature": 0,
+    "timeout_seconds": 90
+  },
+  "runtime_hash": "ee5b5e4253b5d2bbd36985d1386c0cb9065a101347e9a6d8f44767388f988f0a",
+  "source_hashes": {
+    "_llm.py": "11fefba68fc66bf0793521df3fb2508fcc5df8b85973263ceb21f705fcaaec52",
+    "classifier.py": "b65e1d8c5cfa0efd688a3d376a32935c1345b1424a883e357fe0ba8d3bc65507",
+    "evaluator.py": "5ab71203c167a56856738c92cfc98b2be9a3abf436f33ac09e47690aca3358c1",
+    "extract.py": "c622e0827c46c16d227c11d223be7b515ce6af3a18a85c559f5976e5790e6d78",
+    "graph.py": "55a56f06c7b6efd415192fdb6671662c25ed347814d5a94ce935f9dc3c786ddd",
+    "recommender.py": "2e44e65d7b68890cc39b9d0d6b522a96495e6904a6095b7ec8fcb0f1c0d41833",
+    "retrieve.py": "2db1e63d92327b9b9daaf182ca2dff50785a138c8dca07333f2da82811546b24",
+    "reviewer.py": "7a52d24e1375f0936726898ec78f93f96f1d93f3e77a8d4763e060120a605901",
+    "rules.py": "e4e9a6e8bd940072f2207bd4ff2bb0291c10c86f21f83288a10b5e0f7cc4764f",
+    "writeback.py": "8661a13a97b513f77e29226674f68a002ddd4ff6472b3c282d547cc1efcd5993"
+  },
+  "stage_latencies": [
+    {
+      "latency_seconds": 1.3035,
+      "loop": 0,
+      "stage": "extract"
+    },
+    {
+      "latency_seconds": 0.0042,
+      "loop": 0,
+      "stage": "retrieve"
+    },
+    {
+      "latency_seconds": 2.1374,
+      "loop": 0,
+      "stage": "classify"
+    },
+    {
+      "latency_seconds": 1.7839,
+      "loop": 0,
+      "stage": "recommend"
+    },
+    {
+      "latency_seconds": 0.0014,
+      "loop": 1,
+      "stage": "review"
+    },
+    {
+      "latency_seconds": 2.7427,
+      "loop": 1,
+      "stage": "classify"
+    },
+    {
+      "latency_seconds": 1.9649,
+      "loop": 1,
+      "stage": "recommend"
+    },
+    {
+      "latency_seconds": 1.3743,
+      "loop": 1,
+      "stage": "review"
+    },
+    {
+      "latency_seconds": 0.0009,
+      "loop": 1,
+      "stage": "writeback"
+    }
+  ],
+  "timestamp": "2026-10-09T14:47:39.995197+00:00",
+  "version": "gpt-oss-v1-frozen-1",
+  "writeback_executed": false
+}

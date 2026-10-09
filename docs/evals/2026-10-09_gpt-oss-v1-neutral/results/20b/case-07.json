@@ -1,0 +1,466 @@
+{
+  "calls": [
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 3.2543,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "extract",
+      "usage": {
+        "input_tokens": 285,
+        "output_tokens": 265,
+        "total_tokens": 550
+      }
+    },
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 11.9985,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "classify",
+      "usage": {
+        "input_tokens": 1258,
+        "output_tokens": 975,
+        "total_tokens": 2233
+      }
+    },
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 4.13,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "recommend",
+      "usage": {
+        "input_tokens": 1069,
+        "output_tokens": 350,
+        "total_tokens": 1419
+      }
+    },
+    {
+      "error_type": null,
+      "invalid_declared_fields": [],
+      "latency_seconds": 2.4853,
+      "malformed_json": false,
+      "missing_declared_fields": [],
+      "stage": "review",
+      "usage": {
+        "input_tokens": 1400,
+        "output_tokens": 168,
+        "total_tokens": 1568
+      }
+    }
+  ],
+  "case_id": "case-07",
+  "dry_disposition": "accepted_recommendation",
+  "error_type": null,
+  "events": [
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "",
+        "detail": {
+          "courier": "بلجرشي",
+          "shipment_id": "SHP-0055"
+        },
+        "is_agent": false,
+        "label": "Entity Extraction",
+        "lane": "Input",
+        "loop": 0,
+        "stage": "extract"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "",
+        "detail": {
+          "live_failure_id": null,
+          "precedent": [
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "category": "recipient_unavailable",
+              "city": "بلجرشي",
+              "courier": "تركي الغامدي",
+              "description": "المستلم غير متواجد في العنوان وقت محاولة التسليم",
+              "district": "حي الشطيبة",
+              "failure_id": "FR-38974df8af",
+              "resolution_id": "RES-a5c8837459",
+              "rrf_score": 0.032787,
+              "score": 0.7871832847595215,
+              "success": true
+            },
+            {
+              "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+              "category": "failed_attempt_weight_mismatch",
+              "city": "الارطاوية",
+              "courier": "فهد الشمري",
+              "description": "محاولة تسليم فاشلة: عدم تطابق وزن الشحنة مع السجل",
+              "district": "حي الفيحاء",
+              "failure_id": "FR-3b891086ff",
+              "resolution_id": "RES-bdf72e2665",
+              "rrf_score": 0.016129,
+              "score": 0.7803924679756165,
+              "success": true
+            },
+            {
+              "action": "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة",
+              "category": "failed_attempt_wrong_gate",
+              "city": "بلجرشي",
+              "courier": "مشعل السلمي",
+              "description": "محاولة تسليم فاشلة: بوابة دخول خاطئة",
+              "district": "حي الشطيبة",
+              "failure_id": "FR-b4b9f3b8bb",
+              "resolution_id": "RES-62b146c76d",
+              "rrf_score": 0.016129,
+              "score": null,
+              "success": true
+            }
+          ],
+          "similar_cases": 3
+        },
+        "is_agent": false,
+        "label": "Vector KNN + Graph → RRF",
+        "lane": "Hybrid Retrieval",
+        "loop": 0,
+        "stage": "retrieve"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "المصنّف",
+        "detail": {
+          "category": "recipient_unavailable",
+          "confidence": 0.6,
+          "priority": "medium",
+          "rationale": "Model hypothesis: recipient_unavailable; requires evidence verification. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 1.17 days against 5-day policy SLA (within SLA). Complaint statements are reports, not independently verified operational facts."
+        },
+        "is_agent": true,
+        "label": "Root-cause classification",
+        "lane": "Classification",
+        "loop": 0,
+        "stage": "classify"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "المُوصي",
+        "detail": {
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "candidates": [
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "rate": 1.0,
+              "succeeded": 2,
+              "tried": 2
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "rate": 1.0,
+              "succeeded": 2,
+              "tried": 2
+            },
+            {
+              "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            }
+          ],
+          "grounded_cases": [
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "category": "recipient_unavailable",
+              "resolution_id": "RES-bc8ffd4617",
+              "success": true
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "category": "recipient_unavailable",
+              "resolution_id": "RES-ad40fc09db",
+              "success": true
+            }
+          ],
+          "grounded_in": [
+            "RES-bc8ffd4617",
+            "RES-ad40fc09db"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed."
+        },
+        "is_agent": true,
+        "label": "Candidate actions",
+        "lane": "Recommendation",
+        "loop": 0,
+        "stage": "recommend"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "المراجع",
+        "detail": {
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ],
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 1.17 days against 5-day policy SLA (within SLA).",
+          "score": 0.9,
+          "verdict": "accept"
+        },
+        "is_agent": true,
+        "label": "Validation",
+        "lane": "Evaluation",
+        "loop": 0,
+        "stage": "review",
+        "verdict": "accept"
+      }
+    },
+    {
+      "kind": "stage",
+      "payload": {
+        "arabic": "",
+        "detail": {
+          "resolution_id": "DRY-RECOMMENDATION-NOT-PERSISTED"
+        },
+        "is_agent": false,
+        "label": "Write-back",
+        "lane": "Output",
+        "loop": 0,
+        "stage": "writeback"
+      }
+    },
+    {
+      "kind": "final",
+      "payload": {
+        "case_file": null,
+        "classification": {
+          "category": "recipient_unavailable",
+          "confidence": 0.6,
+          "priority": "medium",
+          "rationale": "Model hypothesis: recipient_unavailable; requires evidence verification. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 1.17 days against 5-day policy SLA (within SLA). Complaint statements are reports, not independently verified operational facts."
+        },
+        "disposition": "execute",
+        "escalation": null,
+        "loops": 0,
+        "recommendation": {
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "candidates": [
+            {
+              "action": "تسليم لجهة بديلة بموافقة العميل",
+              "rate": 1.0,
+              "succeeded": 2,
+              "tried": 2
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "rate": 1.0,
+              "succeeded": 2,
+              "tried": 2
+            },
+            {
+              "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+              "rate": 1.0,
+              "succeeded": 1,
+              "tried": 1
+            }
+          ],
+          "grounded_cases": [
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "category": "recipient_unavailable",
+              "resolution_id": "RES-bc8ffd4617",
+              "success": true
+            },
+            {
+              "action": "إعادة جدولة التسليم في يوم آخر",
+              "category": "recipient_unavailable",
+              "resolution_id": "RES-ad40fc09db",
+              "success": true
+            }
+          ],
+          "grounded_in": [
+            "RES-bc8ffd4617",
+            "RES-ad40fc09db"
+          ],
+          "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed."
+        },
+        "resolution_id": "DRY-RECOMMENDATION-NOT-PERSISTED",
+        "review": {
+          "checked_against": [
+            "evidence",
+            "business_rules",
+            "sla",
+            "historical_outcomes"
+          ],
+          "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 1.17 days against 5-day policy SLA (within SLA).",
+          "score": 0.9,
+          "verdict": "accept"
+        }
+      }
+    }
+  ],
+  "final": {
+    "case_file": null,
+    "classification": {
+      "category": "recipient_unavailable",
+      "confidence": 0.6,
+      "priority": "medium",
+      "rationale": "Model hypothesis: recipient_unavailable; requires evidence verification. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 1.17 days against 5-day policy SLA (within SLA). Complaint statements are reports, not independently verified operational facts."
+    },
+    "disposition": "execute",
+    "escalation": null,
+    "loops": 0,
+    "recommendation": {
+      "action": "إعادة جدولة التسليم في يوم آخر",
+      "candidates": [
+        {
+          "action": "تسليم لجهة بديلة بموافقة العميل",
+          "rate": 1.0,
+          "succeeded": 2,
+          "tried": 2
+        },
+        {
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "rate": 1.0,
+          "succeeded": 2,
+          "tried": 2
+        },
+        {
+          "action": "إعادة محاولة التسليم بعد تصحيح بيانات الشحنة",
+          "rate": 1.0,
+          "succeeded": 1,
+          "tried": 1
+        }
+      ],
+      "grounded_cases": [
+        {
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "category": "recipient_unavailable",
+          "resolution_id": "RES-bc8ffd4617",
+          "success": true
+        },
+        {
+          "action": "إعادة جدولة التسليم في يوم آخر",
+          "category": "recipient_unavailable",
+          "resolution_id": "RES-ad40fc09db",
+          "success": true
+        }
+      ],
+      "grounded_in": [
+        "RES-bc8ffd4617",
+        "RES-ad40fc09db"
+      ],
+      "rationale": "Cited observed synthetic histories: 2; exact-action matches: 2. Matching cited outcomes: 2/2 succeeded (100.0%). This small cited sample is not a success guarantee. Operator approval, external execution and outcome remain unconfirmed."
+    },
+    "resolution_id": "DRY-RECOMMENDATION-NOT-PERSISTED",
+    "review": {
+      "checked_against": [
+        "evidence",
+        "business_rules",
+        "sla",
+        "historical_outcomes"
+      ],
+      "reason": "Agent review accepted a proposed recommendation; this does not establish correctness, human approval, execution or success. Recorded delivery attempts: 1 of 3 permitted (budget remains). Recorded timeline span: 1.17 days against 5-day policy SLA (within SLA).",
+      "score": 0.9,
+      "verdict": "accept"
+    }
+  },
+  "gold_hash": "c14a7728540a35ab56f514aac98a38561e388070edf124146f124495c2c21f05",
+  "language": "ar",
+  "latency_seconds": 21.8803,
+  "metrics": {
+    "accepted_seeded_cause_disagreement_proxy": true,
+    "actual_native_prose_language": "en",
+    "afl_changed_seeded_cause_hit_to_miss_proxy": false,
+    "afl_corrected_seeded_cause_miss_proxy": false,
+    "afl_retry": false,
+    "any_recorded_shipment_base_cause_agreement": false,
+    "application_field_fallback_or_normalization": false,
+    "arabic_canonical_action": true,
+    "base_cause_agreement": false,
+    "base_cause_valid_model_agreement": false,
+    "escalated": false,
+    "expected_seeded_action": "تصحيح العنوان في النظام وإعادة الجدولة",
+    "expected_seeded_category": "address_conflict",
+    "extraction_shipment_id_match": true,
+    "failed_attempt_family_agreement": false,
+    "final_classifier_model_output_valid": true,
+    "first_base_cause_agreement": false,
+    "first_predicted_category": "recipient_unavailable",
+    "native_prompt_prose_language": "en",
+    "no_grounding": false,
+    "plausibility_history_counts": null,
+    "predicted_action": "إعادة جدولة التسليم في يوم آخر",
+    "predicted_category": "recipient_unavailable",
+    "quality_not_independently_scored": true,
+    "raw_full_category_agreement_unsupported_escalation_prefix": false,
+    "recorded_delivery_attempts": 1,
+    "reject_reviews": 0,
+    "retrieval_category_match_proxy": 0.0,
+    "review_accepted": true,
+    "seeded_action_exact_agreement": false,
+    "synthetic_history_action_plausibility_proxy": false
+  },
+  "model": "openai/gpt-oss:20b",
+  "observed_success": null,
+  "provider_identity": {
+    "api_base_sha256": "d115cae79af69d9db470aba431e632ea28a39c4f3e2217b900da46e558662fe9",
+    "max_retries": 0,
+    "temperature": 0,
+    "timeout_seconds": 90
+  },
+  "runtime_hash": "ee5b5e4253b5d2bbd36985d1386c0cb9065a101347e9a6d8f44767388f988f0a",
+  "source_hashes": {
+    "_llm.py": "11fefba68fc66bf0793521df3fb2508fcc5df8b85973263ceb21f705fcaaec52",
+    "classifier.py": "b65e1d8c5cfa0efd688a3d376a32935c1345b1424a883e357fe0ba8d3bc65507",
+    "evaluator.py": "5ab71203c167a56856738c92cfc98b2be9a3abf436f33ac09e47690aca3358c1",
+    "extract.py": "c622e0827c46c16d227c11d223be7b515ce6af3a18a85c559f5976e5790e6d78",
+    "graph.py": "55a56f06c7b6efd415192fdb6671662c25ed347814d5a94ce935f9dc3c786ddd",
+    "recommender.py": "2e44e65d7b68890cc39b9d0d6b522a96495e6904a6095b7ec8fcb0f1c0d41833",
+    "retrieve.py": "2db1e63d92327b9b9daaf182ca2dff50785a138c8dca07333f2da82811546b24",
+    "reviewer.py": "7a52d24e1375f0936726898ec78f93f96f1d93f3e77a8d4763e060120a605901",
+    "rules.py": "e4e9a6e8bd940072f2207bd4ff2bb0291c10c86f21f83288a10b5e0f7cc4764f",
+    "writeback.py": "8661a13a97b513f77e29226674f68a002ddd4ff6472b3c282d547cc1efcd5993"
+  },
+  "stage_latencies": [
+    {
+      "latency_seconds": 3.2591,
+      "loop": 0,
+      "stage": "extract"
+    },
+    {
+      "latency_seconds": 0.0012,
+      "loop": 0,
+      "stage": "retrieve"
+    },
+    {
+      "latency_seconds": 11.9999,
+      "loop": 0,
+      "stage": "classify"
+    },
+    {
+      "latency_seconds": 4.1319,
+      "loop": 0,
+      "stage": "recommend"
+    },
+    {
+      "latency_seconds": 2.4872,
+      "loop": 0,
+      "stage": "review"
+    },
+    {
+      "latency_seconds": 0.0005,
+      "loop": 0,
+      "stage": "writeback"
+    }
+  ],
+  "timestamp": "2026-10-09T14:37:02.174944+00:00",
+  "version": "gpt-oss-v1-frozen-1",
+  "writeback_executed": false
+}
