@@ -12,7 +12,7 @@ import json
 from datetime import timedelta
 
 from dataset_v2.contracts import ALIASES, SCHEMA_VERSION, UTC_FIELDS, digest, instant
-from dataset_v2.feed import FEED_KINDS, Reference, decode
+from dataset_v2.feed import INGESTIBLE_KINDS, Reference, decode
 
 INGEST_SOURCE_REF = "live-ingestion-1"
 # (kind, property, relationship, outward): outward means (node)-[rel]->(referenced), else (referenced)-[rel]->(node).
@@ -103,7 +103,7 @@ class Gateway:
             kind, entity_id, sid, occurred_at, props = decode(item["channel"], item["message_type"], json.loads(item["payload_json"]), ref)
         except (KeyError, ValueError, StopIteration, TypeError):
             return "REJECTED", None, None, "undecodable_or_unresolvable_payload"
-        if kind not in FEED_KINDS or not str(entity_id).startswith("DEMO-") or (sid and sid not in self._splits):
+        if kind not in INGESTIBLE_KINDS or not str(entity_id).startswith("DEMO-") or (sid and sid not in self._splits):
             return "REJECTED", None, None, "unknown_kind_identity_or_shipment"
         existing = tx.run("MATCH (n:V2Entity {entity_id:$id}) RETURN n.raw_payload_hash AS hash, n:LiveIngested AS live",
                           id=entity_id).single()
@@ -153,6 +153,11 @@ class Gateway:
             rows = [{**item, "deliver_at": instant(item["deliver_at"]), "status": "PENDING", "dataset_id": self.dataset_id,
                      "synthetic": True} for item in items]
             session.run("UNWIND $rows AS row MERGE (f:ProviderFeedItem {feed_id:row.feed_id}) ON CREATE SET f=row", rows=rows).consume()
+
+    def pending_feed_ids(self, source_event_ids):
+        with self.driver.session(database=self.database, default_access_mode="READ") as session:
+            return [r["id"] for r in session.run("MATCH (f:ProviderFeedItem {status:'PENDING'}) WHERE f.source_event_id IN $ids "
+                                                 "RETURN f.feed_id AS id", ids=list(source_event_ids))]
 
     def reschedule(self, feed_ids, deliver_at):
         """A device sync request makes the device upload what it buffered: earlier delivery, same messages."""

@@ -161,6 +161,10 @@ def assess_shipment(world: World, sid: str, as_of: str | None = None, *, _index=
     cutoff_text = as_of or shipment.properties.get("as_of") or world.config.as_of
     cutoff = instant(cutoff_text)
     flags, comparisons, custodians, disputes, next_priority = {}, [], [], [], False
+    def fresh(node):
+        """Recorded within the live detection allowance: its companion records may not have arrived yet."""
+        recorded = timestamp(node.properties.get("recorded_at"))
+        return bool(detection_allowance_seconds) and recorded is not None and cutoff - recorded < timedelta(seconds=detection_allowance_seconds)
     def flag(code, ids, reason, human=False):
         current = flags.setdefault(code, {"code": code, "evidence_ids": [], "reasons": [], "requires_human_review": False})
         current["evidence_ids"] = sorted(set(current["evidence_ids"]) | {key for key in ids if key in world.nodes})
@@ -226,6 +230,8 @@ def assess_shipment(world: World, sid: str, as_of: str | None = None, *, _index=
             if conflict:
                 conflicting = True
                 flag("CONFLICTING_CUSTODY", [*conflicts[event.id], last_id], "Independent simultaneous reports name incompatible holders; human investigation required", True)
+            elif not corroborated and fresh(event):
+                continue  # Companion uploads (the source scan) may still be in flight; judge after the allowance.
             elif not corroborated:
                 gaps.append(event.id)
                 flag("CUSTODY_GAP", [event.id, source.id if source else None], "Transition lacks acknowledgments or bound source observation", True)
@@ -301,7 +307,8 @@ def assess_shipment(world: World, sid: str, as_of: str | None = None, *, _index=
             state = "CORROBORATED_DELIVERY" if any(p["corroborated"] for p in proofs) else "INSUFFICIENT_EVIDENCE"
         else:
             state = "NO_DELIVERY_PROOF"
-        if proofs and not any(p["corroborated"] for p in proofs):
+        if proofs and not any(p["corroborated"] for p in proofs) and not all(
+                fresh(world.nodes[p["proof_id"]]) for p in proofs):
             flag("PROOF_INSUFFICIENT", [p["proof_id"] for p in proofs], "Proof requires bound recipient corroboration; method alone is insufficient", True)
         disputes.append({"package_id": package_id, "assessment": state, "proofs": proofs,
                          "recipient_report_ids": [n.id for n in reports], "alternatives": ["possible_misdelivery", "conflicting_evidence", "insufficient_evidence", "human_review"] if reports else []})

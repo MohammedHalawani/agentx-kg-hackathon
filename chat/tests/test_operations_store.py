@@ -35,11 +35,12 @@ class Tx:
         if "DETACH DELETE" in q:
             for key in [k for k,(kind,_) in self.ledger.items() if kind!="OpsControl"]:del self.ledger[key]
             return Result()
-        if q.startswith("MATCH (m:V2Entity:ExpectedMilestone"):
+        if q.startswith("MATCH (m:V2Entity:ExpectedMilestone") or q.startswith("MATCH (s:V2Entity:DeliverySession"):
+            kind,field,extra=("ExpectedMilestone","latest_at",0) if "ExpectedMilestone" in q else ("DeliverySession","end_at",60)
             sids=set()
-            for n in self.driver.world.of_kind("ExpectedMilestone"):
+            for n in self.driver.world.of_kind(kind):
                 if n.properties.get("split")!="development":continue
-                due=instant(n.properties["latest_at"])+timedelta(seconds=n.properties.get("grace_seconds") or 0)
+                due=instant(n.properties[field])+timedelta(seconds=(n.properties.get("grace_seconds") or 0)+p.get("allowance",0)+extra)
                 if p["previous"]<due<=p["now"]:sids.add(n.properties["shipment_id"])
             return Result([{"sid":x} for x in sorted(sids)])
         if q.startswith("MATCH(c:OpsEntity:OpsCase {dataset_id:$dataset,split:'development',workflow_state:'AWAITING_OUTCOME'})"):
@@ -122,6 +123,7 @@ class Reader:
     def __init__(self,world):self.world=world
     def evidence(self,sid,as_of):return public_evidence(self.world,sid,as_of)
     def historical_precedents(self,sid,codes,as_of=None):return []
+    def precedents(self,sid,codes,as_of=None):return []
 
 
 class StoreTests(unittest.TestCase):

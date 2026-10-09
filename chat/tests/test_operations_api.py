@@ -23,7 +23,8 @@ class OperationsAPITests(unittest.TestCase):
         for name in ("queue","audit","explore"):getattr(self.reader,name).return_value=page
         self.store.status.return_value={"worker":{"state":"PAUSED","concurrency":1},"simulator":{"state":"PAUSED","speed":1},
             "as_of":"2026-09-01T00:00:00+00:00","synthetic":True,"demo":True}
-        self.runtime=SimpleNamespace(reader=self.reader,store=self.store)
+        self.runtime=SimpleNamespace(reader=self.reader,store=self.store,database="shipments-v2-demo",
+                                     workers=SimpleNamespace(status=lambda:{}))
         self.patcher=patch.object(api,"get_runtime",return_value=self.runtime)
         self.patcher.start()
         self.addCleanup(self.patcher.stop)

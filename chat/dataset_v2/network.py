@@ -162,7 +162,10 @@ class LiveBuilder(Builder):
             healthy = round(count * config.normal_fraction)
             first_normal = [r for r in REQUIRED_LIVE if r in LIVE_NORMAL] if split == "development" else []
             first_abnormal = [r for r in REQUIRED_LIVE if r in LIVE_ABNORMAL] if split == "development" else []
-            recipes = (first_normal + [normal[i % len(normal)] for i in range(healthy - len(first_normal))]
+            # accounted_return ends at the planned next session without generating that delivery; in a live
+            # replay its promise would legitimately lapse, so it is kept out of the live split.
+            pool = [r for r in normal if not (split == "development" and r == "accounted_return")]
+            recipes = (first_normal + [pool[i % len(pool)] for i in range(healthy - len(first_normal))]
                        + first_abnormal + [abnormal[i % len(abnormal)] for i in range(count - healthy - len(first_abnormal))])
             self.rng.shuffle(recipes)
             jobs.extend((split, recipe) for recipe in recipes)

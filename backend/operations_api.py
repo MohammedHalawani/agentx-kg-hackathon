@@ -35,51 +35,49 @@ def _page_limit(value):
 PageLimit=Annotated[int,AfterValidator(_page_limit)]
 
 
+def operations_database(driver):
+    """SUHAIL_OPERATIONS_DATABASE wins; otherwise the live provider-feed dataset when it is fully
+    imported, else the foundation V2 replay database (which stays loadable under its own id)."""
+    from operations.store import OPERATIONS_DATABASES
+    chosen=os.environ.get("SUHAIL_OPERATIONS_DATABASE")
+    if chosen:
+        if chosen not in OPERATIONS_DATABASES:raise RuntimeError("Unsupported operations database")
+        return chosen
+    try:
+        with driver.session(database="shipments-v2-demo-live",default_access_mode="READ") as session:
+            row=session.run("MATCH (m:_V2Import) RETURN m.state AS state").single()
+        if row and row["state"]=="COMPLETE":return "shipments-v2-demo-live"
+    except Neo4jError:
+        pass
+    return DEFAULT_DATABASE
+
+
 class OperationsRuntime:
     def __init__(self):
         from operations.read_model import OperationsReader
         from operations.store import OperationsStore
-        target_guard(config.NEO4J_URI,DEFAULT_DATABASE,(config.NEO4J_DATABASE,config.SHIPMENT_DATABASE,config.CHAT_DATABASE))
         driver=get_driver()
-        with driver.session(database=DEFAULT_DATABASE,default_access_mode="READ") as session:
+        self.database=operations_database(driver)
+        target_guard(config.NEO4J_URI,self.database,(config.NEO4J_DATABASE,config.SHIPMENT_DATABASE,config.CHAT_DATABASE))
+        with driver.session(database=self.database,default_access_mode="READ") as session:
             row=session.run("MATCH (m:_V2Import) RETURN m.state AS state,m.manifest_json AS manifest,m.manifest_hash AS manifest_hash").single()
         if not row or row["state"]!="COMPLETE":raise RuntimeError("V2 import must be COMPLETE")
         manifest=json.loads(row["manifest"])
         if manifest.get("synthetic") is not True or manifest.get("schema_version")!=SCHEMA_VERSION or digest(manifest)!=row["manifest_hash"]:
             raise RuntimeError("Invalid frozen V2 manifest")
         dataset_config=Config(**manifest["config"])
-        self.reader=OperationsReader(driver,DEFAULT_DATABASE,dataset_config.dataset_id,dataset_config,
+        self.reader=OperationsReader(driver,self.database,dataset_config.dataset_id,dataset_config,
                                      lambda:self.store.status()["as_of"])
         from operations import agents
-        self.store=OperationsStore(driver,DEFAULT_DATABASE,dataset_config.dataset_id,dataset_config,reader=self.reader,
+        self.store=OperationsStore(driver,self.database,dataset_config.dataset_id,dataset_config,reader=self.reader,
                                    agents=agents if agents.enabled() else None)
         self.reader.store=self.store
         self.store.initialize()
-        self._stop=threading.Event()
-        self.thread=threading.Thread(target=self._loop,name="suhail-operations",daemon=True)
-        self.thread.start()
+        from operations.workers import WorkerPool
+        # Ingestion, monitoring, investigation and verification run on separate threads.
+        self.workers=WorkerPool(self.store).start()
 
-    def _loop(self):
-        # Synthetic presentation pacing: a gap BETWEEN cases so each live run stays observable.
-        # Stage execution and recorded stage timings are never delayed or altered.
-        pace=max(0.0,float(os.environ.get("SUHAIL_WORKER_PACE_SECONDS","6")))
-        last=time.monotonic();last_case=0.0
-        while not self._stop.wait(1):
-            now=time.monotonic()
-            elapsed=min(now-last,10)
-            last=now
-            try:
-                status=self.store.status()
-                if status["simulator"]["state"]=="running":self.store.tick(seconds=elapsed)
-                if status["session"]["monitor_pending"]:self.store.monitor_step()
-                if status["session"]["case_source"]=="monitor":self.store.outcome_step()
-                if status["worker"]["state"]=="running" and now-last_case>=pace:
-                    if self.store.process_one().get("processed"):last_case=time.monotonic()
-            except Exception as error:
-                # No provider text, evidence contents or credentials in runtime logs.
-                log.warning("Operations background checkpoint failed (%s)",type(error).__name__)
-
-    def close(self):self._stop.set()
+    def close(self):self.workers.stop()
 
 
 def get_runtime():
@@ -199,7 +197,7 @@ def schema_view():
     """Live label topology from the isolated V2 graph, without shipment properties."""
     from core.query_runner import SCHEMA_CYPHER
     runtime=get_runtime()
-    with runtime.store.driver.session(database=DEFAULT_DATABASE,default_access_mode="READ") as session:
+    with runtime.store.driver.session(database=runtime.database,default_access_mode="READ") as session:
         row=session.run(SCHEMA_CYPHER).single()
     if not row:return {"nodes":[],"relationships":[],"synthetic":True}
     nodes=[]
@@ -231,7 +229,10 @@ def evidence_graph(shipment_id: str|None=Query(None,min_length=1,max_length=160)
 
 @router.get("/worker/status")
 def worker_status():
-    status=invoke(get_runtime().store.status)
+    runtime=get_runtime()
+    status=invoke(runtime.store.status)
+    status["workers"]=runtime.workers.status()
+    status["database"]=runtime.database
     return status
 
 

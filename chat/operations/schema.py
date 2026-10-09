@@ -23,7 +23,7 @@ FIELDS = {
                    "case_source", "session_id", "session_started_at", "monitor_queue", "monitor_checked", "monitor_opened"},
     "OpsCase": {"opened_by", "session_id", "source_case_id", "workflow_state", "operational_status", "priority", "cause_codes", "symptom_codes", "city", "opened_at",
                 "as_of", "state_version", "last_run_id", "recommendation_id", "issue_summary", "claim_id", "claim_at",
-                "is_terminal", "closed_at", "verified_outcome_id", "outcome_checked_as_of"},
+                "is_terminal", "closed_at", "verified_outcome_id", "outcome_checked_as_of", "snapshot_refreshes"},
     "OpsAudit": {"case_id", "event_type", "actor_id", "decision", "result", "from_state", "to_state", "run_id",
                  "stage", "stage_status", "sequence", "wall_recorded_at"},
     "OpsEventReceipt": {"source_event_id", "event_kind", "source_occurred_at", "case_id"},
@@ -38,6 +38,7 @@ FIELDS = {
                    "verification_status", "verified_at", "verifier_id", "invalidated", "observed_at", "reason"},
     "OpsNotification": {"case_id", "trigger", "status", "mode", "external_calls"},
     "OpsCommand": {"case_id", "idempotency_key", "request_hash", "result_json", "command_type"},
+    "OpsRiskFlag": {"active", "certainty", "promise_at", "latest_estimate_at", "earliest_estimate_at", "evidence_ids", "checked_at"},
 }
 RELATIONSHIPS = frozenset(("OPS_ABOUT", "OPS_HAS_RUN", "OPS_PROPOSES", "OPS_REVIEWED_BY", "OPS_HAS_DECISION",
                          "OPS_INITIATES", "OPS_HAS_OUTCOME", "OPS_HAS_AUDIT", "OPS_HAS_RECEIPT", "OPS_CITES", "OPS_NOTIFIED"))

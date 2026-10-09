@@ -25,6 +25,8 @@ from dataset_v2.network import device_for_driver, stable_fraction
 FEED_VERSION = "provider-feed-1"
 CHANNELS = ("SPL_CORE", "DRIVER_APP", "CARRIER_EDI", "TELEMATICS", "RECIPIENT_PORTAL", "TRAFFIC", "MDM")
 FEED_KINDS = frozenset(OBSERVATIONS | {"DeviceHeartbeat"})
+# The gateway also accepts an AddressVersion: a recipient confirms or corrects an address via the portal.
+INGESTIBLE_KINDS = frozenset(FEED_KINDS | {"AddressVersion"})
 # Envelope fields the gateway sets itself; never carried in a provider payload.
 ENVELOPE = frozenset(("entity_id", "dataset_id", "schema_version", "synthetic", "provenance", "split", "holdout_group",
                       "recorded_at", "shipment_id", "occurred_at"))
@@ -187,7 +189,11 @@ def channel_for(world, node):
 def feed_item(world, node, ref, *, deliver_at=None, sequence=0, origin="PROVIDER"):
     channel = channel_for(world, node)
     message_type, payload = encode(node, channel, ref)
-    lag = 5 + int(85 * stable_fraction(node.id, sequence))
+    p = node.properties
+    # Records sent together by one device share a delivery: a transfer with its source scan, POD parts with the attempt.
+    bundle = p.get("source_event_id") if node.kind == "CustodyEvent" else p.get("attempt_id") if node.kind in (
+        "ContactAttempt", "DeliveryProof", "AuthenticationEvidence", "SignatureEvidence", "PhotoEvidence", "HandoffEvidence") else node.id
+    lag = 5 + int(85 * stable_fraction(bundle or node.id, sequence))
     deliver = deliver_at or iso(instant(node.properties["recorded_at"]) + timedelta(seconds=lag))
     feed_id = "DEMO-FEED-" + digest([node.id, sequence, origin])[:24]
     return {"feed_id": feed_id, "channel": channel, "provider_id": CHANNEL_PROVIDER[channel], "message_type": message_type,
