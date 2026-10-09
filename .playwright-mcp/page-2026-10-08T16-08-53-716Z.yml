@@ -1,0 +1,26 @@
+- generic [ref=e4]:
+  - generic [ref=e7]:
+    - img "التطبيق" [ref=e10]
+    - list [ref=e14]:
+      - listitem [ref=e15]:
+        - button "الوارد" [ref=e16]
+      - listitem [ref=e21]:
+        - button "القرارات" [ref=e22]
+      - listitem [ref=e28]:
+        - button "الاستكشاف" [ref=e29]
+    - button "Toggle Sidebar" [ref=e34]
+  - main [ref=e35]:
+    - generic [ref=e36]:
+      - button "تبديل الشريط الجانبي" [ref=e37]:
+        - generic [ref=e38]: Toggle Sidebar
+      - heading "الوارد" [level=1] [ref=e39]
+      - generic [ref=e40]:
+        - generic [ref=e41]: معالجة شكاوى الشحنات تلقائيًا عبر رسم معرفي Neo4j
+        - button "اللغة" [ref=e42]:
+          - generic [ref=e43]: ar
+        - button "المظهر" [ref=e44]
+    - generic [ref=e49]:
+      - generic [ref=e50]:
+        - heading "الحالات المفتوحة" [level=2] [ref=e51]
+        - generic [ref=e52]: جارٍ التحميل…
+      - paragraph [ref=e53]: اختر حالة لجمع الأدلة وتصنيف سبب التعثر واقتراح إجراء مبني على السوابق ومراجعته وفق قواعد العمل. تُسجل التوصية أو تُصعد الحالة. التنفيذ التشغيلي والتحقق من النتيجة خطوتان منفصلتان.

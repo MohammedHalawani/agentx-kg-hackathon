@@ -1,0 +1,26 @@
+- generic [ref=f1e4]:
+  - generic [ref=f1e7]:
+    - img "Application" [ref=f1e10]
+    - list [ref=f1e14]:
+      - listitem [ref=f1e15]:
+        - button "Intake" [ref=f1e16]
+      - listitem [ref=f1e21]:
+        - button "Decisions" [ref=f1e22]
+      - listitem [ref=f1e28]:
+        - button "Explore" [ref=f1e29]
+    - button "Toggle Sidebar" [ref=f1e34]
+  - main [ref=f1e35]:
+    - generic [ref=f1e36]:
+      - button "Toggle sidebar" [ref=f1e37]:
+        - generic [ref=f1e38]: Toggle Sidebar
+      - heading "Intake" [level=1] [ref=f1e39]
+      - generic [ref=f1e40]:
+        - generic [ref=f1e41]: Autonomous shipment-complaint resolution over a Neo4j knowledge graph
+        - button "Language" [ref=f1e42]:
+          - generic [ref=f1e43]: en
+        - button "Theme" [ref=f1e44]
+    - generic [ref=f1e49]:
+      - generic [ref=f1e50]:
+        - heading "Open cases" [level=2] [ref=f1e51]
+        - generic [ref=f1e52]: loading…
+      - paragraph [ref=f1e53]: Pick one to run it. Three agents classify the root cause, recommend an action grounded in historical precedent, and review it against the business rules — then the outcome is written back to the graph, or the case is handed to a human. A case you resolve leaves this list.

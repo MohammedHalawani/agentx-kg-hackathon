@@ -1,0 +1,724 @@
+- generic [ref=f2e4]:
+  - generic [ref=f2e7]:
+    - img "التطبيق" [ref=f2e2041]
+    - list [ref=f2e14]:
+      - listitem [ref=f2e15]:
+        - button "الوارد" [ref=f2e2042]
+      - listitem [ref=f2e21]:
+        - button "القرارات" [ref=f2e2043]
+      - listitem [ref=f2e28]:
+        - button "الاستكشاف" [ref=f2e2044]
+    - button "Toggle Sidebar" [ref=f2e34]
+  - main [ref=f2e35]:
+    - generic [ref=f2e36]:
+      - button "تبديل الشريط الجانبي" [ref=f2e2045]:
+        - generic [ref=f2e38]: Toggle Sidebar
+      - heading "القرارات" [level=1] [ref=f2e2046]
+      - generic [ref=f2e40]:
+        - generic [ref=f2e41]: تحقيق تعثر الشحنات وتوصيات مُراجعة عبر رسم معرفي لوجستي
+        - button "اللغة" [active] [ref=f2e2047]:
+          - generic [ref=f2e43]: ar
+        - button "المظهر" [ref=f2e2048]
+    - generic [ref=f2e1263]:
+      - generic [ref=f2e1264]:
+        - heading "القرارات" [level=2] [ref=f2e2049]
+        - paragraph [ref=f2e1266]: مراقبة معالجة الاستثناءات والأداء التاريخي
+      - generic [ref=f2e1267]:
+        - generic [ref=f2e1274]:
+          - paragraph [ref=f2e1275]: الحالات المفتوحة
+          - paragraph [ref=f2e1276]: "73"
+          - paragraph [ref=f2e1277]: بانتظار قرار
+        - generic [ref=f2e1284]:
+          - paragraph [ref=f2e1285]: إجراءات المعالجة المسجلة
+          - paragraph [ref=f2e1286]: "167"
+          - paragraph [ref=f2e1287]: 70% تحمل قرارًا
+        - generic [ref=f2e1294]:
+          - paragraph [ref=f2e1295]: معدل النجاح التاريخي
+          - paragraph [ref=f2e1296]: 90%
+          - paragraph [ref=f2e1297]: 149 من 165 نجحت
+        - generic [ref=f2e1305]:
+          - paragraph [ref=f2e1306]: بانتظار المراجعة البشرية
+          - paragraph [ref=f2e1307]: "1"
+          - paragraph [ref=f2e1308]: "عدد الفرق: 1"
+        - generic [ref=f2e1317]:
+          - paragraph [ref=f2e1318]: أُنشئت بواسطة الوكيل
+          - paragraph [ref=f2e1319]: "2"
+          - paragraph [ref=f2e1320]: 2 معلّق · من 167 إجمالي في الرسم
+      - generic [ref=f2e1321]:
+        - generic [ref=f2e1323]:
+          - generic [ref=f2e1324]:
+            - generic [ref=f2e1325]: تغطية الحالات
+            - generic [ref=f2e1326]:
+              - generic [ref=f2e1327]: 70%
+              - generic [ref=f2e1328]: لها إجراء معالجة مسجل؛ قد تكون النتيجة معلقة
+          - generic [ref=f2e1329]:
+            - img "167 neutral, 73 pending" [ref=f2e1330]
+            - generic [ref=f2e1333]:
+              - generic [ref=f2e1334]: 167 لها إجراء معالجة مسجل
+              - generic [ref=f2e1335]: 73 مفتوحة
+        - generic [ref=f2e1337]:
+          - generic [ref=f2e1338]:
+            - generic [ref=f2e1339]: التوصيات والنتائج
+            - generic [ref=f2e1340]:
+              - generic [ref=f2e1341]: "2"
+              - generic [ref=f2e1342]: توصيات مسجلة من الوكيل
+          - generic [ref=f2e1343]:
+            - paragraph [ref=f2e1344]:
+              - text: 165 سوابق أساسية
+              - generic [ref=f2e1345]: · 2 معلّق
+            - generic [ref=f2e1346]:
+              - generic [ref=f2e1347]: 2 توصية من الوكيل في الرسم
+              - paragraph [ref=f2e1348]: التوصيات المسجلة تنتظر النتيجة التشغيلية. النتائج المتحققة فقط تدعم معدلات النجاح.
+      - generic [ref=f2e1349]:
+        - generic [ref=f2e1350]:
+          - generic [ref=f2e1351]:
+            - generic [ref=f2e1352]: المشكلات
+            - generic [ref=f2e1353]: النجاح حسب السبب الجذري
+          - generic [ref=f2e1356]:
+            - button "تعارض في العنوان 91% 39 من 43 نجح 39 success, 4 failure" [ref=f2e2050]:
+              - generic [ref=f2e1358]:
+                - generic [ref=f2e1359]: تعارض في العنوان
+                - generic [ref=f2e1360]: 91%
+              - paragraph [ref=f2e1361]: 39 من 43 نجح
+              - img "39 success, 4 failure" [ref=f2e1362]
+            - button "تعذر الوصول إلى المستلم 89% 34 من 38 نجح 34 success, 4 failure" [ref=f2e2051]:
+              - generic [ref=f2e1366]:
+                - generic [ref=f2e1367]: تعذر الوصول إلى المستلم
+                - generic [ref=f2e1368]: 89%
+              - paragraph [ref=f2e1369]: 34 من 38 نجح
+              - img "34 success, 4 failure" [ref=f2e1370]
+            - button "تأخر في مركز المعالجة 85% 17 من 20 نجح 17 success, 3 failure" [ref=f2e2052]:
+              - generic [ref=f2e1374]:
+                - generic [ref=f2e1375]: تأخر في مركز المعالجة
+                - generic [ref=f2e1376]: 85%
+              - paragraph [ref=f2e1377]: 17 من 20 نجح
+              - img "17 success, 3 failure" [ref=f2e1378]
+            - button "اختلاف الوزن في محاولة التسليم 88% 14 من 16 نجح 14 success, 2 failure" [ref=f2e2053]:
+              - generic [ref=f2e1382]:
+                - generic [ref=f2e1383]: اختلاف الوزن في محاولة التسليم
+                - generic [ref=f2e1384]: 88%
+              - paragraph [ref=f2e1385]: 14 من 16 نجح
+              - img "14 success, 2 failure" [ref=f2e1386]
+            - button "محاولة تسليم عند البوابة الخاطئة 91% 10 من 11 نجح 10 success, 1 failure" [ref=f2e2054]:
+              - generic [ref=f2e1390]:
+                - generic [ref=f2e1391]: محاولة تسليم عند البوابة الخاطئة
+                - generic [ref=f2e1392]: 91%
+              - paragraph [ref=f2e1393]: 10 من 11 نجح
+              - img "10 success, 1 failure" [ref=f2e1394]
+            - button "عدم تطابق الباركود 100% 7 من 7 نجح 7 success" [ref=f2e2055]:
+              - generic [ref=f2e1398]:
+                - generic [ref=f2e1399]: عدم تطابق الباركود
+                - generic [ref=f2e1400]: 100%
+              - paragraph [ref=f2e1401]: 7 من 7 نجح
+              - img "7 success" [ref=f2e1402]
+        - generic [ref=f2e1406]:
+          - generic [ref=f2e1407]:
+            - generic [ref=f2e1408]: إجراءات المعالجة
+            - generic [ref=f2e1409]: الأداء التاريخي للإجراءات
+          - generic [ref=f2e1412]:
+            - button "تصحيح العنوان في النظام وإعادة الجدولة 89% استُخدم 18× · 16 نجح 16 success, 2 failure" [ref=f2e2056]:
+              - generic [ref=f2e1414]:
+                - generic [ref=f2e1415]: تصحيح العنوان في النظام وإعادة الجدولة
+                - generic [ref=f2e1416]: 89%
+              - paragraph [ref=f2e1417]: استُخدم 18× · 16 نجح
+              - img "16 success, 2 failure" [ref=f2e1418]
+            - button "تحويل الشحنة إلى مندوب آخر لإعادة المحاولة 81% استُخدم 16× · 13 نجح 13 success, 3 failure" [ref=f2e2057]:
+              - generic [ref=f2e1422]:
+                - generic [ref=f2e1423]: تحويل الشحنة إلى مندوب آخر لإعادة المحاولة
+                - generic [ref=f2e1424]: 81%
+              - paragraph [ref=f2e1425]: استُخدم 16× · 13 نجح
+              - img "13 success, 3 failure" [ref=f2e1426]
+            - button "تأكيد العنوان الصحيح مع العميل وإعادة التوجيه 93% استُخدم 15× · 14 نجح 14 success, 1 failure" [ref=f2e2058]:
+              - generic [ref=f2e1430]:
+                - generic [ref=f2e1431]: تأكيد العنوان الصحيح مع العميل وإعادة التوجيه
+                - generic [ref=f2e1432]: 93%
+              - paragraph [ref=f2e1433]: استُخدم 15× · 14 نجح
+              - img "14 success, 1 failure" [ref=f2e1434]
+            - button "إعادة جدولة التسليم في يوم آخر 93% استُخدم 14× · 13 نجح 13 success, 1 failure" [ref=f2e2059]:
+              - generic [ref=f2e1438]:
+                - generic [ref=f2e1439]: إعادة جدولة التسليم في يوم آخر
+                - generic [ref=f2e1440]: 93%
+              - paragraph [ref=f2e1441]: استُخدم 14× · 13 نجح
+              - img "13 success, 1 failure" [ref=f2e1442]
+            - button "التنسيق مع العميل عبر الهاتف لتحديد وقت بديل 85% استُخدم 13× · 11 نجح 11 success, 2 failure" [ref=f2e2060]:
+              - generic [ref=f2e1446]:
+                - generic [ref=f2e1447]: التنسيق مع العميل عبر الهاتف لتحديد وقت بديل
+                - generic [ref=f2e1448]: 85%
+              - paragraph [ref=f2e1449]: استُخدم 13× · 11 نجح
+              - img "11 success, 2 failure" [ref=f2e1450]
+            - button "التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة 100% استُخدم 12× · 12 نجح 12 success" [ref=f2e2061]:
+              - generic [ref=f2e1454]:
+                - generic [ref=f2e1455]: التنسيق بين فريق المستودع والمندوب لحل الحالة المركبة
+                - generic [ref=f2e1456]: 100%
+              - paragraph [ref=f2e1457]: استُخدم 12× · 12 نجح
+              - img "12 success" [ref=f2e1458]
+            - button "تسليم لجهة بديلة بموافقة العميل 91% استُخدم 11× · 10 نجح 10 success, 1 failure" [ref=f2e2062]:
+              - generic [ref=f2e1461]:
+                - generic [ref=f2e1462]: تسليم لجهة بديلة بموافقة العميل
+                - generic [ref=f2e1463]: 91%
+              - paragraph [ref=f2e1464]: استُخدم 11× · 10 نجح
+              - img "10 success, 1 failure" [ref=f2e1465]
+            - button "إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً 80% استُخدم 10× · 8 نجح 8 success, 2 failure" [ref=f2e2063]:
+              - generic [ref=f2e1469]:
+                - generic [ref=f2e1470]: إعادة فتح الطلب ومعالجة جميع أسباب الفشل مجتمعاً
+                - generic [ref=f2e1471]: 80%
+              - paragraph [ref=f2e1472]: استُخدم 10× · 8 نجح
+              - img "8 success, 2 failure" [ref=f2e1473]
+        - generic [ref=f2e1478]:
+          - generic [ref=f2e1479]:
+            - generic [ref=f2e1480]: التفاصيل
+            - generic [ref=f2e1481]: تفاصيل العنصر المحدد
+          - generic [ref=f2e1484]:
+            - generic [ref=f2e1485]:
+              - paragraph [ref=f2e1486]: السبب الجذري
+              - paragraph [ref=f2e1487]: تعارض في العنوان
+            - generic [ref=f2e1488]:
+              - generic [ref=f2e1489]:
+                - paragraph [ref=f2e1490]: معدل النجاح التاريخي
+                - paragraph [ref=f2e1491]: 91%
+              - generic [ref=f2e1492]:
+                - paragraph [ref=f2e1493]: نجح
+                - paragraph [ref=f2e1494]: 39 / 43
+              - generic [ref=f2e1495]:
+                - paragraph [ref=f2e1496]: الحالات المفتوحة حاليًا
+                - paragraph [ref=f2e1497]: "11"
+            - separator [ref=f2e1498]
+            - generic [ref=f2e1499]:
+              - paragraph [ref=f2e1500]: الحالات المفتوحة المطابقة
+              - table [ref=f2e1501]:
+                - rowgroup [ref=f2e1502]:
+                  - row [ref=f2e2064]:
+                    - columnheader "الشحنة" [ref=f2e2065]
+                    - columnheader "المدينة" [ref=f2e2066]
+                    - columnheader "المندوب" [ref=f2e2067]
+                - rowgroup [ref=f2e1507]:
+                  - row [ref=f2e1508]:
+                    - cell "SHP-0072" [ref=f2e1509]
+                    - cell "جدة" [ref=f2e1510]
+                    - cell "جابر الثقفي" [ref=f2e1511]
+                  - row [ref=f2e1512]:
+                    - cell "SHP-0175" [ref=f2e1513]
+                    - cell "بدر" [ref=f2e1514]
+                    - cell "محمد الفيفي" [ref=f2e1515]
+                  - row [ref=f2e1516]:
+                    - cell "SHP-0233" [ref=f2e1517]
+                    - cell "الليث" [ref=f2e1518]
+                    - cell "سامي البقمي" [ref=f2e1519]
+                  - row [ref=f2e1520]:
+                    - cell "SHP-0039" [ref=f2e1521]
+                    - cell "سكاكا" [ref=f2e1522]
+                    - cell "راشد البلوي" [ref=f2e1523]
+                  - row [ref=f2e1524]:
+                    - cell "SHP-0182" [ref=f2e1525]
+                    - cell "خيبر" [ref=f2e1526]
+                    - cell "مشعل السلمي" [ref=f2e1527]
+                  - row [ref=f2e1528]:
+                    - cell "SHP-0134" [ref=f2e1529]
+                    - cell "صفوى" [ref=f2e1530]
+                    - cell "طلال المطيري" [ref=f2e1531]
+                  - row [ref=f2e1532]:
+                    - cell "SHP-0078" [ref=f2e1533]
+                    - cell "طريب" [ref=f2e1534]
+                    - cell "وليد الشهري" [ref=f2e1535]
+                  - row [ref=f2e1536]:
+                    - cell "SHP-0271" [ref=f2e1537]
+                    - cell "القوز" [ref=f2e1538]
+                    - cell "راشد البلوي" [ref=f2e1539]
+                  - row [ref=f2e1540]:
+                    - cell "SHP-0097" [ref=f2e1541]
+                    - cell "ينبع الصناعية" [ref=f2e1542]
+                    - cell "ماجد الدوسري" [ref=f2e1543]
+                  - row [ref=f2e1544]:
+                    - cell "SHP-0280" [ref=f2e1545]
+                    - cell "الغاط" [ref=f2e1546]
+                    - cell "سلطان السبيعي" [ref=f2e1547]
+                  - row [ref=f2e1548]:
+                    - cell "SHP-0101" [ref=f2e1549]
+                    - cell "خميس مشيط" [ref=f2e1550]
+                    - cell "تركي الغامدي" [ref=f2e1551]
+      - generic [ref=f2e1552]:
+        - generic [ref=f2e1553]:
+          - generic [ref=f2e1554]: قائمة الحالات المفتوحة (73)
+          - generic [ref=f2e1555]: الإخفاقات غير المحلولة — يمكن تشغيل كل منها من الوارد
+        - generic [ref=f2e1556]:
+          - textbox "بحث في الحالات…" [ref=f2e2068]
+          - combobox [ref=f2e1559]:
+            - option "جميع الأسباب الجذرية" [selected]
+            - option "تعارض في العنوان"
+            - option "تعارض في العنوان (مصعّدة)"
+            - option "عدم تطابق الباركود (مصعّدة)"
+            - option "اختلاف الوزن في محاولة التسليم (مصعّدة)"
+            - option "محاولة تسليم عند البوابة الخاطئة (مصعّدة)"
+            - option "تأخر في مركز المعالجة (مصعّدة)"
+            - option "تعذر الوصول إلى المستلم (مصعّدة)"
+            - option "عدم تطابق الباركود"
+            - option "اختلاف الوزن في محاولة التسليم"
+            - option "محاولة تسليم عند البوابة الخاطئة"
+            - option "تأخر في مركز المعالجة"
+            - option "تعذر الوصول إلى المستلم"
+        - table [ref=f2e1562]:
+          - rowgroup [ref=f2e1563]:
+            - row [ref=f2e2069]:
+              - columnheader "معرّف الإخفاق" [ref=f2e2070]
+              - columnheader "الشحنة" [ref=f2e2071]
+              - columnheader "السبب الجذري" [ref=f2e2072]
+              - columnheader "المدينة" [ref=f2e2073]
+              - columnheader "المندوب" [ref=f2e2074]
+          - rowgroup [ref=f2e1570]:
+            - row [ref=f2e2075] [cursor=pointer]:
+              - cell "FR-05d5f8a701" [ref=f2e1572]
+              - cell "SHP-0033" [ref=f2e1573]
+              - cell "عدم تطابق الباركود" [ref=f2e2076]
+              - cell "بقعاء" [ref=f2e1575]
+              - cell "عبدالله الحربي" [ref=f2e1576]
+            - row [ref=f2e2077] [cursor=pointer]:
+              - cell "FR-06e17dd099" [ref=f2e1578]
+              - cell "SHP-0072" [ref=f2e1579]
+              - cell "تعارض في العنوان" [ref=f2e2078]
+              - cell "جدة" [ref=f2e1581]
+              - cell "جابر الثقفي" [ref=f2e1582]
+            - row [ref=f2e2079] [cursor=pointer]:
+              - cell "FR-0c1bd3da96" [ref=f2e1584]
+              - cell "SHP-0187" [ref=f2e1585]
+              - cell "تأخر في مركز المعالجة" [ref=f2e2080]
+              - cell "الشنان" [ref=f2e1587]
+              - cell "تركي الغامدي" [ref=f2e1588]
+            - row [ref=f2e2081] [cursor=pointer]:
+              - cell "FR-10a28de29e" [ref=f2e1590]
+              - cell "SHP-0175" [ref=f2e1591]
+              - cell "تعارض في العنوان" [ref=f2e2082]
+              - cell "بدر" [ref=f2e1593]
+              - cell "محمد الفيفي" [ref=f2e1594]
+            - row [ref=f2e2083] [cursor=pointer]:
+              - cell "FR-11fef36daa" [ref=f2e1596]
+              - cell "SHP-0254" [ref=f2e1597]
+              - cell "تأخر في مركز المعالجة" [ref=f2e2084]
+              - cell "العقيق" [ref=f2e1599]
+              - cell "جابر الثقفي" [ref=f2e1600]
+            - row [ref=f2e2085] [cursor=pointer]:
+              - cell "FR-12fa7b596f" [ref=f2e1602]
+              - cell "SHP-0214" [ref=f2e1603]
+              - cell "تأخر في مركز المعالجة" [ref=f2e2086]
+              - cell "حفر الباطن" [ref=f2e1605]
+              - cell "إبراهيم القرني" [ref=f2e1606]
+            - row [ref=f2e2087] [cursor=pointer]:
+              - cell "FR-151991b528" [ref=f2e1608]
+              - cell "SHP-0017" [ref=f2e1609]
+              - cell "تعارض في العنوان (مصعّدة)" [ref=f2e2088]
+              - cell "الشنان" [ref=f2e1611]
+              - cell "فهد الشمري" [ref=f2e1612]
+            - row [ref=f2e2089] [cursor=pointer]:
+              - cell "FR-15f0a1d7d8" [ref=f2e1614]
+              - cell "SHP-0233" [ref=f2e1615]
+              - cell "تعارض في العنوان" [ref=f2e2090]
+              - cell "الليث" [ref=f2e1617]
+              - cell "سامي البقمي" [ref=f2e1618]
+            - row [ref=f2e2091] [cursor=pointer]:
+              - cell "FR-17cc8662e9" [ref=f2e1620]
+              - cell "SHP-0025" [ref=f2e1621]
+              - cell "تعذر الوصول إلى المستلم" [ref=f2e2092]
+              - cell "بدر" [ref=f2e1623]
+              - cell "جابر الثقفي" [ref=f2e1624]
+            - row [ref=f2e2093] [cursor=pointer]:
+              - cell "FR-1b2a976e60" [ref=f2e1626]
+              - cell "SHP-0170" [ref=f2e1627]
+              - cell "تعذر الوصول إلى المستلم" [ref=f2e2094]
+              - cell "بقعاء" [ref=f2e1629]
+              - cell "سامي البقمي" [ref=f2e1630]
+            - row [ref=f2e2095] [cursor=pointer]:
+              - cell "FR-1fe14de7e3" [ref=f2e1632]
+              - cell "SHP-0039" [ref=f2e1633]
+              - cell "تعارض في العنوان" [ref=f2e2096]
+              - cell "سكاكا" [ref=f2e1635]
+              - cell "راشد البلوي" [ref=f2e1636]
+            - row [ref=f2e2097] [cursor=pointer]:
+              - cell "FR-21d1edca80" [ref=f2e1638]
+              - cell "SHP-0197" [ref=f2e1639]
+              - cell "اختلاف الوزن في محاولة التسليم" [ref=f2e2098]
+              - cell "بللحمر" [ref=f2e1641]
+              - cell "علي الشريف" [ref=f2e1642]
+            - row [ref=f2e2099] [cursor=pointer]:
+              - cell "FR-27a29782e4" [ref=f2e1644]
+              - cell "SHP-0054" [ref=f2e1645]
+              - cell "اختلاف الوزن في محاولة التسليم" [ref=f2e2100]
+              - cell "جدة" [ref=f2e1647]
+              - cell "علي الشريف" [ref=f2e1648]
+            - row [ref=f2e2101] [cursor=pointer]:
+              - cell "FR-2b24e533e7" [ref=f2e1650]
+              - cell "SHP-0243" [ref=f2e1651]
+              - cell "محاولة تسليم عند البوابة الخاطئة" [ref=f2e2102]
+              - cell "تاروت" [ref=f2e1653]
+              - cell "محمد الفيفي" [ref=f2e1654]
+            - row [ref=f2e2103] [cursor=pointer]:
+              - cell "FR-2ba47b3fe5" [ref=f2e1656]
+              - cell "SHP-0021" [ref=f2e1657]
+              - cell "تأخر في مركز المعالجة" [ref=f2e2104]
+              - cell "القويعية" [ref=f2e1659]
+              - cell "سعود العتيبي" [ref=f2e1660]
+            - row [ref=f2e2105] [cursor=pointer]:
+              - cell "FR-2e08fa4539" [ref=f2e1662]
+              - cell "SHP-0017" [ref=f2e1663]
+              - cell "محاولة تسليم عند البوابة الخاطئة (مصعّدة)" [ref=f2e2106]
+              - cell "الشنان" [ref=f2e1665]
+              - cell "فهد الشمري" [ref=f2e1666]
+            - row [ref=f2e2107] [cursor=pointer]:
+              - cell "FR-2f6f06ddc6" [ref=f2e1668]
+              - cell "SHP-0201" [ref=f2e1669]
+              - cell "تأخر في مركز المعالجة (مصعّدة)" [ref=f2e2108]
+              - cell "الدمام" [ref=f2e1671]
+              - cell "فهد الشمري" [ref=f2e1672]
+            - row [ref=f2e2109] [cursor=pointer]:
+              - cell "FR-314b233851" [ref=f2e1674]
+              - cell "SHP-0270" [ref=f2e1675]
+              - cell "تعذر الوصول إلى المستلم" [ref=f2e2110]
+              - cell "النماص" [ref=f2e1677]
+              - cell "ماجد الدوسري" [ref=f2e1678]
+            - row [ref=f2e2111] [cursor=pointer]:
+              - cell "FR-376691e0c7" [ref=f2e1680]
+              - cell "SHP-0228" [ref=f2e1681]
+              - cell "تأخر في مركز المعالجة" [ref=f2e2112]
+              - cell "بدر" [ref=f2e1683]
+              - cell "سلطان السبيعي" [ref=f2e1684]
+            - row [ref=f2e2113] [cursor=pointer]:
+              - cell "FR-3fc80a76d4" [ref=f2e1686]
+              - cell "SHP-0141" [ref=f2e1687]
+              - cell "تأخر في مركز المعالجة" [ref=f2e2114]
+              - cell "القيصومة" [ref=f2e1689]
+              - cell "عبدالعزيز اليامي" [ref=f2e1690]
+            - row [ref=f2e2115] [cursor=pointer]:
+              - cell "FR-42a9e31bf2" [ref=f2e1692]
+              - cell "SHP-0085" [ref=f2e1693]
+              - cell "تعذر الوصول إلى المستلم" [ref=f2e2116]
+              - cell "الشماسية" [ref=f2e1695]
+              - cell "فيصل الجهني" [ref=f2e1696]
+            - row [ref=f2e2117] [cursor=pointer]:
+              - cell "FR-44a501c24c" [ref=f2e1698]
+              - cell "SHP-0027" [ref=f2e1699]
+              - cell "تأخر في مركز المعالجة" [ref=f2e2118]
+              - cell "الأضارع" [ref=f2e1701]
+              - cell "علي الشريف" [ref=f2e1702]
+            - row [ref=f2e2119] [cursor=pointer]:
+              - cell "FR-510ca3b99d" [ref=f2e1704]
+              - cell "SHP-0237" [ref=f2e1705]
+              - cell "عدم تطابق الباركود" [ref=f2e2120]
+              - cell "جواثا" [ref=f2e1707]
+              - cell "مشعل السلمي" [ref=f2e1708]
+            - row [ref=f2e2121] [cursor=pointer]:
+              - cell "FR-5608e6d233" [ref=f2e1710]
+              - cell "SHP-0269" [ref=f2e1711]
+              - cell "اختلاف الوزن في محاولة التسليم (مصعّدة)" [ref=f2e2122]
+              - cell "بقعاء" [ref=f2e1713]
+              - cell "فيصل الجهني" [ref=f2e1714]
+            - row [ref=f2e2123] [cursor=pointer]:
+              - cell "FR-56b12c96e3" [ref=f2e1716]
+              - cell "SHP-0043" [ref=f2e1717]
+              - cell "تأخر في مركز المعالجة" [ref=f2e2124]
+              - cell "الحناكية" [ref=f2e1719]
+              - cell "ماجد الدوسري" [ref=f2e1720]
+            - row [ref=f2e2125] [cursor=pointer]:
+              - cell "FR-66094e6627" [ref=f2e1722]
+              - cell "SHP-0229" [ref=f2e1723]
+              - cell "تعذر الوصول إلى المستلم" [ref=f2e2126]
+              - cell "الرين" [ref=f2e1725]
+              - cell "زياد الحارثي" [ref=f2e1726]
+            - row [ref=f2e2127] [cursor=pointer]:
+              - cell "FR-664b7ec43c" [ref=f2e1728]
+              - cell "SHP-0015" [ref=f2e1729]
+              - cell "عدم تطابق الباركود" [ref=f2e2128]
+              - cell "المجاردة" [ref=f2e1731]
+              - cell "فيصل الجهني" [ref=f2e1732]
+            - row [ref=f2e2129] [cursor=pointer]:
+              - cell "FR-6f6b188775" [ref=f2e1734]
+              - cell "SHP-0173" [ref=f2e1735]
+              - cell "عدم تطابق الباركود (مصعّدة)" [ref=f2e2130]
+              - cell "حائل" [ref=f2e1737]
+              - cell "يوسف الزهراني" [ref=f2e1738]
+            - row [ref=f2e2131] [cursor=pointer]:
+              - cell "FR-702f8b023e" [ref=f2e1740]
+              - cell "SHP-0182" [ref=f2e1741]
+              - cell "تعارض في العنوان" [ref=f2e2132]
+              - cell "خيبر" [ref=f2e1743]
+              - cell "مشعل السلمي" [ref=f2e1744]
+            - row [ref=f2e2133] [cursor=pointer]:
+              - cell "FR-7264c2826f" [ref=f2e1746]
+              - cell "SHP-0020" [ref=f2e1747]
+              - cell "تعذر الوصول إلى المستلم" [ref=f2e2134]
+              - cell "ينبع الصناعية" [ref=f2e1749]
+              - cell "تركي الغامدي" [ref=f2e1750]
+            - row [ref=f2e2135] [cursor=pointer]:
+              - cell "FR-7376390d95" [ref=f2e1752]
+              - cell "SHP-0256" [ref=f2e1753]
+              - cell "تعذر الوصول إلى المستلم" [ref=f2e2136]
+              - cell "رنية" [ref=f2e1755]
+              - cell "سامي البقمي" [ref=f2e1756]
+            - row [ref=f2e2137] [cursor=pointer]:
+              - cell "FR-7ada642f64" [ref=f2e1758]
+              - cell "SHP-0173" [ref=f2e1759]
+              - cell "تعذر الوصول إلى المستلم (مصعّدة)" [ref=f2e2138]
+              - cell "حائل" [ref=f2e1761]
+              - cell "يوسف الزهراني" [ref=f2e1762]
+            - row [ref=f2e2139] [cursor=pointer]:
+              - cell "FR-80e38c5092" [ref=f2e1764]
+              - cell "SHP-0269" [ref=f2e1765]
+              - cell "تعذر الوصول إلى المستلم (مصعّدة)" [ref=f2e2140]
+              - cell "بقعاء" [ref=f2e1767]
+              - cell "فيصل الجهني" [ref=f2e1768]
+            - row [ref=f2e2141] [cursor=pointer]:
+              - cell "FR-81e3541786" [ref=f2e1770]
+              - cell "SHP-0259" [ref=f2e1771]
+              - cell "محاولة تسليم عند البوابة الخاطئة" [ref=f2e2142]
+              - cell "طريف" [ref=f2e1773]
+              - cell "علي الشريف" [ref=f2e1774]
+            - row [ref=f2e2143] [cursor=pointer]:
+              - cell "FR-836ae998c8" [ref=f2e1776]
+              - cell "SHP-0084" [ref=f2e1777]
+              - cell "اختلاف الوزن في محاولة التسليم" [ref=f2e2144]
+              - cell "المجاردة" [ref=f2e1779]
+              - cell "حمد العمري" [ref=f2e1780]
+            - row [ref=f2e2145] [cursor=pointer]:
+              - cell "FR-89913d790f" [ref=f2e1782]
+              - cell "SHP-0134" [ref=f2e1783]
+              - cell "تعارض في العنوان" [ref=f2e2146]
+              - cell "صفوى" [ref=f2e1785]
+              - cell "طلال المطيري" [ref=f2e1786]
+            - row [ref=f2e2147] [cursor=pointer]:
+              - cell "FR-8af5fd96fc" [ref=f2e1788]
+              - cell "SHP-0255" [ref=f2e1789]
+              - cell "تعذر الوصول إلى المستلم" [ref=f2e2148]
+              - cell "الشملي" [ref=f2e1791]
+              - cell "سلطان السبيعي" [ref=f2e1792]
+            - row [ref=f2e2149] [cursor=pointer]:
+              - cell "FR-8f0fa2fa46" [ref=f2e1794]
+              - cell "SHP-0062" [ref=f2e1795]
+              - cell "عدم تطابق الباركود" [ref=f2e2150]
+              - cell "تاروت" [ref=f2e1797]
+              - cell "وليد الشهري" [ref=f2e1798]
+            - row [ref=f2e2151] [cursor=pointer]:
+              - cell "FR-94e663f0f5" [ref=f2e1800]
+              - cell "SHP-0222" [ref=f2e1801]
+              - cell "تعذر الوصول إلى المستلم" [ref=f2e2152]
+              - cell "ابو عريش" [ref=f2e1803]
+              - cell "إبراهيم القرني" [ref=f2e1804]
+            - row [ref=f2e2153] [cursor=pointer]:
+              - cell "FR-980e629a87" [ref=f2e1806]
+              - cell "SHP-0192" [ref=f2e1807]
+              - cell "تعذر الوصول إلى المستلم" [ref=f2e2154]
+              - cell "حوطة سدير" [ref=f2e1809]
+              - cell "تركي الغامدي" [ref=f2e1810]
+            - row [ref=f2e2155] [cursor=pointer]:
+              - cell "FR-99fd8abcd0" [ref=f2e1812]
+              - cell "SHP-0078" [ref=f2e1813]
+              - cell "تعارض في العنوان" [ref=f2e2156]
+              - cell "طريب" [ref=f2e1815]
+              - cell "وليد الشهري" [ref=f2e1816]
+            - row [ref=f2e2157] [cursor=pointer]:
+              - cell "FR-9c6115c5f4" [ref=f2e1818]
+              - cell "SHP-0156" [ref=f2e1819]
+              - cell "تعذر الوصول إلى المستلم" [ref=f2e2158]
+              - cell "القريات" [ref=f2e1821]
+              - cell "زياد الحارثي" [ref=f2e1822]
+            - row [ref=f2e2159] [cursor=pointer]:
+              - cell "FR-9d20bcb013" [ref=f2e1824]
+              - cell "SHP-0183" [ref=f2e1825]
+              - cell "تعذر الوصول إلى المستلم" [ref=f2e2160]
+              - cell "الشملي" [ref=f2e1827]
+              - cell "طلال المطيري" [ref=f2e1828]
+            - row [ref=f2e2161] [cursor=pointer]:
+              - cell "FR-a068133b90" [ref=f2e1830]
+              - cell "SHP-0193" [ref=f2e1831]
+              - cell "تعذر الوصول إلى المستلم (مصعّدة)" [ref=f2e2162]
+              - cell "صوير" [ref=f2e1833]
+              - cell "علي الشريف" [ref=f2e1834]
+            - row [ref=f2e2163] [cursor=pointer]:
+              - cell "FR-a5a3c5327c" [ref=f2e1836]
+              - cell "SHP-0096" [ref=f2e1837]
+              - cell "تعذر الوصول إلى المستلم" [ref=f2e2164]
+              - cell "مهد الذهب" [ref=f2e1839]
+              - cell "سلطان السبيعي" [ref=f2e1840]
+            - row [ref=f2e2165] [cursor=pointer]:
+              - cell "FR-ab303d5110" [ref=f2e1842]
+              - cell "SHP-0253" [ref=f2e1843]
+              - cell "تعذر الوصول إلى المستلم" [ref=f2e2166]
+              - cell "جدة" [ref=f2e1845]
+              - cell "ناصر المالكي" [ref=f2e1846]
+            - row [ref=f2e2167] [cursor=pointer]:
+              - cell "FR-abc5854078" [ref=f2e1848]
+              - cell "SHP-0257" [ref=f2e1849]
+              - cell "تعذر الوصول إلى المستلم" [ref=f2e2168]
+              - cell "الشماسية" [ref=f2e1851]
+              - cell "سعود العتيبي" [ref=f2e1852]
+            - row [ref=f2e2169] [cursor=pointer]:
+              - cell "FR-ac3eee944f" [ref=f2e1854]
+              - cell "SHP-0196" [ref=f2e1855]
+              - cell "اختلاف الوزن في محاولة التسليم" [ref=f2e2170]
+              - cell "الحلوة" [ref=f2e1857]
+              - cell "خالد القحطاني" [ref=f2e1858]
+            - row [ref=f2e2171] [cursor=pointer]:
+              - cell "FR-ae1c2c2e72" [ref=f2e1860]
+              - cell "SHP-0180" [ref=f2e1861]
+              - cell "محاولة تسليم عند البوابة الخاطئة" [ref=f2e2172]
+              - cell "طريب" [ref=f2e1863]
+              - cell "يوسف الزهراني" [ref=f2e1864]
+            - row [ref=f2e2173] [cursor=pointer]:
+              - cell "FR-ae9257148e" [ref=f2e1866]
+              - cell "SHP-0271" [ref=f2e1867]
+              - cell "تعارض في العنوان" [ref=f2e2174]
+              - cell "القوز" [ref=f2e1869]
+              - cell "راشد البلوي" [ref=f2e1870]
+            - row [ref=f2e2175] [cursor=pointer]:
+              - cell "FR-af2eb7d119" [ref=f2e1872]
+              - cell "SHP-0136" [ref=f2e1873]
+              - cell "تأخر في مركز المعالجة" [ref=f2e2176]
+              - cell "حائل" [ref=f2e1875]
+              - cell "ماجد الدوسري" [ref=f2e1876]
+            - row [ref=f2e2177] [cursor=pointer]:
+              - cell "FR-afe5005c9e" [ref=f2e1878]
+              - cell "SHP-0201" [ref=f2e1879]
+              - cell "اختلاف الوزن في محاولة التسليم (مصعّدة)" [ref=f2e2178]
+              - cell "الدمام" [ref=f2e1881]
+              - cell "فهد الشمري" [ref=f2e1882]
+            - row [ref=f2e2179] [cursor=pointer]:
+              - cell "FR-b2549d2c17" [ref=f2e1884]
+              - cell "SHP-0070" [ref=f2e1885]
+              - cell "اختلاف الوزن في محاولة التسليم" [ref=f2e2180]
+              - cell "الشنان" [ref=f2e1887]
+              - cell "سعود العتيبي" [ref=f2e1888]
+            - row [ref=f2e2181] [cursor=pointer]:
+              - cell "FR-b6e962cc2a" [ref=f2e1890]
+              - cell "SHP-0097" [ref=f2e1891]
+              - cell "تعارض في العنوان" [ref=f2e2182]
+              - cell "ينبع الصناعية" [ref=f2e1893]
+              - cell "ماجد الدوسري" [ref=f2e1894]
+            - row [ref=f2e2183] [cursor=pointer]:
+              - cell "FR-ba5acbc796" [ref=f2e1896]
+              - cell "SHP-0219" [ref=f2e1897]
+              - cell "عدم تطابق الباركود" [ref=f2e2184]
+              - cell "القنفذة" [ref=f2e1899]
+              - cell "فيصل الجهني" [ref=f2e1900]
+            - row [ref=f2e2185] [cursor=pointer]:
+              - cell "FR-ba995f462b" [ref=f2e1902]
+              - cell "SHP-0209" [ref=f2e1903]
+              - cell "اختلاف الوزن في محاولة التسليم" [ref=f2e2186]
+              - cell "رنية" [ref=f2e1905]
+              - cell "إبراهيم القرني" [ref=f2e1906]
+            - row [ref=f2e2187] [cursor=pointer]:
+              - cell "FR-bee7b1d755" [ref=f2e1908]
+              - cell "SHP-0193" [ref=f2e1909]
+              - cell "تعارض في العنوان (مصعّدة)" [ref=f2e2188]
+              - cell "صوير" [ref=f2e1911]
+              - cell "علي الشريف" [ref=f2e1912]
+            - row [ref=f2e2189] [cursor=pointer]:
+              - cell "FR-bf74f5cd54" [ref=f2e1914]
+              - cell "SHP-0061" [ref=f2e1915]
+              - cell "اختلاف الوزن في محاولة التسليم" [ref=f2e2190]
+              - cell "الهلالية" [ref=f2e1917]
+              - cell "جابر الثقفي" [ref=f2e1918]
+            - row [ref=f2e2191] [cursor=pointer]:
+              - cell "FR-c1f539796d" [ref=f2e1920]
+              - cell "SHP-0024" [ref=f2e1921]
+              - cell "تأخر في مركز المعالجة" [ref=f2e2192]
+              - cell "مدينة الملك عبدالله الاقتصادية" [ref=f2e1923]
+              - cell "سعود العتيبي" [ref=f2e1924]
+            - row [ref=f2e2193] [cursor=pointer]:
+              - cell "FR-c25e4ba84c" [ref=f2e1926]
+              - cell "SHP-0081" [ref=f2e1927]
+              - cell "تأخر في مركز المعالجة" [ref=f2e2194]
+              - cell "الشملي" [ref=f2e1929]
+              - cell "وليد الشهري" [ref=f2e1930]
+            - row [ref=f2e2195] [cursor=pointer]:
+              - cell "FR-c5d5bc31d2" [ref=f2e1932]
+              - cell "SHP-0079" [ref=f2e1933]
+              - cell "تأخر في مركز المعالجة" [ref=f2e2196]
+              - cell "دارين" [ref=f2e1935]
+              - cell "عبدالعزيز اليامي" [ref=f2e1936]
+            - row [ref=f2e2197] [cursor=pointer]:
+              - cell "FR-c8e667baf3" [ref=f2e1938]
+              - cell "SHP-0164" [ref=f2e1939]
+              - cell "تأخر في مركز المعالجة" [ref=f2e2198]
+              - cell "الشملي" [ref=f2e1941]
+              - cell "يوسف الزهراني" [ref=f2e1942]
+            - row [ref=f2e2199] [cursor=pointer]:
+              - cell "FR-caada3d6a2" [ref=f2e1944]
+              - cell "SHP-0052" [ref=f2e1945]
+              - cell "تأخر في مركز المعالجة" [ref=f2e2200]
+              - cell "ابو عريش" [ref=f2e1947]
+              - cell "سلطان السبيعي" [ref=f2e1948]
+            - row [ref=f2e2201] [cursor=pointer]:
+              - cell "FR-d385608b6b" [ref=f2e1950]
+              - cell "SHP-0211" [ref=f2e1951]
+              - cell "تعذر الوصول إلى المستلم" [ref=f2e2202]
+              - cell "شقراء" [ref=f2e1953]
+              - cell "بندر العنزي" [ref=f2e1954]
+            - row [ref=f2e2203] [cursor=pointer]:
+              - cell "FR-d6c38492f4" [ref=f2e1956]
+              - cell "SHP-0279" [ref=f2e1957]
+              - cell "عدم تطابق الباركود" [ref=f2e2204]
+              - cell "الحلوة" [ref=f2e1959]
+              - cell "سلطان السبيعي" [ref=f2e1960]
+            - row [ref=f2e2205] [cursor=pointer]:
+              - cell "FR-d6fd70cd61" [ref=f2e1962]
+              - cell "SHP-0217" [ref=f2e1963]
+              - cell "عدم تطابق الباركود" [ref=f2e2206]
+              - cell "الباحة" [ref=f2e1965]
+              - cell "سعود العتيبي" [ref=f2e1966]
+            - row [ref=f2e2207] [cursor=pointer]:
+              - cell "FR-de41eb3ec0" [ref=f2e1968]
+              - cell "SHP-0273" [ref=f2e1969]
+              - cell "تأخر في مركز المعالجة" [ref=f2e2208]
+              - cell "الزلفي" [ref=f2e1971]
+              - cell "حمد العمري" [ref=f2e1972]
+            - row [ref=f2e2209] [cursor=pointer]:
+              - cell "FR-de9e557995" [ref=f2e1974]
+              - cell "SHP-0224" [ref=f2e1975]
+              - cell "عدم تطابق الباركود" [ref=f2e2210]
+              - cell "نفي" [ref=f2e1977]
+              - cell "حمد العمري" [ref=f2e1978]
+            - row [ref=f2e2211] [cursor=pointer]:
+              - cell "FR-e58dd8c113" [ref=f2e1980]
+              - cell "SHP-0067" [ref=f2e1981]
+              - cell "عدم تطابق الباركود" [ref=f2e2212]
+              - cell "شقراء" [ref=f2e1983]
+              - cell "فيصل الجهني" [ref=f2e1984]
+            - row [ref=f2e2213] [cursor=pointer]:
+              - cell "FR-ea43a1fec1" [ref=f2e1986]
+              - cell "SHP-0166" [ref=f2e1987]
+              - cell "محاولة تسليم عند البوابة الخاطئة" [ref=f2e2214]
+              - cell "خيبر" [ref=f2e1989]
+              - cell "أحمد الزهيري" [ref=f2e1990]
+            - row [ref=f2e2215] [cursor=pointer]:
+              - cell "FR-ef41caa78b" [ref=f2e1992]
+              - cell "SHP-0280" [ref=f2e1993]
+              - cell "تعارض في العنوان" [ref=f2e2216]
+              - cell "الغاط" [ref=f2e1995]
+              - cell "سلطان السبيعي" [ref=f2e1996]
+            - row [ref=f2e2217] [cursor=pointer]:
+              - cell "FR-ef5edfb661" [ref=f2e1998]
+              - cell "SHP-0101" [ref=f2e1999]
+              - cell "تعارض في العنوان" [ref=f2e2218]
+              - cell "خميس مشيط" [ref=f2e2001]
+              - cell "تركي الغامدي" [ref=f2e2002]
+            - row [ref=f2e2219] [cursor=pointer]:
+              - cell "FR-fcc7dcdf17" [ref=f2e2004]
+              - cell "SHP-0178" [ref=f2e2005]
+              - cell "عدم تطابق الباركود" [ref=f2e2220]
+              - cell "الليث" [ref=f2e2007]
+              - cell "فيصل الجهني" [ref=f2e2008]
+      - generic [ref=f2e2009]:
+        - generic [ref=f2e2010]:
+          - generic [ref=f2e2011]: الحالات المصعّدة (1 مفتوحة)
+          - generic [ref=f2e2012]: حالات تم تسليمها مع السبب الجذري والإجراءات المجرّبة
+        - table [ref=f2e2015]:
+          - rowgroup [ref=f2e2016]:
+            - row [ref=f2e2221]:
+              - columnheader "الشحنة" [ref=f2e2222]
+              - columnheader "الفريق" [ref=f2e2223]
+              - columnheader "الأولوية" [ref=f2e2224]
+              - columnheader "السبب" [ref=f2e2225]
+              - columnheader "الإجراءات" [ref=f2e2226]
+          - rowgroup [ref=f2e2023]:
+            - row [ref=f2e2024]:
+              - cell "SHP-0072" [ref=f2e2025]
+              - cell "عمليات العناوين" [ref=f2e2026]
+              - cell "high" [ref=f2e2027]
+              - cell "The proposed action requires a new delivery attempt (redirecting the shipment), but the retry budget is exhausted per the business rules. The action must be changed to a non‑delivery‑attempt resolution, such as confirming the address with the customer and updating the system without scheduling a new attempt." [ref=f2e2028]
+              - cell "تصحيح العنوان في النظام وإعادة الجدولة · تأكيد العنوان الصحيح مع العميل وإعادة التوجيه" [ref=f2e2030]

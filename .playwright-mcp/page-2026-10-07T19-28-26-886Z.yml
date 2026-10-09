@@ -1,0 +1,303 @@
+- generic [ref=f2e4]:
+  - generic [ref=f2e7]:
+    - img "Application" [ref=f2e10]
+    - list [ref=f2e14]:
+      - listitem [ref=f2e15]:
+        - button "Intake" [ref=f2e16]
+      - listitem [ref=f2e21]:
+        - button "Decisions" [ref=f2e22]
+      - listitem [ref=f2e28]:
+        - button "Explore" [active] [ref=f2e29]
+    - button "Toggle Sidebar" [ref=f2e34]
+  - main [ref=f2e35]:
+    - generic [ref=f2e36]:
+      - button "Toggle sidebar" [ref=f2e37]:
+        - generic [ref=f2e38]: Toggle Sidebar
+      - heading "Explore" [level=1] [ref=f2e61]
+      - generic [ref=f2e40]:
+        - generic [ref=f2e41]: Autonomous shipment-complaint resolution over a Neo4j knowledge graph
+        - button "Language" [ref=f2e42]:
+          - generic [ref=f2e43]: en
+        - button "Theme" [ref=f2e44]
+    - generic [ref=f2e63]:
+      - generic [ref=f2e64]:
+        - generic "Explore view" [ref=f2e65]:
+          - button "Map" [pressed] [ref=f2e66]
+          - button "Graph" [ref=f2e69]
+          - button "Schema" [ref=f2e82]
+        - button "Refresh shipments" [ref=f2e87]
+        - button "Overview" [disabled] [ref=f2e93]
+        - button "Toggle fullscreen" [ref=f2e97]
+      - generic [ref=f2e103]:
+        - generic "Shipment filters" [ref=f2e104]:
+          - button "Needs attention (70)" [pressed] [ref=f2e105]:
+            - text: Needs attention
+            - generic [ref=f2e106]: (70)
+          - button "Critical (28)" [ref=f2e107]:
+            - text: Critical
+            - generic [ref=f2e108]: (28)
+          - button "Stalled (16)" [ref=f2e109]:
+            - text: Stalled
+            - generic [ref=f2e110]: (16)
+          - button "Delivered (80)" [ref=f2e111]:
+            - text: Delivered
+            - generic [ref=f2e112]: (80)
+          - button "All shipments (300)" [ref=f2e113]:
+            - text: All shipments
+            - generic [ref=f2e114]: (300)
+        - generic [ref=f2e115]:
+          - text: Shipment limit
+          - combobox "Shipment limit" [ref=f2e116]:
+            - option "10"
+            - option "25" [selected]
+            - option "50"
+      - generic [ref=f2e118]:
+        - generic "Shipment address overview with a text list for every shipment." [ref=f2e120]:
+          - generic [ref=f2e121]:
+            - generic:
+              - generic:
+                - button "SHP-0004 · Critical" [ref=f2e122] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e123]: "!"
+                - button "SHP-0015 · Critical" [ref=f2e124] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e125]: "!"
+                - button "SHP-0017 · Critical" [ref=f2e126] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e127]: "!"
+                - button "SHP-0020 · Critical" [ref=f2e128] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e129]: "!"
+                - button "SHP-0021 · Needs attention" [ref=f2e130] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e131]: Ⅱ
+                - button "SHP-0024 · Critical" [ref=f2e132] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e133]: "!"
+                - button "SHP-0025 · Critical" [ref=f2e134] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e135]: "!"
+                - button "SHP-0027 · Needs attention" [ref=f2e136] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e137]: Ⅱ
+                - button "SHP-0033 · Needs attention" [ref=f2e138] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e139]: Ⅱ
+                - button "SHP-0039 · Critical" [ref=f2e140] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e141]: "!"
+                - button "SHP-0043 · Needs attention" [ref=f2e142] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e143]: Ⅱ
+                - button "SHP-0052 · Needs attention" [ref=f2e144] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e145]: Ⅱ
+                - button "SHP-0054 · Needs attention" [ref=f2e146] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e147]: Ⅱ
+                - button "SHP-0061 · Needs attention" [ref=f2e148] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e149]: Ⅱ
+                - button "SHP-0062 · Critical" [ref=f2e150] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e151]: "!"
+                - button "SHP-0067 · Needs attention" [ref=f2e152] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e153]: Ⅱ
+                - button "SHP-0070 · Needs attention" [ref=f2e154] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e155]: Ⅱ
+                - button "SHP-0072 · Critical" [ref=f2e156] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e157]: "!"
+                - button "SHP-0078 · Needs attention" [ref=f2e158] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e159]: Ⅱ
+                - button "SHP-0079 · Critical" [ref=f2e160] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e161]: "!"
+                - button "SHP-0081 · Needs attention" [ref=f2e162] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e163]: Ⅱ
+                - button "SHP-0084 · Needs attention" [ref=f2e164] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e165]: Ⅱ
+                - button "SHP-0085 · Critical" [ref=f2e166] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e167]: "!"
+                - button "SHP-0096 · Critical" [ref=f2e168] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e169]: "!"
+                - button "SHP-0097 · Needs attention" [ref=f2e170] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e171]: Ⅱ
+            - generic:
+              - generic [ref=f2e172]:
+                - button "Zoom in" [ref=f2e173] [cursor=pointer]: +
+                - button "Zoom out" [ref=f2e174] [cursor=pointer]: −
+              - generic [ref=f2e175]:
+                - link "Leaflet" [ref=f2e176] [cursor=pointer]:
+                  - /url: https://leafletjs.com
+                - text: "| ©"
+                - link "OpenStreetMap" [ref=f2e181] [cursor=pointer]:
+                  - /url: https://www.openstreetmap.org/copyright
+          - generic "Shipment state legend":
+            - generic: Critical
+            - generic: Needs attention
+            - generic: Delivered
+            - generic: Recorded shipment
+          - paragraph: Markers are address locations, not live parcel positions. Use the list for overlapping addresses.
+        - complementary "Shipments in this view" [ref=f2e182]:
+          - status [ref=f2e183]: Showing 25 of 70 shipments · Bounded overview; select a shipment for connected evidence
+          - paragraph [ref=f2e184]: Synthetic shipment data. Priority is derived from case evidence, SLA and retry rules.
+          - list [ref=f2e185]:
+            - listitem [ref=f2e186]:
+              - button "SHP-0004 Critical (Failed) تندحة" [ref=f2e187]:
+                - generic [ref=f2e188]: SHP-0004
+                - generic [ref=f2e189]:
+                  - text: Critical
+                  - generic [ref=f2e192]: (Failed)
+                - generic [ref=f2e193]: تندحة
+            - listitem [ref=f2e194]:
+              - button "SHP-0015 Critical (Failed) المجاردة" [ref=f2e195]:
+                - generic [ref=f2e196]: SHP-0015
+                - generic [ref=f2e197]:
+                  - text: Critical
+                  - generic [ref=f2e200]: (Failed)
+                - generic [ref=f2e201]: المجاردة
+            - listitem [ref=f2e202]:
+              - button "SHP-0017 Critical (Failed) الشنان" [ref=f2e203]:
+                - generic [ref=f2e204]: SHP-0017
+                - generic [ref=f2e205]:
+                  - text: Critical
+                  - generic [ref=f2e208]: (Failed)
+                - generic [ref=f2e209]: الشنان
+            - listitem [ref=f2e210]:
+              - button "SHP-0020 Critical (Failed) ينبع الصناعية" [ref=f2e211]:
+                - generic [ref=f2e212]: SHP-0020
+                - generic [ref=f2e213]:
+                  - text: Critical
+                  - generic [ref=f2e216]: (Failed)
+                - generic [ref=f2e217]: ينبع الصناعية
+            - listitem [ref=f2e218]:
+              - button "SHP-0021 Needs attention (Failed) القويعية" [ref=f2e219]:
+                - generic [ref=f2e220]: SHP-0021
+                - generic [ref=f2e221]:
+                  - text: Needs attention
+                  - generic [ref=f2e225]: (Failed)
+                - generic [ref=f2e226]: القويعية
+            - listitem [ref=f2e227]:
+              - button "SHP-0024 Critical (Failed) مدينة الملك عبدالله الاقتصادية" [ref=f2e228]:
+                - generic [ref=f2e229]: SHP-0024
+                - generic [ref=f2e230]:
+                  - text: Critical
+                  - generic [ref=f2e233]: (Failed)
+                - generic [ref=f2e234]: مدينة الملك عبدالله الاقتصادية
+            - listitem [ref=f2e235]:
+              - button "SHP-0025 Critical (Failed) بدر" [ref=f2e236]:
+                - generic [ref=f2e237]: SHP-0025
+                - generic [ref=f2e238]:
+                  - text: Critical
+                  - generic [ref=f2e241]: (Failed)
+                - generic [ref=f2e242]: بدر
+            - listitem [ref=f2e243]:
+              - button "SHP-0027 Needs attention (Failed) الأضارع" [ref=f2e244]:
+                - generic [ref=f2e245]: SHP-0027
+                - generic [ref=f2e246]:
+                  - text: Needs attention
+                  - generic [ref=f2e250]: (Failed)
+                - generic [ref=f2e251]: الأضارع
+            - listitem [ref=f2e252]:
+              - button "SHP-0033 Needs attention (Failed) بقعاء" [ref=f2e253]:
+                - generic [ref=f2e254]: SHP-0033
+                - generic [ref=f2e255]:
+                  - text: Needs attention
+                  - generic [ref=f2e259]: (Failed)
+                - generic [ref=f2e260]: بقعاء
+            - listitem [ref=f2e261]:
+              - button "SHP-0039 Critical (Failed) سكاكا" [ref=f2e262]:
+                - generic [ref=f2e263]: SHP-0039
+                - generic [ref=f2e264]:
+                  - text: Critical
+                  - generic [ref=f2e267]: (Failed)
+                - generic [ref=f2e268]: سكاكا
+            - listitem [ref=f2e269]:
+              - button "SHP-0043 Needs attention (Failed) الحناكية" [ref=f2e270]:
+                - generic [ref=f2e271]: SHP-0043
+                - generic [ref=f2e272]:
+                  - text: Needs attention
+                  - generic [ref=f2e276]: (Failed)
+                - generic [ref=f2e277]: الحناكية
+            - listitem [ref=f2e278]:
+              - button "SHP-0052 Needs attention (Failed) ابو عريش" [ref=f2e279]:
+                - generic [ref=f2e280]: SHP-0052
+                - generic [ref=f2e281]:
+                  - text: Needs attention
+                  - generic [ref=f2e285]: (Failed)
+                - generic [ref=f2e286]: ابو عريش
+            - listitem [ref=f2e287]:
+              - button "SHP-0054 Needs attention (Failed) جدة" [ref=f2e288]:
+                - generic [ref=f2e289]: SHP-0054
+                - generic [ref=f2e290]:
+                  - text: Needs attention
+                  - generic [ref=f2e294]: (Failed)
+                - generic [ref=f2e295]: جدة
+            - listitem [ref=f2e296]:
+              - button "SHP-0061 Needs attention (Failed) الهلالية" [ref=f2e297]:
+                - generic [ref=f2e298]: SHP-0061
+                - generic [ref=f2e299]:
+                  - text: Needs attention
+                  - generic [ref=f2e303]: (Failed)
+                - generic [ref=f2e304]: الهلالية
+            - listitem [ref=f2e305]:
+              - button "SHP-0062 Critical (Failed) تاروت" [ref=f2e306]:
+                - generic [ref=f2e307]: SHP-0062
+                - generic [ref=f2e308]:
+                  - text: Critical
+                  - generic [ref=f2e311]: (Failed)
+                - generic [ref=f2e312]: تاروت
+            - listitem [ref=f2e313]:
+              - button "SHP-0067 Needs attention (Failed) شقراء" [ref=f2e314]:
+                - generic [ref=f2e315]: SHP-0067
+                - generic [ref=f2e316]:
+                  - text: Needs attention
+                  - generic [ref=f2e320]: (Failed)
+                - generic [ref=f2e321]: شقراء
+            - listitem [ref=f2e322]:
+              - button "SHP-0070 Needs attention (Failed) الشنان" [ref=f2e323]:
+                - generic [ref=f2e324]: SHP-0070
+                - generic [ref=f2e325]:
+                  - text: Needs attention
+                  - generic [ref=f2e329]: (Failed)
+                - generic [ref=f2e330]: الشنان
+            - listitem [ref=f2e331]:
+              - button "SHP-0072 Critical (Failed) جدة" [ref=f2e332]:
+                - generic [ref=f2e333]: SHP-0072
+                - generic [ref=f2e334]:
+                  - text: Critical
+                  - generic [ref=f2e337]: (Failed)
+                - generic [ref=f2e338]: جدة
+            - listitem [ref=f2e339]:
+              - button "SHP-0078 Needs attention (Failed) طريب" [ref=f2e340]:
+                - generic [ref=f2e341]: SHP-0078
+                - generic [ref=f2e342]:
+                  - text: Needs attention
+                  - generic [ref=f2e346]: (Failed)
+                - generic [ref=f2e347]: طريب
+            - listitem [ref=f2e348]:
+              - button "SHP-0079 Critical (Failed) دارين" [ref=f2e349]:
+                - generic [ref=f2e350]: SHP-0079
+                - generic [ref=f2e351]:
+                  - text: Critical
+                  - generic [ref=f2e354]: (Failed)
+                - generic [ref=f2e355]: دارين
+            - listitem [ref=f2e356]:
+              - button "SHP-0081 Needs attention (Failed) الشملي" [ref=f2e357]:
+                - generic [ref=f2e358]: SHP-0081
+                - generic [ref=f2e359]:
+                  - text: Needs attention
+                  - generic [ref=f2e363]: (Failed)
+                - generic [ref=f2e364]: الشملي
+            - listitem [ref=f2e365]:
+              - button "SHP-0084 Needs attention (Failed) المجاردة" [ref=f2e366]:
+                - generic [ref=f2e367]: SHP-0084
+                - generic [ref=f2e368]:
+                  - text: Needs attention
+                  - generic [ref=f2e372]: (Failed)
+                - generic [ref=f2e373]: المجاردة
+            - listitem [ref=f2e374]:
+              - button "SHP-0085 Critical (Failed) الشماسية" [ref=f2e375]:
+                - generic [ref=f2e376]: SHP-0085
+                - generic [ref=f2e377]:
+                  - text: Critical
+                  - generic [ref=f2e380]: (Failed)
+                - generic [ref=f2e381]: الشماسية
+            - listitem [ref=f2e382]:
+              - button "SHP-0096 Critical (Failed) مهد الذهب" [ref=f2e383]:
+                - generic [ref=f2e384]: SHP-0096
+                - generic [ref=f2e385]:
+                  - text: Critical
+                  - generic [ref=f2e388]: (Failed)
+                - generic [ref=f2e389]: مهد الذهب
+            - listitem [ref=f2e390]:
+              - button "SHP-0097 Needs attention (Failed) ينبع الصناعية" [ref=f2e391]:
+                - generic [ref=f2e392]: SHP-0097
+                - generic [ref=f2e393]:
+                  - text: Needs attention
+                  - generic [ref=f2e397]: (Failed)
+                - generic [ref=f2e398]: ينبع الصناعية

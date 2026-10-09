@@ -1,0 +1,102 @@
+[
+  {
+    "litellm_model": "openai/gpt-oss:20b",
+    "api_model": "gpt-oss:20b",
+    "t1_plain": {
+      "sec": 1.22,
+      "ok": true,
+      "status": 200,
+      "snippet": "AGENTX_OLLAMA_OK"
+    },
+    "t2_json": {
+      "sec": 1.31,
+      "ok": true,
+      "status": 200,
+      "parsed": {
+        "status": "ok",
+        "provider": "ollama_cloud"
+      }
+    },
+    "t3_arabic": {
+      "sec": 2.69,
+      "status": 200,
+      "has_arabic": true,
+      "snippet": "عميل يشتكي من تأخير شحنة من الرياض إلى جدة منذ ثلاثة أيام."
+    },
+    "t4_litellm": {
+      "sec": 2.39,
+      "ok": true,
+      "snippet": "AGENTX_OLLAMA_OK"
+    },
+    "t5_ask_json": {
+      "sec": 2.02,
+      "parsed": {
+        "answer": "yes"
+      },
+      "ok": true
+    },
+    "t6_extract": {
+      "sec": 4.7,
+      "ok": true,
+      "keys": [
+        "shipment_id",
+        "tracking_id",
+        "city",
+        "district",
+        "courier",
+        "category_hint",
+        "raw_text"
+      ]
+    }
+  },
+  {
+    "litellm_model": "openai/gpt-oss:120b",
+    "api_model": "gpt-oss:120b",
+    "t1_plain": {
+      "sec": 0.84,
+      "ok": true,
+      "status": 200,
+      "snippet": "AGENTX_OLLAMA_OK"
+    },
+    "t2_json": {
+      "sec": 1.09,
+      "ok": true,
+      "status": 200,
+      "parsed": {
+        "status": "ok",
+        "provider": "ollama_cloud"
+      }
+    },
+    "t3_arabic": {
+      "sec": 1.0,
+      "status": 200,
+      "has_arabic": true,
+      "snippet": "العميل يشتكي من تأخر شحنته من الرياض إلى جدة لمدة ثلاثة أيام."
+    },
+    "t4_litellm": {
+      "sec": 0.66,
+      "ok": true,
+      "snippet": "AGENTX_OLLAMA_OK"
+    },
+    "t5_ask_json": {
+      "sec": 0.83,
+      "parsed": {
+        "answer": "yes"
+      },
+      "ok": true
+    },
+    "t6_extract": {
+      "sec": 1.81,
+      "ok": true,
+      "keys": [
+        "shipment_id",
+        "tracking_id",
+        "city",
+        "district",
+        "courier",
+        "category_hint",
+        "raw_text"
+      ]
+    }
+  }
+]

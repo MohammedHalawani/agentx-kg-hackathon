@@ -1,0 +1,77 @@
+- generic [ref=f2e4]:
+  - generic [ref=f2e7]:
+    - img "Application" [ref=f2e10]
+    - list [ref=f2e14]:
+      - listitem [ref=f2e15]:
+        - button "Intake" [ref=f2e16]
+      - listitem [ref=f2e21]:
+        - button "Decisions" [ref=f2e22]
+      - listitem [ref=f2e28]:
+        - button "Explore" [ref=f2e29]
+    - button "Toggle Sidebar" [ref=f2e34]
+  - main [ref=f2e35]:
+    - generic [ref=f2e36]:
+      - button "Toggle sidebar" [ref=f2e37]:
+        - generic [ref=f2e38]: Toggle Sidebar
+      - heading "Explore" [level=1] [ref=f2e791]
+      - generic [ref=f2e40]:
+        - generic [ref=f2e41]: Shipment exception investigation and reviewed recommendations over a logistics knowledge graph
+        - button "Language" [ref=f2e42]:
+          - generic [ref=f2e43]: en
+        - button "Theme" [ref=f2e44]
+    - generic [ref=f2e793]:
+      - generic [ref=f2e794]:
+        - generic "Explore view" [ref=f2e795]:
+          - button "Map" [ref=f2e796]
+          - button "Graph" [ref=f2e799]
+          - button "Schema" [active] [pressed] [ref=f2e812]
+        - button "Refresh shipments" [ref=f2e817]
+        - button "Overview" [disabled] [ref=f2e823]
+        - button "Toggle fullscreen" [ref=f2e827]
+      - generic [ref=f2e1194]:
+        - generic [ref=f2e1195]:
+          - img "Graph visualization" [ref=f2e1197]
+          - generic [ref=f2e1201]:
+            - button "Zoom in" [ref=f2e1202]
+            - button "Zoom out" [ref=f2e1204]
+            - button "Fit the whole graph" [ref=f2e1206]
+          - generic:
+            - generic [ref=f2e1212]:
+              - text: Customer
+              - generic [ref=f2e1214]: "1"
+            - generic [ref=f2e1215]:
+              - text: EscalatedCase
+              - generic [ref=f2e1217]: "1"
+            - generic [ref=f2e1218]:
+              - text: Resolution
+              - generic [ref=f2e1220]: "1"
+            - generic [ref=f2e1221]:
+              - text: Policy
+              - generic [ref=f2e1223]: "1"
+            - generic [ref=f2e1224]:
+              - text: Event
+              - generic [ref=f2e1226]: "1"
+            - generic [ref=f2e1227]:
+              - text: Address
+              - generic [ref=f2e1229]: "1"
+            - generic [ref=f2e1230]:
+              - text: Order
+              - generic [ref=f2e1232]: "1"
+            - generic [ref=f2e1233]:
+              - text: Courier
+              - generic [ref=f2e1235]: "1"
+            - generic [ref=f2e1236]:
+              - text: Outcome
+              - generic [ref=f2e1238]: "1"
+            - generic [ref=f2e1239]:
+              - text: Failure reason
+              - generic [ref=f2e1241]: "1"
+            - generic [ref=f2e1242]:
+              - text: Shipment
+              - generic [ref=f2e1244]: "1"
+          - generic [ref=f2e1245]:
+            - button "Force" [ref=f2e1246]
+            - button "Tree" [ref=f2e1247]
+        - generic [ref=f2e1248]:
+          - button "2D" [ref=f2e1249]
+          - button "3D" [ref=f2e1256]

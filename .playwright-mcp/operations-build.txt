@@ -1,0 +1,32 @@
+
+> frontend@0.0.0 build
+> tsc -b && vite build
+
+vite v8.1.1 building client environment for production...
+[2K
+transforming...✓ 1490 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                        1.41 kB │ gzip:     0.67 kB
+dist/assets/HierarchicalLayout.worker-BoLW10cT.js    151.15 kB
+dist/assets/CoseBilkentLayout.worker-BehHTB4q.js     514.82 kB
+dist/assets/index-C1bBaz_U.css                       114.86 kB │ gzip:    23.69 kB
+dist/assets/is-plan-event-enabled-DC_xDK-v.js          0.10 kB │ gzip:     0.10 kB
+dist/assets/legacy-video-plugins-BSlcQoaa.js           0.57 kB │ gzip:     0.36 kB
+dist/assets/query-string-D8g2rWFN.js                   0.87 kB │ gzip:     0.49 kB
+dist/assets/remote-middleware-BziTUglZ.js              0.92 kB │ gzip:     0.50 kB
+dist/assets/schema-filter-NiZAWsUu.js                  1.03 kB │ gzip:     0.55 kB
+dist/assets/rolldown-runtime-DAXXjFlN.js               1.26 kB │ gzip:     0.70 kB
+dist/assets/auto-track-BsZKkIxJ.js                     1.36 kB │ gzip:     0.68 kB
+dist/assets/tslib.es6-C98rlihb.js                      2.68 kB │ gzip:     1.20 kB
+dist/assets/ajs-destination-C21Ld3jy.js                7.83 kB │ gzip:     2.66 kB
+dist/assets/index.umd-DfnSFSiU.js                     12.28 kB │ gzip:     3.42 kB
+dist/assets/routing-middleware-k0-ULTlZ.js            17.81 kB │ gzip:     5.85 kB
+dist/assets/index-CoLHt79s.js                      4,148.56 kB │ gzip: 1,161.94 kB
+
+✓ built in 3.65s
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.

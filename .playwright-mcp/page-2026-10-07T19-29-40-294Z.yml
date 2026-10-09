@@ -1,0 +1,330 @@
+- generic [ref=f2e4]:
+  - generic [ref=f2e7]:
+    - img "التطبيق" [ref=f2e1324]
+    - list [ref=f2e14]:
+      - listitem [ref=f2e15]:
+        - button "الوارد" [ref=f2e1325]
+      - listitem [ref=f2e21]:
+        - button "القرارات" [ref=f2e1326]
+      - listitem [ref=f2e28]:
+        - button "الاستكشاف" [ref=f2e1327]
+    - button "Toggle Sidebar" [ref=f2e34]
+  - main [ref=f2e35]:
+    - generic [ref=f2e36]:
+      - button "تبديل الشريط الجانبي" [ref=f2e1328]:
+        - generic [ref=f2e38]: Toggle Sidebar
+      - heading "الاستكشاف" [level=1] [ref=f2e1431]
+      - generic [ref=f2e40]:
+        - generic [ref=f2e41]: معالجة شكاوى الشحنات تلقائيًا عبر رسم معرفي Neo4j
+        - button "اللغة" [ref=f2e1330]:
+          - generic [ref=f2e43]: ar
+        - button "المظهر" [ref=f2e1331]
+    - generic [ref=f2e1433]:
+      - generic [ref=f2e1434]:
+        - generic "طريقة الاستكشاف" [ref=f2e1435]:
+          - button "الخريطة" [pressed] [ref=f2e1436]
+          - button "الرسم" [ref=f2e1439]
+          - button "المخطط" [ref=f2e1452]
+        - button "تحديث الشحنات" [ref=f2e1457]
+        - button "نظرة عامة" [ref=f2e1463]
+        - button "تبديل ملء الشاشة" [ref=f2e1467]
+      - generic [ref=f2e1473]:
+        - generic "مرشحات الشحنات" [ref=f2e1474]:
+          - button "تحتاج متابعة (70)" [pressed] [ref=f2e1475]:
+            - text: تحتاج متابعة
+            - generic [ref=f2e1476]: (70)
+          - button "حرجة (28)" [ref=f2e1477]:
+            - text: حرجة
+            - generic [ref=f2e1478]: (28)
+          - button "متعثرة (16)" [ref=f2e1479]:
+            - text: متعثرة
+            - generic [ref=f2e1480]: (16)
+          - button "تم تسليمها (80)" [ref=f2e1481]:
+            - text: تم تسليمها
+            - generic [ref=f2e1482]: (80)
+          - button "كل الشحنات (300)" [ref=f2e1483]:
+            - text: كل الشحنات
+            - generic [ref=f2e1484]: (300)
+        - generic [ref=f2e1485]:
+          - text: حد الشحنات
+          - combobox "حد الشحنات" [ref=f2e1486]:
+            - option "10"
+            - option "25" [selected]
+            - option "50"
+      - generic [ref=f2e1488]:
+        - generic "عرض عناوين الشحنات مع قائمة نصية لكل شحنة." [ref=f2e1490]:
+          - generic [ref=f2e1491]:
+            - generic:
+              - generic:
+                - img:
+                  - generic [ref=f2e1769] [cursor=pointer]
+              - generic:
+                - button "SHP-0004 · حرجة" [active] [ref=f2e1492] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e1493]: "!"
+                - button "SHP-0015 · حرجة" [ref=f2e1494] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e1495]: "!"
+                - button "SHP-0017 · حرجة" [ref=f2e1496] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e1497]: "!"
+                - button "SHP-0020 · حرجة" [ref=f2e1498] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e1499]: "!"
+                - button "SHP-0021 · تحتاج متابعة" [ref=f2e1500] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e1501]: Ⅱ
+                - button "SHP-0024 · حرجة" [ref=f2e1502] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e1503]: "!"
+                - button "SHP-0025 · حرجة" [ref=f2e1504] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e1505]: "!"
+                - button "SHP-0027 · تحتاج متابعة" [ref=f2e1506] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e1507]: Ⅱ
+                - button "SHP-0033 · تحتاج متابعة" [ref=f2e1508] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e1509]: Ⅱ
+                - button "SHP-0039 · حرجة" [ref=f2e1510] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e1511]: "!"
+                - button "SHP-0043 · تحتاج متابعة" [ref=f2e1512] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e1513]: Ⅱ
+                - button "SHP-0052 · تحتاج متابعة" [ref=f2e1514] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e1515]: Ⅱ
+                - button "SHP-0054 · تحتاج متابعة" [ref=f2e1516] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e1517]: Ⅱ
+                - button "SHP-0061 · تحتاج متابعة" [ref=f2e1518] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e1519]: Ⅱ
+                - button "SHP-0062 · حرجة" [ref=f2e1520] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e1521]: "!"
+                - button "SHP-0067 · تحتاج متابعة" [ref=f2e1522] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e1523]: Ⅱ
+                - button "SHP-0070 · تحتاج متابعة" [ref=f2e1524] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e1525]: Ⅱ
+                - button "SHP-0072 · حرجة" [ref=f2e1526] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e1527]: "!"
+                - button "SHP-0078 · تحتاج متابعة" [ref=f2e1528] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e1529]: Ⅱ
+                - button "SHP-0079 · حرجة" [ref=f2e1530] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e1531]: "!"
+                - button "SHP-0081 · تحتاج متابعة" [ref=f2e1532] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e1533]: Ⅱ
+                - button "SHP-0084 · تحتاج متابعة" [ref=f2e1534] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e1535]: Ⅱ
+                - button "SHP-0085 · حرجة" [ref=f2e1536] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e1537]: "!"
+                - button "SHP-0096 · حرجة" [ref=f2e1538] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e1539]: "!"
+                - button "SHP-0097 · تحتاج متابعة" [ref=f2e1540] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f2e1541]: Ⅱ
+                - 'button "مستودع المصدر: موقع تقريبي في المدينة" [ref=f2e1770] [cursor=pointer]':
+                  - generic [aria-hidden] [ref=f2e1771]: □
+            - generic:
+              - generic [ref=f2e1542]:
+                - button "Zoom in" [ref=f2e1543] [cursor=pointer]: +
+                - button "Zoom out" [ref=f2e1544] [cursor=pointer]: −
+              - generic [ref=f2e1545]:
+                - link "Leaflet" [ref=f2e1546] [cursor=pointer]:
+                  - /url: https://leafletjs.com
+                - text: "| ©"
+                - link "OpenStreetMap" [ref=f2e1551] [cursor=pointer]:
+                  - /url: https://www.openstreetmap.org/copyright
+          - generic "مفتاح حالات الشحنات":
+            - generic: حرجة
+            - generic: تحتاج متابعة
+            - generic: تم التسليم
+            - generic: شحنة مسجلة
+          - paragraph: اتصال المصدر بالوجهة وليس مسارًا فعليًا. موقع المصدر تقريبي.
+        - complementary "الشحنات في هذا العرض" [ref=f2e1552]:
+          - status [ref=f2e1553]: عرض 25 من 70 شحنة · عرض محدود؛ اختر شحنة لفحص أدلتها المتصلة
+          - paragraph [ref=f2e1554]: بيانات شحنات اصطناعية. الأولوية مشتقة من الأدلة وقواعد الخدمة وإعادة المحاولة.
+          - region "تفاصيل الشحنة المحددة" [ref=f2e1772]:
+            - heading "SHP-0004" [level=3] [ref=f2e1773]
+            - generic [ref=f2e1774]:
+              - text: حرجة
+              - generic [ref=f2e1777]: (تعثر)
+            - generic [ref=f2e1778]:
+              - generic [ref=f2e1779]:
+                - term [ref=f2e1780]: الأولوية
+                - definition [ref=f2e1781]: عالية (مشتقة)
+              - generic [ref=f2e1782]:
+                - term [ref=f2e1783]: سبب الإخفاق المسجل
+                - definition [ref=f2e1784]: تعارض في العنوان
+              - generic [ref=f2e1785]:
+                - term [ref=f2e1786]: المصدر
+                - definition [ref=f2e1787]: مستودع أبها الإقليمي
+              - generic [ref=f2e1788]:
+                - term [ref=f2e1789]: عناوين الوجهة
+                - definition [ref=f2e1790]: مبنى 15، شارع 8، حي شمال تندحة، تندحة · مبنى 6، شارع 29، حي جنوب تندحة، ملتقى الصدرين
+              - generic [ref=f2e1791]:
+                - term [ref=f2e1792]: آخر حدث
+                - definition [ref=f2e1793]: FAILED · 2026-07-14T23:00:00
+            - button "فتح الحالة في الوارد" [ref=f2e1794]
+          - list [ref=f2e1555]:
+            - listitem [ref=f2e1556]:
+              - button "SHP-0004 حرجة (تعثر) تندحة" [pressed] [ref=f2e1557]:
+                - generic [ref=f2e1558]: SHP-0004
+                - generic [ref=f2e1559]:
+                  - text: حرجة
+                  - generic [ref=f2e1562]: (تعثر)
+                - generic [ref=f2e1563]: تندحة
+            - listitem [ref=f2e1564]:
+              - button "SHP-0015 حرجة (تعثر) المجاردة" [ref=f2e1565]:
+                - generic [ref=f2e1566]: SHP-0015
+                - generic [ref=f2e1567]:
+                  - text: حرجة
+                  - generic [ref=f2e1570]: (تعثر)
+                - generic [ref=f2e1571]: المجاردة
+            - listitem [ref=f2e1572]:
+              - button "SHP-0017 حرجة (تعثر) الشنان" [ref=f2e1573]:
+                - generic [ref=f2e1574]: SHP-0017
+                - generic [ref=f2e1575]:
+                  - text: حرجة
+                  - generic [ref=f2e1578]: (تعثر)
+                - generic [ref=f2e1579]: الشنان
+            - listitem [ref=f2e1580]:
+              - button "SHP-0020 حرجة (تعثر) ينبع الصناعية" [ref=f2e1581]:
+                - generic [ref=f2e1582]: SHP-0020
+                - generic [ref=f2e1583]:
+                  - text: حرجة
+                  - generic [ref=f2e1586]: (تعثر)
+                - generic [ref=f2e1587]: ينبع الصناعية
+            - listitem [ref=f2e1588]:
+              - button "SHP-0021 تحتاج متابعة (تعثر) القويعية" [ref=f2e1589]:
+                - generic [ref=f2e1590]: SHP-0021
+                - generic [ref=f2e1591]:
+                  - text: تحتاج متابعة
+                  - generic [ref=f2e1595]: (تعثر)
+                - generic [ref=f2e1596]: القويعية
+            - listitem [ref=f2e1597]:
+              - button "SHP-0024 حرجة (تعثر) مدينة الملك عبدالله الاقتصادية" [ref=f2e1598]:
+                - generic [ref=f2e1599]: SHP-0024
+                - generic [ref=f2e1600]:
+                  - text: حرجة
+                  - generic [ref=f2e1603]: (تعثر)
+                - generic [ref=f2e1604]: مدينة الملك عبدالله الاقتصادية
+            - listitem [ref=f2e1605]:
+              - button "SHP-0025 حرجة (تعثر) بدر" [ref=f2e1606]:
+                - generic [ref=f2e1607]: SHP-0025
+                - generic [ref=f2e1608]:
+                  - text: حرجة
+                  - generic [ref=f2e1611]: (تعثر)
+                - generic [ref=f2e1612]: بدر
+            - listitem [ref=f2e1613]:
+              - button "SHP-0027 تحتاج متابعة (تعثر) الأضارع" [ref=f2e1614]:
+                - generic [ref=f2e1615]: SHP-0027
+                - generic [ref=f2e1616]:
+                  - text: تحتاج متابعة
+                  - generic [ref=f2e1620]: (تعثر)
+                - generic [ref=f2e1621]: الأضارع
+            - listitem [ref=f2e1622]:
+              - button "SHP-0033 تحتاج متابعة (تعثر) بقعاء" [ref=f2e1623]:
+                - generic [ref=f2e1624]: SHP-0033
+                - generic [ref=f2e1625]:
+                  - text: تحتاج متابعة
+                  - generic [ref=f2e1629]: (تعثر)
+                - generic [ref=f2e1630]: بقعاء
+            - listitem [ref=f2e1631]:
+              - button "SHP-0039 حرجة (تعثر) سكاكا" [ref=f2e1632]:
+                - generic [ref=f2e1633]: SHP-0039
+                - generic [ref=f2e1634]:
+                  - text: حرجة
+                  - generic [ref=f2e1637]: (تعثر)
+                - generic [ref=f2e1638]: سكاكا
+            - listitem [ref=f2e1639]:
+              - button "SHP-0043 تحتاج متابعة (تعثر) الحناكية" [ref=f2e1640]:
+                - generic [ref=f2e1641]: SHP-0043
+                - generic [ref=f2e1642]:
+                  - text: تحتاج متابعة
+                  - generic [ref=f2e1646]: (تعثر)
+                - generic [ref=f2e1647]: الحناكية
+            - listitem [ref=f2e1648]:
+              - button "SHP-0052 تحتاج متابعة (تعثر) ابو عريش" [ref=f2e1649]:
+                - generic [ref=f2e1650]: SHP-0052
+                - generic [ref=f2e1651]:
+                  - text: تحتاج متابعة
+                  - generic [ref=f2e1655]: (تعثر)
+                - generic [ref=f2e1656]: ابو عريش
+            - listitem [ref=f2e1657]:
+              - button "SHP-0054 تحتاج متابعة (تعثر) جدة" [ref=f2e1658]:
+                - generic [ref=f2e1659]: SHP-0054
+                - generic [ref=f2e1660]:
+                  - text: تحتاج متابعة
+                  - generic [ref=f2e1664]: (تعثر)
+                - generic [ref=f2e1665]: جدة
+            - listitem [ref=f2e1666]:
+              - button "SHP-0061 تحتاج متابعة (تعثر) الهلالية" [ref=f2e1667]:
+                - generic [ref=f2e1668]: SHP-0061
+                - generic [ref=f2e1669]:
+                  - text: تحتاج متابعة
+                  - generic [ref=f2e1673]: (تعثر)
+                - generic [ref=f2e1674]: الهلالية
+            - listitem [ref=f2e1675]:
+              - button "SHP-0062 حرجة (تعثر) تاروت" [ref=f2e1676]:
+                - generic [ref=f2e1677]: SHP-0062
+                - generic [ref=f2e1678]:
+                  - text: حرجة
+                  - generic [ref=f2e1681]: (تعثر)
+                - generic [ref=f2e1682]: تاروت
+            - listitem [ref=f2e1683]:
+              - button "SHP-0067 تحتاج متابعة (تعثر) شقراء" [ref=f2e1684]:
+                - generic [ref=f2e1685]: SHP-0067
+                - generic [ref=f2e1686]:
+                  - text: تحتاج متابعة
+                  - generic [ref=f2e1690]: (تعثر)
+                - generic [ref=f2e1691]: شقراء
+            - listitem [ref=f2e1692]:
+              - button "SHP-0070 تحتاج متابعة (تعثر) الشنان" [ref=f2e1693]:
+                - generic [ref=f2e1694]: SHP-0070
+                - generic [ref=f2e1695]:
+                  - text: تحتاج متابعة
+                  - generic [ref=f2e1699]: (تعثر)
+                - generic [ref=f2e1700]: الشنان
+            - listitem [ref=f2e1701]:
+              - button "SHP-0072 حرجة (تعثر) جدة" [ref=f2e1702]:
+                - generic [ref=f2e1703]: SHP-0072
+                - generic [ref=f2e1704]:
+                  - text: حرجة
+                  - generic [ref=f2e1707]: (تعثر)
+                - generic [ref=f2e1708]: جدة
+            - listitem [ref=f2e1709]:
+              - button "SHP-0078 تحتاج متابعة (تعثر) طريب" [ref=f2e1710]:
+                - generic [ref=f2e1711]: SHP-0078
+                - generic [ref=f2e1712]:
+                  - text: تحتاج متابعة
+                  - generic [ref=f2e1716]: (تعثر)
+                - generic [ref=f2e1717]: طريب
+            - listitem [ref=f2e1718]:
+              - button "SHP-0079 حرجة (تعثر) دارين" [ref=f2e1719]:
+                - generic [ref=f2e1720]: SHP-0079
+                - generic [ref=f2e1721]:
+                  - text: حرجة
+                  - generic [ref=f2e1724]: (تعثر)
+                - generic [ref=f2e1725]: دارين
+            - listitem [ref=f2e1726]:
+              - button "SHP-0081 تحتاج متابعة (تعثر) الشملي" [ref=f2e1727]:
+                - generic [ref=f2e1728]: SHP-0081
+                - generic [ref=f2e1729]:
+                  - text: تحتاج متابعة
+                  - generic [ref=f2e1733]: (تعثر)
+                - generic [ref=f2e1734]: الشملي
+            - listitem [ref=f2e1735]:
+              - button "SHP-0084 تحتاج متابعة (تعثر) المجاردة" [ref=f2e1736]:
+                - generic [ref=f2e1737]: SHP-0084
+                - generic [ref=f2e1738]:
+                  - text: تحتاج متابعة
+                  - generic [ref=f2e1742]: (تعثر)
+                - generic [ref=f2e1743]: المجاردة
+            - listitem [ref=f2e1744]:
+              - button "SHP-0085 حرجة (تعثر) الشماسية" [ref=f2e1745]:
+                - generic [ref=f2e1746]: SHP-0085
+                - generic [ref=f2e1747]:
+                  - text: حرجة
+                  - generic [ref=f2e1750]: (تعثر)
+                - generic [ref=f2e1751]: الشماسية
+            - listitem [ref=f2e1752]:
+              - button "SHP-0096 حرجة (تعثر) مهد الذهب" [ref=f2e1753]:
+                - generic [ref=f2e1754]: SHP-0096
+                - generic [ref=f2e1755]:
+                  - text: حرجة
+                  - generic [ref=f2e1758]: (تعثر)
+                - generic [ref=f2e1759]: مهد الذهب
+            - listitem [ref=f2e1760]:
+              - button "SHP-0097 تحتاج متابعة (تعثر) ينبع الصناعية" [ref=f2e1761]:
+                - generic [ref=f2e1762]: SHP-0097
+                - generic [ref=f2e1763]:
+                  - text: تحتاج متابعة
+                  - generic [ref=f2e1767]: (تعثر)
+                - generic [ref=f2e1768]: ينبع الصناعية

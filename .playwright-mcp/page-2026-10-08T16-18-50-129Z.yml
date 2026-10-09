@@ -1,0 +1,79 @@
+- generic [ref=e1]:
+  - main [ref=e35]:
+    - generic [aria-hidden] [ref=e36]:
+      - button [ref=e1260]:
+        - generic [ref=e38]: Toggle Sidebar
+      - heading [level=1] [ref=e1261]: الاستكشاف
+      - generic [ref=e40]:
+        - button [ref=e1262]:
+          - generic [ref=e43]: ar
+        - button [ref=e1263]
+    - generic [ref=e793]:
+      - generic [aria-hidden] [ref=e794]:
+        - generic [ref=e1264]:
+          - button [ref=e1265]: الخريطة
+          - button [ref=e1266]: الرسم
+          - button [pressed] [ref=e1267]: المخطط
+        - button [ref=e1268]
+        - button [disabled] [ref=e1269]: نظرة عامة
+        - button [ref=e1270]
+      - generic [ref=e1194]:
+        - generic [ref=e1195]:
+          - img "Graph visualization" [ref=e1197]
+          - generic [aria-hidden] [ref=e1201]:
+            - button [ref=e1271]
+            - button [ref=e1272]
+            - button [ref=e1273]
+          - generic [aria-hidden]:
+            - generic [ref=e1212]:
+              - text: العميل
+              - generic [ref=e1214]: "1"
+            - generic [ref=e1215]:
+              - text: EscalatedCase
+              - generic [ref=e1217]: "1"
+            - generic [ref=e1218]:
+              - text: إجراء المعالجة
+              - generic [ref=e1220]: "1"
+            - generic [ref=e1221]:
+              - text: سياسة الخدمة
+              - generic [ref=e1223]: "1"
+            - generic [ref=e1224]:
+              - text: الحدث
+              - generic [ref=e1226]: "1"
+            - generic [ref=e1227]:
+              - text: العنوان
+              - generic [ref=e1229]: "1"
+            - generic [ref=e1230]:
+              - text: الطلب
+              - generic [ref=e1232]: "1"
+            - generic [ref=e1233]:
+              - text: المندوب
+              - generic [ref=e1235]: "1"
+            - generic [ref=e1236]:
+              - text: النتيجة
+              - generic [ref=e1238]: "1"
+            - generic [ref=e1239]:
+              - text: سبب التعثر
+              - generic [ref=e1241]: "1"
+            - generic [ref=e1242]:
+              - text: الشحنة
+              - generic [ref=e1244]: "1"
+          - generic [aria-hidden] [ref=e1245]:
+            - button [ref=e1274]: تخطيط بالقوى
+            - button [ref=e1275]: تخطيط شجري
+        - generic [aria-hidden] [ref=e1248]:
+          - button [ref=e1276]: ثنائي الأبعاد
+          - button [ref=e1277]: ثلاثي الأبعاد
+  - dialog "Sidebar" [ref=e1281]:
+    - generic [ref=e1282]:
+      - heading "Sidebar" [level=2]
+      - paragraph: Displays the mobile sidebar.
+    - generic [ref=e1283]:
+      - img "التطبيق" [ref=e1286]
+      - list [ref=e1290]:
+        - listitem [ref=e1291]:
+          - button "الوارد" [active] [ref=e1292]
+        - listitem [ref=e1297]:
+          - button "القرارات" [ref=e1298]
+        - listitem [ref=e1304]:
+          - button "الاستكشاف" [ref=e1305]

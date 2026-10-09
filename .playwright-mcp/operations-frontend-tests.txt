@@ -1,0 +1,421 @@
+
+> frontend@0.0.0 test
+> vitest run --maxWorkers=4 --reporter=default --reporter=json --outputFile=../.playwright-mcp/operations-frontend-tests.json
+
+
+ RUN  v4.1.9 C:/Projects/demo/frontend
+
+ ✓ src/hooks/useExploreData.test.tsx (3 tests) 267ms
+stderr | src/components/views/ExploreView.test.tsx > operational Explore > preserves Arabic UI and Latin shipment identifiers
+An update to ShipmentMap inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ShipmentMap inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ ✓ src/components/views/ExploreView.test.tsx (3 tests) 1436ms
+     ✓ shares the default/filter/selection between map and graph and opens the case explicitly  1112ms
+stderr | src/components/views/DecisionsView.test.tsx > DecisionsView panel heights (L01) > preserves 440px trio and 400px queue height constants
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/components/views/DecisionsView.test.tsx > DecisionsView metric semantics (M01–M05, D01) > uses segmented outcome bars instead of single primary fill
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/components/views/DecisionsView.test.tsx > DecisionsView metric semantics (M01–M05, D01) > renders full-green bar for 100% success and red segment for partial success
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/components/views/DecisionsView.test.tsx > DecisionsView metric semantics (M01–M05, D01) > shows recorded resolution coverage neutrally instead of implying success
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/components/views/DecisionsView.test.tsx > DecisionsView metric semantics (M01–M05, D01) > uses neutral styling for learning badge when agent writebacks exist
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/components/views/DecisionsView.test.tsx > DecisionsView metric semantics (M01–M05, D01) > surfaces pending writebacks when present (D01)
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/components/views/DecisionsView.test.tsx > DecisionsView metric semantics (M01–M05, D01) > computes overall historical rate including escalation categories
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/components/views/DecisionsView.test.tsx > DecisionsView sticky scroll structure (L02, L03) > uses overflow-auto scroll owner for queue instead of ScrollArea
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/components/views/DecisionsView.test.tsx > DecisionsView sticky scroll structure (L02, L03) > declares sticky header on queue and focus matching-cases tables
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/components/views/DecisionsView.test.tsx > DecisionsView pending strings (I04) > shows Arabic pending fragment when writebacks are pending
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ScrollAreaRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ ✓ src/components/views/DecisionsView.test.tsx (10 tests) 2651ms
+     ✓ preserves 440px trio and 400px queue height constants  420ms
+     ✓ renders full-green bar for 100% success and red segment for partial success  569ms
+ ✓ src/components/agent/CaseFile.test.tsx (4 tests) 1519ms
+     ✓ offers a full-screen button on the graph and the map panel  507ms
+     ✓ closes again from the dialog, returning the graph to the pane  539ms
+ ✓ src/components/intake/OperationsCaseDetail.test.tsx (8 tests) 1711ms
+     ✓ uses ledger state rather than fresh inferred OPEN and approves without resolving  790ms
+ ✓ src/components/chat/ThreadHistory.test.tsx (4 tests) 1035ms
+     ✓ fetches and lists past conversations on open  693ms
+ ✓ src/components/views/IntakeView.explore.test.tsx (2 tests) 894ms
+     ✓ reads a canonical queued case without requiring operator pipeline steps  743ms
+ ✓ src/components/chat/Message.test.tsx (5 tests) 847ms
+     ✓ offers a Show on map chip inside the answer when incidents were mapped  449ms
+ ✓ src/components/views/AuditView.test.tsx (2 tests) 951ms
+     ✓ uses server data and opaque cursors without rendering fixtures  816ms
+ ✓ src/components/views/IntakeView.test.tsx (7 tests) 878ms
+     ✓ uses text-muted-foreground for count, description, and case metadata  384ms
+ ✓ src/components/charts/Donut.test.tsx (3 tests) 533ms
+     ✓ shows the dataset total by default  432ms
+ ✓ src/components/chat/TrustChip.test.tsx (2 tests) 598ms
+     ✓ exposes, on hover, a tooltip that explains what grounded + the number mean  449ms
+ ✓ src/components/operations/ShipmentRouteMap.test.tsx (1 test) 622ms
+     ✓ highlights only provided references and disables missing telemetry rather than inventing a path  613ms
+ ✓ src/components/chat/Composer.test.tsx (3 tests) 459ms
+     ✓ shows Stop (not Send) while busy and calls onStop  358ms
+ ✓ src/components/charts/AreaChart.test.tsx (3 tests) 257ms
+ ✓ src/components/artifacts/BrainGraph.test.tsx (1 test) 417ms
+     ✓ updates backgroundColor and node colors when resolvedTheme changes without remount  403ms
+ ✓ src/components/artifacts/GraphView.test.tsx (2 tests) 392ms
+     ✓ emphasizes only selected evidence and relationships while retaining the bounded graph  349ms
+stderr | src/components/agent/StageCard.test.tsx > StageCard i18n (I04) > renders translated field labels and root cause in Arabic
+An update to AgentProse inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ ✓ src/components/agent/StageCard.test.tsx (3 tests) 214ms
+ ✓ src/components/i18n/AgentProse.test.tsx (6 tests) 197ms
+ ✓ src/components/views/BrainView.test.tsx (2 tests) 197ms
+ ✓ src/hooks/useFetch.test.ts (1 test) 198ms
+ ✓ src/components/operations/operations.test.tsx (5 tests) 164ms
+ ✓ src/components/artifacts/CypherCode.test.tsx (4 tests) 129ms
+ ✓ src/hooks/useChatStream.test.ts (12 tests) 163ms
+ ✓ src/components/i18n/LanguageProvider.test.tsx (5 tests) 106ms
+ ✓ src/hooks/useCasePipeline.test.tsx (2 tests) 59ms
+ ✓ src/hooks/useCursorPage.test.ts (1 test) 49ms
+ ✓ src/components/artifacts/ArtifactCard.test.tsx (1 test) 131ms
+ ✓ src/lib/entityInfo.test.ts (2 tests) 28ms
+ ✓ src/i18n/parity.test.ts (1 test) 12ms
+ ✓ src/lib/arabicShaping.test.ts (12 tests) 20ms
+ ✓ src/lib/sse.test.ts (3 tests) 19ms
+ ✓ src/lib/pipelineEvidence.test.ts (1 test) 11ms
+ ✓ src/lib/vizWheel.test.ts (3 tests) 9ms
+ ✓ src/lib/humanizeKey.test.ts (3 tests) 10ms
+ ✓ src/components/chat/SuggestionPills.test.tsx (2 tests) 9ms
+
+ Test Files  36 passed (36)
+      Tests  132 passed (132)
+   Start at  03:09:29
+   Duration  49.69s (transform 4.31s, setup 782ms, import 47.39s, tests 17.19s, environment 113.42s)
+
+JSON report written to C:/Projects/demo/.playwright-mcp/operations-frontend-tests.json

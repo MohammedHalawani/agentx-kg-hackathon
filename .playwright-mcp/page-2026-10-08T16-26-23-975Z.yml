@@ -1,0 +1,26 @@
+- generic [ref=f2e4]:
+  - generic [ref=f2e7]:
+    - img "Application" [ref=f2e10]
+    - list [ref=f2e14]:
+      - listitem [ref=f2e15]:
+        - button "Intake" [ref=f2e16]
+      - listitem [ref=f2e21]:
+        - button "Decisions" [ref=f2e22]
+      - listitem [ref=f2e28]:
+        - button "Explore" [ref=f2e29]
+    - button "Toggle Sidebar" [ref=f2e34]
+  - main [ref=f2e35]:
+    - generic [ref=f2e36]:
+      - button "Toggle sidebar" [ref=f2e37]:
+        - generic [ref=f2e38]: Toggle Sidebar
+      - heading "Intake" [level=1] [ref=f2e39]
+      - generic [ref=f2e40]:
+        - generic [ref=f2e41]: Shipment exception investigation and reviewed recommendations over a logistics knowledge graph
+        - button "Language" [ref=f2e42]:
+          - generic [ref=f2e43]: en
+        - button "Theme" [ref=f2e44]
+    - generic [ref=f2e49]:
+      - generic [ref=f2e50]:
+        - heading "Open cases" [level=2] [ref=f2e51]
+        - generic [ref=f2e52]: loading…
+      - paragraph [ref=f2e53]: Pick a case to collect evidence, classify its root cause, recommend an action grounded in precedent, and review it against business rules. The recommendation is recorded or the case is escalated. Operational execution and outcome verification happen separately.
