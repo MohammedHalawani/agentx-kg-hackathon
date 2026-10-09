@@ -65,14 +65,16 @@ WHERE s.recorded_at <= $snapshot
      AND p.recorded_at <= $snapshot AND class.recorded_at <= $snapshot })
 OPTIONAL MATCH (c:OpsCase {dataset_id:$dataset_id,split:'development',shipment_id:s.entity_id})
 WHERE datetime(c.recorded_at) <= $snapshot AND datetime(c.opened_at) <= $snapshot
-WITH s,c,coalesce(c.operational_status,'ON_TIME') AS operational_status,coalesce(c.cause_codes,[]) AS codes,
+OPTIONAL MATCH (risk:OpsRiskFlag {dataset_id:$dataset_id,shipment_id:s.entity_id,active:true})
+WHERE datetime(risk.recorded_at) <= $snapshot
+WITH s,c,risk,coalesce(c.operational_status,'ON_TIME') AS operational_status,coalesce(c.cause_codes,[]) AS codes,
  CASE WHEN datetime(coalesce(c.as_of,s.as_of))>$snapshot THEN $snapshot ELSE datetime(coalesce(c.as_of,s.as_of)) END AS view_cutoff
 WHERE ($city IS NULL OR s.destination_city=$city)
  AND ($cause IS NULL OR $cause IN codes)
  AND ($filter='all'
    OR ($filter='needs_attention' AND c IS NOT NULL AND c.workflow_state <> 'RESOLVED')
    OR ($filter='critical' AND operational_status IN ['CRITICAL','UNRECONCILED_CUSTODY','DELIVERY_DISPUTE'])
-   OR ($filter='sla_risk' AND operational_status='SLA_RISK')
+   OR ($filter='sla_risk' AND (operational_status='SLA_RISK' OR risk IS NOT NULL))
    OR ($filter='stalled' AND 'MISSED_MILESTONE' IN codes)
    OR ($filter='unreconciled' AND 'UNRECONCILED_CUSTODY' IN codes)
    OR ($filter='delivery_dispute' AND 'DELIVERY_DISPUTE' IN codes)
@@ -84,7 +86,7 @@ WHERE ($city IS NULL OR s.destination_city=$city)
          WHERE later.shipment_id=s.entity_id AND later.occurred_at > st.occurred_at
            AND later.occurred_at <= view_cutoff AND later.recorded_at <= view_cutoff }
    }))
-WITH s,c,operational_status,codes,view_cutoff,s.recorded_at AS sort_time,s.entity_id AS sort_id
+WITH s,c,risk,operational_status,codes,view_cutoff,s.recorded_at AS sort_time,s.entity_id AS sort_id
 """
 KEYSET = """
 WHERE $after_time IS NULL OR datetime(sort_time) > $after_time OR (datetime(sort_time)=$after_time AND sort_id > $after_id)
@@ -105,15 +107,17 @@ OPTIONAL MATCH (seg:V2Entity:RouteSegment {dataset_id:$dataset_id,holdout_group:
 OPTIONAL MATCH (origin:V2Entity {dataset_id:$dataset_id,entity_id:seg.from_id,split:'shared'})
 OPTIONAL MATCH (st:V2Entity:StatusEvent {dataset_id:$dataset_id,holdout_group:s.entity_id})
 WHERE st.occurred_at <= view_cutoff AND st.recorded_at <= view_cutoff
-WITH s,c,operational_status,codes,view_cutoff,sort_time,sort_id,av,origin,st
+WITH s,c,risk,operational_status,codes,view_cutoff,sort_time,sort_id,av,origin,st
 ORDER BY st.occurred_at DESC,st.entity_id DESC
-WITH s,c,operational_status,codes,view_cutoff,sort_time,sort_id,av,origin,head(collect(st)) AS latest_status
+WITH s,c,risk,operational_status,codes,view_cutoff,sort_time,sort_id,av,origin,head(collect(st)) AS latest_status
 RETURN sort_time,sort_id,{shipment_id:s.entity_id,city:s.destination_city,status:coalesce(latest_status.status,'CREATED'),
  origin_city:s.origin_city,destination_city:s.destination_city,flow_type:s.flow_type,
  origin:CASE WHEN origin.lat IS NOT NULL AND origin.lng IS NOT NULL THEN {lat:origin.lat,lng:origin.lng,entity_id:origin.entity_id,source:'synthetic_facility'} ELSE null END,
  destination:CASE WHEN av.lat IS NOT NULL AND av.lng IS NOT NULL THEN {lat:av.lat,lng:av.lng,entity_id:av.entity_id,accuracy_m:av.accuracy_m,source:'effective_address_version'} ELSE null END,
  operational_status:operational_status,cause_codes:codes,priority:coalesce(c.priority,'low'),case_id:c.entity_id,
- workflow_state:c.workflow_state,as_of:view_cutoff,synthetic:true} AS item"""
+ workflow_state:c.workflow_state,as_of:view_cutoff,
+ risk_watch:CASE WHEN risk IS NULL THEN null ELSE {latest_estimate_at:risk.latest_estimate_at,promise_at:risk.promise_at,certainty:risk.certainty} END,
+ synthetic:true} AS item"""
 
 OWN_NODES = """
 MATCH (s:V2Entity:Shipment {entity_id:$shipment_id,dataset_id:$dataset_id,split:'development'})
@@ -400,12 +404,14 @@ class OperationsReader:
         if not codes:
             return []
         rows = self.historical_precedents(shipment_id, codes, limit=limit, as_of=as_of)
-        live = self._run("MATCH (o:OpsEntity:OpsOutcome {dataset_id:$dataset_id,verification_status:'VERIFIED',invalidated:false}) "
+        live = self._run("MATCH (o:OpsEntity:OpsOutcome {dataset_id:$dataset_id,invalidated:false}) "
                          "MATCH (c:OpsEntity:OpsCase {entity_id:o.case_id}) "
-                         "WHERE o.shipment_id <> $shipment_id AND datetime(o.verified_at) <= $snapshot AND any(x IN coalesce(c.cause_codes,[]) WHERE x IN $codes) "
+                         "WHERE o.verification_status IN ['VERIFIED','HUMAN_VERIFIED'] "
+                         "AND o.shipment_id <> $shipment_id AND datetime(o.verified_at) <= $snapshot AND any(x IN coalesce(c.cause_codes,[]) WHERE x IN $codes) "
                          "AND o.success IN [true,false] "
                          "RETURN {shipment_id:o.shipment_id,case_id:c.entity_id,exception_codes:c.cause_codes,action_type:o.action_type,"
-                         "action:o.outcome_type,success:o.success,verified_at:o.verified_at,outcome_id:o.entity_id,source:'live_verified',synthetic:true} AS item "
+                         "action:o.outcome_type,success:o.success,verified_at:o.verified_at,outcome_id:o.entity_id,exception_cleared:coalesce(o.exception_cleared,o.success),"
+                         "source:CASE o.verification_status WHEN 'HUMAN_VERIFIED' THEN 'live_human_verified' ELSE 'live_evidence_verified' END,synthetic:true} AS item "
                          "ORDER BY o.verified_at DESC LIMIT $limit", shipment_id=shipment_id, codes=codes,
                          snapshot=as_of or self.clock(), limit=limit)
         return [*rows, *[r["item"] for r in live]][:limit * 2]
@@ -450,9 +456,18 @@ class OperationsReader:
             detail["investigated_at"]=(ledger.get("run") or {}).get("recorded_at")
         from operations.graph import topology
         saved=((detail.get("run") or {}).get("result") or {})
-        detail["pipeline"]={"topology":topology(),"events":saved.get("pipeline_events",[]),
-                            "source":"recorded_stage_events" if saved.get("pipeline_events") else "earlier_run",
-                            "status":(detail.get("run") or {}).get("status","QUEUED")}
+        events=saved.get("pipeline_events",[])
+        # The investigation saw a snapshot; the evidence shown follows the live clock. Mark the difference.
+        snapshot=next((e.get("evidence_as_of") for e in events if e.get("evidence_as_of")),None)
+        nodes=(detail.get("evidence") or {}).get("nodes",[])
+        if snapshot:
+            for node in nodes:
+                recorded=node["properties"].get("recorded_at")
+                node["after_investigation"]=bool(recorded) and instant(str(recorded))>instant(str(snapshot))
+        detail["pipeline"]={"topology":topology(),"events":events,"investigation_as_of":snapshot,
+                            "source":"recorded_stage_events" if events else "earlier_run",
+                            "status":(detail.get("run") or {}).get("status","QUEUED"),
+                            "evidence_after_investigation":sum(bool(n.get("after_investigation")) for n in nodes)}
         if self.store is not None and hasattr(self.store,'case_graph'):
             detail['ledger_graph']=self.store.case_graph(case_id,[n['id'] for n in detail['evidence']['nodes']])
         return detail

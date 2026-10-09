@@ -87,7 +87,9 @@ def action_target(tools):
     the expected observations that are missing now and the silent device that should have made them."""
     rows = [r for r in tools._journey()["milestones"] if r["state"] == "missing_after_deadline"]
     silent = [d for d, report in tools.device_reports.items() if report.get("reporting_state") == "SILENT"]
-    device = silent[0] if silent else next((r["facility_handheld"] for r in rows if r.get("facility_handheld")), None)
+    expected = [r["facility_handheld"] for r in rows if r.get("facility_handheld")]
+    # The device that should have made the missing observation, when it is silent; else any silent device.
+    device = next((d for d in expected if d in silent), None) or (silent[0] if silent else (expected[0] if expected else None))
     return {"device_id": device, "expected_evidence": [{"package_id": r["package_id"], "predicate": r["predicate"],
                                                         "location_id": r["location_id"]} for r in rows]}
 

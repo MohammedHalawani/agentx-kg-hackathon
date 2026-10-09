@@ -300,6 +300,10 @@ def propagate_outages(w, truth):
                 _delay(node, reconnect)
             row = truth[event.properties["shipment_id"]]
             row.setdefault("outage_affected_event_ids", []).extend([raw.id, event.id])
+            if not row["healthy"] and "DELAYED_SYNC" not in row["acceptable_causes"]:
+                # Two genuine issues: its own scenario and this device's late upload. Either is a correct finding.
+                row["acceptable_causes"] = sorted({*row["acceptable_causes"], "DELAYED_SYNC"})
+                row["secondary_issue"] = "DELAYED_SYNC"
             if row["healthy"]:
                 # The parcel moved normally; only its receipt upload is late. That is now this shipment's cause.
                 row.update(healthy=False, root_cause="DELAYED_SYNC", acceptable_causes=["DELAYED_SYNC"], expected_resolution="AUTO",

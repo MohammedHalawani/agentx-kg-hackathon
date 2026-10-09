@@ -10,6 +10,7 @@ time. truth.jsonl and gold.jsonl stay on disk for evaluation and the simulator; 
 The foundation V2 database (shipments-v2-demo) is never touched.
 """
 import argparse
+from dataclasses import replace
 import json
 from pathlib import Path
 import tempfile
@@ -23,11 +24,26 @@ LIVE_DATABASE = "shipments-v2-demo-live"
 FEED_BATCH = 500
 
 
-def export_live(destination, config=None):
+def swap_splits(world, truth, live_split):
+    """Evaluation variant: replay another split as the live one (its shipments become 'development')."""
+    swap = {live_split: "development", "development": live_split}
+    for item in [*world.nodes.values(), *world.edges.values()]:
+        if item.properties.get("split") in swap:
+            item.properties["split"] = swap[item.properties["split"]]
+    for row in [*world.gold.values(), *truth.values()]:
+        if row.get("split") in swap:
+            row["split"] = swap[row["split"]]
+    world.config = replace(world.config, **{"development": getattr(world.config, live_split), live_split: world.config.development})
+    return world, truth
+
+
+def export_live(destination, config=None, live_split="development"):
     destination = Path(destination).resolve()
     if destination.exists():
         raise ValueError("Choose a new export directory; existing exports are immutable")
     world, truth = generate_live(config or live_config())
+    if live_split != "development":
+        world, truth = swap_splits(world, truth, live_split)
     imported, items = split_feed(world, truth)
     validation = validate_live_bundle(imported, items)
     if not validation["pass"]:

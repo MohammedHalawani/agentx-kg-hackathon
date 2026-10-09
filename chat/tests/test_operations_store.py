@@ -51,10 +51,11 @@ class Tx:
                     if p.get("force") or v.get("outcome_checked_as_of") is None or v["as_of"]>v["outcome_checked_as_of"] or e["deadline_at"]<=p["clock"]:
                         out.append({"case":copy.deepcopy(v),"execution":copy.deepcopy(e)})
             return Result(sorted(out,key=lambda r:str(r["case"]["as_of"]))[:p["limit"]])
-        if q.startswith("MATCH(e:OpsEntity:OpsExecution {dataset_id:$dataset,status:'AUTHORIZED'})"):
-            rows=sorted((copy.deepcopy(v) for k,v in self.ledger.values() if k=="OpsExecution" and v.get("status")=="AUTHORIZED"),
+        if q.startswith("MATCH(e:OpsEntity:OpsExecution {dataset_id:$dataset,status:'"):
+            status=q.split("status:'")[1].split("'")[0]
+            rows=sorted((copy.deepcopy(v) for k,v in self.ledger.values() if k=="OpsExecution" and v.get("status")==status),
                         key=lambda e:(str(e["recorded_at"]),e["entity_id"]))
-            return Result([{"e":r} for r in rows[:p["limit"]]])
+            return Result([{"e":r} for r in rows[:p.get("limit",1000)]])
         if "(m:_V2Import)" in q:return Result([{"props":self.driver.marker}])
         if q.startswith("MATCH (s:V2Entity:Shipment"):
             node=self.driver.world.nodes.get(p["id"])

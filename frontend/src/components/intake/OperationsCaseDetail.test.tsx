@@ -28,11 +28,36 @@ describe('Case lifecycle authority', () => {
     expect(screen.queryByRole('button', { name: 'Start investigation' })).toBeNull()
     expect(mock.post).not.toHaveBeenCalled()
   })
-  it('does not default an observed result to success', () => {
+  it('offers no success flag: the operator can only ask the independent verifier to check', async () => {
     mock.data.workflow_state = 'AWAITING_OUTCOME'
+    mock.data.executions = [{ action_type: 'REQUEST_RESCAN', authority: 'AUTO_POLICY', status: 'ACKNOWLEDGED', receipt_ref: 'synthetic_operational_simulator:X' }]
     render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
-    expect(screen.getByRole('button', { name: 'Record observed outcome' }).hasAttribute('disabled')).toBe(true)
-    expect(mock.post).not.toHaveBeenCalled()
+    expect(screen.getByText('Executed with a receipt · verification pending')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Record observed outcome' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Ask the verifier to check now' }))
+    await waitFor(() => expect(mock.post).toHaveBeenCalledWith('/cases/CASE-1/outcomes', expect.not.objectContaining({ success: expect.anything() })))
+  })
+  it('lets a person close a human-investigation case only with a finding and attached evidence', () => {
+    mock.data.workflow_state = 'HUMAN_REVIEW'
+    render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
+    expect(screen.getByRole('button', { name: 'Record human-verified finding' }).hasAttribute('disabled')).toBe(true)
+  })
+  it('keeps a verified action unresolved while the exception remains, and names what is still present', () => {
+    mock.data.workflow_state = 'HUMAN_REVIEW'
+    mock.data.executions = [{ action_type: 'REQUEST_DEVICE_SYNC', authority: 'AUTO_POLICY', status: 'ACKNOWLEDGED' }]
+    mock.data.outcome = { verification_status: 'VERIFIED', success: true, exception_cleared: false, remaining_symptoms: ['MANIFEST_CUSTODY_CONFLICT'] }
+    render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
+    expect(screen.getByText('Action verified, but the exception remains · unresolved, with a person')).toBeTruthy()
+    expect(screen.getByText(/Still present:/)).toBeTruthy()
+    expect(screen.queryByText('Verified by independent evidence')).toBeNull()
+    mock.data.executions = undefined
+  })
+  it('does not call a person\'s parcel-not-found finding closed', () => {
+    mock.data.workflow_state = 'ESCALATED'
+    mock.data.outcome = { verification_status: 'HUMAN_VERIFIED', success: false, outcome_type: 'parcel_not_found', verifier_id: 'SYN-OPERATOR-LOCAL' }
+    render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
+    expect(screen.getByText('A person’s verified finding: not resolved · escalated')).toBeTruthy()
+    expect(screen.queryByText('Closed by a person with attached evidence (human-verified)')).toBeNull()
   })
   it('shows graph and recommendation in Overview before approval controls', () => {
     mock.data.recommendation = { action_en: 'Compare bound custody evidence' }

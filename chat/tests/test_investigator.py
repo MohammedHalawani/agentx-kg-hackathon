@@ -82,6 +82,19 @@ class ToolTests(Base):
         report = tools.device_reports[row["physical"]["device_id"]]
         self.assertGreaterEqual(report["hours_since_last_seen"], 2)
 
+    def test_every_tool_returns_a_result_including_precedents(self):
+        sid = self.shipment("different_barcode")
+        tools = InvestigationTools(public_evidence(self.world, sid, self.world.config.as_of), self.world.config,
+                                   heartbeats=heartbeats_from(self.world),
+                                   precedents=lambda cause: [{"case_id": "C1", "action_type": "REQUEST_RESCAN", "success": True, "verified_at": "2026-09-01T00:00:00+00:00"}])
+        package = next(n.id for n in tools.world.nodes.values() if n.kind == "Package")
+        args = {"custody_chain": {"package_id": package}, "device_status": {"device_id": "DEMO-DEV-HH-DEPOT-RUH-01"}, "precedents": {"cause": "BARCODE_MISMATCH"}}
+        for tool in tools.CATALOG:
+            out = tools.call(tool, args.get(tool, {}))
+            self.assertIn("result", out, tool)
+            self.assertNotIn("invalid arguments", out["result"], tool)
+        self.assertIn("REQUEST_RESCAN", tools.call("precedents", {"cause": "BARCODE_MISMATCH"})["result"])
+
     def test_unknown_tool_and_foreign_package_are_refused(self):
         sid = self.shipment("on_time")
         tools = self.tools(sid, self.world.config.as_of)

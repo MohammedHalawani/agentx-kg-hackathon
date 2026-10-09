@@ -362,6 +362,21 @@ def reanalyze(case_id: str,request: Request,body: ReanalysisBody):
     return {'requested':requested,'analysis':result}
 
 
+class HumanOutcomeBody(StrictBody):
+    outcome_type: Literal["parcel_located","delivered_confirmed_by_person","returned_to_depot","parcel_not_found","data_corrected"]
+    finding: str=Field(min_length=10,max_length=1000)
+    evidence_ids: list[str]=Field(min_length=1,max_length=50)
+    expected_version: int=Field(ge=0)
+    idempotency_key: str=Field(min_length=8,max_length=128,pattern=r"^[A-Za-z0-9_-]+$")
+
+
+@router.post("/cases/{case_id}/human-outcome")
+def human_outcome(case_id: str,request: Request,body: HumanOutcomeBody):
+    """A person's physical/administrative check closes a human-investigation case; recorded as HUMAN_VERIFIED."""
+    actor=authority.authorize(request)
+    return invoke(get_runtime().store.record_human_outcome,case_id=case_id,actor_id=actor["actor_id"],**body.model_dump())
+
+
 class VerificationRequest(StrictBody):
     """No success flag exists: only the independent verifier decides whether an action worked."""
     expected_version: int=Field(ge=0)

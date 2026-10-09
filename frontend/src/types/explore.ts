@@ -10,6 +10,8 @@ export interface ExploreShipment {
   status: string
   priority: string | null
   root_causes: string[]
+  /** Travel-window estimate past the promise; a watch flag, never a case or a validated prediction. */
+  risk_watch?: { latest_estimate_at?: string; promise_at?: string; certainty?: string } | null
   needs_attention: boolean
   stalled: boolean
   critical: boolean

@@ -78,8 +78,9 @@ class VerificationTests(unittest.TestCase):
         after = iso(instant(reconnect) + timedelta(minutes=5))
         verdict = evaluate(self.snapshot(sid, after), sid, execution, after)
         self.assertEqual((verdict["status"], verdict["outcome_type"]), ("success", "delayed_upload_received"))
-        # A different device's upload does not count.
-        verdict = evaluate(self.snapshot(sid, after), sid, {**execution, "target_device": "DEMO-DEV-HH-OTHER"}, after)
+        # An observation that occurred after the case opened was in flight, not held back: it does not count.
+        opened_before = iso(occurred - timedelta(hours=1))
+        verdict = evaluate(self.snapshot(sid, after), sid, {**execution, "case_opened_at": opened_before}, after)
         self.assertNotEqual(verdict["status"], "success")
 
     def test_non_receipt_report_after_action_is_failure(self):

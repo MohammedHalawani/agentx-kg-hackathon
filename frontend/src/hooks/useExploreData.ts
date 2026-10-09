@@ -7,6 +7,7 @@ import type { CaseWorkflowState, OperationalShipmentStatus } from '@/contracts/o
 interface ApiExploreShipment {
   shipment_id: string; status: string; operational_status?: OperationalShipmentStatus; city?: string; cause_codes?: string[]
   priority?: string; case_id?: string; workflow_state?: CaseWorkflowState; origin?: RoutePoint | null; destination?: RoutePoint | null
+  risk_watch?: { latest_estimate_at?: string; promise_at?: string; certainty?: string } | null
 }
 export function useExploreData(filter: ShipmentFilter, limit: number, cursor: string | null = null, filters: Record<string, string> = {}) {
   const { data: response, loading, error, refetch } = useOperationsPage<ApiExploreShipment>(`/explore?${pageQuery({ filter, limit, cursor, ...filters })}`)

@@ -7,6 +7,7 @@ different action. Silence until the action's deadline is a failure, never a succ
 non-receipt report after the action contradicts any success. Neither the model, the requester
 nor an operator can declare success: callers only pass the execution and the clock.
 """
+
 from datetime import timedelta
 
 from dataset_v2.contracts import instant
@@ -80,9 +81,18 @@ def _evaluate(world, sid, execution, cutoff_text):
         # ingested after it, uploaded by the device the action targeted, and corroborated.
         expected = execution.get("expected_evidence") or []
         device = execution.get("target_device")
-        late = [n for n in later if n.kind == "CustodyEvent" and instant(n.properties["occurred_at"]) < start
+        # Held back, not merely in flight: it occurred early enough that a timely upload would have been
+        # visible when the case opened, and it arrived only after the request.
+        opened = instant(execution["case_opened_at"]) if execution.get("case_opened_at") else start
+        allowance = timedelta(minutes=15)
+        def uploader(n):
+            return (nodes.get(n.properties.get("source_event_id")) or n).properties.get("device_ref")
+        def expected_device(n):
+            facility = n.properties.get("to_id") or n.properties.get("facility_id") or ""
+            return "DEMO-DEV-HH-" + facility.removeprefix("DEMO-")
+        late = [n for n in later if n.kind == "CustodyEvent" and instant(n.properties["occurred_at"]) + allowance <= opened
                 and custody_corroborated(world, n, cutoff)
-                and (not device or (nodes.get(n.properties.get("source_event_id")) or n).properties.get("device_ref") == device)]
+                and (not device or uploader(n) in (device, expected_device(n)))]
         def covers(item):
             return any(n.properties.get("package_id") == item["package_id"] and n.properties.get("event_type") == item["predicate"]
                        and item["location_id"] in (n.properties.get("to_id"), n.properties.get("facility_id")) for n in late)

@@ -15,7 +15,7 @@ from operations.worker import analyze
 
 CONTROL_ID = "DEMO-OPS-CONTROL"
 # The foundation replay database and the live provider-feed database (plus its isolated test twin).
-OPERATIONS_DATABASES = ("shipments-v2-demo", "shipments-v2-demo-live", "shipments-v2-demo-test")
+OPERATIONS_DATABASES = ("shipments-v2-demo", "shipments-v2-demo-live", "shipments-v2-demo-test", "shipments-v2-demo-test2")
 INGEST_BATCH = 500
 
 
@@ -52,6 +52,13 @@ SYMPTOMS = {
 SYMPTOM_STATUS = (("RECIPIENT_REPORTED_NOT_RECEIVED", "DELIVERY_DISPUTE"), ("CUSTODY_REPORTS_CONFLICT", "CRITICAL"),
                   ("MANIFEST_CUSTODY_CONFLICT", "CRITICAL"),
                   ("SESSION_END_UNRECONCILED", "UNRECONCILED_CUSTODY"), ("MILESTONE_OVERDUE", "SLA_RISK"))
+
+
+# Symptoms describing a condition that is still true at the clock (an observation still missing, custody
+# still unreconciled, a manifest still omitting a loaded package), as opposed to a past event that stays in
+# the record (a misread, a late scan). A case resolves only when none of these remain.
+STANDING_SYMPTOMS = frozenset(("MILESTONE_OVERDUE", "SESSION_END_UNRECONCILED", "MANIFEST_CUSTODY_CONFLICT",
+                               "CUSTODY_TRANSFER_UNCONFIRMED", "DELIVERY_PROOF_INCOMPLETE", "EVIDENCE_MISSING"))
 
 
 def monitor_finding(assessment):
@@ -179,6 +186,20 @@ class OperationsStore:
                 outcome["invalidated"]=True
                 self._put(tx,"OpsOutcome",outcome,update=True)
 
+    def recover_executions(self):
+        """After a restart, executions claimed but never acknowledged go back to AUTHORIZED. Dispatch is
+        idempotent per execution (the simulator's messages have deterministic ids; a real adapter must honour
+        the execution's idempotency_key), so a re-dispatch cannot double-act."""
+        def recover(tx):
+            c=self._control(tx,lock=True);recovered=[]
+            for row in tx.run("MATCH(e:OpsEntity:OpsExecution {dataset_id:$dataset,status:'EXECUTING'}) RETURN properties(e) AS e",dataset=self.dataset_id):
+                e=public_value(row["e"]);e["status"]="AUTHORIZED";self._put(tx,"OpsExecution",e,update=True)
+                self._audit(tx,self._case(tx,e["case_id"]),"EXECUTION_RECOVERED",c["as_of"],actor="SUHAIL-EXECUTION-ADAPTER",key=e["entity_id"],
+                            result="Claimed before a restart without a receipt; re-dispatched idempotently.")
+                recovered.append(e["entity_id"])
+            return recovered
+        return self._execute(recover,write=True)
+
     def initialize(self):
         self._execute(lambda tx: None)
         with self.driver.session(database=self.database) as session:
@@ -201,6 +222,7 @@ class OperationsStore:
             # Only the monitor opens cases. Dataset Case/Exception nodes were derived offline from each
             # shipment's whole evidence window (including later evidence) and are never loaded as live work.
         self._execute(initialize_tx, write=True)
+        self.recover_executions()
         return self.status()
 
     def clock(self):
@@ -497,10 +519,16 @@ class OperationsStore:
             return [(public_value(r["case"]),public_value(r["execution"])) for r in rows],c["as_of"]
         items,clock=self._execute(due)
         results=[]
+        from dataset_v2.derive import assess_shipment
         for case,execution in items:
             context=self._reader().evidence(case["shipment_id"],clock)
-            verdict=evaluate(evidence_world(context,self.config),case["shipment_id"],execution,context["as_of"])
-            def record(tx,case=case,execution=execution,verdict=verdict):
+            world=evidence_world(context,self.config)
+            verdict=evaluate(world,case["shipment_id"],execution,context["as_of"])
+            # Resolution means the exception is gone, not only that the action worked: the verifier re-assesses
+            # the same evidence snapshot and keeps the case open while a standing symptom remains.
+            remaining=sorted(set(monitor_finding(assess_shipment(world,case["shipment_id"],context["as_of"],
+                detection_allowance_seconds=DETECTION_ALLOWANCE_SECONDS))["symptoms"])&STANDING_SYMPTOMS) if verdict["status"]=="success" else []
+            def record(tx,case=case,execution=execution,verdict=verdict,remaining=remaining):
                 c=self._control(tx,lock=True);current=self._case(tx,case["entity_id"]);when=c["as_of"]
                 if current["workflow_state"]!="AWAITING_OUTCOME":return None
                 if verdict["status"]=="pending":
@@ -511,6 +539,7 @@ class OperationsStore:
                     "outcome_type":verdict["outcome_type"],"evidence_ids":verdict["evidence_ids"],"verification_status":"VERIFIED",
                     "verified_at":when,"verifier_id":"SUHAIL-OUTCOME-VERIFIER","invalidated":False,"observed_at":when,
                     "reason":verdict["reason"],"rule_id":verdict.get("rule_id"),"expected_effect":verdict.get("expected_effect"),
+                    "exception_cleared":success and not remaining,"remaining_symptoms":remaining,
                     "recorded_at":when,"occurred_at":when})
                 self._link(tx,"OPS_HAS_OUTCOME",current["entity_id"],outcome_id,current["shipment_id"],when)
                 self._audit(tx,current,"OUTCOME_OBSERVED",when,actor="SUHAIL-OUTCOME-VERIFIER",result=verdict["reason"])
@@ -524,6 +553,14 @@ class OperationsStore:
                     self._audit(tx,current,"OUTCOME_VERIFIED_HUMAN_CLOSURE",when,actor="SUHAIL-OUTCOME-VERIFIER",old=old,
                                 result=f"{execution['action_type']} verified: {verdict['reason']} Closure reserved for a person"
                                        +(f" ({', '.join(floor)})." if floor else "."))
+                elif success and remaining:
+                    # The action did what it was meant to, but the exception is still there: not resolved.
+                    current.update(workflow_state="HUMAN_REVIEW",symptom_codes=sorted(set(current.get("symptom_codes") or [])|set(remaining)),
+                                   state_version=current["state_version"]+1)
+                    self._put(tx,"OpsCase",current,update=True)
+                    self._audit(tx,current,"OUTCOME_VERIFIED_EXCEPTION_REMAINS",when,actor="SUHAIL-OUTCOME-VERIFIER",old=old,
+                                result=f"{execution['action_type']} verified: {verdict['reason']} The exception remains "
+                                       f"({', '.join(remaining)}); not resolved, routed to HUMAN_REVIEW.")
                 elif success:
                     current.update(workflow_state="RESOLVED",operational_status="RESOLVED",is_terminal=True,closed_at=when,
                                    verified_outcome_id=outcome_id,state_version=current["state_version"]+1)
@@ -551,6 +588,7 @@ class OperationsStore:
             "decision_id":decision_id,"action_code":proposal.get("action_code"),"action_type":action_type,"authority":authority,
             "status":"AUTHORIZED","expected_result":proposal.get("action"),"idempotency_key":execution_id,"closure":closure,
             "target_device":target.get("device_id"),"expected_evidence_json":canonical(target.get("expected_evidence") or []),
+            "case_opened_at":case.get("opened_at"),
             "recorded_at":when,"occurred_at":when})
         self._link(tx,"OPS_INITIATES",source_id,execution_id,case["shipment_id"],when)
 
@@ -843,6 +881,50 @@ class OperationsStore:
             self._save_command(tx,case,command,request_hash,'reanalyze',idempotency_key,result,when)
             return result
         return self._execute(request,write=True)
+
+    HUMAN_OUTCOMES = ("parcel_located", "delivered_confirmed_by_person", "returned_to_depot", "parcel_not_found", "data_corrected")
+
+    def record_human_outcome(self,case_id,actor_id,outcome_type,finding,evidence_ids,expected_version,idempotency_key):
+        """Close a human-investigation case after a person's physical or administrative check.
+
+        The operator attaches visible evidence ids and a finding. The outcome is HUMAN_VERIFIED, kept
+        distinct from evidence-verified (VERIFIED) outcomes: it never counts as an automatic success
+        and precedent retrieval labels it as human-verified."""
+        require_actor(actor_id)
+        if outcome_type not in self.HUMAN_OUTCOMES:raise OperationsConflict("Unknown human outcome type")
+        if not isinstance(finding,str) or not 10<=len(finding.strip())<=1000:raise OperationsConflict("A written finding of 10 to 1000 characters is required")
+        detail=self.case_detail(case_id)
+        visible={n["id"] for n in self._reader().evidence(detail["shipment_id"],self.status()["as_of"])["nodes"]}
+        if not evidence_ids or not set(evidence_ids)<=visible:raise OperationsConflict("Attach visible evidence ids for this shipment")
+        def record(tx):
+            control=self._control(tx,lock=True);case=self._case(tx,case_id)
+            payload={"actor_id":actor_id,"outcome_type":outcome_type,"finding":finding,"evidence_ids":sorted(evidence_ids),"expected_version":expected_version}
+            command,request_hash,replay=self._command(tx,case,"human_outcome",idempotency_key,payload)
+            if replay:return replay
+            require_version(case,expected_version)
+            if case["workflow_state"] not in ("HUMAN_REVIEW","ESCALATED","NEEDS_EVIDENCE","AWAITING_APPROVAL"):
+                raise OperationsConflict("Only a case waiting for a person can be closed by a person's verified finding")
+            when=control["as_of"];old=case["workflow_state"];outcome_id=identity("outcome","human",command)
+            resolved=outcome_type!="parcel_not_found"
+            self._put(tx,"OpsOutcome",{"entity_id":outcome_id,"shipment_id":case["shipment_id"],"case_id":case_id,"execution_id":None,
+                "action_code":None,"action_type":"HUMAN_INVESTIGATION","success":resolved,"outcome_type":outcome_type,
+                "evidence_ids":sorted(evidence_ids),"verification_status":"HUMAN_VERIFIED","verified_at":when,"verifier_id":actor_id,
+                "invalidated":False,"observed_at":when,"reason":finding.strip(),"rule_id":"VERIFY-human-finding","exception_cleared":resolved,
+                "recorded_at":when,"occurred_at":when})
+            self._link(tx,"OPS_HAS_OUTCOME",case_id,outcome_id,case["shipment_id"],when)
+            if resolved:
+                case.update(workflow_state="RESOLVED",operational_status="RESOLVED",is_terminal=True,closed_at=when,
+                            verified_outcome_id=outcome_id,state_version=case["state_version"]+1)
+            else:
+                case.update(workflow_state="ESCALATED",state_version=case["state_version"]+1)
+            self._put(tx,"OpsCase",case,update=True)
+            self._audit(tx,case,"HUMAN_OUTCOME_RECORDED",when,actor=actor_id,old=old,
+                        result=f"{outcome_type} · human-verified with {len(evidence_ids)} evidence records · {finding.strip()[:300]}")
+            result={"case_id":case_id,"workflow_state":case["workflow_state"],"state_version":case["state_version"],
+                    "outcome_id":outcome_id,"verification_status":"HUMAN_VERIFIED","idempotent":False}
+            self._save_command(tx,case,command,request_hash,"human_outcome",idempotency_key,result,when)
+            return result
+        return self._execute(record,write=True)
 
     def decide(self,case_id,decision,actor_id,expected_version,idempotency_key):
         require_actor(actor_id)

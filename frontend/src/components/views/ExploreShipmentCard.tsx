@@ -3,7 +3,19 @@ import { shipmentVisualState, type ExploreShipment } from '../../types/explore'
 import { SHIPMENT_STATE_STYLE } from '../../lib/shipmentStyles'
 import { CaseWorkflowBadge, OperationalStatusBadge } from '@/components/operations/StatusBadge'
 
+export function RiskWatch({ shipment }: { shipment: ExploreShipment }) {
+  const { t } = useLanguage()
+  if (!shipment.risk_watch) return null
+  return <span data-testid="risk-watch" title={t('explore.riskWatchHint', { at: shipment.risk_watch.latest_estimate_at ?? '', promise: shipment.risk_watch.promise_at ?? '' })}
+    className="rounded-md border border-chart-warning/60 bg-chart-warning/10 px-1.5 py-0.5 text-[11px]">{t('explore.riskWatch')}</span>
+}
+
 export function ShipmentStatus({ shipment }: { shipment: ExploreShipment }) {
+  const status = <ShipmentStatusInner shipment={shipment} />
+  return shipment.risk_watch ? <span className="inline-flex flex-wrap items-center gap-1.5">{status}<RiskWatch shipment={shipment} /></span> : status
+}
+
+function ShipmentStatusInner({ shipment }: { shipment: ExploreShipment }) {
   const { t, rootCauseLabel } = useLanguage()
   const state = shipmentVisualState(shipment)
   const { Icon, className } = SHIPMENT_STATE_STYLE[state]

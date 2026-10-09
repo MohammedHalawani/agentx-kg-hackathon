@@ -13,10 +13,13 @@ import time
 import unittest
 from pathlib import Path
 
-TEST_DATABASE = "shipments-v2-demo-test"
+import os as _os
+# A second isolated twin lets two evaluation phases run side by side.
+TEST_DATABASE = _os.environ.get("SUHAIL_TEST_DATABASE", "shipments-v2-demo-test")
+assert TEST_DATABASE in ("shipments-v2-demo-test", "shipments-v2-demo-test2")
 
 
-def build_test_database(total=150):
+def build_test_database(total=150, live_split="development"):
     import config
     from core.query_runner import get_driver
     from dataset_v2.live_bundle import export_live, load_feed, read_live_bundle, read_truth
@@ -25,7 +28,7 @@ def build_test_database(total=150):
     driver = get_driver()
     tmp = tempfile.TemporaryDirectory()
     bundle_dir = Path(tmp.name) / "bundle"
-    export_live(bundle_dir, live_config(total=total, dataset_id="DEMO-SUHAIL-LIVE-TEST"))
+    export_live(bundle_dir, live_config(total=total, dataset_id="DEMO-SUHAIL-LIVE-TEST"), live_split=live_split)
     with driver.session(database="system") as session:
         session.run(f"CREATE OR REPLACE DATABASE `{TEST_DATABASE}` WAIT 60 SECONDS").consume()
     bundle, items = read_live_bundle(bundle_dir)

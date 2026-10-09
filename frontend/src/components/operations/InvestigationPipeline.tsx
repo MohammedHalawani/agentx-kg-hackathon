@@ -139,5 +139,9 @@ export function InvestigationPipeline({ detail, selected, onSelect, onEvidence }
     </ol>
     <StepDetail detail={detail} step={current} onEvidence={onEvidence} />
     {!detail.pipeline?.events.length && detail.run && <p className="text-[11px] text-muted-foreground">{t('ops.pipeline.earlier')}</p>}
+    {!!detail.pipeline?.investigation_as_of && <p data-testid="investigation-snapshot" className="text-[11px] text-muted-foreground">
+      {t('ops.pipeline.snapshot', { at: new Date(detail.pipeline.investigation_as_of).toLocaleString('en-GB', { timeZone: 'UTC' }) })}
+      {!!detail.pipeline.evidence_after_investigation && <> · {t('ops.pipeline.afterSnapshot', { count: detail.pipeline.evidence_after_investigation })}</>}
+    </p>}
   </section>
 }
