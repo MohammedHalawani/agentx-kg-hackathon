@@ -1,0 +1,11 @@
+{
+ "phase": "heldout_detection",
+ "replayed_split": "held_out (relabelled as the live split)",
+ "shipments": 120,
+ "healthy": 76,
+ "abnormal": 44,
+ "false_positive_cases": [],
+ "missed_abnormal": [],
+ "false_positive_rate": 0.0,
+ "recall": 1.0
+}

@@ -1,0 +1,55 @@
+{
+ "phase": "reviewer_failure",
+ "case_id": "DEMO-OPS-CASE-59ce4febd6c78454ad1a8e0c",
+ "truth_recipe": "different_barcode",
+ "investigator_mode": "gpt-oss",
+ "primary_cause": "BARCODE_MISMATCH",
+ "review": {
+  "degraded": true,
+  "feedback": "Independent model review could not be completed; automatic execution is blocked and a person must review.",
+  "model_verdict": "UNAVAILABLE",
+  "verdict": "accept"
+ },
+ "degraded": [
+  {
+   "error": "model call failed (InternalServerError)",
+   "role": "reviewer"
+  }
+ ],
+ "authority": {
+  "action_type": "REQUEST_RESCAN",
+  "inputs": {
+   "action_type": "REQUEST_RESCAN",
+   "degraded": [
+    "reviewer"
+   ],
+   "diagnosis_codes": [
+    "BARCODE_MISMATCH"
+   ],
+   "fact_checks": {
+    "contractor_custody": false,
+    "sensitive": false,
+    "unsupported": false
+   },
+   "requires_physical_check": false,
+   "review_verdict": "UNAVAILABLE",
+   "symptoms": [
+    "BARCODE_READ_DIFFERS"
+   ]
+  },
+  "policy": "deterministic_action_authority",
+  "reason": "Model role unavailable (reviewer); automatic execution blocked.",
+  "risk_class": "HUMAN_REVIEW",
+  "rule_id": "AUTH-02-model-degraded"
+ },
+ "final_state": "HUMAN_REVIEW",
+ "executions": [],
+ "audit_events": [
+  "AUTHORITY_DECISION",
+  "CASE_CLAIMED",
+  "CASE_OPENED",
+  "MODEL_DEGRADED",
+  "PIPELINE_STAGE",
+  "RECOMMENDATION_READY"
+ ]
+}

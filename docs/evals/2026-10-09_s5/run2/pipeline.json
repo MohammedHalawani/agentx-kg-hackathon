@@ -1,0 +1,2300 @@
+{
+ "phase": "pipeline",
+ "model": "openai/gpt-oss:120b",
+ "wall_seconds": 2219,
+ "metrics": {
+  "live_shipments": 120,
+  "abnormal_live_shipments": 39,
+  "cases_opened": 42,
+  "cases_on_healthy_shipments": 0,
+  "abnormal_without_case": 0,
+  "investigations_completed": 42,
+  "degraded_investigations": 0,
+  "root_cause_accuracy": {
+   "correct": 28,
+   "scored": 42,
+   "rate": 0.667
+  },
+  "wrong_cause_but_routed_to_a_person": 12,
+  "evidence_correctness": {
+   "citations_within_retrieved": 42,
+   "investigations": 42,
+   "key_evidence_cited": 5,
+   "with_key_evidence_defined": 12
+  },
+  "automatic_actions_executed": 13,
+  "automatic_actions_with_wrong_cause": 2,
+  "automatic_resolution_success": {
+   "auto_executed_and_verified_resolved": 8,
+   "auto_executed": 13,
+   "rate": 0.615
+  },
+  "auto_eligible_scenarios_resolved_without_human": {
+   "resolved": 7,
+   "eligible": 20
+  },
+  "false_resolution": {
+   "count": 1,
+   "resolved": 8,
+   "rate": 0.125,
+   "cases": [
+    [
+     "DEMO-OPS-CASE-b44b5fbbbdf2e57e400a7d4c",
+     "report_failed_authentication",
+     "DELAYED_SYNC"
+    ]
+   ]
+  },
+  "final_states": {
+   "AWAITING_APPROVAL": 2,
+   "ESCALATED": 11,
+   "HUMAN_REVIEW": 21,
+   "RESOLVED": 8
+  },
+  "verification_failures_left_unresolved": 5,
+  "human_decisions_recorded": 0
+ },
+ "cases": [
+  {
+   "case_id": "DEMO-OPS-CASE-4f904d309686110ca5083f56",
+   "shipment_id": "DEMO-SHP-000441",
+   "opened_at": "2026-09-01T08:00:12.000000000+00:00",
+   "symptoms": [
+    "BARCODE_READ_DIFFERS"
+   ],
+   "investigations": 1,
+   "tool_calls": 3,
+   "tools": [
+    "scans",
+    "custody_chain",
+    "journey"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "BARCODE_MISMATCH",
+   "confidence": "high",
+   "hypotheses": [
+    [
+     "BARCODE_MISMATCH",
+     "supported"
+    ]
+   ],
+   "recommended_action": "REQUEST_RESCAN",
+   "review": "ACCEPT",
+   "review_rounds": 2,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "AUTO",
+   "authority_reason": "Low-risk, reversible, evidence-bound action within the synthetic automation allowlist.",
+   "executions": [
+    {
+     "action_type": "REQUEST_RESCAN",
+     "authority": "AUTO_POLICY",
+     "status": "ACKNOWLEDGED",
+     "adapter": "label wrongly applied: rescan reads the same wrong barcode"
+    }
+   ],
+   "outcomes": [
+    {
+     "type": "barcode_still_differs",
+     "success": false,
+     "verifier": "SUHAIL-OUTCOME-VERIFIER"
+    }
+   ],
+   "final_state": "HUMAN_REVIEW",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 1,
+   "key_evidence_cited": null,
+   "truth_recipe": "wrong_label_applied",
+   "truth_healthy": false,
+   "truth_cause": "BARCODE_MISMATCH",
+   "acceptable_causes": [
+    "BARCODE_MISMATCH"
+   ],
+   "expected_resolution": "HUMAN"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-f8295725822e30934884a6a0",
+   "shipment_id": "DEMO-SHP-000431",
+   "opened_at": "2026-09-02T02:00:12.000000000+00:00",
+   "symptoms": [
+    "MILESTONE_OVERDUE"
+   ],
+   "investigations": 1,
+   "tool_calls": 5,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "custody_chain",
+    "scans",
+    "device_status"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "DELAYED_SYNC",
+   "confidence": "medium",
+   "hypotheses": [
+    [
+     "DELAYED_SYNC",
+     "supported"
+    ]
+   ],
+   "recommended_action": "REQUEST_DEVICE_SYNC",
+   "review": "ACCEPT",
+   "review_rounds": 1,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "AUTO",
+   "authority_reason": "Low-risk, reversible, evidence-bound action within the synthetic automation allowlist.",
+   "executions": [
+    {
+     "action_type": "REQUEST_DEVICE_SYNC",
+     "authority": "AUTO_POLICY",
+     "status": "ACKNOWLEDGED",
+     "adapter": "device uploaded 2 buffered messages"
+    }
+   ],
+   "outcomes": [
+    {
+     "type": "delayed_upload_received",
+     "success": true,
+     "verifier": "SUHAIL-OUTCOME-VERIFIER"
+    }
+   ],
+   "final_state": "RESOLVED",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 2,
+   "key_evidence_cited": false,
+   "truth_recipe": "fulfillment",
+   "truth_healthy": false,
+   "truth_cause": "DELAYED_SYNC",
+   "acceptable_causes": [
+    "DELAYED_SYNC"
+   ],
+   "expected_resolution": "AUTO"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-209166e8abad5b96f636751a",
+   "shipment_id": "DEMO-SHP-000032",
+   "opened_at": "2026-09-02T13:00:12.000000000+00:00",
+   "symptoms": [
+    "MILESTONE_OVERDUE",
+    "SESSION_END_UNRECONCILED"
+   ],
+   "investigations": 1,
+   "tool_calls": 5,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "custody_chain",
+    "device_status",
+    "scans"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "CUSTODY_GAP",
+   "confidence": "medium",
+   "hypotheses": [
+    [
+     "CUSTODY_GAP",
+     "supported"
+    ]
+   ],
+   "recommended_action": "INITIATE_CUSTODY_RECONCILIATION",
+   "review": "REVISE",
+   "review_rounds": 2,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "HUMAN_REVIEW",
+   "authority_reason": "Reviewer rejected the proposal after the bounded revision rounds.",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "ESCALATED",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 2,
+   "key_evidence_cited": null,
+   "truth_recipe": "absent_transfer_receipt",
+   "truth_healthy": false,
+   "truth_cause": "CUSTODY_GAP",
+   "acceptable_causes": [
+    "CUSTODY_GAP",
+    "MISSED_MILESTONE"
+   ],
+   "expected_resolution": "AUTO"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-fb06ec173df7ded818211e7f",
+   "shipment_id": "DEMO-SHP-000392",
+   "opened_at": "2026-09-02T13:00:12.000000000+00:00",
+   "symptoms": [
+    "MANIFEST_CUSTODY_CONFLICT",
+    "MILESTONE_OVERDUE"
+   ],
+   "investigations": 1,
+   "tool_calls": 6,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "journey",
+    "custody_chain",
+    "scans",
+    "device_status"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "CUSTODY_GAP",
+   "confidence": "medium",
+   "hypotheses": [
+    [
+     "CUSTODY_GAP",
+     "supported"
+    ]
+   ],
+   "recommended_action": "INITIATE_CUSTODY_RECONCILIATION",
+   "review": "ACCEPT",
+   "review_rounds": 1,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "HUMAN_REVIEW",
+   "authority_reason": "Deterministic evidence rules flagged a conflict requiring human judgment.",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "HUMAN_REVIEW",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 2,
+   "key_evidence_cited": false,
+   "truth_recipe": "conflicting_manifest",
+   "truth_healthy": false,
+   "truth_cause": "MANIFEST_CONFLICT",
+   "acceptable_causes": [
+    "DELAYED_SYNC",
+    "MANIFEST_CONFLICT"
+   ],
+   "expected_resolution": "HUMAN"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-6b9081c6aaaf5f5fae4a2b3c",
+   "shipment_id": "DEMO-SHP-000101",
+   "opened_at": "2026-09-02T14:00:12.000000000+00:00",
+   "symptoms": [
+    "MILESTONE_OVERDUE",
+    "SESSION_END_UNRECONCILED"
+   ],
+   "investigations": 1,
+   "tool_calls": 6,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "custody_chain",
+    "delivery_attempts",
+    "scans",
+    "device_status"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "CUSTODY_GAP",
+   "confidence": "medium",
+   "hypotheses": [
+    [
+     "CUSTODY_GAP",
+     "supported"
+    ],
+    [
+     "DELAYED_SYNC",
+     "uncertain"
+    ]
+   ],
+   "recommended_action": "REQUEST_DEVICE_SYNC",
+   "review": "ACCEPT",
+   "review_rounds": 1,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "APPROVAL_REQUIRED",
+   "authority_reason": "Proposed action does not address a supported diagnosis.",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "AWAITING_APPROVAL",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 2,
+   "key_evidence_cited": null,
+   "truth_recipe": "absent_session_receipt",
+   "truth_healthy": false,
+   "truth_cause": "UNRECONCILED_CUSTODY",
+   "acceptable_causes": [
+    "UNRECONCILED_CUSTODY"
+   ],
+   "expected_resolution": "AUTO"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-622ca2f9919e71d4160e8bb0",
+   "shipment_id": "DEMO-SHP-000532",
+   "opened_at": "2026-09-03T04:00:12.000000000+00:00",
+   "symptoms": [
+    "MANIFEST_CUSTODY_CONFLICT"
+   ],
+   "investigations": 1,
+   "tool_calls": 6,
+   "tools": [
+    "shipment_overview",
+    "custody_chain",
+    "custody_chain",
+    "scans",
+    "vehicle_and_manifest",
+    "delivery_attempts"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "MANIFEST_CONFLICT",
+   "confidence": "high",
+   "hypotheses": [
+    [
+     "MANIFEST_CONFLICT",
+     "supported"
+    ]
+   ],
+   "recommended_action": "MANIFEST_RECONCILIATION_REVIEW",
+   "review": "ACCEPT",
+   "review_rounds": 1,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "HUMAN_REVIEW",
+   "authority_reason": "The parcel's last corroborated holder is a contractor or independent driver; physical reconciliation needs a person.",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "HUMAN_REVIEW",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 3,
+   "key_evidence_cited": true,
+   "truth_recipe": "conflicting_manifest",
+   "truth_healthy": false,
+   "truth_cause": "MANIFEST_CONFLICT",
+   "acceptable_causes": [
+    "MANIFEST_CONFLICT"
+   ],
+   "expected_resolution": "HUMAN"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-59ce4febd6c78454ad1a8e0c",
+   "shipment_id": "DEMO-SHP-000583",
+   "opened_at": "2026-09-03T08:00:12.000000000+00:00",
+   "symptoms": [
+    "BARCODE_READ_DIFFERS"
+   ],
+   "investigations": 1,
+   "tool_calls": 5,
+   "tools": [
+    "scans",
+    "shipment_overview",
+    "scans",
+    "custody_chain",
+    "device_status"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "BARCODE_MISMATCH",
+   "confidence": "medium",
+   "hypotheses": [
+    [
+     "BARCODE_MISMATCH",
+     "supported"
+    ]
+   ],
+   "recommended_action": "REQUEST_RESCAN",
+   "review": "REVISE",
+   "review_rounds": 2,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "HUMAN_REVIEW",
+   "authority_reason": "Reviewer rejected the proposal after the bounded revision rounds.",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "ESCALATED",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 1,
+   "key_evidence_cited": null,
+   "truth_recipe": "different_barcode",
+   "truth_healthy": false,
+   "truth_cause": "BARCODE_MISMATCH",
+   "acceptable_causes": [
+    "BARCODE_MISMATCH"
+   ],
+   "expected_resolution": "AUTO"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-d9763c84e7549f2baac4e6ed",
+   "shipment_id": "DEMO-SHP-000482",
+   "opened_at": "2026-09-03T14:00:12.000000000+00:00",
+   "symptoms": [
+    "MILESTONE_OVERDUE",
+    "SESSION_END_UNRECONCILED"
+   ],
+   "investigations": 1,
+   "tool_calls": 6,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "custody_chain",
+    "device_status",
+    "scans",
+    "delivery_attempts"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "CUSTODY_GAP",
+   "confidence": "high",
+   "hypotheses": [
+    [
+     "CUSTODY_GAP",
+     "supported"
+    ]
+   ],
+   "recommended_action": "INITIATE_CUSTODY_RECONCILIATION",
+   "review": "ACCEPT",
+   "review_rounds": 2,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "HUMAN_REVIEW",
+   "authority_reason": "Deterministic evidence rules flagged a conflict requiring human judgment.",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "HUMAN_REVIEW",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 4,
+   "key_evidence_cited": null,
+   "truth_recipe": "absent_session_receipt",
+   "truth_healthy": false,
+   "truth_cause": "UNRECONCILED_CUSTODY",
+   "acceptable_causes": [
+    "UNRECONCILED_CUSTODY"
+   ],
+   "expected_resolution": "AUTO"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-3387f73da5d0e3e2cdb92eb1",
+   "shipment_id": "DEMO-SHP-000113",
+   "opened_at": "2026-09-04T00:00:12.000000000+00:00",
+   "symptoms": [
+    "CUSTODY_TRANSFER_UNCONFIRMED",
+    "MILESTONE_OVERDUE"
+   ],
+   "investigations": 1,
+   "tool_calls": 5,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "custody_chain",
+    "device_status",
+    "scans"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "CUSTODY_GAP",
+   "confidence": "medium",
+   "hypotheses": [
+    [
+     "CUSTODY_GAP",
+     "supported"
+    ],
+    [
+     "DELAYED_SYNC",
+     "uncertain"
+    ]
+   ],
+   "recommended_action": "INITIATE_CUSTODY_RECONCILIATION",
+   "review": "REVISE",
+   "review_rounds": 2,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "HUMAN_REVIEW",
+   "authority_reason": "Reviewer rejected the proposal after the bounded revision rounds.",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "ESCALATED",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 3,
+   "key_evidence_cited": false,
+   "truth_recipe": "offline_device_sync",
+   "truth_healthy": false,
+   "truth_cause": "DELAYED_SYNC",
+   "acceptable_causes": [
+    "DELAYED_SYNC"
+   ],
+   "expected_resolution": "AUTO"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-d217f89a7896883c8913f000",
+   "shipment_id": "DEMO-SHP-000362",
+   "opened_at": "2026-09-04T06:00:12.000000000+00:00",
+   "symptoms": [
+    "RECIPIENT_REPORTED_NOT_RECEIVED"
+   ],
+   "investigations": 1,
+   "tool_calls": 4,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "delivery_attempts",
+    "custody_chain"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "DELIVERY_DISPUTE",
+   "confidence": "medium",
+   "hypotheses": [
+    [
+     "DELIVERY_DISPUTE",
+     "supported"
+    ]
+   ],
+   "recommended_action": "DELIVERY_DISPUTE_REVIEW",
+   "review": "REVISE",
+   "review_rounds": 2,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "HUMAN_REVIEW",
+   "authority_reason": "Reviewer rejected the proposal after the bounded revision rounds.",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "ESCALATED",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 4,
+   "key_evidence_cited": null,
+   "truth_recipe": "report_with_corroboration",
+   "truth_healthy": false,
+   "truth_cause": "DELIVERY_DISPUTE",
+   "acceptable_causes": [
+    "DELIVERY_DISPUTE"
+   ],
+   "expected_resolution": "HUMAN"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-75c8c391965f27edb3e3548e",
+   "shipment_id": "DEMO-SHP-000262",
+   "opened_at": "2026-09-04T06:00:12.000000000+00:00",
+   "symptoms": [
+    "MILESTONE_OVERDUE",
+    "RECIPIENT_REPORTED_NOT_RECEIVED"
+   ],
+   "investigations": 1,
+   "tool_calls": 2,
+   "tools": [
+    "shipment_overview",
+    "delivery_attempts"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "DELIVERY_DISPUTE",
+   "confidence": "high",
+   "hypotheses": [
+    [
+     "DELIVERY_DISPUTE",
+     "supported"
+    ]
+   ],
+   "recommended_action": "DELIVERY_DISPUTE_REVIEW",
+   "review": "REVISE",
+   "review_rounds": 2,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "HUMAN_REVIEW",
+   "authority_reason": "Reviewer rejected the proposal after the bounded revision rounds.",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "ESCALATED",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 3,
+   "key_evidence_cited": null,
+   "truth_recipe": "report_authorized_alternate",
+   "truth_healthy": false,
+   "truth_cause": "DELIVERY_DISPUTE",
+   "acceptable_causes": [
+    "DELIVERY_DISPUTE",
+    "PROOF_INSUFFICIENT"
+   ],
+   "expected_resolution": "HUMAN"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-f8d32f033fedf3decfe20aa3",
+   "shipment_id": "DEMO-SHP-000003",
+   "opened_at": "2026-09-04T17:00:12.000000000+00:00",
+   "symptoms": [
+    "MILESTONE_OVERDUE"
+   ],
+   "investigations": 1,
+   "tool_calls": 5,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "custody_chain",
+    "device_status",
+    "scans"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "CUSTODY_GAP",
+   "confidence": "medium",
+   "hypotheses": [
+    [
+     "CUSTODY_GAP",
+     "supported"
+    ]
+   ],
+   "recommended_action": "INITIATE_CUSTODY_RECONCILIATION",
+   "review": "ACCEPT",
+   "review_rounds": 2,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "HUMAN_REVIEW",
+   "authority_reason": "Deterministic evidence rules flagged a conflict requiring human judgment.",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "HUMAN_REVIEW",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 4,
+   "key_evidence_cited": false,
+   "truth_recipe": "contractor_on_time",
+   "truth_healthy": false,
+   "truth_cause": "DELAYED_SYNC",
+   "acceptable_causes": [
+    "DELAYED_SYNC"
+   ],
+   "expected_resolution": "AUTO"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-929c9c9ee6a98ab49adcf2f9",
+   "shipment_id": "DEMO-SHP-000324",
+   "opened_at": "2026-09-05T04:00:12.000000000+00:00",
+   "symptoms": [
+    "CUSTODY_REPORTS_CONFLICT",
+    "MILESTONE_OVERDUE",
+    "SESSION_END_UNRECONCILED"
+   ],
+   "investigations": 1,
+   "tool_calls": 5,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "custody_chain",
+    "scans",
+    "vehicle_and_manifest"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "CONFLICTING_CUSTODY",
+   "confidence": "high",
+   "hypotheses": [
+    [
+     "CONFLICTING_CUSTODY",
+     "supported"
+    ]
+   ],
+   "recommended_action": "CONFLICTING_CUSTODY_REVIEW",
+   "review": "ACCEPT",
+   "review_rounds": 1,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "HUMAN_REVIEW",
+   "authority_reason": "Sensitive or rights-impacting evidence (dispute, misdelivery or conflicting custody).",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "HUMAN_REVIEW",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 2,
+   "key_evidence_cited": null,
+   "truth_recipe": "conflicting_custody_sources",
+   "truth_healthy": false,
+   "truth_cause": "CONFLICTING_CUSTODY",
+   "acceptable_causes": [
+    "CONFLICTING_CUSTODY"
+   ],
+   "expected_resolution": "HUMAN"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-b7fd15c6f10198140bac0834",
+   "shipment_id": "DEMO-SHP-000404",
+   "opened_at": "2026-09-05T05:00:12.000000000+00:00",
+   "symptoms": [
+    "CUSTODY_TRANSFER_UNCONFIRMED",
+    "MILESTONE_OVERDUE",
+    "SESSION_END_UNRECONCILED"
+   ],
+   "investigations": 1,
+   "tool_calls": 4,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "custody_chain",
+    "device_status"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "DELAYED_SYNC",
+   "confidence": "medium",
+   "hypotheses": [
+    [
+     "DELAYED_SYNC",
+     "supported"
+    ],
+    [
+     "CUSTODY_GAP",
+     "uncertain"
+    ]
+   ],
+   "recommended_action": "REQUEST_DEVICE_SYNC",
+   "review": "ACCEPT",
+   "review_rounds": 1,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "AUTO",
+   "authority_reason": "Low-risk, reversible, evidence-bound action within the synthetic automation allowlist.",
+   "executions": [
+    {
+     "action_type": "REQUEST_DEVICE_SYNC",
+     "authority": "AUTO_POLICY",
+     "status": "ACKNOWLEDGED",
+     "adapter": "device had nothing buffered"
+    }
+   ],
+   "outcomes": [
+    {
+     "type": "no_confirming_evidence",
+     "success": false,
+     "verifier": "SUHAIL-OUTCOME-VERIFIER"
+    }
+   ],
+   "final_state": "HUMAN_REVIEW",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 2,
+   "key_evidence_cited": true,
+   "truth_recipe": "contractor_unconfirmed_pickup",
+   "truth_healthy": false,
+   "truth_cause": "CUSTODY_GAP",
+   "acceptable_causes": [
+    "CUSTODY_GAP",
+    "UNRECONCILED_CUSTODY"
+   ],
+   "expected_resolution": "AUTO"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-f52ccc9a872f6db65d0abc92",
+   "shipment_id": "DEMO-SHP-000553",
+   "opened_at": "2026-09-05T06:00:12.000000000+00:00",
+   "symptoms": [
+    "DELIVERY_ATTEMPT_FAILED",
+    "MILESTONE_OVERDUE"
+   ],
+   "investigations": 1,
+   "tool_calls": 6,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "journey",
+    "delivery_attempts",
+    "custody_chain",
+    "address_and_instructions"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "RECIPIENT_UNAVAILABLE",
+   "confidence": "high",
+   "hypotheses": [
+    [
+     "RECIPIENT_UNAVAILABLE",
+     "supported"
+    ]
+   ],
+   "recommended_action": "PRIORITIZE_NEXT_SESSION",
+   "review": "ACCEPT",
+   "review_rounds": 1,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "AUTO",
+   "authority_reason": "Low-risk, reversible, evidence-bound action within the synthetic automation allowlist.",
+   "executions": [
+    {
+     "action_type": "PRIORITIZE_NEXT_SESSION",
+     "authority": "AUTO_POLICY",
+     "status": "ACKNOWLEDGED",
+     "adapter": "next-session delivery failed: recipient unreachable"
+    }
+   ],
+   "outcomes": [
+    {
+     "type": "delivery_failed_again",
+     "success": false,
+     "verifier": "SUHAIL-OUTCOME-VERIFIER"
+    }
+   ],
+   "final_state": "HUMAN_REVIEW",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 7,
+   "key_evidence_cited": null,
+   "truth_recipe": "unanswered_contact",
+   "truth_healthy": false,
+   "truth_cause": "RECIPIENT_UNAVAILABLE",
+   "acceptable_causes": [
+    "RECIPIENT_UNAVAILABLE"
+   ],
+   "expected_resolution": "APPROVAL"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-a367fab59c698c52afddf484",
+   "shipment_id": "DEMO-SHP-000215",
+   "opened_at": "2026-09-05T08:00:12.000000000+00:00",
+   "symptoms": [
+    "WEIGHT_READ_DIFFERS"
+   ],
+   "investigations": 1,
+   "tool_calls": 6,
+   "tools": [
+    "shipment_overview",
+    "scans",
+    "custody_chain",
+    "device_status",
+    "device_status",
+    "policy"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "WEIGHT_MISMATCH",
+   "confidence": "high",
+   "hypotheses": [
+    [
+     "WEIGHT_MISMATCH",
+     "supported"
+    ]
+   ],
+   "recommended_action": "REQUEST_REWEIGH",
+   "review": "REVISE",
+   "review_rounds": 2,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "HUMAN_REVIEW",
+   "authority_reason": "Reviewer rejected the proposal after the bounded revision rounds.",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "ESCALATED",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 2,
+   "key_evidence_cited": null,
+   "truth_recipe": "different_weight",
+   "truth_healthy": false,
+   "truth_cause": "WEIGHT_MISMATCH",
+   "acceptable_causes": [
+    "WEIGHT_MISMATCH"
+   ],
+   "expected_resolution": "AUTO"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-69dd3c9c356591c860384739",
+   "shipment_id": "DEMO-SHP-000305",
+   "opened_at": "2026-09-05T08:00:12.000000000+00:00",
+   "symptoms": [
+    "WEIGHT_READ_DIFFERS"
+   ],
+   "investigations": 1,
+   "tool_calls": 5,
+   "tools": [
+    "shipment_overview",
+    "scans",
+    "custody_chain",
+    "journey",
+    "policy"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "WEIGHT_MISMATCH",
+   "confidence": "high",
+   "hypotheses": [
+    [
+     "WEIGHT_MISMATCH",
+     "supported"
+    ]
+   ],
+   "recommended_action": "REQUEST_REWEIGH",
+   "review": "ACCEPT",
+   "review_rounds": 1,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "HUMAN_REVIEW",
+   "authority_reason": "Deterministic evidence rules flagged a conflict requiring human judgment.",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "HUMAN_REVIEW",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 1,
+   "key_evidence_cited": null,
+   "truth_recipe": "declared_weight_wrong",
+   "truth_healthy": false,
+   "truth_cause": "WEIGHT_MISMATCH",
+   "acceptable_causes": [
+    "WEIGHT_MISMATCH"
+   ],
+   "expected_resolution": "HUMAN"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-a35fd772d8dd03dfcb83fcb5",
+   "shipment_id": "DEMO-SHP-000415",
+   "opened_at": "2026-09-06T07:00:12.000000000+00:00",
+   "symptoms": [
+    "DELIVERY_ATTEMPT_FAILED"
+   ],
+   "investigations": 1,
+   "tool_calls": 4,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "delivery_attempts",
+    "address_and_instructions"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "WRONG_GATE",
+   "confidence": "high",
+   "hypotheses": [
+    [
+     "WRONG_GATE",
+     "supported"
+    ]
+   ],
+   "recommended_action": "REQUEST_ADDRESS_CONFIRMATION",
+   "review": "ACCEPT",
+   "review_rounds": 1,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "AUTO",
+   "authority_reason": "Low-risk, reversible, evidence-bound action within the synthetic automation allowlist.",
+   "executions": [
+    {
+     "action_type": "REQUEST_ADDRESS_CONFIRMATION",
+     "authority": "AUTO_POLICY",
+     "status": "ACKNOWLEDGED",
+     "adapter": "recipient confirmed the address"
+    }
+   ],
+   "outcomes": [
+    {
+     "type": "address_confirmed",
+     "success": true,
+     "verifier": "SUHAIL-OUTCOME-VERIFIER"
+    }
+   ],
+   "final_state": "RESOLVED",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 2,
+   "key_evidence_cited": null,
+   "truth_recipe": "different_gate",
+   "truth_healthy": false,
+   "truth_cause": "WRONG_GATE",
+   "acceptable_causes": [
+    "WRONG_GATE"
+   ],
+   "expected_resolution": "AUTO"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-8d4aeed798e3f40c8bb05eb8",
+   "shipment_id": "DEMO-SHP-000415",
+   "opened_at": "2026-09-06T14:00:12.000000000+00:00",
+   "symptoms": [
+    "DELIVERY_ATTEMPT_FAILED",
+    "MILESTONE_OVERDUE"
+   ],
+   "investigations": 1,
+   "tool_calls": 5,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "delivery_attempts",
+    "address_and_instructions",
+    "custody_chain"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "WRONG_GATE",
+   "confidence": "high",
+   "hypotheses": [
+    [
+     "WRONG_GATE",
+     "supported"
+    ],
+    [
+     "MISSED_MILESTONE",
+     "supported"
+    ]
+   ],
+   "recommended_action": "REQUEST_ADDRESS_CONFIRMATION",
+   "review": "ACCEPT",
+   "review_rounds": 2,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "AUTO",
+   "authority_reason": "Low-risk, reversible, evidence-bound action within the synthetic automation allowlist.",
+   "executions": [
+    {
+     "action_type": "REQUEST_ADDRESS_CONFIRMATION",
+     "authority": "AUTO_POLICY",
+     "status": "ACKNOWLEDGED",
+     "adapter": "recipient confirmed the address"
+    }
+   ],
+   "outcomes": [
+    {
+     "type": "address_confirmed",
+     "success": true,
+     "verifier": "SUHAIL-OUTCOME-VERIFIER"
+    }
+   ],
+   "final_state": "RESOLVED",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 4,
+   "key_evidence_cited": null,
+   "truth_recipe": "different_gate",
+   "truth_healthy": false,
+   "truth_cause": "WRONG_GATE",
+   "acceptable_causes": [
+    "WRONG_GATE"
+   ],
+   "expected_resolution": "AUTO"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-b05015a4cc432f5050349c76",
+   "shipment_id": "DEMO-SHP-000397",
+   "opened_at": "2026-09-07T08:00:12.000000000+00:00",
+   "symptoms": [
+    "DELIVERY_ATTEMPT_FAILED",
+    "MILESTONE_OVERDUE",
+    "WEIGHT_READ_DIFFERS"
+   ],
+   "investigations": 1,
+   "tool_calls": 4,
+   "tools": [
+    "shipment_overview",
+    "scans",
+    "custody_chain",
+    "journey"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "WEIGHT_MISMATCH",
+   "confidence": "high",
+   "hypotheses": [
+    [
+     "WEIGHT_MISMATCH",
+     "supported"
+    ]
+   ],
+   "recommended_action": "REQUEST_REWEIGH",
+   "review": "REVISE",
+   "review_rounds": 2,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "HUMAN_REVIEW",
+   "authority_reason": "Reviewer rejected the proposal after the bounded revision rounds.",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "ESCALATED",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 2,
+   "key_evidence_cited": null,
+   "truth_recipe": "weight_and_obsolete_address",
+   "truth_healthy": false,
+   "truth_cause": "ADDRESS_CONFLICT",
+   "acceptable_causes": [
+    "ADDRESS_CONFLICT",
+    "WEIGHT_MISMATCH"
+   ],
+   "expected_resolution": "HUMAN"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-a11f873718d08527c9969261",
+   "shipment_id": "DEMO-SHP-000567",
+   "opened_at": "2026-09-07T08:00:12.000000000+00:00",
+   "symptoms": [
+    "BARCODE_READ_DIFFERS"
+   ],
+   "investigations": 1,
+   "tool_calls": 3,
+   "tools": [
+    "scans",
+    "custody_chain",
+    "policy"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "BARCODE_MISMATCH",
+   "confidence": "medium",
+   "hypotheses": [
+    [
+     "BARCODE_MISMATCH",
+     "supported"
+    ]
+   ],
+   "recommended_action": "REQUEST_RESCAN",
+   "review": "ACCEPT",
+   "review_rounds": 2,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "AUTO",
+   "authority_reason": "Low-risk, reversible, evidence-bound action within the synthetic automation allowlist.",
+   "executions": [
+    {
+     "action_type": "REQUEST_RESCAN",
+     "authority": "AUTO_POLICY",
+     "status": "ACKNOWLEDGED",
+     "adapter": "label wrongly applied: rescan reads the same wrong barcode"
+    }
+   ],
+   "outcomes": [
+    {
+     "type": "barcode_still_differs",
+     "success": false,
+     "verifier": "SUHAIL-OUTCOME-VERIFIER"
+    }
+   ],
+   "final_state": "HUMAN_REVIEW",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 1,
+   "key_evidence_cited": null,
+   "truth_recipe": "wrong_label_applied",
+   "truth_healthy": false,
+   "truth_cause": "BARCODE_MISMATCH",
+   "acceptable_causes": [
+    "BARCODE_MISMATCH"
+   ],
+   "expected_resolution": "HUMAN"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-65ad753d99b6a8f0e7571438",
+   "shipment_id": "DEMO-SHP-000326",
+   "opened_at": "2026-09-08T04:00:12.000000000+00:00",
+   "symptoms": [
+    "MANIFEST_CUSTODY_CONFLICT"
+   ],
+   "investigations": 1,
+   "tool_calls": 5,
+   "tools": [
+    "shipment_overview",
+    "custody_chain",
+    "vehicle_and_manifest",
+    "delivery_attempts",
+    "scans"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "MANIFEST_CONFLICT",
+   "confidence": "high",
+   "hypotheses": [
+    [
+     "MANIFEST_CONFLICT",
+     "supported"
+    ]
+   ],
+   "recommended_action": "MANIFEST_RECONCILIATION_REVIEW",
+   "review": "ACCEPT",
+   "review_rounds": 1,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "HUMAN_REVIEW",
+   "authority_reason": "The parcel's last corroborated holder is a contractor or independent driver; physical reconciliation needs a person.",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "HUMAN_REVIEW",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 3,
+   "key_evidence_cited": true,
+   "truth_recipe": "conflicting_manifest",
+   "truth_healthy": false,
+   "truth_cause": "MANIFEST_CONFLICT",
+   "acceptable_causes": [
+    "MANIFEST_CONFLICT"
+   ],
+   "expected_resolution": "HUMAN"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-82b74eb66bd948240a28c800",
+   "shipment_id": "DEMO-SHP-000466",
+   "opened_at": "2026-09-08T06:00:12.000000000+00:00",
+   "symptoms": [
+    "DELIVERY_ATTEMPT_FAILED"
+   ],
+   "investigations": 1,
+   "tool_calls": 5,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "delivery_attempts",
+    "address_and_instructions",
+    "custody_chain"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "ADDRESS_CONFLICT",
+   "confidence": "high",
+   "hypotheses": [
+    [
+     "ADDRESS_CONFLICT",
+     "supported"
+    ],
+    [
+     "RECIPIENT_UNAVAILABLE",
+     "uncertain"
+    ]
+   ],
+   "recommended_action": "REQUEST_ADDRESS_CONFIRMATION",
+   "review": "ACCEPT",
+   "review_rounds": 1,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "AUTO",
+   "authority_reason": "Low-risk, reversible, evidence-bound action within the synthetic automation allowlist.",
+   "executions": [
+    {
+     "action_type": "REQUEST_ADDRESS_CONFIRMATION",
+     "authority": "AUTO_POLICY",
+     "status": "ACKNOWLEDGED",
+     "adapter": "recipient confirmed the address"
+    }
+   ],
+   "outcomes": [
+    {
+     "type": "address_confirmed",
+     "success": true,
+     "verifier": "SUHAIL-OUTCOME-VERIFIER"
+    }
+   ],
+   "final_state": "RESOLVED",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 4,
+   "key_evidence_cited": null,
+   "truth_recipe": "obsolete_address",
+   "truth_healthy": false,
+   "truth_cause": "ADDRESS_CONFLICT",
+   "acceptable_causes": [
+    "ADDRESS_CONFLICT"
+   ],
+   "expected_resolution": "AUTO"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-862d774e57fb36225c4ee158",
+   "shipment_id": "DEMO-SHP-000337",
+   "opened_at": "2026-09-08T11:00:12.000000000+00:00",
+   "symptoms": [
+    "MILESTONE_OVERDUE",
+    "SESSION_END_UNRECONCILED"
+   ],
+   "investigations": 1,
+   "tool_calls": 6,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "custody_chain",
+    "vehicle_and_manifest",
+    "device_status",
+    "scans"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "CUSTODY_GAP",
+   "confidence": "medium",
+   "hypotheses": [
+    [
+     "CUSTODY_GAP",
+     "supported"
+    ]
+   ],
+   "recommended_action": "INITIATE_CUSTODY_RECONCILIATION",
+   "review": "ACCEPT",
+   "review_rounds": 1,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "HUMAN_REVIEW",
+   "authority_reason": "Deterministic evidence rules flagged a conflict requiring human judgment.",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "HUMAN_REVIEW",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 4,
+   "key_evidence_cited": null,
+   "truth_recipe": "absent_transfer_receipt",
+   "truth_healthy": false,
+   "truth_cause": "CUSTODY_GAP",
+   "acceptable_causes": [
+    "CUSTODY_GAP",
+    "MISSED_MILESTONE"
+   ],
+   "expected_resolution": "AUTO"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-6099b57719b9041d5f236091",
+   "shipment_id": "DEMO-SHP-000067",
+   "opened_at": "2026-09-08T12:00:12.000000000+00:00",
+   "symptoms": [
+    "CUSTODY_TRANSFER_UNCONFIRMED",
+    "DELIVERY_PROOF_INCOMPLETE",
+    "MILESTONE_OVERDUE",
+    "RECIPIENT_REPORTED_NOT_RECEIVED",
+    "SESSION_END_UNRECONCILED"
+   ],
+   "investigations": 1,
+   "tool_calls": 5,
+   "tools": [
+    "shipment_overview",
+    "delivery_attempts",
+    "custody_chain",
+    "address_and_instructions",
+    "scans"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "PROOF_INSUFFICIENT",
+   "confidence": "medium",
+   "hypotheses": [
+    [
+     "PROOF_INSUFFICIENT",
+     "supported"
+    ]
+   ],
+   "recommended_action": "DELIVERY_DISPUTE_REVIEW",
+   "review": "REVISE",
+   "review_rounds": 2,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "HUMAN_REVIEW",
+   "authority_reason": "Reviewer rejected the proposal after the bounded revision rounds.",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "ESCALATED",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 3,
+   "key_evidence_cited": null,
+   "truth_recipe": "report_different_location",
+   "truth_healthy": false,
+   "truth_cause": "POSSIBLE_MISDELIVERY",
+   "acceptable_causes": [
+    "DELIVERY_DISPUTE",
+    "POSSIBLE_MISDELIVERY"
+   ],
+   "expected_resolution": "HUMAN"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-1143b3ba8c16e684aba11559",
+   "shipment_id": "DEMO-SHP-000387",
+   "opened_at": "2026-09-08T14:00:12.000000000+00:00",
+   "symptoms": [
+    "MILESTONE_LATE",
+    "MILESTONE_OVERDUE"
+   ],
+   "investigations": 1,
+   "tool_calls": 4,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "custody_chain",
+    "delivery_attempts"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "MISSED_MILESTONE",
+   "confidence": "high",
+   "hypotheses": [
+    [
+     "MISSED_MILESTONE",
+     "supported"
+    ]
+   ],
+   "recommended_action": "PRIORITIZE_NEXT_SESSION",
+   "review": "ACCEPT",
+   "review_rounds": 1,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "APPROVAL_REQUIRED",
+   "authority_reason": "Proposed action does not address a supported diagnosis.",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "AWAITING_APPROVAL",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 5,
+   "key_evidence_cited": null,
+   "truth_recipe": "traffic_safe_return",
+   "truth_healthy": false,
+   "truth_cause": "TRAFFIC_DELAY",
+   "acceptable_causes": [
+    "ROUTE_DELAY",
+    "TRAFFIC_DELAY"
+   ],
+   "expected_resolution": "AUTO"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-6f775c2405d3e4f09baafdf8",
+   "shipment_id": "DEMO-SHP-000466",
+   "opened_at": "2026-09-08T14:00:12.000000000+00:00",
+   "symptoms": [
+    "DELIVERY_ATTEMPT_FAILED",
+    "MILESTONE_OVERDUE"
+   ],
+   "investigations": 1,
+   "tool_calls": 4,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "delivery_attempts",
+    "address_and_instructions"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "ADDRESS_CONFLICT",
+   "confidence": "high",
+   "hypotheses": [
+    [
+     "ADDRESS_CONFLICT",
+     "supported"
+    ]
+   ],
+   "recommended_action": "REQUEST_ADDRESS_CONFIRMATION",
+   "review": "ACCEPT",
+   "review_rounds": 1,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "AUTO",
+   "authority_reason": "Low-risk, reversible, evidence-bound action within the synthetic automation allowlist.",
+   "executions": [
+    {
+     "action_type": "REQUEST_ADDRESS_CONFIRMATION",
+     "authority": "AUTO_POLICY",
+     "status": "ACKNOWLEDGED",
+     "adapter": "recipient confirmed the address"
+    }
+   ],
+   "outcomes": [
+    {
+     "type": "address_confirmed",
+     "success": true,
+     "verifier": "SUHAIL-OUTCOME-VERIFIER"
+    }
+   ],
+   "final_state": "RESOLVED",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 5,
+   "key_evidence_cited": null,
+   "truth_recipe": "obsolete_address",
+   "truth_healthy": false,
+   "truth_cause": "ADDRESS_CONFLICT",
+   "acceptable_causes": [
+    "ADDRESS_CONFLICT"
+   ],
+   "expected_resolution": "AUTO"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-c0e5e27f2ffcb99c849d3f5a",
+   "shipment_id": "DEMO-SHP-000017",
+   "opened_at": "2026-09-09T04:00:12.000000000+00:00",
+   "symptoms": [
+    "CUSTODY_TRANSFER_UNCONFIRMED",
+    "MILESTONE_OVERDUE"
+   ],
+   "investigations": 1,
+   "tool_calls": 6,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "custody_chain",
+    "scans",
+    "delivery_attempts",
+    "device_status"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "DELAYED_SYNC",
+   "confidence": "medium",
+   "hypotheses": [
+    [
+     "DELAYED_SYNC",
+     "supported"
+    ]
+   ],
+   "recommended_action": "REQUEST_DEVICE_SYNC",
+   "review": "ACCEPT",
+   "review_rounds": 1,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "AUTO",
+   "authority_reason": "Low-risk, reversible, evidence-bound action within the synthetic automation allowlist.",
+   "executions": [
+    {
+     "action_type": "REQUEST_DEVICE_SYNC",
+     "authority": "AUTO_POLICY",
+     "status": "ACKNOWLEDGED",
+     "adapter": "device uploaded 2 buffered messages"
+    }
+   ],
+   "outcomes": [
+    {
+     "type": "delayed_upload_received",
+     "success": true,
+     "verifier": "SUHAIL-OUTCOME-VERIFIER"
+    }
+   ],
+   "final_state": "RESOLVED",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 2,
+   "key_evidence_cited": false,
+   "truth_recipe": "next_day",
+   "truth_healthy": false,
+   "truth_cause": "DELAYED_SYNC",
+   "acceptable_causes": [
+    "DELAYED_SYNC"
+   ],
+   "expected_resolution": "AUTO"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-17390ea3640527245c64550b",
+   "shipment_id": "DEMO-SHP-000187",
+   "opened_at": "2026-09-09T06:00:12.000000000+00:00",
+   "symptoms": [
+    "DELIVERY_ATTEMPT_FAILED",
+    "MILESTONE_OVERDUE",
+    "SESSION_END_UNRECONCILED"
+   ],
+   "investigations": 1,
+   "tool_calls": 4,
+   "tools": [
+    "delivery_attempts",
+    "custody_chain",
+    "address_and_instructions",
+    "journey"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "RECIPIENT_UNAVAILABLE",
+   "confidence": "medium",
+   "hypotheses": [
+    [
+     "RECIPIENT_UNAVAILABLE",
+     "supported"
+    ]
+   ],
+   "recommended_action": "PRIORITIZE_NEXT_SESSION",
+   "review": "REVISE",
+   "review_rounds": 2,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "HUMAN_REVIEW",
+   "authority_reason": "Reviewer rejected the proposal after the bounded revision rounds.",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "ESCALATED",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 4,
+   "key_evidence_cited": true,
+   "truth_recipe": "contractor_unreturned",
+   "truth_healthy": false,
+   "truth_cause": "UNRECONCILED_CUSTODY",
+   "acceptable_causes": [
+    "UNRECONCILED_CUSTODY"
+   ],
+   "expected_resolution": "HUMAN"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-db5a9bc455d64f03dd49dfbb",
+   "shipment_id": "DEMO-SHP-000299",
+   "opened_at": "2026-09-09T08:00:12.000000000+00:00",
+   "symptoms": [
+    "WEIGHT_READ_DIFFERS"
+   ],
+   "investigations": 1,
+   "tool_calls": 7,
+   "tools": [
+    "shipment_overview",
+    "scans",
+    "scans",
+    "scans",
+    "custody_chain",
+    "journey",
+    "policy"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "WEIGHT_MISMATCH",
+   "confidence": "high",
+   "hypotheses": [
+    [
+     "WEIGHT_MISMATCH",
+     "supported"
+    ]
+   ],
+   "recommended_action": "REQUEST_REWEIGH",
+   "review": "ACCEPT",
+   "review_rounds": 2,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "HUMAN_REVIEW",
+   "authority_reason": "Deterministic evidence rules flagged a conflict requiring human judgment.",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "HUMAN_REVIEW",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 3,
+   "key_evidence_cited": null,
+   "truth_recipe": "different_weight",
+   "truth_healthy": false,
+   "truth_cause": "WEIGHT_MISMATCH",
+   "acceptable_causes": [
+    "WEIGHT_MISMATCH"
+   ],
+   "expected_resolution": "AUTO"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-ca6c6b44c831434180a380e8",
+   "shipment_id": "DEMO-SHP-000239",
+   "opened_at": "2026-09-10T06:00:12.000000000+00:00",
+   "symptoms": [
+    "DELIVERY_ATTEMPT_FAILED",
+    "MILESTONE_OVERDUE",
+    "SESSION_END_UNRECONCILED"
+   ],
+   "investigations": 1,
+   "tool_calls": 6,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "journey",
+    "delivery_attempts",
+    "address_and_instructions",
+    "custody_chain"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "RECIPIENT_UNAVAILABLE",
+   "confidence": "medium",
+   "hypotheses": [
+    [
+     "RECIPIENT_UNAVAILABLE",
+     "supported"
+    ]
+   ],
+   "recommended_action": "PRIORITIZE_NEXT_SESSION",
+   "review": "ACCEPT",
+   "review_rounds": 1,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "HUMAN_REVIEW",
+   "authority_reason": "The parcel's last corroborated holder is a contractor or independent driver; physical reconciliation needs a person.",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "HUMAN_REVIEW",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 8,
+   "key_evidence_cited": true,
+   "truth_recipe": "contractor_unreturned",
+   "truth_healthy": false,
+   "truth_cause": "UNRECONCILED_CUSTODY",
+   "acceptable_causes": [
+    "UNRECONCILED_CUSTODY"
+   ],
+   "expected_resolution": "HUMAN"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-e6c12823e16d2e8c08e7d3ed",
+   "shipment_id": "DEMO-SHP-000530",
+   "opened_at": "2026-09-10T08:00:12.000000000+00:00",
+   "symptoms": [
+    "WEIGHT_READ_DIFFERS"
+   ],
+   "investigations": 1,
+   "tool_calls": 6,
+   "tools": [
+    "shipment_overview",
+    "scans",
+    "scans",
+    "custody_chain",
+    "policy",
+    "scans"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "WEIGHT_MISMATCH",
+   "confidence": "high",
+   "hypotheses": [
+    [
+     "WEIGHT_MISMATCH",
+     "supported"
+    ]
+   ],
+   "recommended_action": "REQUEST_REWEIGH",
+   "review": "REVISE",
+   "review_rounds": 2,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "HUMAN_REVIEW",
+   "authority_reason": "Reviewer rejected the proposal after the bounded revision rounds.",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "ESCALATED",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 3,
+   "key_evidence_cited": null,
+   "truth_recipe": "declared_weight_wrong",
+   "truth_healthy": false,
+   "truth_cause": "WEIGHT_MISMATCH",
+   "acceptable_causes": [
+    "WEIGHT_MISMATCH"
+   ],
+   "expected_resolution": "HUMAN"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-2dde921b484071c6b1470fc1",
+   "shipment_id": "DEMO-SHP-000100",
+   "opened_at": "2026-09-10T08:00:12.000000000+00:00",
+   "symptoms": [
+    "BARCODE_READ_DIFFERS"
+   ],
+   "investigations": 1,
+   "tool_calls": 4,
+   "tools": [
+    "shipment_overview",
+    "scans",
+    "custody_chain",
+    "journey"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "BARCODE_MISMATCH",
+   "confidence": "high",
+   "hypotheses": [
+    [
+     "BARCODE_MISMATCH",
+     "supported"
+    ]
+   ],
+   "recommended_action": "REQUEST_RESCAN",
+   "review": "ACCEPT",
+   "review_rounds": 2,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "AUTO",
+   "authority_reason": "Low-risk, reversible, evidence-bound action within the synthetic automation allowlist.",
+   "executions": [
+    {
+     "action_type": "REQUEST_RESCAN",
+     "authority": "AUTO_POLICY",
+     "status": "ACKNOWLEDGED",
+     "adapter": "rescan reads the label"
+    }
+   ],
+   "outcomes": [
+    {
+     "type": "barcode_corrected",
+     "success": true,
+     "verifier": "SUHAIL-OUTCOME-VERIFIER"
+    }
+   ],
+   "final_state": "RESOLVED",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 3,
+   "key_evidence_cited": null,
+   "truth_recipe": "different_barcode",
+   "truth_healthy": false,
+   "truth_cause": "BARCODE_MISMATCH",
+   "acceptable_causes": [
+    "BARCODE_MISMATCH"
+   ],
+   "expected_resolution": "AUTO"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-8221f978d95ae46ed8fc720d",
+   "shipment_id": "DEMO-SHP-000120",
+   "opened_at": "2026-09-10T15:00:12.000000000+00:00",
+   "symptoms": [
+    "CUSTODY_TRANSFER_UNCONFIRMED",
+    "MILESTONE_OVERDUE"
+   ],
+   "investigations": 1,
+   "tool_calls": 10,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "journey",
+    "journey",
+    "journey",
+    "custody_chain",
+    "device_status",
+    "scans",
+    "custody_chain",
+    "scans"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "CUSTODY_GAP",
+   "confidence": "medium",
+   "hypotheses": [
+    [
+     "CUSTODY_GAP",
+     "supported"
+    ]
+   ],
+   "recommended_action": "INITIATE_CUSTODY_RECONCILIATION",
+   "review": "ACCEPT",
+   "review_rounds": 2,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "HUMAN_REVIEW",
+   "authority_reason": "Deterministic evidence rules flagged a conflict requiring human judgment.",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "HUMAN_REVIEW",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 10,
+   "key_evidence_cited": false,
+   "truth_recipe": "offline_device_sync",
+   "truth_healthy": false,
+   "truth_cause": "DELAYED_SYNC",
+   "acceptable_causes": [
+    "DELAYED_SYNC"
+   ],
+   "expected_resolution": "AUTO"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-c237bcc3c48609f5f3083418",
+   "shipment_id": "DEMO-SHP-000400",
+   "opened_at": "2026-09-10T15:00:12.000000000+00:00",
+   "symptoms": [
+    "MILESTONE_LATE",
+    "MILESTONE_OVERDUE"
+   ],
+   "investigations": 1,
+   "tool_calls": 7,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "journey",
+    "custody_chain",
+    "custody_chain",
+    "scans",
+    "device_status"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "CUSTODY_GAP",
+   "confidence": "high",
+   "hypotheses": [
+    [
+     "CUSTODY_GAP",
+     "supported"
+    ]
+   ],
+   "recommended_action": "INITIATE_CUSTODY_RECONCILIATION",
+   "review": "ACCEPT",
+   "review_rounds": 1,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "HUMAN_REVIEW",
+   "authority_reason": "Deterministic evidence rules flagged a conflict requiring human judgment.",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "HUMAN_REVIEW",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 7,
+   "key_evidence_cited": null,
+   "truth_recipe": "later_hub_departure",
+   "truth_healthy": false,
+   "truth_cause": "HUB_DELAY",
+   "acceptable_causes": [
+    "HUB_DELAY",
+    "JOURNEY_DELAY",
+    "MISSED_MILESTONE"
+   ],
+   "expected_resolution": "AUTO"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-51a935c40b45501a4944725e",
+   "shipment_id": "DEMO-SHP-000459",
+   "opened_at": "2026-09-10T17:00:12.000000000+00:00",
+   "symptoms": [
+    "CUSTODY_TRANSFER_UNCONFIRMED",
+    "MILESTONE_OVERDUE",
+    "SESSION_END_UNRECONCILED"
+   ],
+   "investigations": 1,
+   "tool_calls": 5,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "journey",
+    "custody_chain",
+    "scans"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "CUSTODY_GAP",
+   "confidence": "high",
+   "hypotheses": [
+    [
+     "CUSTODY_GAP",
+     "supported"
+    ]
+   ],
+   "recommended_action": "INITIATE_CUSTODY_RECONCILIATION",
+   "review": "ACCEPT",
+   "review_rounds": 1,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "HUMAN_REVIEW",
+   "authority_reason": "Deterministic evidence rules flagged a conflict requiring human judgment.",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "HUMAN_REVIEW",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 2,
+   "key_evidence_cited": false,
+   "truth_recipe": "contractor_unconfirmed_pickup",
+   "truth_healthy": false,
+   "truth_cause": "CUSTODY_GAP",
+   "acceptable_causes": [
+    "CUSTODY_GAP",
+    "DELAYED_SYNC",
+    "UNRECONCILED_CUSTODY"
+   ],
+   "expected_resolution": "AUTO"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-dd9ad9af15177fa59d44f8c9",
+   "shipment_id": "DEMO-SHP-000060",
+   "opened_at": "2026-09-11T04:00:12.000000000+00:00",
+   "symptoms": [
+    "CUSTODY_REPORTS_CONFLICT",
+    "MILESTONE_OVERDUE",
+    "SESSION_END_UNRECONCILED"
+   ],
+   "investigations": 1,
+   "tool_calls": 5,
+   "tools": [
+    "shipment_overview",
+    "custody_chain",
+    "scans",
+    "delivery_attempts",
+    "vehicle_and_manifest"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "CONFLICTING_CUSTODY",
+   "confidence": "high",
+   "hypotheses": [
+    [
+     "CONFLICTING_CUSTODY",
+     "supported"
+    ]
+   ],
+   "recommended_action": "CONFLICTING_CUSTODY_REVIEW",
+   "review": "ACCEPT",
+   "review_rounds": 1,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "HUMAN_REVIEW",
+   "authority_reason": "Sensitive or rights-impacting evidence (dispute, misdelivery or conflicting custody).",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "HUMAN_REVIEW",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 2,
+   "key_evidence_cited": null,
+   "truth_recipe": "conflicting_custody_sources",
+   "truth_healthy": false,
+   "truth_cause": "CONFLICTING_CUSTODY",
+   "acceptable_causes": [
+    "CONFLICTING_CUSTODY"
+   ],
+   "expected_resolution": "HUMAN"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-5cb1ba90f4cd67ed48c272bb",
+   "shipment_id": "DEMO-SHP-000389",
+   "opened_at": "2026-09-11T06:00:12.000000000+00:00",
+   "symptoms": [
+    "RECIPIENT_REPORTED_NOT_RECEIVED"
+   ],
+   "investigations": 1,
+   "tool_calls": 7,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "journey",
+    "custody_chain",
+    "delivery_attempts",
+    "address_and_instructions",
+    "scans"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "DELIVERY_DISPUTE",
+   "confidence": "medium",
+   "hypotheses": [
+    [
+     "DELIVERY_DISPUTE",
+     "supported"
+    ]
+   ],
+   "recommended_action": "DELIVERY_DISPUTE_REVIEW",
+   "review": "ACCEPT",
+   "review_rounds": 1,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "HUMAN_REVIEW",
+   "authority_reason": "Sensitive or rights-impacting evidence (dispute, misdelivery or conflicting custody).",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "HUMAN_REVIEW",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 4,
+   "key_evidence_cited": null,
+   "truth_recipe": "report_after_prior_outcome",
+   "truth_healthy": false,
+   "truth_cause": "DELIVERY_DISPUTE",
+   "acceptable_causes": [
+    "DELIVERY_DISPUTE"
+   ],
+   "expected_resolution": "HUMAN"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-40bc0246d52ef1a52b1af19d",
+   "shipment_id": "DEMO-SHP-000249",
+   "opened_at": "2026-09-11T06:00:12.000000000+00:00",
+   "symptoms": [
+    "CUSTODY_TRANSFER_UNCONFIRMED",
+    "DELIVERY_PROOF_INCOMPLETE",
+    "MILESTONE_OVERDUE",
+    "RECIPIENT_REPORTED_NOT_RECEIVED",
+    "SESSION_END_UNRECONCILED"
+   ],
+   "investigations": 1,
+   "tool_calls": 5,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "delivery_attempts",
+    "address_and_instructions",
+    "custody_chain"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "PROOF_INSUFFICIENT",
+   "confidence": "medium",
+   "hypotheses": [
+    [
+     "PROOF_INSUFFICIENT",
+     "supported"
+    ],
+    [
+     "CUSTODY_GAP",
+     "uncertain"
+    ]
+   ],
+   "recommended_action": "REQUEST_ADDITIONAL_EVIDENCE",
+   "review": "REVISE",
+   "review_rounds": 2,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "HUMAN_REVIEW",
+   "authority_reason": "Reviewer rejected the proposal after the bounded revision rounds.",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "ESCALATED",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 5,
+   "key_evidence_cited": null,
+   "truth_recipe": "report_photo_only",
+   "truth_healthy": false,
+   "truth_cause": "PROOF_INSUFFICIENT",
+   "acceptable_causes": [
+    "DELIVERY_DISPUTE",
+    "PROOF_INSUFFICIENT"
+   ],
+   "expected_resolution": "HUMAN"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-b44b5fbbbdf2e57e400a7d4c",
+   "shipment_id": "DEMO-SHP-000030",
+   "opened_at": "2026-09-11T13:00:12.000000000+00:00",
+   "symptoms": [
+    "MILESTONE_OVERDUE"
+   ],
+   "investigations": 1,
+   "tool_calls": 7,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "journey",
+    "custody_chain",
+    "scans",
+    "device_status",
+    "vehicle_and_manifest"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "DELAYED_SYNC",
+   "confidence": "medium",
+   "hypotheses": [
+    [
+     "DELAYED_SYNC",
+     "supported"
+    ]
+   ],
+   "recommended_action": "REQUEST_DEVICE_SYNC",
+   "review": "ACCEPT",
+   "review_rounds": 1,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "AUTO",
+   "authority_reason": "Low-risk, reversible, evidence-bound action within the synthetic automation allowlist.",
+   "executions": [
+    {
+     "action_type": "REQUEST_DEVICE_SYNC",
+     "authority": "AUTO_POLICY",
+     "status": "ACKNOWLEDGED",
+     "adapter": "device had nothing buffered"
+    }
+   ],
+   "outcomes": [
+    {
+     "type": "delayed_upload_received",
+     "success": true,
+     "verifier": "SUHAIL-OUTCOME-VERIFIER"
+    }
+   ],
+   "final_state": "RESOLVED",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 3,
+   "key_evidence_cited": null,
+   "truth_recipe": "report_failed_authentication",
+   "truth_healthy": false,
+   "truth_cause": "PROOF_INSUFFICIENT",
+   "acceptable_causes": [
+    "DELAYED_SYNC",
+    "DELIVERY_DISPUTE",
+    "PROOF_INSUFFICIENT"
+   ],
+   "expected_resolution": "HUMAN"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-922feb9a63c82629361eec04",
+   "shipment_id": "DEMO-SHP-000029",
+   "opened_at": "2026-09-11T14:00:12.000000000+00:00",
+   "symptoms": [
+    "MILESTONE_OVERDUE",
+    "SESSION_END_UNRECONCILED"
+   ],
+   "investigations": 1,
+   "tool_calls": 9,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "journey",
+    "custody_chain",
+    "journey",
+    "delivery_attempts",
+    "device_status",
+    "vehicle_and_manifest",
+    "scans"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "DELAYED_SYNC",
+   "confidence": "medium",
+   "hypotheses": [
+    [
+     "DELAYED_SYNC",
+     "supported"
+    ]
+   ],
+   "recommended_action": "REQUEST_DEVICE_SYNC",
+   "review": "ACCEPT",
+   "review_rounds": 1,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "AUTO",
+   "authority_reason": "Low-risk, reversible, evidence-bound action within the synthetic automation allowlist.",
+   "executions": [
+    {
+     "action_type": "REQUEST_DEVICE_SYNC",
+     "authority": "AUTO_POLICY",
+     "status": "ACKNOWLEDGED",
+     "adapter": "device had nothing buffered"
+    }
+   ],
+   "outcomes": [
+    {
+     "type": "no_confirming_evidence",
+     "success": false,
+     "verifier": "SUHAIL-OUTCOME-VERIFIER"
+    }
+   ],
+   "final_state": "HUMAN_REVIEW",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 4,
+   "key_evidence_cited": null,
+   "truth_recipe": "partial_packages",
+   "truth_healthy": false,
+   "truth_cause": "UNRECONCILED_CUSTODY",
+   "acceptable_causes": [
+    "CUSTODY_GAP",
+    "UNRECONCILED_CUSTODY"
+   ],
+   "expected_resolution": "AUTO"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-b9463130171a11bc4f2de103",
+   "shipment_id": "DEMO-SHP-000030",
+   "opened_at": "2026-09-12T06:00:12.000000000+00:00",
+   "symptoms": [
+    "CUSTODY_TRANSFER_UNCONFIRMED",
+    "DELIVERY_PROOF_INCOMPLETE",
+    "MILESTONE_OVERDUE",
+    "RECIPIENT_REPORTED_NOT_RECEIVED",
+    "SESSION_END_UNRECONCILED"
+   ],
+   "investigations": 1,
+   "tool_calls": 4,
+   "tools": [
+    "shipment_overview",
+    "journey",
+    "custody_chain",
+    "delivery_attempts"
+   ],
+   "mode": "gpt-oss",
+   "primary_cause": "CUSTODY_GAP",
+   "confidence": "high",
+   "hypotheses": [
+    [
+     "CUSTODY_GAP",
+     "supported"
+    ],
+    [
+     "PROOF_INSUFFICIENT",
+     "uncertain"
+    ]
+   ],
+   "recommended_action": "INITIATE_CUSTODY_RECONCILIATION",
+   "review": "ACCEPT",
+   "review_rounds": 2,
+   "degraded": [],
+   "fact_check_unsupported": false,
+   "authority": "HUMAN_REVIEW",
+   "authority_reason": "Deterministic evidence rules flagged a conflict requiring human judgment.",
+   "executions": [],
+   "outcomes": [],
+   "final_state": "HUMAN_REVIEW",
+   "human_decision": false,
+   "citations_within_retrieved": true,
+   "cited": 4,
+   "key_evidence_cited": null,
+   "truth_recipe": "report_failed_authentication",
+   "truth_healthy": false,
+   "truth_cause": "PROOF_INSUFFICIENT",
+   "acceptable_causes": [
+    "DELAYED_SYNC",
+    "DELIVERY_DISPUTE",
+    "PROOF_INSUFFICIENT"
+   ],
+   "expected_resolution": "HUMAN"
+  }
+ ]
+}

@@ -1,0 +1,26 @@
+{
+ "phase": "checks",
+ "public_id_resolution": {
+  "cited": 148,
+  "resolve_to_case_evidence": 145,
+  "device_telemetry_citations": 3,
+  "unresolved": 0,
+  "unresolved_ids": []
+ },
+ "authority_bypass_executions": [],
+ "executions": 13,
+ "authority_decisions_recorded": 42,
+ "trigger_symptoms": {
+  "BARCODE_READ_DIFFERS": 4,
+  "MILESTONE_OVERDUE": 28,
+  "SESSION_END_UNRECONCILED": 14,
+  "MANIFEST_CUSTODY_CONFLICT": 3,
+  "CUSTODY_TRANSFER_UNCONFIRMED": 8,
+  "RECIPIENT_REPORTED_NOT_RECEIVED": 6,
+  "CUSTODY_REPORTS_CONFLICT": 2,
+  "DELIVERY_ATTEMPT_FAILED": 8,
+  "WEIGHT_READ_DIFFERS": 5,
+  "DELIVERY_PROOF_INCOMPLETE": 3,
+  "MILESTONE_LATE": 2
+ }
+}

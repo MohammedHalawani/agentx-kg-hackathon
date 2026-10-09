@@ -1,0 +1,97 @@
+{
+ "phase": "concurrency",
+ "model": "openai/gpt-oss:120b",
+ "run_seconds": 420,
+ "samples": 138,
+ "investigation_paused_check": {
+  "events_ingested": 208,
+  "monitor_checks": 17,
+  "cases_opened": 0,
+  "investigations_run": 0
+ },
+ "investigation_windows": [
+  {
+   "case_id": "DEMO-OPS-CASE-cd87e58dc65660bd23ce51e5",
+   "wall_seconds": 82,
+   "events_ingested_meanwhile": 321,
+   "monitor_checks_meanwhile": 42,
+   "simulated_clock": [
+    "2026-09-02T07:56:36.600000+00:00",
+    "2026-09-02T21:48:28.800000+00:00"
+   ]
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-d7ad62b8d0444df33d309054",
+   "wall_seconds": 30,
+   "events_ingested_meanwhile": 119,
+   "monitor_checks_meanwhile": 14,
+   "simulated_clock": [
+    "2026-09-02T22:40:58.800000+00:00",
+    "2026-09-03T03:45:49.800000+00:00"
+   ]
+  }
+ ],
+ "worker_heartbeats": {
+  "ingestion": {
+   "state": "stopped",
+   "iterations": 390,
+   "last_started_at": "2026-10-09T18:17:29.515054+00:00",
+   "last_finished_at": "2026-10-09T18:17:29.625741+00:00",
+   "last_result": {
+    "advanced": true,
+    "events": 1,
+    "as_of": "2026-09-04T07:50:49.800000+00:00"
+   },
+   "last_error": null,
+   "busy": false
+  },
+  "monitor": {
+   "state": "running",
+   "iterations": 423,
+   "last_started_at": "2026-10-09T18:17:30.253802+00:00",
+   "last_finished_at": "2026-10-09T18:17:29.245134+00:00",
+   "last_result": {
+    "checked": 0,
+    "opened": 0
+   },
+   "last_error": null,
+   "busy": true
+  },
+  "investigation": {
+   "state": "stopped",
+   "iterations": 343,
+   "last_started_at": "2026-10-09T18:17:29.736906+00:00",
+   "last_finished_at": "2026-10-09T18:17:29.767834+00:00",
+   "last_result": {
+    "processed": false,
+    "case_id": null,
+    "workflow_state": null
+   },
+   "last_error": null,
+   "busy": false
+  },
+  "execution": {
+   "state": "stopped",
+   "iterations": 235,
+   "last_started_at": "2026-10-09T18:17:29.940692+00:00",
+   "last_finished_at": "2026-10-09T18:17:29.964894+00:00",
+   "last_result": {
+    "executed": 0
+   },
+   "last_error": null,
+   "busy": false
+  },
+  "verification": {
+   "state": "stopped",
+   "iterations": 236,
+   "last_started_at": "2026-10-09T18:17:30.395127+00:00",
+   "last_finished_at": "2026-10-09T18:17:30.421017+00:00",
+   "last_result": {
+    "verified": 0
+   },
+   "last_error": null,
+   "busy": false
+  }
+ },
+ "total_events": 1917
+}
