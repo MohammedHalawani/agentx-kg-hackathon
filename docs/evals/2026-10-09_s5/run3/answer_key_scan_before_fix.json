@@ -1,0 +1,158 @@
+{
+ "note": "Answer-key scan of the run 3 database (code before fix 2), run with the fix-2 checker. Receipts carried answer-key wording; nothing else did.",
+ "database": "shipments-v2-demo-test2",
+ "answer_key_scan": {
+  "terms": 109,
+  "records_scanned": {
+   "execution_receipts": 16,
+   "outcomes": 16,
+   "audit": 1516,
+   "reviews": 60,
+   "recommendations": 41,
+   "case_api_responses": 43
+  },
+  "leaks": [
+   {
+    "source": "execution_receipts",
+    "term": "label wrongly applied",
+    "excerpt": "{\"behaviour\":\"label wrongly applied: rescan reads the same wrong barcode\",\"scheduled\":2}"
+   },
+   {
+    "source": "execution_receipts",
+    "term": "same wrong barcode",
+    "excerpt": "{\"behaviour\":\"label wrongly applied: rescan reads the same wrong barcode\",\"scheduled\":2}"
+   },
+   {
+    "source": "execution_receipts",
+    "term": "nothing buffered",
+    "excerpt": "{\"behaviour\":\"device had nothing buffered\",\"scheduled\":1}"
+   },
+   {
+    "source": "execution_receipts",
+    "term": "nothing buffered",
+    "excerpt": "{\"behaviour\":\"device had nothing buffered\",\"scheduled\":1}"
+   },
+   {
+    "source": "execution_receipts",
+    "term": "nothing buffered",
+    "excerpt": "{\"behaviour\":\"device had nothing buffered\",\"scheduled\":0}"
+   },
+   {
+    "source": "execution_receipts",
+    "term": "left at depot",
+    "excerpt": "{\"behaviour\":\"parcel located at left at depot\",\"scheduled\":2}"
+   },
+   {
+    "source": "execution_receipts",
+    "term": "parcel located at",
+    "excerpt": "{\"behaviour\":\"parcel located at left at depot\",\"scheduled\":2}"
+   },
+   {
+    "source": "execution_receipts",
+    "term": "next-session delivery failed",
+    "excerpt": "{\"behaviour\":\"next-session delivery failed: recipient unreachable\",\"scheduled\":4}"
+   },
+   {
+    "source": "execution_receipts",
+    "term": "recipient unreachable",
+    "excerpt": "{\"behaviour\":\"next-session delivery failed: recipient unreachable\",\"scheduled\":4}"
+   },
+   {
+    "source": "execution_receipts",
+    "term": "label wrongly applied",
+    "excerpt": "{\"behaviour\":\"label wrongly applied: rescan reads the same wrong barcode\",\"scheduled\":2}"
+   },
+   {
+    "source": "execution_receipts",
+    "term": "same wrong barcode",
+    "excerpt": "{\"behaviour\":\"label wrongly applied: rescan reads the same wrong barcode\",\"scheduled\":2}"
+   },
+   {
+    "source": "execution_receipts",
+    "term": "left at depot",
+    "excerpt": "{\"behaviour\":\"parcel located at left at depot\",\"scheduled\":4}"
+   },
+   {
+    "source": "execution_receipts",
+    "term": "parcel located at",
+    "excerpt": "{\"behaviour\":\"parcel located at left at depot\",\"scheduled\":4}"
+   },
+   {
+    "source": "execution_receipts",
+    "term": "nothing buffered",
+    "excerpt": "{\"behaviour\":\"device had nothing buffered\",\"scheduled\":1}"
+   },
+   {
+    "source": "case_api_responses",
+    "term": "label wrongly applied",
+    "excerpt": "dence_json\": \"[]\", \"adapter_result_json\": \"{\\\"behaviour\\\":\\\"label wrongly applied: rescan reads the same wrong barcode\\\",\\\"scheduled\\\":2}\", \""
+   },
+   {
+    "source": "case_api_responses",
+    "term": "same wrong barcode",
+    "excerpt": ": \"{\\\"behaviour\\\":\\\"label wrongly applied: rescan reads the same wrong barcode\\\",\\\"scheduled\\\":2}\", \"holdout_group\": \"SYN-SHP-000441\", \"cl"
+   },
+   {
+    "source": "case_api_responses",
+    "term": "nothing buffered",
+    "excerpt": "OLICY\", \"adapter_result_json\": \"{\\\"behaviour\\\":\\\"device had nothing buffered\\\",\\\"scheduled\\\":1}\", \"holdout_group\": \"SYN-SHP-000032\", \"st"
+   },
+   {
+    "source": "case_api_responses",
+    "term": "nothing buffered",
+    "excerpt": "OLICY\", \"adapter_result_json\": \"{\\\"behaviour\\\":\\\"device had nothing buffered\\\",\\\"scheduled\\\":1}\", \"holdout_group\": \"SYN-SHP-000392\", \"st"
+   },
+   {
+    "source": "case_api_responses",
+    "term": "nothing buffered",
+    "excerpt": "D\\\"}]\", \"adapter_result_json\": \"{\\\"behaviour\\\":\\\"device had nothing buffered\\\",\\\"scheduled\\\":0}\", \"holdout_group\": \"SYN-SHP-000482\", \"cl"
+   },
+   {
+    "source": "case_api_responses",
+    "term": "left at depot",
+    "excerpt": " \"adapter_result_json\": \"{\\\"behaviour\\\":\\\"parcel located at left at depot\\\",\\\"scheduled\\\":2}\", \"holdout_group\": \"SYN-SHP-000404\", \"st"
+   },
+   {
+    "source": "case_api_responses",
+    "term": "parcel located at",
+    "excerpt": "y\": \"AUTO_POLICY\", \"adapter_result_json\": \"{\\\"behaviour\\\":\\\"parcel located at left at depot\\\",\\\"scheduled\\\":2}\", \"holdout_group\": \"SYN-SH"
+   },
+   {
+    "source": "case_api_responses",
+    "term": "next-session delivery failed",
+    "excerpt": "dence_json\": \"[]\", \"adapter_result_json\": \"{\\\"behaviour\\\":\\\"next-session delivery failed: recipient unreachable\\\",\\\"scheduled\\\":4}\", \"holdout_group\""
+   },
+   {
+    "source": "case_api_responses",
+    "term": "recipient unreachable",
+    "excerpt": "sult_json\": \"{\\\"behaviour\\\":\\\"next-session delivery failed: recipient unreachable\\\",\\\"scheduled\\\":4}\", \"holdout_group\": \"SYN-SHP-000553\", \"cl"
+   },
+   {
+    "source": "case_api_responses",
+    "term": "label wrongly applied",
+    "excerpt": "dence_json\": \"[]\", \"adapter_result_json\": \"{\\\"behaviour\\\":\\\"label wrongly applied: rescan reads the same wrong barcode\\\",\\\"scheduled\\\":2}\", \""
+   },
+   {
+    "source": "case_api_responses",
+    "term": "same wrong barcode",
+    "excerpt": ": \"{\\\"behaviour\\\":\\\"label wrongly applied: rescan reads the same wrong barcode\\\",\\\"scheduled\\\":2}\", \"holdout_group\": \"SYN-SHP-000567\", \"cl"
+   },
+   {
+    "source": "case_api_responses",
+    "term": "left at depot",
+    "excerpt": " \"adapter_result_json\": \"{\\\"behaviour\\\":\\\"parcel located at left at depot\\\",\\\"scheduled\\\":4}\", \"holdout_group\": \"SYN-SHP-000459\", \"st"
+   },
+   {
+    "source": "case_api_responses",
+    "term": "parcel located at",
+    "excerpt": "y\": \"AUTO_POLICY\", \"adapter_result_json\": \"{\\\"behaviour\\\":\\\"parcel located at left at depot\\\",\\\"scheduled\\\":4}\", \"holdout_group\": \"SYN-SH"
+   },
+   {
+    "source": "case_api_responses",
+    "term": "nothing buffered",
+    "excerpt": "OLICY\", \"adapter_result_json\": \"{\\\"behaviour\\\":\\\"device had nothing buffered\\\",\\\"scheduled\\\":1}\", \"holdout_group\": \"SYN-SHP-000030\", \"st"
+   }
+  ],
+  "leak_count": 28
+ }
+}

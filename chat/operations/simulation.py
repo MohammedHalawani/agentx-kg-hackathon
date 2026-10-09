@@ -13,6 +13,18 @@ from dataset_v2.contracts import Node, canonical, digest, instant, iso
 from dataset_v2.feed import CHANNEL_PROVIDER, FEED_VERSION, encode
 from operations.reasoning import evidence_world
 
+# The receipt is what a field system acknowledges when it accepts a request: which request reached whom.
+# It never describes the outcome or the field state (which only the simulator knows); the outcome
+# reaches Suhail solely as ordinary provider messages through ingestion, judged by the verifier.
+RECEIPTS = {
+    "REQUEST_DEVICE_SYNC": "Sync request delivered to the device.",
+    "REQUEST_RESCAN": "Rescan request sent to the facility holding the parcel.",
+    "REQUEST_REWEIGH": "Reweigh request sent to the facility holding the parcel.",
+    "REQUEST_HUB_CHECK": "Check request sent to the expected facility.",
+    "INITIATE_CUSTODY_RECONCILIATION": "Custody reconciliation request sent to the facility.",
+    "REQUEST_ADDRESS_CONFIRMATION": "Address confirmation request sent to the recipient.",
+    "PRIORITIZE_NEXT_SESSION": "Shipment prioritized for the next delivery session.",
+}
 RESPONSE_DELAY = {"REQUEST_DEVICE_SYNC": 10, "REQUEST_RESCAN": 45, "REQUEST_REWEIGH": 60, "REQUEST_HUB_CHECK": 60,
                   "INITIATE_CUSTODY_RECONCILIATION": 90, "REQUEST_ADDRESS_CONFIRMATION": 120, "PRIORITIZE_NEXT_SESSION": None}
 FACILITIES = ("Branch", "Hub", "SortingCenter", "DeliveryDepot", "FulfillmentWarehouse", "OrganizationWarehouse")
@@ -37,13 +49,14 @@ class OperationalSimulator:
         world = evidence_world(context, self.config)
         handler = getattr(self, "_" + action.lower(), None)
         if handler is None:
-            return {"scheduled": 0, "behaviour": "no_field_response"}
+            return {"acknowledged": False, "behaviour": "No field system accepts this request type."}
         at = instant(now)
         delay = RESPONSE_DELAY.get(action)
-        items, behaviour = handler(world, sid, physical, at, at + timedelta(minutes=delay or 0), execution)
+        items = handler(world, sid, physical, at, at + timedelta(minutes=delay or 0), execution)
         if items:
             self.gateway.enqueue(items)
-        return {"scheduled": len(items), "behaviour": behaviour}
+        # The receipt depends on the action alone: nothing about what the field will report.
+        return {"acknowledged": True, "behaviour": RECEIPTS[action]}
 
     # -- helpers ---------------------------------------------------------------------------
     def _node(self, kind, sid, key, when, **props):
@@ -81,16 +94,14 @@ class OperationalSimulator:
         items = []
         if physical.get("device") == "buffered_upload":
             feed_ids = self.gateway.pending_feed_ids(physical.get("buffered_event_ids", []))
-            moved = self.gateway.reschedule(feed_ids, iso(at)) if feed_ids else 0
-            behaviour = f"device uploaded {moved} buffered messages"
-        else:
-            behaviour = "device had nothing buffered"
+            if feed_ids:
+                self.gateway.reschedule(feed_ids, iso(at))
         if device or execution.get("target_device"):
             beat = Node(f"{device or execution['target_device']}-HB-SIM-{at.strftime('%Y%m%dT%H%M')}", "DeviceHeartbeat",
                         {"occurred_at": iso(at), "recorded_at": iso(at), "device_id": device or execution["target_device"], "connectivity": "ONLINE",
                          "pending_uploads": 0, "last_upload_at": iso(at), "source_ref": "synthetic:simulator-response"})
             items.append(message(beat, "MDM", iso(at)))
-        return items, behaviour
+        return items
 
     def _request_rescan(self, world, sid, physical, now, at, execution):
         items = []
@@ -104,7 +115,7 @@ class OperationalSimulator:
                              and n.properties.get("observed_barcode") not in (None, package.properties.get("manifest_barcode"))), None)
             barcode = observed if wrong and observed else None
             items.append(message(self._scan(sid, package, facility, at, barcode=barcode), "SPL_CORE", iso(at + timedelta(seconds=40))))
-        return items, "label wrongly applied: rescan reads the same wrong barcode" if physical.get("label") == "wrong_label" else "rescan reads the label"
+        return items
 
     def _request_reweigh(self, world, sid, physical, now, at, execution):
         items = []
@@ -118,11 +129,11 @@ class OperationalSimulator:
                             and n.properties.get("package_id") == package.id and n.properties.get("calibrated") is True]
                 weight = previous[-1] if previous else weight
             items.append(message(self._scan(sid, package, facility, at, weight=weight, kind="REWEIGH"), "SPL_CORE", iso(at + timedelta(seconds=40))))
-        return items, "declared weight was wrong: reweigh confirms the difference" if physical.get("scale") == "declared_weight_wrong" else "calibrated reweigh"
+        return items
 
     def _located(self, world, sid, physical, at, custody):
         if physical.get("parcel") == "retained_by_contractor" or physical.get("contractor") == "unresponsive":
-            return [], "no response: the parcel is with an unresponsive contractor"
+            return []  # Nobody answers: no messages follow.
         items = []
         for package in self._packages(world):
             # Where the parcel physically is: at the depot when it was left there, returned unscanned, or received
@@ -141,7 +152,7 @@ class OperationalSimulator:
                                    event_type="RECEIVED", source_event_id=scan.id, required_acknowledgments=2, received_acknowledgments=2,
                                    source_quality="CORROBORATED", facility_id=facility)
                 items.append(message(event, "SPL_CORE", iso(at + timedelta(seconds=30))))
-        return items, "parcel located at " + ", ".join(sorted({json_safe(i) for i in [physical.get("parcel") or "last known facility"]}))
+        return items
 
     def _request_hub_check(self, world, sid, physical, now, at, execution):
         return self._located(world, sid, physical, at, custody=False)
@@ -151,23 +162,23 @@ class OperationalSimulator:
 
     def _request_address_confirmation(self, world, sid, physical, now, at, execution):
         if physical.get("recipient") not in ("confirms_address",):
-            return [], "recipient did not confirm"
+            return []
         current = sorted((n for n in world.nodes.values() if n.kind == "AddressVersion"), key=lambda n: n.properties.get("version", 0))
         if not current:
-            return [], "no address on record"
+            return []
         base = current[-1].properties
         shipment = world.nodes[sid].properties
         version = self._node("AddressVersion", sid, "ADDR-CONFIRMED", at, address_id=base.get("address_id"), version=(base.get("version") or 1) + 1,
                              valid_from=iso(at), valid_to=None, lat=base.get("lat"), lng=base.get("lng"), accuracy_m=base.get("accuracy_m"),
                              city=base.get("city"), address_text=base.get("address_text"), verification_status="VERIFIED",
                              confirmed_by=shipment.get("recipient_id"))
-        return [message(version, "RECIPIENT_PORTAL", iso(at))], "recipient confirmed the address"
+        return [message(version, "RECIPIENT_PORTAL", iso(at))]
 
     def _prioritize_next_session(self, world, sid, physical, now, at, execution):
         sessions = sorted((n for n in world.nodes.values() if n.kind == "DeliverySession" and instant(n.properties["start_at"]) > now),
                           key=lambda n: n.properties["start_at"])
         if not sessions:
-            return [], "no later delivery session"
+            return []
         session = sessions[0]
         when = instant(session.properties["start_at"]) + timedelta(hours=2)
         shipment = world.nodes[sid].properties
@@ -197,8 +208,5 @@ class OperationalSimulator:
                                verification_policy="synthetic_bound_delivery_v1")
             for node in (auth, handoff, proof):
                 items.append(message(node, "SPL_CORE", iso(when + timedelta(seconds=30))))
-        return items, "next-session delivery " + ("completed" if physical.get("recipient") != "unreachable" else "failed: recipient unreachable")
+        return items
 
-
-def json_safe(value):
-    return str(value).replace("_", " ")

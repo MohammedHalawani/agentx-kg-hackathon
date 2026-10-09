@@ -615,9 +615,9 @@ class OperationsStore:
             execution["expected_evidence"]=json.loads(execution.get("expected_evidence_json") or "[]")
             if self.adapter is not None:
                 try:receipt=self.adapter.respond(execution,clock);mode="synthetic_operational_simulator"
-                except Exception as error:receipt={"scheduled":0,"behaviour":f"adapter_error_{type(error).__name__}"};mode="adapter_error"
+                except Exception as error:receipt={"acknowledged":False,"behaviour":f"The execution adapter failed ({type(error).__name__}); nothing was confirmed as sent."};mode="adapter_error"
             else:
-                receipt={"scheduled":0,"behaviour":"no execution adapter configured; nothing was sent"};mode="no_adapter"
+                receipt={"acknowledged":False,"behaviour":"No execution adapter is configured; nothing was sent."};mode="no_adapter"
             def record(tx,execution=execution,receipt=receipt,mode=mode):
                 c=self._control(tx,lock=True);when=c["as_of"]
                 current=self._get(tx,"OpsExecution",execution["entity_id"])

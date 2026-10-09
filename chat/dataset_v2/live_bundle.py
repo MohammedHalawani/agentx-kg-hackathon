@@ -82,6 +82,31 @@ def read_truth(directory):
     return {row["shipment_id"]: row for row in _records(Path(directory) / "truth.jsonl")}
 
 
+# Ordinary words that recipe names share with legitimate data (service types, normal journeys).
+_PLAIN_RECIPES = frozenset(("on_time", "next_day", "second_attempt", "bulky_normal", "fulfillment", "accounted_return"))
+_TRUTH_FIELDS = ("acceptable_causes", "expected_resolution", "secondary_issue", "secondary_effect_of", "foundation_recipe",
+                 "key_evidence", "outage_affected_event_ids", "natural_reconnect_at", "buffered_event_ids", "upload_delay_minutes",
+                 "dropped_package_id", "truth.jsonl")
+# Phrases earlier simulator receipts derived from the answer key; they must never reappear.
+_LEGACY_RECEIPT_PHRASES = ("label wrongly applied", "same wrong barcode", "declared weight was wrong", "unresponsive contractor",
+                           "nothing buffered", "buffered messages", "parcel located at", "recipient unreachable",
+                           "next-session delivery completed", "next-session delivery failed")
+
+
+def truth_vocabulary(truth):
+    """Evaluation only: words that exist only in the answer key (scenario recipes, physical field states,
+    truth field names), in underscore and spaced forms. Used to prove nothing that leaves the simulator,
+    the verifier or the API carries them."""
+    terms = set(_TRUTH_FIELDS)
+    for row in truth.values():
+        if row.get("recipe") and row["recipe"] not in _PLAIN_RECIPES:
+            terms.add(row["recipe"])
+        for value in (row.get("physical") or {}).values():
+            if isinstance(value, str) and "_" in value and not value.startswith("DEMO-"):
+                terms.add(value)
+    return sorted(terms | {t.replace("_", " ") for t in terms if "_" in t} | set(_LEGACY_RECEIPT_PHRASES))
+
+
 def read_live_bundle(directory):
     items = read_feed(directory)
     return read_bundle(directory, validator=lambda world: validate_live_bundle(world, items)), items

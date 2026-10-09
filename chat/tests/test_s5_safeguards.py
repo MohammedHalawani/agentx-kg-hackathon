@@ -55,6 +55,46 @@ class TruthIsolationTests(unittest.TestCase):
             self.assertNotIn(marker, investigator.SYSTEM.lower())
 
 
+
+class ReceiptLeakTests(unittest.TestCase):
+    def test_receipts_depend_on_the_action_alone_and_carry_no_answer_key_wording(self):
+        from dataset_v2.contracts import canonical
+        from dataset_v2.live_bundle import truth_vocabulary
+        from operations.reasoning import public_evidence
+        from operations.simulation import RECEIPTS, OperationalSimulator
+        from dataset_v2.feed import reconstitute, split_feed
+        from dataset_v2.network import generate_live, live_config
+        world, truth = generate_live(live_config(total=600))  # The full live recipe mix (120 live shipments).
+        imported, items = split_feed(world, truth)
+        world = reconstitute(imported, items)
+
+        class Gateway:
+            def enqueue(self, items): pass
+            def pending_feed_ids(self, ids): return list(ids)
+            def reschedule(self, ids, at): return len(ids)
+
+        class Reader:
+            def evidence(self, sid, at): return public_evidence(world, sid, at)
+
+        simulator = OperationalSimulator(Gateway(), Reader(), truth, world.config)
+        receipts = {}
+        abnormal = [sid for sid, row in truth.items() if row["split"] == "development" and not row["healthy"]]
+        self.assertGreater(len({truth[sid]["recipe"] for sid in abnormal}), 25)
+        for sid in abnormal:
+            for action in RECEIPTS:
+                receipt = simulator.respond({"shipment_id": sid, "action_type": action, "target_device": None,
+                                             "expected_evidence": [], "entity_id": "X"}, world.config.as_of)
+                receipts.setdefault(action, set()).add(canonical(receipt))
+        # Whatever the field state (wrong label, unresponsive contractor, offline device...), one receipt per action.
+        self.assertEqual({action: len(texts) for action, texts in receipts.items()}, {action: 1 for action in RECEIPTS})
+        text = " ".join(t for texts in receipts.values() for t in texts).lower()
+        vocabulary = truth_vocabulary(truth)
+        self.assertIn("label wrongly applied", vocabulary)
+        self.assertIn("retained by contractor", vocabulary)
+        for term in vocabulary:
+            self.assertNotIn(term.lower(), text)
+
+
 class _Store(unittest.TestCase):
     """Reuses the store test fixtures without re-running their tests."""
     setUpClass = classmethod(lambda cls: setattr(cls, "world", generate(Config(total=90))))
@@ -70,7 +110,7 @@ class ExecutionRecoveryTests(_Store):
         calls = []
         class Adapter:
             def respond(self, execution, now):
-                calls.append(execution["entity_id"]); return {"scheduled": 0, "behaviour": "test"}
+                calls.append(execution["entity_id"]); return {"acknowledged": True, "behaviour": "test"}
         # Simulate a crash after the claim and before the receipt.
         def crash(tx):
             for kind, e in tx.ledger.values():

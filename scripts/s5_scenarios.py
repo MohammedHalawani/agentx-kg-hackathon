@@ -47,6 +47,20 @@ def attach(store, truth):
     store.adapter = OperationalSimulator(store.gateway, store.reader, truth, store.config)
 
 
+def scoring_truth(total, manifest_hash):
+    """The answer key, regenerated deterministically for scoring and checked against the imported dataset."""
+    import tempfile
+    from dataset_v2.contracts import digest
+    from dataset_v2.live_bundle import export_live, read_live_bundle, read_truth
+    from dataset_v2.network import live_config
+    with tempfile.TemporaryDirectory() as tmp:
+        export_live(Path(tmp) / "b", live_config(total=total, dataset_id="DEMO-SUHAIL-LIVE-TEST"), live_split="development")
+        bundle, _ = read_live_bundle(Path(tmp) / "b")
+        truth = read_truth(Path(tmp) / "b")
+    assert digest(bundle.manifest) == manifest_hash, "regenerated truth does not match the imported dataset"
+    return truth
+
+
 def step_loop(store, *, investigate=True, max_hours=None):
     hours = 0
     while store.status()["as_of"] < store.status()["simulator"]["end_at"] and (max_hours is None or hours < max_hours):
@@ -273,15 +287,18 @@ def phase_concurrency(out, total, seconds):
     return result
 
 
-def phase_checks(out):
-    """On the database the pipeline phase left behind: public ids, authority switch, trigger coverage."""
+def phase_checks(out, total):
+    """On the database the pipeline phase left behind: public ids, authority switch, trigger coverage, and a
+    scan of every receipt, outcome, audit entry, review, recommendation and case API response for answer-key words."""
     from core.query_runner import get_driver
     from dataset_v2.contracts import Config
+    from dataset_v2.live_bundle import truth_vocabulary
     from operations.identifiers import public_value
     from operations.read_model import OperationsReader
     driver = get_driver()
     with driver.session(database=TEST_DATABASE, default_access_mode="READ") as session:
-        manifest = json.loads(session.run("MATCH (m:_V2Import) RETURN m.manifest_json AS m").single()["m"])
+        imported = session.run("MATCH (m:_V2Import) RETURN m.manifest_json AS m, m.manifest_hash AS h").single()
+        manifest = json.loads(imported["m"])
         clock = iso(session.run("MATCH (c:OpsEntity:OpsControl) RETURN c.as_of AS a").single()["a"])
     cfg = Config(**manifest["config"])
     from operations.store import OperationsStore
@@ -294,12 +311,14 @@ def phase_checks(out):
         runs.setdefault(run["case_id"], []).append(run)
     resolvable = cited_total = telemetry_cited = 0
     unresolved_ids = []
+    api_details = []
     for case in cases:
         if not runs.get(case["entity_id"]):
             continue
         last = sorted(runs[case["entity_id"]], key=lambda r: iso(r["recorded_at"]))[-1]
         inv = (json.loads(last.get("result_json") or "{}").get("investigation") or {})
         detail = public_value(reader.case_detail(case["entity_id"]))
+        api_details.append(json.dumps(detail, default=str, ensure_ascii=False))
         nodes = {n["id"] for n in detail["evidence"]["nodes"]}
         for h in inv.get("hypotheses") or []:
             for key in public_value(h.get("supporting_evidence_ids", []) + h.get("contradicting_evidence_ids", [])):
@@ -323,11 +342,32 @@ def phase_checks(out):
     for case in cases:
         for symptom in case.get("symptom_codes") or []:
             triggers[symptom] = triggers.get(symptom, 0) + 1
+    for case in cases:  # Cases never investigated are served by the API too.
+        if not runs.get(case["entity_id"]):
+            api_details.append(json.dumps(public_value(reader.case_detail(case["entity_id"])), default=str, ensure_ascii=False))
+    vocabulary = [t.lower() for t in truth_vocabulary(scoring_truth(total, imported["h"]))]
+    sources = {"execution_receipts": [e.get("adapter_result_json") for e in ledger(driver, "OpsExecution")],
+               "outcomes": [json.dumps({k: o.get(k) for k in ("outcome_type", "reason", "expected_effect", "rule_id")}) for o in ledger(driver, "OpsOutcome")],
+               "audit": [a.get("result") for a in audits],
+               "reviews": [json.dumps({k: r.get(k) for k in ("verdict", "feedback", "summary_en", "summary_ar")}, ensure_ascii=False) for r in ledger(driver, "OpsReview")],
+               "recommendations": [json.dumps({k: r.get(k) for k in ("action", "action_en", "action_ar", "authority_reason")}, ensure_ascii=False)
+                                   for r in ledger(driver, "OpsRecommendation")],
+               "case_api_responses": api_details}
+    leaks = []
+    for source, texts in sources.items():
+        for text in texts:
+            lowered = (text or "").lower()
+            for term in vocabulary:
+                at = lowered.find(term)
+                if at >= 0:
+                    leaks.append({"source": source, "term": term, "excerpt": (text or "")[max(0, at - 60):at + len(term) + 60]})
     result = {"phase": "checks", "public_id_resolution": {"cited": cited_total, "resolve_to_case_evidence": resolvable,
               "device_telemetry_citations": telemetry_cited, "unresolved": cited_total - resolvable - telemetry_cited,
               "unresolved_ids": unresolved_ids[:50]},
               "authority_bypass_executions": bypass, "executions": len(ledger(driver, "OpsExecution")),
-              "authority_decisions_recorded": len(decisions), "trigger_symptoms": triggers}
+              "authority_decisions_recorded": len(decisions), "trigger_symptoms": triggers,
+              "answer_key_scan": {"terms": len(vocabulary), "records_scanned": {k: len(v) for k, v in sources.items()},
+                                  "leaks": leaks[:100], "leak_count": len(leaks)}}
     (out / "checks.json").write_text(json.dumps(result, indent=1, default=str), encoding="utf-8")
     return result
 
@@ -351,12 +391,9 @@ def end_state(row):
 def phase_accounting(out, total, source):
     """After a pipeline run, on the database it left: every wrong diagnosis's end state, whether each
     resolved case's exception was really gone at closure, and what happened to two-cause shipments."""
-    import tempfile
     from core.query_runner import get_driver
-    from dataset_v2.contracts import Config, digest
+    from dataset_v2.contracts import Config
     from dataset_v2.derive import assess_shipment
-    from dataset_v2.live_bundle import export_live, read_live_bundle, read_truth
-    from dataset_v2.network import live_config
     from operations.read_model import OperationsReader
     from operations.reasoning import evidence_world
     from operations.store import DETECTION_ALLOWANCE_SECONDS, STANDING_SYMPTOMS, monitor_finding
@@ -366,12 +403,7 @@ def phase_accounting(out, total, source):
     with driver.session(database=TEST_DATABASE, default_access_mode="READ") as session:
         imported = session.run("MATCH (m:_V2Import) RETURN m.manifest_json AS m, m.manifest_hash AS h").single()
         clock = iso(session.run("MATCH (c:OpsEntity:OpsControl) RETURN c.as_of AS a").single()["a"])
-    # Truth is regenerated deterministically for scoring and checked against the imported manifest.
-    with tempfile.TemporaryDirectory() as tmp:
-        export_live(Path(tmp) / "b", live_config(total=total, dataset_id="DEMO-SUHAIL-LIVE-TEST"), live_split="development")
-        bundle, _ = read_live_bundle(Path(tmp) / "b")
-        truth = read_truth(Path(tmp) / "b")
-    assert digest(bundle.manifest) == imported["h"], "regenerated truth does not match the imported dataset"
+    truth = scoring_truth(total, imported["h"])
     cfg = Config(**json.loads(imported["m"])["config"])
     reader = OperationsReader(driver, TEST_DATABASE, cfg.dataset_id, cfg, clock=lambda: clock)
     cases = {c["entity_id"]: c for c in ledger(driver, "OpsCase")}
@@ -427,7 +459,7 @@ def main():
     parser.add_argument("--seconds", type=int, default=300)
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
-    result = {"pipeline": lambda: phase_pipeline(args.out, args.total), "checks": lambda: phase_checks(args.out),
+    result = {"pipeline": lambda: phase_pipeline(args.out, args.total), "checks": lambda: phase_checks(args.out, args.total),
               "accounting": lambda: phase_accounting(args.out, args.total, args.source), "heldout": lambda: phase_heldout(args.out, args.total),
               "reviewer": lambda: phase_reviewer(args.out, args.total),
               "concurrency": lambda: phase_concurrency(args.out, args.total, args.seconds)}[args.phase]()
