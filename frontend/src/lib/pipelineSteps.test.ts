@@ -56,3 +56,18 @@ describe('Compact pipeline steps over recorded LangGraph events', () => {
     expect(['retrieve_context', 'review', 'writeback', 'outcome'].map(s => suggestedFocus(s as 'review'))).toEqual(['graph', 'graph', 'graph', 'graph'])
   })
 })
+
+import { stageFocus } from './pipelineSteps'
+describe('stageFocus (Auto layout)', () => {
+  it('follows the evidence type of each stage', () => {
+    expect(stageFocus('extract', ['TRAFFIC_DELAY'])).toBe('balanced')
+    expect(stageFocus('retrieve', ['TRAFFIC_DELAY'])).toBe('graph')
+    expect(stageFocus('classify', ['TRAFFIC_DELAY'])).toBe('map')
+    expect(stageFocus('classify', ['DELIVERY_DISPUTE'])).toBe('graph')
+    expect(stageFocus('retrieve_context', ['ADDRESS_CONFLICT'])).toBe('graph')
+    expect(stageFocus('recommend', ['ADDRESS_CONFLICT'])).toBe('balanced')
+    expect(stageFocus('review', [])).toBe('graph')
+    expect(stageFocus('writeback', ['UNRECONCILED_CUSTODY'])).toBe('map')
+    expect(stageFocus('outcome', ['TRAFFIC_DELAY'])).toBe('balanced')
+  })
+})

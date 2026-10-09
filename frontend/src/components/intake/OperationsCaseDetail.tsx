@@ -85,7 +85,7 @@ export function OperationsCaseDetail({ caseId, shipmentId, onBack }: { caseId?: 
     <header className="flex flex-wrap items-center gap-2 border-b border-border pb-2">
       <Button type="button" variant="outline" size="xs" onClick={onBack}>{t('ops.workspace.back')}</Button>
       <div className="min-w-0">
-        <h2 className="font-mono text-base leading-tight" dir="ltr">{shipmentId}</h2>
+        <h2 className="font-mono text-base leading-tight" dir="ltr">{data?.shipment_id || shipmentId}</h2>
         {caseId && <p className="font-mono text-[10px] text-muted-foreground" dir="ltr">{t('ops.workspace.caseRef', { id: caseId })}</p>}
       </div>
       {state && <CaseWorkflowBadge state={state} />}

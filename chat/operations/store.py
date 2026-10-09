@@ -186,7 +186,11 @@ class OperationsStore:
         control = self._execute(lambda tx: self._control(tx))
         return {"synthetic": True, "demo": True, "as_of": control["as_of"],
             "worker": {"state": control["worker_state"], "concurrency": 1, "processed_count": control["processed_count"],
-                       "active_case_id": control.get("worker_claim")},
+                       "active_case_id": control.get("worker_claim"),
+                       "active_shipment_id": control.get("claim_shipment_id") if control.get("worker_claim") else None,
+                       # Most recent completed claim, so the live panel can show its recorded stages after the run.
+                       "last_case_id": control.get("last_case_id"), "last_shipment_id": control.get("last_shipment_id"),
+                       "last_workflow_state": control.get("last_workflow_state"), "last_processed_at": control.get("last_processed_at")},
             "simulator": {"state": control["simulator_state"], "speed": control["speed"], "replay_mode":control.get("replay_mode","timeline"), "event_count": control["event_count"],
                           "cursor": {"time": control["cursor_time"], "id": control["cursor_id"]}, "end_at": control["end_at"]},
             "notifications": {"mode": "dry_run", "external_calls": 0}}
@@ -293,7 +297,7 @@ class OperationsStore:
             case=public_value(rows[0]["props"]); token=identity("claim",case["entity_id"],case["state_version"])
             case.update(workflow_state="INVESTIGATING",state_version=case["state_version"]+1,claim_id=token,claim_at=control["as_of"],as_of=control['as_of'],
                         last_run_id=identity("run",case["entity_id"],token))
-            control.update(worker_claim=case["entity_id"],claim_at=control["as_of"])
+            control.update(worker_claim=case["entity_id"],claim_at=control["as_of"],claim_shipment_id=case["shipment_id"])
             self._put(tx,"OpsCase",case,update=True);self._put(tx,"OpsControl",control,update=True)
             self._audit(tx,case,"CASE_CLAIMED",case["as_of"])
             return case
@@ -345,7 +349,9 @@ class OperationsStore:
                 cause_codes=analysis["result"]["operational_labels"],operational_status=analysis["result"]["operational_status"])
             self._put(tx,"OpsCase",current,update=True)
             if analysis["afl"]["fixture"]:self._audit(tx,current,"AFL_RETRY",when,result="Explicit deterministic hard rejection carried into revised investigation proposal.")
-            control.update(worker_claim=None,claim_at=None,processed_count=control["processed_count"]+1)
+            control.update(worker_claim=None,claim_at=None,processed_count=control["processed_count"]+1,
+                           last_case_id=current["entity_id"],last_shipment_id=current["shipment_id"],
+                           last_workflow_state=current["workflow_state"],last_processed_at=when)
             self._put(tx,"OpsControl",control,update=True)
             return {"processed":True,"case_id":current["entity_id"],"workflow_state":current["workflow_state"],
                     "state_version":current["state_version"],"run_id":run_id,"mode":analysis["mode"],"afl":analysis["afl"],"outcome":None}

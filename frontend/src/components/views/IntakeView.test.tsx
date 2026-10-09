@@ -23,7 +23,7 @@ vi.mock('../../hooks/useComplaintStream', () => ({
 
 vi.mock('../../hooks/useFetch', () => ({
   useFetch: (url: string) => ({
-    data: url.startsWith('/cases/queue') ? {
+    data: url.includes('workflow_state=') ? { items: [], filtered_total: 0, next_cursor: null, previous_cursor: null, metadata: {} } : url.startsWith('/cases/queue') ? {
       items: [
         {
           case_id: 'f1',

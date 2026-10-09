@@ -5,7 +5,7 @@ import { operationsPost } from '@/lib/operationsClient'
 export type SimulationSpeed = 1 | 10 | 60
 export type ReplayMode = 'timeline' | 'compressed'
 export interface SimulationEvent { id: string; type: string; shipmentId: string; timestamp?: string }
-export interface OperationsStatus { synthetic: boolean; as_of: string; worker: { state: string; concurrency: number; processed_count: number; active_case_id: string | null }; simulator: { state: string; speed: SimulationSpeed; replay_mode?: ReplayMode; event_count: number; cursor?: { time: string; id: string }; end_at?: string }; notifications: { mode: string; external_calls: number } }
+export interface OperationsStatus { synthetic: boolean; as_of: string; worker: { state: string; concurrency: number; processed_count: number; active_case_id: string | null; active_shipment_id?: string | null; last_case_id?: string | null; last_shipment_id?: string | null; last_workflow_state?: string | null; last_processed_at?: string | null }; simulator: { state: string; speed: SimulationSpeed; replay_mode?: ReplayMode; event_count: number; cursor?: { time: string; id: string }; end_at?: string }; notifications: { mode: string; external_calls: number } }
 export type SimulationStatus = OperationsStatus
 export type WorkerStatus = OperationsStatus
 

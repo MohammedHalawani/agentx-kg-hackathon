@@ -22,7 +22,7 @@ export function adaptAudit(row: ApiAuditEvent): AuditEvent {
   return { id: row.id, timestamp: row.timestamp, shipmentId: row.shipment_id, caseId: row.case_id, eventType: row.event_type as AuditEvent['eventType'], actor: row.actor, model: row.model, decision: row.decision, result: row.result, stage:row.stage,stageStatus:row.stage_status }
 }
 export function adaptBuckets(b: Record<string, number> = {}): QueueBucketCounts {
-  return { open: (b.OPEN ?? b.open ?? 0) + (b.REOPENED ?? 0), investigating: b.INVESTIGATING ?? b.investigating ?? 0, needsReview: b.HUMAN_REVIEW ?? b.needs_review ?? 0, needsEvidence: b.NEEDS_EVIDENCE ?? 0, awaitingApproval: b.AWAITING_APPROVAL ?? b.awaiting_approval ?? 0, awaitingOutcome: b.AWAITING_OUTCOME ?? b.awaiting_outcome ?? 0, resolved: b.RESOLVED ?? b.resolved ?? 0 }
+  return { open: (b.OPEN ?? b.open ?? 0) + (b.REOPENED ?? 0), investigating: b.INVESTIGATING ?? b.investigating ?? 0, needsReview: b.HUMAN_REVIEW ?? b.needs_review ?? 0, needsEvidence: b.NEEDS_EVIDENCE ?? 0, awaitingApproval: b.AWAITING_APPROVAL ?? b.awaiting_approval ?? 0, awaitingOutcome: b.AWAITING_OUTCOME ?? b.awaiting_outcome ?? 0, resolved: b.RESOLVED ?? b.resolved ?? 0, human: (b.HUMAN_REVIEW ?? 0) + (b.AWAITING_APPROVAL ?? 0) + (b.NEEDS_EVIDENCE ?? 0) + (b.ESCALATED ?? 0) }
 }
 export function pageQuery(values: Record<string, string | number | null | undefined>): string {
   const p = new URLSearchParams()

@@ -12,6 +12,8 @@ export default defineConfig({
     dedupe: ['react', 'react-dom'],
     alias: { '@': path.resolve(__dirname, './src') },
   },
+  // Split vendors so no single chunk exceeds the import-analysis lexer's WebAssembly memory on Windows.
+  build: { rolldownOptions: { output: { advancedChunks: { groups: [{ name: 'nvl', test: /@neo4j-nvl/ }, { name: 'leaflet', test: /leaflet/ }, { name: 'vendor', test: /node_modules/ }] } } } },
   // unit tests (vitest): jsdom for component rendering, globals so testing-library auto-cleans up,
   // a setup file to stub matchMedia (motion needs it under jsdom)
   test: { environment: 'jsdom', globals: true, setupFiles: ['./src/test/setup.ts'] },

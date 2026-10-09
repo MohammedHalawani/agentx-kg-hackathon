@@ -85,18 +85,18 @@ describe('Case lifecycle authority', () => {
     await waitFor(() => expect(mock.post).toHaveBeenCalledWith('/cases/CASE-1/reanalyze', expect.objectContaining({ expected_version: 3 })))
   })
 
-  it('switches Balanced, Map and Graph focus explicitly and remembers the choice for the session', () => {
+  it('defaults to Auto stage focus, then keeps an explicit manual choice for the session', () => {
     sessionStorage.clear()
     const { unmount } = render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
     const layout = () => document.querySelector('[data-focus]')!.getAttribute('data-focus')
-    expect(layout()).toBe('balanced')
-    expect(screen.getByText(/This stage reads best on the route map/)).toBeTruthy()
-    fireEvent.click(screen.getByRole('radio', { name: 'Graph focus' }))
-    expect(layout()).toBe('graph')
+    expect(screen.getByRole('radio', { name: 'Auto' }).getAttribute('aria-checked')).toBe('true')
+    expect(screen.getByText(/This stage reads best on the|Auto follows the investigation stage/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('radio', { name: 'Map focus' }))
+    expect(layout()).toBe('map')
     expect(screen.queryByText(/This stage reads best/)).toBeNull()
     unmount()
     render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
-    expect(layout()).toBe('graph')
+    expect(layout()).toBe('map')
     expect(mock.post).not.toHaveBeenCalled()
   })
   it('opens Evidence on cited key evidence and focuses the graph on it without running anything', () => {

@@ -1,21 +1,22 @@
 import { useMemo, type ReactNode } from 'react'
 import { useFocusMode, type FocusMode } from '@/hooks/useFocusMode'
-import { Columns2, Map as MapIcon, Share2 } from 'lucide-react'
+import { Columns2, Map as MapIcon, Share2, Radar } from 'lucide-react'
 import { useLanguage } from '@/components/i18n/LanguageProvider'
 import { Graph } from '@/components/artifacts/Graph'
 import { ShipmentRouteMap } from '@/components/operations/ShipmentRouteMap'
 import { InvestigationPipeline } from '@/components/operations/InvestigationPipeline'
 import { evidenceGraph, type InspectStage, type ShipmentDetail } from '@/contracts/caseDetail'
-import { suggestedFocus } from '@/lib/pipelineSteps'
+import { stageFocus } from '@/lib/pipelineSteps'
 
 const COLUMNS: Record<FocusMode, string> = { balanced: 'lg:grid-cols-[1fr_1fr]', map: 'lg:grid-cols-[7fr_3fr]', graph: 'lg:grid-cols-[3fr_7fr]' }
 
 export function CaseOverview({ detail, stage, highlightedIds, onStage, onDeepDive, actions }: { detail: ShipmentDetail; stage: InspectStage; highlightedIds: string[]; onStage: (stage: InspectStage) => void; onDeepDive: (section: 'evidence' | 'diagnosis' | 'map', mode?: 'map' | 'graph') => void; actions: ReactNode }) {
   const { t, isArabic, rootCauseLabel } = useLanguage()
   const [chosen, setChosen] = useFocusMode()
-  const focus: FocusMode = chosen ?? 'balanced'
-  const suggested = chosen ? null : suggestedFocus(stage)
   const diagnoses = detail.reasoning?.diagnoses ?? []
+  // Auto follows the inspected/active stage; a manual choice is never overridden.
+  const focus: FocusMode = chosen === 'auto' ? stageFocus(stage, diagnoses.map(d => d.code ?? '')) : chosen
+  const suggested = chosen === 'auto' && focus !== 'balanced' ? focus : null
   const resolved = detail.workflow_state === 'RESOLVED' && detail.outcome?.verification_status === 'VERIFIED' && !detail.outcome.invalidated
   const primary = diagnoses.find(d => d.code === 'DELIVERY_DISPUTE') ?? diagnoses.find(d => d.code === 'UNRECONCILED_CUSTODY') ?? diagnoses.find(d => d.code === 'ADDRESS_CONFLICT') ?? diagnoses.find(d => d.code === 'TRAFFIC_DELAY') ?? diagnoses[0]
   const comparisons = (detail.reasoning?.assessment?.expected_vs_actual ?? []).filter(m => m.milestone_id)
@@ -39,9 +40,9 @@ export function CaseOverview({ detail, stage, highlightedIds, onStage, onDeepDiv
     <InvestigationPipeline detail={detail} selected={stage} onSelect={onStage} onEvidence={() => onDeepDive('evidence')} />
     <div className="flex flex-wrap items-center gap-2">
       <div role="radiogroup" aria-label={t('ops.focus.label')} className="flex rounded-lg border border-border bg-card p-0.5">
-        {([['balanced', Columns2], ['map', MapIcon], ['graph', Share2]] as const).map(([mode, Icon]) => <button key={mode} type="button" role="radio" aria-checked={focus === mode} onClick={() => setChosen(mode)} className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] focus-visible:outline-2 focus-visible:outline-ring ${focus === mode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}><Icon size={12} aria-hidden="true" />{t(`ops.focus.${mode}`)}</button>)}
+        {([['auto', Radar], ['balanced', Columns2], ['map', MapIcon], ['graph', Share2]] as const).map(([mode, Icon]) => <button key={mode} type="button" role="radio" aria-checked={chosen === mode} onClick={() => setChosen(mode)} className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] focus-visible:outline-2 focus-visible:outline-ring ${chosen === mode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}><Icon size={12} aria-hidden="true" />{t(`ops.focus.${mode}`)}</button>)}
       </div>
-      {suggested && <span className="text-[11px] text-muted-foreground">{t('ops.focus.suggested', { pane: t(`ops.focus.${suggested}Pane`) })}</span>}
+      {chosen === 'auto' && <span className="text-[11px] text-muted-foreground">{suggested ? t('ops.focus.suggested', { pane: t(`ops.focus.${suggested}Pane`) }) : t('ops.focus.autoHint')}</span>}
     </div>
       <div className={`grid gap-2.5 transition-[grid-template-columns] duration-300 ease-out motion-reduce:transition-none ${COLUMNS[focus]}`} data-focus={focus} data-viewport-key={focus}>
       <section className={pane('map')} aria-label={t('ops.overview.route')}><header className="flex items-center justify-between gap-2 px-3 py-1.5"><h3 className="text-sm font-semibold">{t('ops.overview.route')}</h3><button type="button" onClick={() => onDeepDive('map', 'map')} className="text-xs text-primary underline underline-offset-2">{t('ops.overview.fullRoute')}</button></header><div className="h-[clamp(16rem,42vh,26rem)] xl:h-[max(18rem,calc(100svh-27rem))]" data-stage-map={stage}><ShipmentRouteMap detail={detail} stage={stage} highlightedIds={highlightedIds} compact /></div></section>

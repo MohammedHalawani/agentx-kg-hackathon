@@ -22,6 +22,8 @@ import { OperationsCaseDetail } from '@/components/intake/OperationsCaseDetail'
 import { CaseWorkspace } from '@/components/intake/CaseWorkspace'
 import { ProcessQueuePanel } from '@/components/intake/ProcessQueuePanel'
 import { SimulationPanel } from '@/components/intake/SimulationPanel'
+import { NowProcessingPanel, useLiveWorkerStatus } from '@/components/intake/NowProcessingPanel'
+import { HumanAttentionRail } from '@/components/intake/HumanAttentionRail'
 import { cn } from '../../lib/cn'
 import type { ExploreShipment } from '../../types/explore'
 
@@ -127,7 +129,12 @@ export function IntakeView({
   const queueRefreshing = loading && data != null
   const queueInitialLoad = loading && !data
   const page = { items: (data?.items ?? []).map(adaptCase), total: data?.filtered_total ?? 0, nextCursor: data?.next_cursor ?? null, prevCursor: data?.previous_cursor ?? null }
-  const bucketCounts = adaptBuckets(data?.metadata?.buckets)
+  // Unfiltered lifecycle totals for counters and the Human attention rail, independent of table filters.
+  const unfiltered = query === 'limit=25'
+  const totals = useOperationsPage<ApiCase>('/cases/queue?limit=25', !unfiltered)
+  const totalBuckets = (unfiltered ? data : totals.data)?.metadata?.buckets ?? {}
+  const bucketCounts = adaptBuckets(totalBuckets)
+  const [railCollapsed, setRailCollapsed] = useState(false)
   const [activeBucket, setActiveBucket] = useState<BucketKey | undefined>()
   const cities = data?.metadata?.filter_choices?.city ?? data?.metadata?.filter_choices?.cities ?? []
   const causes = data?.metadata?.filter_choices?.cause ?? data?.metadata?.filter_choices?.causes ?? []
@@ -146,9 +153,14 @@ export function IntakeView({
   useEffect(() => {
     if (final) refetch()
   }, [final, refetch])
+  const live = useLiveWorkerStatus(workerRunning, worker.data)
+  const liveTick = `${live?.worker?.processed_count}|${live?.worker?.active_case_id}|${simulation.data?.as_of}`
+  const refetchTotals = totals.refetch
   useEffect(() => {
+    // Background refresh keeps rows mounted (keepDataOnRefresh); only changed rows re-render.
     if (!cursor) refetch()
-  }, [worker.data?.worker?.processed_count, simulation.data?.as_of, cursor, refetch])
+    if (!unfiltered) refetchTotals()
+  }, [unfiltered, liveTick, cursor, refetch, refetchTotals])
 
   const started = stages.length > 0 || busy || Boolean(error)
 
@@ -160,7 +172,7 @@ export function IntakeView({
     <div className="flex h-full flex-col">
       <div className={cn('min-h-0 flex-1 px-4 py-4 sm:px-6 sm:py-5', started ? 'overflow-hidden' : 'overflow-y-auto')}>
         {selectedCase || selectedShipment ? <OperationsCaseDetail caseId={selectedCase?.caseId ?? selectedShipment?.case_id ?? undefined} shipmentId={selectedCase?.shipmentId ?? selectedShipment!.shipment_id} onBack={() => { setSelectedCase(null); onClearShipment?.(); refetch() }} /> : !started ? (
-          <div className="mx-auto max-w-6xl space-y-4" dir={isArabic ? 'rtl' : undefined}>
+          <div className="mx-auto max-w-[1760px] space-y-4" dir={isArabic ? 'rtl' : undefined}>
             <header>
               <h2 className="font-display text-xl font-bold text-ink">{t('ops.intake.title')}</h2>
               <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{t('ops.intake.subtitle')}</p>
@@ -190,17 +202,24 @@ export function IntakeView({
                 )}
               </div>
               <p className="mb-2 text-xs text-muted-foreground">{t('ops.automation.queueContinues')}</p>
+              <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(320px,420px)]">
               <QueueCounter
                 counts={bucketCounts}
                 active={activeBucket}
                 onSelect={(key) => {
+                  if (key === 'human') { setRailCollapsed(false); return }
                   const next = workflowForBucket(key)
                   setActiveBucket(key)
                   setFilters((f) => ({ ...f, status: next }))
                   pager.reset()
                 }}
               />
+              <NowProcessingPanel status={live} running={workerRunning} onOpen={(caseId, shipmentId) => setSelectedCase({ caseId, shipmentId, issueSummary: '', priority: 'unknown', workflowState: 'INVESTIGATING' } as OperationsCase)} />
+              </div>
             </section>
+
+            <div className="flex items-start gap-3">
+            <div className="min-w-0 flex-1 space-y-4">
 
             <IntakeToolbar
               filters={filters}
@@ -281,6 +300,11 @@ export function IntakeView({
                 />
               </>
             )}
+            </div>
+            <div className="sticky top-0 hidden max-h-[calc(100vh-7rem)] self-stretch lg:flex">
+              <HumanAttentionRail counts={totalBuckets} refreshKey={liveTick} onOpen={runCase} collapsed={railCollapsed} onCollapsedChange={setRailCollapsed} />
+            </div>
+            </div>
           </div>
         ) : (
           <CaseWorkspace

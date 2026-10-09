@@ -1,5 +1,6 @@
 """Real V2 operational routes; explicit local operations authority for all controls."""
 import json
+import os
 import logging
 import threading
 import time
@@ -57,7 +58,10 @@ class OperationsRuntime:
         self.thread.start()
 
     def _loop(self):
-        last=time.monotonic()
+        # Synthetic presentation pacing: a gap BETWEEN cases so each live run stays observable.
+        # Stage execution and recorded stage timings are never delayed or altered.
+        pace=max(0.0,float(os.environ.get("SUHAIL_WORKER_PACE_SECONDS","6")))
+        last=time.monotonic();last_case=0.0
         while not self._stop.wait(1):
             now=time.monotonic()
             elapsed=min(now-last,10)
@@ -65,7 +69,8 @@ class OperationsRuntime:
             try:
                 status=self.store.status()
                 if status["simulator"]["state"]=="running":self.store.tick(seconds=elapsed)
-                if status["worker"]["state"]=="running":self.store.process_one()
+                if status["worker"]["state"]=="running" and now-last_case>=pace:
+                    if self.store.process_one().get("processed"):last_case=time.monotonic()
             except Exception as error:
                 # No provider text, evidence contents or credentials in runtime logs.
                 log.warning("Operations background checkpoint failed (%s)",type(error).__name__)

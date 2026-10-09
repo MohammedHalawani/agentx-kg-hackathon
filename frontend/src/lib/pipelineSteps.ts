@@ -61,3 +61,19 @@ export function activeStage(detail: ShipmentDetail | null | undefined): InspectS
 export function suggestedFocus(stage: InspectStage): 'map' | 'graph' {
   return ['extract', 'classify'].includes(stage) ? 'map' : 'graph'
 }
+
+const SPATIAL = new Set(['TRAFFIC_DELAY', 'JOURNEY_DELAY', 'MISSED_MILESTONE', 'SLA_RISK', 'UNRECONCILED_CUSTODY', 'CUSTODY_GAP', 'ADDRESS_CONFLICT', 'WRONG_GATE'])
+
+/**
+ * Auto layout per stage, derived from what that stage's evidence is about: spatial divergence
+ * (route, custody, traffic, address) reads on the map; relationships, precedent, policy and review on the graph.
+ */
+export function stageFocus(stage: InspectStage, diagnosisCodes: string[]): 'balanced' | 'map' | 'graph' {
+  const spatial = diagnosisCodes.some(c => SPATIAL.has(c))
+  switch (stage) {
+    case 'retrieve': case 'retrieve_context': case 'review': return 'graph'
+    case 'classify': return spatial ? 'map' : 'graph'
+    case 'writeback': case 'escalate': return spatial ? 'map' : 'balanced'
+    default: return 'balanced'
+  }
+}

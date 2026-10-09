@@ -66,6 +66,8 @@ export interface QueueBucketCounts {
   awaitingApproval: number
   awaitingOutcome: number
   resolved: number
+  /** Human review + approval + evidence + escalated. */
+  human?: number
 }
 
 export interface IntakeFilters {
