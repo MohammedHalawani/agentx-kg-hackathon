@@ -579,6 +579,7 @@ def scoring_transparency(rows, truth):
         good = sum(r["primary_cause"] in acceptable(r, with_second) for r in group)
         return {"correct": good, "cases": len(group), "rate": round(good / len(group), 3) if group else None}
 
+    one_code = [r for r in scored if opening(r) and all(len(inverse.get(x, ())) == 1 for x in opening(r))]
     named = [r for r in scored if any(len(inverse.get(x, ())) == 1 and inverse[x] & acceptable(r) for x in opening(r))]
     strict = [r for r in scored if any(len(inverse.get(x, ())) == 1 and r["primary_cause"] in inverse[x] for x in opening(r))]
     inclusive = [r for r in scored if any(r["primary_cause"] in inverse.get(x, ()) for x in opening(r))]
@@ -593,6 +594,12 @@ def scoring_transparency(rows, truth):
         "symptoms_from_one_rule_code": sorted(x for x, causes in inverse.items() if len(causes) == 1),
         "symptoms_from_several_rule_codes": {x: sorted(c) for x, c in inverse.items() if len(c) > 1},
         "accuracy_all": rate(scored),
+        "accuracy_by_opening_symptom_rule_codes": {
+            "one_label_every_opening_symptom_from_one_rule_code": rate(one_code),
+            "multi_label_an_opening_symptom_from_several_rule_codes": rate([r for r in scored if r not in one_code]),
+            "caveat": ("a symptom from one rule code is not one diagnosis: delayed sync, hub delay, route delay, SLA risk and "
+                       "possible misdelivery have no rule code, so an overdue milestone (one rule code) has several possible "
+                       "causes; the named and not-named split below measures what the symptom name gives away")},
         "accuracy_when_an_opening_symptom_names_an_acceptable_cause": rate(named),
         "accuracy_when_no_opening_symptom_names_an_acceptable_cause": rate([r for r in scored if r not in named]),
         "diagnosis_equals_the_label_of_an_opening_symptom": {
