@@ -96,7 +96,7 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
                 agents=None, live_session=False, symptoms=(), heartbeats=None):
     """agents: None (deterministic rules only) or an investigator (operations.investigator or a test double)."""
     from operations.worker import review as guard
-    from operations.authority import authorize, ACTIONS, STATE
+    from operations.authority import authorize, symptom_floor, ACTIONS, STATE
     from operations.checks import fact_checks, cited_records
     events = events if events is not None else []
     holder = {}
@@ -236,7 +236,12 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
                          "action_type": (s.get("proposal") or {}).get("action_type"), "policy": "deterministic_action_authority"}
             state = {**s, "authority": authority, "result": {**s["result"], "workflow_state": "HUMAN_REVIEW"}}
         elif s["review"]["verdict"] != "accept":
-            state = {**s, "result": {**s["result"], "workflow_state": "ESCALATED" if s["proposal"] else "NEEDS_EVIDENCE"}}
+            # Denials are policy decisions too: recorded with their rule and inputs.
+            reason = ("Reviewer rejected the proposal after the bounded revision rounds." if s["proposal"]
+                      else "No grounded proposal at this snapshot; evidence is needed first.")
+            authority = {"risk_class": "HUMAN_REVIEW", "reason": reason, "action_type": (s.get("proposal") or {}).get("action_type"),
+                         "policy": "deterministic_action_authority"}
+            state = {**s, "authority": authority, "result": {**s["result"], "workflow_state": "ESCALATED" if s["proposal"] else "NEEDS_EVIDENCE"}}
         elif s["proposal"] and s["proposal"].get("action_type"):
             # The deterministic authority policy, never the model, decides who may act.
             codes = s["result"]["assessment"]["supported_codes"] or [s["proposal"]["action_code"]]
@@ -244,8 +249,17 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
             risk, reason = authorize(s["proposal"]["action_type"], codes, review_verdict=s["review"].get("model_verdict"),
                                      evidence_conflict=bool(conflict), synthetic=True, live_session=live_session,
                                      degraded=bool(s.get("degraded")), contractor_custody=bool(checks.get("contractor_custody")))
-            authority = {"risk_class": risk, "reason": reason, "action_type": s["proposal"]["action_type"], "policy": "deterministic_action_authority"}
+            risk, reason, closure = symptom_floor(risk, reason, s["proposal"]["action_type"], s.get("symptoms"))
+            authority = {"risk_class": risk, "reason": reason, "action_type": s["proposal"]["action_type"], "closure": closure,
+                         "policy": "deterministic_action_authority"}
             state = {**s, "authority": authority, "result": {**s["result"], "workflow_state": STATE[risk]}}
+        if state.get("authority"):
+            from operations.authority import rule_id
+            state["authority"] = {**state["authority"], "rule_id": rule_id(state["authority"]["reason"]), "inputs": {
+                "action_type": (s.get("proposal") or {}).get("action_type"), "diagnosis_codes": s["result"]["assessment"]["supported_codes"],
+                "review_verdict": s["review"].get("model_verdict") or s["review"].get("verdict"), "symptoms": list(s.get("symptoms") or []),
+                "degraded": [d["role"] for d in s.get("degraded") or []], "fact_checks": {k: checks.get(k) for k in ("unsupported", "sensitive", "contractor_custody")},
+                "requires_physical_check": s["result"]["assessment"]["requires_human_review"]}}
         receipt = commit(analysis(state, events)) if commit else None
         return {"result": state["result"], "disposition": receipt, "authority": state.get("authority")}, {
             "authority": state.get("authority"), "agent": "authority_policy",

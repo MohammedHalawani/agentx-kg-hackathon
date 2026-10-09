@@ -7,6 +7,7 @@ monitoring or outcome verification:
                 provider messages through the gateway
   monitor       checks touched and deadline-due shipments against visible evidence; opens cases
   investigation claims the oldest eligible case (FIFO) and runs the agent investigation
+  execution     hands authorized actions to the execution adapter (the synthetic simulator in development)
   verification  evaluates executed actions against later evidence
 
 Workers coordinate only through the durable ledger (the OpsControl lock serializes claims and
@@ -61,6 +62,7 @@ class WorkerPool:
             "ingestion": Worker("ingestion", self.ingest, 1.0),
             "monitor": Worker("monitor", self.monitor, 1.0),
             "investigation": Worker("investigation", self.investigate, max(1.0, pace / 3)),
+            "execution": Worker("execution", self.execute, 2.0),
             "verification": Worker("verification", self.verify, 2.0),
         }
         self.pace = pace
@@ -101,6 +103,9 @@ class WorkerPool:
             self._last_case = time.monotonic()
         return {"processed": bool(result.get("processed")), "case_id": result.get("case_id"),
                 "workflow_state": result.get("workflow_state")}
+
+    def execute(self):
+        return {"executed": len(self.store.execute_step(limit=10))}
 
     def verify(self):
         return {"verified": len(self.store.outcome_step(limit=10))}

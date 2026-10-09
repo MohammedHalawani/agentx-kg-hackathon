@@ -196,27 +196,6 @@ class OutcomeEngineTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls): cls.world = generate(Config(total=90))
 
-    def test_rescan_success_requires_later_matching_scan_and_silence_fails_at_deadline(self):
-        from operations.outcome_engine import evaluate
-        from dataset_v2.contracts import Node
-        from operations.reasoning import evidence_world, public_evidence
-        sid = next(n.id for n in self.world.of_kind("Shipment") if n.properties["split"] == "development")
-        ctx = public_evidence(self.world, sid, self.world.config.as_of)
-        world = evidence_world(ctx, self.world.config)
-        pkg = next(n for n in world.nodes.values() if n.kind == "Package")
-        execution = {"action_type": "REQUEST_RESCAN", "occurred_at": "2026-10-20T00:00:00+00:00", "deadline_at": "2026-10-23T00:00:00+00:00"}
-        self.assertEqual(evaluate(world, sid, execution, "2026-10-20T06:00:00+00:00")["status"], "pending")
-        self.assertEqual(evaluate(world, sid, execution, "2026-10-23T00:00:00+00:00")["status"], "failure")
-        scan = Node("LATER-SCAN", "ScanEvent", {"shipment_id": sid, "package_id": pkg.id, "readable": True,
-                    "observed_barcode": pkg.properties.get("manifest_barcode"), "occurred_at": "2026-10-20T05:00:00+00:00"})
-        world.nodes[scan.id] = scan
-        self.assertEqual(evaluate(world, sid, execution, "2026-10-20T04:00:00+00:00")["status"], "pending")  # Not yet visible.
-        verdict = evaluate(world, sid, execution, "2026-10-20T06:00:00+00:00")
-        self.assertEqual((verdict["status"], verdict["outcome_type"]), ("success", "barcode_corrected"))
-        report = Node("LATER-REPORT", "RecipientReport", {"shipment_id": sid, "report_code": "NOT_RECEIVED", "occurred_at": "2026-10-20T05:30:00+00:00"})
-        world.nodes[report.id] = report
-        self.assertEqual(evaluate(world, sid, execution, "2026-10-20T06:00:00+00:00")["outcome_type"], "dispute_unresolved")
-
     def test_live_world_resolves_only_from_later_verified_evidence_with_no_human(self):
         d = Driver(self.world)
         s = OperationsStore(d, "shipments-v2-demo", self.world.config.dataset_id, self.world.config, Reader(self.world), agents=fake_agents())
@@ -225,13 +204,16 @@ class OutcomeEngineTests(unittest.TestCase):
             r = s.tick(seconds=3600, manual=True, speed=60)
             while s.status()["session"]["monitor_pending"]: s.monitor_step()
             while s.process_one(manual=True).get("processed"): pass
+            s.execute_step(limit=50)
             s.outcome_step(limit=50)
             if not r["events_replayed"] and s.status()["as_of"] >= s.status()["simulator"]["end_at"]: break
         cases = [v for k, v in d.ledger.values() if k == "OpsCase"]
         outcomes = {v["entity_id"]: v for k, v in d.ledger.values() if k == "OpsOutcome"}
         executions = {v["entity_id"]: v for k, v in d.ledger.values() if k == "OpsExecution"}
         resolved = [c for c in cases if c["workflow_state"] == "RESOLVED"]
-        self.assertTrue(resolved, "at least one zero-human resolution")
+        # No execution adapter here, so no field response: later unrelated evidence must not resolve anything.
+        self.assertTrue(executions)
+        self.assertTrue(all(e["status"] == "ACKNOWLEDGED" and e["mode"] == "no_adapter" for e in executions.values()))
         for c in resolved:
             o = outcomes[c["verified_outcome_id"]]
             self.assertTrue(c["is_terminal"]); self.assertTrue(o["success"]); self.assertEqual(o["verifier_id"], "SUHAIL-OUTCOME-VERIFIER")

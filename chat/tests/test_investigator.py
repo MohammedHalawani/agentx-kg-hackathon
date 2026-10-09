@@ -220,6 +220,18 @@ class GraphTests(Base):
         self.assertEqual(result["authority"]["risk_class"], "HUMAN_REVIEW")
         self.assertIn("contractor", result["authority"]["reason"])
 
+    def test_observed_symptom_floor_beats_a_wrong_diagnosis(self):
+        # Reconciliation is not evidence-gathering: the floor turns AUTO into human investigation.
+        result, _, _ = self.run_case("different_barcode", "BARCODE_MISMATCH", "INITIATE_CUSTODY_RECONCILIATION",
+                                     symptoms=("BARCODE_READ_DIFFERS", "SESSION_END_UNRECONCILED"))
+        self.assertEqual(result["authority"]["risk_class"], "HUMAN_REVIEW")
+        # An evidence request may still run automatically, but only a person can close the case.
+        result, _, _ = self.run_case("different_barcode", "BARCODE_MISMATCH", "REQUEST_RESCAN",
+                                     symptoms=("BARCODE_READ_DIFFERS", "SESSION_END_UNRECONCILED"))
+        self.assertEqual((result["authority"]["risk_class"], result["authority"]["closure"]), ("AUTO", "HUMAN"))
+        self.assertTrue(result["authority"]["rule_id"].startswith("AUTH-"))
+        self.assertIn("symptoms", result["authority"]["inputs"])
+
     def test_no_rule_codes_are_given_to_the_investigator(self):
         sid = self.shipment("different_barcode")
         tools = self.tools(sid, self.world.config.as_of)

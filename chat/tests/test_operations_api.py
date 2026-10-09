@@ -97,16 +97,15 @@ class OperationsAPITests(unittest.TestCase):
         for speed in (True,1.0,"1",2):
             self.assertEqual(self.client.post("/simulation/tick",json={"speed":speed},headers=headers).status_code,422)
 
-    def test_verified_outcome_routes_bind_case_outcome_and_version(self):
-        self.store.verify_outcome.return_value={"resolved":True,"verification_status":"VERIFIED"}
+    def test_verification_request_has_no_success_flag(self):
+        self.store.request_verification.return_value={"case_id":"DEMO-CASE-01","workflow_state":"AWAITING_OUTCOME"}
         body={"expected_version":3,"idempotency_key":"verify_01"}
         headers=self.headers()
-        for path,data in (("/cases/DEMO-CASE-01/outcomes/DEMO-OUT-01/verify",body),
-                          ("/cases/DEMO-CASE-01/outcome/verify",{**body,"outcome_id":"DEMO-OUT-01"})):
-            self.assertEqual(self.client.post(path,json=data,headers=headers).status_code,200)
-            call=self.store.verify_outcome.call_args.kwargs
-            self.assertEqual(call["outcome_id"],"DEMO-OUT-01")
-            self.assertEqual(call["authority"],"LOCAL_DEMO_OPERATOR")
+        for path in ("/cases/SYN-CASE-01/outcomes","/cases/SYN-CASE-01/outcome/verify"):
+            self.assertEqual(self.client.post(path,json=body,headers=headers).status_code,200)
+            self.assertEqual(self.store.request_verification.call_args.kwargs,
+                             {"case_id":"DEMO-CASE-01","actor_id":"DEMO-OPERATOR-LOCAL",**body})
+        self.assertEqual(self.client.post("/cases/SYN-CASE-01/outcomes",json={**body,"success":True},headers=headers).status_code,422)
 
     def test_real_failure_returns_error_without_fixture_payload(self):
         self.reader.queue.side_effect=RuntimeError("unavailable")

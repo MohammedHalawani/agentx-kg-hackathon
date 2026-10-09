@@ -37,6 +37,26 @@ ACTIONS = {
     "LIABILITY_DETERMINATION": ("PROHIBITED", set(), False, "Liability, fraud or theft determination."),
 }
 SENSITIVE_CODES = frozenset(("DELIVERY_DISPUTE", "POSSIBLE_MISDELIVERY", "CONFLICTING_CUSTODY"))
+# Observed symptoms that set a human-investigation floor whatever the diagnosis: a wrong diagnosis can
+# never lower such a case to automatic closure. Evidence-gathering may still run automatically.
+HUMAN_FLOOR_SYMPTOMS = frozenset(("SESSION_END_UNRECONCILED", "CUSTODY_REPORTS_CONFLICT", "MANIFEST_CUSTODY_CONFLICT",
+                                  "RECIPIENT_REPORTED_NOT_RECEIVED"))
+EVIDENCE_GATHERING = frozenset(("REQUEST_RESCAN", "REQUEST_REWEIGH", "REQUEST_DEVICE_SYNC", "REQUEST_ADDITIONAL_EVIDENCE",
+                                "REQUEST_HUB_CHECK"))
+
+
+def symptom_floor(risk, reason, action_type, symptoms):
+    """Apply the human floor. Returns (risk, reason, closure) where closure is AUTO or HUMAN."""
+    floor = sorted(set(symptoms or []) & HUMAN_FLOOR_SYMPTOMS)
+    if not floor:
+        return risk, reason, "AUTO"
+    if risk == "AUTO" and action_type in EVIDENCE_GATHERING:
+        return risk, reason + f" Observed {', '.join(floor)}: the evidence request may run, but only a person can close the case.", "HUMAN"
+    if risk in ("AUTO", "APPROVAL_REQUIRED"):
+        return "HUMAN_REVIEW", f"Observed {', '.join(floor)} requires human investigation regardless of the diagnosis.", "HUMAN"
+    return risk, reason, "HUMAN"
+
+
 STATE = {"AUTO": "AWAITING_OUTCOME", "APPROVAL_REQUIRED": "AWAITING_APPROVAL", "HUMAN_REVIEW": "HUMAN_REVIEW", "PROHIBITED": "HUMAN_REVIEW"}
 
 
@@ -77,3 +97,31 @@ def default_action(code):
         if code in addresses and risk in ("AUTO", "HUMAN_REVIEW"):
             return name
     return "REQUEST_ADDITIONAL_EVIDENCE"
+
+
+RULE_IDS = {
+    "Unknown action type": "AUTH-01-unknown-action",
+    "A model role failed": "AUTH-02-model-degraded",
+    "Reviewer requested human judgment": "AUTH-03-reviewer-human",
+    "The parcel's last corroborated holder is a contractor": "AUTH-04-contractor-custody",
+    "Sensitive or rights-impacting evidence": "AUTH-05-sensitive",
+    "Deterministic evidence rules flagged a conflict": "AUTH-06-evidence-conflict",
+    "Proposed action does not address": "AUTH-07-action-mismatch",
+    "Automatic execution is limited to synthetic": "AUTH-08-not-live-synthetic",
+    "No independent model review accepted": "AUTH-09-no-review-accept",
+    "Low-risk, reversible": "AUTH-10-auto-allowlist",
+    "Action changes destination": "AUTH-11-approval-required",
+    "Sensitive judgment reserved": "AUTH-12-human-review-action",
+    "Money, liability or blame": "AUTH-13-prohibited",
+    "requires human investigation regardless": "AUTH-14-symptom-floor",
+    "Evidence kept changing": "AUTH-15-superseded-snapshot",
+    "Model role unavailable": "AUTH-02-model-degraded",
+    "Reviewer rejected": "AUTH-16-review-rejected",
+    "No grounded proposal": "AUTH-17-no-proposal",
+}
+
+
+def rule_id(reason):
+    """Stable identifier of the deterministic authority rule that produced a decision."""
+    return next((rule for prefix, rule in RULE_IDS.items() if (reason or "").startswith(prefix) or prefix in (reason or "")),
+                "AUTH-00-unclassified")

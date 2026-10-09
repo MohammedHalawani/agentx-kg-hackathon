@@ -14,7 +14,6 @@ from operations.store import OperationsStore, CONTROL_ID, temporal_properties
 from operations.reasoning import public_evidence
 from operations.simulator import replay_plan
 from operations.worker import analyze
-from operations.outcome import validate_observation, verify
 from dataset_v2.derive import proof_assessment
 from operations.reasoning import evidence_world
 
@@ -46,12 +45,16 @@ class Tx:
         if q.startswith("MATCH(c:OpsEntity:OpsCase {dataset_id:$dataset,split:'development',workflow_state:'AWAITING_OUTCOME'})"):
             out=[]
             for k,v in self.ledger.values():
-                if k!="OpsCase" or v["workflow_state"]!="AWAITING_OUTCOME":continue
-                ex=[e for kk,e in self.ledger.values() if kk=="OpsExecution" and e["case_id"]==v["entity_id"] and e.get("authority")=="AUTO_POLICY"]
+                if k!="OpsCase" or v["workflow_state"]!="AWAITING_OUTCOME" or (p.get("case_id") and v["entity_id"]!=p["case_id"]):continue
+                ex=[e for kk,e in self.ledger.values() if kk=="OpsExecution" and e["case_id"]==v["entity_id"] and e.get("status")=="ACKNOWLEDGED"]
                 for e in ex:
-                    if v.get("outcome_checked_as_of") is None or v["as_of"]>v["outcome_checked_as_of"] or e["deadline_at"]<=p["clock"]:
+                    if p.get("force") or v.get("outcome_checked_as_of") is None or v["as_of"]>v["outcome_checked_as_of"] or e["deadline_at"]<=p["clock"]:
                         out.append({"case":copy.deepcopy(v),"execution":copy.deepcopy(e)})
             return Result(sorted(out,key=lambda r:str(r["case"]["as_of"]))[:p["limit"]])
+        if q.startswith("MATCH(e:OpsEntity:OpsExecution {dataset_id:$dataset,status:'AUTHORIZED'})"):
+            rows=sorted((copy.deepcopy(v) for k,v in self.ledger.values() if k=="OpsExecution" and v.get("status")=="AUTHORIZED"),
+                        key=lambda e:(str(e["recorded_at"]),e["entity_id"]))
+            return Result([{"e":r} for r in rows[:p["limit"]]])
         if "(m:_V2Import)" in q:return Result([{"props":self.driver.marker}])
         if q.startswith("MATCH (s:V2Entity:Shipment"):
             node=self.driver.world.nodes.get(p["id"])
@@ -246,17 +249,23 @@ class StoreTests(unittest.TestCase):
         events={p["event_type"]:p for kind,p in driver.ledger.values() if kind=="OpsAudit"}
         self.assertEqual(events["RECOMMENDATION_READY"]["to_state"],"RECOMMENDATION_READY")
         self.assertEqual(events["ACTION_INITIATED"]["to_state"],"ACTION_INITIATED")
-        self.assertEqual(events["EXECUTION_ACKNOWLEDGED"]["to_state"],"AWAITING_OUTCOME")
-    def test_observed_and_verified_failure_stays_unresolved_and_authority_is_required(self):
+        self.assertEqual(events["EXECUTION_REQUESTED"]["to_state"],"AWAITING_OUTCOME")
+        execution=next(v for kind,v in driver.ledger.values() if kind=="OpsExecution")
+        self.assertEqual((execution["status"],execution["authority"]),("AUTHORIZED","OPERATOR_APPROVAL"))  # Approval is not execution.
+        self.assertEqual(store.execute_step(),[execution["entity_id"]])
+        executed=next(v for kind,v in driver.ledger.values() if kind=="OpsExecution")
+        self.assertEqual((executed["status"],executed["mode"]),("ACKNOWLEDGED","no_adapter"))
+        self.assertEqual(store.execute_step(),[])  # Exactly once.
+    def test_operator_cannot_declare_success_only_the_verifier_decides(self):
         store,driver,result=self.processed();case=store.case_detail(result["case_id"])
         approved=store.decide(case["case_id"],"approve","DEMO-OPERATOR-LOCAL",case["state_version"],"approve")
-        evidence=store.reader.evidence(case["shipment_id"],case["as_of"])
-        ids=[node["id"] for node in evidence["nodes"] if node["kind"]=="CustodyEvent"][:1]
-        observed=store.observe_outcome(case["case_id"],"insufficient_evidence",ids,False,"DEMO-OPERATOR-LOCAL",approved["state_version"],"observe")
-        self.assertEqual(observed["verification_status"],"OBSERVED")
-        with self.assertRaises(OperationsConflict):store.verify_outcome(case["case_id"],observed["outcome_id"],"AI",observed["state_version"],"bad")
-        verified=store.verify_outcome(case["case_id"],observed["outcome_id"],"DEMO-OPERATOR-LOCAL",observed["state_version"],"verify")
-        self.assertFalse(verified["resolved"]);self.assertEqual(verified["workflow_state"],"HUMAN_REVIEW")
+        store.execute_step()
+        current=store.case_detail(case["case_id"])
+        with self.assertRaises(TypeError):
+            store.request_verification(case["case_id"],"DEMO-OPERATOR-LOCAL",current["state_version"],"verify-now",success=True)
+        with self.assertRaises(OperationsConflict):store.request_verification(case["case_id"],"AI",current["state_version"],"verify-ai")
+        checked=store.request_verification(case["case_id"],"DEMO-OPERATOR-LOCAL",current["state_version"],"verify-now")
+        self.assertNotEqual(checked["workflow_state"],"RESOLVED")  # No action-relevant evidence arrived after execution.
         self.assertEqual(store.status()["notifications"]["external_calls"],0)
     def test_simulation_replay_cursor_is_committed_idempotent_and_speed_validated(self):
         store,driver=self.make();store.control("simulator","start",speed=60)
@@ -287,36 +296,6 @@ class StoreTests(unittest.TestCase):
         for state in ("OPEN","INVESTIGATING","AWAITING_OUTCOME"):
             with self.assertRaises(OperationsConflict):decision_state(state,"approve")
         with self.assertRaises(OperationsConflict):require_version({"state_version":2},1)
-    def test_outcome_rejects_foreign_ids_and_unresolved_success(self):
-        store,_,result=self.processed();case=store.case_detail(result["case_id"]);context=store.reader.evidence(case["shipment_id"],case["as_of"])
-        with self.assertRaises(OperationsConflict):validate_observation(context,["DEMO-FOREIGN"],"delivery_verified",True)
-        with self.assertRaises(OperationsConflict):validate_observation(context,[context["nodes"][0]["id"]],"dispute_unresolved",True)
-
-    def test_delivery_verification_requires_every_package_and_correct_action(self):
-        candidate=None
-        for shipment in self.world.of_kind("Shipment"):
-            if shipment.properties["split"]!="development":continue
-            context=public_evidence(self.world,shipment.id,self.world.config.as_of)
-            world=evidence_world(context,self.world.config)
-            packages=[node for node in world.nodes.values() if node.kind=="Package"]
-            proofs=[node for node in world.nodes.values() if node.kind=="DeliveryProof"]
-            assessments=[proof_assessment(world,node,instant(context["as_of"])) for node in proofs]
-            if len(packages)>1 and len(proofs)==len(packages) and all(row["corroborated"] for row in assessments):
-                candidate=(shipment,context,proofs,assessments);break
-        self.assertIsNotNone(candidate,"Need real generated multi-package proof evidence")
-        shipment,context,proofs,assessments=candidate
-        evidence=sorted({identifier for row in assessments for identifier in row["evidence_ids"]})
-        outcome={"outcome_type":"delivery_verified","success":True,"evidence_ids":evidence,
-                 "verification_status":"OBSERVED","invalidated":False}
-        # Explicit authority fixture, not a claim this healthy shipment had an operational Case.
-        execution={"receipt_ref":"synthetic-confirmed","status":"ACKNOWLEDGED","action_code":"JOURNEY_DELAY",
-                   "occurred_at":(min(instant(node.properties["occurred_at"]) for node in proofs)-timedelta(minutes=1)).isoformat()}
-        self.assertTrue(verify(context,self.world.config,outcome,execution,"DEMO-OPERATOR-LOCAL","LOCAL_DEMO_OPERATOR")["resolved"])
-        with self.assertRaises(OperationsConflict):
-            verify(context,self.world.config,{**outcome,"evidence_ids":assessments[0]["evidence_ids"]},execution,"DEMO-OPERATOR-LOCAL","LOCAL_DEMO_OPERATOR")
-        with self.assertRaises(OperationsConflict):
-            verify(context,self.world.config,outcome,{**execution,"action_code":"ADDRESS_CONFLICT"},"DEMO-OPERATOR-LOCAL","LOCAL_DEMO_OPERATOR")
-
     def test_reopening_invalidates_prior_verified_outcome(self):
         store,driver,result=self.processed();case=store.case_detail(result["case_id"])
         def prepare(tx):

@@ -52,6 +52,30 @@ def operations_database(driver):
     return DEFAULT_DATABASE
 
 
+def attach_simulator(store,reader,manifest):
+    """Development only: the synthetic operational simulator answers executed actions through the feed.
+    It needs the live bundle's truth file (never loaded into Neo4j); without it nothing responds."""
+    if not getattr(store,"live",False):return None
+    from pathlib import Path
+    from dataset_v2.live_bundle import read_truth
+    from dataset_v2.contracts import digest as _digest
+    bundle=Path(os.environ.get("SUHAIL_LIVE_BUNDLE",str(Path(__file__).resolve().parents[1]/"artifacts"/"live-network"/"main")))
+    try:
+        feed_manifest=json.loads((bundle/"feed_manifest.json").read_text(encoding="utf-8"))
+        bundle_manifest=json.loads((bundle/"manifest.json").read_text(encoding="utf-8"))
+        truth=read_truth(bundle)
+    except (OSError,ValueError):
+        log.warning("Synthetic operational simulator unavailable (no live bundle); executed actions get no field response")
+        return None
+    if (bundle_manifest.get("dataset_id")!=manifest.get("dataset_id") or _digest(bundle_manifest)!=_digest(manifest)
+            or _digest([truth[k] for k in sorted(truth)])!=feed_manifest.get("truth_hash")):
+        log.warning("Live bundle does not match the imported dataset; simulator disabled")
+        return None
+    from operations.simulation import OperationalSimulator
+    store.adapter=OperationalSimulator(store.gateway,reader,truth,store.config)
+    return store.adapter
+
+
 class OperationsRuntime:
     def __init__(self):
         from operations.read_model import OperationsReader
@@ -74,6 +98,7 @@ class OperationsRuntime:
                                    agents=investigator if agents.enabled() else None)
         self.reader.store=self.store
         self.store.initialize()
+        self.simulator=attach_simulator(self.store,self.reader,manifest)
         from operations.workers import WorkerPool
         # Ingestion, monitoring, investigation and verification run on separate threads.
         self.workers=WorkerPool(self.store).start()
@@ -337,38 +362,14 @@ def reanalyze(case_id: str,request: Request,body: ReanalysisBody):
     return {'requested':requested,'analysis':result}
 
 
-class ObserveBody(StrictBody):
-    outcome_type: str=Field(min_length=3,max_length=80)
-    evidence_ids: list[str]=Field(min_length=1,max_length=100)
-    success: bool
+class VerificationRequest(StrictBody):
+    """No success flag exists: only the independent verifier decides whether an action worked."""
     expected_version: int=Field(ge=0)
     idempotency_key: str=Field(min_length=8,max_length=128,pattern=r"^[A-Za-z0-9_-]+$")
 
 
 @router.post("/cases/{case_id}/outcomes")
-@router.post("/cases/{case_id}/outcome/observe",include_in_schema=False)
-def observe_outcome(case_id: str,request: Request,body: ObserveBody):
-    actor=authority.authorize(request)
-    return invoke(get_runtime().store.observe_outcome,case_id=case_id,actor_id=actor["actor_id"],**body.model_dump())
-
-
-class VerifyBody(StrictBody):
-    expected_version: int=Field(ge=0)
-    idempotency_key: str=Field(min_length=8,max_length=128,pattern=r"^[A-Za-z0-9_-]+$")
-
-
-@router.post("/cases/{case_id}/outcomes/{outcome_id}/verify")
-def verify_outcome(case_id: str,outcome_id: str,request: Request,body: VerifyBody):
-    actor=authority.authorize(request)
-    return invoke(get_runtime().store.verify_outcome,case_id=case_id,outcome_id=outcome_id,
-                  actor_id=actor["actor_id"],authority=actor["authority"],**body.model_dump())
-
-
-class LegacyVerifyBody(VerifyBody):outcome_id: str=Field(min_length=1,max_length=160)
-
-
 @router.post("/cases/{case_id}/outcome/verify",include_in_schema=False)
-def verify_alias(case_id: str,request: Request,body: LegacyVerifyBody):
-    data=body.model_dump()
-    outcome_id=data.pop("outcome_id")
-    return verify_outcome(case_id,outcome_id,request,VerifyBody(**data))
+def request_verification(case_id: str,request: Request,body: VerificationRequest):
+    actor=authority.authorize(request)
+    return invoke(get_runtime().store.request_verification,case_id=case_id,actor_id=actor["actor_id"],**body.model_dump())
