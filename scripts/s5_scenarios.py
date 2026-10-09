@@ -17,9 +17,11 @@ Truth is read only to score after each phase (and by the simulator, which plays 
 Usage (from chat/): uv run python ../scripts/s5_scenarios.py --phase pipeline --out ../docs/evals/2026-10-09_s5
 """
 import argparse
+from datetime import datetime, timezone
 import json
 import logging
 from pathlib import Path
+import subprocess
 import sys
 import threading
 import time
@@ -31,6 +33,53 @@ import config  # noqa: E402
 from tests.test_live_runtime_neo4j import TEST_DATABASE, build_test_database, make_store  # noqa: E402
 
 logging.getLogger("neo4j").setLevel(logging.ERROR)
+
+
+ROOT = Path(__file__).resolve().parents[1]
+# Every model call LiteLLM completes or fails during a phase, by the model name the provider reported.
+MODEL_CALLS = {"succeeded": {}, "failed": {}, "total_tokens": 0}
+
+
+def record_model_calls():
+    import litellm
+
+    def succeeded(kwargs, response, start, end):
+        name = getattr(response, "model", None) or kwargs.get("model") or "unknown"
+        MODEL_CALLS["succeeded"][name] = MODEL_CALLS["succeeded"].get(name, 0) + 1
+        MODEL_CALLS["total_tokens"] += getattr(getattr(response, "usage", None), "total_tokens", 0) or 0
+
+    def failed(kwargs, response, start, end):
+        name = kwargs.get("model") or "unknown"
+        MODEL_CALLS["failed"][name] = MODEL_CALLS["failed"].get(name, 0) + 1
+
+    litellm.success_callback = [*litellm.success_callback, succeeded]
+    litellm.failure_callback = [*litellm.failure_callback, failed]
+
+
+def git_state():
+    commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+    dirty = bool(subprocess.check_output(["git", "status", "--porcelain", "--untracked-files=no"], cwd=ROOT, text=True).strip())
+    return commit, dirty
+
+
+def provenance(phase, started_at, *, bundle_dir=None, manifest_hash=None):
+    """Written into every results file: the exact code, data and model a result came from."""
+    from dataset_v2.contracts import digest
+    from dataset_v2.network import NETWORK_VERSION
+    from operations import investigator
+    commit, dirty = git_state()
+    record = {"phase": phase, "commit": commit, "dirty_tree": dirty, "started_at": started_at,
+              "finished_at": datetime.now(timezone.utc).isoformat(), "configured_model": config.LLM_MODEL,
+              "model_api_base": config.LLM_API_BASE, "database": TEST_DATABASE, "generator": NETWORK_VERSION,
+              "investigator_prompt_sha256": digest(investigator.SYSTEM), "reviewer_prompt_sha256": digest(investigator.REVIEWER_SYSTEM),
+              "model_calls": json.loads(json.dumps(MODEL_CALLS))}
+    if bundle_dir is not None:
+        manifest = json.loads((Path(bundle_dir) / "manifest.json").read_text(encoding="utf-8"))
+        feed = json.loads((Path(bundle_dir) / "feed_manifest.json").read_text(encoding="utf-8"))
+        record.update(dataset_id=manifest.get("dataset_id"), manifest_hash=digest(manifest), feed_hash=feed["hash"], truth_hash=feed["truth_hash"])
+    if manifest_hash:
+        record["manifest_hash"] = manifest_hash
+    return record
 
 
 def ledger(driver, kind):
@@ -161,7 +210,11 @@ def metrics(rows, truth):
     }
 
 
-def phase_pipeline(out, total):
+def bundle_dir(tmp):
+    return Path(tmp.name) / "bundle"
+
+
+def phase_pipeline(out, total, started_at):
     from operations import investigator
     driver, bundle, truth, tmp = build_test_database(total=total)
     store = make_store(driver, bundle, agents=investigator)
@@ -170,13 +223,14 @@ def phase_pipeline(out, total):
     step_loop(store)
     rows = case_rows(driver, truth)
     result = {"phase": "pipeline", "model": config.LLM_MODEL, "wall_seconds": round(time.perf_counter() - started),
+              "provenance": provenance("pipeline", started_at, bundle_dir=bundle_dir(tmp)),
               "metrics": metrics(rows, truth), "cases": rows}
     (out / "pipeline.json").write_text(json.dumps(result, indent=1, default=str), encoding="utf-8")
     tmp.cleanup()
     return result["metrics"]
 
 
-def phase_heldout(out, total):
+def phase_heldout(out, total, started_at):
     driver, bundle, truth, tmp = build_test_database(total=total, live_split="held_out")
     store = make_store(driver, bundle)
     step_loop(store, investigate=False)
@@ -191,12 +245,14 @@ def phase_heldout(out, total):
               "missed_abnormal": sorted([s, live[s]["recipe"]] for s in abnormal if s not in with_case)}
     result["false_positive_rate"] = round(len(result["false_positive_cases"]) / len(healthy), 4) if healthy else None
     result["recall"] = round(1 - len(result["missed_abnormal"]) / len(abnormal), 4) if abnormal else None
+    result["per_shipment"] = sorted([s, live[s]["recipe"], live[s]["healthy"], s in with_case] for s in live)
+    result["provenance"] = provenance("heldout", started_at, bundle_dir=bundle_dir(tmp))
     (out / "heldout_detection.json").write_text(json.dumps(result, indent=1, default=str), encoding="utf-8")
     tmp.cleanup()
     return result
 
 
-def phase_reviewer(out, total):
+def phase_reviewer(out, total, started_at):
     """D: the real investigator runs; the reviewer's provider endpoint is unreachable."""
     from langchain_core.messages import HumanMessage, SystemMessage
     from langchain_litellm import ChatLiteLLM
@@ -228,13 +284,16 @@ def phase_reviewer(out, total):
               "investigator_mode": (run.get("investigation") or {}).get("mode"), "primary_cause": (run.get("investigation") or {}).get("primary_cause"),
               "review": run.get("review"), "degraded": run.get("degraded"), "authority": run.get("authority"),
               "final_state": case["workflow_state"], "executions": [e for e in ledger(driver, "OpsExecution") if e["case_id"] == case["entity_id"]],
-              "audit_events": sorted({a["event_type"] for a in audit})}
+              "stored_reviews": [{k: r.get(k) for k in ("verdict", "model_verdict", "degraded", "mode", "summary_en", "summary_ar")}
+                                 for r in ledger(driver, "OpsReview") if r["case_id"] == case["entity_id"]],
+              "audit_events": sorted({a["event_type"] for a in audit}),
+              "provenance": provenance("reviewer", started_at, bundle_dir=bundle_dir(tmp))}
     (out / "reviewer_failure.json").write_text(json.dumps(result, indent=1, default=str), encoding="utf-8")
     tmp.cleanup()
     return result
 
 
-def phase_concurrency(out, total, seconds):
+def phase_concurrency(out, total, seconds, started_at):
     from operations import investigator
     from operations.workers import WorkerPool
     import os
@@ -281,13 +340,14 @@ def phase_concurrency(out, total, seconds):
     result = {"phase": "concurrency", "model": config.LLM_MODEL, "run_seconds": seconds, "samples": len(samples),
               "investigation_paused_check": paused_check,
               "investigation_windows": spans, "worker_heartbeats": pool.status(),
-              "total_events": samples[-1]["events"] if samples else 0}
+              "total_events": samples[-1]["events"] if samples else 0,
+              "provenance": provenance("concurrency", started_at, bundle_dir=bundle_dir(tmp))}
     (out / "concurrency.json").write_text(json.dumps(result, indent=1, default=str), encoding="utf-8")
     tmp.cleanup()
     return result
 
 
-def phase_checks(out, total):
+def phase_checks(out, total, started_at):
     """On the database the pipeline phase left behind: public ids, authority switch, trigger coverage, and a
     scan of every receipt, outcome, audit entry, review, recommendation and case API response for answer-key words."""
     from core.query_runner import get_driver
@@ -367,7 +427,8 @@ def phase_checks(out, total):
               "authority_bypass_executions": bypass, "executions": len(ledger(driver, "OpsExecution")),
               "authority_decisions_recorded": len(decisions), "trigger_symptoms": triggers,
               "answer_key_scan": {"terms": len(vocabulary), "records_scanned": {k: len(v) for k, v in sources.items()},
-                                  "leaks": leaks[:100], "leak_count": len(leaks)}}
+                                  "leaks": leaks[:100], "leak_count": len(leaks)},
+              "provenance": provenance("checks", started_at, manifest_hash=imported["h"])}
     (out / "checks.json").write_text(json.dumps(result, indent=1, default=str), encoding="utf-8")
     return result
 
@@ -388,7 +449,7 @@ def end_state(row):
     return "routed_to_a_person_" + row["final_state"].lower()
 
 
-def phase_accounting(out, total, source):
+def phase_accounting(out, total, source, started_at):
     """After a pipeline run, on the database it left: every wrong diagnosis's end state, whether each
     resolved case's exception was really gone at closure, and what happened to two-cause shipments."""
     from core.query_runner import get_driver
@@ -452,17 +513,26 @@ def phase_accounting(out, total, source):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--phase", required=True, choices=("pipeline", "checks", "accounting", "heldout", "reviewer", "concurrency"))
+    parser.add_argument("--phase", required=True, choices=("pipeline", "checks", "accounting", "heldout", "reviewer", "concurrency", "human"))
     parser.add_argument("--source", default="pipeline.json", help="accounting: the pipeline result file in --out")
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--total", type=int, default=600)
     parser.add_argument("--seconds", type=int, default=300)
+    parser.add_argument("--allow-dirty", action="store_true", help="run on uncommitted tracked changes (results say so)")
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
-    result = {"pipeline": lambda: phase_pipeline(args.out, args.total), "checks": lambda: phase_checks(args.out, args.total),
-              "accounting": lambda: phase_accounting(args.out, args.total, args.source), "heldout": lambda: phase_heldout(args.out, args.total),
-              "reviewer": lambda: phase_reviewer(args.out, args.total),
-              "concurrency": lambda: phase_concurrency(args.out, args.total, args.seconds)}[args.phase]()
+    commit, dirty = git_state()
+    if dirty and not args.allow_dirty:
+        raise SystemExit(f"Tracked files differ from {commit[:12]}; commit first so results name the exact code (or pass --allow-dirty).")
+    started_at = datetime.now(timezone.utc).isoformat()
+    record_model_calls()
+    result = {"pipeline": lambda: phase_pipeline(args.out, args.total, started_at),
+              "checks": lambda: phase_checks(args.out, args.total, started_at),
+              "accounting": lambda: phase_accounting(args.out, args.total, args.source, started_at),
+              "heldout": lambda: phase_heldout(args.out, args.total, started_at),
+              "reviewer": lambda: phase_reviewer(args.out, args.total, started_at),
+              "concurrency": lambda: phase_concurrency(args.out, args.total, args.seconds, started_at),
+              "human": lambda: phase_human(args.out, args.total, started_at)}[args.phase]()
     print(json.dumps(result, indent=1, default=str)[:4000])
 
 
