@@ -91,7 +91,7 @@ WHERE $after_time IS NULL OR datetime(sort_time) > $after_time OR (datetime(sort
 """
 QUEUE_PROJECTION = """RETURN sort_time,sort_id,{case_id:c.entity_id,shipment_id:c.shipment_id,
  source_case_id:c.source_case_id,issue_summary:coalesce(c.issue_summary,'Evidence-derived shipment exception'),
- city:c.city,category:head(c.cause_codes),cause_codes:coalesce(c.cause_codes,[]),priority:c.priority,
+ city:c.city,category:head(c.cause_codes),cause_codes:coalesce(c.cause_codes,[]),symptom_codes:coalesce(c.symptom_codes,[]),priority:c.priority,
  workflow_state:c.workflow_state,operational_status:c.operational_status,opened_at:c.opened_at,
  as_of:coalesce(c.as_of,s.as_of),state_version:c.state_version,synthetic:true} AS item"""
 AUDIT_PROJECTION = """RETURN sort_time,sort_id,{id:a.entity_id,timestamp:coalesce(a.wall_recorded_at,a.occurred_at),scenario_time:a.occurred_at,shipment_id:a.shipment_id,

@@ -70,7 +70,7 @@ def _prompt(state: PipelineState) -> str:
                     "policy": local.get("policy"),
                     "addresses": local.get("addresses"),
                     "events": local.get("events"),
-                    "recorded_failure": local.get("live_failure"),
+                    "recorded_failure_id": (local.get("live_failure") or {}).get("failure_id"),
                 },
                 ensure_ascii=False, default=str,
             )

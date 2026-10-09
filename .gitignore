@@ -36,3 +36,4 @@ playwright-report/
 artifacts/
 docs/agent-runs/evidence/**/*.png
 docs/agent-runs/evidence/**/*.mjs
+docs/agent-runs/evidence/2026-09-17T19-21-agentx-ui-repair-proof/

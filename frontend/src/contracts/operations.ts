@@ -49,6 +49,8 @@ export interface OperationsCase {
   city?: string | null
   courier?: string | null
   category?: string | null
+  /** Observable symptoms the monitor detected; the cause is unknown until investigated. */
+  symptoms?: string[]
   priority: CasePriority
   workflowState: CaseWorkflowState
   operationalStatus?: OperationalShipmentStatus | null

@@ -6,6 +6,9 @@ from dataset_v2.context import evidence_context
 from dataset_v2.derive import assess_shipment, custody_corroborated
 
 
+WINDOW_END_KINDS = frozenset(("Shipment", "JourneyPlan"))
+
+
 def public_evidence(world, shipment_id, as_of=None):
     shipment = world.nodes.get(shipment_id)
     if shipment is None or shipment.kind != "Shipment" or shipment.properties.get("split") != "development":
@@ -30,6 +33,9 @@ def public_evidence(world, shipment_id, as_of=None):
         return output
     for row in context["nodes"] + context["edges"]:
         row["properties"] = clean(row["properties"])
+        if row.get("kind") in WINDOW_END_KINDS:
+            # Generator bookkeeping: the end of the shipment's whole story is future information.
+            row["properties"].pop("as_of", None)
     return context
 
 

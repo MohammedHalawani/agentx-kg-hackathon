@@ -35,11 +35,15 @@ export function CaseCard({
           <span className="font-mono text-[11px] text-muted-foreground group-hover:text-accent-foreground/80" dir="ltr">
             {caseRow.shipmentId}
           </span>
-          {caseRow.category && (
+          {caseRow.category ? (
             <span className="text-[11px] text-muted-foreground group-hover:text-accent-foreground/80" dir="auto">
               {rootCauseLabel(caseRow.category)}
             </span>
-          )}
+          ) : caseRow.symptoms?.length ? (
+            <span className="text-[11px] text-muted-foreground group-hover:text-accent-foreground/80" dir="auto">
+              {caseRow.symptoms.map((code) => t(`symptoms.${code}`)).join(' · ')}
+            </span>
+          ) : null}
           {caseRow.city && <span className="text-[11px] text-muted-foreground" dir="auto">{t(`cities.${caseRow.city}`)}</span>}
         </span>
         <span className="mt-1.5 flex flex-wrap gap-1.5">

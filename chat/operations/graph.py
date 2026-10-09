@@ -20,6 +20,7 @@ class Investigation(TypedDict, total=False):
     proposal: dict | None
     review: dict
     trace: list
+    degraded: list
     iteration: int
     feedback: str | None
     disposition: Any
@@ -36,16 +37,16 @@ def topology():
                       for e in graph.edges], "retry_limit": 2}
 
 
-def analysis(state, events, afl_scenario):
+def analysis(state, events):
     return {"result": state["result"], "proposal": state.get("proposal"), "review": state["review"],
             "trace": state["trace"], "context_hash": digest(state["context"]),
-            "afl": {"iterations": len(state["trace"]), "fixture": bool(afl_scenario)},
+            "afl": {"iterations": len(state["trace"])}, "degraded": state.get("degraded") or [],
             "mode": state.get("mode", "deterministic_evidence_rules"), "outcome": None,
             "investigation": state.get("investigation"), "authority": state.get("authority"),
             "pipeline_events": list(events), "topology": topology()}
 
 
-def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, events=None, afl_scenario=False,
+def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, events=None,
                 agents=None, live_session=False):
     """agents: None (deterministic only) or a module with facts/investigate/plan/review (operations.agents)."""
     from operations.worker import review
@@ -69,7 +70,8 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
                 emit(name, "FAILED", state, {"error": "stage_failed"})
                 raise
             merged = {**state, **update}
-            status = "REJECTED" if name == "review" and update["review"]["verdict"] == "reject" else "COMPLETED"
+            status = ("REJECTED" if name == "review" and update["review"]["verdict"] == "reject" else
+                      "DEGRADED" if len(update.get("degraded") or []) > len(state.get("degraded") or []) else "COMPLETED")
             emit(name, status, merged, output)
             return update
         return run
@@ -95,6 +97,8 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
         if agents and result["diagnoses"]:
             investigation = agents.investigate(agents.facts(s["context"], result))
             update.update(investigation=investigation, mode="gpt_oss_agents")
+            if investigation.get("degraded"):
+                update["degraded"] = [*s.get("degraded", []), {"role": "investigator", "error": investigation["validation_error"]}]
             cited = set(investigation["supporting_evidence_ids"]) | set(investigation["conflicting_evidence_ids"])
             output.update(investigation=investigation, agent=investigation["mode"], evidence_ids=sorted(cited) or output["evidence_ids"])
         return update, output
@@ -107,56 +111,67 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
             "evidence_ids": policies}
 
     def recommend(s):
-        if afl_scenario and s.get("iteration",0) == 0 and s["result"]["recommendations"]:
-            proposal = {"action_code": "MARK_DELIVERED_FROM_GPS", "action": "Certify parcel delivery from vehicle GPS.",
-                        "evidence_ids": [], "requires_approval": False, "resolves": True}
-        elif agents and s.get("investigation") and s["result"]["recommendations"]:
+        degraded = list(s.get("degraded", []))
+        if agents and s.get("investigation") and not s["investigation"].get("degraded") and s["result"]["recommendations"]:
             planned = agents.plan(agents.facts(s["context"], s["result"], s.get("precedents", [])), s["investigation"], feedback=s.get("feedback"))
             action = planned["action_type"]
             text = planned["expected_result"] or ACTIONS[action][3]
             proposal = {"code": s["investigation"]["primary_hypothesis"], "action_code": s["investigation"]["primary_hypothesis"],
                         "action_type": action, "action": text, "action_en": text, "action_ar": None,
                         "evidence_ids": planned["evidence_basis"], "requires_approval": True, "resolves": False, "planner": planned}
+            if planned.get("degraded"):
+                degraded.append({"role": "planner", "error": planned["validation_error"]})
         elif s["result"]["recommendations"]:
-            if afl_scenario and s.get("iteration",0) and "cannot establish parcel delivery" not in (s.get("feedback") or ""):
-                raise ValueError("Revision must consume the actual safety rejection")
             r = s["result"]["recommendations"][0]
             proposal = {**r, "action_code": r["code"], "resolves": False}
         else: proposal = None
-        return {"proposal": proposal}, {"proposal": proposal, "evidence_ids": (proposal or {}).get("evidence_ids",[]),
+        return {"proposal": proposal, "degraded": degraded}, {"proposal": proposal, "degraded": degraded, "evidence_ids": (proposal or {}).get("evidence_ids",[]),
             "feedback_received": s.get("feedback"), "verified_precedents": len(s.get("precedents",[])),
             "agent": ((proposal or {}).get("planner") or {}).get("mode", "evidence_rules")}
 
     def review_stage(s):
-        verdict = review(s["proposal"], {n["id"] for n in s["context"]["nodes"]}) if s["proposal"] else {
+        verdict = review(s["proposal"], {n["id"] for n in s["context"]["nodes"]}, {n["id"]: n["kind"] for n in s["context"]["nodes"]}) if s["proposal"] else {
             "verdict": "reject", "feedback": "No grounded investigation action at this snapshot."}
         model_review = None
+        degraded = list(s.get("degraded", []))
         if agents and s["proposal"] and s["proposal"].get("planner") and verdict["verdict"] == "accept":
             model_review = agents.review(agents.facts(s["context"], s["result"], s.get("precedents", [])), s["investigation"], s["proposal"]["planner"])
-            if model_review["verdict"] == "REVISE":
+            if model_review["verdict"] == "UNAVAILABLE":
+                # Fail closed: no independent review means no automatic authority. Recorded, not hidden.
+                degraded.append({"role": "reviewer", "error": model_review["validation_error"]})
+                verdict = {**verdict, "model_verdict": "UNAVAILABLE", "degraded": True,
+                           "feedback": "Independent model review could not be completed; automatic execution is blocked and a person must review."}
+            elif model_review["verdict"] == "REVISE":
                 verdict = {"verdict": "reject", "feedback": model_review["feedback"] or "Reviewer requested a revision."}
             else:
                 verdict = {**verdict, "model_verdict": model_review["verdict"], "feedback": model_review["feedback"] or verdict["feedback"]}
         trace = [*s["trace"], {"iteration": s.get("iteration",0), "proposal": s["proposal"], "review": verdict,
             "feedback_received": s.get("feedback"), "mode": "deterministic_evidence_guard"}]
-        return {"review": verdict, "trace": trace, "feedback": verdict["feedback"], "iteration": s.get("iteration",0)+1}, {
+        return {"review": verdict, "trace": trace, "feedback": verdict["feedback"], "iteration": s.get("iteration",0)+1,
+                "degraded": degraded}, {"degraded": degraded,
             **verdict, "evidence_ids": (s["proposal"] or {}).get("evidence_ids",[]),
             "checks": ["shipment_bound_evidence", "operator_approval", "no_gps_delivery_certification", "independent_verified_outcome"],
             "agent": (model_review or {}).get("mode", "deterministic_guard"), "model_review": model_review}
 
     def route(s):
         state = s
-        if s["review"]["verdict"] != "accept":
+        if s.get("degraded"):
+            # Fail closed: any unavailable model role sends the case to a person with no automatic authority.
+            roles = ", ".join(sorted({d["role"] for d in s["degraded"]}))
+            authority = {"risk_class": "HUMAN_REVIEW", "reason": f"Model role unavailable ({roles}); automatic execution blocked.",
+                         "action_type": (s.get("proposal") or {}).get("action_type"), "policy": "deterministic_action_authority"}
+            state = {**s, "authority": authority, "result": {**s["result"], "workflow_state": "HUMAN_REVIEW"}}
+        elif s["review"]["verdict"] != "accept":
             state = {**s, "result": {**s["result"], "workflow_state": "ESCALATED" if s["proposal"] else "NEEDS_EVIDENCE"}}
         elif s["proposal"] and s["proposal"].get("action_type"):
             # The deterministic authority policy, never the model, decides who may act.
             codes = [d["code"] for d in s["result"]["diagnoses"]]
             risk, reason = authorize(s["proposal"]["action_type"], codes, review_verdict=s["review"].get("model_verdict"),
                                      evidence_conflict=s["result"]["assessment"]["requires_human_review"],
-                                     synthetic=True, live_session=live_session)
+                                     synthetic=True, live_session=live_session, degraded=bool(s.get("degraded")))
             authority = {"risk_class": risk, "reason": reason, "action_type": s["proposal"]["action_type"], "policy": "deterministic_action_authority"}
             state = {**s, "authority": authority, "result": {**s["result"], "workflow_state": STATE[risk]}}
-        receipt = commit(analysis(state, events, afl_scenario)) if commit else None
+        receipt = commit(analysis(state, events)) if commit else None
         return {"result": state["result"], "disposition": receipt, "authority": state.get("authority")}, {"authority": state.get("authority"), "agent": "authority_policy","workflow_state": (receipt or {}).get("workflow_state",state["result"]["workflow_state"]),
             "physical_execution": False, "outcome": None}
 
@@ -177,10 +192,10 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
     return g.compile()
 
 
-def investigate(shipment_id, as_of, config, retrieve, precedents, *, commit=None, on_event=None, afl_scenario=False,
+def investigate(shipment_id, as_of, config, retrieve, precedents, *, commit=None, on_event=None,
                 agents=None, live_session=False):
     events = []
-    graph = build_graph(config,retrieve,precedents,commit=commit,on_event=on_event,events=events,afl_scenario=afl_scenario,
+    graph = build_graph(config,retrieve,precedents,commit=commit,on_event=on_event,events=events,
                         agents=agents,live_session=live_session)
-    result = graph.invoke({"shipment_id":shipment_id,"as_of":as_of,"trace":[],"iteration":0,"feedback":None})
-    return analysis(result,events,afl_scenario), result.get("disposition")
+    result = graph.invoke({"shipment_id":shipment_id,"as_of":as_of,"trace":[],"iteration":0,"feedback":None,"degraded":[]})
+    return analysis(result,events), result.get("disposition")

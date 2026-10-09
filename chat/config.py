@@ -38,6 +38,7 @@ LLM_API_KEY = (
     or os.getenv("OPENAI_API_KEY")
     or os.getenv("OLLAMA_API_KEY")
 )
+LLM_TIMEOUT_SECONDS = float(os.getenv("LLM_TIMEOUT_SECONDS", "120"))
 LLM_API_BASE = os.getenv("LLM_API_BASE") or (
     "https://ollama.com/v1" if LLM_MODEL.startswith("openai/gpt-oss:") else None
 )

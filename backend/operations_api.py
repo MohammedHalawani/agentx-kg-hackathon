@@ -277,9 +277,9 @@ def step_worker(request: Request):
 
 
 @router.post("/cases/{case_id}/investigate")
-def investigate(case_id: str,request: Request, review_scenario: bool=False):
+def investigate(case_id: str,request: Request):
     authority.authorize(request)
-    return invoke(get_runtime().store.process_one,case_id=case_id,**({'review_scenario':True} if review_scenario else {}))
+    return invoke(get_runtime().store.process_one,case_id=case_id)
 
 
 @router.post("/simulation/start")
@@ -326,12 +326,12 @@ class ReanalysisBody(StrictBody):
 
 
 @router.post("/cases/{case_id}/reanalyze")
-def reanalyze(case_id: str,request: Request,body: ReanalysisBody,review_scenario: bool=False):
+def reanalyze(case_id: str,request: Request,body: ReanalysisBody):
     actor=authority.authorize(request)
     store=get_runtime().store
     requested=invoke(store.request_reanalysis,case_id=case_id,actor_id=actor['actor_id'],**body.model_dump())
     result=({'processed':False,'reason':'idempotent_replay'} if requested.get('idempotent') else
-            invoke(store.process_one,case_id=case_id,**({'review_scenario':True} if review_scenario else {})))
+            invoke(store.process_one,case_id=case_id))
     return {'requested':requested,'analysis':result}
 
 

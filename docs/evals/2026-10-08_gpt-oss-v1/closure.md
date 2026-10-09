@@ -1,3 +1,7 @@
+> **Superseded (2026-10-09): not valid as an independent reasoning evaluation.** Complaint texts were
+> authored per gold category and keyed the complaint-similarity retrieval, so part of the answer was
+> in the input. See `docs/evals/2026-10-09_gpt-oss-v1-neutral/` for the neutral-complaint recomputation.
+
 # Evaluation V1 closure
 
 Closed 2026-10-08, UTC+3. **PASS for complete controlled measurement and reporting.**

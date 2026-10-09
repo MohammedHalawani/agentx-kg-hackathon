@@ -154,9 +154,10 @@ def main():
     for limit in (25,50,100):assert len(demo.get("/explore?"+urlencode({"filter":"all","limit":limit}))["items"])<=limit
     audit=demo.get("/audit?"+urlencode({"case_id":cid,"limit":100}))
     assert sum(e["event_type"]=="CASE_RESOLVED" for e in audit["items"])==1
-    assert any(e["event_type"]=="AFL_RETRY" for e in audit["items"])
+    # No scripted review rehearsal exists; a rejection appears only if the real reviewer rejected.
+    assert not any(e["event_type"]=="AFL_RETRY" for e in audit["items"])
     assert all("thinking" not in json.dumps(e) and "chain_of_thought" not in json.dumps(e) for e in audit["items"])
-    report["checks"].update(single_resolution_audit=True,afl_review_rejection_revised=True,bounded_explore=True,notifications_dry_run=True)
+    report["checks"].update(single_resolution_audit=True,no_scripted_review=True,bounded_explore=True,notifications_dry_run=True)
     report["final_status"]=demo.get("/simulation/status")
     assert report["final_status"]["notifications"]["external_calls"]==0
     report["decisions"]=demo.get("/decisions")

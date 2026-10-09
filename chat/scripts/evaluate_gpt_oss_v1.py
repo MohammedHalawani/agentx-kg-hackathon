@@ -78,6 +78,19 @@ _SYMPTOMS = {
 }
 
 
+# Neutral protocol (2026-10-09): one complaint wording for every case. The symptom templates above
+# were authored per gold category, which hands the model (and the complaint-keyed vector search)
+# part of the answer. Results prepared with _SYMPTOMS are not valid as independent reasoning.
+NEUTRAL_COMPLAINT = {
+    "ar": "لدي مشكلة في هذه الشحنة ولم تُحل بعد. أحتاج معرفة ما حدث والخطوة التالية بناءً على الأدلة المسجلة.",
+    "en": "I have a problem with this shipment that is still unresolved. Please determine what happened and the next step from the recorded evidence.",
+}
+
+
+def templates(mode):
+    return NEUTRAL_COMPLAINT if mode == "neutral" else _SYMPTOMS
+
+
 def base(category):
     return (category or "").removeprefix("escalation:")
 
@@ -146,9 +159,9 @@ def select_cases(corpus, seed=42):
     return [grouped[cause][slot] for slot in range(5) for cause in CATEGORIES]
 
 
-def complaint_for(row, slot):
+def complaint_for(row, slot, mode="category_symptoms"):
     language = "ar" if slot < 3 else "en"
-    symptom = _SYMPTOMS[base(row["category"])][language]
+    symptom = NEUTRAL_COMPLAINT[language] if mode == "neutral" else _SYMPTOMS[base(row["category"])][language]
     prefix = "الشحنة" if language == "ar" else "Shipment"
     city = f" ({row['city']})" if row.get("city") else ""
     return f"{prefix} {row['shipment_id']}{city}: {symptom}", language
@@ -211,7 +224,7 @@ def validate_runtime(runtime, gold, membership=None):
             raise ValueError("Live gold failure ID withheld")
 
 
-def prepare(output_dir):
+def prepare(output_dir, mode="category_symptoms"):
     if (output_dir / "manifest.json").exists():
         raise ValueError("Frozen manifest already exists; use a new directory for a new protocol")
     if urlsplit(config.NEO4J_URI).hostname not in ("localhost", "127.0.0.1") or config.SHIPMENT_DATABASE != "shipments":
@@ -232,7 +245,7 @@ def prepare(output_dir):
     cases, gold = [], {}
     for index, row in enumerate(selected):
         case_id = f"case-{index + 1:02d}"
-        complaint, language = complaint_for(row, index // len(CATEGORIES))
+        complaint, language = complaint_for(row, index // len(CATEGORIES), mode)
         forbidden = held_by_ship[row["shipment_id"]]
         factual = {"shipment_id": row["shipment_id"], "tracking_id": None, "city": row.get("city"),
                    "district": None, "courier": None, "category_hint": None, "raw_text": complaint}
@@ -257,7 +270,7 @@ def prepare(output_dir):
     manifest = {"version": VERSION, "prepared_at": datetime.now(timezone.utc).isoformat(),
                 "runtime_hash": digest(runtime), "gold_hash": digest(gold), "corpus_hash": digest(corpus),
                 "membership_hash": digest(membership), "source_hashes": source_hashes(), "provider_identity": provider_identity(),
-                "symptom_templates_hash": digest(_SYMPTOMS), "models": MODELS, "temperature": 0,
+                "symptom_templates_hash": digest(templates(mode)), "complaint_mode": mode, "models": MODELS, "temperature": 0,
                 "timeout_seconds": TIMEOUT_SECONDS, "max_retries": MAX_RETRIES,
                 "sampling_seed": 42, "planned_cases_per_model": 30,
                 "language_counts": {"ar": 18, "en": 12},
@@ -280,7 +293,7 @@ def verify_bundle(output_dir):
     gold = load_json(output_dir / "gold.json")
     if manifest["version"] != VERSION or digest(runtime) != manifest["runtime_hash"] or digest(gold) != manifest["gold_hash"]:
         raise ValueError("Frozen input/gold hash mismatch")
-    if source_hashes() != manifest["source_hashes"] or digest(_SYMPTOMS) != manifest["symptom_templates_hash"]:
+    if source_hashes() != manifest["source_hashes"] or digest(templates(manifest.get("complaint_mode"))) != manifest["symptom_templates_hash"]:
         raise ValueError("Production source/template hash mismatch; paired runs must use unchanged prompts/rules")
     if provider_identity() != manifest["provider_identity"]:
         raise ValueError("Provider endpoint/settings fingerprint mismatch")
@@ -599,7 +612,7 @@ def report(output_dir):
     lines.extend(["Wilson 95% intervals use completed case agreement counts, including exceptions as disagreements. Balanced synthetic sampling is not random production sampling; intervals are descriptive uncertainty, not evidence of significance.", "",
                   "| Base category | 20B agreement | 120B agreement |", "|---|---:|---:|"])
     for category in CATEGORIES:
-        cells = [summaries[model]["per_category"][category] for model in MODELS]
+        cells = [summaries[model]["per_category"][category] if model in summaries else {"correct": 0, "percentage": 0} for model in MODELS]
         lines.append(f"| {category} | " + " | ".join(f"{cell['correct']}/5 ({cell['percentage']}%)" for cell in cells) + " |")
     lines.append("")
     lines.extend(f"- {item}" for item in manifest["limitations"])
@@ -617,12 +630,14 @@ def main():
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_DIR)
     parser.add_argument("--model", choices=MODELS)
     parser.add_argument("--max-new-results", type=int)
+    parser.add_argument("--neutral-complaints", action="store_true",
+                        help="prepare: one neutral complaint for every case (no category-authored symptoms)")
     args = parser.parse_args()
     # Provider logs can include request/response content. Benchmark records type-only errors.
     logging.disable(logging.CRITICAL)
     try:
         if args.prepare:
-            prepared = prepare(args.output_dir)
+            prepared = prepare(args.output_dir, "neutral" if args.neutral_complaints else "category_symptoms")
             print(encode({"prepared": True, "runtime_hash": prepared["runtime_hash"], "cases": 30}))
         elif args.run:
             run(args.output_dir, (args.model,) if args.model else MODELS, args.max_new_results)

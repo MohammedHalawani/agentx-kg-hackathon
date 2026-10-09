@@ -34,10 +34,7 @@ def classification_summary(state, value):
     category = value.get("category") or "unknown"
     local = _local(state)
     text = f"Model hypothesis: {category}; requires evidence verification. " + recorded_facts(state)
-    failure = local.get("live_failure") or {}
-    if failure.get("category"):
-        text += f" Recorded failure category: {failure['category']}."
-    elif category == "hub_delay" and any(event.get("event_type") == "HUB_DELAY"
+    if category == "hub_delay" and any(event.get("event_type") == "HUB_DELAY"
                                         for event in local.get("events") or []):
         text += " A HUB_DELAY event is recorded; causal attribution still requires review."
     elif category in ("failed_attempt_barcode_mismatch", "failed_attempt_weight_mismatch", "failed_attempt_wrong_gate"):

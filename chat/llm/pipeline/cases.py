@@ -162,15 +162,10 @@ def overview() -> dict:
 # Complaint text for the intake worklist. Built from real queue rows so the shipment id in
 # each row resolves during extraction and seeds a real graph traversal - a plausible-looking
 # but fabricated id extracts fine and then retrieves nothing, which looks like a pipeline bug.
-_PHRASING = {
-    "address_conflict": "الشحنة {sid} لم تصل والعنوان المسجل غير صحيح",
-    "recipient_unavailable": "لم يتم تسليم الشحنة {sid} ولم يتواصل معي المندوب",
-    "hub_delay": "الشحنة {sid} متأخرة كثيراً ولم تتحرك من المستودع",
-    "failed_attempt_wrong_gate": "المندوب لم يستطع الوصول إلى الشحنة {sid} عند البوابة",
-    "failed_attempt_barcode_mismatch": "الشحنة {sid} لم تسلّم بسبب مشكلة في الباركود",
-    "failed_attempt_weight_mismatch": "الشحنة {sid} لم تسلّم بسبب اختلاف في الوزن",
-}
-_DEFAULT_PHRASING = "لدي مشكلة في الشحنة {sid} ولم يتم حلها حتى الآن"
+#
+# One neutral wording for every row: a template chosen per recorded failure category would hand
+# the answer to the extractor and classifier. The worklist row carries no category either.
+NEUTRAL_PHRASING = "لدي مشكلة في الشحنة {sid} ولم يتم حلها حتى الآن"
 
 
 def worklist() -> list[dict]:
@@ -190,15 +185,12 @@ def worklist() -> list[dict]:
         shipment_id = row.get("shipment_id")
         if not shipment_id:
             continue
-        category = row.get("category") or ""
-        template = _PHRASING.get(category, _DEFAULT_PHRASING)
         out.append({
             "failure_id": row.get("failure_id"),
             "shipment_id": shipment_id,
-            "category": category,
             "city": row.get("city"),
             "courier": row.get("courier"),
-            "text": template.format(sid=shipment_id),
+            "text": NEUTRAL_PHRASING.format(sid=shipment_id),
         })
     return out
 

@@ -8,12 +8,12 @@ export interface ApiPage<T> {
   metadata?: { buckets?: Record<string, number>; filter_choices?: Record<string, string[]>; offset?: number; as_of?: string; split?: string }
 }
 export interface ApiCase {
-  case_id: string; shipment_id: string; issue_summary: string; city?: string; category?: string
+  case_id: string; shipment_id: string; issue_summary: string; city?: string; category?: string; symptom_codes?: string[]
   priority: CasePriority; workflow_state: CaseWorkflowState; operational_status?: OperationalShipmentStatus
   opened_at?: string; synthetic?: boolean
 }
 export function adaptCase(row: ApiCase): OperationsCase {
-  return { caseId: row.case_id, shipmentId: row.shipment_id, issueSummary: row.issue_summary, city: row.city, category: row.category, priority: row.priority, workflowState: row.workflow_state, operationalStatus: row.operational_status, openedAt: row.opened_at }
+  return { caseId: row.case_id, shipmentId: row.shipment_id, issueSummary: row.issue_summary, city: row.city, category: row.category, symptoms: row.symptom_codes ?? [], priority: row.priority, workflowState: row.workflow_state, operationalStatus: row.operational_status, openedAt: row.opened_at }
 }
 export interface ApiAuditEvent {
   id: string; timestamp: string; shipment_id: string; case_id?: string; event_type: string; actor: string; model?: string; decision?: string; result?: string; synthetic?: boolean; stage?:string; stage_status?:string

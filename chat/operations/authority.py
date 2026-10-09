@@ -34,13 +34,16 @@ SENSITIVE_CODES = frozenset(("DELIVERY_DISPUTE", "POSSIBLE_MISDELIVERY", "CONFLI
 STATE = {"AUTO": "AWAITING_OUTCOME", "APPROVAL_REQUIRED": "AWAITING_APPROVAL", "HUMAN_REVIEW": "HUMAN_REVIEW", "PROHIBITED": "HUMAN_REVIEW"}
 
 
-def authorize(action_type, diagnosis_codes, *, review_verdict, evidence_conflict, synthetic, live_session):
-    """Return the risk class and the reason. Never AUTO outside a synthetic live session."""
+def authorize(action_type, diagnosis_codes, *, review_verdict, evidence_conflict, synthetic, live_session, degraded=False):
+    """Return the risk class and the reason. Never AUTO outside a synthetic live session, and
+    never AUTO without an explicit ACCEPT from the independent model reviewer (fail closed)."""
     entry = ACTIONS.get(action_type)
     codes = set(diagnosis_codes)
     if entry is None:
         return "HUMAN_REVIEW", "Unknown action type; a person must decide."
     risk, addresses, _, _ = entry
+    if degraded or review_verdict == "UNAVAILABLE":
+        return "HUMAN_REVIEW", "A model role failed or was unavailable; automatic execution is blocked and a person must review."
     if review_verdict in ("HUMAN_REVIEW", "ESCALATE"):
         return "HUMAN_REVIEW", "Reviewer requested human judgment."
     if codes & SENSITIVE_CODES:
@@ -51,6 +54,8 @@ def authorize(action_type, diagnosis_codes, *, review_verdict, evidence_conflict
         return "APPROVAL_REQUIRED", "Proposed action does not address a supported diagnosis."
     if risk == "AUTO" and not (synthetic and live_session):
         return "APPROVAL_REQUIRED", "Automatic execution is limited to synthetic live sessions."
+    if risk == "AUTO" and review_verdict != "ACCEPT":
+        return "APPROVAL_REQUIRED", "No independent model review accepted this action; operator authorization required."
     return risk, {"AUTO": "Low-risk, reversible, evidence-bound action within the synthetic automation allowlist.",
                   "APPROVAL_REQUIRED": "Action changes destination or service; operator authorization required.",
                   "HUMAN_REVIEW": "Sensitive judgment reserved for a person.",

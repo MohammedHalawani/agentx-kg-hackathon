@@ -20,5 +20,5 @@ def public_value(value):
         return value.replace("local_demo","local_synthetic").replace("_DEMO_","_SYNTHETIC_").replace("_fixture","_scenario").replace("_FIXTURE","_SCENARIO")
     if isinstance(value,list):return [public_value(v) for v in value]
     if isinstance(value,tuple):return tuple(public_value(v) for v in value)
-    if isinstance(value,dict):return {('review_scenario' if k=='fixture' else k):v if k in ("token","next_cursor","previous_cursor") else public_value(v) for k,v in value.items() if k!="demo"}
+    if isinstance(value,dict):return {k:v if k in ("token","next_cursor","previous_cursor") else public_value(v) for k,v in value.items() if k!="demo"}
     return value

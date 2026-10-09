@@ -117,6 +117,7 @@ class OperationsAPITests(unittest.TestCase):
 
     def test_reanalysis_authority_alias_and_idempotent_retry_do_not_repeat_run(self):
         body={'expected_version':3,'idempotency_key':'reanalyze_01'}
+        # A legacy review_scenario query parameter is ignored: no scripted review path exists.
         route='/cases/SYN-CASE-01/reanalyze?review_scenario=true'
         self.assertEqual(self.client.post(route,json=body).status_code,403)
         self.store.request_reanalysis.assert_not_called()
@@ -127,7 +128,7 @@ class OperationsAPITests(unittest.TestCase):
         second=self.client.post(route,json=body,headers=headers)
         self.assertEqual(first.status_code,200)
         self.assertFalse(second.json()['analysis']['processed'])
-        self.store.process_one.assert_called_once_with(case_id='DEMO-CASE-01',review_scenario=True)
+        self.store.process_one.assert_called_once_with(case_id='DEMO-CASE-01')
         self.store.request_reanalysis.assert_called_with(case_id='DEMO-CASE-01',actor_id='DEMO-OPERATOR-LOCAL',**body)
 
     def test_pipeline_topology_and_invisible_case_are_checked_before_stream(self):

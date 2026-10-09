@@ -195,7 +195,8 @@ class FinalContentTests(unittest.TestCase):
              patch.object(_llm.config, "LLM_API_BASE", "https://ollama.com/v1"), \
              patch.object(_llm.config, "LLM_API_KEY", "test-key"), patch.object(_llm, "ChatLiteLLM") as cls:
             _llm.model()
-            cls.assert_called_once_with(model="openai/gpt-oss:20b", api_base="https://ollama.com/v1", api_key="test-key", temperature=0)
+            cls.assert_called_once_with(model="openai/gpt-oss:20b", api_base="https://ollama.com/v1", api_key="test-key", temperature=0,
+                                        request_timeout=_llm.config.LLM_TIMEOUT_SECONDS, max_retries=0)
         _llm.model.cache_clear()
 
 

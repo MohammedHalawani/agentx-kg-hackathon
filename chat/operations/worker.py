@@ -1,18 +1,28 @@
-"""Sequential deterministic evidence triage. Explicit AFL rehearsal is not a model run."""
+"""Deterministic safety guard applied to every proposal before any model review or authority."""
+import re
+
+# A proposal may never certify delivery or parcel location from vehicle telemetry.
+GPS_CERTIFICATION = re.compile(r"\b(gps|telemetry|vehicle position)\b[^.]{0,80}\b(deliver|parcel|package|custody)", re.I)
+CERTIFYING_CODES = re.compile(r"(MARK|CERTIFY|CONFIRM)_(DELIVERED|DELIVERY|CUSTODY)", re.I)
 
 
-def review(proposal, visible_ids):
-    if proposal.get("action_code") == "MARK_DELIVERED_FROM_GPS":
+def review(proposal, visible_ids, kinds=None):
+    """kinds: evidence id -> kind for the visible snapshot (used to detect GPS-only certification)."""
+    kinds = kinds or {}
+    cited = proposal.get("evidence_ids") or []
+    text = " ".join(str(proposal.get(key) or "") for key in ("action", "action_en", "expected_result"))
+    certifies = bool(CERTIFYING_CODES.search(str(proposal.get("action_code") or "")) or proposal.get("resolves"))
+    if GPS_CERTIFICATION.search(text) or (certifies and cited and all(kinds.get(i) == "GPSObservation" for i in cited)):
         return {"verdict": "reject", "feedback": "Vehicle GPS cannot establish parcel delivery. Revise to an evidence-bound investigation action."}
-    if proposal.get("resolves") or not proposal.get("requires_approval"):
+    if certifies or not proposal.get("requires_approval"):
         return {"verdict": "reject", "feedback": "Recommendations cannot certify outcomes and require operator authority."}
-    if not proposal.get("evidence_ids") or not set(proposal["evidence_ids"]) <= set(visible_ids):
+    if not cited or not set(cited) <= set(visible_ids):
         return {"verdict": "reject", "feedback": "Recommendation requires visible shipment-bound supporting evidence."}
     return {"verdict": "accept", "feedback": "Bound evidence supports this investigation proposal; operator approval and an independent verified outcome remain required."}
 
 
-def analyze(context, config, precedents=(), *, afl_fixture=False):
+def analyze(context, config, precedents=()):
     from operations.graph import investigate
     result, _ = investigate(context['shipment_id'], context['as_of'], config,
-                            lambda *_: context, lambda *_: precedents, afl_scenario=afl_fixture)
+                            lambda *_: context, lambda *_: precedents)
     return result

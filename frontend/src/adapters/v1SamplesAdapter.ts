@@ -11,7 +11,8 @@ import { categoryToOperationalStatus } from '@/lib/operationalStates'
 export interface V1OpenCase {
   failure_id: string
   shipment_id: string
-  category: string
+  /** Not sent by the API: a recorded failure category is the case's answer label. */
+  category?: string
   city?: string
   courier?: string
   text: string
@@ -32,9 +33,9 @@ export function v1CaseToOperations(c: V1OpenCase): OperationsCase {
     city: c.city ?? null,
     courier: c.courier ?? null,
     category: c.category,
-    priority: inferPriority(c.category),
+    priority: inferPriority(c.category ?? ''),
     workflowState: 'OPEN',
-    operationalStatus: categoryToOperationalStatus(c.category),
+    operationalStatus: categoryToOperationalStatus(c.category ?? ''),
     runText: c.text,
   }
 }

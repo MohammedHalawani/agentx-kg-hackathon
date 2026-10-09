@@ -127,9 +127,15 @@ class Reader:
 class StoreTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):cls.world=generate(Config(total=90))
-    def make(self):
+    def make(self,rounds=12):
+        """Cases exist only once the monitor has opened them from replayed, visible evidence."""
         d=Driver(self.world);s=OperationsStore(d,"shipments-v2-demo",self.world.config.dataset_id,self.world.config,Reader(self.world))
-        s.initialize();return s,d
+        s.initialize();s.reset_session()
+        for _ in range(rounds):
+            s.tick(seconds=86400,manual=True,speed=60)
+            while s.status()["session"]["monitor_pending"]:s.monitor_step()
+            if any(kind=="OpsCase" for kind,_ in d.ledger.values()):break
+        return s,d
     def processed(self):
         store,driver=self.make();result=store.process_one(manual=True)
         self.assertTrue(result["processed"]);return store,driver,result
@@ -141,12 +147,14 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(set(driver.databases),{"shipments-v2-demo"})
         self.assertFalse(any(re.search(r"(?:SET|MERGE|CREATE).*V2Entity",q) for q in driver.queries))
         self.assertTrue(all(p["synthetic"] and p["split"]=="development" for _,p in driver.ledger.values()))
-    def test_worker_review_fixture_carries_feedback_and_cannot_resolve(self):
+    def test_first_investigation_is_not_a_scripted_rehearsal_and_cannot_resolve(self):
         store,driver,result=self.processed();detail=store.case_detail(result["case_id"])
         self.assertIsNone(result["outcome"]);self.assertNotEqual(detail["workflow_state"],"RESOLVED")
         trace=detail["run"]["result"]["trace"]
-        self.assertEqual(trace[0]["review"]["verdict"],"reject")
-        self.assertEqual(trace[-1]["feedback_received"],trace[0]["review"]["feedback"])
+        # No injected GPS-delivery proposal or forced rejection: the first trace entry is the real proposal.
+        self.assertNotIn("MARK_DELIVERED_FROM_GPS",canonical(trace))
+        self.assertNotIn("fixture",detail["run"]["result"]["afl"])
+        self.assertFalse(any(v["event_type"]=="AFL_RETRY" for kind,v in driver.ledger.values() if kind=="OpsAudit"))
         self.assertEqual(detail["review"]["verdict"],trace[-1]["review"]["verdict"])
         self.assertEqual(store.process_one(case_id=result["case_id"])["processed"],False)
 
@@ -160,7 +168,7 @@ class StoreTests(unittest.TestCase):
         store,driver=self.make()
         case_id=next(v['entity_id'] for kind,v in driver.ledger.values() if kind=='OpsCase')
         listener=store.subscribe_pipeline(case_id)
-        result=store.process_one(case_id=case_id,review_scenario=True)
+        result=store.process_one(case_id=case_id)
         states=[]
         while not listener.empty():states.append(listener.get_nowait())
         events=store.pipeline_state(case_id)['events']
@@ -192,7 +200,9 @@ class StoreTests(unittest.TestCase):
         store,driver,first=self.processed()
         driver.ledger[first['case_id']][1]['workflow_state']='HUMAN_REVIEW'
         store.control('simulator','start',speed=60)
-        for _ in range(12):store.tick(seconds=86400)
+        for _ in range(12):
+            store.tick(seconds=86400)
+            while store.status()["session"]["monitor_pending"]:store.monitor_step()
         store.control('simulator','pause')
         store.control('worker','start')
         second=store.process_one()
@@ -372,4 +382,4 @@ class LiveSessionTests(unittest.TestCase):
         s,d=self.live();self.run_world(s,rounds=40)
         self.assertTrue(self.cases(d))
         result=s.process_one(manual=True)
-        self.assertTrue(result["processed"]);self.assertFalse(result["afl"]["fixture"])
+        self.assertTrue(result["processed"]);self.assertNotIn("fixture",result["afl"])

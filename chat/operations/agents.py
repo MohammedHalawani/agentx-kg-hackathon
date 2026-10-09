@@ -2,7 +2,10 @@
 
 Code computes every canonical fact (counts, timestamps, custody, milestones, signals). GPT-OSS
 reasons over those facts and must cite visible evidence IDs. Each output is validated; invalid
-output is retried once with feedback, then replaced by a labelled deterministic fallback.
+output or a provider error/timeout is retried once with feedback (a bounded policy). A role that
+still fails is returned as DEGRADED: the failure is recorded and shown, nothing is substituted
+as if the model had answered, and the graph routes the case to a person with no automatic
+authority. In particular a failed reviewer never yields ACCEPT.
 No chain-of-thought is requested, stored or returned.
 """
 import json
@@ -114,16 +117,23 @@ def validate_review(out, packet):
     return check_text([out["feedback"]], packet)
 
 
+ATTEMPTS = 2  # One call plus one corrective retry.
+
+
 def _ask(system, packet, extra, default, validate, call):
-    """One call plus one corrective retry; returns (output, mode, error)."""
+    """Bounded attempts; returns (output, mode, error). output is None when every attempt failed."""
     user = json.dumps({"facts": packet, **extra}, default=str, ensure_ascii=False)
     feedback = None
-    for _ in range(2):
-        out = call(system, user + (f"\n\nYour previous output was rejected: {feedback} Return corrected JSON only." if feedback else ""), default)
+    for _ in range(ATTEMPTS):
+        try:
+            out = call(system, user + (f"\n\nYour previous output was rejected: {feedback} Return corrected JSON only." if feedback else ""), default)
+        except Exception as error:  # Timeouts, transport and provider errors: type only, never provider text.
+            feedback = f"model call failed ({type(error).__name__})"
+            continue
         feedback = validate(out)
         if not feedback:
             return out, "gpt-oss", None
-    return None, "deterministic_fallback", feedback
+    return None, "model_unavailable", feedback
 
 
 def _model_call(system, user, default):
@@ -143,12 +153,10 @@ def investigate(packet, call=None):
     out, mode, error = _ask(SYSTEM.format(role="investigator", keys=list(INVESTIGATOR)), packet, extra, INVESTIGATOR,
                             lambda o: validate_investigation(o, packet), call)
     if out is None:
-        top = packet["deterministic_signals"][0] if packet["deterministic_signals"] else None
-        out = {**INVESTIGATOR, "primary_hypothesis": top["code"] if top else "INSUFFICIENT_EVIDENCE",
-               "supporting_evidence_ids": top["evidence_ids"] if top else [], "confidence": "medium",
-               "sensitivity": "high" if top and top["requires_human_review"] else "low",
-               "summary": top["summary"] if top else "No supported exception in visible evidence."}
-    return {**out, "mode": mode, "validation_error": error}
+        # No model conclusion exists. Record the failure; do not fabricate a diagnosis.
+        return {**INVESTIGATOR, "primary_hypothesis": None, "mode": mode, "degraded": True, "validation_error": error,
+                "summary": "Investigation model unavailable; no AI conclusion was produced."}
+    return {**out, "mode": mode, "degraded": False, "validation_error": error}
 
 
 def plan(packet, investigation, call=None, feedback=None):
@@ -159,10 +167,12 @@ def plan(packet, investigation, call=None, feedback=None):
     out, mode, error = _ask(SYSTEM.format(role="action planner", keys=list(PLANNER)), packet, extra, PLANNER,
                             lambda o: validate_plan(o, packet, investigation), call)
     if out is None:
+        # Shown to a person as a catalog suggestion only; degraded planning never receives automatic authority.
         action = default_action(investigation["primary_hypothesis"])
         out = {**PLANNER, "action_type": action, "evidence_basis": investigation["supporting_evidence_ids"],
-               "expected_result": ACTIONS[action][3], "reason": "Deterministic catalog action for the supported diagnosis."}
-    return {**out, "mode": mode, "validation_error": error}
+               "expected_result": ACTIONS[action][3], "reason": "Planner model unavailable; catalog action shown for human review only."}
+        return {**out, "mode": mode, "degraded": True, "validation_error": error}
+    return {**out, "mode": mode, "degraded": False, "validation_error": error}
 
 
 def review(packet, investigation, proposal, call=None):
@@ -174,5 +184,7 @@ def review(packet, investigation, proposal, call=None):
     out, mode, error = _ask(SYSTEM.format(role="reviewer", keys=list(REVIEWER)), packet, extra, REVIEWER,
                             lambda o: validate_review(o, packet), call)
     if out is None:
-        out = {**REVIEWER, "verdict": "ACCEPT", "feedback": "Model review unavailable; deterministic safety guard applied."}
-    return {**out, "mode": mode, "validation_error": error}
+        # Fail closed: an unavailable reviewer is never an acceptance.
+        return {**REVIEWER, "verdict": "UNAVAILABLE", "feedback": "Independent model review could not be completed.",
+                "mode": mode, "degraded": True, "validation_error": error}
+    return {**out, "mode": mode, "degraded": False, "validation_error": error}

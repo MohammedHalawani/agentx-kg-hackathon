@@ -89,7 +89,14 @@ to repeat the presentation.
 
 ## Evaluation and limitations
 
-[Evaluation V1](docs/evals/2026-10-08_gpt-oss-v1/closure.md) retains30 paired synthetic
+**V1 evaluation figures from 2026-10-08 are invalid as independent reasoning results.** Their
+complaint wording was authored per gold category (and keyed the complaint-similarity retrieval).
+Separately, live intake runs passed the open failure's recorded category to the classifier and
+reviewer prompts; that path is now an identifier only. The neutral-complaint recomputation is in
+[docs/evals/2026-10-09_gpt-oss-v1-neutral](docs/evals/2026-10-09_gpt-oss-v1-neutral/comparison.md).
+The original record below is kept for audit only.
+
+[Evaluation V1 (superseded)](docs/evals/2026-10-08_gpt-oss-v1/closure.md) retains30 paired synthetic
 cases per model, frozen whole-shipment holdout evidence and dry writeback. Base-cause
 agreement was13/30 for20B and16/30 for120B, not production accuracy. 120B averaged8.537s
 vs28.648s on this endpoint and won19 blinded editorial preferences against5 (six ties).

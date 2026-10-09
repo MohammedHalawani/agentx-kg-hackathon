@@ -18,7 +18,7 @@ import json
 import logging
 import re
 
-from llm.pipeline import _llm, rules
+from llm.pipeline import _llm, retrieve, rules
 from llm.pipeline.state import PipelineState, Review
 
 log = logging.getLogger("pipeline.reviewer")
@@ -181,7 +181,7 @@ def _prompt(state: PipelineState, findings: list) -> str:
         "PROPOSED ACTION:\n" + json.dumps(state.get("recommendation") or {},
                                           ensure_ascii=False, default=str),
         "ORIGINAL EVIDENCE (this shipment):\n" + json.dumps(
-            ctx.get("local_subgraph") or {}, ensure_ascii=False, default=str),
+            retrieve.model_view(ctx.get("local_subgraph")), ensure_ascii=False, default=str),
         "BUSINESS RULE FINDINGS:\n" + rules.summarise(findings),
         "HISTORICAL OUTCOMES FOR COMPARABLE CASES:\n" + json.dumps(
             [{k: c.get(k) for k in ("resolution_id", "action", "success")}

@@ -94,7 +94,9 @@ LIMIT $k
 
 # --- the complaint's own shipment -------------------------------------------------------
 # The "original evidence" the reviewer validates against: what actually happened to THIS
-# shipment, the policy governing it (SLA + retry limit), and its unresolved FailureReason.
+# shipment and the policy governing it (SLA + retry limit). The unresolved FailureReason is
+# returned as an identifier only: its recorded category/description is the case's answer label
+# and must never reach the classifier, reviewer or any other model prompt.
 _LOCAL = """
 MATCH (s:Shipment)
 WHERE ($shipment_id IS NULL OR s.shipment_id = $shipment_id)
@@ -112,9 +114,23 @@ RETURN s {.shipment_id, .tracking_id, .order_id, .carrier, .status}  AS shipment
        collect(DISTINCT a {.address_id, .full_address, .district, .city,
                            .lat, .lng, .version})                    AS addresses,
        collect(DISTINCT e {.event_id, .event_type, .timestamp})      AS events,
-       head(collect(DISTINCT lf {.failure_id, .category, .description,
-                                 .city, .district, .courier, .timestamp})) AS live_failure
+       head(collect(DISTINCT lf {.failure_id})) AS live_failure
 """
+
+
+# Fields of a FailureReason that name the case's answer. Even if a future query projects them,
+# model_view() strips them before a prompt is built (defence in depth for the _LOCAL rule above).
+ANSWER_FIELDS = frozenset({"category", "description", "case_summary", "root_cause"})
+
+
+def model_view(local: dict | None) -> dict:
+    """The shipment's own evidence as a model may see it: the live failure is an id only."""
+    if not local:
+        return {}
+    view = dict(local)
+    failure = view.get("live_failure") or {}
+    view["live_failure"] = {"failure_id": failure.get("failure_id")} if failure else None
+    return view
 
 
 def _embed(text: str) -> list[float]:

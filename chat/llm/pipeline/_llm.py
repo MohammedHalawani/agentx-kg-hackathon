@@ -130,6 +130,9 @@ def model() -> ChatLiteLLM:
         api_key=config.LLM_API_KEY,
         api_base=config.LLM_API_BASE,
         temperature=0,
+        # A hung provider call must surface as a failure the caller can route, never block forever.
+        request_timeout=config.LLM_TIMEOUT_SECONDS,
+        max_retries=0,
     )
 
 

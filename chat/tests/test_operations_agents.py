@@ -33,19 +33,36 @@ class ValidationTests(unittest.TestCase):
         out = agents.investigate(PACKET, call=scripted(GOOD_INV))
         self.assertEqual(out["mode"], "gpt-oss"); self.assertEqual(out["primary_hypothesis"], "BARCODE_MISMATCH")
 
-    def test_invented_evidence_id_is_retried_with_feedback_then_falls_back(self):
+    def test_invented_evidence_id_is_retried_with_feedback_then_degrades_without_a_substitute(self):
         bad = {**GOOD_INV, "supporting_evidence_ids": ["FUTURE-SCAN-9"]}
         call = scripted(bad, bad)
         out = agents.investigate(PACKET, call=call)
-        self.assertEqual(out["mode"], "deterministic_fallback")
+        self.assertEqual(out["mode"], "model_unavailable"); self.assertTrue(out["degraded"])
         self.assertIn("not visible", out["validation_error"])
         self.assertIn("previous output was rejected", call.calls[1])
-        self.assertEqual(out["supporting_evidence_ids"], ["SCAN-1"])  # Fallback cites only deterministic evidence.
+        # No canned diagnosis is substituted for the missing model conclusion.
+        self.assertIsNone(out["primary_hypothesis"]); self.assertEqual(out["supporting_evidence_ids"], [])
 
     def test_invented_numbers_blame_and_gps_delivery_are_rejected(self):
         for summary in ("There were 3 failed attempts.", "The driver lost the parcel.", "Vehicle GPS proves the package was delivered."):
             out = agents.investigate(PACKET, call=scripted({**GOOD_INV, "summary": summary}, {**GOOD_INV, "summary": summary}))
-            self.assertEqual(out["mode"], "deterministic_fallback", summary)
+            self.assertEqual(out["mode"], "model_unavailable", summary)
+
+    def test_reviewer_failure_fails_closed_and_is_never_acceptance(self):
+        proposal = {"action_type": "REQUEST_RESCAN", "evidence_basis": ["SCAN-1"], "expected_result": "", "risk_hypothesis": "",
+                    "reason": "", "requires_authorization_hint": ""}
+        def timeout(system, user, default): raise TimeoutError("provider timed out")
+        def invalid(system, user, default): return {**default, "verdict": "MAYBE"}
+        for call in (timeout, invalid):
+            out = agents.review(PACKET, GOOD_INV, proposal, call=call)
+            self.assertEqual(out["verdict"], "UNAVAILABLE"); self.assertTrue(out["degraded"])
+            self.assertNotIn("provider timed out", json.dumps(out))  # Error type only, never provider text.
+        self.assertEqual(authorize("REQUEST_RESCAN", ["BARCODE_MISMATCH"], review_verdict="UNAVAILABLE", evidence_conflict=False,
+                                   synthetic=True, live_session=True)[0], "HUMAN_REVIEW")
+        self.assertEqual(authorize("REQUEST_RESCAN", ["BARCODE_MISMATCH"], review_verdict=None, evidence_conflict=False,
+                                   synthetic=True, live_session=True)[0], "APPROVAL_REQUIRED")
+        self.assertEqual(authorize("REQUEST_RESCAN", ["BARCODE_MISMATCH"], review_verdict="ACCEPT", evidence_conflict=False,
+                                   synthetic=True, live_session=True, degraded=True)[0], "HUMAN_REVIEW")
 
     def test_hypothesis_must_be_supported_by_a_deterministic_signal(self):
         out = agents.investigate(PACKET, call=scripted({**GOOD_INV, "primary_hypothesis": "DELIVERY_DISPUTE"}, GOOD_INV))
@@ -132,6 +149,36 @@ class AgentPipelineTests(unittest.TestCase):
             self.assertNotEqual(case["workflow_state"], "RESOLVED")  # Nothing self-certifies success.
             if "DELIVERY_DISPUTE" in case["cause_codes"]:
                 self.assertIn(case["workflow_state"], ("HUMAN_REVIEW", "OPEN", "ESCALATED"))
+
+
+class ReviewerFailureTests(unittest.TestCase):
+    """Scenario D at unit level: a failed reviewer blocks the automatic action and is recorded."""
+    @classmethod
+    def setUpClass(cls): cls.world = generate(Config(total=90))
+
+    def test_unavailable_reviewer_blocks_auto_execution_and_records_degraded_review(self):
+        healthy = fake_agents()
+        def broken(p, i, pr):
+            def call(system, user, default): raise ConnectionError("unreachable")
+            return agents.review(p, i, pr, call=call)
+        module = types.SimpleNamespace(facts=healthy.facts, investigate=healthy.investigate, plan=healthy.plan, review=broken)
+        d = Driver(self.world)
+        s = OperationsStore(d, "shipments-v2-demo", self.world.config.dataset_id, self.world.config, Reader(self.world), agents=module)
+        s.initialize(); s.reset_session(); LiveSessionTests.run_world(self, s, rounds=400)
+        routed = []
+        while True:
+            r = s.process_one(manual=True)
+            if not r.get("processed"): break
+            routed.append(r)
+        self.assertTrue(routed)
+        self.assertEqual([v for k, v in d.ledger.values() if k == "OpsExecution"], [])  # Nothing executed automatically.
+        audit = [v for k, v in d.ledger.values() if k == "OpsAudit"]
+        degraded = [a for a in audit if a["event_type"] == "MODEL_DEGRADED" and a["actor_id"] == "SUHAIL-REVIEWER"]
+        self.assertTrue(degraded)
+        for case in [v for k, v in d.ledger.values() if k == "OpsCase" and v.get("last_run_id")]:
+            self.assertNotIn(case["workflow_state"], ("AWAITING_OUTCOME", "ACTION_INITIATED", "RESOLVED"))
+        runs = [json.loads(v["result_json"]) for k, v in d.ledger.values() if k == "OpsRun"]
+        self.assertTrue(any(e["stage"] == "review" and e["status"] == "DEGRADED" for r in runs for e in r["pipeline_events"]))
 
 
 class OutcomeEngineTests(unittest.TestCase):

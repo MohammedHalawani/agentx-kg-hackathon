@@ -21,7 +21,7 @@ FIELDS = {
                    "cursor_time", "cursor_id", "worker_claim", "claim_at", "processed_count", "event_count",
                    "claim_shipment_id", "last_case_id", "last_shipment_id", "last_workflow_state", "last_processed_at",
                    "case_source", "session_id", "session_started_at", "monitor_queue", "monitor_checked", "monitor_opened"},
-    "OpsCase": {"opened_by", "session_id", "source_case_id", "workflow_state", "operational_status", "priority", "cause_codes", "city", "opened_at",
+    "OpsCase": {"opened_by", "session_id", "source_case_id", "workflow_state", "operational_status", "priority", "cause_codes", "symptom_codes", "city", "opened_at",
                 "as_of", "state_version", "last_run_id", "recommendation_id", "issue_summary", "claim_id", "claim_at",
                 "is_terminal", "closed_at", "verified_outcome_id", "outcome_checked_as_of"},
     "OpsAudit": {"case_id", "event_type", "actor_id", "decision", "result", "from_state", "to_state", "run_id",
