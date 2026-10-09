@@ -16,7 +16,9 @@ interface GraphProps {
   onLayoutChange?: (layout: LayoutKey) => void
   onNodeSelect?: (node: GraphNode) => void
   highlightedIds?: readonly string[]
-  compact?:boolean
+  compact?: boolean
+  /** Bumps when the graph pane is resized (focus modes, tabs) so NVL refits. */
+  viewportKey?: string
 }
 
 export function Graph(props: GraphProps) {

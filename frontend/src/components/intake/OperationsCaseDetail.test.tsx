@@ -40,7 +40,7 @@ describe('Case lifecycle authority', () => {
     expect(screen.getByText('Evidence graph')).toBeTruthy()
     expect(screen.getByText('Compare bound custody evidence')).toBeTruthy()
     expect(screen.getByText('Compare bound custody evidence').compareDocumentPosition(screen.getByRole('button', { name: 'Approve action' })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'Recommendation' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Recommendation' }))
     expect(screen.getByText('Compare bound custody evidence')).toBeTruthy()
   })
   it('lets the operator reopen a verified case through the versioned decision API', async () => {
@@ -103,7 +103,7 @@ describe('Case lifecycle authority', () => {
     mock.data.evidence = { nodes: [{ id: 'PROOF', kind: 'DeliveryProof', properties: {} }, { id: 'REPORT', kind: 'RecipientReport', properties: { report_code: 'NOT_RECEIVED' } }, { id: 'HUB', kind: 'Hub', properties: {} }], edges: [] }
     mock.data.reasoning = { workflow_state: 'HUMAN_REVIEW', diagnoses: [{ code: 'DELIVERY_DISPUTE', evidence_ids: ['PROOF', 'REPORT'] }] }
     render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
-    fireEvent.click(screen.getByRole('button', { name: 'Evidence' }))
+    fireEvent.click(screen.getByRole('tab', { name: /Evidence/ }))
     expect(screen.getByRole('tab', { name: /Key evidence/ }).getAttribute('aria-selected')).toBe('true')
     expect(screen.getAllByText(/Cited by diagnosis: Delivery dispute/)).toHaveLength(2)
     expect(screen.queryByText('HUB')).toBeNull()

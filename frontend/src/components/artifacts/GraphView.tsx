@@ -3,6 +3,7 @@ import { InteractiveNvlWrapper } from '@neo4j-nvl/react'
 import type { Node as NvlNode, Relationship as NvlRel } from '@neo4j-nvl/base'
 import { AnimatePresence, motion } from 'motion/react'
 import { Maximize2, Minus, Plus, X } from 'lucide-react'
+import * as Popover from '@radix-ui/react-popover'
 import type { GraphNode, SubGraph } from '../../types/contract'
 import { buildLabelColors } from '../../lib/theme'
 import { useEntityInfo } from '../../lib/entityInfo'
@@ -27,6 +28,17 @@ const MIN_NODE_SIZE = 12
 const MAX_NODE_SIZE = 46
 // show captions only once zoomed in enough to read them — declutters the fitted whole-graph view
 const CAPTION_ZOOM = 0.65
+const KEY_LABELS = new Set([
+  'Shipment',
+  'DeliveryProof',
+  'RecipientReport',
+  'CustodyEvent',
+  'ScanEvent',
+  'DeliveryAttempt',
+  'GPSObservation',
+  'Hub',
+  'Package',
+])
 // Ceiling for a fitted view: past this a small graph stops looking like a graph and starts
 // looking like three circles.
 const FIT_MAX_ZOOM = 1.1
@@ -46,11 +58,12 @@ interface GraphViewProps {
   onLayoutChange?: (layout: LayoutKey) => void
   onNodeSelect?: (node: GraphNode) => void
   highlightedIds?: readonly string[]
-  compact?:boolean
+  compact?: boolean
+  viewportKey?: string
 }
 
 // the graph renders on the app's warm-light surface; nodes carry the color, edges stay quiet
-export function GraphView({ graph, layout: layoutProp, onLayoutChange, onNodeSelect, highlightedIds, compact }: GraphViewProps) {
+export function GraphView({ graph, layout: layoutProp, onLayoutChange, onNodeSelect, highlightedIds, compact, viewportKey }: GraphViewProps) {
   const { t, entityLabel, propertyLabel } = useLanguage()
   const { resolvedTheme } = useTheme()
   const [internalLayout, setInternalLayout] = useState<LayoutKey>('forceDirected')
@@ -117,9 +130,31 @@ export function GraphView({ graph, layout: layoutProp, onLayoutChange, onNodeSel
   const renderer = graph.nodes.length > CANVAS_MAX_NODES ? 'webgl' : 'canvas'
 
   const nvlRef = useRef<ComponentRef<typeof InteractiveNvlWrapper>>(null)
+  const rootRef = useRef<HTMLDivElement>(null)
   const [ready, setReady] = useState(false)
   const labelsRef = useRef(false) // are captions currently shown?
+  const scaleRef = useRef(1)
   const focusRef = useRef<string | null>(null) // hovered/focused node for the spotlight
+  const [hoverId, setHoverId] = useState<string | null>(null)
+
+  const keyNodeIds = useMemo(() => {
+    const ids = new Set<string>(highlightedIds ?? [])
+    for (const n of graph.nodes) {
+      if (KEY_LABELS.has(labelOf(n)) || (degree.get(n.id) ?? 0) >= 3) ids.add(n.id)
+    }
+    return ids
+  }, [graph, degree, highlightedIds])
+
+  const formatCaption = useCallback(
+    (n: GraphNode, scale: number) => {
+      const full = shapeForCanvas(n.caption)
+      if (scale >= CAPTION_ZOOM) return full
+      if (!keyNodeIds.has(n.id)) return ''
+      const tail = n.id.includes('-') ? (n.id.split('-').pop() ?? n.id) : n.id
+      return shapeForCanvas(tail.length > 12 ? tail.slice(-12) : tail)
+    },
+    [keyNodeIds],
+  )
 
   // One full-style restyle for every node, so caption-toggling and hover-dimming compose cleanly
   // regardless of how updateElementsInGraph merges. Non-neighbours of the focus node are dimmed.
@@ -135,12 +170,12 @@ export function GraphView({ graph, layout: layoutProp, onLayoutChange, onNodeSel
         // NVL's canvas renderer draws a caption character by character, which strips Arabic
         // joining and lays the letters out left-to-right; shapeForCanvas pre-shapes and
         // reorders so they render correctly. Latin captions pass through untouched.
-        captions: labelsRef.current ? [{ value: shapeForCanvas(n.caption) }] : [],
+        captions: labelsRef.current ? [{ value: formatCaption(n, scaleRef.current) }] : [],
         disabled: keep ? !(n.id === focus || keep.has(n.id)) : !!highlightedIds?.length && !highlightedIds.includes(n.id),
       })),
       graph.relationships.map(r=>({id:r.id,disabled:!!highlightedIds?.length && !(highlightedIds.includes(r.from)&&highlightedIds.includes(r.to)),width:highlightedIds?.includes(r.from)&&highlightedIds.includes(r.to)?2:1})),
     )
-  }, [graph, colors, sizeById, adjacency, highlightedIds])
+  }, [graph, colors, sizeById, adjacency, highlightedIds, formatCaption])
 
   const setLabels = useCallback(
     (show: boolean) => {
@@ -153,8 +188,10 @@ export function GraphView({ graph, layout: layoutProp, onLayoutChange, onNodeSel
   // getScale isn't fired by programmatic fit, so read it directly after fit/zoom transitions
   const syncCaptions = useCallback(() => {
     const scale = nvlRef.current?.getScale?.()
-    setLabels(typeof scale === 'number' ? scale >= CAPTION_ZOOM : graph.nodes.length <= 30)
-  }, [setLabels, graph])
+    if (typeof scale === 'number') scaleRef.current = scale
+    const show = typeof scale === 'number' ? scale >= CAPTION_ZOOM || keyNodeIds.size > 0 : graph.nodes.length <= 30
+    setLabels(show)
+  }, [setLabels, graph, keyNodeIds.size])
 
   useEffect(() => {
     setReady(false)
@@ -193,18 +230,50 @@ export function GraphView({ graph, layout: layoutProp, onLayoutChange, onNodeSel
     syncCaptions()
   }, [graph, syncCaptions])
 
+  useEffect(() => {
+    if (!ready) return
+    let outer = 0
+    let inner = 0
+    outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() => fitAll())
+    })
+    return () => {
+      cancelAnimationFrame(outer)
+      cancelAnimationFrame(inner)
+    }
+  }, [viewportKey, ready, fitAll])
+
+  useEffect(() => {
+    const el = rootRef.current
+    if (!el || !ready) return
+    let frame = 0
+    const ro = new ResizeObserver(() => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => fitAll())
+    })
+    ro.observe(el)
+    return () => {
+      ro.disconnect()
+      cancelAnimationFrame(frame)
+    }
+  }, [ready, fitAll])
+
   // hover a node → spotlight it + neighbours (dim the rest); restore off-node
   const setFocus = useCallback(
     (id: string | null) => {
       if (focusRef.current === id) return
       focusRef.current = id
+      setHoverId(id)
       restyle()
     },
     [restyle],
   )
 
+  const legendLabels = compact ? orderedLabels.slice(0, 4) : orderedLabels
+  const legendMore = compact ? orderedLabels.slice(4) : []
+
   return (
-    <div className="relative h-full w-full overflow-hidden bg-surface" onMouseLeave={() => setFocus(null)}>
+    <div ref={rootRef} className="relative h-full w-full overflow-hidden bg-surface" onMouseLeave={() => setFocus(null)}>
       <div className={`h-full w-full transition-opacity duration-500 ${ready ? 'opacity-100' : 'opacity-0'}`}>
         <InteractiveNvlWrapper
           ref={nvlRef}
@@ -274,8 +343,8 @@ export function GraphView({ graph, layout: layoutProp, onLayoutChange, onNodeSel
         </div>
       )}
 
-      <div className="pointer-events-none absolute left-3 top-3 flex max-w-[55%] flex-wrap gap-x-3 gap-y-1 rounded-lg border border-border bg-card/90 px-2.5 py-1.5 text-[11px] text-foreground backdrop-blur">
-        {(compact?orderedLabels.slice(0,4):orderedLabels).map((l) => (
+      <div className="pointer-events-none absolute left-3 top-3 flex max-w-[55%] flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border bg-card/90 px-2.5 py-1.5 text-[11px] text-foreground backdrop-blur">
+        {legendLabels.map((l) => (
           <span
             key={l}
             title={entityInfo(l)}
@@ -286,7 +355,41 @@ export function GraphView({ graph, layout: layoutProp, onLayoutChange, onNodeSel
             <span className="font-mono tabular-nums text-muted-foreground">{labelCounts.get(l)}</span>
           </span>
         ))}
+        {!!legendMore.length && (
+          <Popover.Root>
+            <Popover.Trigger asChild>
+              <button
+                type="button"
+                className="pointer-events-auto rounded-md border border-border bg-card px-1.5 py-0.5 text-[10px] text-primary hover:bg-muted"
+              >
+                {t('explore.allNodeTypes')}
+              </button>
+            </Popover.Trigger>
+            <Popover.Portal>
+              <Popover.Content
+                sideOffset={6}
+                className="z-50 max-h-56 w-56 overflow-auto rounded-lg border border-border bg-card p-2 text-[11px] shadow-md"
+              >
+                {orderedLabels.map((l) => (
+                  <p key={l} className="flex items-center gap-2 py-0.5" title={entityInfo(l)}>
+                    <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: colors[l] }} />
+                    <span className="min-w-0 flex-1 truncate">{entityLabel(l)}</span>
+                    <span className="font-mono text-muted-foreground">{labelCounts.get(l)}</span>
+                  </p>
+                ))}
+              </Popover.Content>
+            </Popover.Portal>
+          </Popover.Root>
+        )}
       </div>
+
+      {hoverId && byId.get(hoverId) && (
+        <div className="pointer-events-none absolute start-1/2 top-10 z-20 max-w-[min(90%,20rem)] -translate-x-1/2 rounded-md border border-border bg-card/95 px-2 py-1 text-[11px] shadow-sm backdrop-blur">
+          <span className="text-muted-foreground">{entityLabel(labelOf(byId.get(hoverId)!))}</span>
+          <span className="mx-1 text-muted-foreground">·</span>
+          <span className="font-medium">{byId.get(hoverId)!.caption}</span>
+        </div>
+      )}
 
       {!controlled && (
         <div className="absolute right-3 top-3 inline-flex gap-0.5 rounded-lg border border-border bg-card/90 p-0.5 text-[11px] text-muted-foreground backdrop-blur">

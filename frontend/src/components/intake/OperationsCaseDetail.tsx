@@ -21,6 +21,10 @@ import { useCursorPage } from '@/hooks/useCursorPage'
 import { Timeline } from '@/components/operations/Timeline'
 import { CursorPagination } from '@/components/operations/Pagination'
 import { adaptAudit, pageQuery, type ApiAuditEvent } from '@/adapters/operationsApi'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
+import { AskSuhailPanel } from '@/components/operations/AskSuhailPanel'
+import { notifyOperator, OperatorToastRegion } from '@/components/operations/OperatorToast'
 
 const SECTIONS = ['overview', 'evidence', 'diagnosis', 'recommendation', 'review', 'map', 'history'] as const
 type Section = typeof SECTIONS[number]
@@ -55,25 +59,60 @@ export function OperationsCaseDetail({ caseId, shipmentId, onBack }: { caseId?: 
   const [mapMode, setMapMode] = useState<'map' | 'graph'>('map')
   // Fresh evidence assessment is a proposal, never the mutable workflow authority.
   const state = data?.workflow_state
+  const toastFor = (action: string, body: Record<string, unknown>) => {
+    if (action === 'decision' && body.decision === 'reopen') return t('ops.toast.reopened')
+    if (action === 'decision') return t('ops.toast.decisionRecorded')
+    if (action === 'reanalyze') return t('ops.toast.reanalyzeQueued')
+    if (action === 'outcomes') return t('ops.toast.outcomeRecorded')
+    if (action.startsWith('outcomes/')) return t('ops.toast.outcomeVerified')
+    return t('ops.toast.actionRecorded')
+  }
   const command = async (action: string, body: Record<string, unknown> = {}) => {
     if (!caseId || pending) return
     setPending(true); setActionError(null)
-    try { await operationsPost(`/cases/${encodeURIComponent(caseId)}/${action}`, { ...body, idempotency_key: crypto.randomUUID(), expected_version: data?.state_version }); refetch() }
+    try {
+      await operationsPost(`/cases/${encodeURIComponent(caseId)}/${action}`, { ...body, idempotency_key: crypto.randomUUID(), expected_version: data?.state_version })
+      notifyOperator(toastFor(action, body))
+      refetch()
+    }
     catch (e) { setActionError(e instanceof Error ? e.message : 'Request failed') }
     finally { setPending(false) }
   }
+  const terminal = state === 'RESOLVED' || state === 'REJECTED' || state === 'ESCALATED'
   const operatorControls = data && (caseId && (state === 'AWAITING_APPROVAL' || state === 'HUMAN_REVIEW') && <section className="space-y-1 border-t border-border pt-2" aria-label={t('ops.automation.humanDecision')}><h4 className="text-xs font-semibold">{t('ops.automation.humanDecision')}</h4><p className="text-[11px] leading-4 text-muted-foreground">{t(state === 'HUMAN_REVIEW' ? 'ops.automation.humanReason' : 'ops.automation.authorizationReason')}</p><div className="flex flex-wrap gap-2">{(['approve', 'reject', 'request_evidence', 'escalate'] as const).map(decision => <button key={decision} type="button" disabled={pending || data.state_version == null || (decision === 'approve' && (!data.recommendation_id || !data.recommendation))} onClick={() => void command('decision', { decision })} className="rounded-lg border border-border bg-card px-2 py-1 text-xs disabled:opacity-50">{t(`ops.actions.${decision}`)}</button>)}<button type="button" disabled={pending} onClick={() => void command('reanalyze')} className="text-[11px] text-muted-foreground underline underline-offset-2">{t('ops.actions.reanalyze')}</button></div></section>)
   return <section className="mx-auto max-w-[1600px] space-y-3" dir={isArabic ? 'rtl' : 'ltr'}>
-    <header className="flex flex-wrap items-center gap-3"><button type="button" onClick={onBack} className="rounded-lg border border-border px-2 py-1.5 text-xs">{t('ops.workspace.back')}</button><h2 className="font-mono text-lg" dir="ltr">{shipmentId}</h2>{state && <CaseWorkflowBadge state={state} />}{data?.priority&&<span className="text-xs text-muted-foreground">{t(`ops.priority.${data.priority}`)}</span>}{data?.synthetic && <span className="text-xs text-muted-foreground">{t('ops.simulation.label')}</span>}{caseId && state && ['RESOLVED', 'REJECTED', 'ESCALATED'].includes(state) && data?.state_version != null && <button type="button" disabled={pending} onClick={() => void command('decision', { decision: 'reopen' })} className="ms-auto rounded-lg border border-border px-2 py-1.5 text-xs disabled:opacity-50">{t('ops.actions.reopen')}</button>}<button type="button" disabled={pending || loading} onClick={refetch} className={`${caseId && state && ['RESOLVED', 'REJECTED', 'ESCALATED'].includes(state) ? '' : 'ms-auto '}rounded-lg border border-border px-2 py-1.5 text-xs disabled:opacity-50`}>{t('explore.refresh')}</button></header>
+    <OperatorToastRegion />
+    <header className="flex flex-wrap items-center gap-2 border-b border-border pb-2">
+      <Button type="button" variant="outline" size="xs" onClick={onBack}>{t('ops.workspace.back')}</Button>
+      <div className="min-w-0">
+        <h2 className="font-mono text-base leading-tight" dir="ltr">{shipmentId}</h2>
+        {caseId && <p className="font-mono text-[10px] text-muted-foreground" dir="ltr">{t('ops.workspace.caseRef', { id: caseId })}</p>}
+      </div>
+      {state && <CaseWorkflowBadge state={state} />}
+      {state && !terminal && <span className="text-[10px] text-muted-foreground">{t('ops.workspace.notClosed')}</span>}
+      {data?.priority && <span className="text-[10px] text-muted-foreground">{t(`ops.priority.${data.priority}`)}</span>}
+      {data?.synthetic && <span className="text-[10px] text-muted-foreground">{t('ops.simulation.label')}</span>}
+      <div className="ms-auto flex flex-wrap items-center gap-1.5">
+        {caseId && terminal && data?.state_version != null && (
+          <Button type="button" variant="outline" size="xs" disabled={pending} onClick={() => void command('decision', { decision: 'reopen' })}>{t('ops.actions.reopen')}</Button>
+        )}
+        <Button type="button" variant="outline" size="xs" disabled={pending || loading} onClick={refetch}>{t('explore.refresh')}</Button>
+      </div>
+    </header>
     {loading && !data ? <LoadingState label={t('explore.loading')} /> : error || (data && !data.evidence?.nodes) ? <ErrorState onRetry={refetch} /> : data && <>
       {caseId && (state === 'OPEN' || state === 'REOPENED' || state === 'INVESTIGATING') && <p role="status" className="text-[11px] leading-4 text-muted-foreground">{t(state === 'INVESTIGATING' ? 'ops.automation.processing' : 'ops.automation.queued')}</p>}
       {!caseId && <p className="text-sm text-muted-foreground">{t('ops.workspace.evidenceOnly')}</p>}
       {actionError && <ErrorState message={t('ops.error.action')} onRetry={() => { setActionError(null); refetch() }} />}
-      <div className="flex flex-wrap gap-2 border-b border-border pb-3" role="group" aria-label={t('ops.workspace.sections')}>
-        {SECTIONS.map(key => <button key={key} type="button" aria-pressed={section === key} onClick={() => setSection(key)} className={`rounded-lg px-2.5 py-1.5 text-xs focus-visible:outline-2 focus-visible:outline-ring ${section === key ? 'bg-primary text-primary-foreground' : 'border border-border bg-card text-muted-foreground'}`}>{t(`ops.workspace.${key}`)}</button>)}
-      </div>
+      <Tabs value={section} onValueChange={(v) => setSection(v as Section)}>
+        <TabsList aria-label={t('ops.workspace.sections')}>
+          {SECTIONS.map(key => <TabsTrigger key={key} value={key}>{t(`ops.workspace.${key}`)}</TabsTrigger>)}
+        </TabsList>
+      </Tabs>
       {unavailable && <p role="status" className="text-xs text-muted-foreground">{t('ops.pipeline.disconnected')}</p>}
-      {section === 'overview' && <CaseOverview detail={data} stage={stage} highlightedIds={highlightedIds} onStage={inspectStage} actions={operatorControls} onDeepDive={(target, mode) => { setSection(target); if(mode) setMapMode(mode) }} />}
+      {section === 'overview' && <>
+        <CaseOverview detail={data} stage={stage} highlightedIds={highlightedIds} onStage={inspectStage} actions={operatorControls} onDeepDive={(target, mode) => { setSection(target); if(mode) setMapMode(mode) }} />
+        <AskSuhailPanel detail={data} caseId={caseId} />
+      </>}
       {section === 'evidence' && <CaseEvidence detail={data} onHistory={() => setSection('history')} onShow={(ids, mode) => { setFocusIds(ids); setMapMode(mode); setSection('map') }} />}
       {section === 'recommendation' && data.recommendation && <div className="rounded-xl border border-border bg-card p-4"><h3 className="font-semibold">{t('ops.workspace.recommendation')}</h3><p className="mt-2" dir="auto">{isArabic ? data.recommendation.action_ar ?? data.recommendation.action : data.recommendation.action_en ?? data.recommendation.action}</p><p dir="auto">{isArabic ? data.recommendation.summary_ar ?? data.recommendation.summary_en : data.recommendation.summary_en ?? data.recommendation.summary_ar}</p></div>}
       {section === 'recommendation' && operatorControls}
@@ -91,7 +130,7 @@ export function OperationsCaseDetail({ caseId, shipmentId, onBack }: { caseId?: 
       </section>}
       {section === 'overview' && data.outcome && <section className="space-y-2 rounded-xl border border-border p-3"><h3 className="font-semibold">{t('ops.trace.outcome')}</h3><p>{t(`ops.actions.${data.outcome.invalidated ? 'invalidated' : data.outcome.verification_status === 'VERIFIED' ? 'verified' : 'observed'}`)}</p><p className="text-xs text-muted-foreground">{t('ops.actions.outcomeHint')}</p>{state === 'AWAITING_OUTCOME' && !data.outcome.invalidated && data.outcome.verification_status === 'OBSERVED' && (data.outcome.outcome_id ?? data.outcome.id) && <button type="button" disabled={pending || data.state_version == null} onClick={() => void command(`outcomes/${encodeURIComponent(data.outcome!.outcome_id ?? data.outcome!.id!)}/verify`)} className="rounded-lg border border-border px-3 py-2 disabled:opacity-50">{t('ops.actions.verify')}</button>}</section>}
       {section === 'recommendation' && <section className="space-y-2 rounded-xl border border-border p-3"><h3 className="font-semibold">{t('ops.workspace.proposedActions')}</h3>{data.reasoning?.recommendations?.map((r, i) => <div key={i} dir="auto"><p>{isArabic ? r.action_ar ?? r.action : r.action_en ?? r.action}</p><p className="text-sm text-muted-foreground">{isArabic ? r.explanation_ar ?? r.explanation_en ?? r.rationale : r.explanation_en ?? r.explanation_ar ?? r.rationale}</p></div>)}<p className="text-xs text-muted-foreground">{t('ops.transition.noSkipToResolved')}</p></section>}
-      {section === 'map' && <div className="space-y-3"><InvestigationPipeline detail={data} selected={stage} onSelect={inspectStage} onEvidence={() => setSection('evidence')} /><div className="flex flex-wrap items-center gap-2"><div role="group" aria-label={t('explore.lens')} className="flex rounded-lg border border-border bg-card p-0.5">{(['map', 'graph'] as const).map(mode => <button key={mode} type="button" aria-pressed={mapMode === mode} onClick={() => setMapMode(mode)} className={`rounded-md px-3 py-1 text-xs ${mapMode === mode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>{t(`explore.${mode}`)}</button>)}</div>{focusIds && <p role="status" className="flex items-center gap-2 text-xs text-muted-foreground">{t('ops.evidence.focused', { count: focusIds.length })}<button type="button" onClick={() => setFocusIds(null)} className="text-primary underline underline-offset-2">{t('ops.evidence.clearFocus')}</button></p>}</div><div className="h-[calc(100svh-17rem)] min-h-96 overflow-hidden rounded-xl border border-border">{mapMode === 'graph' ? <Graph graph={evidenceGraph(data)} highlightedIds={highlightedIds} /> : <ShipmentRouteMap detail={data} stage={stage} highlightedIds={highlightedIds} />}</div></div>}
+      {section === 'map' && <div className="space-y-3"><InvestigationPipeline detail={data} selected={stage} onSelect={inspectStage} onEvidence={() => setSection('evidence')} /><div className="flex flex-wrap items-center gap-2"><div role="group" aria-label={t('explore.lens')} className="inline-flex rounded-lg border border-border bg-card p-0.5">{(['map', 'graph'] as const).map(mode => <Button key={mode} type="button" size="xs" variant={mapMode === mode ? 'default' : 'ghost'} aria-pressed={mapMode === mode} onClick={() => setMapMode(mode)}>{t(`explore.${mode}`)}</Button>)}</div>{focusIds && <p role="status" className="flex items-center gap-2 text-xs text-muted-foreground">{t('ops.evidence.focused', { count: focusIds.length })}<button type="button" onClick={() => setFocusIds(null)} className="text-primary underline underline-offset-2">{t('ops.evidence.clearFocus')}</button></p>}</div><div className="h-[calc(100svh-17rem)] min-h-96 overflow-hidden rounded-xl border border-border" data-map-mode={mapMode}>{mapMode === 'graph' ? <Graph graph={evidenceGraph(data)} highlightedIds={highlightedIds} viewportKey={mapMode} /> : <ShipmentRouteMap key={mapMode} detail={data} stage={stage} highlightedIds={highlightedIds} />}</div></div>}
       {section === 'history' && <div className="space-y-5">{caseId && <CaseAudit caseId={caseId} />}<section className="space-y-2 rounded-xl border border-border p-3"><h3 className="font-semibold">{t('ops.trace.similar_cases')}</h3><p className="text-xs text-muted-foreground">{t('ops.outcomeMetrics.syntheticCaution')}</p>{(data.reasoning?.precedents ?? data.precedents ?? []).map((p, i) => <details key={i} className="rounded-lg border border-border p-3"><summary className="cursor-pointer text-sm"><span className="font-mono" dir="ltr">{p.shipment_id}</span> · {p.success == null ? t('intake.stages.retrieve.pending') : p.success ? t('ops.outcomeMetrics.succeeded') : t('ops.outcomeMetrics.failed')}</summary><p className="mt-2" dir="auto">{isArabic && p.synthetic ? t('ops.workspace.syntheticFollowup') : p.action}</p><time dir="ltr" className="text-xs text-muted-foreground">{p.verified_at}</time><p className="break-all font-mono text-xs text-muted-foreground" dir="ltr">{p.evidence_ids?.join(' · ')}</p></details>)}</section></div>}
     </>}
   </section>

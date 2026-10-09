@@ -11,8 +11,8 @@ function Glyph({ status }: { status: StepStatus }) {
   switch (status) {
     case 'COMPLETED': return <span className={`${base} border-chart-good bg-chart-good text-white`}><Check size={14} strokeWidth={3} /></span>
     case 'UNRECORDED': return <span className={`${base} border-chart-good/60 bg-card text-chart-good`}><Check size={14} strokeWidth={2.5} /></span>
-    case 'RUNNING': return <span className={`${base} border-primary bg-primary text-primary-foreground ring-4 ring-primary/20`}><LoaderCircle size={14} className="animate-spin motion-reduce:animate-none" /></span>
-    case 'RETRYING': return <span className={`${base} border-chart-warning bg-chart-warning text-white ring-4 ring-chart-warning/20`}><RotateCcw size={13} strokeWidth={2.5} /></span>
+    case 'RUNNING': return <span className={`${base} border-primary bg-primary text-primary-foreground ring-2 ring-primary/25`}><LoaderCircle size={14} className="animate-spin motion-reduce:animate-none" /></span>
+    case 'RETRYING': return <span className={`${base} border-chart-warning bg-chart-warning text-white ring-2 ring-chart-warning/25`}><RotateCcw size={13} strokeWidth={2.5} /></span>
     case 'REJECTED': return <span className={`${base} border-chart-warning bg-chart-warning text-white`}><X size={14} strokeWidth={3} /></span>
     case 'HUMAN_REVIEW': return <span className={`${base} border-chart-orange bg-chart-orange text-white`} aria-hidden="true">!</span>
     case 'ESCALATED': return <span className={`${base} border-chart-orange bg-chart-orange text-white`}><ArrowUpRight size={14} strokeWidth={2.5} /></span>
@@ -81,8 +81,8 @@ export function InvestigationPipeline({ detail, selected, onSelect, onEvidence }
             aria-label={`${t(`ops.pipeline.full.${step.key}`)} · ${t(`ops.pipeline.states.${step.status}`)}${step.revisions ? ` · ${t('ops.pipeline.loop', { count: step.revisions })}` : ''} · ${t('ops.automation.inspect')}`}
             title={`${t(`ops.pipeline.full.${step.key}`)} — ${t(`ops.pipeline.states.${step.status}`)}`}
             onClick={() => onSelect(step.stage)}
-            className={`relative z-10 flex flex-col items-center gap-1 rounded-lg px-1.5 pb-1 focus-visible:outline-2 focus-visible:outline-ring ${isSelected ? 'bg-primary/10' : 'hover:bg-muted/60'}`}>
-            <span className={`rounded-full ${isSelected ? 'ring-2 ring-primary ring-offset-2 ring-offset-card' : ''}`}><Glyph status={step.status} /></span>
+            className={`relative z-10 flex flex-col items-center gap-1 rounded-lg px-1.5 pb-1 transition-colors duration-200 motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-ring ${isSelected ? 'bg-primary/8' : 'hover:bg-muted/60'}`}>
+            <span className={`rounded-full transition-shadow duration-200 motion-reduce:transition-none ${isSelected ? 'ring-1 ring-primary/70' : ''}`}><Glyph status={step.status} /></span>
             {step.revisions > 0 && <span aria-hidden="true" className="absolute -top-1 end-0 rounded-full bg-chart-warning px-1 text-[9px] font-semibold leading-4 text-white">↺{step.revisions}</span>}
             <span className={`text-[11px] leading-tight ${isSelected ? 'font-semibold' : 'font-medium'}`}>{t(`ops.pipeline.short.${step.key}`)}</span>
             <span className="text-[9px] leading-tight text-muted-foreground">{t(`ops.pipeline.states.${step.status}`)}</span>

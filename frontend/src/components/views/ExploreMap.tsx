@@ -12,7 +12,36 @@ import type { LayerPoint, RouteLayerKey, RouteLayers } from '@/contracts/caseDet
 
 function ViewportBounds({ coordinates }: { coordinates: string }) {
   const map = useMap()
-  useEffect(() => { map.invalidateSize(); map.fitBounds(JSON.parse(coordinates), { padding: [35, 35], maxZoom: 11, animate: false }) }, [map, coordinates])
+  useEffect(() => {
+    const bounds = JSON.parse(coordinates) as [number, number][]
+    map.invalidateSize()
+    if (bounds.length) map.fitBounds(bounds, { padding: [35, 35], maxZoom: 11, animate: false })
+  }, [map, coordinates])
+  return null
+}
+
+/** Refit when the pane grows or shrinks (focus modes, tabs) — fixes cropped Leaflet tiles. */
+function MapResizeSync({ coordinates }: { coordinates: string }) {
+  const map = useMap()
+  useEffect(() => {
+    const bounds = JSON.parse(coordinates) as [number, number][]
+    const container = map.getContainer()
+    let frame = 0
+    const sync = () => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => {
+        map.invalidateSize()
+        if (bounds.length) map.fitBounds(bounds, { padding: [35, 35], maxZoom: 11, animate: false })
+      })
+    }
+    const ro = new ResizeObserver(sync)
+    ro.observe(container)
+    sync()
+    return () => {
+      ro.disconnect()
+      cancelAnimationFrame(frame)
+    }
+  }, [map, coordinates])
   return null
 }
 
@@ -51,6 +80,7 @@ export function ExploreMap({ shipments, selected, onSelect, layers, visibleLayer
     <div className="relative h-full min-h-40" aria-label={t('explore.mapHint')} data-map-highlight-count={layerPoints.filter(p=>highlightedIds?.includes(p.evidence_id??p.entity_id??'')).length}>
       <MapContainer bounds={bounds} boundsOptions={{ padding: [35, 35], maxZoom: 11 }} className="h-full w-full" scrollWheelZoom>
         <ViewportBounds coordinates={JSON.stringify(bounds)} />
+        <MapResizeSync coordinates={JSON.stringify(bounds)} />
         <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
         {addressGroups.map(([key, group]) => {
           const { shipment, point } = group[0]
