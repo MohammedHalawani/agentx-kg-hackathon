@@ -6,6 +6,7 @@ import { IntakeView } from './components/views/IntakeView'
 import { OperationsDecisionsView } from './components/views/OperationsDecisionsView'
 import { ExploreView } from './components/views/ExploreView'
 import { AuditView } from './components/views/AuditView'
+import { SimulationView } from './components/views/SimulationView'
 import type { ExploreShipment } from './types/explore'
 
 export default function App() {
@@ -56,6 +57,7 @@ export default function App() {
               }}
             />
           )}
+          {view === 'simulation' && <SimulationView />}
           {view === 'audit' && <AuditView onOpenCase={(shipmentId, caseId) => { setSelectedShipment({ shipment_id: shipmentId, case_id: caseId }); setView('intake') }} />}
         </motion.div>
       </AppShell>

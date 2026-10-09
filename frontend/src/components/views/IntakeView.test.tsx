@@ -110,6 +110,13 @@ describe('IntakeView metadata contrast (H01)', () => {
     expect(screen.getAllByText(/Synthetic operational data/i).length).toBeGreaterThan(0)
   })
 
+  it('keeps simulation controls off the operator screen', () => {
+    renderIntake()
+    expect(screen.queryByRole('button', { name: /Start world|Pause world/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /New live session/ })).toBeNull()
+    expect(screen.getByText('Synthetic world clock paused')).toBeTruthy()
+  })
+
   it('defaults Intake to Active work while counters span every state', () => {
     renderIntake()
     expect(seenUrls.some(u => u.startsWith('/cases/queue?scope=active'))).toBe(true)

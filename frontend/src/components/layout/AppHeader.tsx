@@ -18,6 +18,7 @@ const VIEW_KEYS: Record<ViewKey, string> = {
   decisions: 'nav.decisions',
   explore: 'nav.explore',
   audit: 'nav.audit',
+  simulation: 'nav.simulation',
 }
 
 export function AppHeader({

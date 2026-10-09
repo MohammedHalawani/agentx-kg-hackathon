@@ -5,7 +5,7 @@ import { ArrowUpRight, CheckCircle2, Loader2, RotateCcw, Square } from 'lucide-r
 import { useComplaintStream } from '../../hooks/useComplaintStream'
 import { useOperationsPage } from '@/hooks/useOperationsPage'
 import { useLanguage } from '@/components/i18n/LanguageProvider'
-import { useOperationsControl, type WorkerStatus, type SimulationStatus, type SimulationSpeed, type ReplayMode } from '@/hooks/useQueueSimulation'
+import { useOperationsControl, type WorkerStatus, type SimulationStatus } from '@/hooks/useQueueSimulation'
 import {
   activeWorkflowState,
 } from '@/adapters/v1SamplesAdapter'
@@ -21,7 +21,6 @@ import { ErrorState } from '@/components/operations/ErrorState'
 import { OperationsCaseDetail } from '@/components/intake/OperationsCaseDetail'
 import { CaseWorkspace } from '@/components/intake/CaseWorkspace'
 import { ProcessQueuePanel } from '@/components/intake/ProcessQueuePanel'
-import { SimulationPanel } from '@/components/intake/SimulationPanel'
 import { NowProcessingPanel, useLiveWorkerStatus } from '@/components/intake/NowProcessingPanel'
 import { HumanAttentionRail } from '@/components/intake/HumanAttentionRail'
 import { LiveSessionBar } from '@/components/intake/LiveSessionBar'
@@ -141,8 +140,6 @@ export function IntakeView({
   const [activeBucket, setActiveBucket] = useState<BucketKey | undefined>()
   const cities = data?.metadata?.filter_choices?.city ?? data?.metadata?.filter_choices?.cities ?? []
   const causes = data?.metadata?.filter_choices?.cause ?? data?.metadata?.filter_choices?.causes ?? []
-  const [speed, setSpeed] = useState<SimulationSpeed>(1)
-  const [replayMode, setReplayMode] = useState<ReplayMode>('timeline')
   const workerRunning = worker.data?.worker?.state?.toLowerCase() === 'running'
   const simulationRunning = simulation.data?.simulator?.state?.toLowerCase() === 'running'
 
@@ -181,13 +178,8 @@ export function IntakeView({
               <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{t('ops.intake.subtitle')}</p>
             </header>
 
-            <LiveSessionBar
-              status={simulation.data}
-              running={simulationRunning}
-              pending={simulation.pending}
-              onToggle={() => void simulation.command(simulationRunning ? 'pause' : 'start', simulationRunning ? {} : { speed: 600, replay_mode: 'timeline' })}
-              onReset={async () => { await simulation.command('reset'); worker.refetch(); pager.reset(); refetch() }}
-            />
+            {/* Read-only on the operator screen; the world clock and sessions are driven from Development > Simulation. */}
+            <LiveSessionBar status={simulation.data} running={simulationRunning} pending={simulation.pending} />
             <section aria-label={t('ops.queue.title')}>
               <div className="mb-2 flex flex-wrap items-center gap-2" role="status">
                 <h3 className="text-sm font-semibold">
@@ -274,19 +266,6 @@ export function IntakeView({
             {worker.error && <ErrorState onRetry={worker.refetch} />}
             {worker.loading && !worker.data && <LoadingState label={t('ops.loading')} />}
 
-            {simulation.data && <SimulationPanel
-              running={simulationRunning}
-              onRunningChange={(v) => void simulation.command(v ? 'start' : 'pause', v ? { speed, replay_mode: replayMode } : {})}
-              speed={simulationRunning ? simulation.data!.simulator.speed : speed}
-              onSpeedChange={(v) => { setSpeed(v); if (simulationRunning) void simulation.command('start', { speed: v, replay_mode: simulation.data?.simulator.replay_mode ?? replayMode }) }}
-              replayMode={simulationRunning ? simulation.data?.simulator.replay_mode ?? replayMode : replayMode}
-              onReplayModeChange={v => { setReplayMode(v); if (simulationRunning) void simulation.command('start', { speed: simulation.data?.simulator.speed ?? speed, replay_mode: v }) }}
-              events={[]}
-              disabled={simulation.pending || !simulation.data || Boolean(simulation.error)}
-              eventCount={simulation.data?.simulator?.event_count}
-              asOf={simulation.data?.as_of}
-              onStep={() => void simulation.command('tick', { seconds: 60, speed: simulationRunning ? simulation.data!.simulator.speed : speed, replay_mode: simulationRunning ? simulation.data!.simulator.replay_mode : replayMode })}
-            />}
             {simulation.error && <ErrorState onRetry={simulation.refetch} />}
             {simulation.loading && !simulation.data && <LoadingState label={t('ops.loading')} />}
 

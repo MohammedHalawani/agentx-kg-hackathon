@@ -1,9 +1,10 @@
-import { ClipboardList, Compass, GitBranch, Inbox } from 'lucide-react'
+import { ClipboardList, Compass, FlaskConical, GitBranch, Inbox } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -20,6 +21,8 @@ const NAV: { key: ViewKey; labelKey: string; icon: typeof Inbox }[] = [
   { key: 'explore', labelKey: 'nav.explore', icon: Compass },
   { key: 'audit', labelKey: 'nav.audit', icon: ClipboardList },
 ]
+// Development tooling, separated from the operator views.
+const DEV_NAV: typeof NAV = [{ key: 'simulation', labelKey: 'nav.simulation', icon: FlaskConical }]
 
 export function AppSidebar({
   active,
@@ -49,6 +52,26 @@ export function AppSidebar({
                     tooltip={t(labelKey)}
                     onClick={() => { onSelect(key); setOpenMobile(false) }}
                     className="text-sidebar-foreground [&_svg]:text-current"
+                  >
+                    <Icon />
+                    <span>{t(labelKey)}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup className="mt-auto border-t border-sidebar-border">
+          <SidebarGroupLabel>{t('nav.development')}</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {DEV_NAV.map(({ key, labelKey, icon: Icon }) => (
+                <SidebarMenuItem key={key}>
+                  <SidebarMenuButton
+                    isActive={active === key}
+                    tooltip={t(labelKey)}
+                    onClick={() => { onSelect(key); setOpenMobile(false) }}
+                    className="text-muted-foreground [&_svg]:text-current"
                   >
                     <Icon />
                     <span>{t(labelKey)}</span>
