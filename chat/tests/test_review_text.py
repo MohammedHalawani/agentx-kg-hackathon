@@ -78,6 +78,15 @@ class StoredReviewTextTests(_Store):
         for item in detail["run"]["result"]["trace"]:
             self.assertEqual(item["proposal"]["action_ar"], ACTION_SUMMARY_AR["REQUEST_RESCAN"])
 
+    def test_agent_hypotheses_carry_no_rule_sentence_as_their_arabic_summary(self):
+        fake = ti.FakeInvestigator(lambda tools: [("shipment_overview", {})], ["HUMAN_REVIEW"])
+        fake.cause, fake.action = "CUSTODY_GAP", "REQUEST_DEVICE_SYNC"
+        store, driver, result = self.run_with(fake)
+        diagnoses = store.case_detail(result["case_id"])["run"]["result"]["result"]["diagnoses"]
+        self.assertTrue(diagnoses)
+        self.assertEqual({d["summary_ar"] for d in diagnoses}, {None})  # Not a rule definition passed off as the model's words.
+        self.assertEqual(diagnoses[0]["summary_en"], "Consistent with the records.")
+
     def test_a_model_revision_is_not_told_as_a_gps_story(self):
         fake = ti.FakeInvestigator(lambda tools: [("shipment_overview", {})], ["REVISE", "REVISE"])
         fake.cause, fake.action = "BARCODE_MISMATCH", "REQUEST_RESCAN"

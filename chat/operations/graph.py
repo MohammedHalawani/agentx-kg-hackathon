@@ -15,7 +15,7 @@ from typing import TypedDict, Any
 
 from langgraph.graph import StateGraph, END
 from dataset_v2.contracts import digest
-from operations.reasoning import triage, operational_status, ARABIC
+from operations.reasoning import triage, operational_status
 
 MAX_REVIEW_ROUNDS = 2
 
@@ -65,7 +65,8 @@ def agent_result(investigation, context):
         if h["status"] == "refuted":
             continue
         diagnoses.append({"code": h["cause"], "status": h["status"], "summary": h.get("assessment") or "", "summary_en": h.get("assessment") or "",
-                          "summary_ar": ARABIC.get(h["cause"], (None,))[0],
+                          # The assessment is the model's own text; a rule-definition sentence is not its translation.
+                          "summary_ar": None,
                           "evidence_ids": [i for i in h.get("supporting_evidence_ids", []) if i in known] or h.get("supporting_evidence_ids", []),
                           "certainty": "model_hypothesis", "requires_human_review": False})
     primary = investigation.get("primary_cause")
