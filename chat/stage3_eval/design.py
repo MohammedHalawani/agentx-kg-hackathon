@@ -18,6 +18,10 @@ DESIGN_COMMITS = {"frozen": "b1d331f", "amendment_1": "001bcbf", "amendment_2": 
 
 # ---------------------------------------------------------------------------------------------- budget (amendment 2)
 CALL_BUDGET = 4000            # Fahad's hard cap for the blind evaluation on E1 and E2, every arm and retry included.
+# Stage 3 stops when the campaign ledger reaches this many calls; the rest of the cap is the Stage 4 reserve (addendum
+# to amendment 3). `select` seals budget = min(campaign remaining, STAGE3_STOP_AT - spent), and `run` refuses to start
+# if the calls spent plus the sealed budget would pass it.
+STAGE3_STOP_AT = 3600
 C_CAP_PLANNING = 12           # Planning value; the real C_cap is the 95th percentile of correct development runs.
 NOTOOLS_MAX_CALLS = 2         # One call plus one retry on invalid output (addendum 2, item 2).
 
@@ -27,6 +31,12 @@ def n_main(c_cap=C_CAP_PLANNING, r_cap=0, budget=CALL_BUDGET):
     if c_cap < 1 or r_cap < 0:
         raise ValueError("C_cap must be at least 1 and R_cap at least 0")
     return budget // (c_cap + r_cap + NOTOOLS_MAX_CALLS)
+
+
+def evaluation_budget(spent, reserve=0, cap=CALL_BUDGET, stop_at=STAGE3_STOP_AT):
+    """The budget `select` seals at a campaign ledger of `spent` calls: what the campaign has left (less the calls
+    --reserve keeps out), and never more than what is left before the Stage 3 stop line. Zero or less: nothing to seal."""
+    return min(cap - spent - reserve, stop_at - spent)
 
 
 def worst_case_per_case(c_cap=C_CAP_PLANNING, r_cap=0):
@@ -234,5 +244,6 @@ def sealed_hash(config: EvalConfig) -> str:
                "shrink": SHRINK_ORDER, "pass_bars": PASS_BARS, "rulecode_order": RULECODE_ORDER, "symptom_cause": SYMPTOM_CAUSE,
                "symptom_order": SYMPTOM_ORDER, "categories": CATEGORIES, "min_support": STRATUM_MIN_SUPPORT,
                "max_hypotheses": MAX_SUPPORTED_HYPOTHESES, "notools_max_calls": NOTOOLS_MAX_CALLS,
-               "cross_shipment": CROSS_SHIPMENT_MECHANISMS, "extras": EXTRAS_ORDER, "stability_max": STABILITY_MAX}
+               "cross_shipment": CROSS_SHIPMENT_MECHANISMS, "extras": EXTRAS_ORDER, "stability_max": STABILITY_MAX,
+               "stage3_stop_at": STAGE3_STOP_AT}
     return hashlib.sha256(json.dumps(payload, sort_keys=True, default=list).encode()).hexdigest()

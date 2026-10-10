@@ -38,7 +38,7 @@ import sys
 from stage3_eval.arms import CaseRef
 from stage3_eval.budget import BudgetExceeded, BudgetLedger, CapViolation, RunStopped
 from stage3_eval.canary import marker_hits
-from stage3_eval.design import EXTRAS_ORDER, EvalConfig, canonical_bytes, runtime_selection_problem, sealed_hash
+from stage3_eval.design import EXTRAS_ORDER, STAGE3_STOP_AT, EvalConfig, canonical_bytes, runtime_selection_problem, sealed_hash
 from stage3_eval.records import ArmResult
 
 TRUTH_ENV = "SUHAIL_EVAL_TRUTH_ROOT"
@@ -78,6 +78,19 @@ def refuse_into_reserve(campaign, config, *, run_name=None):
         raise LedgerRefused(f"refused: {others} of {document['cap']} campaign model calls are spent or reserved and {config.reserve} are "
                             f"set aside by the selection; a run of up to {config.budget} calls would go into that reserve "
                             f"({document['cap'] - config.reserve - others} remain outside it)")
+
+
+def refuse_past_stop_line(campaign, config, *, run_name=None):
+    """Refuse (LedgerRefused, nothing written) a run whose sealed budget would take the campaign ledger past the Stage 3
+    stop line (design.STAGE3_STOP_AT; the calls above it are the Stage 4 reserve), whatever reserve the selection
+    sealed. run_name: this run's own entry, left out of the calls already spent when it is being resumed."""
+    from operations.call_ledger import LedgerRefused
+    document = campaign.load()
+    others = sum(entry["calls"] for entry in document["entries"] if entry["run"] != run_name)
+    if others + config.budget > STAGE3_STOP_AT:
+        raise LedgerRefused(f"refused: {others} campaign model calls are spent or reserved and Stage 3 stops at {STAGE3_STOP_AT}; "
+                            f"a run of up to {config.budget} calls would pass the Stage 3 stop line "
+                            f"({max(STAGE3_STOP_AT - others, 0)} remain before it)")
 
 
 def load_selection(path):
@@ -171,7 +184,8 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
     the provider counted and whether the code tree changed during the run).
     campaign: the campaign's persistent model-call ledger (operations.call_ledger.CallLedger). The run's own maximum
     is config.budget: the run refuses to start if the calls already spent in the campaign plus that maximum would
-    exceed the campaign cap (less config.reserve, the calls the selection set aside), reserves the maximum before the first case and writes the calls it actually committed
+    exceed the campaign cap (less config.reserve, the calls the selection set aside) or pass the Stage 3 stop line
+    (design.STAGE3_STOP_AT), reserves the maximum before the first case and writes the calls it actually committed
     at the end. A run that dies leaves its reservation counted at the maximum. A dry run checks and writes nothing.
     extras_path: extras.json of the pre-registration. The lists in it are derived from truth (which cases are in the
     main test, which have a cross-shipment mechanism), so the file is opened only after the last main-test case has
@@ -210,6 +224,7 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
     settled_keys = {row["key"] for row in settled_before}
     campaign_run = f"stage3 run {out.name} selection {selection_sha[:12]}"
     if campaign is not None:
+        refuse_past_stop_line(campaign, config, run_name=campaign_run if resume else None)
         refuse_into_reserve(campaign, config, run_name=campaign_run if resume else None)
         if dry_run:
             campaign.check(config.budget)        # LedgerRefused if it would not fit; nothing is written

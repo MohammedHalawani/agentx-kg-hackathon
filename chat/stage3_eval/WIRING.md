@@ -254,9 +254,11 @@ What the wiring added to or settled about the sections above:
 - **Resolver (section 7).** A cited id resolves from the database's `V2Entity` records first; an id that is not one
   (a tool-computed `DEMO-CMP-` result, a precedent, a device) resolves from `captured/tool_index/`, written by the
   tools' code. An id in neither does not resolve.
-- **Campaign ledger.** `select` seals `budget = 4000 - spent` from `docs/evals/model_call_ledger.json`; `run` refuses to
-  start past the cap, reserves the budget and writes what it used (README, design item table). `select --reserve N`
-  seals `budget = 4000 - spent - N` and the reserve itself; `run` then refuses if spent + budget would exceed 4000 - N.
+- **Campaign ledger.** `select` seals `budget = min(4000 - spent, 3600 - spent)` from `docs/evals/model_call_ledger.json`
+  (3,600 is `design.STAGE3_STOP_AT`, where Stage 3 stops; addendum to amendment 3); `run` refuses to start past the cap
+  or past that line, reserves the budget and writes what it used (README, design item table). `select --reserve N`
+  seals `budget = min(4000 - spent - N, 3600 - spent)` and the reserve itself; `run` then also refuses if spent + budget
+  would exceed 4000 - N.
 - **Gate fixes (2026-10-11).**
   - *Cap equality.* `prepare_session` sets the store's `model_call_cap` to the sealed `C_cap`; `require_sealed_cap` reads
     it back through `investigator.CallBudget` at build and again before every case and extra, and stops the run

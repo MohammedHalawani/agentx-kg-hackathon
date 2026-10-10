@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from stage3_eval.arms import AgentArm, NoToolsArm, RuleCodeArm, SymptomArm
-from stage3_eval.design import EvalConfig
+from stage3_eval.design import STAGE3_STOP_AT, EvalConfig
 from stage3_eval.fixtures.fakes import world_dir
 from stage3_eval.records import ArmResult
 from stage3_eval.truth_io import load_replay_rows, load_truth
@@ -23,7 +23,8 @@ def fixture_worlds():
 
 
 def make_config(**over):
-    base = dict(freeze_commit=COMMIT, worlds={w: {"dataset_id": f"FIXTURE-{w}"} for w in ("E1", "E2")})
+    """The fixture configuration: sealed at the whole Stage 3 line (3,600), the most a run may hold from an empty ledger."""
+    base = dict(freeze_commit=COMMIT, budget=STAGE3_STOP_AT, worlds={w: {"dataset_id": f"FIXTURE-{w}"} for w in ("E1", "E2")})
     base.update(over)
     return EvalConfig(**base)
 

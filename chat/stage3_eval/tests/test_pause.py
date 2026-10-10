@@ -45,7 +45,7 @@ def _files(root):
 def test_a_run_pauses_after_n_cases_with_both_ledgers_right_and_no_extras(tmp_path, selected, worlds, monkeypatch):
     import stage3_eval.runner as runner_mod
     config, sel_dir, _ = selected
-    campaign = CallLedger(write_campaign_ledger(tmp_path / "campaign.json", spent=173, cap=4200))
+    campaign = CallLedger(write_campaign_ledger(tmp_path / "campaign.json", spent=0))
     monkeypatch.setattr(runner_mod, "load_extras", lambda *a: pytest.fail("extras.json was opened by a paused run"))
     manifest, agent, extra = _part(tmp_path / "run", config, sel_dir, worlds, campaign=campaign, max_cases=25)
     assert manifest["status"] == "paused"                              # not invalid, not completed
@@ -59,14 +59,14 @@ def test_a_run_pauses_after_n_cases_with_both_ledgers_right_and_no_extras(tmp_pa
     assert manifest["extras"] == {} and not any(e.seen for e in extra.values()) and not (tmp_path / "run" / "results" / "extras").exists()
     # The run's ledger: nothing held for a case that has not started, and what was settled is what was called.
     led = manifest["ledger"]
-    assert (led["open_reservations"], led["settled_calls"], led["committed_calls"], led["remaining"]) == (0, 250, 250, 4000 - 250)
+    assert (led["open_reservations"], led["settled_calls"], led["committed_calls"], led["remaining"]) == (0, 250, 250, 3600 - 250)
     events = read_ledger(tmp_path / "run" / "ledger.jsonl")
     assert sum(e["event"] == "reserve" for e in events) == sum(e["event"] == "settle" for e in events) == 50
     assert events[-1]["event"] == "close" and events[-1]["status"] == "paused" and led["cases_reconciled_with_provider"] == 25
     # The campaign's ledger: the entry is settled at the calls committed so far, so the rest of the budget is free.
     entry = campaign.load()["entries"][-1]
-    assert (entry["calls"], entry["reserved"], bool(entry["finished_at"])) == (250, 4000, True) and "status: paused" in entry["note"]
-    assert campaign.spent == 173 + 250 and manifest["campaign_ledger"]["calls"] == 250
+    assert (entry["calls"], entry["reserved"], bool(entry["finished_at"])) == (250, 3600, True) and "status: paused" in entry["note"]
+    assert campaign.spent == 250 and manifest["campaign_ledger"]["calls"] == 250
     # The run-level surfaces are captured as of the pause, so an interim canary scan is complete.
     assert (tmp_path / "run" / "captured" / "logs" / "paused_after_0025.jsonl").exists()
     scan = TruthScanner(truth_vocabulary(worlds["E1"][0])).scan_run(tmp_path / "run")
@@ -131,7 +131,7 @@ def test_a_paused_run_resumed_to_the_end_equals_an_unpaused_run(tmp_path, select
             "cap_violations", "recovered_after_crash", "cases_reconciled_with_provider")
     assert {k: last["ledger"][k] for k in keep} == {k: plain["ledger"][k] for k in keep}
     assert campaign.spent == plain_campaign.spent == last["ledger"]["committed_calls"]
-    assert len(campaign.load()["entries"]) == 1 and campaign.load()["entries"][0]["reserved"] == 4000
+    assert len(campaign.load()["entries"]) == 1 and campaign.load()["entries"][0]["reserved"] == 3600
     # The same scores and the same report.
     selection = scorer_view(sel_dir / "selection.json")
     truth = {w: worlds[w][0] for w in worlds}
@@ -169,7 +169,7 @@ def test_resuming_holds_the_whole_budget_again_and_is_refused_if_it_no_longer_fi
     truth = {w: worlds[w][0] for w in worlds}
     manifest = run(sel_dir / "selection.json", tmp_path / "run", arms=build_arms(config, Watching(truth), notools_turn_factory()[0]),
                    case_source=FixtureCaseSource(), config=config, campaign=campaign, resume=True, max_cases=5)
-    assert seen["held"] == 4000 and manifest["status"] == "paused" and campaign.spent == 50
+    assert seen["held"] == 3600 and manifest["status"] == "paused" and campaign.spent == 50
 
 
 def test_score_and_report_work_on_a_paused_run_and_the_report_says_interim(tmp_path, selected, worlds):
@@ -213,7 +213,7 @@ def test_cli_max_cases_then_resume(tmp_path, selected, capsys, campaign_ledger_f
     with pytest.raises(SystemExit, match="--max-cases must be 1 or more"):
         main(base + ["--max-cases", "0"])
     assert not (tmp_path / "run").exists()
-    # The fixture selection is sealed with the whole 4,000, so the test's ledger starts empty.
+    # The fixture selection is sealed with the whole Stage 3 line (3,600), so the test's ledger starts empty.
     write_campaign_ledger(campaign_ledger_file, spent=0)
     assert main(base + ["--max-cases", "5"]) == 0
     printed = json.loads(capsys.readouterr().out)
