@@ -136,6 +136,26 @@ def test_agent_arm_reads_an_s5_shaped_run_record():
     assert none.degraded and none.failure_mode == "no_run_recorded"
 
 
+def test_the_backends_nested_counter_is_lifted_as_integers_never_as_the_counter_object():
+    counter = {"model_call_cap": 12, "model_calls_used": 5, "model_calls_by_role": {"investigator": 5}, "cap_reached": True, "calls_refused_by_cap": 1}
+    investigation = {"mode": "model_call_cap", "degraded": True, "hypotheses": [], "primary_cause": None, "model_calls": counter}
+
+    def read(analysis, **row):
+        return from_ops_run("E1:S1", "S1", case={"entity_id": "C1"}, runs=[{"recorded_at": "t", "result_json": json.dumps(analysis), **row}])
+    # No investigation log (the investigator failed before a round was logged): the investigator's own budget.
+    nested = read({"investigation": investigation})
+    assert (nested.calls_used, nested.cap_hit) == (5, True) and type(nested.calls_used) is int and nested.cap_hit is True
+    # The log, when there is one, is the one counter.
+    logged = read({"investigation": investigation, "investigation_log": {**counter, "model_calls_used": 7, "cap_reached": False}})
+    assert (logged.calls_used, logged.cap_hit) == (7, False)
+    # A name that holds the whole counter object (or anything that is not a count) is passed over, never returned.
+    for bad in (counter, "7", 7.5, True, -1):
+        odd = read({"investigation": {**investigation, "model_calls": None}, "model_calls_used": bad, "cap_hit": "yes", "total_tokens": bad})
+        assert odd.calls_used is None and odd.tokens is None and odd.cap_hit is False, bad
+    assert read({"investigation": investigation, "model_calls_used": counter}).calls_used == 5     # the next candidate still answers
+    assert read({"investigation": {**investigation, "model_calls": None}}, model_calls_used=9).calls_used == 9   # the OpsRun row
+
+
 def test_cause_set_is_capped_at_primary_plus_three():
     from stage3_eval.records import ArmResult
     hyps = [{"cause": c, "status": "supported"} for c in ("A", "B", "C", "D", "E")]

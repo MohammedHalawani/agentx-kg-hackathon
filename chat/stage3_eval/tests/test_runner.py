@@ -120,6 +120,30 @@ def test_cap_violation_stops_the_run(tmp_path, selected, worlds):
     assert len(agent.seen) == 1
 
 
+def test_an_unreadable_call_count_never_aborts_the_run_with_an_open_reservation(tmp_path, selected, worlds):
+    """A run record whose count is not a whole number (the counter object, a string) is an arm error: the case is
+    degraded and settled at its worst case, and the run goes on."""
+    config, sel_dir, _ = selected
+
+    class BadCount(FakeAgent):
+        def __call__(self, case):
+            result = super().__call__(case)
+            if len(self.seen) == 2:
+                result.calls_used = {"model_calls_used": 9, "cap_reached": False}
+            if len(self.seen) == 3:
+                result.calls_used, result.tokens = 9, "many"
+            return result
+    agent = BadCount({w: worlds[w][0] for w in worlds})
+    manifest, _, _ = _full_run(tmp_path, config, sel_dir, worlds, agent=agent)
+    assert manifest["status"] == "completed" and manifest["counts"]["arm_errors"] == 2
+    assert manifest["ledger"]["open_reservations"] == 0 and len(agent.seen) == 70
+    assert manifest["ledger"]["calls_by_arm"]["agent"] == 68 * 9 + 2 * 12
+    rows = read_jsonl(tmp_path / "run" / "results" / "main" / "agent.jsonl")
+    assert [r["failure_mode"] for r in rows[:4]] == [None, "arm_error:ValueError", "arm_error:ValueError", None]
+    settles = [e for e in read_ledger(tmp_path / "run" / "ledger.jsonl") if e["event"] == "settle" and e["arm"] == "agent"]
+    assert settles[1]["calls"] == 12 and settles[1]["source"].startswith("reserved_worst_case")
+
+
 def test_crash_then_resume_never_spends_twice(tmp_path, selected, worlds):
     config, sel_dir, _ = selected
     truth = {w: worlds[w][0] for w in worlds}

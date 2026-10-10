@@ -5,7 +5,9 @@ degraded, checks, authority, investigation_log, pipeline_events) plus the case's
 Every field name this harness reads is in FIELDS below and nowhere else; a name with dots is a path into nested
 objects. The Stage 2 names are those of docs/api/investigation-run.md: the one per-case model-call counter is
 investigation_log.model_calls_used, the snapshot investigation_log.snapshot_as_of and a cap hit
-investigation_log.cap_reached. Adjust FIELDS, not the scorer.
+investigation_log.cap_reached. A run whose investigator failed before a round was logged has no log; its counter is
+the investigator's own, nested at investigation.model_calls (model_calls_used, cap_reached). from_ops_run lifts the
+two values as an integer and a boolean, never the counter object. Adjust FIELDS, not the scorer.
 """
 from dataclasses import asdict, dataclass, field
 import json
@@ -35,16 +37,27 @@ FIELDS = {
 }
 
 
-def pick(record, name, default=None):
+def pick(record, name, default=None, accept=None):
+    """The first candidate of FIELDS[name] that is present (and, with `accept`, of the expected kind: a candidate
+    holding something else, such as the whole counter object where a number is expected, is passed over)."""
     for key in FIELDS[name]:
         value = record
         for part in key.split("."):
             value = value.get(part) if isinstance(value, dict) else None
             if value is None:
                 break
-        if value is not None:
+        if value is not None and (accept is None or accept(value)):
             return value
     return default
+
+
+def is_count(value):
+    """A whole, non-negative number (True and False are not counts)."""
+    return isinstance(value, int) and not isinstance(value, bool) and value >= 0
+
+
+def is_flag(value):
+    return isinstance(value, bool)
 
 
 @dataclass
@@ -153,11 +166,13 @@ def from_ops_run(case_key, shipment_id, *, case, runs, executions=(), outcomes=(
                                 outcomes=[{"type": o.get("outcome_type"), "success": o.get("success"), "verifier": o.get("verifier_id")}
                                           for o in outcomes],
                                 final_state=case.get("workflow_state"),
-                                calls_used=pick(analysis, "calls_used", pick(first, "calls_used")),
-                                tokens=pick(analysis, "tokens", pick(first, "tokens")),
+                                # Integers only, never the counter object: a record with no readable count gives None, and
+                                # the ledger then settles the case at its full worst case.
+                                calls_used=pick(analysis, "calls_used", pick(first, "calls_used", accept=is_count), accept=is_count),
+                                tokens=pick(analysis, "tokens", pick(first, "tokens", accept=is_count), accept=is_count),
                                 wall_seconds=pick(analysis, "wall_seconds", pick(first, "wall_seconds")),
                                 tool_seconds=list(pick(analysis, "tool_seconds", []) or []),
-                                cap_hit=bool(pick(analysis, "cap_hit", False)))
+                                cap_hit=pick(analysis, "cap_hit", False, accept=is_flag))
     if "investigator" in degraded_roles and not result.degraded:
         result.degraded, result.failure_mode = True, "investigator_degraded"
     return result

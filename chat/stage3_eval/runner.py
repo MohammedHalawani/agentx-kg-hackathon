@@ -188,6 +188,15 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
     return manifest
 
 
+def _whole(value, name):
+    """None, or the value as a whole non-negative number; anything else raises."""
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise ValueError(f"{name} must be a whole non-negative number, not {type(value).__name__}")
+    return value
+
+
 def _run_arm(arm, case: CaseRef, ledger, dry_run, counts):
     worst = arm.worst_case()
     if arm.uses_model:
@@ -200,6 +209,11 @@ def _run_arm(arm, case: CaseRef, ledger, dry_run, counts):
             return _not_run(case, case.key, case.world, case.shipment_id, arm.name, "dry_run")
     try:
         result = arm.run(case)
+        if arm.uses_model:
+            # Inside the guard: a count the ledger cannot read (the counter object, a string, a negative number) is an
+            # arm error like any other, so it can never abort the run with this reservation still open.
+            result.calls_used = _whole(result.calls_used, "calls_used")
+            result.tokens = _whole(result.tokens, "tokens")
     except Exception as exc:   # one bad case never loses the run; it counts as degraded (wrong)
         counts["arm_errors"] += 1
         result = ArmResult(case_key=case.key, arm=arm.name, shipment_id=case.shipment_id, case_id=case.case_id, as_of=case.as_of,
