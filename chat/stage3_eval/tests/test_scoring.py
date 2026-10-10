@@ -97,3 +97,16 @@ def test_baselines_are_scored_without_citations(worlds):
                   cause_set_override=["MISSED_MILESTONE"])
     s = _score(worlds, 13, r)                              # shipment 13: FACILITY_BACKLOG accepts MISSED_MILESTONE
     assert s["category"] == "correct_unsupported" and s["cause_set_precision"] == 1.0
+
+
+def test_a_scored_row_says_whether_a_correct_answer_is_observation_level_or_mechanism_level(worlds):
+    d, link, o = _ids(1)                                   # shipment 1 opens with CUSTODY_TRANSFER_UNCONFIRMED; DELAYED_SYNC is acceptable
+    t = _t(worlds, 1)
+
+    def scored(primary, symptoms):
+        return score_result(_result(1, primary, cites=[d], retrieved=[d, link]), _row(worlds, 1), t=t, world="E1", opening_symptoms=symptoms,
+                            opening_ids=[o], ingested=DB.ingested("E1", t), resolver=DB, pre_registered="identifiable_ambiguous")
+    right = scored("DELAYED_SYNC", ["CUSTODY_TRANSFER_UNCONFIRMED"])
+    assert (right["correct"], right["correct_level"]) == (True, "mechanism")          # the symptom's name gives CUSTODY_GAP, not this
+    wrong = scored("CUSTODY_GAP", ["CUSTODY_TRANSFER_UNCONFIRMED"])
+    assert (wrong["correct"], wrong["correct_level"]) == (False, None)

@@ -25,6 +25,7 @@ from pathlib import Path
 from stage3_eval.canary import TruthScanner
 from stage3_eval.design import ABSTAIN, CORRECT, SYMPTOM_CAUSE
 from stage3_eval.records import ArmResult
+from stage3_eval.report import correct_level
 from stage3_eval.truth_io import truth_at, truth_vocabulary
 
 
@@ -110,6 +111,8 @@ def score_result(result: ArmResult, row, *, t, world, opening_codes=None, openin
     recall = (len(names & set(at.knowable_causes)) / len(at.knowable_causes)) if at.knowable_causes else None
     precision = (len(names & set(at.acceptable)) / len(names)) if names else None
     return {**base, "category": category, "unsafe_reasons": unsafe, "correct": category in CORRECT,
+            # Observation level (the cause an opening symptom's name maps to), mechanism level, or a correct abstention.
+            "correct_level": correct_level(result.primary_cause, opening_symptoms, category in CORRECT),
             "evidence_grounded": category in ("correct_supported", "honest_uncertainty"), "citations": audit,
             "cause_set_size": len(names), "cause_set_recall": recall, "cause_set_precision": precision,
             # Symptom-name dependence (section 4): does an opening symptom's own name already give an acceptable cause?

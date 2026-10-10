@@ -3,16 +3,43 @@
 Everything a bar depends on is in design.py and was fixed before any case existed; nothing here chooses a threshold
 after seeing results. Without scores (a dry run) the same report is written as a skeleton: planned cell sizes, the
 budget plan, the bars and the minimum detectable gains at the planned sizes, with every result marked "not run".
+
+Correct answers are also split by level, per arm and per cell, and never pooled back silently:
+- observation level: the answer's cause is the code an opening symptom maps to (design.SYMPTOM_CAUSE), that is, what
+  B_symptom reads off the alert's own name. Getting it right needs no investigation.
+- mechanism level: a correct specific cause that no opening symptom maps to: it had to come from somewhere else.
+- abstention: a correct INSUFFICIENT_EVIDENCE or UNKNOWN on a case not knowable at t (unless an opening symptom maps
+  to that code, which is observation level by the same rule).
+The three add up to the cell's correct count. The pass bars are unchanged: they stay on plain accuracy.
 """
 from collections import Counter, defaultdict
 import json
 from pathlib import Path
 
-from stage3_eval.design import (CATEGORIES, DESCRIPTIVE_CELLS, DISCORDANCE_PLANNING, HISTORY_ONLY, MAIN_TEST_CELL,
-                                PASS_BARS, PROVIDER_FAILURE_LIMIT, RELEASE_BAR, STRATA, WORLDS)
+from stage3_eval.design import (ABSTAIN, CATEGORIES, DESCRIPTIVE_CELLS, DISCORDANCE_PLANNING, HISTORY_ONLY, MAIN_TEST_CELL,
+                                PASS_BARS, PROVIDER_FAILURE_LIMIT, RELEASE_BAR, STRATA, SYMPTOM_CAUSE, WORLDS)
 from stage3_eval.stats import mcnemar_exact, minimum_detectable_gain, paired_difference_interval, percentile, wilson
 
 ARM_LABELS = {"agent": "Agent (tools)", "notools": "B_notools", "rulecode": "B_rulecode", "symptom": "B_symptom"}
+CORRECT_LEVELS = ("observation", "mechanism", "abstention")
+
+
+def correct_level(primary_cause, opening_symptoms, correct):
+    """The level of a correct answer (None for an answer that is not correct): "observation" when its cause is the
+    code an opening symptom maps to, else "abstention" for a correct abstention, else "mechanism"."""
+    if not correct:
+        return None
+    if primary_cause in {SYMPTOM_CAUSE.get(s) for s in opening_symptoms or ()}:
+        return "observation"
+    return "abstention" if primary_cause in ABSTAIN else "mechanism"
+
+
+def _levels(rows):
+    scored = [r for r in rows if r.get("category") not in (None, "not_run")]
+    found = Counter(correct_level(r.get("primary_cause"), r.get("symptoms"), r.get("correct")) for r in scored)
+    out = {f"{level}_level" if level != "abstention" else "abstention": found.get(level, 0) for level in CORRECT_LEVELS}
+    return {"n": len(scored), "correct": sum(out.values()), **out,
+            "mechanism_level_rate": _pct(out["mechanism_level"] / len(scored)) if scored else None}
 
 
 def _pct(x):
@@ -75,7 +102,7 @@ def build_report(selection, *, scores=None, run_manifest=None, ledger_summary=No
                     "role": "main test (the only pass or fail)" if (world, stratum) == MAIN_TEST_CELL else DESCRIPTIVE_CELLS.get((world, stratum), "")}
             if not dry:
                 arms = {arm: _cell_rows(scores, world, stratum, arm) for arm in ARM_LABELS}
-                cell["arms"] = {arm: {"accuracy": _acc(rows), "evidence_grounded": _acc(rows, "evidence_grounded"),
+                cell["arms"] = {arm: {"accuracy": _acc(rows), "evidence_grounded": _acc(rows, "evidence_grounded"), "correct_by_level": _levels(rows),
                                       "categories": _categories(rows), "not_run": Counter(r.get("not_run") for r in rows if r.get("category") == "not_run")}
                                 for arm, rows in arms.items()}
                 cell["paired"] = {b: _paired(arms["agent"], arms[b]) for b in ("rulecode", "notools", "symptom")}
@@ -271,6 +298,17 @@ def render_markdown(report):
                   "|---|" + "---|" * len(ARM_LABELS)]
         for c in report["cells"]:
             lines.append(f"| {c['world']} / {c['stratum']} | " + " | ".join(_fmt_acc(c["arms"][a]["accuracy"]) for a in ARM_LABELS) + " |")
+        lines += ["", "## Correct answers by level, per arm and stratum", "",
+                  "Observation level: the cause is the code an opening symptom maps to (what the alert's own name gives). Mechanism level: "
+                  "a correct specific cause that no opening symptom maps to. Abstention: a correct INSUFFICIENT_EVIDENCE or UNKNOWN. "
+                  "The three add up to the correct count; the pass bars stay on plain accuracy.", "",
+                  "| World / stratum | Arm | Scored | Correct | Observation level | Mechanism level | Abstention |", "|---|---|---|---|---|---|---|"]
+        for c in report["cells"]:
+            for a in ARM_LABELS:
+                v = c["arms"][a].get("correct_by_level") or {}
+                if v.get("n"):
+                    lines.append(f"| {c['world']} / {c['stratum']} | {ARM_LABELS[a]} | {v['n']} | {v['correct']} | {v['observation_level']} | "
+                                 f"{v['mechanism_level']} | {v['abstention']} |")
         lines += ["", "## Answer categories per arm (honest uncertainty is never pooled with confident wrong answers)", ""]
         lines += ["| World / stratum | Arm | " + " | ".join(CATEGORIES) + " |", "|---|---|" + "---|" * len(CATEGORIES)]
         for c in report["cells"]:

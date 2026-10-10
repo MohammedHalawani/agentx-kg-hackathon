@@ -83,3 +83,45 @@ def test_skeleton_states_planned_sizes_and_mdg():
     md = render_markdown(r)
     assert "dry-run skeleton" in md and "Minimum detectable gain" in md
     json.dumps(r)
+
+
+def test_correct_answers_are_split_into_observation_level_and_mechanism_level_per_arm_and_stratum():
+    """A correct answer is observation level when its cause is the code an opening symptom maps to (B_symptom's table),
+    mechanism level when no opening symptom maps to it; both counts are reported per arm and per cell."""
+    from stage3_eval.report import correct_level
+    assert correct_level("MISSED_MILESTONE", ["MILESTONE_OVERDUE"], True) == "observation"
+    assert correct_level("HUB_DELAY", ["MILESTONE_OVERDUE"], True) == "mechanism"
+    assert correct_level("WRONG_GATE", ["DELIVERY_ATTEMPT_FAILED"], True) == "mechanism"        # the symptom maps to RECIPIENT_UNAVAILABLE
+    assert correct_level("INSUFFICIENT_EVIDENCE", ["MILESTONE_OVERDUE"], True) == "abstention"
+    assert correct_level("INSUFFICIENT_EVIDENCE", ["EVIDENCE_MISSING"], True) == "observation"  # the same rule: the symptom maps to it
+    assert correct_level("MISSED_MILESTONE", ["MILESTONE_OVERDUE"], False) is None
+
+    def row(i, arm, cause, correct, stratum="identifiable_ambiguous", symptoms=("MILESTONE_OVERDUE",), category=None):
+        prefix = "S" if stratum == "identifiable_ambiguous" else "D"
+        return {**_row(f"E1:{prefix}{i}", arm, correct, stratum, category), "primary_cause": cause, "symptoms": list(symptoms)}
+    scores = []
+    for i in range(6):                                   # agent: 3 mechanism level, 1 observation level, 1 abstention, 1 wrong
+        cause, ok, category = [("HUB_DELAY", True, None), ("HUB_DELAY", True, None), ("ROUTE_DELAY", True, None), ("MISSED_MILESTONE", True, None),
+                               ("INSUFFICIENT_EVIDENCE", True, "honest_uncertainty"), ("CUSTODY_GAP", False, None)][i]
+        scores.append(row(i, "agent", cause, ok, category=category))
+        scores.append(row(i, "symptom", "MISSED_MILESTONE", i == 3))             # B_symptom: right once, at observation level by construction
+        scores.append(row(i, "rulecode", "MISSED_MILESTONE", i == 3))
+        scores.append(row(i, "notools", "HUB_DELAY", i < 2))                     # right twice, at mechanism level
+    for i in range(4):                                   # determined: the symptom's own name gives the cause
+        scores.append(row(i, "agent", "WEIGHT_MISMATCH", True, "determined", ("WEIGHT_READ_DIFFERS",)))
+        scores.append(row(i, "rulecode", "WEIGHT_MISMATCH", True, "determined", ("WEIGHT_READ_DIFFERS",)))
+    scores.append({**row(9, "agent", None, None), "category": "not_run"})        # not scored, not counted
+    report = build_report(_selection(), scores=scores, run_manifest=MANIFEST, canary=CLEAN)
+    cell = {c["stratum"]: c for c in report["cells"] if c["world"] == "E1"}
+    levels = {arm: v["correct_by_level"] for arm, v in cell["identifiable_ambiguous"]["arms"].items()}
+    assert levels["agent"] == {"n": 6, "correct": 5, "observation_level": 1, "mechanism_level": 3, "abstention": 1, "mechanism_level_rate": 50.0}
+    assert (levels["symptom"]["observation_level"], levels["symptom"]["mechanism_level"]) == (1, 0)
+    assert (levels["notools"]["observation_level"], levels["notools"]["mechanism_level"]) == (0, 2)
+    for arm, v in cell["identifiable_ambiguous"]["arms"].items():          # the split never changes the correct count
+        assert v["correct_by_level"]["correct"] == v["accuracy"]["correct"], arm
+    determined = cell["determined"]["arms"]["agent"]["correct_by_level"]
+    assert (determined["observation_level"], determined["mechanism_level"], determined["correct"]) == (4, 0, 4)
+    md = render_markdown(report)
+    assert "## Correct answers by level, per arm and stratum" in md
+    assert "| E1 / identifiable_ambiguous | Agent (tools) | 6 | 5 | 1 | 3 | 1 |" in md
+    assert "| E1 / determined | Agent (tools) | 4 | 4 | 4 | 0 | 0 |" in md
