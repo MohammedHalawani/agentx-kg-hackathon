@@ -661,7 +661,7 @@ class Stage3WiringNeo4jTests(unittest.TestCase):
         except SystemExit:
             cls.refused_without_reset = True
         cls.wired = wiring.build(cls.config, selection=cls.selection, agents=cls.agents, notools_turn=notools, driver=cls.driver, allow_reset=True)
-        cls.manifest = run(cls.root / "pre" / "selection.json", cls.root / "run", config=cls.config,
+        cls.manifest = run(cls.root / "pre" / "selection.json", cls.root / "run", config=cls.config, extras_path=cls.root / "pre" / "extras.json",
                            **{k: cls.wired[k] for k in ("arms", "case_source", "capture", "extras_arms", "provenance")})
         cls.session = cls.wired["sessions"]["E1"]
 
