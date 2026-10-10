@@ -46,7 +46,8 @@ import { RouteMap } from "@/components/route-map";
 import { KnowledgeGraph } from "@/components/knowledge-graph";
 import { DecisionDialog } from "@/components/decision-dialog";
 import { StatusBadge, PriorityLabel, EmptyState } from "@/components/shared";
-import { timeLabel } from "@/lib/dates";
+import { dateTimeLabel, timeLabel } from "@/lib/dates";
+import { InvestigatorFindings } from "@/components/investigator-findings";
 import {
   stages,
   type AuthorityDecision,
@@ -786,6 +787,41 @@ export function InvestigationPage() {
                   </>
                 )}
               </DetailSection>
+              <InvestigatorFindings
+                c={c}
+                onEvidence={(id) => {
+                  select(id);
+                  setDetails(false);
+                }}
+              />
+              {c.backend?.ruleSignals &&
+                c.backend.ruleSignals.signals.length > 0 && (
+                  <section
+                    className="detail-section"
+                    data-testid="rule-signals"
+                  >
+                    <h3>
+                      {t(
+                        "Rule checks · not a diagnosis",
+                        "فحوص القواعد · ليست تشخيصاً",
+                      )}
+                    </h3>
+                    <div>
+                      <p className="finding-meta">
+                        {t(
+                          `Deterministic checks over the evidence visible at ${dateTimeLabel(c.backend.ruleSignals.asOf)}. They open cases and back fact checks; they do not say what happened.`,
+                          `فحوص حتمية على الأدلة الظاهرة عند ${dateTimeLabel(c.backend.ruleSignals.asOf)}. تفتح الحالات وتدعم التحقق من الوقائع، ولا تحدد ما حدث.`,
+                        )}
+                      </p>
+                      {c.backend.ruleSignals.signals.map((signal) => (
+                        <div className="finding" key={signal.code}>
+                          <b>{signal.code.replaceAll("_", " ").toLowerCase()}</b>
+                          {signal.summary && <p>{signal.summary}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
               {c.backend?.review && (
                 <DetailSection
                   title={t("Independent review", "المراجعة المستقلة")}

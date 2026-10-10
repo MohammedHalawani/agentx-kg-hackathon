@@ -169,6 +169,32 @@ export interface BackendCaseState {
   /** Counts before the graph was bounded for display. */
   graphTotals?: { nodes: number; relationships: number; shown: number };
   review?: { verdict: string | null; reasonCode: string | null; summary: string | null };
+  /**
+   * The investigator's own findings. `accepted` is false when the independent reviewer did
+   * not accept them: they are then shown labelled, never as what happened.
+   */
+  investigation?: {
+    accepted: boolean;
+    primaryCause: string | null;
+    confidence: string | null;
+    summary: string | null;
+    toolCalls: number;
+    requiresPhysicalCheck: boolean;
+    snapshotSuperseded: boolean;
+    hypotheses: {
+      cause: string;
+      status: "supported" | "refuted" | "uncertain";
+      assessment: string | null;
+      supporting: string[];
+      contradicting: string[];
+    }[];
+    missingEvidence: string[];
+  };
+  /** Deterministic rule checks, labelled: signals for monitoring, never the cause. */
+  ruleSignals?: {
+    asOf: string;
+    signals: { code: string; summary: string; evidenceIds: string[] }[];
+  };
   riskClass?: string | null;
   actionType?: string | null;
   outcomeStatus?: string | null;

@@ -134,6 +134,24 @@ test("Investigation shows recorded evidence, keeps GPS apart from custody, and r
   const sheet = page.getByRole("dialog");
   await expect(sheet).toContainText("A receipt is not an outcome");
   await expect(sheet).toContainText("Independent review");
+  // The investigator's hypotheses with their status and cited evidence; rule checks labelled.
+  const findings = sheet.getByTestId("investigator-findings");
+  await expect(findings).toContainText("Investigator's findings");
+  await expect(findings.locator(".finding-supported")).toHaveText("Supported");
+  await expect(findings.locator(".finding-refuted")).toHaveText("Refuted");
+  await expect(findings).toContainText("Missing evidence");
+  await expect(findings).toContainText("6 evidence queries");
+  await expect(
+    findings.getByRole("button", { name: "SHP-000101-SCAN-HIDDEN" }),
+  ).toBeDisabled();
+  await expect(sheet.getByTestId("rule-signals")).toContainText(
+    "Rule checks · not a diagnosis",
+  );
+  await findings.getByRole("button", { name: "SHP-000101-CUST-02-01" }).click();
+  await expect(page.getByTestId("evidence-inspector")).toContainText(
+    "Custody · Loaded",
+  );
+  await page.getByRole("button", { name: "Case details" }).click();
   await expect(sheet).not.toContainText("resolved");
   await page.keyboard.press("Escape");
   await page.goto("/app/operations");
@@ -269,4 +287,36 @@ test("Connected screens for visual review", async ({ page }) => {
     "Canopus is not connected yet.",
   );
   await shot("canopus");
+  await page.getByRole("button", { name: "Minimize Canopus conversation" }).click();
+
+  // The same connected screens in Arabic, dark mode and at phone size.
+  await page.goto(`/app/cases/${CASE_A}`);
+  await page.getByRole("button", { name: "Switch to Arabic" }).click();
+  await page.getByRole("button", { name: "تبديل المظهر" }).click();
+  await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+  await expect(
+    page.getByTestId("knowledge-graph").locator(".entity-node"),
+  ).toHaveCount(48);
+  await shot("investigation-arabic-dark");
+  await page.getByRole("button", { name: "Switch to English" }).click();
+  await page.getByRole("button", { name: "Toggle theme" }).click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/app/operations");
+  await expect(page.locator("[data-testid^='data-row-']")).toHaveCount(2);
+  // No horizontal overflow of the page at phone width.
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+    ),
+  ).toBe(true);
+  await shot("operations-mobile");
+  await page.goto(`/app/cases/${CASE_A}`);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(SHIP_A);
+  await expect(page.getByTestId("route-map")).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+    ),
+  ).toBe(true);
+  await shot("investigation-mobile");
 });

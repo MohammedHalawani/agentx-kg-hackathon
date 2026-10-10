@@ -476,6 +476,47 @@ function recommendationOf(detail: ApiCaseDetail): Recommendation {
   };
 }
 
+/** The investigator's findings: accepted ones, or (labelled) ones the reviewer did not accept. */
+function investigationOf(
+  detail: ApiCaseDetail,
+): BackendCaseState["investigation"] {
+  const d = detail.diagnosis;
+  if (!d) return undefined;
+  const hypotheses = (list: typeof d.hypotheses | undefined) =>
+    (list ?? []).map((h) => ({
+      cause: h.cause,
+      status: h.status,
+      assessment: h.assessment ?? null,
+      supporting: h.supporting_evidence_ids ?? [],
+      contradicting: h.contradicting_evidence_ids ?? [],
+    }));
+  if (d.available)
+    return {
+      accepted: true,
+      primaryCause: d.primary_cause,
+      confidence: d.confidence,
+      summary: d.summary,
+      toolCalls: d.tool_calls ?? 0,
+      requiresPhysicalCheck: d.requires_physical_check === true,
+      snapshotSuperseded: d.snapshot_superseded === true,
+      hypotheses: hypotheses(d.hypotheses),
+      missingEvidence: d.missing_evidence ?? [],
+    };
+  const u = d.unaccepted_investigation;
+  if (!u) return undefined;
+  return {
+    accepted: false,
+    primaryCause: u.primary_cause,
+    confidence: u.confidence,
+    summary: u.summary,
+    toolCalls: 0,
+    requiresPhysicalCheck: false,
+    snapshotSuperseded: false,
+    hypotheses: hypotheses(u.hypotheses),
+    missingEvidence: u.missing_evidence ?? [],
+  };
+}
+
 /** GET /cases/{id} merged into the case. Stored workflow, review, execution and outcome are authoritative. */
 export function applyDetail(
   base: OperationalCase,
@@ -578,7 +619,10 @@ export function applyDetail(
     ...Object.values(pipeline.stageEvidence).flat(),
     ...(detail.recommendation?.evidence_ids ?? []),
     ...(detail.outcome?.evidence_ids ?? []),
-    ...(detail.diagnosis?.hypotheses ?? []).flatMap((h) => [
+    ...[
+      ...(detail.diagnosis?.hypotheses ?? []),
+      ...(detail.diagnosis?.unaccepted_investigation?.hypotheses ?? []),
+    ].flatMap((h) => [
       ...(h.supporting_evidence_ids ?? []),
       ...(h.contradicting_evidence_ids ?? []),
     ]),
@@ -766,6 +810,17 @@ export function applyDetail(
             verdict: detail.review.verdict ?? null,
             reasonCode: detail.review.reason_code ?? null,
             summary: detail.review.summary_en ?? detail.review.feedback ?? null,
+          }
+        : undefined,
+      investigation: investigationOf(detail),
+      ruleSignals: detail.rule_signals
+        ? {
+            asOf: detail.rule_signals.as_of,
+            signals: (detail.rule_signals.signals ?? []).map((signal) => ({
+              code: signal.code,
+              summary: signal.summary_en ?? "",
+              evidenceIds: signal.evidence_ids ?? [],
+            })),
           }
         : undefined,
       riskClass: detail.recommendation?.risk_class ?? null,

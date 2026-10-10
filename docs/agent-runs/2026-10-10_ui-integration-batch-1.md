@@ -87,11 +87,20 @@ Behaviour worth knowing:
 | Canopus conversation API | Not connected |
 | New Saudi logistics world | Shown once the backend can read it (its Stage 2) |
 
+## Added after the first push (same day)
+
+- The case assessment now shows the investigator's hypotheses with their status (supported,
+  refuted, uncertain), the evidence each cites (selectable when drawn on the screen), missing
+  evidence, and whether evidence arrived after the investigation's snapshot. Findings the
+  reviewer did not accept are shown labelled as claims and never become the case's diagnosis.
+  Rule checks are shown apart, labelled "not a diagnosis".
+- Connected screens checked in Arabic with dark mode and at phone size (390 by 844): layout
+  intact, no horizontal overflow (`screenshots/connected-*-arabic-dark.png`, `*-mobile.png`).
+- Checks after this change: TypeScript and lint clean, 46 unit tests, 8 connected browser tests.
+
 ## Next batch
 
 1. Live browser run against a real backend on a scratch database, monitor and automatic
    investigation off, no model calls.
-2. Investigation detail: hypotheses with supporting and contradicting evidence, missing
-   evidence, rule signals labelled as such, evidence recorded after the investigation snapshot.
-3. Mobile and Arabic passes of the connected screens.
-4. As Stages 2 to 4 finish on fhd: merge, then connect what each stabilised.
+2. As Stages 2 to 4 finish on fhd: merge, then connect what each stabilised.
+3. Backend-side gaps listed above, once the backend track takes them.

@@ -302,7 +302,14 @@ export function detailA(overrides: Partial<ApiCaseDetail> = {}): ApiCaseDetail {
         {
           cause: "UNRECONCILED_CUSTODY",
           status: "supported",
+          assessment: "Loaded at the depot; no return, delivery or reconciliation record follows.",
           supporting_evidence_ids: [`${SHIP_A}-CUST-02-01`],
+        },
+        {
+          cause: "DELAYED_SYNC",
+          status: "refuted",
+          assessment: "Other parcels on the same device synchronised normally.",
+          contradicting_evidence_ids: [`${SHIP_A}-SCAN-HIDDEN`],
         },
       ],
       missing_evidence: ["depot reconciliation"],
@@ -328,6 +335,18 @@ export function detailA(overrides: Partial<ApiCaseDetail> = {}): ApiCaseDetail {
       approval_reason: "A person may authorize this evidence-gathering request.",
     },
     review: { verdict: "accept", reason_code: "ACCEPTED", summary_en: "Accepted." },
+    rule_signals: {
+      kind: "rule_signals",
+      is_diagnosis: false,
+      as_of: "2026-09-03T14:00:00+00:00",
+      signals: [
+        {
+          code: "MISSED_MILESTONE",
+          summary_en: "An expected milestone is overdue at the evidence cutoff.",
+          evidence_ids: [`${SHIP_A}-EM-01`],
+        },
+      ],
+    },
     outcome: null,
     decisions: [],
     executions: [],

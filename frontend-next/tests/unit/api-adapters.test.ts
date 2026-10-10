@@ -188,6 +188,57 @@ describe("backend case detail", () => {
     expect(controls(resolved)).toEqual({ investigate: false, approve: false, reject: false, escalate: false, verify: false });
   });
 
+  it("serves the investigator's hypotheses with their evidence, and rule checks as labelled signals", () => {
+    const found = c.backend!.investigation!;
+    expect(found.accepted).toBe(true);
+    expect(found.primaryCause).toBe("UNRECONCILED_CUSTODY");
+    expect(found.toolCalls).toBe(6);
+    expect(found.requiresPhysicalCheck).toBe(true);
+    expect(found.hypotheses.map((h) => [h.cause, h.status])).toEqual([
+      ["UNRECONCILED_CUSTODY", "supported"],
+      ["DELAYED_SYNC", "refuted"],
+    ]);
+    expect(found.hypotheses[0].supporting).toEqual([`${SHIP_A}-CUST-02-01`]);
+    expect(found.missingEvidence).toEqual(["depot reconciliation"]);
+    // Rule checks are kept apart from the diagnosis and never become the case's cause.
+    expect(c.backend!.ruleSignals?.signals[0].code).toBe("MISSED_MILESTONE");
+    expect(c.issue).toBe("Unreconciled custody");
+    expect(c.backend!.causeCodes).not.toContain("MISSED_MILESTONE");
+  });
+
+  it("labels findings the reviewer did not accept and never promotes them to the diagnosis", () => {
+    const refused = applyDetail(
+      base,
+      detailA({
+        workflow_state: "HUMAN_REVIEW",
+        diagnosis: {
+          ...detailA().diagnosis!,
+          available: false,
+          reason: "review_not_accepted",
+          summary: null,
+          primary_cause: null,
+          hypotheses: [],
+          unaccepted_investigation: {
+            primary_cause: "POSSIBLE_MISDELIVERY",
+            summary: "The parcel was handed to the wrong person.",
+            confidence: "low",
+            hypotheses: [{ cause: "POSSIBLE_MISDELIVERY", status: "uncertain" }],
+            missing_evidence: ["recipient statement"],
+          },
+        },
+      }),
+    );
+    expect(refused.backend!.investigation).toMatchObject({
+      accepted: false,
+      primaryCause: "POSSIBLE_MISDELIVERY",
+    });
+    // The case itself is still described by what the monitor observed.
+    expect(refused.issue).toBe("Session end unreconciled +1");
+    expect(refused.diagnosis).toMatch(/did not accept/);
+    expect(refused.diagnosis).not.toMatch(/wrong person/);
+    expect(refused.summary).not.toMatch(/wrong person/);
+  });
+
   it("shows an absent diagnosis as absent, with the backend's reason", () => {
     const pending = applyDetail(
       base,

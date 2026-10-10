@@ -191,6 +191,8 @@ export interface ApiDiagnosis {
     primary_cause: string | null;
     summary: string | null;
     confidence: string | null;
+    hypotheses?: ApiDiagnosisHypothesis[];
+    missing_evidence?: string[];
   } | null;
 }
 export interface ApiRecommendation {
@@ -265,6 +267,18 @@ export interface ApiCaseDetail {
     source?: string;
     investigation_as_of?: string | null;
     evidence_after_investigation?: number;
+  };
+  /** Deterministic rule checks at their own as-of time. Never a diagnosis. */
+  rule_signals?: {
+    kind: "rule_signals";
+    is_diagnosis: false;
+    as_of: string;
+    signals: {
+      code: string;
+      summary_en?: string;
+      evidence_ids?: string[];
+      certainty?: string;
+    }[];
   };
   recommendation?: ApiRecommendation | null;
   review?: {

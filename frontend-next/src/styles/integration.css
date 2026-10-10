@@ -22,3 +22,90 @@
     margin: 0 12px;
   }
 }
+
+/* Case assessment: the investigator's findings and labelled rule checks. */
+.finding {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.finding > b {
+  font-weight: 500;
+  text-transform: capitalize;
+}
+.finding > .finding-status + b {
+  margin-inline-start: 6px;
+  vertical-align: middle;
+}
+.finding p {
+  margin-top: 6px;
+  color: var(--muted-foreground);
+}
+.finding ul {
+  margin: 6px 0 0;
+  padding-inline-start: 18px;
+  color: var(--muted-foreground);
+  list-style: disc;
+}
+.finding-status {
+  font-size: 10px;
+}
+.finding-supported {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.finding-refuted {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.finding-uncertain {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.finding-evidence {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.finding-evidence small {
+  color: var(--muted-foreground);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.finding-evidence button {
+  height: 22px;
+  padding: 0 7px;
+  font-size: 10px;
+  direction: ltr;
+}
+.finding-meta {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  line-height: 1.5;
+}
+.finding-meta b {
+  color: var(--foreground);
+  font-weight: 500;
+  text-transform: capitalize;
+}
+.finding-caution {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--warning-soft);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.finding-caution svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--warning);
+}

@@ -63,6 +63,9 @@ Code: `src/api/contracts.ts` (wire types), `src/api/client.ts` (HTTP, session to
 - **A diagnosis is shown only when the backend accepted one.** Without it the queue shows the
   monitor's observed symptoms and the case shows the backend's reason for the absence. Rule
   signals are not presented as a cause.
+- **Findings are attributed.** The case assessment lists the investigator's hypotheses with
+  their status and cited evidence. Findings the reviewer did not accept are labelled as claims;
+  rule checks are labelled "not a diagnosis". Neither replaces an absent diagnosis.
 - **Vehicle GPS is never parcel custody.** Custody markers come from `custody_points`
   (corroborated custody); `vehicle_path` is drawn as vehicle telemetry only; a delivery attempt
   is a recorded attempt at an address reference, not proof of delivery.
@@ -74,7 +77,7 @@ Code: `src/api/contracts.ts` (wire types), `src/api/client.ts` (HTTP, session to
   and the page says so; if it drops out later, the last read stays, marked as possibly out of
   date. There is no fallback to fixtures.
 - **Bounded reads are labelled.** The queue loads up to 1,000 cases and the audit ledger up to
-  3,000 events; the graph draws up to 64 of a case's recorded nodes (cited evidence first) and
+  3,000 events; the graph draws up to 48 of a case's recorded nodes (cited evidence first) and
   states the total.
 - **Synthetic data is labelled synthetic** and is not presented as SPL operations.
 
