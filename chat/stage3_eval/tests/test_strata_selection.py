@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from stage3_eval.selection import select
+from stage3_eval.selection import scorer_view, select
 from stage3_eval.strata import assign_strata, determined_symptom_sets, opened_cases
 from stage3_eval.truth_io import load_truth, truth_vocabulary
 
@@ -68,16 +68,67 @@ def test_selection_is_deterministic_runtime_safe_and_written_once(tmp_path, worl
         assert not any(f'"{n}"' in text for n in vocab["mechanism_names"])
     for forbidden in ('"acceptable', '"cause', '"label', '"canary', '"truth'):
         assert forbidden not in text
+    for name in ("selection_scorer.json", "extras.json"):
+        assert (tmp_path / "a" / f"{name}.sha256").read_text().split()[0] == a["hashes"][name.removesuffix(".json")]
     assert (tmp_path / "a" / "selection.json.sha256").read_text().split()[0] == a["hashes"]["selection"]
     with pytest.raises(FileExistsError):
         select(worlds, config, tmp_path / "a")
+
+
+def test_the_run_readable_selection_carries_nothing_derived_from_truth(tmp_path, worlds):
+    """Gate fix 4: the stratum, the main-test flag and the extras lists are derived from truth. They are written to the
+    scorer-side files only, and the runtime screen refuses a run-readable document that carries any of them."""
+    from stage3_eval import selection as sel_mod
+    from stage3_eval.design import RUN_CASE_KEYS, runtime_selection_problem
+    from stage3_eval.runner import load_selection
+    select(worlds, make_config(), tmp_path / "s")
+    run_side = json.loads((tmp_path / "s" / "selection.json").read_text())
+    assert set(run_side) == {"schema", "sealed_config_hash", "config", "n_main", "cases", "unit"}
+    assert all(set(row) == {"order", "key", "world", "shipment_id", "expected_opened_at"} for row in run_side["cases"])
+    assert set(run_side["cases"][0]) <= set(RUN_CASE_KEYS)
+    text = (tmp_path / "s" / "selection.json").read_text()
+    for name in ("stratum", "main_test", "cross_shipment_ablation", "stability_rerun", "extras", "allocation", "identifiable_ambiguous",
+                 "determined"):
+        assert name not in text, name
+    # The scorer side holds them, bound to this selection by its hash.
+    scorer = json.loads((tmp_path / "s" / "selection_scorer.json").read_text())
+    extras = json.loads((tmp_path / "s" / "extras.json").read_text())
+    digest = (tmp_path / "s" / "selection.json.sha256").read_text().split()[0]
+    assert scorer["selection_sha256"] == extras["selection_sha256"] == digest
+    assert {row["stratum"] for row in scorer["cases"]} == {"identifiable_ambiguous", "determined", "unidentifiable"}
+    assert extras["extras"]["cross_shipment_ablation"] and extras["extras"]["stability_rerun"]
+    view = scorer_view(tmp_path / "s" / "selection.json")
+    assert [row["key"] for row in view["cases"]] == [row["key"] for row in run_side["cases"]] and view["allocation"] == scorer["allocation"]
+    # The screen: each truth-derived name is refused, on a case row, at the top level and nested.
+    vocabulary = truth_vocabulary(worlds["E1"][0])
+    sel_mod._check_runtime_safe(run_side, vocabulary)
+    for bad in ({**run_side, "cases": [{**run_side["cases"][0], "stratum": "determined"}]},
+                {**run_side, "cases": [{**run_side["cases"][0], "main_test": True}]},
+                {**run_side, "extras": {"cross_shipment_ablation": []}},
+                {**run_side, "allocation": {}},
+                {**run_side, "config": {**run_side["config"], "notes": {"cross_shipment_ablation": ["E1:X"]}}}):
+        assert runtime_selection_problem(bad)
+        with pytest.raises(ValueError, match="truth-side field"):
+            sel_mod._check_runtime_safe(bad, vocabulary)
+    # The run step refuses such a file even when its hash matches (an old-format or hand-made selection).
+    old = tmp_path / "old"
+    old.mkdir()
+    sel_mod._write_once(old / "selection.json", view)
+    with pytest.raises(ValueError, match="not a run-readable selection"):
+        load_selection(old / "selection.json")
+    # A scorer-side file from another selection is refused.
+    select(worlds, make_config(freeze_commit="b" * 40), tmp_path / "t")
+    for name in ("extras.json", "extras.json.sha256"):
+        (tmp_path / "t" / name).write_bytes((tmp_path / "s" / name).read_bytes())
+    with pytest.raises(ValueError, match="not written for this selection"):
+        scorer_view(tmp_path / "t" / "selection.json")
 
 
 def test_selection_reports_shortfalls_and_covers_mechanisms(tmp_path, worlds):
     summary = select(worlds, make_config(), tmp_path / "s")
     short = {(s["world"], s["stratum"]): s for s in summary["shortfalls"]}
     assert short[("E1", "identifiable_ambiguous")] == {"world": "E1", "stratum": "identifiable_ambiguous", "allocated": 160, "available": 34}
-    sel = json.loads((tmp_path / "s" / "selection.json").read_text())
+    sel = scorer_view(tmp_path / "s" / "selection.json")
     assert sum(c["main_test"] for c in sel["cases"]) == 34
     # World by world, by expected opening: the replay clock only moves forward.
     order = [(c["world"], c["expected_opened_at"]) for c in sel["cases"]]
@@ -94,7 +145,7 @@ def test_round_robin_draw_spreads_over_mechanisms_when_the_cell_is_small(tmp_pat
     from stage3_eval import selection as sel_mod
     monkeypatch.setitem(sel_mod.ALLOCATION_AT_PLANNING, ("E1", "identifiable_ambiguous"), 7)
     summary = select({"E1": worlds["E1"]}, make_config(), tmp_path / "r")
-    sel = json.loads((tmp_path / "r" / "selection.json").read_text())
+    sel = scorer_view(tmp_path / "r" / "selection.json")
     truth = worlds["E1"][0]
     types = {truth[c["shipment_id"]]["mechanisms"][0]["type"] for c in sel["cases"] if c["main_test"]}
     assert summary["by_cell"]["E1/identifiable_ambiguous"] == 7 and len(types) == 7

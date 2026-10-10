@@ -1,13 +1,14 @@
 """The run step: every arm over the pre-registered cases, under the budget guard, with nothing truth-side in reach.
 
-It reads only selection.json (checked against its pre-registered sha256 and the sealed configuration hash), asks the
+It reads only selection.json (checked against its pre-registered sha256 and the sealed configuration hash, and
+refused if it carries anything but each case's key, world, shipment and expected opening), asks the
 backend's CaseSource for each case's runtime facts, and runs the arms in a fixed order per case: agent first, then
 B_notools at the agent's own snapshot (so both arms answer at the same t), then the two free baselines. Each model arm
 reserves its worst case in the ledger before it runs and settles with the calls its record reports. Results, the
 case facts and everything the runtime produced (captured for the canary scan) are written as the run goes, one
 fsynced line at a time.
 
-After the main test, and only with calls left, the exploratory extras run in their fixed order (cross-shipment
+After the main test, and only with calls left and extras.json named, the exploratory extras run in their fixed order (cross-shipment
 ablation, then stability reruns), each case only if its worst case still fits; whatever completes is reported,
 never pooled.
 
@@ -25,7 +26,7 @@ import re
 
 from stage3_eval.arms import CaseRef
 from stage3_eval.budget import BudgetExceeded, BudgetLedger, CapViolation, RunStopped
-from stage3_eval.design import EXTRAS_ORDER, EvalConfig, canonical_bytes, sealed_hash
+from stage3_eval.design import EXTRAS_ORDER, EvalConfig, canonical_bytes, runtime_selection_problem, sealed_hash
 from stage3_eval.records import ArmResult
 
 TRUTH_ENV = "SUHAIL_EVAL_TRUTH_ROOT"
@@ -33,7 +34,9 @@ MAIN_ARM_ORDER = ("agent", "notools", "rulecode", "symptom")
 
 
 def load_selection(path):
-    """selection.json, refused unless it matches the sha256 written beside it at pre-registration."""
+    """selection.json, refused unless it matches the sha256 written beside it at pre-registration and carries only
+    what the run step may read: a file with a stratum, a main-test flag, an extras list or any other truth-derived
+    field is refused, whatever its hash says."""
     path = Path(path)
     data = path.read_bytes()
     sidecar = path.with_name(path.name + ".sha256")
@@ -43,7 +46,26 @@ def load_selection(path):
     actual = hashlib.sha256(canonical_bytes(data)).hexdigest()   # line endings normalised: the same on every checkout
     if actual != expected:
         raise ValueError("selection.json does not match its pre-registered sha256")
-    return json.loads(data), actual
+    document = json.loads(data)
+    problem = runtime_selection_problem(document)
+    if problem:
+        raise ValueError(f"{path.name} is not a run-readable selection ({problem}); the run step reads only key, world, shipment and "
+                         "expected opening per case")
+    return document, actual
+
+
+def load_extras(path, selection_sha):
+    """The extras lists (scorer-side file extras.json), read only once the main test has finished: {name: [case keys]}.
+    Refused unless it matches its own pre-registered sha256 and was written for this selection."""
+    path = Path(path)
+    data = path.read_bytes()
+    sidecar = path.with_name(path.name + ".sha256")
+    if not sidecar.exists() or hashlib.sha256(canonical_bytes(data)).hexdigest() != sidecar.read_text(encoding="utf-8").split()[0]:
+        raise ValueError(f"{path.name} does not match its pre-registered sha256")
+    document = json.loads(data)
+    if document.get("selection_sha256") != selection_sha:
+        raise ValueError(f"{path.name} was not written for this selection")
+    return {name: list(document.get("extras", {}).get(name, [])) for name in EXTRAS_ORDER}
 
 
 def _safe(name):
@@ -90,7 +112,7 @@ def _previous_results(out_dir, phase):
 
 
 def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, capture=None, extras_arms=None, dry_run=False,
-        resume=False, provenance=None, campaign=None, campaign_commit=None, provider_calls=None):
+        resume=False, provenance=None, campaign=None, campaign_commit=None, provider_calls=None, extras_path=None):
     """Run every arm over the selection. arms: {"agent": AgentArm, "notools": NoToolsArm, "rulecode": ..., "symptom": ...};
     extras_arms: {"cross_shipment_ablation": AgentArm (cross-shipment tools disabled), "stability_rerun": AgentArm}.
     provenance: a dict, or a callable returning one, called when the run has finished (so it can report the model calls
@@ -99,6 +121,9 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
     is config.budget: the run refuses to start if the calls already spent in the campaign plus that maximum would
     exceed the campaign cap, reserves the maximum before the first case and writes the calls it actually committed
     at the end. A run that dies leaves its reservation counted at the maximum. A dry run checks and writes nothing.
+    extras_path: extras.json of the pre-registration. The lists in it are derived from truth (which cases are in the
+    main test, which have a cross-shipment mechanism), so the file is opened only after the last main-test case has
+    run; without it no extra runs.
     provider_calls: a callable returning the model calls the provider's own callbacks have counted in this process
     (completed and failed). After every case, and after every extra, that count and the ledger's are written to the
     ledger, and the run stops if the provider counted more than the ledger holds.
@@ -178,7 +203,9 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
                     writer.capture(surface, key, items)
             if reconcile is not None:
                 reconcile(key)
-        extras = _run_extras(selection, refs, agent_t, extras_arms or {}, ledger, writer, dry_run, counts, reconcile)
+        # Only now: every main-test arm has answered, so nothing in the extras lists can reach the main test.
+        extras_plan = load_extras(extras_path, selection_sha) if extras_path else {}
+        extras = _run_extras(extras_plan, refs, agent_t, extras_arms or {}, ledger, writer, dry_run, counts, reconcile)
         if capture is not None and not dry_run:
             for surface, items in (capture.capture_run() or {}).items():
                 writer.capture(surface, "run", items)
@@ -238,14 +265,14 @@ def _run_arm(arm, case: CaseRef, ledger, dry_run, counts):
     return result
 
 
-def _run_extras(selection, refs, agent_t, extras_arms, ledger, writer, dry_run, counts, reconcile=None):
+def _run_extras(plan, refs, agent_t, extras_arms, ledger, writer, dry_run, counts, reconcile=None):
     """The exploratory extras, in their fixed order, while each case's worst case still fits. Each extra case is
     investigated AS OF the main agent run's own snapshot (the clock has moved on by then), so the comparison with the
     main run is at the same t; its arm must investigate as of CaseRef.as_of (WIRING.md)."""
     report = {}
     plan_left = ledger.remaining
     for name in EXTRAS_ORDER:
-        keys = selection["extras"].get(name, [])
+        keys = plan.get(name, [])
         arm = extras_arms.get(name)
         entry = {"listed": len(keys), "completed": 0, "stopped_for_budget": False, "available": arm is not None}
         if arm is None or not keys:

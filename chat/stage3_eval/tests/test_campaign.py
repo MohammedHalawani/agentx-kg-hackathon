@@ -8,6 +8,7 @@ import pytest
 
 from operations.call_ledger import CallLedger, LedgerRefused
 from stage3_eval import design
+from stage3_eval.selection import scorer_view
 from stage3_eval.__main__ import main
 from stage3_eval.arms import AgentArm, NoToolsArm, RuleCodeArm, SymptomArm
 from stage3_eval.fixtures.fakes import FixtureCapture, FixtureCaseSource, world_dir
@@ -44,7 +45,7 @@ def _select(tmp_path, ledger=None, c_cap=12):
 def test_select_sizes_the_evaluation_from_what_the_campaign_has_left(tmp_path, capsys, campaign_ledger_file):
     selection_path = _select(tmp_path)
     printed = json.loads(capsys.readouterr().out)
-    selection = json.loads(selection_path.read_text())
+    selection = scorer_view(selection_path)
     assert printed["campaign_ledger"]["spent"] == 173 and printed["budget"] == 3827
     assert selection["config"]["budget"] == 3827                       # sealed: 4,000 minus the 173 already spent
     assert selection["n_main"] == 3827 // (12 + 2) == 273              # not floor(4000 / 14) = 285

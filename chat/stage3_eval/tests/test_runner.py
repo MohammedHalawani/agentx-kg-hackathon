@@ -12,6 +12,7 @@ from stage3_eval.fixtures.fakes import FixtureCaseSource, FixtureCapture, Fixtur
 from stage3_eval.report import build_report, render_markdown
 from stage3_eval.runner import run
 from stage3_eval.scoring import score_run
+from stage3_eval.selection import scorer_view
 from stage3_eval.truth_io import truth_vocabulary
 
 from .conftest import FakeAgent, build_arms, make_config, notools_turn_factory, read_jsonl
@@ -29,8 +30,9 @@ class Exploding:
 def test_dry_run_over_the_fixture_spends_zero_calls(tmp_path):
     summary, manifest, report_path = dry_run_fixture(tmp_path / "dry")
     out = tmp_path / "dry"
-    for name in ("selection.json", "selection.json.sha256", "pairs.json", "strata.json"):
+    for name in ("selection.json", "selection.json.sha256", "selection_scorer.json", "extras.json", "pairs.json", "strata.json"):
         assert (out / name).exists()
+    assert manifest["extras"]["stability_rerun"]["listed"] == 20            # planned from extras.json, after the main cases
     ledger = read_ledger(out / "run" / "ledger.jsonl")
     assert manifest["ledger"]["settled_calls"] == 0 and manifest["ledger"]["committed_calls"] == 0
     assert not [e for e in ledger if e["event"] in ("reserve", "settle")]
@@ -58,7 +60,7 @@ def _full_run(tmp_path, config, sel_dir, worlds, *, agent=None, budget_note=None
     extras = {"cross_shipment_ablation": AgentArm(FakeAgent(truth, calls=6), config.c_cap, name="cross_shipment_ablation"),
               "stability_rerun": AgentArm(FakeAgent(truth, calls=6), config.c_cap, name="stability_rerun")}
     manifest = run(sel_dir / "selection.json", tmp_path / "run", arms=build_arms(config, agent, turn), case_source=FixtureCaseSource(),
-                   config=config, capture=FixtureCapture(), extras_arms=extras,
+                   config=config, capture=FixtureCapture(), extras_arms=extras, extras_path=sel_dir / "extras.json",
                    provenance={"model_calls": {"succeeded": {"gpt-oss": 700}, "failed": {}}, "dirty_tree": False})
     return manifest, agent, calls
 
@@ -74,7 +76,7 @@ def test_full_fake_run_scores_and_reports(tmp_path, selected, worlds):
     agent_rows = {r["case_key"]: r for r in read_jsonl(tmp_path / "run" / "results" / "main" / "agent.jsonl")}
     for r in read_jsonl(tmp_path / "run" / "results" / "main" / "notools.jsonl"):
         assert r["as_of"] == agent_rows[r["case_key"]]["as_of"]
-    selection = json.loads((sel_dir / "selection.json").read_text())
+    selection = scorer_view(sel_dir / "selection.json")
     truth = {w: worlds[w][0] for w in worlds}
     db = FixtureDatabase()
     scores = score_run(tmp_path / "run", selection, truth, ingestion=db, resolver=db)
@@ -215,6 +217,36 @@ def test_run_refuses_truth_env_tampered_selection_and_changed_config(tmp_path, s
     path.write_text(path.read_text().replace('"order": 0', '"order": 99'))
     with pytest.raises(ValueError, match="pre-registered sha256"):
         run(path, tmp_path / "c", arms=arms, case_source=FixtureCaseSource(), config=config)
+
+
+def test_extras_run_only_when_their_file_is_named_and_only_after_the_main_test(tmp_path, selected, worlds):
+    """Gate fix 4: the extras lists are truth-derived, so the run opens extras.json only after the last main case."""
+    import stage3_eval.runner as runner_mod
+    config, sel_dir, _ = selected
+    truth = {w: worlds[w][0] for w in worlds}
+    turn, _ = notools_turn_factory()
+    extra = FakeAgent(truth, calls=6)
+    extras = {"stability_rerun": AgentArm(extra, config.c_cap, name="stability_rerun")}
+    none = run(sel_dir / "selection.json", tmp_path / "none", arms=build_arms(config, FakeAgent(truth), turn), case_source=FixtureCaseSource(),
+               config=config, extras_arms=extras)
+    assert extra.seen == [] and none["extras"]["stability_rerun"]["listed"] == 0
+    agent, seen_at_load = FakeAgent(truth), []
+    real = runner_mod.load_extras
+
+    def load(path, selection_sha):
+        seen_at_load.append(len(agent.seen))
+        return real(path, selection_sha)
+    runner_mod.load_extras = load
+    try:
+        named = run(sel_dir / "selection.json", tmp_path / "named", arms=build_arms(config, agent, turn), case_source=FixtureCaseSource(),
+                    config=config, extras_arms=extras, extras_path=sel_dir / "extras.json")
+    finally:
+        runner_mod.load_extras = real
+    assert seen_at_load == [70] and len(extra.seen) == named["extras"]["stability_rerun"]["completed"] == 20
+    path = sel_dir / "extras.json"
+    path.write_text(path.read_text().replace("E1:", "E2:", 1))
+    with pytest.raises(ValueError, match="pre-registered sha256"):
+        runner_mod.load_extras(path, "x")
 
 
 def test_missing_arm_and_unopened_cases(tmp_path, selected, worlds):

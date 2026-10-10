@@ -488,7 +488,7 @@ class HarnessOverAFakeWorldTests(unittest.TestCase):
 
     def setUp(self):
         from stage3_eval.fixtures.fakes import FixtureDatabase, world_dir
-        from stage3_eval.selection import select
+        from stage3_eval.selection import scorer_view, select
         from stage3_eval.truth_io import load_replay_rows, load_truth
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
@@ -497,7 +497,8 @@ class HarnessOverAFakeWorldTests(unittest.TestCase):
                        for w in ("E1", "E2")}
         self.config = EvalConfig(freeze_commit="b" * 40, budget=1500, worlds={w: {"database": f"shipments-v2-world-{w.lower()}"} for w in ("E1", "E2")})
         select(self.worlds, self.config, self.root / "pre")
-        self.selection = json.loads((self.root / "pre" / "selection.json").read_text(encoding="utf-8"))
+        self.selection = json.loads((self.root / "pre" / "selection.json").read_text(encoding="utf-8"))   # what the run reads
+        self.scored_selection = scorer_view(self.root / "pre" / "selection.json")                          # scorer side only
         self.runtime = {w: json.loads((world_dir(w) / "runtime" / "cases.json").read_text(encoding="utf-8")) for w in ("E1", "E2")}
         self.database = FixtureDatabase()
         clean = {k: v for k, v in os.environ.items() if "TRUTH" not in k.upper()}
@@ -551,7 +552,7 @@ class HarnessOverAFakeWorldTests(unittest.TestCase):
         # The run.
         sessions, wired = self.wired()
         manifest = run(self.root / "pre" / "selection.json", self.root / "run", config=self.config,
-                       provenance=lambda: {"dirty_tree": False, "tree_changed_during_run": False,
+                       extras_path=self.root / "pre" / "extras.json", provenance=lambda: {"dirty_tree": False, "tree_changed_during_run": False,
                                            "model_calls": {"succeeded": {"scripted": selected * 9}, "failed": {}}}, **wired)
         self.assertEqual((manifest["status"], manifest["counts"]["not_opened"], manifest["counts"]["arm_errors"]), ("completed", 0, 0))
         investigated = [case_id for s in sessions.values() for case_id in s.store.processed]
@@ -572,11 +573,12 @@ class HarnessOverAFakeWorldTests(unittest.TestCase):
             self.assertTrue(any((self.root / "run" / "captured" / surface).iterdir()), surface)
         # Score and report (the scorer side reads truth; the fixture's database answers the two seams).
         truth = {w: self.worlds[w][0] for w in self.worlds}
-        scores = score_run(self.root / "run", self.selection, truth, ingestion=self.database, resolver=self.database)
+        self.assertEqual(manifest["extras"]["stability_rerun"]["completed"], 20)
+        scores = score_run(self.root / "run", self.scored_selection, truth, ingestion=self.database, resolver=self.database)
         self.assertEqual(len([s for s in scores if s["phase"] == "main"]), selected * 4)
         canary = TruthScanner(truth_vocabulary(truth["E1"])).scan_run(self.root / "run")
         self.assertEqual((canary["verdict"], canary["missing_surfaces"]), ("clean", []))
-        report = build_report(self.selection, scores=scores, run_manifest=manifest, canary=canary,
+        report = build_report(self.scored_selection, scores=scores, run_manifest=manifest, canary=canary,
                               pairs=json.loads((self.root / "pre" / "pairs.json").read_text(encoding="utf-8")))
         self.assertEqual(report["validity"]["verdict"], "valid")
         self.assertIn("Arms side by side", render_markdown(report))
@@ -589,7 +591,7 @@ class Stage3WiringNeo4jTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        from stage3_eval.selection import select
+        from stage3_eval.selection import scorer_view, select
         from world.validate import monitor_replay
         assert TEST_DATABASE in SCRATCH
         cls.directory = tempfile.TemporaryDirectory()
@@ -605,7 +607,8 @@ class Stage3WiringNeo4jTests(unittest.TestCase):
         cls.truth = {"E1": dict(fixture.truth)}
         cls.config = EvalConfig(freeze_commit="c" * 40, c_cap=12, budget=1400, worlds={"E1": {"database": TEST_DATABASE}})
         cls.summary = select({"E1": (cls.truth["E1"], replay)}, cls.config, cls.root / "pre")
-        cls.selection = json.loads((cls.root / "pre" / "selection.json").read_text(encoding="utf-8"))
+        cls.selection = json.loads((cls.root / "pre" / "selection.json").read_text(encoding="utf-8"))   # what the run reads
+        cls.scored_selection = scorer_view(cls.root / "pre" / "selection.json")                          # scorer side only
         cls.replay = replay
         clean = {k: v for k, v in os.environ.items() if "TRUTH" not in k.upper()}
         cls.patcher = mock.patch.dict(os.environ, clean, clear=True)
@@ -745,7 +748,7 @@ class Stage3WiringNeo4jTests(unittest.TestCase):
             self.assertTrue(all(instant(at) <= instant(row["as_of"]) for at in resolved.values()), row["case_key"])
         self.assertEqual(scorer["resolver"].recorded_at("E1", ["DEMO-INVENTED-ID"]), {})
         self.assertLess(len(scorer["ingestion"].ingested("E1", agent[0]["as_of"])), len(scorer["ingestion"].ingested("E1", "2100-01-01T00:00:00+00:00")))
-        scores = score_run(self.root / "run", self.selection, self.truth, ingestion=scorer["ingestion"], resolver=scorer["resolver"])
+        scores = score_run(self.root / "run", self.scored_selection, self.truth, ingestion=scorer["ingestion"], resolver=scorer["resolver"])
         main = [s for s in scores if s["phase"] == "main"]
         self.assertEqual(len(main), 4 * len(self.selection["cases"]))
         scored_agent = [s for s in main if s["arm"] == "agent" and s["category"] != "degraded"]
@@ -754,7 +757,7 @@ class Stage3WiringNeo4jTests(unittest.TestCase):
         self.assertEqual({s["category"] for s in scored_agent} - {"honest_uncertainty", "insufficient_when_knowable"}, set())
         canary = TruthScanner(truth_vocabulary(self.truth["E1"])).scan_run(self.root / "run")
         self.assertEqual((canary["verdict"], canary["missing_surfaces"]), ("clean", []), canary.get("hit_locations"))
-        report = build_report(self.selection, scores=scores, run_manifest=self.manifest, canary=canary,
+        report = build_report(self.scored_selection, scores=scores, run_manifest=self.manifest, canary=canary,
                               pairs=json.loads((self.root / "pre" / "pairs.json").read_text(encoding="utf-8")))
         self.assertNotIn("canary", " ".join(report["validity"].get("reasons") or []))
         self.assertIn("Arms side by side", render_markdown(report))

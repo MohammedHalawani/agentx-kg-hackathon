@@ -8,9 +8,12 @@
       --freeze-commit FULL_HASH --c-cap N [--r-cap N] --out DIR
       TRUTH_DIR holds truth.jsonl and monitor_replay_rows.jsonl (world.export's <truth-root>/.../<live split>/).
 
-  python -m stage3_eval run --selection DIR/selection.json --out RUN_DIR --wiring MODULE:FUNCTION [--dry-run] [--resume]
+  python -m stage3_eval run --selection DIR/selection.json --out RUN_DIR --wiring MODULE:FUNCTION [--extras DIR/extras.json]
+      [--dry-run] [--resume]
       FUNCTION(config, dry_run=...) returns {"arms", "case_source", "capture", "extras_arms", "provenance"} (WIRING.md).
-      Run with SUHAIL_EVAL_TRUTH_ROOT unset.
+      Run with SUHAIL_EVAL_TRUTH_ROOT unset. The run reads selection.json only (key, world, shipment and expected
+      opening per case). --extras names the exploratory extras' case lists, which are derived from truth: the file is
+      opened only after the last main-test case has run, and without it no extra runs.
 
   python -m stage3_eval score --selection DIR/selection.json --run RUN_DIR --world E1=TRUTH_DIR [...] --wiring MODULE:FUNCTION
       FUNCTION(config) returns {"ingestion", "resolver"}. Writes RUN_DIR/scores.jsonl and RUN_DIR/canary.json.
@@ -82,6 +85,12 @@ def _config(selection_path):
     return EvalConfig(**data["config"]), data
 
 
+def _scorer_selection(selection_path):
+    """Scorer side (score, report): the selection with each case's stratum, the allocation and the extras lists."""
+    from stage3_eval.selection import scorer_view
+    return scorer_view(selection_path)
+
+
 def _report(selection, run_dir, out_dir):
     from stage3_eval.report import build_report, write_report
     run_dir = Path(run_dir) if run_dir else None
@@ -113,8 +122,8 @@ def dry_run_fixture(out):
     extras = {"cross_shipment_ablation": AgentArm(refuse, config.c_cap, config.r_cap, name="cross_shipment_ablation"),
               "stability_rerun": AgentArm(refuse, config.c_cap, config.r_cap, name="stability_rerun")}
     manifest = run(out / "selection.json", out / "run", arms=arms, case_source=FixtureCaseSource(), config=config, extras_arms=extras,
-                   dry_run=True, provenance={"note": "dry run over the committed fixture"})
-    selection = json.loads((out / "selection.json").read_text(encoding="utf-8"))
+                   dry_run=True, provenance={"note": "dry run over the committed fixture"}, extras_path=out / "extras.json")
+    selection = _scorer_selection(out / "selection.json")
     report_path = _report(selection, out / "run", out)
     return summary, manifest, report_path
 
@@ -138,6 +147,7 @@ def main(argv=None):
     r.add_argument("--selection", required=True)
     r.add_argument("--out", required=True)
     r.add_argument("--wiring", required=True)
+    r.add_argument("--extras", help="extras.json of the pre-registration (opened only after the main test has finished)")
     r.add_argument("--dry-run", action="store_true")
     r.add_argument("--resume", action="store_true")
     r.add_argument("--ledger", help="campaign model-call ledger (default docs/evals/model_call_ledger.json)")
@@ -183,7 +193,7 @@ def main(argv=None):
             manifest = run(args.selection, args.out, arms=wired["arms"], case_source=wired["case_source"], config=config,
                            capture=wired.get("capture"), extras_arms=wired.get("extras_arms"), dry_run=args.dry_run, resume=args.resume,
                            provenance=wired.get("provenance"), campaign=campaign, campaign_commit=_head_commit(),
-                           provider_calls=wired.get("provider_calls"))
+                           provider_calls=wired.get("provider_calls"), extras_path=args.extras)
         except (LedgerRefused, LedgerError) as refusal:
             raise SystemExit(f"Refusing to run: {refusal}") from None
         finally:
@@ -195,7 +205,8 @@ def main(argv=None):
         from stage3_eval.canary import TruthScanner
         from stage3_eval.scoring import score_run
         from stage3_eval.truth_io import truth_vocabulary
-        config, selection = _config(args.selection)
+        config, _run_side = _config(args.selection)
+        selection = _scorer_selection(args.selection)
         wired = _call_wiring(_wiring(args.wiring), config, run_dir=args.run)
         worlds = {w: truth for w, (truth, _replay) in _worlds(args.world).items()}
         rows = score_run(args.run, selection, worlds, ingestion=wired.get("ingestion"), resolver=wired.get("resolver"))
@@ -209,8 +220,7 @@ def main(argv=None):
         print(json.dumps({"scored_rows": len(rows), "canary": canary["verdict"]}, indent=1))
     elif args.cmd == "report":
         _config(args.selection)
-        selection = json.loads(Path(args.selection).read_text(encoding="utf-8"))
-        print(_report(selection, args.run, Path(args.selection).parent))
+        print(_report(_scorer_selection(args.selection), args.run, Path(args.selection).parent))
     return 0
 
 

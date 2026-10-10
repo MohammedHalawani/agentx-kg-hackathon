@@ -2,13 +2,21 @@
 
 Reads each evaluation world's truth rows and monitor replay rows, assigns strata (strata.py), allocates N_main over
 the (world, stratum) cells by the design's table and shrink order, draws each cell by a seeded procedure, and
-writes two files before any case runs:
+writes these files before any case runs:
 
-- selection.json: the cases to run, in order, with world, shipment and stratum, plus the extras lists. No cause
-  code, mechanism name, label or canary is written into it (checked on write), because the run step reads it.
+- selection.json (run side): the cases to run, in order, each with its key, world, shipment and the monitor
+  replica's expected opening time, and nothing else. No stratum, no main-test flag, no extras list, no cause code,
+  mechanism name, label or canary: all of those are derived from truth, and the run step reads this file (checked on
+  write by design.runtime_selection_problem, and again by the run step when it loads the file).
+- selection_scorer.json (scorer side): each case's stratum and whether it is in the main test, and the allocation.
+  The run step never reads it; the scorer and the report do (scorer_view puts the two back together).
+- extras.json (scorer side): the case keys of the two exploratory extras, both derived from truth (the ablation list
+  from the explaining mechanisms, the stability list from the main-test cell). The run step opens it only when it is
+  named on the command line, and only after every main-test case has been run.
 - pairs.json: the seeded, non-overlapping matched pairs (scorer side only; the run step never reads it).
+- strata.json: every opened case's stratum and the census that decided it (scorer side only).
 
-Both are written once (an existing file is never replaced) with their sha256 beside them, so the hash can be
+All are written once (an existing file is never replaced) with their sha256 beside them, so the hash can be
 committed before the first run (amendment 1, F).
 """
 from collections import defaultdict
@@ -18,10 +26,14 @@ from pathlib import Path
 import random
 
 from stage3_eval.design import (ALLOCATION_AT_PLANNING, CROSS_SHIPMENT_MECHANISMS, E1_MAIN_FLOOR, MAIN_TEST_CELL, SHRINK_ORDER,
-                                STABILITY_MAX, STRATA, WORLDS, EvalConfig, canonical_bytes, n_main, sealed_hash, selection_seed)
+                                STABILITY_MAX, STRATA, WORLDS, EvalConfig, canonical_bytes, n_main, runtime_selection_problem, sealed_hash,
+                                selection_seed)
 from stage3_eval.strata import assign_strata, opened_cases
 
-SELECTION_SCHEMA = "stage3-selection-1"
+SELECTION_SCHEMA = "stage3-selection-2"
+SCORER_SCHEMA = "stage3-selection-scorer-1"
+EXTRAS_SCHEMA = "stage3-extras-1"
+SCORER_FILE, EXTRAS_FILE = "selection_scorer.json", "extras.json"
 
 
 def allocate(c_cap, r_cap=0, budget=None):
@@ -95,10 +107,16 @@ def _pairs(selected, rng):
     return out
 
 
-FORBIDDEN_IN_SELECTION = ("acceptable", "cause", "mechanism", "label", "canary", "truth")
+FORBIDDEN_IN_SELECTION = ("acceptable", "cause", "mechanism", "label", "canary", "truth", "stratum", "main_test", "extras",
+                          "cross_shipment_ablation", "stability_rerun", "allocation", "identifiable")
 
 
 def _check_runtime_safe(document, vocabulary):
+    """The runtime-safety screen of the run-readable file: only the registered names (so no stratum, main-test flag
+    or extras list, which are derived from truth), no truth-side field name and no truth vocabulary."""
+    problem = runtime_selection_problem(document)
+    if problem:
+        raise ValueError(f"selection would carry a truth-side field ({problem}); the run step reads this file")
     text = json.dumps(document, sort_keys=True)
     for key in FORBIDDEN_IN_SELECTION:
         if f'"{key}' in text:
@@ -161,25 +179,61 @@ def select(worlds, config: EvalConfig, out_dir, *, vocabulary_of=None):
     ablation = [c["key"] for c in main if set(c["mechanism_types"]) & set(CROSS_SHIPMENT_MECHANISMS)]
     stability = [c["key"] for c in main][:STABILITY_MAX]
     selection = {
-        "schema": SELECTION_SCHEMA, "sealed_config_hash": sealed_hash(config), "config": config.as_dict(),
-        "allocation": {f"{w}/{s}": v for (w, s), v in sorted(allocation["cells"].items())}, "n_main": allocation["n_main"],
-        "cases": [{"order": i, "key": c["key"], "world": c["world"], "shipment_id": c["shipment_id"], "stratum": c["stratum"],
-                   "expected_opened_at": c["opened_at"], "main_test": (c["world"], c["stratum"]) == MAIN_TEST_CELL}
+        "schema": SELECTION_SCHEMA, "sealed_config_hash": sealed_hash(config), "config": config.as_dict(), "n_main": allocation["n_main"],
+        "cases": [{"order": i, "key": c["key"], "world": c["world"], "shipment_id": c["shipment_id"], "expected_opened_at": c["opened_at"]}
                   for i, c in enumerate(selected)],
-        "extras": {"cross_shipment_ablation": ablation, "stability_rerun": stability},
         "unit": "first case per shipment, scored at its first investigation",
     }
     for world in worlds:
         _check_runtime_safe(selection, vocabulary_of(worlds[world][0]))
+    selection_sha = _write_once(out_dir / "selection.json", selection)
+    scorer_side = {"schema": SCORER_SCHEMA, "selection_sha256": selection_sha,
+                   "allocation": {f"{w}/{s}": v for (w, s), v in sorted(allocation["cells"].items())},
+                   "cases": [{"key": c["key"], "stratum": c["stratum"], "main_test": (c["world"], c["stratum"]) == MAIN_TEST_CELL} for c in selected]}
+    extras = {"schema": EXTRAS_SCHEMA, "selection_sha256": selection_sha,
+              "extras": {"cross_shipment_ablation": ablation, "stability_rerun": stability}}
     pair_rng = random.Random(selection_seed(config.freeze_commit, "pairs"))
     pairs = {"schema": "stage3-pairs-1", "pairs": _pairs(selected, pair_rng)}
     strata_list = {"schema": "stage3-strata-1", "cases": [{"key": c["key"], "stratum": c["stratum"], "rule": c["stratum_rule"]}
                                                           for w in by_world_cases for c in by_world_cases[w]],
                    "census": census, "healthy_opened": healthy}
-    hashes = {"selection": _write_once(out_dir / "selection.json", selection),
+    hashes = {"selection": selection_sha,
+              "selection_scorer": _write_once(out_dir / SCORER_FILE, scorer_side),
+              "extras": _write_once(out_dir / EXTRAS_FILE, extras),
               "pairs": _write_once(out_dir / "pairs.json", pairs),
               "strata": _write_once(out_dir / "strata.json", strata_list)}
     return {"hashes": hashes, "allocation": {**allocation, "cells": {f"{w}/{st}": v for (w, st), v in sorted(allocation["cells"].items())}},
             "shortfalls": shortfalls, "selected": len(selected),
             "by_cell": {f"{w}/{s}": sum(1 for c in selected if (c["world"], c["stratum"]) == (w, s)) for w in WORLDS for s in STRATA},
             "pairs": len(pairs["pairs"]), "census": census}
+
+
+def _read_sealed(path):
+    """A pre-registered file, refused unless it matches the sha256 written beside it. Returns (document, sha256)."""
+    path = Path(path)
+    data = path.read_bytes()
+    sidecar = path.with_name(path.name + ".sha256")
+    if not sidecar.exists():
+        raise ValueError(f"{sidecar} is missing; a pre-registered file without its hash is not used")
+    actual = hashlib.sha256(canonical_bytes(data)).hexdigest()
+    if actual != sidecar.read_text(encoding="utf-8").split()[0]:
+        raise ValueError(f"{path.name} does not match its pre-registered sha256")
+    return json.loads(data), actual
+
+
+def scorer_view(selection_path):
+    """Scorer side only: the run-readable selection joined with what the scorer and the report need and the run step
+    must not read (each case's stratum and main-test flag, the allocation, the extras lists). Every file is checked
+    against its pre-registered hash, and the scorer-side files against the selection they were written for."""
+    selection_path = Path(selection_path)
+    selection, selection_sha = _read_sealed(selection_path)
+    scorer_side, _ = _read_sealed(selection_path.with_name(SCORER_FILE))
+    extras, _ = _read_sealed(selection_path.with_name(EXTRAS_FILE))
+    for name, document in ((SCORER_FILE, scorer_side), (EXTRAS_FILE, extras)):
+        if document.get("selection_sha256") != selection_sha:
+            raise ValueError(f"{name} was not written for this selection.json")
+    by_key = {row["key"]: row for row in scorer_side["cases"]}
+    if set(by_key) != {row["key"] for row in selection["cases"]}:
+        raise ValueError(f"{SCORER_FILE} does not name the same cases as selection.json")
+    return {**selection, "allocation": scorer_side["allocation"], "extras": extras["extras"], "selection_sha256": selection_sha,
+            "cases": [{**row, "stratum": by_key[row["key"]]["stratum"], "main_test": by_key[row["key"]]["main_test"]} for row in selection["cases"]]}

@@ -183,6 +183,44 @@ def canonical_bytes(data: bytes) -> bytes:
     return data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
 
 
+# ---------------------------------------------------------------------------------------------- the run-readable selection
+# selection.json is the only pre-registered file the run step opens before and during the main test. It may carry
+# these names and no others: every other fact about a case (its stratum, whether it is in the main test, which extras
+# it belongs to) is derived from truth and lives in the scorer-side files (selection_scorer.json, extras.json).
+RUN_SELECTION_KEYS = ("schema", "sealed_config_hash", "config", "n_main", "cases", "unit")
+RUN_CASE_KEYS = ("order", "key", "world", "shipment_id", "expected_opened_at", "case_id", "as_of")
+TRUTH_DERIVED_KEYS = ("stratum", "stratum_rule", "main_test", "extras", "cross_shipment_ablation", "stability_rerun", "allocation",
+                      "identifiable", "acceptable", "mechanism_types", "pairs", "census")
+
+
+def runtime_selection_problem(document):
+    """None when the document is a run-readable selection; otherwise what makes it unsafe for the run step to read."""
+    if not isinstance(document, dict) or not isinstance(document.get("cases"), list):
+        return "not a selection document"
+    extra = sorted(set(document) - set(RUN_SELECTION_KEYS))
+    if extra:
+        return f"fields the run step must not read: {extra}"
+    for row in document["cases"]:
+        if not isinstance(row, dict):
+            return "a case row is not an object"
+        extra = sorted(set(row) - set(RUN_CASE_KEYS))
+        if extra:
+            return f"a case row carries fields the run step must not read: {extra}"
+
+    def names(value):
+        if isinstance(value, dict):
+            for key, inner in value.items():
+                yield str(key)
+                yield from names(inner)
+        elif isinstance(value, (list, tuple)):
+            for inner in value:
+                yield from names(inner)
+    derived = sorted(set(names(document)) & set(TRUTH_DERIVED_KEYS))
+    if derived:
+        return f"truth-derived fields: {derived}"
+    return None
+
+
 def sealed_hash(config: EvalConfig) -> str:
     """Hash of the configuration and every frozen table above; a run whose hash differs is not the sealed run."""
     payload = {"config": config.as_dict(), "allocation": sorted((list(k), v) for k, v in ALLOCATION_AT_PLANNING.items()),
