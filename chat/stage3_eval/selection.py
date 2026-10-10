@@ -28,6 +28,7 @@ import random
 from stage3_eval.design import (ALLOCATION_AT_PLANNING, CROSS_SHIPMENT_MECHANISMS, E1_MAIN_FLOOR, MAIN_TEST_CELL, SHRINK_ORDER,
                                 STABILITY_MAX, STRATA, WORLDS, EvalConfig, canonical_bytes, n_main, runtime_selection_problem, sealed_hash,
                                 selection_seed)
+from stage3_eval.exclusions import excluded_for, load_exclusions
 from stage3_eval.strata import assign_strata, opened_cases
 
 SELECTION_SCHEMA = "stage3-selection-2"
@@ -139,9 +140,11 @@ def _write_once(path: Path, document):
     return digest
 
 
-def select(worlds, config: EvalConfig, out_dir, *, vocabulary_of=None):
-    """worlds: {"E1": (truth, replay_rows), "E2": (...)} (dicts keyed by shipment id). Writes selection.json and
-    pairs.json under out_dir and returns a summary (hashes, allocation, shortfalls, census)."""
+def select(worlds, config: EvalConfig, out_dir, *, vocabulary_of=None, exclusions=None):
+    """worlds: {"E1": (truth, replay_rows), "E2": (...)} (dicts keyed by shipment id). Writes the pre-registered files
+    under out_dir and returns a summary (hashes, allocation, shortfalls, census, exclusions).
+    exclusions: (by dataset, sources) as exclusions.load_exclusions returns; by default the committed lists. A listed
+    shipment of a world with that dataset id is never drawn (it stays in the census: the strata are unchanged)."""
     from stage3_eval.truth_io import truth_vocabulary
     if len(config.freeze_commit or "") < 40:
         raise ValueError("the selection is seeded from the full freeze commit hash (amendment 1, G); give all 40 characters")
@@ -149,7 +152,8 @@ def select(worlds, config: EvalConfig, out_dir, *, vocabulary_of=None):
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     allocation = allocate(config.c_cap, config.r_cap, config.budget)
-    selected, shortfalls, census, by_world_cases, healthy = [], [], {}, {}, {}
+    excluded_by_dataset, exclusion_sources = load_exclusions() if exclusions is None else exclusions
+    selected, shortfalls, census, by_world_cases, healthy, excluded = [], [], {}, {}, {}, {}
     for world in WORLDS:
         if world not in worlds:
             continue
@@ -159,10 +163,13 @@ def select(worlds, config: EvalConfig, out_dir, *, vocabulary_of=None):
         for c in cases:
             c.update(world=world, key=f"{world}:{c['shipment_id']}", stratum=strata[c["shipment_id"]], stratum_rule=rule[c["shipment_id"]])
         by_world_cases[world] = cases
+        dataset_ids = sorted({str(d) for d in [(config.worlds.get(world) or {}).get("dataset_id"), *{r.get("dataset_id") for r in truth.values()}] if d})
+        barred = set(excluded_for(excluded_by_dataset, dataset_ids, [c["shipment_id"] for c in cases]))
+        excluded[world] = {"dataset_ids": dataset_ids, "opened_cases_excluded": sorted(barred)}
         rng = random.Random(selection_seed(config.freeze_commit, world))
         for stratum in STRATA:
             k = allocation["cells"].get((world, stratum), 0)
-            pool = [c for c in cases if c["stratum"] == stratum]
+            pool = [c for c in cases if c["stratum"] == stratum and c["shipment_id"] not in barred]
             drawn = _draw(pool, k, rng, config.sampling)
             if len(drawn) < k:
                 shortfalls.append({"world": world, "stratum": stratum, "allocated": k, "available": len(pool)})
@@ -187,7 +194,8 @@ def select(worlds, config: EvalConfig, out_dir, *, vocabulary_of=None):
     for world in worlds:
         _check_runtime_safe(selection, vocabulary_of(worlds[world][0]))
     selection_sha = _write_once(out_dir / "selection.json", selection)
-    scorer_side = {"schema": SCORER_SCHEMA, "selection_sha256": selection_sha,
+    exclusion_record = {"sources": exclusion_sources, "by_world": excluded}
+    scorer_side = {"schema": SCORER_SCHEMA, "selection_sha256": selection_sha, "exclusions": exclusion_record,
                    "allocation": {f"{w}/{s}": v for (w, s), v in sorted(allocation["cells"].items())},
                    "cases": [{"key": c["key"], "stratum": c["stratum"], "main_test": (c["world"], c["stratum"]) == MAIN_TEST_CELL} for c in selected]}
     extras = {"schema": EXTRAS_SCHEMA, "selection_sha256": selection_sha,
@@ -203,7 +211,7 @@ def select(worlds, config: EvalConfig, out_dir, *, vocabulary_of=None):
               "pairs": _write_once(out_dir / "pairs.json", pairs),
               "strata": _write_once(out_dir / "strata.json", strata_list)}
     return {"hashes": hashes, "allocation": {**allocation, "cells": {f"{w}/{st}": v for (w, st), v in sorted(allocation["cells"].items())}},
-            "shortfalls": shortfalls, "selected": len(selected),
+            "shortfalls": shortfalls, "selected": len(selected), "exclusions": exclusion_record,
             "by_cell": {f"{w}/{s}": sum(1 for c in selected if (c["world"], c["stratum"]) == (w, s)) for w in WORLDS for s in STRATA},
             "pairs": len(pairs["pairs"]), "census": census}
 

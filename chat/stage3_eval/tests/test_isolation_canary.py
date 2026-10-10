@@ -9,7 +9,7 @@ from stage3_eval.canary import TruthScanner
 from stage3_eval.truth_io import truth_vocabulary
 
 PKG = Path(__file__).resolve().parents[1]
-RUN_SIDE = ("runner.py", "arms.py", "records.py", "budget.py", "interfaces.py", "canary.py", "design.py", "stats.py", "fixtures/fakes.py")
+RUN_SIDE = ("runner.py", "arms.py", "records.py", "budget.py", "interfaces.py", "canary.py", "design.py", "stats.py", "exclusions.py", "fixtures/fakes.py")
 SCORER_SIDE = {"stage3_eval.truth_io", "stage3_eval.strata", "stage3_eval.selection", "stage3_eval.scoring", "world", "world.truth",
                "world.export", "world.mechanisms"}
 

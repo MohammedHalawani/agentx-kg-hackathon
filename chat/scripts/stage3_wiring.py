@@ -40,6 +40,7 @@ import time
 
 from stage3_eval.arms import AgentArm, CaseRef, NoToolsArm, RuleCodeArm, SymptomArm
 from stage3_eval.budget import RunStopped
+from stage3_eval.exclusions import excluded_in, load_exclusions
 from stage3_eval.records import ArmResult, from_ops_run
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -189,8 +190,9 @@ class WorldCaseSource:
     """Advances each world's replay until the selected case opens. The clock only moves forward, so the harness asks
     for cases in the selection's order (world by world, by expected opening time)."""
 
-    def __init__(self, sessions, expected=None, *, horizon_hours=OPEN_HORIZON_HOURS):
+    def __init__(self, sessions, expected=None, *, horizon_hours=OPEN_HORIZON_HOURS, exclusions=None):
         self.sessions = sessions
+        self.exclusions = load_exclusions()[0] if exclusions is None else exclusions   # {dataset id: shipment ids}
         self.expected = dict(expected or {})      # {(world, shipment_id): expected_opened_at}
         self.horizon = timedelta(hours=horizon_hours)
         self.cases = {world: {} for world in sessions}            # shipment id -> the FIRST case the monitor opened for it
@@ -234,6 +236,9 @@ class WorldCaseSource:
     def case_ref(self, world, shipment_id):
         from dataset_v2.contracts import instant
         ws = self.sessions[world]
+        if excluded_in(self.exclusions, ws.dataset_id, [shipment_id]):
+            # Its truth labels were exposed: it is never an evaluation case, whatever the selection says.
+            raise RunStopped(f"{world} {shipment_id} is on the exclusion list of dataset {ws.dataset_id}")
         expected = self.expected.get((world, shipment_id))
         # Without an expected opening the case is waited for over the horizon from where the clock stands.
         deadline = instant(expected or ws.clock()) + self.horizon
@@ -401,6 +406,19 @@ class WorldCapture:
         return out
 
 
+def refuse_excluded(sessions, selection, exclusions=None):
+    """Refuse (before anything runs) a selection that names a shipment on the exclusion list of the dataset its
+    world's database holds. Returns the lists that were applied, for the provenance."""
+    by_dataset, sources = load_exclusions() if exclusions is None else exclusions
+    for world, ws in sessions.items():
+        named = [row["shipment_id"] for row in (selection or {}).get("cases", []) if row["world"] == world]
+        listed = excluded_in(by_dataset, ws.dataset_id, named)
+        if listed:
+            raise SystemExit(f"the selection names {len(listed)} shipment(s) of {world} that are on the exclusion list of dataset "
+                             f"{ws.dataset_id} (truth labels exposed): {', '.join(listed[:5])}. Select again; the selection step leaves them out.")
+    return sources
+
+
 # ---------------------------------------------------------------------- build (the run process)
 def build(config, *, dry_run=False, resume=False, selection=None, agents=None, notools_turn=None, driver=None, allow_reset=None,
           provider_calls=None):
@@ -431,6 +449,7 @@ def build(config, *, dry_run=False, resume=False, selection=None, agents=None, n
         # Equality with the sealed cap, read back from the store the investigations will use (and again before each case).
         prepared[world]["backend_model_call_cap"] = require_sealed_cap(sessions[world], config.c_cap)
         log.info("%s: %s session %s clock %s", world, prepared[world]["database"], prepared[world]["session_id"], prepared[world]["clock_at_start"])
+    exclusion_sources = refuse_excluded(sessions, selection)
     if real_model:
         pilot.record_model_calls()           # LiteLLM callbacks: every provider call, completed or failed, and its tokens
     tokens = (lambda: pilot.MODEL_CALLS["total_tokens"]) if real_model else None
@@ -462,6 +481,7 @@ def build(config, *, dry_run=False, resume=False, selection=None, agents=None, n
                 "model_calls": calls, "open_horizon_hours": OPEN_HORIZON_HOURS, "tick_seconds": TICK_SECONDS,
                 "cross_shipment_tools_withheld_in_the_ablation": list(CROSS_SHIPMENT_TOOLS),
                 "worlds": {w: {**prepared[w], "clock_at_end": sessions[w].clock(), "replay": source.counts[w]} for w in sessions},
+                "exclusion_lists": exclusion_sources,
                 "truth_environment_set": pilot.truth_environment(), "world_truth_imported": pilot.truth_module_loaded()}
 
     def close():

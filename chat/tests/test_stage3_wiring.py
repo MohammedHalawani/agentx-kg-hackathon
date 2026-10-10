@@ -469,6 +469,29 @@ class SessionTests(unittest.TestCase):
         with self.assertRaisesRegex(SystemExit, "C_cap 2 is outside"):
             wiring.prepare_session(FakeSession("E1", FakeStore(THREE)), resume=False, c_cap=2, allow_reset=False)
 
+    def test_a_selection_naming_an_excluded_shipment_is_refused_for_that_dataset_only(self):
+        """The exclusion list (shipments whose truth labels were exposed) is honoured by the run side too."""
+        from stage3_eval.budget import RunStopped
+        session = FakeSession("E1", FakeStore(THREE))
+        selection = {"cases": [{"world": "E1", "shipment_id": sid} for sid in THREE]}
+        lists = ({session.dataset_id: frozenset({"DEMO-SHP-000002"})}, [{"file": "test"}])
+        with self.assertRaisesRegex(SystemExit, "exclusion list of dataset DEMO-SUHAIL-WORLD-FAKE.*DEMO-SHP-000002"):
+            wiring.refuse_excluded({"E1": session}, selection, lists)
+        self.assertEqual(wiring.refuse_excluded({"E1": session}, selection, ({"ANOTHER-DATASET": frozenset(THREE)}, [{"file": "test"}])),
+                         [{"file": "test"}])
+        # The committed list is the default: it names world 1's dataset, and a database holding that dataset is refused.
+        self.assertEqual(wiring.refuse_excluded({"E1": session}, selection)[0]["dataset_id"], "DEMO-SUHAIL-WORLD-1")
+        session.dataset_id = "DEMO-SUHAIL-WORLD-1"
+        with self.assertRaisesRegex(SystemExit, "DEMO-SHP-000019"):
+            wiring.refuse_excluded({"E1": session}, {"cases": [{"world": "E1", "shipment_id": "DEMO-SHP-000019"}]})
+        # The case source itself never hands such a shipment to an arm, and does not move the clock for it.
+        store = FakeStore(THREE)
+        source = wiring.WorldCaseSource({"E1": FakeSession("E1", store)}, EXPECTED, exclusions={store.dataset_id: frozenset({"DEMO-SHP-000001"})})
+        with self.assertRaisesRegex(RunStopped, "exclusion list"):
+            source.case_ref("E1", "DEMO-SHP-000001")
+        self.assertEqual(store.ticks, 0)
+        self.assertEqual(source.case_ref("E1", "DEMO-SHP-000002").shipment_id, "DEMO-SHP-000002")
+
     def test_the_run_side_refuses_a_truth_path_and_reads_no_truth(self):
         with mock.patch.dict(os.environ, {"SUHAIL_EVAL_TRUTH_ROOT": r"C:\somewhere"}):
             with self.assertRaises(SystemExit):

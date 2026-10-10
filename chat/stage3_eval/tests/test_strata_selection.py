@@ -173,3 +173,44 @@ def test_truth_inside_the_repository_is_refused_unless_fixture(tmp_path):
     outside.write_text(json.dumps({"shipment_id": "S", "canary": "nope"}) + "\n")
     with pytest.raises(ValueError, match="canary"):
         load_truth(outside)
+
+
+def test_the_committed_exclusion_list_is_read_and_a_bad_one_stops_the_selection(tmp_path):
+    from stage3_eval.exclusions import excluded_for, excluded_in, load_exclusions
+    by_dataset, sources = load_exclusions()
+    listed = by_dataset["DEMO-SUHAIL-WORLD-1"]
+    assert len(listed) == 12 and "DEMO-SHP-000019" in listed
+    assert sources[0]["file"] == "docs/evals/2026-10-10_world1_pilot/excluded_shipments.json" and sources[0]["shipments"] == 12
+    assert len(sources[0]["sha256"]) == 64 and sources[0]["dataset_id"] == "DEMO-SUHAIL-WORLD-1"
+    assert excluded_in(by_dataset, "DEMO-SUHAIL-WORLD-1", ["DEMO-SHP-000019", "DEMO-SHP-000020"]) == ["DEMO-SHP-000019"]
+    assert excluded_in(by_dataset, "DEMO-SUHAIL-WORLD-2", ["DEMO-SHP-000019"]) == []          # another dataset: not affected
+    assert excluded_for(by_dataset, [], ["DEMO-SHP-000019"]) == ["DEMO-SHP-000019"]           # dataset unknown: the safe side
+    bad = tmp_path / "bad.json"
+    bad.write_text(json.dumps({"dataset_id": "X", "shipments": ["A"]}))
+    with pytest.raises(ValueError, match="not an exclusion list"):
+        load_exclusions([str(bad)])
+    with pytest.raises(FileNotFoundError):                    # a list that cannot be read stops the selection
+        load_exclusions([str(tmp_path / "missing.json")])
+
+
+def test_an_excluded_shipment_is_never_drawn_for_its_dataset(tmp_path, worlds):
+    """The harness case source honours the exclusion list: a listed shipment of the world's dataset is not selected
+    (and not in an extras list or a pair); the same id in another dataset is untouched; the strata do not move."""
+    config = make_config()
+    plain = select(worlds, config, tmp_path / "plain")
+    before = scorer_view(tmp_path / "plain" / "selection.json")
+    assert plain["exclusions"]["by_world"]["E1"] == {"dataset_ids": ["FIXTURE-E1"], "opened_cases_excluded": []}   # the committed list names another dataset
+    barred = [c["shipment_id"] for c in before["cases"] if c["world"] == "E1" and c["main_test"]][:3]
+    lists = ({"FIXTURE-E1": frozenset(barred)}, [{"file": "test", "sha256": "0" * 64, "dataset_id": "FIXTURE-E1", "shipments": 3}])
+    summary = select(worlds, config, tmp_path / "barred", exclusions=lists)
+    after = scorer_view(tmp_path / "barred" / "selection.json")
+    chosen = {c["shipment_id"] for c in after["cases"] if c["world"] == "E1"}
+    assert not chosen & set(barred) and summary["exclusions"]["by_world"]["E1"]["opened_cases_excluded"] == sorted(barred)
+    text = "".join((tmp_path / "barred" / name).read_text() for name in ("selection.json", "extras.json", "pairs.json"))
+    assert not any(sid in text for sid in barred)
+    recorded = json.loads((tmp_path / "barred" / "selection_scorer.json").read_text())["exclusions"]
+    assert recorded["sources"] == lists[1] and recorded["by_world"]["E1"]["opened_cases_excluded"] == sorted(barred)
+    assert summary["by_cell"]["E1/identifiable_ambiguous"] == 34 - 3
+    assert json.loads((tmp_path / "barred" / "strata.json").read_text())["census"] == json.loads((tmp_path / "plain" / "strata.json").read_text())["census"]
+    other = select(worlds, config, tmp_path / "other", exclusions=({"ANOTHER-DATASET": frozenset(barred)}, []))
+    assert other["hashes"]["selection"] == plain["hashes"]["selection"]
