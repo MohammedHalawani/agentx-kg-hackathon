@@ -15,8 +15,8 @@ from datetime import timedelta
 import heapq
 import math
 
-from world.bookings import Shipment
-from world.config import WorldConfig, is_friday, local_dt, local_hour
+from world.bookings import Shipment, s10
+from world.config import WorldConfig, is_friday, local_date, local_dt, local_hour
 from world.geo import haversine_km, interpolate, offset_point, road_km
 from world.mechanisms import MechanismPlan
 from world.network import Network, TripPlan, travel_seconds
@@ -27,6 +27,7 @@ ROUTE_MAX_STOPS = {"LM-VAN": 20, "PRIVATE-CAR": 14}
 LOAD_WINDOW_END = "08:50"
 STOCK_CHECK = "21:30"
 PLANNING = "07:15"
+CLOSED_ROAD = 6.0     # A traffic incident with at least this slow-down factor closes the district to delivery vans.
 
 
 @dataclass
@@ -80,6 +81,7 @@ class TripState:
     parcels: list = field(default_factory=list)
     cancelled: bool = False
     delay_mid: str | None = None
+    delay_seconds: int = 0           # how long the mechanism (or an ordinary long hold) delayed this trip
     breakdown: tuple | None = None   # (start, end)
     positions: list = field(default_factory=list)
     stop_times: list = field(default_factory=list)
@@ -129,8 +131,24 @@ class Simulation:
         self.service_log = defaultdict(list)    # facility -> [(ready, done, pid)]
         self.queue_peak = defaultdict(int)
         self.vehicle_free = {}                  # vehicle -> actual available instant
-        self.touch = defaultdict(set)           # mid -> {pid}
+        self.touch = defaultdict(set)           # mid -> {pid} the mechanism caused a deviation on
         self.touch_ship = defaultdict(set)      # mid -> {sid}
+        self.exposed = defaultdict(set)         # mid -> {pid} it touched without consequence (never scored)
+        self.exposed_ship = defaultdict(set)    # mid -> {sid}
+        self.server_free_cf = {}                # facility -> next free instant had no backlog ever acted there
+        self.cf_slot = {}                       # (facility, pid) -> service completion without any backlog
+        self.wrong_label = {}                   # pid -> mid of the label batch that mislabelled it
+        self.label_source = {}                  # pid -> "other_parcel" | "unknown_order" (what a wrong label shows)
+        self.last_label = {}                    # origin facility -> barcode printed for the previous parcel
+        self.barcodes = {parcel.barcode for shipment in shipments.values() for parcel in shipment.parcels}
+        self.deadline = {}                      # (pid, predicate, location) -> the plan's latest instant
+        from world.bookings import milestones
+        for shipment in shipments.values():
+            for parcel in shipment.parcels:
+                parcel.label_barcode = parcel.barcode
+            for _, predicate, location, _, latest, _ in milestones(shipment):
+                for parcel in shipment.parcels:
+                    self.deadline[(parcel.pid, predicate, location)] = latest
         self.corrections = {}                   # sid -> instant the correction was applied by dispatch
         self.container_seq = defaultdict(int)
         self.person_seq = defaultdict(int)
@@ -152,6 +170,7 @@ class Simulation:
         self.events.append({"t": t.replace(microsecond=0), "type": kind, **fields})
 
     def mark(self, mid, pid=None, sid=None):
+        """The mechanism caused a deviation on this parcel (or shipment)."""
         if not mid:
             return
         if pid:
@@ -159,6 +178,32 @@ class Simulation:
             self.touch_ship[mid].add(self.p[pid].shipment.sid)
         if sid:
             self.touch_ship[mid].add(sid)
+
+    def expose(self, mid, pid):
+        """The mechanism touched this parcel without consequence (a harmless exposure, never scored)."""
+        if mid:
+            self.exposed[mid].add(pid)
+            self.exposed_ship[mid].add(self.p[pid].shipment.sid)
+
+    def breached(self, pid, predicate, location, actual, without):
+        """The plan's deadline for this step was missed, and would have been met without the delay."""
+        latest = self.deadline.get((pid, predicate, location))
+        return latest is not None and actual > latest >= without
+
+    def route_day(self, t):
+        """The first delivery day whose route planning still includes a parcel shelved at t."""
+        day = local_date(t)
+        if t > local_dt(day, "08:40"):
+            day += timedelta(days=1)
+        while is_friday(day):
+            day += timedelta(days=1)
+        return day
+
+    def consequence(self, mid, pid, caused):
+        if caused:
+            self.mark(mid, pid)
+        else:
+            self.expose(mid, pid)
 
     def move(self, pid, t, kind, ref):
         state = self.p[pid]
@@ -195,9 +240,7 @@ class Simulation:
         if barcode is None and obs not in ("CONTAINER_SCAN", "CONTAINER_BAGGING"):
             barcode = state.parcel.label_barcode
         if barcode is not None and barcode == state.parcel.label_barcode != state.parcel.barcode:
-            flag = self.mech.parcel_flag(pid, "WRONG_LABEL_APPLIED")
-            if flag:
-                mech = [*mech, flag[0]]
+            mech = [*mech, self.wrong_label[pid]]
         return self.act("scan", t, pid=pid, sid=state.shipment.sid, device=device, obs=obs, facility=facility, barcode=barcode,
                         readable=readable, confidence=confidence, weight=weight, container=container, trip=trip,
                         route=route, vehicle=vehicle, mech=list(mech), bundle=bundle)
@@ -227,9 +270,12 @@ class Simulation:
                 self.at(local_dt(day, STOCK_CHECK), "stock_check", depot, day)
             day += timedelta(days=1)
         for city, district, start, end, factor, mid in self.mech.traffic:
-            provider_type = {"ROAD_CLOSURE": "CLOSURE", "ACCIDENT": "COLLISION", "HEAVY_CONGESTION": "CONGESTION"}[self.mech.items[mid].subtype]
-            self.act("traffic_event", start + timedelta(minutes=self.d.integer(4, 15, "traffic-pub", mid)), city=city, district=district,
-                     start=start, end=end, severity=self.d.weighted((("HIGH", .7), ("MODERATE", .3)), "traffic-sev", mid),
+            provider_type = {"ROAD_CLOSURE": "CLOSURE", "ACCIDENT": "COLLISION"}.get(self.mech.items[mid].subtype, "CONGESTION")
+            # The provider grades severity from the measured slow-down, with noise around its thresholds.
+            graded = factor + self.d.normal(0, .35, "traffic-sev", city, district, start.isoformat())
+            self.act("traffic_event", start + timedelta(minutes=self.d.integer(4, 15, "traffic-pub", city, district, start.isoformat())),
+                     city=city, district=district, start=start, end=end,
+                     severity="HIGH" if graded >= 2.6 else "MODERATE" if graded >= 1.5 else "LOW",
                      event_type=provider_type, factor=factor, mech=[mid])
         while self.heap:
             t, _, kind, args = heapq.heappop(self.heap)
@@ -244,11 +290,6 @@ class Simulation:
         if (shipment.recipient_kind == "Customer" and not self.mech.shipment_flag(sid, "WRONG_ADDRESS")
                 and self.d.chance(.025, "minor-correction", sid)):
             self.at(t + timedelta(hours=self.d.uniform(1, 20, "minor-correction-t", sid)), "minor_correction", sid)
-        for parcel in shipment.parcels:
-            flag = self.mech.parcel_flag(parcel.pid, "WRONG_LABEL_APPLIED")
-            if flag:
-                parcel.label_barcode = flag[1]["barcode"]
-                self.mark(flag[0], parcel.pid)
         self.status(sid, t, "CREATED", None)
         self.log(t, "booked", sid=sid)
 
@@ -259,6 +300,7 @@ class Simulation:
         first = None
         for n, parcel in enumerate(shipment.parcels):
             when = t + timedelta(seconds=25 * n)
+            self.print_label(parcel, facility, when)
             self.move(parcel.pid, when, "FACILITY", facility)
             self.hold(parcel.pid, when, facility)
             scan = self.scan(parcel.pid, when, device, "HANDHELD_RECEIPT", facility=facility)
@@ -268,6 +310,26 @@ class Simulation:
             self.at_origin[facility].append(parcel.pid)
         self.status(sid, t, "ACCEPTED", first)
         self.log(t, "handover", sid=sid, facility=facility)
+
+    def print_label(self, parcel, facility, when):
+        """The label put on the parcel at the origin counter. A printer batch gone wrong puts another order's label
+        on some parcels: the previous order's label again, or the label of an order that is not in this world."""
+        propensity, mid = self.mech.window("printer", facility, when)
+        previous = self.last_label.get(facility)
+        self.last_label[facility] = parcel.barcode
+        if not mid or not self.d.chance(propensity, "wrong-label", mid, parcel.pid):
+            return
+        if previous and previous != parcel.barcode and self.d.chance(.5, "wrong-label-kind", mid, parcel.pid):
+            parcel.label_barcode, self.label_source[parcel.pid] = previous, "other_parcel"
+        else:
+            serial, bump = int(parcel.barcode[2:10]), self.d.integer(1, 40, "wrong-label-near", mid, parcel.pid)
+            barcode = s10((serial + bump) % 90_000_000 + 10_000_000, parcel.barcode[:2])
+            while barcode in self.barcodes:
+                bump += 1
+                barcode = s10((serial + bump) % 90_000_000 + 10_000_000, parcel.barcode[:2])
+            parcel.label_barcode, self.label_source[parcel.pid] = barcode, "unknown_order"
+        self.wrong_label[parcel.pid] = mid
+        self.mark(mid, parcel.pid)
 
     # ------------------------------------------------------------------ first mile
     def _fm_start(self, t, tid):
@@ -307,6 +369,7 @@ class Simulation:
         if i == len(plan.stops) - 1:
             if not state.parcels:
                 state.cancelled = True
+                self.act("trip_event", t, trip=tid, event="CANCELLED", eta=None, vehicle=plan.vehicle, reason="NO_LOAD")
                 return
             last = self.net.facilities[facility]
             sort = self.net.facilities[plan.destination]
@@ -334,13 +397,29 @@ class Simulation:
         jitter = self.d.lognormal(360, .7, "dep-jitter", tid)
         if self.d.chance(.10, "dep-late", tid):
             jitter += self.d.uniform(900, 2700, "dep-late-s", tid)  # ordinary late departures (waiting for a dock or a driver)
-        actual = plan.scheduled_departure + timedelta(seconds=round(jitter))
+        hold = 0
+        if delay and delay[0] == "DEPARTURE_DELAY":
+            hold, state.delay_mid = delay[1], delay[3]
+        elif not delay and self.d.chance(.03, "dep-long", tid):
+            # An ordinary long hold (a late inbound connection, a driver swap): real-frequency variation. It is a cause
+            # only for the parcels it makes miss something.
+            hold = round(self.d.uniform(3000, 9000, "dep-long-s", tid))
+            state.delay_mid = self.mech.base("LATE_LINEHAUL", "DEPARTURE_DELAY", tid, plan.scheduled_departure,
+                                             plan.scheduled_arrival + timedelta(seconds=hold), trip=tid, delay_seconds=hold)
+        state.delay_seconds = hold
+        actual = plan.scheduled_departure + timedelta(seconds=round(jitter) + hold)
         free = self.vehicle_free.get(plan.vehicle)
         if free and free + timedelta(minutes=40) > actual:
             actual = free + timedelta(minutes=40)   # the truck is late from its previous run
-        if delay and delay[0] == "DEPARTURE_DELAY":
-            actual += timedelta(seconds=delay[1])
-            state.delay_mid = delay[3]
+        late_by = (actual - plan.scheduled_departure).total_seconds()
+        if late_by > 1500:
+            # While the truck is held at origin the carrier reports the delay with its own estimate of the new arrival.
+            guess = round(late_by * self.d.uniform(.6, 1.3, "hold-guess", tid) / 300) * 300
+            state.notice = self.act("trip_event", plan.scheduled_departure + timedelta(minutes=self.d.integer(3, 18, "hold-notice", tid)),
+                                    trip=tid, event="HELD_AT_ORIGIN", eta=plan.scheduled_arrival + timedelta(seconds=guess),
+                                    vehicle=plan.vehicle, reason=self.d.weighted((("LOADING_DELAY", .45), ("OTHER", .35), ("VEHICLE_ISSUE", .2)),
+                                                                                 "hold-reason", tid),
+                                    mech=[state.delay_mid] if state.delay_mid else [])
         self.at(actual, "depart_actual", tid)
 
     def _depart_actual(self, t, tid):
@@ -373,6 +452,7 @@ class Simulation:
         if not physical and not mis_in:
             if not assigned:
                 state.cancelled = True
+                self.act("trip_event", t, trip=tid, event="CANCELLED", eta=None, vehicle=plan.vehicle, reason="NO_LOAD")
                 return
         state.departed_at = t
         n = 0
@@ -395,14 +475,11 @@ class Simulation:
             start = t + timedelta(seconds=round(duration * delay[2]))
             breakdown = (start, start + timedelta(seconds=delay[1]))
             duration += delay[1]
-            state.delay_mid = delay[3]
+            state.delay_mid, state.delay_seconds = delay[3], delay[1]
         state.breakdown = breakdown
         arrival = t + timedelta(seconds=round(duration))
         state.arrived_at = arrival
         self.vehicle_free[plan.vehicle] = arrival + (arrival - t if plan.kind == "FEEDER" else timedelta(0))
-        if state.delay_mid:
-            for pid in state.parcels:
-                self.mark(state.delay_mid, pid)
         self.trip_events(state, t, arrival)
         self.at(arrival, "trip_arrive", tid)
 
@@ -410,19 +487,42 @@ class Simulation:
         plan = state.plan
         slip = (arrival - plan.scheduled_arrival).total_seconds()
         mid = [state.delay_mid] if state.delay_mid else []
-        self.act("trip_event", departed, trip=plan.id, event="DEPARTED", eta=plan.scheduled_arrival + timedelta(seconds=max(0, (departed - plan.scheduled_departure).total_seconds())),
-                 vehicle=plan.vehicle, mech=mid)
+        nominal = (plan.scheduled_arrival - plan.scheduled_departure).total_seconds()
+        stopped = (state.breakdown[1] - state.breakdown[0]).total_seconds() if state.breakdown else 0
+        driving = max(1.0, (arrival - departed).total_seconds() - stopped)
+
+        def estimate(now, remaining, *key):
+            """What the carrier knows when it reports: its nominal driving time for the distance left, to five minutes.
+            Never the simulated arrival."""
+            seconds = max(300, remaining * self.d.uniform(.93, 1.10, "eta", plan.id, *key))
+            eta = (now + timedelta(seconds=seconds)).replace(second=0, microsecond=0)
+            eta -= timedelta(minutes=eta.minute % 5)
+            return eta + timedelta(minutes=5) if eta == arrival else eta
+
+        self.act("trip_event", departed, trip=plan.id, event="DEPARTED", eta=estimate(departed, nominal, "dep"), vehicle=plan.vehicle, mech=mid)
         if state.breakdown:
             start, end = state.breakdown
+            left = nominal * max(0.0, 1 - (start - departed).total_seconds() / driving)
             when = start + timedelta(minutes=self.d.integer(15, 40, "bd-report", plan.id))
             reason = self.d.weighted((("VEHICLE_ISSUE", .6), ("OTHER", .4)), "bd-reason", plan.id)
-            self.act("trip_event", when, trip=plan.id, event="ETA_REVISED", eta=arrival, vehicle=plan.vehicle, reason=reason, mech=mid)
+            # First report: the driver's guess of the repair time. Second: back on the road.
+            guess = stopped * self.d.uniform(.4, 1.5, "bd-guess", plan.id)
+            if when < end:
+                self.act("trip_event", when, trip=plan.id, event="ETA_REVISED", eta=estimate(start + timedelta(seconds=guess), left, "bd1"),
+                         vehicle=plan.vehicle, reason=reason, mech=mid)
+            again = end + timedelta(minutes=self.d.integer(2, 12, "bd-resume", plan.id))
+            if again < arrival:
+                self.act("trip_event", again, trip=plan.id, event="ETA_REVISED", eta=estimate(end, left, "bd2"), vehicle=plan.vehicle,
+                         reason=reason, mech=mid)
         elif slip > 1800:
             reason = (self.d.weighted((("LOADING_DELAY", .45), ("OTHER", .35), ("TRAFFIC", .2)), "slip-reason", plan.id) if state.delay_mid
                       else self.d.weighted((("TRAFFIC", .4), ("LOADING_DELAY", .35), ("OTHER", .2), ("VEHICLE_ISSUE", .05)), "slip-reason", plan.id))
-            self.act("trip_event", departed + timedelta(minutes=self.d.integer(5, 25, "slip-report", plan.id)), trip=plan.id,
-                     event="ETA_REVISED", eta=arrival, vehicle=plan.vehicle, reason=reason, mech=mid)
-        self.act("trip_event", arrival, trip=plan.id, event="ARRIVED", eta=arrival, vehicle=plan.vehicle, mech=mid)
+            when = departed + timedelta(minutes=self.d.integer(5, 25, "slip-report", plan.id))
+            if when < arrival:
+                self.act("trip_event", when, trip=plan.id, event="ETA_REVISED",
+                         eta=estimate(when, nominal * max(0.0, 1 - (when - departed).total_seconds() / driving), "slip"),
+                         vehicle=plan.vehicle, reason=reason, mech=mid)
+        self.act("trip_event", arrival, trip=plan.id, event="ARRIVED", eta=None, vehicle=plan.vehicle, mech=mid)
         # Vehicle positions every 30 minutes (vehicle position only, never a parcel position).
         origin, destination = self.net.facilities[plan.origin], self.net.facilities[plan.destination]
         moving = (arrival - departed).total_seconds() - ((state.breakdown[1] - state.breakdown[0]).total_seconds() if state.breakdown else 0)
@@ -473,7 +573,15 @@ class Simulation:
                                      mech=[m for m in unexpected if m])
                     # The receiving hub records the truck it unloaded.
                     self.custody_act(pid, when, "RECEIVED", plan.vehicle, destination, scan, facility=destination, vehicle=plan.vehicle, trip=tid)
-                self.crossdock(c, unload + timedelta(seconds=15 * n))
+                ready = unload + timedelta(seconds=15 * n)
+                self.crossdock(c, ready)
+                if state.delay_mid:
+                    # A late truck is a cause only for the parcels it makes miss their onward connection or their deadline here.
+                    earlier = ready - timedelta(seconds=state.delay_seconds)
+                    onward, without = self.onward_trip(c, destination, ready), self.onward_trip(c, destination, earlier)
+                    missed = (onward.id if onward else None) != (without.id if without else None)
+                    for pid in c.parcels:
+                        self.consequence(state.delay_mid, pid, missed or self.breached(pid, "RECEIVED", destination, ready, earlier))
         else:  # a depot: bags are opened and every parcel is scanned in, in arrival order
             for cid in loaded:
                 c = self.containers[cid]
@@ -483,16 +591,20 @@ class Simulation:
                     slot = self.serve(destination, c.opened_at, pid)
                     self.p[pid].expected_shelf_at = slot
                     self.at(slot, "receive", pid, destination, tid, cid)
+                    if state.delay_mid:
+                        earlier = slot - timedelta(seconds=state.delay_seconds)
+                        self.consequence(state.delay_mid, pid, self.route_day(slot) != self.route_day(earlier)
+                                         or self.breached(pid, "RECEIVED", destination, slot, earlier))
 
-    def crossdock(self, c, ready):
-        hub = c.timeline[-1][2]
+    def onward_trip(self, c, hub, ready):
+        """The trip a container ready at a hub at `ready` goes out on (no side effects)."""
         depot_region_hub = self.net.region_hub(self.net.facilities[c.depot].city)
         if depot_region_hub == hub:
-            lane = self.net.feeder_lane(c.depot)
-            trip = self.net.next_trip(lane.id, ready)
-        else:
-            lane = self.net.linehaul_lane(hub, depot_region_hub)
-            trip = self.net.next_trip(lane.id, ready + timedelta(minutes=30))
+            return self.net.next_trip(self.net.feeder_lane(c.depot).id, ready)
+        return self.net.next_trip(self.net.linehaul_lane(hub, depot_region_hub).id, ready + timedelta(minutes=30))
+
+    def crossdock(self, c, ready):
+        trip = self.onward_trip(c, c.timeline[-1][2], ready)
         if trip is None:
             c.trip = None
             return
@@ -512,38 +624,40 @@ class Simulation:
             self.trip_assign(pid, trip.id, t)
 
     # ------------------------------------------------------------------ facilities
-    def capacity(self, facility, t):
+    def staffed(self, facility, t):
+        """Capacity the shift on duty at t can process per hour (before any fault)."""
         f = self.net.facilities[facility]
         base = f.capacity_per_hour or 60
         hour = local_hour(t)
-        factor = 1.0
         for start, end, value in f.shifts:
             a, b = _hours(start), _hours(end)
-            inside = a <= hour < b if a < b else (hour >= a or hour < b)
-            if inside:
-                factor = value
-                break
+            if a <= hour < b if a < b else (hour >= a or hour < b):
+                return base * value
+        return base * 1.0
+
+    def capacity(self, facility, t):
         backlog, mid = self.mech.backlog_at(facility, t)
-        return base * factor * backlog, mid
+        return self.staffed(facility, t) * backlog, mid
 
     def serve(self, facility, ready, pid):
-        """FIFO single server with a time-varying rate: processing never exceeds hourly capacity."""
+        """FIFO single server with a time-varying rate: processing never exceeds hourly capacity.
+
+        A shadow queue serves the same arrivals as if no backlog had ever acted at this facility; the difference is
+        what the backlog cost this parcel. Whether that cost is a cause is decided where the parcel goes next (a
+        missed departure, route or deadline), not here."""
         start = max(ready, self.server_free.get(facility, ready))
         rate, mid = self.capacity(facility, start)
-        service = 3600.0 / max(rate, .5)
-        done = start + timedelta(seconds=round(service * self.d.uniform(.85, 1.15, "svc", facility, pid)))
+        draw = self.d.uniform(.85, 1.15, "svc", facility, pid)
+        done = start + timedelta(seconds=round(3600.0 / max(rate, .5) * draw))
         self.server_free[facility] = done
-        # Delay beyond an ordinary service at nominal capacity: a backlog touches the parcel when it costs a
-        # quarter of an hour or more, during the backlog or in the queue it leaves behind.
-        nominal = 3600.0 / max(rate / self.mech.backlog_at(facility, start)[0], .5)
-        extra = (done - ready).total_seconds() - nominal * 1.15
-        if extra > 900:
-            if mid:
-                self.mark(mid, pid)
-            else:
-                for row in self.mech.backlog.get(facility, ()):
-                    if row[0] <= ready <= row[1] + timedelta(hours=6):
-                        self.mark(row[3], pid)
+        shadow_start = max(ready, self.server_free_cf.get(facility, ready))
+        shadow = shadow_start + timedelta(seconds=round(3600.0 / max(self.staffed(facility, shadow_start), .5) * draw))
+        self.server_free_cf[facility] = shadow
+        self.cf_slot[(facility, pid)] = (shadow, None)
+        if (done - shadow).total_seconds() >= 60:
+            if not mid:
+                mid = next((row[3] for row in self.mech.backlog.get(facility, ()) if row[0] <= ready <= row[1] + timedelta(hours=8)), None)
+            self.cf_slot[(facility, pid)] = (shadow, mid)
         hour = done.replace(minute=0, second=0, microsecond=0)
         self.processed[(facility, hour)] += 1
         self.service_log[facility].append((ready, done, pid))
@@ -556,14 +670,13 @@ class Simulation:
         reader = facility.devices["SORTER_READER"]
         handheld = facility.devices["FACILITY_HANDHELD"]
         key = ("induct", pid, t.isoformat())
-        misread = self.mech.parcel_flag(pid, "LABEL_MISREAD")
+        misread = self.misread(reader, t, pid)
         source = None
-        if misread and misread[1].get("stage") == "sort" and not misread[1].get("done"):
-            misread[1]["done"] = True
-            wrong = _mutate(parcel.label_barcode, self.d, pid)
+        if misread:
+            wrong = _mutate(parcel.label_barcode, self.d, pid, t.isoformat())
             self.scan(pid, t, reader, "SORTER_READ", facility=sort, barcode=wrong, confidence=round(self.d.uniform(.91, .97, *key, "c"), 3),
-                      mech=[misread[0]])
-            self.mark(misread[0], pid)
+                      mech=[misread])
+            self.mark(misread, pid)
             manual = t + timedelta(minutes=self.d.integer(2, 9, *key, "manual"))
             source = self.scan(pid, manual, handheld, "HANDHELD_EXCEPTION_SCAN", facility=sort)
             when = manual
@@ -584,19 +697,22 @@ class Simulation:
         line = 1 + int(self.d.u("line", pid) * 2)
         scale = f"DEMO-DEV-SCL-{sort.removeprefix('DEMO-')}-{line}"
         drift, drift_mid = self.mech.drift_at(scale, t)
-        measured = parcel.true_kg * (1 + self.d.normal(0, .012, *key, "w") + drift)
-        state.sort_weight = round(max(.01, measured), 2)
+        noise = self.d.normal(0, .012, *key, "w")
+        state.sort_weight = round(max(.01, parcel.true_kg * (1 + noise + drift)), 2)
         state.sort_drift_mid = drift_mid
         self.scan(pid, t + timedelta(seconds=8), scale, "SCALE_WEIGH", facility=sort, weight=state.sort_weight,
                   mech=[drift_mid] if drift_mid else [])
+        # A weight fault is a cause only when the weighing breaches the tolerance the monitor applies (and, for a
+        # drifting scale, when a true weighing would not have).
+        tolerance = max(.5, parcel.declared_kg * .1)
+        off = abs(state.sort_weight - parcel.declared_kg) > tolerance + 1e-9
+        true_off = abs(round(max(.01, parcel.true_kg * (1 + noise)), 2) - parcel.declared_kg) > tolerance + 1e-9
         if drift_mid:
-            self.mark(drift_mid, pid)
+            self.consequence(drift_mid, pid, off and not true_off)
         flag = self.mech.parcel_flag(pid, "DECLARED_WEIGHT_WRONG")
         if flag:
-            self.mark(flag[0], pid)
+            self.consequence(flag[0], pid, true_off)
             self.acts[-1]["mech"].append(flag[0])
-        if parcel.label_barcode != parcel.barcode:
-            self.mark(self.mech.parcel_flag(pid, "WRONG_LABEL_APPLIED")[0], pid)
         previous = state.last_custody_to
         self.custody_act(pid, when, "RECEIVED", previous if previous and previous.startswith("DEMO-VEH") else self.net.trips[tid].vehicle,
                          sort, source, facility=sort, vehicle=self.net.trips[tid].vehicle, trip=tid)
@@ -604,25 +720,46 @@ class Simulation:
         if state.receipts == 0:
             self.status(state.shipment.sid, when, "IN_TRANSIT", source)
         state.receipts += 1
-        missort = self.mech.parcel_flag(pid, "MISSORT")
-        if missort and not missort[1].get("done"):
-            missort[1]["done"] = True
-            state.routed_depot = missort[1]["depot"]
-            state.missort_mid = missort[0]
-            self.mark(missort[0], pid)
-        self.bag(pid, sort, when + timedelta(minutes=self.d.integer(1, 4, *key, "bag")))
+        propensity, chute = self.mech.window("chute", sort, t)
+        if chute and state.receipts == 1 and self.mech.items[chute].params["depot"] != state.routed_depot \
+                and self.d.chance(propensity, "wrong-chute", chute, pid):
+            # A sorter chute mapped to the wrong lane: parcels inducted in the window land in another depot's bag.
+            state.routed_depot = self.mech.items[chute].params["depot"]
+            state.missort_mid = chute
+            self.mark(chute, pid)
+        bag_at = when + timedelta(minutes=self.d.integer(1, 4, *key, "bag"))
+        shadow, backlog = self.cf_slot.pop((sort, pid), (t, None))
+        if backlog:
+            earlier = bag_at - (t - shadow)
+            actual_trip, without = self.bag_trip(pid, sort, bag_at), self.bag_trip(pid, sort, earlier)
+            self.consequence(backlog, pid, (actual_trip.id if actual_trip else None) != (without.id if without else None)
+                             or self.breached(pid, "RECEIVED", sort, when, when - (t - shadow)))
+        self.bag(pid, sort, bag_at)
+
+    def misread(self, device, t, pid):
+        """mid when this read of the label goes wrong: a reader with a dirty lens or a worn head misreads a share of
+        the labels it sees in its window; any reader misreads the odd label (ordinary variation, one instance a day)."""
+        propensity, mid = self.mech.window("reader", device, t)
+        if mid and self.d.chance(propensity, "misread", mid, pid, t.isoformat()):
+            return mid
+        if self.d.chance(.004, "misread-ordinary", device, pid, t.isoformat()):
+            day = local_date(t)
+            return self.mech.base("LABEL_MISREAD", "ORDINARY_MISREAD", (device, day.isoformat()), local_dt(day, "00:00"),
+                                  local_dt(day + timedelta(days=1), "00:00"), device=device)
+        return None
+
+    def bag_trip(self, pid, facility, when):
+        """The trip a parcel bagged at a sort at `when` is booked on (no side effects)."""
+        depot = self.p[pid].routed_depot
+        region_hub = self.net.region_hub(self.net.facilities[facility].city)
+        depot_hub = self.net.region_hub(self.net.facilities[depot].city)
+        lane = self.net.feeder_lane(depot) if region_hub == depot_hub else self.net.linehaul_lane(region_hub, depot_hub)
+        return self.net.next_trip(lane.id, when + timedelta(minutes=10))
 
     def bag(self, pid, facility, when):
         state = self.p[pid]
         depot = state.routed_depot
-        region_hub = self.net.region_hub(self.net.facilities[facility].city)
-        depot_hub = self.net.region_hub(self.net.facilities[depot].city)
-        if region_hub == depot_hub:
-            lane = self.net.feeder_lane(depot)
-            trip = self.net.next_trip(lane.id, when + timedelta(minutes=10))
-        else:
-            lane = self.net.linehaul_lane(region_hub, depot_hub)
-            trip = self.net.next_trip(lane.id, when + timedelta(minutes=10))
+        trip = self.bag_trip(pid, facility, when)
         if trip is None:
             return  # Beyond the simulated schedule: the parcel waits at the sort.
         key = (facility, depot, trip.id)
@@ -663,13 +800,14 @@ class Simulation:
         c.timeline.append([t, "FACILITY", hub])
         c.hub_ready_at = t
         device = self.net.facilities[hub].devices["FACILITY_HANDHELD"]
+        # A dock clerk who waves containers through in a shift: the whole container arrives without receipt scans.
+        propensity, skip = self.mech.window("clerk", hub, t)
+        skip = skip if skip and self.d.chance(propensity, "skip-receipt", skip, cid) else None
         for n, pid in enumerate(c.parcels):
             when = t + timedelta(seconds=12 * n)
             self.hold(pid, when, hub)
-            skip = self.mech.parcel_flag(pid, "SCAN_SKIPPED_AT_RECEIPT")
-            if skip and skip[1].get("stage") == "hub" and not skip[1].get("done"):
-                skip[1]["done"] = True
-                self.mark(skip[0], pid)
+            if skip:
+                self.mark(skip, pid)
                 self.log(when, "received_unscanned", pid=pid, hub=hub)
                 continue
             scan = self.scan(pid, when, device, "CONTAINER_SCAN", facility=hub, container=cid)
@@ -684,18 +822,20 @@ class Simulation:
         state.expected_shelf_at = None
         device = self.net.facilities[depot].devices["FACILITY_HANDHELD"]
         vehicle = self.net.trips[tid].vehicle if tid in self.net.trips else self.trips[tid].plan.vehicle
-        skip = self.mech.parcel_flag(pid, "SCAN_SKIPPED_AT_RECEIPT")
-        misread = self.mech.parcel_flag(pid, "LABEL_MISREAD")
-        if skip and skip[1].get("stage") == "depot" and not skip[1].get("done"):
-            skip[1]["done"] = True
-            self.mark(skip[0], pid)
+        propensity, skip = self.mech.window("clerk", depot, t)
+        shadow, backlog = self.cf_slot.pop((depot, pid), (t, None))
+        if backlog:
+            self.consequence(backlog, pid, self.route_day(t) != self.route_day(shadow) or self.breached(pid, "RECEIVED", depot, t, shadow))
+        if skip and self.d.chance(propensity, "skip-receipt", skip, pid):
+            self.mark(skip, pid)
             self.log(t, "received_unscanned", pid=pid, depot=depot)
         else:
             mech, barcode, confidence = [], None, None
-            if misread and misread[1].get("stage") == "depot" and not misread[1].get("done"):
-                misread[1]["done"] = True
-                barcode, confidence, mech = _mutate(state.parcel.label_barcode, self.d, pid), round(self.d.uniform(.91, .97, "mr", pid), 3), [misread[0]]
-                self.mark(misread[0], pid)
+            misread = self.misread(device, t, pid)
+            if misread:
+                barcode, confidence, mech = (_mutate(state.parcel.label_barcode, self.d, pid, t.isoformat()),
+                                             round(self.d.uniform(.91, .97, "mr", pid, t.isoformat()), 3), [misread])
+                self.mark(misread, pid)
             if depot != state.target_depot and getattr(state, "missort_mid", None):
                 mech = [*mech, state.missort_mid]
             scan = self.scan(pid, t, device, "HANDHELD_RECEIPT", facility=depot, barcode=barcode, confidence=confidence, trip=tid,
@@ -806,6 +946,8 @@ class Simulation:
             state = self.p[pid]
             if state.timeline[-1][1:] != ["FACILITY", depot]:
                 continue
+            if getattr(state, "pending_reconcile", None) and self.d.chance(.5, "returns-cage", pid, day.isoformat()):
+                continue   # Still in the returns cage, not on a shelf: this evening's stock check does not see it.
             when = t + timedelta(seconds=30 * n)
             scan = self.scan(pid, when, device, "INVENTORY_CHECK", facility=depot)
             if state.last_custody_to != depot:
@@ -925,23 +1067,23 @@ class Simulation:
         late = []
         for pid in route.parcels:
             state = self.p[pid]
-            ready = state.expected_shelf_at or state.shelf_since or when
+            # A parcel still being scanned in is ready once it is shelved (and check-weighed, if it is picked for that).
+            ready = state.expected_shelf_at + timedelta(minutes=10) if state.expected_shelf_at else state.shelf_since or when
             slot = max(when + timedelta(seconds=self.d.integer(35, 95, "ld", rid, pid)), ready + timedelta(minutes=2))
             if slot > window_end:
                 late.append(pid)   # Not on the shelf in time: the dispatcher drops it from this route.
                 continue
             when = slot
-            flag = self.mech.parcel_flag(pid, "ASSIGNED_NOT_LOADED")
-            if flag and not flag[1].get("done"):
-                flag[1]["done"] = True
+            flag = route.mechs.get("ASSIGNED_NOT_LOADED")
+            if flag and self.d.chance(flag[1]["p"], "left-on-shelf", flag[0], pid):
                 self.mark(flag[0], pid)
-                continue           # Left on the shelf; nobody notices at loading.
+                continue           # A rushed loading: left on the shelf; nobody notices.
             self.at(slot, "load_parcel", rid, pid)
             route.loaded.append(pid)
         depart = when + timedelta(minutes=self.d.integer(5, 12, "depart", rid))
         route.departed_at = depart
         revision = route.mechs.get("MANIFEST_ERROR")
-        if revision or late or self.d.chance(.12, "revise", rid):
+        if revision or late or self.d.chance(.30, "revise", rid):
             # Version 2 of the route manifest: every shipment on the route gets its line, changed or not.
             at = depart - timedelta(minutes=self.d.integer(2, 6, "rev", rid))
             dropped, mid = None, None
@@ -996,8 +1138,9 @@ class Simulation:
         route.position = (depot.lat, depot.lng)
         route.clock = t
         route.cursor = 0
-        route.early_end = (local_dt(route.date, "13:00") + timedelta(minutes=self.d.integer(0, 240, "early-end-t", rid))
-                           if self.d.chance(.04, "early-end", rid) else None)   # A personal or vehicle problem cuts the shift short.
+        route.early_end = (local_dt(route.date, "09:30") + timedelta(minutes=self.d.integer(0, 240, "early-end-t", rid))
+                           if self.d.chance(.07, "early-end", rid) else None)   # A personal or vehicle problem cuts the shift short.
+        route.traffic_delay = defaultdict(float)   # mid -> seconds this route lost to that incident so far
         self.at(t, "route_next", rid)
 
     def _route_next(self, t, rid):
@@ -1025,6 +1168,12 @@ class Simulation:
                     target.stops.append({**stop, "foreign": True, "mech": handoff[0]})
                 self.log(t, "unrecorded_handoff", from_route=rid, to_route=target.rid, parcels=[p for s in moved for p in s["pids"]])
                 t = t + timedelta(minutes=15)
+        retains = route.mechs.get("CONTRACTOR_RETAINS")
+        if retains and retains[1].get("quit_after") is not None and retains[1]["quit_after"] <= route.cursor < len(route.stops):
+            # The driver leaves the route with the remaining parcels on board: no more stops, no records, no return.
+            route.quit_at = t
+            self.at(t, "route_end", rid)
+            return
         if route.cursor >= len(route.stops):
             back = road_km(*route.position, depot.lat, depot.lng, urban=True)
             arrival = t + timedelta(seconds=round(back / 28 * 3600))
@@ -1032,27 +1181,61 @@ class Simulation:
             return
         stop = route.stops[route.cursor]
         shipment = self.shipments[stop["sid"]]
-        point = self.misdelivery_point(shipment) or self.stop_point(shipment, t)
+        if "misdelivery" not in stop:
+            stop["misdelivery"] = self.misdelivery(shipment, route)
+        point = stop["misdelivery"][1] if stop["misdelivery"] else self.stop_point(shipment, t)
         distance = road_km(*route.position, *point, urban=True)
         speed = 28 * self.d.uniform(.8, 1.2, "speed", rid, route.cursor) * _rush(t)
         district = shipment.recipient["district"]
+        if not stop.get("foreign") and self.d.chance(.02, "stop-skipped", rid, stop["sid"]):
+            # An ordinary skipped stop (no parking, a booked window missed): recorded as not attempted, tried again next session.
+            for pid in stop["pids"]:
+                self.not_attempted(route, stop, pid, t)
+            route.cursor += 1
+            self.at(t + timedelta(minutes=self.d.integer(1, 4, "stop-skipped-t", rid, stop["sid"])), "route_next", rid)
+            return
         factor, mid = self.mech.traffic_at(city, district, t)
+        if mid and factor >= CLOSED_ROAD:
+            # The road into the district is closed. The driver leaves the stop for later; if it is still closed when
+            # everything else is done, the stop cannot be attempted today and the closure is the cause.
+            if not stop.get("deferred"):
+                stop["deferred"] = True
+                route.stops.append(route.stops.pop(route.cursor))
+                self.at(t, "route_next", rid)
+                return
+            for pid in stop["pids"]:
+                self.not_attempted(route, stop, pid, t, mech=[mid])
+                self.mark(mid, pid)
+            route.cursor += 1
+            self.at(t + timedelta(minutes=self.d.integer(2, 6, "blocked", rid, route.cursor)), "route_next", rid)
+            return
         travel = distance / speed * 3600 * factor
         arrive = t + timedelta(seconds=round(travel))
         if mid and factor > 1:
+            route.traffic_delay[mid] += travel * (1 - 1 / factor)
             for pid in stop["pids"]:
-                self.mark(mid, pid)
+                self.expose(mid, pid)   # Slower, nothing more, unless the route runs out of time because of it (below).
         back = road_km(*point, depot.lat, depot.lng, urban=True) / 28 * 3600
         if arrive + timedelta(minutes=8) + timedelta(seconds=back) > session_end or (route.early_end and arrive > route.early_end):
-            # Out of time: the remaining stops are recorded as not attempted and come back to the depot.
+            # Out of time: the remaining stops are recorded as not attempted and come back to the depot. Traffic is
+            # the cause for the stops this route would still have reached without the time it lost to the incident.
+            lost = sum(route.traffic_delay.values())
+            culprit = max(route.traffic_delay, key=lambda m: (route.traffic_delay[m], m)) if lost > 0 else None
+            shadow_t, shadow_at = t - timedelta(seconds=lost), route.position
             for rest in route.stops[route.cursor:]:
+                there = self.stop_point(self.shipments[rest["sid"]], t)
+                shadow_arrive = shadow_t + timedelta(seconds=road_km(*shadow_at, *there, urban=True) / 28 * 3600)
+                home = timedelta(seconds=road_km(*there, depot.lat, depot.lng, urban=True) / 28 * 3600)
+                reached = bool(culprit) and shadow_arrive + timedelta(minutes=8) + home <= session_end and not (
+                    route.early_end and shadow_arrive > route.early_end)
                 for pid in rest["pids"]:
-                    self.not_attempted(route, rest, pid, t)
-                    if mid:
-                        self.mark(mid, pid)
-                    for row in self.mech.traffic:
-                        if row[0] == city and row[2] <= t <= row[3] + timedelta(hours=2):
-                            self.mark(row[5], pid)
+                    self.not_attempted(route, rest, pid, t, mech=[culprit] if reached else [])
+                    if reached:
+                        self.mark(culprit, pid)
+                if reached:
+                    shadow_t, shadow_at = shadow_arrive + timedelta(minutes=6), there
+                else:
+                    culprit = None
             route.cursor = len(route.stops)
             self.at(t, "route_next", rid)
             return
@@ -1062,19 +1245,23 @@ class Simulation:
         route.cursor += 1
         self.at(finish, "route_next", rid)
 
-    def misdelivery_point(self, shipment):
-        flag = self.mech.shipment_flag(shipment.sid, "MISDELIVERY")
-        if flag and not flag[1].get("done"):
-            home = shipment.recipient["home"]
-            return offset_point(home[0], home[1], flag[1]["north_km"], flag[1]["east_km"])
-        return None
+    def misdelivery(self, shipment, route):
+        """(mid, point) when this driver, on this route, leaves this parcel at a wrong building nearby; else None.
+        A driver new to an area does it at several of the day's stops."""
+        flag = route.mechs.get("MISDELIVERY")
+        if not flag or shipment.recipient_kind != "Customer" or not self.d.chance(flag[1]["p"], "wrong-building", flag[0], shipment.sid):
+            return None
+        distance = self.d.uniform(.08, .45, "wrong-building-km", flag[0], shipment.sid)
+        angle = self.d.uniform(0, 2 * math.pi, "wrong-building-angle", flag[0], shipment.sid)
+        home = shipment.recipient["home"]
+        return flag[0], offset_point(home[0], home[1], distance * math.cos(angle), distance * math.sin(angle))
 
-    def not_attempted(self, route, stop, pid, t):
+    def not_attempted(self, route, stop, pid, t, mech=()):
         state = self.p[pid]
         state.attempts += 1
         attempt = self.act("attempt", t, pid=pid, sid=stop["sid"], route=route.rid, vehicle=route.vehicle, driver=route.driver,
                            device=route.device, disposition="FAILED", reason="NOT_ATTEMPTED_TIME", gate=None,
-                           address=self.address_tag(state.shipment, t), point=None)
+                           address=self.address_tag(state.shipment, t), point=None, mech=list(mech))
         state.last_attempt = attempt
         state.last_attempt_failed = True
 
@@ -1105,7 +1292,7 @@ class Simulation:
         foreign = stop.get("foreign", False)
         device = route.device
         # --- where the driver actually stands
-        misdelivery = self.mech.shipment_flag(sid, "MISDELIVERY")
+        misdelivery = stop.get("misdelivery")
         wrong_address = self.mech.shipment_flag(sid, "WRONG_ADDRESS")
         at_old_address = wrong_address and self.address_tag(shipment, t) == "v1"
         gate_flag = self.mech.shipment_flag(sid, "WRONG_GATE")
@@ -1118,12 +1305,7 @@ class Simulation:
                 for pid in pids:
                     self.mark(gate_flag[0], pid)
         available, unavailable_mid = self.available(shipment, t, attempt_no)
-        neighbour_flag = self.mech.shipment_flag(sid, "NEIGHBOUR_RECEIVES")
-        if neighbour_flag and not neighbour_flag[1].get("done"):
-            available = False   # The recipient has stepped out; a neighbour offers to take the parcel.
-        if unavailable_mid:
-            for pid in pids:
-                self.mark(unavailable_mid, pid)
+        absent = False          # The attempt failed because nobody was there to receive (and for no other reason).
         otp_mode = None
         online = self.mech.down(device, t) is None
         if shipment.otp_required:
@@ -1134,12 +1316,12 @@ class Simulation:
                 otp_mode = "OTP"
         outcome, reason, recipient_type, receiver, auth_result, signer = None, None, None, None, None, None
         contact_result = None
-        mech_fields = [unavailable_mid] if unavailable_mid else []
+        mech_fields = []
         if foreign and stop.get("mech"):
             mech_fields.append(stop["mech"])
         notes = {}
         routine = None
-        if shipment.recipient_kind == "Customer" and attempt_no == 1 and not at_old_address and not (misdelivery and not misdelivery[1].get("done")):
+        if shipment.recipient_kind == "Customer" and attempt_no == 1 and not at_old_address and not misdelivery:
             if self.d.chance(.015, *key, "bg-address"):
                 routine = "ADDRESS_NOT_FOUND"
             elif self.d.chance(.05 if gates else .01, *key, "bg-access"):
@@ -1162,8 +1344,7 @@ class Simulation:
                 if self.d.chance(.85, *key, "corr-happens"):
                     wrong_address[1]["correction_at"] = t + timedelta(seconds=round(min(delay, 30 * 3600)))
                     self.at(wrong_address[1]["correction_at"], "correction", sid)
-        elif misdelivery and not misdelivery[1].get("done"):
-            misdelivery[1]["done"] = True
+        elif misdelivery:
             for pid in pids:
                 self.mark(misdelivery[0], pid)
             mech_fields.append(misdelivery[0])
@@ -1200,10 +1381,10 @@ class Simulation:
                 recipient_type, receiver = "EXPECTED_RECIPIENT", "RECIPIENT"
         else:
             contact_result = "ANSWERED" if self.d.chance(.55 if not unavailable_mid else .25, *key, "call") else "NO_RESPONSE"
-            neighbour = self.mech.shipment_flag(sid, "NEIGHBOUR_RECEIVES")
+            # Some drivers hand a parcel to whoever is next door when the recipient is out (a driver's habit on a route).
+            neighbour = route.mechs.get("NEIGHBOUR_RECEIVES")
             pref = shipment.recipient["preference"]
-            if neighbour and not neighbour[1].get("done"):
-                neighbour[1]["done"] = True
+            if neighbour and shipment.recipient_kind == "Customer" and self.d.chance(neighbour[1]["p"], "next-door", neighbour[0], sid):
                 for pid in pids:
                     self.mark(neighbour[0], pid)
                 mech_fields.append(neighbour[0])
@@ -1227,8 +1408,16 @@ class Simulation:
                     outcome, recipient_type, receiver = "DELIVERED", "LEFT_AT_DOOR", "DOOR"
                 else:
                     outcome, reason = "FAILED", "CUSTOMER_REQUESTED_RESCHEDULE"
+                    absent = True
             else:
                 outcome, reason = "FAILED", "RECIPIENT_NOT_REACHED"
+                absent = True
+        if unavailable_mid:
+            # A recipient away for days is the cause of the failed attempts it produces; otherwise it only was there.
+            if absent:
+                mech_fields.append(unavailable_mid)
+            for pid in pids:
+                self.consequence(unavailable_mid, pid, absent)
         # --- one-time code
         otp_failed = False
         if outcome == "DELIVERED" and otp_mode == "OTP" and receiver == "OCCUPANT":
@@ -1279,10 +1468,11 @@ class Simulation:
         elif outcome == "DELIVERED" and otp_mode == "PIN" and receiver in ("RECIPIENT", "FAMILY"):
             auth_result = "PASS"
         # --- records of the attempt
-        scan_skipped = self.mech.shipment_flag(sid, "DELIVERY_SCAN_SKIPPED")
-        skip_records = outcome == "DELIVERED" and scan_skipped and not scan_skipped[1].get("done") and receiver in ("RECIPIENT", "FAMILY", "DOOR")
+        # A driver who does not finish the app flow at the door does it at several stops of the day.
+        scan_skipped = route.mechs.get("DELIVERY_SCAN_SKIPPED")
+        skip_records = bool(outcome == "DELIVERED" and scan_skipped and receiver in ("RECIPIENT", "FAMILY", "DOOR")
+                            and self.d.chance(scan_skipped[1]["p"], "app-flow", scan_skipped[0], sid))
         if skip_records:
-            scan_skipped[1]["done"] = True
             for pid in pids:
                 self.mark(scan_skipped[0], pid)
         person = None
@@ -1294,11 +1484,8 @@ class Simulation:
         holder = {"RECIPIENT": shipment.recipient_id, "FAMILY": person, "DOOR": shipment.recipient_id, "RECEPTION": person,
                   "NEIGHBOUR_AUTHORIZED": person, "NEIGHBOUR_UNAUTHORIZED": person,
                   "OCCUPANT": person or f"PRIVATE-OCCUPANT-{sid}"}.get(receiver)
-        point = self.misdelivery_point(shipment) if receiver == "OCCUPANT" else None
         if receiver == "OCCUPANT":
-            home = shipment.recipient["home"]
-            flag = self.mech.shipment_flag(sid, "MISDELIVERY")
-            point = offset_point(home[0], home[1], flag[1]["north_km"], flag[1]["east_km"])
+            point = misdelivery[1]
         else:
             point = self.stop_point(shipment, t) if not at_old_address else shipment.recipient["registered_point"]
         if outcome == "FAILED" and reason not in ("NOT_ATTEMPTED_TIME", None) and self.d.chance(.08, *key, "reason-other"):
@@ -1392,7 +1579,8 @@ class Simulation:
         route = self.routes[rid]
         depot = self.net.facilities[route.depot]
         route.returned_at = t
-        route.timeline.append((t, depot.lat, depot.lng, "RETURN"))
+        if getattr(route, "quit_at", None) is None:
+            route.timeline.append((t, depot.lat, depot.lng, "RETURN"))
         retains = route.mechs.get("CONTRACTOR_RETAINS")
         handheld = depot.devices["FACILITY_HANDHELD"]
         on_board = [pid for pid in route.loaded + route.handed_in if pid not in route.handed_out
@@ -1419,10 +1607,9 @@ class Simulation:
             state.shelf_since = when
             if state.attempts >= MAX_ATTEMPTS:
                 state.held = True
-            flag = self.mech.parcel_flag(pid, "RETURN_SCAN_SKIPPED")
-            if flag and not flag[1].get("done"):
-                flag[1]["done"] = True
-                self.mark(flag[0], pid)
+            flag = route.mechs.get("RETURN_SCAN_SKIPPED")
+            if flag and self.d.chance(flag[1]["p"], "check-in", flag[0], pid):
+                self.mark(flag[0], pid)   # The check-in was waved through: back on the shelf without a return scan.
                 state.pending_reconcile = (rid, getattr(state, "last_attempt", None))
                 self.log(when, "returned_unscanned", pid=pid, route=rid)
                 continue
@@ -1439,7 +1626,8 @@ class Simulation:
                 statuses.setdefault(self.p[pid].shipment.sid, receipt)
         for sid in sorted(statuses):
             self.status(sid, self.acts_by_id(statuses[sid])["t"], "RETURNED_TO_DEPOT", statuses[sid])
-        self.reconcile_route(route, t + timedelta(minutes=8), exclude=set())
+        # The depot reconciles the session once every returned parcel has been checked in.
+        self.reconcile_route(route, t + timedelta(minutes=8, seconds=40 * len(on_board)), exclude=set())
 
     def reconcile_route(self, route, t, exclude):
         n = 0
@@ -1502,10 +1690,12 @@ def _rush(t):
     return .75 if 7 <= hour < 9 or 16 <= hour < 19 else 1.0
 
 
-def _mutate(barcode, draws, pid):
-    """One misread digit: a plausible wrong read of the same label."""
+def _mutate(barcode, draws, *key):
+    """A wrong read of the same label: usually one digit, sometimes a run of two to four (a smudged or creased label)."""
     digits = [i for i, ch in enumerate(barcode) if ch.isdigit()]
-    position = digits[int(draws.u("misread-pos", pid) * len(digits))]
-    original = barcode[position]
-    replacement = str((int(original) + 1 + int(draws.u("misread-digit", pid) * 8)) % 10)
-    return barcode[:position] + replacement + barcode[position + 1:]
+    run = draws.weighted(((1, .5), (2, .25), (3, .15), (4, .10)), "misread-run", *key)
+    first = int(draws.u("misread-pos", *key) * (len(digits) - run + 1))
+    out = list(barcode)
+    for n, position in enumerate(digits[first:first + run]):
+        out[position] = str((int(out[position]) + 1 + int(draws.u("misread-digit", *key, n) * 8)) % 10)
+    return "".join(out)

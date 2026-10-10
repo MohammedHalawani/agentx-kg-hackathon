@@ -4,8 +4,8 @@ import unittest
 
 from dataset_v2.contracts import KINDS, RELATIONSHIPS, UTC_FIELDS, Node, digest
 from dataset_v2.context import CATALOG, OBSERVATIONS
-from dataset_v2.feed import (CHANNELS, CHANNEL_PROVIDER, ENVELOPE, FEED_KINDS, INGESTIBLE_KINDS, SHARED_OBSERVATIONS, WORLD_FEED_KINDS,
-                             Reference, decode, encode, split_feed)
+from dataset_v2.feed import (CHANNELS, CHANNEL_PROVIDER, DATED_SHARED, ENVELOPE, FEED_KINDS, INGESTIBLE_KINDS, SHARED_OBSERVATIONS,
+                             WORLD_FEED_KINDS, Reference, decode, encode, feed_item, ingestible_kinds, split_feed)
 from dataset_v2.network import generate_live, live_config
 
 # Provenance of the S5 dataset (scripts/s5_scenarios.py provenance(): digest of manifest.json, feed_manifest hash and truth_hash).
@@ -37,15 +37,78 @@ class AdditiveContractTests(unittest.TestCase):
     def test_live_network_channels_and_feed_kinds_unchanged(self):
         self.assertEqual(CHANNELS, ("SPL_CORE", "DRIVER_APP", "CARRIER_EDI", "TELEMATICS", "RECIPIENT_PORTAL", "TRAFFIC", "MDM"))
         self.assertEqual(FEED_KINDS, frozenset(OBSERVATIONS | {"DeviceHeartbeat"}))
-        self.assertTrue(FEED_KINDS | {"AddressVersion"} <= INGESTIBLE_KINDS)
-        self.assertTrue(WORLD_FEED_KINDS <= INGESTIBLE_KINDS and SHARED_OBSERVATIONS <= WORLD_FEED_KINDS)
+        # The live-network gateway accepts exactly what it accepted before the mechanism world existed.
+        self.assertEqual(INGESTIBLE_KINDS, (FEED_KINDS - {"CommunicationEvent"}) | {"AddressVersion"})
+        # Exactly the kinds the gateway accepted before the mechanism world existed (commit 968b264).
+        self.assertEqual(INGESTIBLE_KINDS, frozenset((
+            "ScanEvent", "CustodyEvent", "DeliveryAttempt", "ContactAttempt", "GPSObservation", "TrafficObservation", "DeliveryProof",
+            "AuthenticationEvidence", "SignatureEvidence", "PhotoEvidence", "HandoffEvidence", "RecipientReport", "DepotReconciliation",
+            "StatusEvent", "LocationPin", "Manifest", "DeviceHeartbeat", "AddressVersion")))
+        self.assertTrue(SHARED_OBSERVATIONS | DATED_SHARED <= WORLD_FEED_KINDS)
         self.assertEqual(CHANNEL_PROVIDER["MESSAGING"], "DEMO-PROV-MSG-01")
+
+    def test_the_wider_kind_set_is_accepted_only_for_mechanism_world_datasets(self):
+        for dataset in ("DEMO-SUHAIL-LIVE", "DEMO-SUHAIL-LIVE-TEST", "DEMO-SUHAIL", "DEMO-OTHER", None):
+            self.assertEqual(ingestible_kinds(dataset), INGESTIBLE_KINDS, dataset)
+        for dataset in ("DEMO-SUHAIL-WORLD-1", "DEMO-SUHAIL-WORLD-TEST"):
+            self.assertEqual(ingestible_kinds(dataset), INGESTIBLE_KINDS | WORLD_FEED_KINDS, dataset)
+        world_only = WORLD_FEED_KINDS - INGESTIBLE_KINDS
+        self.assertTrue({"DeliverySession", "VehicleAssignment", "Customer", "FacilityThroughput", "TripEvent", "TrafficEvent", "Trip",
+                         "Container", "RouteRun", "CommunicationEvent"} <= world_only)
+
+    def test_the_live_network_gateway_rejects_mechanism_world_kinds(self):
+        from operations.ingestion import Gateway
+
+        class Result:
+            def single(self):
+                return None
+
+            def consume(self):
+                return None
+
+            def __iter__(self):
+                return iter(())
+
+        class Tx:
+            def __init__(self):
+                self.created = 0
+
+            def run(self, query, **params):
+                self.created += query.startswith("CREATE")
+                return Result()
+
+        ref = Reference([], [])
+        payload = {"type": "FacilityThroughput", "id": "DEMO-TP-X", "shipment": None, "at": "2026-09-14T09:00:00+00:00",
+                   "fields": {"facility_id": "DEMO-SORT-RUH-01", "processed_count": 3, "source_ref": "wms:throughput"}}
+        item = {"channel": "SPL_CORE", "message_type": "FACILITYTHROUGHPUT", "payload_json": json.dumps(payload), "payload_hash": "h",
+                "feed_id": "DEMO-FEED-1", "provider_id": "DEMO-PROV-SPL", "origin": "PROVIDER"}
+        from dataset_v2.contracts import instant
+        clock = instant("2026-09-14T10:00:00+00:00")
+        for dataset, status in (("DEMO-SUHAIL-LIVE", "REJECTED"), ("DEMO-SUHAIL-WORLD-1", "INGESTED")):
+            gateway = Gateway(None, "unused", dataset)
+            gateway._splits = {}
+            tx = Tx()
+            self.assertEqual(gateway._one(tx, ref, item, clock)[0], status, dataset)
+            self.assertEqual(tx.created, 1 if status == "INGESTED" else 0)
 
     def test_new_ingestion_edge_rules_only_touch_ingestible_kinds(self):
         from operations.ingestion import EDGE_RULES
+        accepted = ingestible_kinds("DEMO-SUHAIL-WORLD-1")
         for kind, prop, rel, outward in EDGE_RULES:
-            self.assertIn(kind, INGESTIBLE_KINDS)
+            self.assertIn(kind, accepted)
             self.assertIn(rel, RELATIONSHIPS)
+
+    def test_a_dated_shared_record_round_trips_through_the_feed(self):
+        from dataset_v2.contracts import World
+        from world.config import WorldConfig
+        world = World(WorldConfig(dataset_id="DEMO-SUHAIL-WORLD-TEST").v2_config({"history": 20, "development": 20}))
+        world.node("Container", "DEMO-CTR-RUH-00001", occurred_at="2026-09-14T09:00:00+00:00", recorded_at="2026-09-14T09:00:05+00:00",
+                   container_type="BAG", origin_facility_id="DEMO-SORT-RUH-01", destination_facility_id="DEMO-DEPOT-RUH-N", source_ref="wms:container")
+        node = world.nodes["DEMO-CTR-RUH-00001"]
+        item = feed_item(world, node, Reference([], []))
+        kind, entity, sid, occurred, props = decode(item["channel"], item["message_type"], json.loads(item["payload_json"]), Reference([], []))
+        self.assertEqual((kind, entity, sid, occurred), ("Container", node.id, None, node.properties["occurred_at"]))
+        self.assertEqual(props, {k: v for k, v in node.properties.items() if k not in ENVELOPE})
 
     def test_messaging_round_trip_is_exact(self):
         ref = Reference([{"entity_id": "DEMO-SHP-1-PKG-01", "manifest_barcode": "RB123456785SA"}],

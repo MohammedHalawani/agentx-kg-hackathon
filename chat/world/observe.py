@@ -4,7 +4,8 @@ Each physical act from world.physical becomes V2 evidence with the property sche
 (generate.py / network.py) for every existing kind. occurred_at is when it happened; recorded_at is when
 the provider system sent it (a device's upload, a carrier's EDI batch, a delivery report); the gateway's
 own receipt is recorded_at plus the feed lag (dataset_v2.feed.feed_item). A device that is offline buffers
-its records and uploads them at reconnect; a device with stuck uploads keeps them until the nightly sync.
+its records and uploads them at reconnect; a device with stuck uploads keeps them until the app is restarted or
+the nightly sync runs.
 
 The private index `records` maps every evidence id to its act, device, times and the mechanisms that
 shaped it. It is truth-side and never written into a node, edge or feed message.
@@ -13,8 +14,9 @@ from collections import defaultdict
 from datetime import timedelta
 
 from dataset_v2.contracts import Provenance, World, iso
+from operations.store import DETECTION_ALLOWANCE_SECONDS
 from world.bookings import SERVICE_TOLERANCE, milestones
-from world.config import LOCAL, local_dt, next_local
+from world.config import LOCAL, local_date, local_dt
 from world.geo import CITIES, CITY
 from world.mechanisms import CLAIM_SUBTYPE
 from world.network import PROVIDERS, SPL_OPERATOR, VEHICLE_TYPES
@@ -61,6 +63,62 @@ REPORT_TEXT = {
 REPORT_CHANNELS = (("PORTAL", .4), ("EMAIL", .25), ("CALL_CENTER", .2), ("WHATSAPP", .15))
 
 
+def upload_times(config, network, draws, shipments, sim, plan):
+    """act id -> instant its record reached the provider system (the scheduler needs this without building the world)."""
+    observer = Observer(config, network, draws, shipments, sim, plan)
+    observer.plan_uploads()
+    return observer.recorded
+
+
+def tick_after(config, when):
+    """The monitor's first hourly tick strictly after `when` (ticks run on the hour grid from the world's start)."""
+    hours = (when - config.start_at).total_seconds() // 3600 + 1
+    return config.start_at + timedelta(hours=hours)
+
+
+def held_past_deadline(config, sim, recorded):
+    """(mid -> shipments, mid -> shipments): where a device fault held a record past a monitor deadline (a cause),
+    and where it only delayed records harmlessly (an exposure).
+
+    A buffered or stuck record is held past a deadline when, at a monitor tick before it arrived,
+      - the plan's latest time for the step it records had passed (plus the monitor's 900 s allowance), or
+      - a later custody record of the same parcel had already arrived, so the chain shows a missing transfer, or
+      - the delivery session had ended (plus grace and allowance) and it is the record that reconciles the parcel."""
+    allowance = timedelta(seconds=DETECTION_ALLOWANCE_SECONDS)
+    custody_of, chain = {}, defaultdict(list)
+    for a in sim.acts:
+        if a["type"] == "custody":
+            custody_of[a["source"]] = a
+            chain[a["pid"]].append(a)
+    grace = timedelta(minutes=config.reconciliation_grace_minutes)
+    caused, harmless = defaultdict(set), defaultdict(set)
+    for a in sim.acts:
+        mids = a.get("upload_mech")
+        if not mids or a["type"] not in ("scan", "attempt") or not a.get("sid"):
+            continue
+        release = recorded[a["act"]]
+        held = False
+        c = custody_of.get(a["act"])
+        if c is not None:
+            latest = sim.deadline.get((c["pid"], c["event"], c["to"])) or sim.deadline.get((c["pid"], c["event"], c.get("facility")))
+            if latest is not None and a["t"] <= latest and tick_after(config, latest + allowance) < release:
+                held = True
+            others = chain[c["pid"]]
+            if any(o["t"] < c["t"] for o in others) and any(
+                    o["t"] > c["t"] and recorded[o["act"]] < release and tick_after(config, recorded[o["act"]]) < release for o in others):
+                held = True
+        route = sim.routes.get(a.get("route")) if a["type"] == "attempt" or a.get("obs") in ("RETURN_SCAN", "DELIVERY_SCAN") else None
+        if route is not None:
+            deadline = local_dt(route.date, config.session_end) + grace + allowance
+            if a["t"] <= deadline and tick_after(config, deadline) < release:
+                held = True
+        for mid in mids:
+            (caused if held else harmless)[mid].add(a["sid"])
+    for mid in caused:
+        harmless[mid] -= caused[mid]
+    return dict(caused), {mid: sids for mid, sids in harmless.items() if sids}
+
+
 class Observer:
     def __init__(self, config, network, draws, shipments, sim, plan):
         self.config, self.net, self.d, self.shipments, self.sim, self.mech = config, network, draws, shipments, sim, plan
@@ -79,6 +137,7 @@ class Observer:
         self.address_v1 = {}
         self.address_v2 = {}
         self.ran_trips = set()
+        self.assign_by_day = {}     # (sid, service date) -> the shipment's last-mile VehicleAssignment that day
         self.recipient_pin = {}
         self.segments = {}
         self.persons = {}
@@ -122,6 +181,7 @@ class Observer:
         sim = self.sim
         heads = {}
         for a in sim.acts:
+            a["upload_mech"] = []
             kind = a["type"]
             if kind == "custody":
                 continue
@@ -141,9 +201,8 @@ class Observer:
                     buffered[(device, window[1], down)].append(a)
                     continue
                 loss = next((w for w in self.mech.device_loss.get(device, ()) if w[0] <= t < w[1]), None)
-                if loss and self.d.chance(loss[2], "lost", aid):
-                    sync = next_local(loss[1], "02:30")
-                    buffered[(device, sync, loss[3])].append(a)
+                if loss and self.d.chance(loss[2], "lost", loss[3], a["type"], a.get("pid"), t.isoformat()):
+                    buffered[(device, loss[4], loss[3])].append(a)
                     continue
                 if kind == "DRIVER_APP":
                     delay = self.lag(aid, median=45, sigma=1.0)
@@ -174,7 +233,7 @@ class Observer:
         for (device, release, mid), rows in sorted(buffered.items(), key=lambda kv: (kv[0][0], kv[0][1])):
             for n, a in enumerate(sorted(rows, key=lambda r: (r["t"], r["act"]))):
                 self.recorded[a["act"]] = max(release, a["t"]) + timedelta(seconds=2 * n + 3)
-                a.setdefault("upload_mech", []).append(mid)
+                a["upload_mech"].append(mid)
         # Bundled acts inherit their head's upload time.
         for a in sim.acts:
             aid = a["act"]
@@ -190,7 +249,7 @@ class Observer:
                 head = a.get("attempt")
             if head and head in self.recorded:
                 self.recorded[aid] = self.recorded[head]
-                a.setdefault("upload_mech", []).extend(sim.acts_by_id(head).get("upload_mech", []))
+                a["upload_mech"] = list(sim.acts_by_id(head)["upload_mech"])
         for a in sim.acts:
             if a["act"] not in self.recorded:
                 self.recorded[a["act"]] = a["t"] + timedelta(seconds=30)
@@ -223,7 +282,6 @@ class Observer:
         self.trip_records()
         self.route_positions()
         self.throughput()
-        self.traffic_background()
         self.heartbeats()
         self.edges()
         return self.world
@@ -287,16 +345,19 @@ class Observer:
                    source_ref="synthetic-catalog")
             w.edge(lid, "FROM", lane.origin)
             w.edge(lid, "TO", lane.destination)
-        # Trips that ran (empty scheduled departures are cancelled and leave no record).
+        # Every scheduled departure is published with the schedule, whether or not it later runs (an empty departure is
+        # cancelled by a dated trip status): the existence of a trip record says nothing about later cargo.
         for tid, state in sorted(self.sim.trips.items()):
-            if state.cancelled or state.departed_at is None:
-                continue
             plan = state.plan
+            if not tid.endswith("-R") and not (start - timedelta(days=1) <= plan.scheduled_departure < self.config.end_at):
+                continue
+            if tid.endswith("-R") and state.departed_at is None:
+                continue
             self.ran_trips.add(tid)
-            published = max(start, plan.scheduled_departure - timedelta(hours=36))
+            published = max(start, plan.scheduled_departure - timedelta(hours=72))
             if tid.endswith("-R"):
                 published = state.departed_at - timedelta(minutes=30)
-            w.node("Trip", tid, trip_type=plan.kind, lane_id=plan.lane,
+            w.node("Trip", tid, occurred_at=iso(published), trip_type=plan.kind, lane_id=plan.lane,
                    from_facility_id=plan.origin, to_facility_id=plan.destination, start_at=iso(plan.scheduled_departure),
                    end_at=iso(plan.scheduled_arrival), cutoff_at=iso(min(plan.cutoff, plan.scheduled_departure - timedelta(minutes=1))),
                    vehicle_id=plan.vehicle, driver_id=plan.driver, provider_id=plan.provider_id, distance_km=plan.distance_km,
@@ -305,15 +366,22 @@ class Observer:
                              ("FROM", plan.origin), ("TO", plan.destination), ("OPERATED_BY", plan.provider_id)):
                 w.edge(tid, rel, end)
         for cid, c in sorted(self.sim.containers.items()):
-            w.node("Container", cid, container_type="CAGE" if len(c.parcels) > 18 else "BAG", origin_facility_id=c.origin,
-                   destination_facility_id=c.depot, recorded_at=iso(c.created_at), source_ref="wms:container")
+            # The WMS opens the container (prints its tag) a few minutes before the first parcel goes in; the kind of
+            # container is chosen then, from the lane, not from what later fills it.
+            opened = c.created_at.replace(microsecond=0) - timedelta(seconds=self.d.integer(150, 400, "container-open", cid))
+            cage = self.net.facilities[c.origin].kind == "Hub" or self.d.chance(.25, "container-kind", cid)
+            w.node("Container", cid, occurred_at=iso(opened), container_type="CAGE" if cage else "BAG", origin_facility_id=c.origin,
+                   destination_facility_id=c.depot, recorded_at=iso(opened + timedelta(seconds=self.d.integer(2, 20, "container-rec", cid))),
+                   source_ref="wms:container")
             w.edge(cid, "FROM", c.origin)
             w.edge(cid, "TO", c.depot)
         for rid, r in sorted(self.sim.routes.items()):
-            w.node("RouteRun", rid, depot_id=r.depot, service_date=r.date.isoformat(), vehicle_id=r.vehicle, driver_id=r.driver,
-                   provider_id=self.net.drivers[r.driver].provider_id, device_ref=r.device,
+            planned = r.planned_at - timedelta(seconds=self.d.integer(150, 300, "route-plan", rid))
+            w.node("RouteRun", rid, occurred_at=iso(planned), depot_id=r.depot, service_date=r.date.isoformat(), vehicle_id=r.vehicle,
+                   driver_id=r.driver, provider_id=self.net.drivers[r.driver].provider_id, device_ref=r.device,
                    start_at=iso(local_dt(r.date, "08:00")), end_at=iso(local_dt(r.date, self.config.session_end)),
-                   planned_stops=len(r.shipments), recorded_at=iso(r.planned_at), source_ref="dispatch:route-plan")
+                   planned_stops=len(r.shipments), recorded_at=iso(planned + timedelta(seconds=self.d.integer(2, 20, "route-plan-rec", rid))),
+                   source_ref="dispatch:route-plan")
             for rel, end in (("AT_FACILITY", r.depot), ("USES_VEHICLE", r.vehicle), ("ASSIGNED_DRIVER", r.driver), ("USES_DEVICE", r.device)):
                 w.edge(rid, rel, end)
 
@@ -457,7 +525,8 @@ class Observer:
         source = self.node_of_act[a["source"]]
         assignment = None
         if a.get("route"):
-            assignment = self.assign_node.get((sid, a["route"]))
+            route = self.sim.routes.get(a["route"])
+            assignment = self.assign_node.get((sid, a["route"])) or (self.assign_by_day.get((sid, route.date)) if route else None)
         elif a.get("trip"):
             assignment = self.assign_node.get((sid, a["trip"]))
         proof = self.node_of_act.get(a["proof"]) if a.get("proof") else None
@@ -508,6 +577,7 @@ class Observer:
                           valid_to=iso(local_dt(day, self.config.session_end) + timedelta(seconds=grace)), package_ids=pids, weight_kg=weight,
                           volume_m3=volume, mode="last_mile", session_id=self.session_node[key], route_run_id=rid, source_ref="dispatch:route-plan")
         self.assign_node[(sid, rid)] = node
+        self.assign_by_day[(sid, day)] = node
         self.node_of_act[a["act"]] = node
 
     def _manifest(self, a):
@@ -532,7 +602,10 @@ class Observer:
         node = self.owned("DeliveryAttempt", self.nid(sid, "ATT"), sid, a["t"], self.rec(a), act=a["act"], device=a["device"],
                           mech=self.mech_of(a), package_id=a["pid"], used_address_version_id=self.address_version_of(sid, a["address"]),
                           observed_gate=a.get("gate"), disposition=a["disposition"], failed_reason=a.get("reason"), session_id=session,
-                          assignment_id=self.assign_node.get((sid, a["route"])), route_run_id=a["route"], driver_id=a["driver"],
+                          # The job the parcel was dispatched on that day; the app of whoever attempted it names its own
+                          # route run, driver and vehicle.
+                          assignment_id=self.assign_node.get((sid, a["route"])) or self.assign_by_day.get((sid, route.date)),
+                          route_run_id=a["route"], driver_id=a["driver"],
                           vehicle_id=a["vehicle"], source_ref="driver-app")
         self.node_of_act[a["act"]] = node
 
@@ -549,6 +622,7 @@ class Observer:
         recorded = self.recorded[handoff["attempt"]] if handoff else a["t"] + timedelta(seconds=40)
         self.counters[("PERSON",)] += 1
         node = self.owned("Customer", a["person"], sid, a["t"], recorded, act=a["act"],
+                          mech=self.sim.acts_by_id(handoff["attempt"])["upload_mech"] if handoff else (),
                           display_name=f"Synthetic person {self.counters[('PERSON',)]:05d}", source_ref="driver-app")
         self.node_of_act[a["act"]] = node
 
@@ -647,7 +721,7 @@ class Observer:
         self.counters[(tid, "EV")] += 1
         node = self.shared("TripEvent", f"{tid}-EV-{self.counters[(tid, 'EV')]:02d}", self.rec(a), occurred=a["t"], act=a["act"],
                            mech=self.mech_of(a), trip_id=tid, vehicle_id=a["vehicle"], event_type=a["event"],
-                           estimated_arrival_at=iso(a["eta"]), reason_code=a.get("reason"),
+                           estimated_arrival_at=iso(a["eta"]) if a.get("eta") else None, reason_code=a.get("reason"),
                            source_ref="carrier-edi" if self.net.trips[tid].provider_id == "DEMO-PROV-3PL-01" else "tms:trip-status")
         self.node_of_act[a["act"]] = node
 
@@ -708,6 +782,7 @@ class Observer:
     def reports(self):
         """Inbound recipient messages: some caused by what happened, some ordinary questions."""
         delivered_at, first_failed, rescheduled = {}, {}, {}
+        caused = {(self.mech.items[mid].type, sid): mid for mid, sids in sorted(self.sim.touch_ship.items()) for sid in sids}
         for a in self.sim.acts:
             if a["type"] == "attempt":
                 if a["disposition"] == "DELIVERED":
@@ -724,6 +799,8 @@ class Observer:
             handed_at = min(handed) if handed else None
             for mtype in ("NEIGHBOUR_RECEIVES", "MISDELIVERY", "DELIVERY_SCAN_SKIPPED", "CUSTOMER_COMPLAINT", "RECIPIENT_UNAVAILABLE"):
                 flag = self.mech.shipment_flag(sid, mtype)
+                if not flag and (mtype, sid) in caused:
+                    flag = (caused[(mtype, sid)], {"done": True})
                 if not flag:
                     continue
                 mid, params = flag
@@ -829,39 +906,24 @@ class Observer:
             while hour < end:
                 h_end = hour + timedelta(hours=1)
                 processed = counts.get(hour, 0)
-                queue = sum(1 for ready, done, pid in log if ready <= h_end < done)
+                waiting = [ready for ready, done, pid in log if ready <= h_end < done]
                 local = h_end.astimezone(LOCAL).hour
                 in_shift = any(_inside(local - .5, sh) for sh in f.shifts) if f.shifts else True
-                if processed or queue or in_shift:
-                    rate, mid = self.sim.capacity(facility, hour)
+                if processed or waiting or in_shift:
+                    # The WMS reports what the shift on duty could process this hour (a staff shortage lowers it; a
+                    # jammed sorter or a congested dock does not) and how long the oldest waiting item has waited.
+                    middle = hour + timedelta(minutes=30)
+                    factor, mid = self.mech.backlog_at(facility, middle)
+                    staffed = self.sim.staffed(facility, middle) * (factor if mid and self.mech.items[mid].subtype == "STAFF_SHORTAGE" else 1.0)
+                    shaped = sorted({m for m in (self.mech.backlog_at(facility, hour + timedelta(minutes=x))[1] for x in (0, 20, 40, 59)) if m})
                     recorded = h_end + timedelta(seconds=self.d.integer(90, 300, "tp", facility, hour.isoformat()))
                     self.shared("FacilityThroughput", f"DEMO-TP-{facility.removeprefix('DEMO-')}-{hour.strftime('%Y%m%dT%H')}", recorded,
-                                occurred=h_end, mech=[mid] if mid else [], facility_id=facility, start_at=iso(hour), end_at=iso(h_end),
-                                processed_count=processed, queue_depth=queue, nominal_capacity_per_hour=f.capacity_per_hour,
+                                occurred=h_end, mech=shaped, facility_id=facility, start_at=iso(hour), end_at=iso(h_end),
+                                processed_count=processed, queue_depth=len(waiting), nominal_capacity_per_hour=f.capacity_per_hour,
+                                staffed_capacity_per_hour=round(staffed, 1),
+                                oldest_waiting_minutes=round((h_end - min(waiting)).total_seconds() / 60) if waiting else 0,
                                 source_ref="wms:throughput")
                 hour = h_end
-
-    def traffic_background(self):
-        """Ordinary rush-hour congestion reports in the large cities (no mechanism): normal variation."""
-        day = self.config.day1
-        while local_dt(day, "00:00") < self.config.end_at:
-            for city in ("RUH", "JED", "DMM"):
-                for slot in ("07:00", "16:30"):
-                    key = ("bg-traffic", city, day.isoformat(), slot)
-                    if not self.d.chance(.7, *key):
-                        continue
-                    district = self.d.choice(districts_of(city), *key, "district")
-                    start = local_dt(day, slot) + timedelta(minutes=self.d.integer(0, 50, *key, "m"))
-                    end = start + timedelta(minutes=self.d.integer(60, 150, *key, "len"))
-                    self.counters[("TRAFFIC", city)] += 1
-                    occurred = start + timedelta(minutes=self.d.integer(3, 15, *key, "pub"))
-                    self.shared("TrafficEvent", f"DEMO-TRAFFIC-{city}-{self.counters[('TRAFFIC', city)]:03d}",
-                                occurred + timedelta(seconds=self.d.integer(30, 150, *key, "rec")), occurred=occurred, city_id=f"DEMO-CITY-{city}",
-                                district=district[0], lat=district[2], lng=district[3], radius_km=round(self.d.uniform(1, 3, *key, "r"), 1),
-                                start_at=iso(start), end_at=iso(end), event_type="CONGESTION",
-                                severity=self.d.weighted((("LOW", .6), ("MODERATE", .35), ("HIGH", .05)), *key, "sev"), confidence=.9,
-                                source_ref="traffic-feed")
-            day += timedelta(days=1)
 
     def heartbeats(self):
         """Device telemetry: a beat every interval while the device is powered (docked) or its user is logged in."""
@@ -904,9 +966,22 @@ class Observer:
             losses = self.mech.device_loss.get(dev_id, [])
             occ = occurred_index.get(dev_id, [])
             rec = recorded_index.get(dev_id, [])
+
+            def quiet_from(t, dev_id=dev_id):
+                day = local_date(t)
+                if not self.d.chance(.05, "agent-sleep", dev_id, day.isoformat()):
+                    return t - timedelta(days=1)
+                return local_dt(day, "06:00") + timedelta(minutes=self.d.integer(0, 840, "agent-sleep-start", dev_id, day.isoformat()))
+
+            def quiet_for(t, dev_id=dev_id):
+                day = local_date(t)
+                return timedelta(minutes=self.d.integer(45, 240, "agent-sleep-length", dev_id, day.isoformat()))
             for a, b, logout in sorted(windows[dev_id], key=lambda w: w[0]):
                 t = a + ((phase - (a - start)) % interval) if dev.always_on else a
                 while t < min(b, end):
+                    if timedelta(0) <= (t - quiet_from(t)) < quiet_for(t):
+                        t += interval      # The management agent sleeps for a while (records still upload): no beat, no fault.
+                        continue
                     outage = next((o for o in outages if o[0] <= t < o[1]), None)
                     if outage:
                         t = outage[1]  # Silent until reconnect; the reconnect beat reports what was buffered.
@@ -915,7 +990,7 @@ class Observer:
                         t += interval
                         continue
                     pending = bisect.bisect_right(occ, t) - bisect.bisect_right(rec, t)
-                    stuck = [l for l in losses if l[0] <= t < next_local(l[1], "02:30")]
+                    stuck = [l for l in losses if l[0] <= t < l[4]]
                     done = bisect.bisect_right(rec, t)
                     last_upload = rec[done - 1] if done else None
                     self.beat(dev_id, t, pending, last_upload or t, mech=[l[3] for l in stuck if pending])

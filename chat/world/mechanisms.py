@@ -1,7 +1,10 @@
 """Mechanism catalogue and the plan of mechanism instances a world run applies.
 
 A mechanism is a world-level cause (a device, facility, trip, driver, route, recipient or label condition).
-It acts on every parcel it physically touches; nothing here names a shipment's outcome. The catalogue maps
+It acts on every parcel it physically touches; nothing here names a shipment's outcome. A mechanism CAUSES
+something on a shipment only when it produced a deviation there (a missed connection or promise, a record
+held past a monitor deadline, a tolerance breach, a failed or misrecorded handover); parcels it touched
+without consequence are EXPOSURES, kept apart and never scored (world.physical marks both). The catalogue maps
 each mechanism type to the cause code in the current catalogue (chat/operations/agents.py CAUSES), the
 resolution it permits and the catalogue action (chat/operations/authority.py ACTIONS) that addresses it.
 This module is truth-side: nothing from it is written into a node, edge or feed message.
@@ -16,7 +19,7 @@ CATALOGUE = {
                       "the device reconnects at the end of the window and uploads everything it buffered"),
     "PARTIAL_UPLOAD_LOSS": ("DELAYED_SYNC", ("DELAYED_SYNC",), "AUTO", "REQUEST_DEVICE_SYNC", True,
                             "none", "some records stay stuck in the device outbox; heartbeats report a pending queue",
-                            "the nightly full sync uploads the stuck records"),
+                            "an app restart or the nightly full sync uploads the stuck records"),
     "SCAN_SKIPPED_AT_RECEIPT": ("CUSTODY_GAP", ("CUSTODY_GAP", "MISSED_MILESTONE"), "AUTO", "INITIATE_CUSTODY_RECONCILIATION", True,
                                 "parcel is received physically", "no receipt scan; later scans appear without it",
                                 "the next handling scan (loading) shows the parcel moved on"),
@@ -42,7 +45,8 @@ CATALOGUE = {
                             "the parcel is back on the depot shelf", "no return scan; the session ends unreconciled",
                             "the evening stock check finds it and the session is reconciled late"),
     "CONTRACTOR_RETAINS": ("UNRECONCILED_CUSTODY", ("UNRECONCILED_CUSTODY",), "HUMAN", "PHYSICAL_CUSTODY_CHECK", True,
-                           "an independent driver keeps undelivered parcels", "the driver app goes silent; no return, no reconciliation",
+                           "a driver keeps undelivered parcels after the shift, or leaves the route early with them",
+                           "the driver app goes silent; no return, no reconciliation",
                            "sometimes the driver returns the parcels a day or two later"),
     "UNRECORDED_HANDOFF": ("CUSTODY_GAP", ("CUSTODY_GAP", "CONFLICTING_CUSTODY"), "AUTO", "INITIATE_CUSTODY_RECONCILIATION", True,
                            "parcels move from one driver's vehicle to another's", "the other driver's app delivers parcels the first driver loaded",
@@ -79,10 +83,10 @@ CATALOGUE = {
                        "none: the parcel is on the vehicle", "a revised route manifest drops a loaded parcel",
                        "none: the manifest stays wrong until a person reconciles it"),
     "TRAFFIC_DISRUPTION": ("TRAFFIC_DELAY", ("TRAFFIC_DELAY", "ROUTE_DELAY"), "AUTO", "PRIORITIZE_NEXT_SESSION", True,
-                           "routes through the zone slow down; some stops run out of time",
-                           "shared traffic incident; slow vehicle positions; not-attempted stops on several routes",
+                           "a closed district cannot be reached by delivery vans; ordinary congestion only slows routes",
+                           "shared traffic incident; slow vehicle positions; not-attempted stops in the district",
                            "the next session delivers"),
-    "ROUTINE_FAILED_ATTEMPT": ("RECIPIENT_UNAVAILABLE", ("RECIPIENT_UNAVAILABLE",), "AUTO", "PRIORITIZE_NEXT_SESSION", True,
+    "ROUTINE_FAILED_ATTEMPT": ("RECIPIENT_UNAVAILABLE", ("RECIPIENT_UNAVAILABLE",), "AUTO", "PRIORITIZE_NEXT_SESSION", False,
                               "an ordinary failed attempt (not home, building not found, access refused, code not given, shift cut short)",
                               "a failed attempt record; the next attempt is after the promise",
                               "the next session delivers"),
@@ -100,6 +104,36 @@ CLAIM_SUBTYPE = "NON_RECEIPT_CLAIM"
 ROUTINE_CAUSE = {"NOT_HOME": "RECIPIENT_UNAVAILABLE", "RESCHEDULED_BY_RECIPIENT": "RECIPIENT_UNAVAILABLE",
                  "CODE_NOT_PROVIDED": "RECIPIENT_UNAVAILABLE", "BUILDING_NOT_FOUND": "ADDRESS_CONFLICT",
                  "ACCESS_REFUSED": "RECIPIENT_UNAVAILABLE", "ROUTE_NOT_COMPLETED": "ROUTE_DELAY"}
+
+
+# Rule codes (dataset_v2.derive) each mechanism can raise on a shipment it causes something on. An opened case is
+# explained by a causal mechanism when one of its opening rule codes is in the mechanism's set; the acceptable
+# causes of that case are built from the explaining mechanisms only.
+_LATE = ("MISSED_MILESTONE", "JOURNEY_DELAY")
+RULE_CODES = {
+    "DEVICE_OUTAGE": ("MISSED_MILESTONE", "CUSTODY_GAP", "UNRECONCILED_CUSTODY", "PROOF_INSUFFICIENT"),
+    "PARTIAL_UPLOAD_LOSS": ("MISSED_MILESTONE", "CUSTODY_GAP", "UNRECONCILED_CUSTODY", "PROOF_INSUFFICIENT"),
+    "SCAN_SKIPPED_AT_RECEIPT": ("CUSTODY_GAP", "MISSED_MILESTONE"),
+    # A parcel that arrives or is shelved after the morning's loading was already assigned to a route it never rode.
+    "FACILITY_BACKLOG": ("UNRECONCILED_CUSTODY", *_LATE), "LATE_LINEHAUL": ("UNRECONCILED_CUSTODY", *_LATE),
+    "MISSORT": ("CUSTODY_GAP", *_LATE),
+    "ASSIGNED_NOT_LOADED": ("UNRECONCILED_CUSTODY", "CUSTODY_GAP", *_LATE),
+    "DELIVERY_SCAN_SKIPPED": ("UNRECONCILED_CUSTODY", "MISSED_MILESTONE"),
+    "RETURN_SCAN_SKIPPED": ("UNRECONCILED_CUSTODY", "CUSTODY_GAP", *_LATE),
+    "CONTRACTOR_RETAINS": ("UNRECONCILED_CUSTODY", *_LATE),
+    "UNRECORDED_HANDOFF": ("CUSTODY_GAP", "CONFLICTING_CUSTODY", "UNRECONCILED_CUSTODY", "PROOF_INSUFFICIENT"),
+    "RECIPIENT_UNAVAILABLE": ("RECIPIENT_UNAVAILABLE", *_LATE),
+    "WRONG_ADDRESS": ("ADDRESS_CONFLICT", "RECIPIENT_UNAVAILABLE", *_LATE),
+    "WRONG_GATE": ("WRONG_GATE", "RECIPIENT_UNAVAILABLE", *_LATE),
+    "OTP_NOT_RECEIVED": ("PROOF_INSUFFICIENT", "CUSTODY_GAP", "RECIPIENT_UNAVAILABLE", *_LATE),
+    "NEIGHBOUR_RECEIVES": ("PROOF_INSUFFICIENT", "CUSTODY_GAP", "DELIVERY_DISPUTE"),
+    "MISDELIVERY": ("PROOF_INSUFFICIENT", "CUSTODY_GAP", "DELIVERY_DISPUTE", "POSSIBLE_MISDELIVERY"),
+    "LABEL_MISREAD": ("BARCODE_MISMATCH",), "WRONG_LABEL_APPLIED": ("BARCODE_MISMATCH",),
+    "SCALE_DRIFT": ("WEIGHT_MISMATCH",), "DECLARED_WEIGHT_WRONG": ("WEIGHT_MISMATCH",),
+    "MANIFEST_ERROR": ("MANIFEST_CONFLICT",), "TRAFFIC_DISRUPTION": ("TRAFFIC_DELAY", *_LATE),
+    "ROUTINE_FAILED_ATTEMPT": ("RECIPIENT_UNAVAILABLE", "ADDRESS_CONFLICT", *_LATE),
+    "CUSTOMER_COMPLAINT": ("DELIVERY_DISPUTE",), "DUPLICATE_EVENTS": (),
+}
 
 
 def resolution_of(mtype, subtype=None):
@@ -136,7 +170,7 @@ class MechanismPlan:
     def __init__(self):
         self.items = {}
         self.device_down = {}        # device -> [(start, end, mid)]
-        self.device_loss = {}        # device -> [(start, end, fraction, mid)]
+        self.device_loss = {}        # device -> [(start, end, fraction, mid, release)]: stuck records leave at release
         self.backlog = {}            # facility -> [(start, end, factor, mid)]
         self.trip_delay = {}         # trip id -> (kind, seconds, fraction, mid)
         self.misload = {}            # trip id -> (wrong trip id, mid)
@@ -147,6 +181,11 @@ class MechanismPlan:
         self.route = {}              # (depot, date, slot) -> {type: (mid, params)}
         self.depot_day = {}          # (depot, date) -> {type: (mid, params)}
         self.traffic = []            # (city, district, start, end, factor, mid)
+        self.clerk = {}              # facility -> [(start, end, propensity, mid)]: receipts not scanned in a shift
+        self.reader = {}             # device -> [(start, end, propensity, mid)]: a reader that misreads labels
+        self.printer = {}            # origin facility -> [(start, end, propensity, mid)]: a label batch printed wrong
+        self.chute = {}              # sorting center -> [(start, end, propensity, mid)]: a chute feeding the wrong bag
+        self.base_keys = {}          # (type, key) -> mid of an ordinary-operation instance (origin "base")
         self._n = 0
 
     def add(self, mtype, subtype, started_at, ended_at, origin="scheduled", **params):
@@ -154,6 +193,19 @@ class MechanismPlan:
         mid = f"W1M-{self._n:05d}"
         self.items[mid] = Mechanism(mid, mtype, subtype, started_at, ended_at, params, origin)
         return mid
+
+    def base(self, mtype, subtype, key, started_at, ended_at, **params):
+        """An ordinary-operation instance (real-frequency variation, never scheduled): one per key, stable across
+        re-simulations of the same plan."""
+        mid = self.base_keys.get((mtype, key))
+        if mid is None:
+            mid = self.base_keys[(mtype, key)] = self.add(mtype, subtype, started_at, ended_at, origin="base", **params)
+        return mid
+
+    def window(self, table, key, t):
+        """(propensity, mid) of the window of `table` in force for `key` at t, else (0, None)."""
+        row = self._window(getattr(self, table).get(key, ()), t)
+        return (row[2], row[3]) if row else (0.0, None)
 
     def on_parcel(self, pid, mtype, mid, **params):
         self.parcel.setdefault(pid, {})[mtype] = (mid, params)

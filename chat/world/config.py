@@ -8,16 +8,18 @@ import re
 
 from dataset_v2.contracts import Config, RIYADH, UTC, iso
 
-WORLD_VERSION = "world-1.0"
+WORLD_VERSION = "world-1.1"   # 1.1: causes versus exposures, actor-level faults, time-cut export (after independent review)
 WORLD_SPLITS = ("history", "development", "held_out")
 LOCAL = RIYADH
 
 # Committed over-sampling weights (addendum B4), per scheduled mechanism: (history rate, live rate). A rate is
-# the minimum share of a split's shipments the mechanism must touch; live applies to development and held_out.
+# the minimum share of a split's shipments on which the mechanism must be the CAUSE of a deviation (a touch
+# without consequence does not count); live applies to development and held_out. History and live splits use
+# the same rate, so history is a fair prior for the live days and has cases to learn from.
 # Scenario weighting, not real frequencies: every world manifest records these rates and the targets they give.
-# History is kept sparse so most imported history stays healthy; live splits carry roughly 11 affected
-# shipments per mechanism in a 600-shipment world (305 development shipments).
-HISTORY_RATE, LIVE_RATE = .005, .036
+# At .02 a split of 250 shipments carries 5 caused shipments per mechanism; the floor of 10 clean cases per
+# mechanism (validate.coverage) needs a larger world, not a denser one (see README "Size and the clean-case floor").
+HISTORY_RATE, LIVE_RATE = .02, .02
 MECHANISM_RATES = {mechanism: (HISTORY_RATE, LIVE_RATE) for mechanism in (
     "DEVICE_OUTAGE", "PARTIAL_UPLOAD_LOSS", "SCAN_SKIPPED_AT_RECEIPT", "FACILITY_BACKLOG", "LATE_LINEHAUL", "MISSORT",
     "ASSIGNED_NOT_LOADED", "DELIVERY_SCAN_SKIPPED", "RETURN_SCAN_SKIPPED", "CONTRACTOR_RETAINS", "UNRECORDED_HANDOFF",
@@ -28,6 +30,11 @@ MECHANISM_RATES = {mechanism: (HISTORY_RATE, LIVE_RATE) for mechanism in (
 # Truth labels live outside the repository and outside artifacts/ (addendum B1): <root>/<dataset_id>/.
 # Override with SUHAIL_EVAL_TRUTH_ROOT or the export command's --truth-root. Backend and operations code never read it.
 DEFAULT_TRUTH_ROOT = r"C:\Projects\suhail-eval-truth"
+# The physical world state the Stage 4 operational simulator reads (parcel locations, device buffers, recipient
+# availability) records what really happened, so causes can be worked out from it. It lives outside the repository
+# too, in its own root that only the simulator opens: <root>/<export name>/<dataset_id>/<live split>/.
+# Override with SUHAIL_SIM_STATE_ROOT or the export command's --state-root.
+DEFAULT_STATE_ROOT = r"C:\Projects\suhail-sim-state"
 
 
 def uniform_rates(history: float, live: float) -> tuple:
@@ -40,7 +47,8 @@ class WorldConfig:
     """Size, span and seed of one world.
 
     split_days: booking days per world split (history, development, held_out). Default for 9 days is the
-    plan's 4/3/2; otherwise history = days//3, held_out = max(1, days//6) and development the rest.
+    plan's 4/3/2 and for 8 days 4/3/1 (four history days, so history cases can be acted on and verified before
+    the development window opens); otherwise history = days//3, held_out = max(1, days//6) and development the rest.
     Shipments are spread over booking days in proportion to a weekly demand profile.
     rates: per-mechanism over-sampling rates as ((mechanism, history_rate, live_rate), ...); None means the
     committed MECHANISM_RATES. The scheduler tops every scheduled mechanism up to
@@ -48,10 +56,10 @@ class WorldConfig:
     real frequencies); every mechanism also has a real-frequency base rate that applies everywhere.
     """
     total: int = 600
-    days: int = 6
+    days: int = 8
     seed: int = 20261010
     dataset_id: str = "DEMO-SUHAIL-WORLD-1"
-    start_date: str = "2026-09-12"          # local date of booking day 1 (a Saturday)
+    start_date: str = "2026-09-10"          # local date of booking day 1 (a Thursday; development is Monday to Wednesday)
     split_days: tuple | None = None
     horizon_days: int = 4                    # simulated days after the last booking day
     session_start: str = "08:00"
@@ -70,8 +78,8 @@ class WorldConfig:
             raise ValueError("Dataset identity must explicitly be DEMO")
         date.fromisoformat(self.start_date)
         if self.split_days is None:
-            if self.days == 9:
-                split = (4, 3, 2)
+            if self.days in (8, 9):
+                split = (4, 3, self.days - 7)
             else:
                 history, held = max(1, self.days // 3), max(1, self.days // 6)
                 split = (history, self.days - history - held, held)
@@ -129,7 +137,7 @@ class WorldConfig:
         return history if split == "history" else live
 
     def target(self, mechanism: str, split: str, shipments: int) -> int:
-        """Minimum affected shipments for one mechanism in a split holding `shipments` shipments."""
+        """Minimum shipments one mechanism must be the cause of a deviation on, in a split holding `shipments` shipments."""
         return max(1, int(self.rate(mechanism, split) * shipments + .5))
 
     def v2_config(self, counts: dict) -> "WorldV2Config":

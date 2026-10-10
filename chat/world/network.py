@@ -186,8 +186,11 @@ class Network:
                 org = f"DEMO-ORG-{c.code}-B{n}"
                 self.organizations[org] = {"name": f"Synthetic business {c.code}-{n}", "organization_type": "business", "city": c.code}
                 self.businesses[c.code].append(org)
+        # Capacities are sized to this world's volume, so a facility normally works at half to four fifths of what its
+        # shift can process in the hour a truck is unloaded, and a capacity cut leaves a queue for hours.
+        scale = max(.5, self.config.total / self.config.days / 100)
         for region, code in REGION_HUB.items():
-            capacity = {"RUH": 90, "JED": 70, "DMM": 50}[code]
+            capacity = max(8, round({"RUH": 36, "JED": 28, "DMM": 20}[code] * scale))
             sort = self._facility("SortingCenter", "SORT", code, "01", f"Synthetic {CITY[code].name} sorting center", f"مركز فرز {CITY[code].name_ar} (تجريبي)",
                                   -6.0, 4.0, capacity_per_hour=capacity,
                                   shifts=(("06:00", "14:00", 1.0), ("14:00", "22:00", 1.0), ("22:00", "06:00", .5)))
@@ -221,7 +224,7 @@ class Network:
             self.depots_by_city[c.code] = []
             size = "large" if c.code in ("RUH", "JED", "DMM") else "medium" if c.code in ("KHB", "MAK", "MED") else "small"
             for suffix, dn, de in depots:
-                cap = {"large": 60, "medium": 40, "small": 25}[size]
+                cap = max(6, round({"large": 24, "medium": 14, "small": 10}[size] * scale))
                 depot = self._facility("DeliveryDepot", "DEPOT", c.code, suffix, f"Synthetic {c.name} delivery depot {suffix}",
                                        f"مستودع توصيل {c.name_ar} {suffix} (تجريبي)", dn, de, capacity_per_hour=cap,
                                        shifts=(("05:00", "23:00", 1.0),))
