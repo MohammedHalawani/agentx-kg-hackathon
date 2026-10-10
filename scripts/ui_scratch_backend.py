@@ -5,8 +5,10 @@ UI integration branch only. Serves the API and the built frontend-next app on on
     cd frontend-next && npm ci && npm run build && cd ..
     <python of chat/.venv> scripts/ui_scratch_backend.py            # http://127.0.0.1:8010/app/
 
-It always uses the database shipments-v2-demo-ui, runs with the investigation agents off and
-clears every model key, so it cannot make model calls and cannot touch another database.
+Operations (cases, ledger, evidence) always use the database shipments-v2-demo-ui. It runs with
+the investigation agents off and clears every model key, so it makes no model calls. The legacy
+V1 routes of the same app (/v1/..., /threads) still use the configured chat and shipment
+databases if they are called; the redesigned interface never calls them.
 Neo4j connection settings are read from an env file (default: the repository's .env, else the
 main checkout's at C:\\Projects\\demo\\.env); their values are never printed.
 """

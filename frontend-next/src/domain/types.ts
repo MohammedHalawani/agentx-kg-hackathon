@@ -225,7 +225,14 @@ export interface InvestigationStageEvent {
   evidenceTimestamp?: string;
   runId?: string;
   evidenceIds?: string[];
-  actorRole?: "investigator" | "reviewer" | "operator" | "verifier";
+  /** "policy": the deterministic authority policy. "system": monitor, ingestion, execution adapter, rule worker. */
+  actorRole?:
+    | "investigator"
+    | "reviewer"
+    | "operator"
+    | "verifier"
+    | "policy"
+    | "system";
   kind: AuditKind;
   title: string;
   detail: string;
@@ -244,6 +251,8 @@ export interface CaseQueue {
   decisions: AuthorityDecision[];
   revision: number;
   version: 1;
+  /** Backend only: cases a screen holds open that the queue does not (yet) list. Never shown in lists. */
+  unlisted?: OperationalCase[];
   /** Present only when the queue is served by the Suhail backend. */
   connection?: BackendConnection;
 }
@@ -315,55 +324,55 @@ export interface OperationsService {
     relationships: { id: string; type: string; from: string; to: string }[];
   }>;
 }
+/** Lab builds only: the fixture narration for a stage. The connected build shows recorded text instead. */
+const lab = (text: string) => (import.meta.env.VITE_SUHAIL_DATA === "lab" ? text : "");
 export const stages = [
   {
     label: "Collect",
     arabic: "جمع",
-    detail: "Collecting shipment scans and delivery records.",
+    detail: lab("Collecting shipment scans and delivery records."),
     kind: "evidence",
   },
   {
     label: "Graph",
     arabic: "العلاقات",
-    detail: "Reconstructing the expected journey and linked custody evidence.",
+    detail: lab("Reconstructing the expected journey and linked custody evidence."),
     kind: "evidence",
   },
   {
     label: "Diagnose",
     arabic: "التشخيص",
-    detail:
-      "Comparing parcel custody observations and manifest contradictions.",
+    detail: lab("Comparing parcel custody observations and manifest contradictions."),
     kind: "investigation",
   },
   {
     label: "Precedent",
     arabic: "السوابق",
-    detail: "Reviewing similar synthetic cases and recovery outcomes.",
+    detail: lab("Reviewing similar synthetic cases and recovery outcomes."),
     kind: "investigation",
   },
   {
     label: "Recommend",
     arabic: "التوصية",
-    detail: "Preparing an evidence-grounded recovery recommendation.",
+    detail: lab("Preparing an evidence-grounded recovery recommendation."),
     kind: "recommendation",
   },
   {
     label: "Review",
     arabic: "المراجعة",
-    detail: "Checking action risk, policy, and required human authority.",
+    detail: lab("Checking action risk, policy, and required human authority."),
     kind: "policy",
   },
   {
     label: "Route",
     arabic: "التوجيه",
-    detail:
-      "Routing the authorized local recovery action for simulated execution.",
+    detail: lab("Routing the authorized local recovery action for simulated execution."),
     kind: "execution",
   },
   {
     label: "Outcome",
     arabic: "النتيجة",
-    detail: "Independently checking the new custody observation and result.",
+    detail: lab("Independently checking the new custody observation and result."),
     kind: "verification",
   },
 ] as const;

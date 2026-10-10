@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/popover";
 import { SelectControl } from "@/components/select-control";
 import { usePreferences } from "@/state/preferences";
+const LAB_BUILD = import.meta.env.VITE_SUHAIL_DATA === "lab";
 
 type MapFocus = { city: string; revision: number } | null;
 type Cities = Record<string, [number, number]>;
@@ -145,7 +146,9 @@ export function NetworkMap({
   focus: MapFocus;
 }) {
   const { t } = usePreferences();
-  const { catalog, backend } = useOperations();
+  const { catalog, backend: fromBackend } = useOperations();
+  // Connected build: always the backend, so lab-only branches are removed at build time.
+  const backend = !LAB_BUILD || fromBackend;
   const { facilities, cityLocations } = catalog;
   const [basemap, setBasemap] = useState("street");
   const [errors, setErrors] = useState(0);
@@ -187,7 +190,10 @@ export function NetworkMap({
           <h2>{t("Logistics network", "الشبكة اللوجستية")}</h2>
         </div>
         <span className="viz-subtitle">
-          {cases.length} {t("matching shipments", "شحنات مطابقة")}
+          {cases.length}{" "}
+          {backend
+            ? t("matching cases", "حالات مطابقة")
+            : t("matching shipments", "شحنات مطابقة")}
         </span>
       </div>
       <div className="map-canvas" dir="ltr" data-testid="network-map">

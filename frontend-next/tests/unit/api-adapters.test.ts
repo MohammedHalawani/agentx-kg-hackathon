@@ -351,6 +351,22 @@ describe("recorded pipeline and audit events", () => {
     expect(stage.actor).toMatch(/gpt-oss:120b/);
     expect(auditEvent(auditRows[3]).kind).toBe("verification");
     expect(auditEvent(auditRows[3]).actorRole).toBe("verifier");
+    expect(stage.actorRole).toBe("reviewer");
+    expect(auditEvent(auditRows[0]).actorRole).toBe("system");
+    // The authority policy's record is the policy's, never an operator's decision.
+    const authority = auditEvent({
+      id: "SYN-AUD-9",
+      timestamp: "2026-10-09T10:00:07+00:00",
+      shipment_id: SHIP_A,
+      case_id: CASE_A,
+      event_type: "AUTHORITY_DECISION",
+      actor: "SUHAIL-AUTHORITY-POLICY",
+      result: '{"rule_id":"AUTH-09-no-review-accept","risk_class":"APPROVAL_REQUIRED"}',
+    });
+    expect(authority.kind).toBe("policy");
+    expect(authority.actorRole).toBe("policy");
+    expect(authority.title).toBe("Authority decision");
+    expect(decisionFromAudit({ id: "x", timestamp: "", shipment_id: SHIP_A, case_id: CASE_A, event_type: "AUTHORITY_DECISION", actor: "SUHAIL-AUTHORITY-POLICY", decision: "approve" }, "")).toBeNull();
     const decision = decisionFromAudit(auditRows[2], "Request device synchronisation");
     expect(decision).toMatchObject({ verdict: "approved", actor: "SYN-OPERATOR-LOCAL", reason: "" });
     expect(decisionFromAudit(auditRows[0], "")).toBeNull();

@@ -23,6 +23,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { SelectControl } from "@/components/select-control";
 import { usePreferences } from "@/state/preferences";
+const LAB_BUILD = import.meta.env.VITE_SUHAIL_DATA === "lab";
 
 const country: [number, number][] = [
   [29.1, 34.9],
@@ -106,7 +107,9 @@ export function RouteMap({
   onFacility?: (id: string) => void;
 }) {
   const { t } = usePreferences();
-  const { catalog, backend } = useOperations();
+  const { catalog, backend: fromBackend } = useOperations();
+  // Connected build: always the backend, so lab-only branches are removed at build time.
+  const backend = !LAB_BUILD || fromBackend;
   // Lab: the fixture network. Backend: facilities located in evidence the backend served.
   const facilities = catalog.facilities;
   const [layers, setLayers] = useState({

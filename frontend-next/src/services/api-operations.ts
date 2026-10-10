@@ -92,6 +92,8 @@ export class ApiOperationsService implements OperationsService {
   private rowSignature = new Map<string, string>();
   private detailSignature = new Map<string, string>();
   private dirty = { cases: true, events: true, decisions: true };
+  /** Case ids the backend's queue has listed. */
+  private listed = new Set<string>();
   private cities: string[] = [];
   private watchers = new Map<
     string,
@@ -162,12 +164,18 @@ export class ApiOperationsService implements OperationsService {
     // Lists keep their identity while their content is unchanged, so maps and graphs
     // are not rebuilt (and the operator's pan and zoom are not reset) on every poll.
     const last = this.snapshot as CaseQueue | undefined;
-    const cases =
+    const all =
       last && !this.dirty.cases
-        ? last.cases
+        ? null
         : this.order
             .map((id) => this.cases.get(id))
             .filter((c): c is OperationalCase => !!c);
+    // A case opened by a direct link before the queue lists it is held apart: it is not a
+    // queue row until the backend says what it is.
+    const cases = all ? all.filter((c) => this.listed.has(c.id)) : last!.cases;
+    const unlisted = all
+      ? all.filter((c) => !this.listed.has(c.id))
+      : (last!.unlisted ?? []);
     const events =
       last && !this.dirty.events
         ? last.events
@@ -188,6 +196,7 @@ export class ApiOperationsService implements OperationsService {
     this.dirty = { cases: false, events: false, decisions: false };
     return {
       cases,
+      unlisted,
       automatic: this.automatic,
       events,
       decisions,
@@ -297,6 +306,10 @@ export class ApiOperationsService implements OperationsService {
       const stale: string[] = [];
       for (const row of queue.items) {
         present.add(row.case_id);
+        if (!this.listed.has(row.case_id)) {
+          this.listed.add(row.case_id);
+          this.dirty.cases = true;
+        }
         const previous = this.cases.get(row.case_id);
         const joined = this.explore.get(row.case_id);
         const signature = JSON.stringify([row, joined?.origin_city ?? null]);
@@ -312,6 +325,7 @@ export class ApiOperationsService implements OperationsService {
       this.order = this.order.filter((id) => {
         if (present.has(id) || this.watchers.has(id)) return true;
         this.cases.delete(id);
+        this.listed.delete(id);
         this.rowSignature.delete(id);
         this.detailSignature.delete(id);
         this.dirty.cases = true;
@@ -513,10 +527,9 @@ export class ApiOperationsService implements OperationsService {
     const c = this.caseFor(id);
     try {
       const result = await run(c);
-      await Promise.all([
-        this.loadDetail(id, true).catch(() => undefined),
-        this.refreshAfterChange(),
-      ]);
+      // The case itself is re-read before the request counts as done; the queue follows.
+      await this.loadDetail(id, true).catch(() => undefined);
+      void this.refreshAfterChange();
       return result;
     } catch (error) {
       if (error instanceof ApiError && error.conflict) {
@@ -546,18 +559,32 @@ export class ApiOperationsService implements OperationsService {
     const request = this.client
       .post(`/cases/${encodeURIComponent(id)}/investigate`, undefined, 900000)
       .then(() => undefined);
-    const settled = request.then(
-      () => "done" as const,
+    // "Started" is what the backend reports, never a guess: wait until the request settles
+    // or the backend shows the case out of the queue, whichever comes first.
+    let settled = false;
+    const done = request.then(
+      () => {
+        settled = true;
+      },
       (error: unknown) => {
+        settled = true;
         throw error;
       },
     );
-    const started = new Promise<"started">((resolve) =>
-      setTimeout(() => resolve("started"), 1500),
-    );
-    const outcome = await Promise.race([settled, started]);
-    if (outcome === "started")
-      request
+    const underWay = (async () => {
+      for (let attempt = 0; attempt < 120 && !settled; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        if (settled) return;
+        const state = await this.client
+          .get<ApiCaseDetail>(`/cases/${encodeURIComponent(id)}`)
+          .catch(() => null);
+        if (state && !["OPEN", "REOPENED"].includes(state.workflow_state))
+          return;
+      }
+    })();
+    await Promise.race([done, underWay]);
+    if (!settled)
+      done
         .catch((error: unknown) => {
           this.connect({ error: `Investigation request: ${message(error)}` });
           this.commit();
@@ -566,7 +593,7 @@ export class ApiOperationsService implements OperationsService {
           void this.loadDetail(id, true).catch(() => undefined);
           void this.refresh();
         });
-    else await this.loadDetail(id, true).catch(() => undefined);
+    await this.loadDetail(id, true).catch(() => undefined);
     void this.refresh();
   }
   async decide(
@@ -718,7 +745,8 @@ export class ApiOperationsService implements OperationsService {
         arabic: OPERATIONAL[value] ?? humanize(value),
       })),
       cities,
-      cityLocations: { ...located, ...moreCityLocations, ...cityLocations },
+      // Positions the backend located win over the built-in city centres.
+      cityLocations: { ...moreCityLocations, ...cityLocations, ...located },
       facilities: [...this.facilities.values()],
     };
   }

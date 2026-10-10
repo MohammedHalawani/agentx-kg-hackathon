@@ -1,8 +1,10 @@
 import { defineConfig } from "@playwright/test";
 /**
- * Read-only checks against a running Suhail backend that serves this app under /app/:
+ * Checks against a running Suhail backend that serves this app under /app/:
  *   SUHAIL_LIVE_URL=http://127.0.0.1:8000 npx playwright test --config playwright.live.config.ts
- * The specs only read. They never start an investigation, decide, verify or change the worker.
+ * By default the specs only read. With SUHAIL_LIVE_WRITE=1 (scratch database only) the
+ * walkthrough also makes real operator requests: investigate, reject, escalate, approve,
+ * worker start and pause. No spec ever makes a model call on its own.
  */
 export default defineConfig({
   testDir: "./tests/e2e-live",

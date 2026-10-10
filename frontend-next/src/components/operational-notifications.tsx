@@ -4,13 +4,16 @@ import { toast } from "sonner";
 import { useOperations } from "@/state/operations";
 import { usePreferences } from "@/state/preferences";
 import { displayId } from "@/domain/case-view";
+const LAB_BUILD = import.meta.env.VITE_SUHAIL_DATA === "lab";
 
 /**
  * Notifications reflect observed state changes, never a speculative outcome: the lab's own
  * mock transitions, or changes the backend reported between two reads of the queue.
  */
 export function OperationalNotifications() {
-  const { cases, events, backend, connection } = useOperations();
+  const { cases, events, backend: fromBackend, connection } = useOperations();
+  // Connected build: always the backend, so lab-only branches are removed at build time.
+  const backend = !LAB_BUILD || fromBackend;
   const primed = useRef(false);
   const { t } = usePreferences();
   const navigate = useNavigate();

@@ -67,6 +67,7 @@ import { StatusBadge } from "@/components/shared";
 import { dateLabel, timeLabel } from "@/lib/dates";
 import { asset } from "@/config";
 import { displayId, searchText } from "@/domain/case-view";
+const LAB_BUILD = import.meta.env.VITE_SUHAIL_DATA === "lab";
 
 const LAST_CASE = "suhail.last-case";
 function lastCase() {
@@ -85,7 +86,7 @@ const navigation = [
     icon: LayoutDashboard,
   },
   {
-    to: "/cases/SHP-10482",
+    to: LAB_BUILD ? "/cases/SHP-10482" : "/operations",
     en: "Investigation",
     ar: "التحقيق",
     icon: ScanSearch,
@@ -96,7 +97,9 @@ const navigation = [
 ];
 function Navigation() {
   const { t, preferences } = usePreferences();
-  const { cases, backend, connection } = useOperations();
+  const { cases, backend: fromBackend, connection } = useOperations();
+  // Connected build: always the backend, so lab-only branches are removed at build time.
+  const backend = !LAB_BUILD || fromBackend;
   const { setOpenMobile, isMobile } = useSidebar();
   const location = useLocation();
   const [workspace, setWorkspace] = useState(false);
@@ -390,7 +393,9 @@ function Guide({
 }
 function TopBar() {
   const { t, preferences, update } = usePreferences();
-  const { cases, events, backend, connection, service } = useOperations();
+  const { cases, events, backend: fromBackend, connection, service } = useOperations();
+  // Connected build: always the backend, so lab-only branches are removed at build time.
+  const backend = !LAB_BUILD || fromBackend;
   const location = useLocation();
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -599,7 +604,7 @@ function TopBar() {
                     <p>{e.detail}</p>
                     <small>
                       {e.shipmentId ?? e.caseId} · {timeLabel(e.timestamp)} ·{" "}
-                      {e.simulated
+                      {LAB_BUILD && e.simulated
                         ? t("simulated", "محاكاة")
                         : t("backend", "الخادم")}
                     </small>
@@ -615,7 +620,9 @@ function TopBar() {
 function ResolutionTransfer() {
   const { cases } = useOperations();
   const { t } = usePreferences();
-  const { backend, connection } = useOperations();
+  const { backend: fromBackend, connection } = useOperations();
+  // Connected build: always the backend, so lab-only branches are removed at build time.
+  const backend = !LAB_BUILD || fromBackend;
   const resolved = cases
     .filter((c) => c.status === "resolved")
     .map((c) => c.id);
@@ -667,7 +674,9 @@ function ResolutionTransfer() {
 export function AppShell() {
   const location = useLocation();
   const { t } = usePreferences();
-  const { backend, connection } = useOperations();
+  const { backend: fromBackend, connection } = useOperations();
+  // Connected build: always the backend, so lab-only branches are removed at build time.
+  const backend = !LAB_BUILD || fromBackend;
   return (
     <SidebarProvider
       style={

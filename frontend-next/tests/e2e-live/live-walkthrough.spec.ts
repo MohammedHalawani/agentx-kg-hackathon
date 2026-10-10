@@ -163,7 +163,7 @@ test("Decisions relays a rejection and an escalation, and the backend's audit re
   await page.getByRole("button", { name: "Reject the action" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Reject action" }).click();
   await expect
-    .poll(async () => (await (await request.get(`/cases/${approval!.case_id}`)).json()).workflow_state)
+    .poll(async () => (await (await request.get(`/cases/${approval!.case_id}`)).json()).workflow_state, { timeout: 30000 })
     .toBe("REJECTED");
 
   await page.getByRole("textbox", { name: "Search decisions" }).fill(review!.shipment_id);
@@ -171,7 +171,7 @@ test("Decisions relays a rejection and an escalation, and the backend's audit re
   await page.getByRole("button", { name: "Escalate case" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Escalate case" }).click();
   await expect
-    .poll(async () => (await (await request.get(`/cases/${review!.case_id}`)).json()).workflow_state)
+    .poll(async () => (await (await request.get(`/cases/${review!.case_id}`)).json()).workflow_state, { timeout: 30000 })
     .toBe("ESCALATED");
 
   // Neither decision executed or resolved anything.

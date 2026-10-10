@@ -120,7 +120,9 @@ export function CanopusProvider({
               error: m.streaming
                 ? preferences.language === "ar"
                   ? "توقفت إجابة المحاكاة قبل اكتمالها. أعد المحاولة للمتابعة."
-                  : "The simulated response was interrupted. Retry to continue."
+                  : import.meta.env.VITE_SUHAIL_DATA === "lab"
+                    ? "The simulated response was interrupted. Retry to continue."
+                    : "The response was interrupted. Retry to continue."
                 : m.error,
             })),
             busy: false,
@@ -262,7 +264,9 @@ export function CanopusProvider({
                   error:
                     error instanceof Error
                       ? error.message
-                      : "The simulated response failed.",
+                      : import.meta.env.VITE_SUHAIL_DATA === "lab"
+                        ? "The simulated response failed."
+                        : "The response failed.",
                 }
               : m,
           ),

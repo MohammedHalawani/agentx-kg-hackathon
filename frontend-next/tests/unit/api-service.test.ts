@@ -93,8 +93,13 @@ function backend(overrides: Record<string, Handler> = {}) {
   const posts = () => calls.filter((call) => call.method === "POST");
   return { service, calls, posts, streams, routes };
 }
-const find = (service: ApiOperationsService, id: string) =>
-  service.getSnapshot().cases.find((c) => c.id === id)!;
+const find = (service: ApiOperationsService, id: string) => {
+  const snapshot = service.getSnapshot();
+  return (
+    snapshot.cases.find((c) => c.id === id) ??
+    snapshot.unlisted!.find((c) => c.id === id)!
+  );
+};
 
 afterEach(() => vi.useRealTimers());
 
@@ -399,5 +404,8 @@ describe("ApiOperationsService live pipeline", () => {
       expect(find(world.service, "SYN-CASE-NOPE").backend?.detailError).toMatch(/not found/),
     );
     expect(find(world.service, "SYN-CASE-NOPE").evidence).toEqual([]);
+    // It never appears as a queue row.
+    expect(world.service.getSnapshot().cases.map((c) => c.id)).not.toContain("SYN-CASE-NOPE");
+    expect(world.service.getSnapshot().cases).toHaveLength(3);
   });
 });

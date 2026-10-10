@@ -47,10 +47,12 @@ import {
   searchText,
 } from "@/domain/case-view";
 import { useCanopusScreen } from "@/state/canopus";
+const LAB_BUILD = import.meta.env.VITE_SUHAIL_DATA === "lab";
 
 export function OperationsPage() {
-  const { cases, automatic, service, catalog, backend, connection } =
-    useOperations();
+  const { cases, automatic, service, catalog, backend: fromBackend, connection } = useOperations();
+  // Connected build: always the backend, so lab-only branches are removed at build time.
+  const backend = !LAB_BUILD || fromBackend;
   const { t } = usePreferences();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");

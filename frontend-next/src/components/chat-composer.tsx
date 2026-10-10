@@ -155,7 +155,11 @@ export function ChatComposer({
                   {t("No matching assistant.", "لا يوجد مساعد مطابق.")}
                 </CommandEmpty>
                 <CommandGroup
-                  heading={t("SIMULATED PARTICIPANTS", "مساعدو المحاكاة")}
+                  heading={
+                    import.meta.env.VITE_SUHAIL_DATA === "lab"
+                      ? t("SIMULATED PARTICIPANTS", "مساعدو المحاكاة")
+                      : t("PARTICIPANTS", "المشاركون")
+                  }
                 >
                   {participants
                     .filter((p) => !pageHelper || p.id === "suhail")

@@ -228,7 +228,9 @@ function ConversationMessage({
         </Bubble>
         {!user && !message.streaming && !message.error && (
           <MessageFooter className="conversation-message-meta">
-            {t("Simulated response", "إجابة محاكاة")}
+            {import.meta.env.VITE_SUHAIL_DATA === "lab"
+              ? t("Simulated response", "إجابة محاكاة")
+              : t("Response", "إجابة")}
             {message.actions && message.actions.length > 0 && (
               <span>
                 <CheckCheck size={10} />

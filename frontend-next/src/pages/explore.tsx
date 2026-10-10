@@ -53,10 +53,13 @@ import {
 } from "@/domain/page-actions";
 import { displayId } from "@/domain/case-view";
 import { useCanopusScreen } from "@/state/canopus";
+const LAB_BUILD = import.meta.env.VITE_SUHAIL_DATA === "lab";
 
 type ExploreView = "map" | "graph" | "schema";
 export function ExplorePage() {
-  const { cases, catalog, service, backend } = useOperations();
+  const { cases, catalog, service, backend: fromBackend } = useOperations();
+  // Connected build: always the backend, so lab-only branches are removed at build time.
+  const backend = !LAB_BUILD || fromBackend;
   const { t, preferences } = usePreferences();
   const [params, setParams] = useSearchParams();
   const filters = {
@@ -277,7 +280,7 @@ export function ExplorePage() {
         </Tabs>
         <div className="explore-count">
           <b data-testid="explore-count">{matching.length}</b>{" "}
-          {t("shipments", "شحنات")}
+          {backend ? t("cases", "حالات") : t("shipments", "شحنات")}
           <span>·</span>
           {t("selected filters", "التصفية المحددة")}
         </div>
@@ -462,7 +465,7 @@ export function ExplorePage() {
                   <>
                     <h2>
                       <Package size={14} />
-                      {t("Shipments", "الشحنات")}
+                      {backend ? t("Cases", "الحالات") : t("Shipments", "الشحنات")}
                       <span className="subtle-count">{matching.length}</span>
                     </h2>
                     <Button

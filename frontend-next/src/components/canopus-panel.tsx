@@ -35,6 +35,7 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 import type { ChatParticipant } from "@/domain/chat";
 import { LAB, asset } from "@/config";
 import { displayId } from "@/domain/case-view";
+const LAB_BUILD = import.meta.env.VITE_SUHAIL_DATA === "lab";
 
 const screenLabels = {
   operations: ["Operations", "العمليات"],
@@ -100,8 +101,10 @@ export function CanopusPanel() {
     window.addEventListener("keydown", escape);
     return () => window.removeEventListener("keydown", escape);
   }, [open, close]);
-  const pageQuestions =
-    context.screen === "explore"
+  // Suggested questions belong to the lab's scripted assistant.
+  const pageQuestions = !LAB_BUILD
+    ? []
+    : context.screen === "explore"
       ? [
           t(
             "Show shipments from Riyadh to Khobar.",
@@ -124,37 +127,39 @@ export function CanopusPanel() {
             ),
           ]
         : [];
-  const questions = pageQuestions.length
-    ? pageQuestions
-    : selected
-      ? [
-          t("Where is parcel custody confirmed?", "أين تأكدت حيازة الطرد؟"),
-          t(
-            "@reviewer why is approval required?",
-            "@reviewer لماذا يلزم تفويض المشغل؟",
-          ),
-        ]
-      : context.screen === "decisions"
+  const questions = !LAB_BUILD
+    ? []
+    : pageQuestions.length
+      ? pageQuestions
+      : selected
         ? [
+            t("Where is parcel custody confirmed?", "أين تأكدت حيازة الطرد؟"),
             t(
-              "Which cases need human authority?",
-              "ما الحالات التي تحتاج تفويضاً بشرياً؟",
-            ),
-            t(
-              "Explain the review for SHP-10482.",
-              "اشرح مراجعة الشحنة SHP-10482.",
+              "@reviewer why is approval required?",
+              "@reviewer لماذا يلزم تفويض المشغل؟",
             ),
           ]
-        : [
-            t(
-              "What needs attention in the queue?",
-              "ما الحالات التي تحتاج انتباهاً في القائمة؟",
-            ),
-            t(
-              "What continues when investigation is paused?",
-              "ما الذي يستمر عند إيقاف التحقيق مؤقتاً؟",
-            ),
-          ];
+        : context.screen === "decisions"
+          ? [
+              t(
+                "Which cases need human authority?",
+                "ما الحالات التي تحتاج تفويضاً بشرياً؟",
+              ),
+              t(
+                "Explain the review for SHP-10482.",
+                "اشرح مراجعة الشحنة SHP-10482.",
+              ),
+            ]
+          : [
+              t(
+                "What needs attention in the queue?",
+                "ما الحالات التي تحتاج انتباهاً في القائمة؟",
+              ),
+              t(
+                "What continues when investigation is paused?",
+                "ما الذي يستمر عند إيقاف التحقيق مؤقتاً؟",
+              ),
+            ];
   function send(text: string, fail = false) {
     if (!connected || !text.trim() || thread.busy) return;
     const participant = text
@@ -288,40 +293,40 @@ export function CanopusPanel() {
                 </TooltipContent>
               </Tooltip>
               {LAB && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={t(
-                      "Canopus conversation options",
-                      "خيارات محادثة كانوبس",
-                    )}
-                  >
-                    <Ellipsis size={17} />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    disabled={thread.busy}
-                    onClick={() =>
-                      send(
-                        t(
-                          "Explain the current operational context.",
-                          "اشرح السياق التشغيلي الحالي.",
-                        ),
-                        true,
-                      )
-                    }
-                  >
-                    <AlertTriangle size={14} />
-                    {t(
-                      "Try a simulated response error",
-                      "تجربة خطأ إجابة في المحاكاة",
-                    )}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={t(
+                        "Canopus conversation options",
+                        "خيارات محادثة كانوبس",
+                      )}
+                    >
+                      <Ellipsis size={17} />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      disabled={thread.busy}
+                      onClick={() =>
+                        send(
+                          t(
+                            "Explain the current operational context.",
+                            "اشرح السياق التشغيلي الحالي.",
+                          ),
+                          true,
+                        )
+                      }
+                    >
+                      <AlertTriangle size={14} />
+                      {t(
+                        "Try a simulated response error",
+                        "تجربة خطأ إجابة في المحاكاة",
+                      )}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -372,7 +377,12 @@ export function CanopusPanel() {
               typing={
                 thread.busy
                   ? (thread.activity ??
-                    t("Preparing a synthetic response…", "إعداد إجابة محاكاة…"))
+                    (LAB_BUILD
+                      ? t(
+                          "Preparing a synthetic response…",
+                          "إعداد إجابة محاكاة…",
+                        )
+                      : t("Preparing a response…", "إعداد الإجابة…")))
                   : undefined
               }
               onRetry={(messageId) => void canopus.retry(context, messageId)}
@@ -450,15 +460,17 @@ export function CanopusPanel() {
               }
             />
             <div className="chat-readonly">
-              {connected
+              {LAB_BUILD
                 ? t(
                     "Synthetic replies · local simulation",
                     "إجابات اصطناعية · محاكاة محلية",
                   )
-                : t(
-                    "Not connected · no AI responses are generated",
-                    "غير متصل · لا تُولَّد إجابات ذكاء اصطناعي",
-                  )}
+                : connected
+                  ? t("Suhail operations assistant", "مساعد سهيل للعمليات")
+                  : t(
+                      "Not connected · no AI responses are generated",
+                      "غير متصل · لا تُولَّد إجابات ذكاء اصطناعي",
+                    )}
             </div>
           </footer>
         </motion.section>

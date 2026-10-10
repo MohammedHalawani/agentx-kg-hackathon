@@ -13,6 +13,7 @@ import type { AuthorityDecision, OperationalCase } from "@/domain/types";
 import { useOperations } from "@/state/operations";
 import { usePreferences } from "@/state/preferences";
 import { displayId } from "@/domain/case-view";
+const LAB_BUILD = import.meta.env.VITE_SUHAIL_DATA === "lab";
 export function DecisionDialog({
   c,
   verdict,
@@ -22,7 +23,9 @@ export function DecisionDialog({
   verdict: AuthorityDecision["verdict"];
   onClose: () => void;
 }) {
-  const { service, backend } = useOperations();
+  const { service, backend: fromBackend } = useOperations();
+  // Connected build: always the backend, so lab-only branches are removed at build time.
+  const backend = !LAB_BUILD || fromBackend;
   const { t } = usePreferences();
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");

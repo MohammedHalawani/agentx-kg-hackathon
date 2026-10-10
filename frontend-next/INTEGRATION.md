@@ -12,7 +12,9 @@ as the rollback.
 | Connected (default) | `npm run build` → `dist/` | The Suhail API only | Served by the backend at `/app/` |
 | UI lab | `npm run dev:lab`, `npm run build:lab` → `dist-lab/` | Browser fixtures, local timer, scripted assistant | `http://127.0.0.1:5180/` |
 
-The lab build exists for design work and for regression against the original lab. The swap is
+The lab build exists for design work and for regression against the original lab. Lab-only
+wording in shared components is behind a build-time constant (`LAB_BUILD`), so it is removed
+from the connected bundle rather than merely unreachable. The swap is
 made at build time (`src/services/lab-entry.ts` is aliased to `src/services/lab.ts` in lab
 mode), so the connected bundle contains no fixture cases, no mock service and no scripted
 assistant replies. `npm run build` followed by a search of `dist/` for fixture text is part of
@@ -114,6 +116,9 @@ retry and scrolling components are unchanged from the lab.
 | Backend serves `/app/` and keeps its API routes | `pytest chat/tests/test_frontend_next_mount.py` |
 | Read-only check against a running backend | `SUHAIL_LIVE_URL=http://127.0.0.1:8010 npm run test:e2e:live` |
 | Full walkthrough with real operator requests (scratch database only) | add `SUHAIL_LIVE_WRITE=1`; backend from `scripts/ui_scratch_backend.py` |
+
+Only the live suite (`test:e2e:live`) exercises the real backend over HTTP. The "connected"
+suite is a stand-in: the browser's requests are answered by a route mock in the tests.
 
 The scripted stand-in (`tests/e2e-backend/backend-stub.ts`, `tests/fixtures/backend.ts`) answers
 HTTP in the backend's wire format for tests only; the application never imports it.

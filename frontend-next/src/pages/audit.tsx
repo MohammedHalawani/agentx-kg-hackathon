@@ -67,6 +67,7 @@ import {
 } from "@/domain/types";
 import { dateLabel, timeLabel, dateTimeLabel } from "@/lib/dates";
 import { useCanopusScreen } from "@/state/canopus";
+const LAB_BUILD = import.meta.env.VITE_SUHAIL_DATA === "lab";
 
 const kinds = [
   "intake",
@@ -117,13 +118,27 @@ const shortDate = (day: string) =>
   });
 export function AuditPage() {
   const snapshot = useOperations();
-  const { cases, events, backend, service, connection, catalog } = snapshot;
+  const {
+    cases,
+    events,
+    backend: fromBackend,
+    service,
+    connection,
+    catalog,
+  } = snapshot;
+  // Connected build: always the backend, so lab-only branches are removed at build time.
+  const backend = !LAB_BUILD || fromBackend;
   const base = backend ? backendAuditFilters : emptyAuditFilters;
   // Lab fixtures are anchored to a fixed day; backend records use the real calendar.
   const today = backend ? riyadhToday() : LAB_TODAY;
   useEffect(() => {
     void service.loadAudit?.();
   }, [service]);
+  // Backend "policy" records come from the review stage and from the authority policy alike.
+  const kindLabel = (kind: InvestigationStageEvent["kind"]) =>
+    backend && kind === "policy"
+      ? t("Review / policy", "المراجعة / السياسة")
+      : t(labels[kind], arabic[kind]);
   const label = (id: string) => {
     const found = cases.find((c) => c.id === id);
     return found ? displayId(found) : id;
@@ -257,7 +272,7 @@ export function AuditPage() {
       ),
     );
     return t(
-      `${output.total} matching simulated events across ${output.uniqueShipments} unique shipments and ${output.uniqueCases} cases. ${next.destination !== "all" ? `Destination: ${next.destination}. ` : ""}Time range: ${next.timeRange}. ${nextMode === "by_shipment" ? "Shipment histories are shown." : "The event table is updated."}${output.total === 0 ? " No records match; try a broader time range or clear a filter." : ""}`,
+      `${output.total} matching ${LAB_BUILD ? "simulated " : ""}events across ${output.uniqueShipments} unique shipments and ${output.uniqueCases} cases. ${next.destination !== "all" ? `Destination: ${next.destination}. ` : ""}Time range: ${next.timeRange}. ${nextMode === "by_shipment" ? "Shipment histories are shown." : "The event table is updated."}${output.total === 0 ? " No records match; try a broader time range or clear a filter." : ""}`,
       `${output.total} أحداث محاكاة مطابقة تخص ${output.uniqueShipments} شحنات فريدة و${output.uniqueCases} حالات. ${next.destination !== "all" ? `الوجهة: ${next.destination}. ` : ""}${nextMode === "by_shipment" ? "تظهر سجلات الشحنات المطابقة." : "تم تحديث جدول الأحداث."}${output.total === 0 ? " لا توجد سجلات مطابقة؛ وسّع الفترة الزمنية أو أزل أحد المرشحات." : ""}`,
     );
   }
@@ -309,7 +324,7 @@ export function AuditPage() {
           variant="secondary"
           className={`event-type event-type-${row.original.kind}`}
         >
-          {t(labels[row.original.kind], arabic[row.original.kind])}
+          {kindLabel(row.original.kind)}
         </Badge>
       ),
     },
@@ -354,7 +369,7 @@ export function AuditPage() {
       size: 95,
       cell: ({ row }) => (
         <span className="micro-tag">
-          {row.original.simulated
+          {LAB_BUILD && row.original.simulated
             ? t("SIMULATED", "محاكاة")
             : t("BACKEND", "الخادم")}
         </span>
@@ -383,7 +398,10 @@ export function AuditPage() {
         <span className="date-pill">
           <ShieldCheck size={13} />
           {backend
-            ? t("Backend audit ledger · synthetic data", "سجل تدقيق الخادم · بيانات اصطناعية")
+            ? t(
+                "Backend audit ledger · synthetic data",
+                "سجل تدقيق الخادم · بيانات اصطناعية",
+              )
             : t("Traceable · simulated", "قابل للتتبع · محاكاة")}
         </span>
       </PageTitle>
@@ -580,6 +598,15 @@ export function AuditPage() {
                     { value: "reviewer", label: "Reviewer" },
                     { value: "operator", label: t("Operator", "المشغل") },
                     { value: "verifier", label: "Verifier" },
+                    ...(backend
+                      ? [
+                          {
+                            value: "policy",
+                            label: t("Authority policy", "سياسة الصلاحيات"),
+                          },
+                          { value: "system", label: t("System", "النظام") },
+                        ]
+                      : []),
                   ]}
                 />
               </label>
@@ -634,11 +661,7 @@ export function AuditPage() {
             <RefreshCw size={14} />
           </Button>
           {active.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => update(base)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => update(base)}>
               {t("Clear", "مسح")}
             </Button>
           )}
@@ -680,21 +703,21 @@ export function AuditPage() {
                     custom: "",
                   }[filters.timeRange]
                 : t(
-                  {
-                    today: "09 Oct 2026",
-                    week: "05–09 Oct 2026",
-                    month: "01–09 Oct 2026",
-                    all: "All recorded dates",
-                    custom: "",
-                  }[filters.timeRange],
-                  {
-                    today: "09 أكتوبر 2026",
-                    week: "05–09 أكتوبر 2026",
-                    month: "01–09 أكتوبر 2026",
-                    all: "كل الأوقات",
-                    custom: "",
-                  }[filters.timeRange],
-                )}
+                    {
+                      today: "09 Oct 2026",
+                      week: "05–09 Oct 2026",
+                      month: "01–09 Oct 2026",
+                      all: "All recorded dates",
+                      custom: "",
+                    }[filters.timeRange],
+                    {
+                      today: "09 أكتوبر 2026",
+                      week: "05–09 أكتوبر 2026",
+                      month: "01–09 أكتوبر 2026",
+                      all: "كل الأوقات",
+                      custom: "",
+                    }[filters.timeRange],
+                  )}
           </span>
         </div>
         {active.length > 0 && (
@@ -807,7 +830,7 @@ export function AuditPage() {
                                 variant="secondary"
                                 className={`event-type event-type-${e.kind}`}
                               >
-                                {t(labels[e.kind], arabic[e.kind])}
+                                {kindLabel(e.kind)}
                               </Badge>
                               <Button
                                 variant="link"
@@ -819,9 +842,12 @@ export function AuditPage() {
                               <p>{e.detail}</p>
                               <small>
                                 {e.actor} ·{" "}
-                                {e.simulated
+                                {LAB_BUILD && e.simulated
                                   ? t("simulated", "محاكاة")
-                                  : t("recorded by the backend", "سجّله الخادم")}
+                                  : t(
+                                      "recorded by the backend",
+                                      "سجّله الخادم",
+                                    )}
                               </small>
                             </div>
                           </div>
@@ -869,9 +895,9 @@ export function AuditPage() {
             <SheetTitle>{selected?.title}</SheetTitle>
             <SheetDescription>
               {selected ? label(selected.caseId) : ""} ·{" "}
-              {selected && !selected.simulated
-                ? t("Backend audit event", "حدث تدقيق من الخادم")
-                : t("Simulated audit event", "حدث تدقيق محاكى")}
+              {LAB_BUILD && selected?.simulated !== false
+                ? t("Simulated audit event", "حدث تدقيق محاكى")
+                : t("Backend audit event", "حدث تدقيق من الخادم")}
             </SheetDescription>
           </SheetHeader>
           {selected && (
@@ -881,7 +907,7 @@ export function AuditPage() {
                   variant="secondary"
                   className={`event-type event-type-${selected.kind}`}
                 >
-                  {t(labels[selected.kind], arabic[selected.kind])}
+                  {kindLabel(selected.kind)}
                 </Badge>
                 <p className="audit-event-detail mt-5">{selected.detail}</p>
                 <dl className="audit-event-metadata">
@@ -923,7 +949,7 @@ export function AuditPage() {
                   <dd>{selected.evidenceIds?.join(", ") ?? "—"}</dd>
                   <dt>{t("Source", "المصدر")}</dt>
                   <dd>
-                    {selected.simulated
+                    {LAB_BUILD && selected.simulated
                       ? t(
                           "Local synthetic fixture / mock service",
                           "محاكاة محلية",

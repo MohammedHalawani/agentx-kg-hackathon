@@ -10,10 +10,13 @@ import { useOperations } from "@/state/operations";
 import { usePreferences } from "@/state/preferences";
 import { stages, type OperationalCase } from "@/domain/types";
 import { timeLabel } from "@/lib/dates";
+const LAB_BUILD = import.meta.env.VITE_SUHAIL_DATA === "lab";
 
 /** The case activity survives in Canopus without a second floating chat dock. */
 export function CaseActivityMarkers({ c }: { c: OperationalCase }) {
-  const { events, backend } = useOperations();
+  const { events, backend: fromBackend } = useOperations();
+  // Connected build: always the backend, so lab-only branches are removed at build time.
+  const backend = !LAB_BUILD || fromBackend;
   const { t } = usePreferences();
   const active = ["investigating", "executing", "verifying"].includes(c.status);
   const waiting = ["human_review", "needs_evidence"].includes(c.status);
@@ -38,7 +41,7 @@ export function CaseActivityMarkers({ c }: { c: OperationalCase }) {
             {event.title}
             <small>
               {timeLabel(event.timestamp)} ·{" "}
-              {event.simulated
+              {LAB_BUILD && event.simulated
                 ? t("simulated", "محاكاة")
                 : t("backend", "الخادم")}
             </small>

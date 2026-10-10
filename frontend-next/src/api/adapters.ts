@@ -514,9 +514,9 @@ function investigationOf(
     primaryCause: u.primary_cause,
     confidence: u.confidence,
     summary: u.summary,
-    toolCalls: 0,
-    requiresPhysicalCheck: false,
-    snapshotSuperseded: false,
+    toolCalls: u.tool_calls ?? 0,
+    requiresPhysicalCheck: u.requires_physical_check === true,
+    snapshotSuperseded: u.snapshot_superseded === true,
     hypotheses: hypotheses(u.hypotheses),
     missingEvidence: u.missing_evidence ?? [],
   };
@@ -907,6 +907,22 @@ const AUDIT_KIND: Record<string, AuditKind> = {
   APPROVAL_REFUSED: "policy",
   OPERATOR_DECISION: "decision",
   CASE_REOPENED: "decision",
+  HUMAN_OUTCOME_RECORDED: "decision",
+  // The deterministic authority policy's own records: never an operator's decision.
+  AUTHORITY_DECISION: "policy",
+  ACTION_AUTHORIZED: "policy",
+  EXECUTION_CONTEXT_CHECKED: "policy",
+  EXECUTION_REFUSED: "policy",
+  ACTION_EXECUTED: "execution",
+  ACTION_NOT_ACKNOWLEDGED: "execution",
+  NOTIFICATION_QUEUED: "execution",
+  OUTCOME_FAILED: "verification",
+  OUTCOME_VERIFIED_EXCEPTION_REMAINS: "verification",
+  OUTCOME_VERIFIED_HUMAN_CLOSURE: "verification",
+  OTHER_OPEN_CASES: "verification",
+  SYMPTOMS_UPDATED: "intake",
+  SNAPSHOT_SUPERSEDED: "investigation",
+  MODEL_DEGRADED: "investigation",
   ACTION_INITIATED: "execution",
   EXECUTION_REQUESTED: "execution",
   EXECUTION_ACKNOWLEDGED: "execution",
@@ -933,9 +949,23 @@ function auditKind(row: ApiAuditEvent): AuditKind {
   if (known) return known;
   if (/OUTCOME|VERIF/.test(row.event_type)) return "verification";
   if (/EXECUT|ACTION/.test(row.event_type)) return "execution";
-  if (/DECISION/.test(row.event_type)) return "decision";
   if (/APPROV|REVIEW|AUTH/.test(row.event_type)) return "policy";
+  // Only an operator's own record is a decision.
+  if (/DECISION/.test(row.event_type) && /OPERATOR/.test(row.actor))
+    return "decision";
   return "investigation";
+}
+/** The role is read from the recorded actor, never guessed from the kind of event. */
+function actorRole(row: ApiAuditEvent): InvestigationStageEvent["actorRole"] {
+  const actor = row.actor.toUpperCase();
+  if (actor.includes("OPERATOR")) return "operator";
+  if (actor.includes("AUTHORITY-POLICY")) return "policy";
+  if (actor.includes("OUTCOME-VERIFIER")) return "verifier";
+  if (actor.includes("REVIEWER")) return "reviewer";
+  if (actor.includes("INVESTIGATOR")) return "investigator";
+  // Workers record model-backed stages with the model's name; the review stage is the reviewer's.
+  if (row.model) return row.stage === "review" ? "reviewer" : "investigator";
+  return "system";
 }
 export function auditEvent(row: ApiAuditEvent): InvestigationStageEvent {
   const kind = auditKind(row);
@@ -947,13 +977,7 @@ export function auditEvent(row: ApiAuditEvent): InvestigationStageEvent {
     shipmentId: row.shipment_id,
     timestamp: row.timestamp,
     evidenceTimestamp: row.scenario_time ?? undefined,
-    actorRole: /OPERATOR/.test(row.actor)
-      ? "operator"
-      : kind === "policy"
-        ? "reviewer"
-        : kind === "verification" || kind === "resolution"
-          ? "verifier"
-          : "investigator",
+    actorRole: actorRole(row),
     kind,
     title:
       row.event_type === "PIPELINE_STAGE"

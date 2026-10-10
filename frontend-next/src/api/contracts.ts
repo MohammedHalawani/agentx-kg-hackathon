@@ -195,6 +195,9 @@ export interface ApiDiagnosis {
     confidence: string | null;
     hypotheses?: ApiDiagnosisHypothesis[];
     missing_evidence?: string[];
+    requires_physical_check?: boolean | null;
+    tool_calls?: number;
+    snapshot_superseded?: boolean;
   } | null;
 }
 export interface ApiRecommendation {

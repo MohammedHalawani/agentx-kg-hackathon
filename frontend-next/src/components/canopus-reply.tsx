@@ -20,7 +20,7 @@ const blockInfo = {
     icon: ScanSearch,
   },
   hypothesis: {
-    title: "Hypothesis · simulated",
+    title: import.meta.env.VITE_SUHAIL_DATA === "lab" ? "Hypothesis · simulated" : "Hypothesis",
     ar: "فرضية · محاكاة",
     icon: FlaskConical,
   },

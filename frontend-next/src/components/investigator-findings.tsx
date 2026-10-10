@@ -55,8 +55,7 @@ export function InvestigatorFindings({
           <b>{readable(found.primaryCause)}</b>
           {found.confidence &&
             ` · ${t("confidence", "الثقة")}: ${found.confidence}`}
-          {found.accepted &&
-            ` · ${found.toolCalls} ${t("evidence queries", "استعلامات أدلة")}`}
+          {` · ${found.toolCalls} ${t("evidence queries", "استعلامات أدلة")}`}
         </p>
         {found.hypotheses.map((h, index) => (
           <div className="finding" key={`${h.cause}-${index}`}>

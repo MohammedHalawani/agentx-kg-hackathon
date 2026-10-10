@@ -23,12 +23,12 @@ the original at copy time.
 | --- | --- |
 | TypeScript (`npm run typecheck`, app and tests) | Passed, no errors |
 | Lint (`npm run lint`) | Passed, no warnings |
-| Build (`npm run build`, connected) | Passed. The bundle was searched for fixture text and mock code: none present |
+| Build (`npm run build`, connected) | Passed. Correction (independent review, same day): the fixture module and the mock service were absent from the bundle, but lab-only strings in runtime branches were not (for example `SHP-10482`, `Noura Al-Salem`, `SPL Operations`, `policy C-04`). They were unreachable, yet present. Fixed in batch 4: those branches are now removed at build time and the bundle search covers them |
 | Build (`npm run build:lab`) | Passed |
 | Unit tests (`npm test`) | 44 passed: 16 original lab tests, 11 adapter tests, 17 backend-service tests |
 | Connected app in Chrome (`npm run test:e2e`) | 8 passed, against a scripted stand-in that answers in the backend's wire format |
 | Original lab browser suite on the integrated code (`npm run test:e2e:lab`) | 20 of 20 passed, specs unmodified |
-| Backend: `/app/` serving and API routes (`pytest chat/tests/test_frontend_next_mount.py` with the API and authority tests) | 24 passed |
+| Backend: `/app/` serving and API routes | 24 passed across four files: `test_frontend_next_mount.py` 5, `test_operations_api.py` 14, `test_legacy_retirement.py` 2, `test_operations_authority.py` 3 |
 | Backend suite on this branch, without the Neo4j-backed tests | 386 passed, 11 deselected, 0 failed |
 | Real backend from this branch on port 8010 (`npm run test:e2e:live`) | Passed: `/app/` and deep links served, API routes kept their paths, and with operations unavailable the app showed its offline state and no cases |
 

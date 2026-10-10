@@ -64,6 +64,7 @@ import { useOperations } from "@/state/operations";
 import { usePreferences } from "@/state/preferences";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useCanopus, useCanopusScreen } from "@/state/canopus";
+const LAB_BUILD = import.meta.env.VITE_SUHAIL_DATA === "lab";
 
 /** Backend cases: the first evidence the recorded stage cited that this screen can show. */
 function stageTarget(c: OperationalCase, index: number) {
@@ -78,10 +79,21 @@ export function InvestigationPage() {
   const { caseId } = useParams();
   const { key: navigationKey } = useLocation();
   const [params] = useSearchParams();
-  const { cases, events, decisions, service, backend } = useOperations();
+  const {
+    cases,
+    unlisted,
+    events,
+    decisions,
+    service,
+    backend: fromBackend,
+  } = useOperations();
+  // Connected build: always the backend, so lab-only branches are removed at build time.
+  const backend = !LAB_BUILD || fromBackend;
   const { t, preferences } = usePreferences();
   const canopus = useCanopus();
-  const c = cases.find((c) => c.id === caseId);
+  const c =
+    cases.find((c) => c.id === caseId) ??
+    unlisted?.find((c) => c.id === caseId);
   // Lab fixtures open on a known marker; backend evidence has no predetermined focus.
   const [selected, setSelected] = useState<string | null>(
     backend ? null : "warehouse",
@@ -168,11 +180,15 @@ export function InvestigationPage() {
     navigationKey,
   ]);
   if (alias) return <Navigate to={`/cases/${alias.id}`} replace />;
-  const missing = c?.backend && !c.backend.detailLoaded && c.backend.detailError;
+  const missing =
+    c?.backend && !c.backend.detailLoaded && c.backend.detailError;
   if (c?.backend && !c.backend.detailLoaded && !missing && !c.shipment.id)
     return (
       <EmptyState
-        title={t("Loading the case from the backend…", "جارٍ تحميل الحالة من الخادم…")}
+        title={t(
+          "Loading the case from the backend…",
+          "جارٍ تحميل الحالة من الخادم…",
+        )}
         description={t(
           "Evidence, recorded stages and decisions are read from the Suhail backend.",
           "تُقرأ الأدلة والمراحل المسجلة والقرارات من خادم سهيل.",
@@ -293,6 +309,14 @@ export function InvestigationPage() {
             <PriorityLabel priority={c.priority} />
           </div>
           <p>
+            {c.backend && (
+              <>
+                <span dir="ltr" title={t("Case identifier", "معرف الحالة")}>
+                  {t("Case", "الحالة")} {c.id.replace(/^SYN-OPS-CASE-/, "")}
+                </span>
+                <i>·</i>
+              </>
+            )}
             {c.issue}
             <i>·</i>
             {c.shipment.origin}
@@ -345,41 +369,50 @@ export function InvestigationPage() {
               ? t("Verified · completed", "تحقق · مكتمل")
               : c.backend && !c.backend.detailLoaded
                 ? (c.backend.detailError ??
-                  t("Loading evidence from the backend…", "جارٍ تحميل الأدلة من الخادم…"))
+                  t(
+                    "Loading evidence from the backend…",
+                    "جارٍ تحميل الأدلة من الخادم…",
+                  ))
                 : c.backend?.workflowState === "HUMAN_REVIEW"
                   ? t(
                       "Waiting for a person to investigate",
                       "بانتظار تحقيق بشري",
                     )
                   : c.status === "human_review"
-                ? t("Waiting for operator authority", "بانتظار صلاحية المشغل")
-                : c.status === "needs_evidence"
-                  ? t(
-                      "Blocked · independent evidence needed",
-                      "متوقف · يحتاج أدلة مستقلة",
-                    )
-                  : c.status === "escalated"
                     ? t(
-                        "Escalated · manual follow-up",
-                        "تم التصعيد · متابعة بشرية",
+                        "Waiting for operator authority",
+                        "بانتظار صلاحية المشغل",
                       )
-                    : c.backend?.supersededRunId && c.status === "queued"
+                    : c.status === "needs_evidence"
                       ? t(
-                          "Queued for re-investigation · the earlier run is superseded",
-                          "في انتظار إعادة التحقيق · التحقيق السابق لم يعد سارياً",
+                          "Blocked · independent evidence needed",
+                          "متوقف · يحتاج أدلة مستقلة",
                         )
-                      : c.run
-                      ? backend
-                        ? c.status === "investigating"
-                          ? t("Investigation in progress", "التحقيق جارٍ")
-                          : c.status === "verifying"
-                            ? t(
-                                "Executed · awaiting independent verification",
-                                "نُفذ · بانتظار التحقق المستقل",
-                              )
-                            : t("Recorded run", "تحقيق مسجل")
-                        : t("Simulated run in progress", "تحقيق محاكى جارٍ")
-                      : t("Queued", "في الانتظار")}
+                      : c.status === "escalated"
+                        ? t(
+                            "Escalated · manual follow-up",
+                            "تم التصعيد · متابعة بشرية",
+                          )
+                        : c.backend?.supersededRunId && c.status === "queued"
+                          ? t(
+                              "Queued for re-investigation · the earlier run is superseded",
+                              "في انتظار إعادة التحقيق · التحقيق السابق لم يعد سارياً",
+                            )
+                          : c.run
+                            ? backend
+                              ? c.status === "investigating"
+                                ? t("Investigation in progress", "التحقيق جارٍ")
+                                : c.status === "verifying"
+                                  ? t(
+                                      "Executed · awaiting independent verification",
+                                      "نُفذ · بانتظار التحقق المستقل",
+                                    )
+                                  : t("Recorded run", "تحقيق مسجل")
+                              : t(
+                                  "Simulated run in progress",
+                                  "تحقيق محاكى جارٍ",
+                                )
+                            : t("Queued", "في الانتظار")}
           </span>
           {previewStage !== null && (
             <Button
@@ -412,7 +445,7 @@ export function InvestigationPage() {
                 className={`pipeline-step state-${state} ${stage === i ? "selected" : ""}`}
                 aria-pressed={stage === i}
                 aria-label={`${s.label} · ${state}`}
-                title={s.detail}
+                title={s.detail || undefined}
                 onClick={() => inspectStage(i)}
               >
                 <span className="stage-number">
@@ -597,7 +630,10 @@ export function InvestigationPage() {
                 >
                   <ShieldCheck size={13} />
                   {backend
-                    ? t("Ask the verifier to check now", "اطلب من المتحقق الفحص الآن")
+                    ? t(
+                        "Ask the verifier to check now",
+                        "اطلب من المتحقق الفحص الآن",
+                      )
                     : t("Verify outcome", "التحقق من النتيجة")}
                 </Button>
               )
@@ -631,7 +667,10 @@ export function InvestigationPage() {
           <span className="context-lab">
             <span className="live-dot" />
             {backend
-              ? t("Backend evidence · synthetic dataset", "أدلة الخادم · بيانات اصطناعية")
+              ? t(
+                  "Backend evidence · synthetic dataset",
+                  "أدلة الخادم · بيانات اصطناعية",
+                )
               : t("Synthetic evidence", "أدلة محاكاة")}
           </span>
         </aside>
@@ -704,7 +743,10 @@ export function InvestigationPage() {
                   : evidence.confidence === "vehicle_only"
                     ? t("VEHICLE TELEMETRY ONLY", "موقع المركبة فقط")
                     : c.backend && evidence.kind === "delivery"
-                      ? t("RECORDED ATTEMPT · NOT PROOF", "محاولة مسجلة · ليست إثباتاً")
+                      ? t(
+                          "RECORDED ATTEMPT · NOT PROOF",
+                          "محاولة مسجلة · ليست إثباتاً",
+                        )
                       : t("EXPECTED · UNCONFIRMED", "متوقع · غير مؤكد")}
               </Badge>
             )}
@@ -766,9 +808,9 @@ export function InvestigationPage() {
                     `الحالة ${c.id}. الأدلة والمراجعة والنتائج كما سجلها الخادم (بيانات اصطناعية).`,
                   )
                 : t(
-                "Synthetic evidence, recommendation, and recorded outcomes.",
-                "أدلة المحاكاة والتوصية والنتائج المسجلة.",
-              )}
+                    "Synthetic evidence, recommendation, and recorded outcomes.",
+                    "أدلة المحاكاة والتوصية والنتائج المسجلة.",
+                  )}
             </SheetDescription>
           </SheetHeader>
           <ScrollArea className="flex-1">
@@ -797,12 +839,7 @@ export function InvestigationPage() {
               </DetailSection>
               <DetailSection title={t("Expected journey", "الرحلة المتوقعة")}>
                 {c.shipment.origin} → {c.shipment.destination}
-                {!backend && (
-                  <>
-                    {" "}
-                    → {t("Delivery depot", "مستودع التسليم")}
-                  </>
-                )}
+                {!backend && <> → {t("Delivery depot", "مستودع التسليم")}</>}
               </DetailSection>
               <InvestigatorFindings
                 c={c}
@@ -832,7 +869,9 @@ export function InvestigationPage() {
                       </p>
                       {c.backend.ruleSignals.signals.map((signal) => (
                         <div className="finding" key={signal.code}>
-                          <b>{signal.code.replaceAll("_", " ").toLowerCase()}</b>
+                          <b>
+                            {signal.code.replaceAll("_", " ").toLowerCase()}
+                          </b>
                           {signal.summary && <p>{signal.summary}</p>}
                         </div>
                       ))}
@@ -858,29 +897,32 @@ export function InvestigationPage() {
               )}
               <div className="detail-section">
                 <h3>{t("Actual evidence", "الأدلة الفعلية")}</h3>
-                {c.evidence.map((e) => (
-                  <Button
-                    key={e.id}
-                    variant="ghost"
-                    className="detail-evidence"
-                    onClick={() => {
-                      select(e.id);
-                      setDetails(false);
-                    }}
-                  >
-                    <span>
-                      {e.label}
-                      <small>
-                        {e.facility} · {e.time} AST
-                      </small>
-                    </span>
-                    {e.confidence === "confirmed" ? (
-                      <ShieldCheck size={14} />
-                    ) : (
-                      <AlertTriangle size={14} />
-                    )}
-                  </Button>
-                ))}
+                {c.evidence
+                  // The planned-route end marker is drawn by this screen, not recorded evidence.
+                  .filter((e) => !(c.backend && e.id.startsWith("planned:")))
+                  .map((e) => (
+                    <Button
+                      key={e.id}
+                      variant="ghost"
+                      className="detail-evidence"
+                      onClick={() => {
+                        select(e.id);
+                        setDetails(false);
+                      }}
+                    >
+                      <span>
+                        {e.label}
+                        <small>
+                          {e.facility} · {e.time} AST
+                        </small>
+                      </span>
+                      {e.confidence === "confirmed" ? (
+                        <ShieldCheck size={14} />
+                      ) : (
+                        <AlertTriangle size={14} />
+                      )}
+                    </Button>
+                  ))}
               </div>
               <DetailSection title={c.recommendation.title}>
                 {c.recommendation.detail}

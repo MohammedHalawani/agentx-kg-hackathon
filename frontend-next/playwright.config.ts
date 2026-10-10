@@ -3,7 +3,7 @@ import { defineConfig } from "@playwright/test";
  * The connected product (the build the backend serves under /app/), driven against a
  * scripted stand-in for the backend's HTTP surface in the backend's own wire format.
  * The stand-in lives in the tests only. The original lab specs run from
- * playwright.lab.config.ts; a live backend is exercised by scripts/live-smoke.mjs.
+ * playwright.lab.config.ts; a live backend is exercised by playwright.live.config.ts (the only real-HTTP evidence).
  */
 export default defineConfig({
   testDir: "./tests/e2e-backend",

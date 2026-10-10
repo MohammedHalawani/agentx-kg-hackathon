@@ -457,7 +457,7 @@ export const auditRows: ApiAuditEvent[] = [
     shipment_id: SHIP_A,
     case_id: CASE_A,
     event_type: "CASE_OPENED",
-    actor: "SYN-RULE-WORKER",
+    actor: "SUHAIL-MONITOR",
     to_state: "OPEN",
   },
   {
@@ -467,7 +467,7 @@ export const auditRows: ApiAuditEvent[] = [
     shipment_id: SHIP_A,
     case_id: CASE_A,
     event_type: "PIPELINE_STAGE",
-    actor: "SYN-RULE-WORKER",
+    actor: "SUHAIL-INVESTIGATION-WORKER",
     model: "gpt-oss:120b",
     stage: "review",
     stage_status: "COMPLETED",
@@ -492,7 +492,7 @@ export const auditRows: ApiAuditEvent[] = [
     shipment_id: "SYN-SHP-000102",
     case_id: CASE_B,
     event_type: "OUTCOME_VERIFIED",
-    actor: "SYN-VERIFIER",
+    actor: "SUHAIL-OUTCOME-VERIFIER",
     result: "Buffered scans from the named device arrived after the request.",
   },
 ];

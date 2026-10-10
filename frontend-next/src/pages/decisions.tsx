@@ -39,8 +39,11 @@ import {
   displayId,
 } from "@/domain/case-view";
 import { useCanopus, useCanopusScreen } from "@/state/canopus";
+const LAB_BUILD = import.meta.env.VITE_SUHAIL_DATA === "lab";
 export function DecisionsPage() {
-  const { cases, decisions, service, backend } = useOperations();
+  const { cases, decisions, service, backend: fromBackend } = useOperations();
+  // Connected build: always the backend, so lab-only branches are removed at build time.
+  const backend = !LAB_BUILD || fromBackend;
   const { t, preferences } = usePreferences();
   const [params] = useSearchParams();
   const { key: navigationKey } = useLocation();
