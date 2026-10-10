@@ -2,7 +2,7 @@ import type { EvidenceNode, ShipmentDetail } from '@/contracts/caseDetail'
 import type { StepKey } from './pipelineSteps'
 
 export type EvidenceCategory = 'key' | 'route' | 'parties' | 'context' | 'inventory'
-export interface KeyReason { kind: 'diagnosis' | 'recommendation' | 'outcome' | 'milestone' | 'linked'; code?: string }
+export interface KeyReason { kind: 'diagnosis' | 'recommendation' | 'outcome' | 'rule_signal' | 'milestone' | 'linked'; code?: string }
 export interface KeyEvidence { node: EvidenceNode; reasons: KeyReason[]; stages: StepKey[] }
 
 const ROUTE = new Set(['CustodyEvent', 'ScanEvent', 'WeightObservation', 'ExpectedMilestone', 'DeliveryAttempt', 'ContactAttempt', 'GPSObservation', 'TrafficObservation', 'DepotReconciliation', 'DeliveryProof', 'AuthenticationEvidence', 'SignatureEvidence', 'PhotoEvidence', 'HandoffEvidence', 'LocationPin', 'RecipientReport', 'StatusEvent', 'VehicleAssignment', 'DeliverySession'])
@@ -27,10 +27,13 @@ export function evidenceCategories(detail: ShipmentDetail) {
     if (!list.some(r => r.kind === reason.kind && r.code === reason.code)) list.push(reason)
     reasons.set(id, list)
   }
-  for (const d of detail.reasoning?.diagnoses ?? []) for (const id of d.evidence_ids ?? []) add(id, { kind: 'diagnosis', code: d.code ?? d.category })
+  // Cited by the investigation only when an agent investigation is the current diagnosis.
+  if (detail.diagnosis?.available) for (const h of detail.diagnosis.hypotheses) if (h.status !== 'refuted') for (const id of h.supporting_evidence_ids ?? []) add(id, { kind: 'diagnosis', code: h.cause })
   for (const id of detail.recommendation?.evidence_ids ?? []) add(id, { kind: 'recommendation' })
   for (const id of detail.outcome?.evidence_ids ?? []) add(id, { kind: 'outcome' })
-  const milestones = new Set((detail.reasoning?.assessment?.expected_vs_actual ?? []).filter(m => m.milestone_id && (m.late || m.missing_due)).map(m => m.milestone_id!))
+  // Rule checks flag evidence too, labelled as such: a rule signal is not a diagnosis.
+  for (const sig of detail.rule_signals?.signals ?? []) for (const id of sig.evidence_ids ?? []) add(id, { kind: 'rule_signal', code: sig.code })
+  const milestones = new Set((detail.rule_signals?.expected_vs_actual ?? []).filter(m => m.milestone_id && (m.late || m.missing_due)).map(m => m.milestone_id!))
   for (const id of milestones) add(id, { kind: 'milestone' })
   // One real relationship hop from cited evidence to its bound components.
   const cited = new Set(reasons.keys())
@@ -40,14 +43,14 @@ export function evidenceCategories(detail: ShipmentDetail) {
     }
   }
   const stageHits = (id: string) => CITING_STAGES.filter(([stage]) => detail.pipeline?.events.some(ev => ev.stage === stage && ev.output.evidence_ids?.includes(id))).map(([, key]) => key)
-  const rank = (r: KeyReason[]) => Math.min(...r.map(x => ['diagnosis', 'recommendation', 'outcome', 'milestone', 'linked'].indexOf(x.kind)))
+  const rank = (r: KeyReason[]) => Math.min(...r.map(x => ['diagnosis', 'recommendation', 'outcome', 'rule_signal', 'milestone', 'linked'].indexOf(x.kind)))
   const key: KeyEvidence[] = [...reasons.entries()]
     .map(([id, r]) => ({ node: byId.get(id)!, reasons: r, stages: stageHits(id) }))
     .sort((a, b) => rank(a.reasons) - rank(b.reasons) || (evidenceTime(a.node) ?? '').localeCompare(evidenceTime(b.node) ?? ''))
   const route = nodes.filter(n => ROUTE.has(n.kind)).sort((a, b) => (evidenceTime(a) ?? '').localeCompare(evidenceTime(b) ?? ''))
   const parties = nodes.filter(n => PARTIES.has(n.kind))
   const context = nodes.filter(n => !ROUTE.has(n.kind) && !PARTIES.has(n.kind))
-  const precedents = (detail.reasoning?.precedents ?? detail.precedents ?? []).length
+  const precedents = (detail.rule_signals?.precedents ?? detail.precedents ?? []).length
   return { key, route, parties, context, precedents }
 }
 

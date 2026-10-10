@@ -10,6 +10,7 @@ from dataset_v2.contracts import Config, canonical, digest, instant, UTC_FIELDS
 from dataset_v2.load import target_guard
 from operations.schema import SCHEMA, FIELDS, COMMON, public_value
 from operations.lifecycle import OperationsConflict, decision_state, require_version, require_actor
+from operations.diagnosis import case_diagnosis
 from operations.simulator import SPEEDS, EVENT_KINDS
 from operations.worker import analyze
 
@@ -1083,5 +1084,7 @@ class OperationsStore:
                 "state_version":case["state_version"],"priority":case["priority"],"operational_status":case["operational_status"],
                 "as_of":case["as_of"],"recommendation_id":case.get("recommendation_id"),"last_run_id":case.get("last_run_id"),
                 "recommendation":recommendation,"review":reviews[0] if reviews else None,"outcome":outcomes[0] if outcomes else None,
-                "decisions":linked("OpsDecision"),"executions":linked("OpsExecution"),"run":current,"synthetic":True}
+                "decisions":linked("OpsDecision"),"executions":linked("OpsExecution"),"run":current,
+                # The current run's agent investigation, or explicitly absent; never rule output.
+                "diagnosis":case_diagnosis(case,current),"synthetic":True}
         return self._execute(read)

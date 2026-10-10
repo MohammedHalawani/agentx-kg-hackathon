@@ -11,7 +11,10 @@ const detail: ShipmentDetail = {
       n('HUB', 'Hub'), n('DRV', 'Driver'), n('POL', 'Policy'), n('M1', 'ExpectedMilestone', { latest_at: '2026-09-02T00:00:00Z' })],
     edges: [{ id: 'E1', kind: 'HAS_SIGNATURE', start: 'PROOF', end: 'SIGN', properties: {} }, { id: 'E2', kind: 'AT', start: 'C1', end: 'HUB', properties: {} }],
   },
-  reasoning: { diagnoses: [{ code: 'DELIVERY_DISPUTE', evidence_ids: ['PROOF', 'REPORT'] }], assessment: { expected_vs_actual: [{ milestone_id: 'M1', late: true }] } },
+  diagnosis: { available: true, reason: null, source: 'agent_investigation', run_id: 'RUN', as_of: '2026-09-03T06:00:00Z', investigated_at: null, primary_cause: 'DELIVERY_DISPUTE', confidence: 'medium', summary: null,
+    hypotheses: [{ cause: 'DELIVERY_DISPUTE', status: 'supported', supporting_evidence_ids: ['PROOF', 'REPORT'] }, { cause: 'PROOF_INSUFFICIENT', status: 'refuted', supporting_evidence_ids: ['C0'] }],
+    missing_evidence: [], requires_physical_check: null, tool_calls: 3, snapshot_superseded: false, language: 'en' },
+  rule_signals: { kind: 'rule_signals', is_diagnosis: false, source: 'deterministic_evidence_rules', as_of: '2026-09-04T00:00:00Z', signals: [], expected_vs_actual: [{ milestone_id: 'M1', late: true }] },
   recommendation: { evidence_ids: ['PROOF', 'REPORT'] },
   route_layers: { layers: { custody_points: [{ lat: 1, lng: 1, evidence_id: 'C1' }], expected_route: [{ segment_id: 'S', points: [{ lat: 1, lng: 1, entity_id: 'HUB' }] }] } },
 }
@@ -23,6 +26,13 @@ describe('Evidence categories', () => {
     expect(key[0].reasons).toEqual([{ kind: 'diagnosis', code: 'DELIVERY_DISPUTE' }, { kind: 'recommendation' }])
     expect(key.find(k => k.node.id === 'SIGN')!.reasons).toEqual([{ kind: 'linked' }])
     expect(key.some(k => k.node.id === 'FAR')).toBe(false)
+  })
+
+  it('labels rule-flagged evidence as a rule signal and ignores refuted hypotheses and absent diagnoses', () => {
+    const flagged = evidenceCategories({ ...detail, recommendation: null, diagnosis: { ...detail.diagnosis!, available: false, hypotheses: [] },
+      rule_signals: { ...detail.rule_signals!, signals: [{ code: 'DELIVERY_DISPUTE', evidence_ids: ['PROOF'] }] } })
+    expect(flagged.key.find(k => k.node.id === 'PROOF')!.reasons).toEqual([{ kind: 'rule_signal', code: 'DELIVERY_DISPUTE' }])
+    expect(evidenceCategories(detail).key.some(k => k.node.id === 'C0')).toBe(false)  // Only a refuted hypothesis cited it.
   })
 
   it('orders route & custody chronologically and keeps every entity reachable in some category', () => {

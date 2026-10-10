@@ -1,14 +1,16 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { LanguageProvider } from '@/components/i18n/LanguageProvider'
 import { OperationsCaseDetail } from './OperationsCaseDetail'
-import type { ShipmentDetail } from '@/contracts/caseDetail'
-const mock = vi.hoisted(() => ({ post: vi.fn(), refetch: vi.fn(), data: { case_id: 'CASE-1', shipment_id: 'SYN-1', workflow_state: 'AWAITING_APPROVAL', state_version: 3, recommendation_id: 'REC-1', evidence: { nodes: [], edges: [] }, reasoning: { workflow_state: 'OPEN' } } as ShipmentDetail }))
+import type { Diagnosis, RuleSignals, ShipmentDetail } from '@/contracts/caseDetail'
+const mock = vi.hoisted(() => ({ post: vi.fn(), refetch: vi.fn(), data: { case_id: 'CASE-1', shipment_id: 'SYN-1', workflow_state: 'AWAITING_APPROVAL', state_version: 3, recommendation_id: 'REC-1', evidence: { nodes: [], edges: [] } } as ShipmentDetail }))
+const diagnosis = (over: Partial<Diagnosis> = {}): Diagnosis => ({ available: true, reason: null, source: 'agent_investigation', run_id: 'SYN-OPS-RUN-0123456789ab', as_of: '2026-09-11T14:01:00Z', investigated_at: '2026-09-11T14:02:00Z', primary_cause: 'DELAYED_SYNC', confidence: 'medium', summary: 'Buffered scans from the depot handheld explain the missing receipt.', hypotheses: [{ cause: 'DELAYED_SYNC', status: 'supported', assessment: 'The handheld stopped reporting.', supporting_evidence_ids: ['SCAN'] }, { cause: 'UNRECONCILED_CUSTODY', status: 'refuted', supporting_evidence_ids: [] }], missing_evidence: [], requires_physical_check: false, tool_calls: 4, snapshot_superseded: false, language: 'en', ...over })
+const signals = (codes: string[], ids: string[] = []): RuleSignals => ({ kind: 'rule_signals', is_diagnosis: false, source: 'deterministic_evidence_rules', as_of: '2026-09-12T08:00:00Z', signals: codes.map(code => ({ code, evidence_ids: ids, summary_en: 'Rule text.' })), expected_vs_actual: [] })
 vi.mock('@/hooks/useFetch', () => ({ useFetch: () => ({ data: mock.data, loading: false, error: null, refetch: mock.refetch }) }))
 vi.mock('@/lib/operationsClient', () => ({ operationsPost: mock.post }))
 vi.mock('@/components/artifacts/Graph', () => ({ Graph: ({ highlightedIds }: { highlightedIds?: string[] }) => <div data-testid="highlighted-graph" data-ids={highlightedIds?.join(',')}>Evidence graph</div> }))
 vi.mock('@/components/operations/ShipmentRouteMap', () => ({ ShipmentRouteMap: ({ highlightedIds }: { highlightedIds?:string[] }) => <div data-testid="highlighted-map" data-ids={highlightedIds?.join(',')}>Route evidence preview</div> }))
-beforeEach(() => { vi.clearAllMocks(); localStorage.clear(); mock.post.mockResolvedValue({}); mock.data.workflow_state = 'AWAITING_APPROVAL'; mock.data.reasoning = { workflow_state: 'OPEN' }; mock.data.outcome = null; mock.data.recommendation = { action_en: 'Compare bound custody evidence' }; mock.data.pipeline = undefined; mock.data.synthetic = true; mock.data.evidence = { nodes: [], edges: [] } })
+beforeEach(() => { vi.clearAllMocks(); localStorage.clear(); mock.post.mockResolvedValue({}); mock.data.workflow_state = 'AWAITING_APPROVAL'; mock.data.diagnosis = undefined; mock.data.rule_signals = undefined; mock.data.outcome = null; mock.data.recommendation = { action_en: 'Compare bound custody evidence' }; mock.data.pipeline = undefined; mock.data.synthetic = true; mock.data.evidence = { nodes: [], edges: [] } })
 describe('Case lifecycle authority', () => {
   it('uses ledger state rather than fresh inferred OPEN and approves without resolving', async () => {
     render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
@@ -22,7 +24,7 @@ describe('Case lifecycle authority', () => {
   })
   it('keeps a healthy shipment with NO_EXCEPTION assessment evidence-only', () => {
     mock.data.workflow_state = undefined
-    mock.data.reasoning = { workflow_state: 'NO_EXCEPTION' }
+    mock.data.rule_signals = { kind: 'rule_signals', is_diagnosis: false, source: 'deterministic_evidence_rules', as_of: '2026-09-11T14:01:00Z', signals: [], expected_vs_actual: [] }
     render(<LanguageProvider><OperationsCaseDetail shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
     expect(screen.getByText(/Evidence only/)).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Start investigation' })).toBeNull()
@@ -187,9 +189,39 @@ describe('Case lifecycle authority', () => {
     expect(document.body.textContent).not.toMatch(/GPS/)
     mock.data.review = undefined
   })
+  it('shows the agent investigation as what happened, with its run and snapshot, and rule signals apart', () => {
+    mock.data.workflow_state = 'AWAITING_APPROVAL'
+    mock.data.diagnosis = diagnosis()
+    mock.data.rule_signals = signals(['UNRECONCILED_CUSTODY'])
+    render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
+    expect(screen.getByTestId('diagnosis-primary').textContent).toBe('Delayed device synchronization')
+    expect(screen.getByTestId('diagnosis-provenance').textContent).toContain('confidence medium')
+    expect(screen.getByTestId('diagnosis-provenance').textContent).toContain('56789ab')
+    expect(screen.getByTestId('rule-signals').textContent).toMatch(/not a diagnosis/)
+    expect(screen.getByTestId('rule-signals').textContent).toContain('Unreconciled custody')
+    fireEvent.click(screen.getByRole('tab', { name: 'Diagnosis' }))
+    expect(screen.getAllByTestId('diagnosis-hypothesis').map(h => h.textContent)).toEqual([expect.stringContaining('Delayed device synchronization'), expect.stringContaining('refuted')])
+    expect(screen.getByTestId('rule-signals-panel').textContent).toContain('Rule signals — not a diagnosis')
+  })
+  it('never fills an absent diagnosis from rule signals', () => {
+    mock.data.workflow_state = 'HUMAN_REVIEW'
+    mock.data.diagnosis = { ...diagnosis(), available: false, reason: 'no_agent_investigation', source: null, primary_cause: null, confidence: null, summary: null, hypotheses: [] }
+    mock.data.rule_signals = signals(['DELIVERY_DISPUTE'], ['PROOF'])
+    mock.data.evidence = { nodes: [{ id: 'PROOF', kind: 'DeliveryProof', properties: {} }], edges: [] }
+    render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
+    expect(screen.getByTestId('diagnosis-primary').textContent).toBe('No diagnosis')
+    expect(screen.getByTestId('diagnosis-absent').textContent).toMatch(/No agent investigation ran/)
+    expect(screen.getByTestId('rule-signals').textContent).toContain('Delivery dispute')
+    fireEvent.click(screen.getByRole('tab', { name: /Evidence/ }))
+    // Evidence a rule flagged is labelled as a rule check, never as cited by a diagnosis.
+    expect(screen.getAllByText('Flagged by a rule check: Delivery dispute').length).toBeGreaterThan(0)
+    expect(screen.queryByText(/Cited by diagnosis/)).toBeNull()
+    fireEvent.click(screen.getByRole('tab', { name: 'Diagnosis' }))
+    expect(within(screen.getByTestId('diagnosis-panel')).queryByText(/Delivery dispute/)).toBeNull()
+  })
   it('opens Evidence on cited key evidence and focuses the graph on it without running anything', () => {
     mock.data.evidence = { nodes: [{ id: 'PROOF', kind: 'DeliveryProof', properties: {} }, { id: 'REPORT', kind: 'RecipientReport', properties: { report_code: 'NOT_RECEIVED' } }, { id: 'HUB', kind: 'Hub', properties: {} }], edges: [] }
-    mock.data.reasoning = { workflow_state: 'HUMAN_REVIEW', diagnoses: [{ code: 'DELIVERY_DISPUTE', evidence_ids: ['PROOF', 'REPORT'] }] }
+    mock.data.diagnosis = diagnosis({ primary_cause: 'DELIVERY_DISPUTE', hypotheses: [{ cause: 'DELIVERY_DISPUTE', status: 'supported', supporting_evidence_ids: ['PROOF', 'REPORT'] }] })
     render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
     fireEvent.click(screen.getByRole('tab', { name: /Evidence/ }))
     expect(screen.getByRole('tab', { name: /Key evidence/ }).getAttribute('aria-selected')).toBe('true')

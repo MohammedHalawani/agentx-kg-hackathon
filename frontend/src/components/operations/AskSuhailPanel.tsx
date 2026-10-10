@@ -16,12 +16,13 @@ export function AskSuhailPanel({ detail, caseId }: { detail: ShipmentDetail; cas
   if (!ENABLED) return null
 
   const summarize = () => {
-    const dx = detail.reasoning?.diagnoses?.[0]
+    // Only a completed agent investigation names a cause; rule signals are not a diagnosis.
+    const dx = detail.diagnosis?.available ? detail.diagnosis : null
     const action = isArabic
       ? detail.recommendation?.action_ar ?? detail.recommendation?.action
       : detail.recommendation?.action_en ?? detail.recommendation?.action
     const state = detail.workflow_state ? t(`ops.states.${detail.workflow_state}`) : t('ops.workspace.noDiagnosis')
-    const cause = dx ? rootCauseLabel(dx.code ?? '') : t('ops.workspace.noDiagnosis')
+    const cause = dx ? rootCauseLabel(dx.primary_cause ?? 'UNKNOWN') : t('ops.workspace.noDiagnosis')
     return t('ops.askSuhail.readOnlyReply', {
       shipment: detail.shipment_id,
       case: caseId ?? '—',

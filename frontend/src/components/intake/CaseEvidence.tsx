@@ -33,7 +33,7 @@ function KeyCard({ item, mapped, onShow }: { item: KeyEvidence; mapped: boolean;
     <div className="flex flex-wrap items-center gap-2">
       <span className="rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium">{entityLabel(n.kind)}</span>
       {item.reasons.map((r, i) => <span key={i} className={`rounded-md px-1.5 py-0.5 text-[10px] ${r.kind === 'linked' ? 'border border-border text-muted-foreground' : 'bg-primary/10 text-primary'}`}>
-        {r.kind === 'diagnosis' ? t('ops.evidence.citedDiagnosis', { cause: rootCauseLabel(r.code ?? '') }) : r.kind === 'linked' ? t('ops.evidence.linked') : r.kind === 'milestone' ? t('ops.evidence.divergentMilestone') : t(`ops.evidence.cited.${r.kind}`)}
+        {r.kind === 'diagnosis' ? t('ops.evidence.citedDiagnosis', { cause: rootCauseLabel(r.code ?? '') }) : r.kind === 'rule_signal' ? t('ops.evidence.ruleSignal', { cause: rootCauseLabel(r.code ?? '') }) : r.kind === 'linked' ? t('ops.evidence.linked') : r.kind === 'milestone' ? t('ops.evidence.divergentMilestone') : t(`ops.evidence.cited.${r.kind}`)}
       </span>)}
       <time className="ms-auto text-[11px] text-muted-foreground" dir="ltr">{format(evidenceTime(n))}</time>
     </div>

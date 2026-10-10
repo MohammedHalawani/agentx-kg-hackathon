@@ -8,6 +8,7 @@ from datetime import datetime, date, timezone
 
 from dataset_v2.contracts import Config, Edge, KINDS, Node, World, instant
 from dataset_v2.context import CATALOG, CONTEXT, OBSERVATIONS
+from operations.diagnosis import absent_diagnosis
 from operations.pagination import LIMITS, fingerprint, encode_cursor, decode_cursor
 from operations.reasoning import public_evidence, route_layers, triage
 
@@ -428,12 +429,25 @@ class OperationsReader:
                          "h.last_upload_at AS last_upload_at ORDER BY h.occurred_at DESC LIMIT 60",
                          device_id=device_id, from_at=since, cutoff=until)
 
+    def rule_signals(self, evidence):
+        """Deterministic rule checks over the evidence visible at its as-of time. They feed monitoring and
+        fact checks; they are served as labelled signals and never as the case's diagnosis."""
+        checked = triage(evidence, self.config)
+        signals = [{key: d.get(key) for key in ("code", "summary_en", "summary_ar", "evidence_ids", "certainty", "requires_human_review")}
+                   for d in checked["diagnoses"]]
+        return {"kind": "rule_signals", "is_diagnosis": False, "source": "deterministic_evidence_rules",
+                "as_of": evidence["as_of"], "signals": signals,
+                "expected_vs_actual": checked["assessment"]["expected_vs_actual"],
+                "operational_labels": checked["operational_labels"], "journey_forecast": checked["journey_forecast"],
+                "precedents": self.historical_precedents(evidence["shipment_id"], checked["assessment"]["supported_codes"], as_of=evidence["as_of"]),
+                "note": "Rule checks over the evidence visible at as_of. Signals for monitoring and fact checks, not a diagnosis."}
+
     def shipment_detail(self, shipment_id, as_of=None):
         evidence = self.evidence(shipment_id, as_of)
-        reasoning = triage(evidence, self.config)
-        reasoning["precedents"] = self.historical_precedents(shipment_id, reasoning["assessment"]["supported_codes"], as_of=evidence["as_of"])
+        # A shipment view has no investigation of its own: the diagnosis is explicitly absent, never filled from rules.
         return {"shipment_id": shipment_id, "as_of": evidence["as_of"], "synthetic": True,
-                "evidence": evidence, "reasoning": reasoning, "route_layers": route_layers(evidence, self.config)}
+                "evidence": evidence, "diagnosis": absent_diagnosis("not_a_case"),
+                "rule_signals": self.rule_signals(evidence), "route_layers": route_layers(evidence, self.config)}
 
     def case_detail(self, case_id):
         if not isinstance(case_id, str) or len(case_id)>160:
@@ -450,10 +464,12 @@ class OperationsReader:
             # Stored workflow/approvals/outcomes are authoritative. Fresh triage is
             # a proposal and cannot silently replace an existing human decision.
             for key in ("workflow_state","state_version","priority","operational_status","recommendation_id",
-                        "last_run_id","recommendation","review","outcome","decisions","executions","run"):
+                        "last_run_id","recommendation","review","outcome","decisions","executions","run","diagnosis"):
                 if key in ledger:
                     detail[key]=ledger[key]
             detail["investigated_at"]=(ledger.get("run") or {}).get("recorded_at")
+        else:
+            detail["diagnosis"]=absent_diagnosis("no_operations_ledger")
         from operations.graph import topology
         saved=((detail.get("run") or {}).get("result") or {})
         events=saved.get("pipeline_events",[])

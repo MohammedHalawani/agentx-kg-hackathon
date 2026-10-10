@@ -252,7 +252,7 @@ class EvidenceTests(unittest.TestCase):
 
     def test_ledger_detail_preserves_actual_workflow_and_approval(self):
         reader,_=make_reader(lambda q,p:[{"shipment_id":"DEMO-SHP-18","as_of":"2026-09-01T02:00:00+00:00","workflow_state":"OPEN","state_version":1}])
-        reader.shipment_detail=lambda sid,asof:{"shipment_id":sid,"as_of":asof,"reasoning":{"workflow_state":"AWAITING_APPROVAL"}}
+        reader.shipment_detail=lambda sid,asof:{"shipment_id":sid,"as_of":asof,"rule_signals":{"is_diagnosis":False,"signals":[]}}
         class Store:
             def case_detail(self,case_id):return {"workflow_state":"AWAITING_OUTCOME","state_version":4,"recommendation":{"action":"confirm address"},"outcome":None}
         reader.store=Store()
@@ -274,7 +274,9 @@ class EvidenceTests(unittest.TestCase):
         reader,driver=make_reader(handler)
         result=reader.shipment_detail(sid)
         self.assertEqual(result["shipment_id"],sid)
-        self.assertEqual(result["reasoning"]["workflow_state"],"NO_EXCEPTION")
+        self.assertNotIn("reasoning",result)
+        self.assertEqual((result["rule_signals"]["signals"],result["rule_signals"]["is_diagnosis"]),([],False))
+        self.assertEqual((result["diagnosis"]["available"],result["diagnosis"]["reason"]),(False,"not_a_case"))
         with self.assertRaises(LookupError):reader.evidence("DEMO-SHP-29")
         self.assertIn("split:'development'",OWN_NODES)
         reader.driver.handler=lambda q,p:[{"kind":"Package","props":{}}]*1001
