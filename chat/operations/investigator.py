@@ -161,6 +161,14 @@ Rules:
 - If the evidence available now does not establish a cause, conclude INSUFFICIENT_EVIDENCE: list what is missing in
   missing_evidence, say in next_evidence_step what should be obtained next and from where, and recommend an
   evidence-gathering action or a person's check. That is a good answer when it is true; a guess is not.
+- confidence: high when the cited evidence establishes the cause and the closest alternative is refuted by evidence;
+  medium when it supports the cause but an alternative is still open; low when it does not establish the cause. If your
+  honest confidence is low, or nothing you retrieved distinguishes your cause from its closest alternative, the
+  conclusion is INSUFFICIENT_EVIDENCE, not the most familiar cause.
+- requires_physical_check: true only when, in your judgment, a person must go and physically locate or inspect the parcel
+  before anything else can safely happen. An evidence request carried out through the system (a rescan, a reweigh, a
+  device sync, a facility's check of its own records and shelves, a request for more evidence) is not by itself such a
+  check: set false when that request is all you recommend.
 - Your turns are limited (limits). Leave a turn for the conclusion.
 
 Respond with exactly one JSON object and nothing else, either:
