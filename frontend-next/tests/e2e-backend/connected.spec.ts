@@ -100,7 +100,8 @@ test("Investigation shows recorded evidence, keeps GPS apart from custody, and r
     "CONFIRMED CUSTODY",
   );
   // Vehicle telemetry is labelled as such.
-  await map.locator(".evidence-marker.vehicle_only").first().click({ force: true });
+  // Markers can overlap at this zoom; deliver the click to the marker itself.
+  await map.locator(".evidence-marker.vehicle_only").last().dispatchEvent("click");
   await expect(page.getByTestId("evidence-inspector")).toContainText(
     "VEHICLE TELEMETRY ONLY",
   );

@@ -824,7 +824,14 @@ export function InvestigationPage() {
                 )}
               {c.backend?.review && (
                 <DetailSection
-                  title={t("Independent review", "المراجعة المستقلة")}
+                  title={
+                    c.backend.review.byModel
+                      ? t("Independent review", "المراجعة المستقلة")
+                      : t(
+                          "Deterministic evidence guard · no model review",
+                          "حارس أدلة حتمي · دون مراجعة نموذج",
+                        )
+                  }
                 >
                   {t("Verdict", "الحكم")}: {c.backend.review.verdict ?? "—"}
                   {c.backend.review.summary && (

@@ -138,6 +138,8 @@ export interface ApiPipelineEvent {
   recorded_at?: string;
   evidence_as_of?: string;
   output?: {
+    /** Which component produced the stage: e.g. evidence_rules, deterministic_guard, or an agent. */
+    agent?: string | null;
     evidence_ids?: string[];
     edge_ids?: string[];
     nodes?: number;
@@ -201,6 +203,7 @@ export interface ApiRecommendation {
   action_ar?: string;
   summary_en?: string;
   summary_ar?: string;
+  authority_reason?: string;
   evidence_ids?: string[];
   action_type?: string | null;
   risk_class?: string | null;
@@ -283,6 +286,8 @@ export interface ApiCaseDetail {
   recommendation?: ApiRecommendation | null;
   review?: {
     verdict?: string;
+    model_verdict?: string | null;
+    mode?: string;
     reason_code?: string;
     feedback?: string;
     summary_en?: string;

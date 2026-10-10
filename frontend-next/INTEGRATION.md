@@ -90,6 +90,7 @@ Code: `src/api/contracts.ts` (wire types), `src/api/client.ts` (HTTP, session to
 | Queue has no server-side sort or origin filter | Sorting and filtering run in the browser over the loaded (bounded) queue |
 | `request_evidence` and `reopen` decisions, human outcomes | Not offered yet; the redesigned UI has no control for them |
 | Audit is served oldest-first only | Loaded in bounded pages, then incrementally |
+| Rules-only proposals cannot be approved (`AUTH-22`) | Shown as "Rules-only proposal · not executable" with the backend's reason; approval, execution and verification need an agent-investigated case |
 | Canopus has no conversation backend | The floating window opens, states that it is not connected and sends nothing |
 | Shipments without a case | Explore lists cases; healthy shipments are not listed yet |
 | New Saudi logistics world | Not readable by the backend until its Stage 2; the app shows whatever dataset the backend serves |
@@ -111,6 +112,8 @@ retry and scrolling components are unchanged from the lab.
 | Connected app in a browser, against a scripted backend stand-in | `npm run test:e2e` |
 | Original lab browser suite on this codebase (visual and behavioural regression) | `npm run test:e2e:lab` |
 | Backend serves `/app/` and keeps its API routes | `pytest chat/tests/test_frontend_next_mount.py` |
+| Read-only check against a running backend | `SUHAIL_LIVE_URL=http://127.0.0.1:8010 npm run test:e2e:live` |
+| Full walkthrough with real operator requests (scratch database only) | add `SUHAIL_LIVE_WRITE=1`; backend from `scripts/ui_scratch_backend.py` |
 
 The scripted stand-in (`tests/e2e-backend/backend-stub.ts`, `tests/fixtures/backend.ts`) answers
 HTTP in the backend's wire format for tests only; the application never imports it.

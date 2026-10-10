@@ -168,7 +168,13 @@ export interface BackendCaseState {
   evidenceAfterInvestigation: number;
   /** Counts before the graph was bounded for display. */
   graphTotals?: { nodes: number; relationships: number; shown: number };
-  review?: { verdict: string | null; reasonCode: string | null; summary: string | null };
+  review?: {
+    verdict: string | null;
+    reasonCode: string | null;
+    summary: string | null;
+    /** False when a deterministic guard, not the independent model reviewer, produced it. */
+    byModel: boolean;
+  };
   /**
    * The investigator's own findings. `accepted` is false when the independent reviewer did
    * not accept them: they are then shown labelled, never as what happened.

@@ -177,11 +177,13 @@ export class ApiOperationsService implements OperationsService {
     const decisions =
       last && !this.dirty.decisions
         ? last.decisions
-        : [
-            ...new Map([
-              ...this.detailDecisions,
-              ...this.auditDecisions,
-            ]).values(),
+        : // The audit ledger is the decision history once it is loaded. Case details record the
+          // same decisions on the dataset clock, so the two are never merged (no double rows).
+          [
+            ...(this.audit.size
+              ? this.auditDecisions
+              : this.detailDecisions
+            ).values(),
           ].sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp));
     this.dirty = { cases: false, events: false, decisions: false };
     return {
@@ -254,6 +256,11 @@ export class ApiOperationsService implements OperationsService {
     return { items, first: first!, truncated };
   }
 
+  /** After an operator request: a read that started before it must not be mistaken for the result. */
+  private async refreshAfterChange() {
+    if (this.refreshing) await this.refreshing.catch(() => undefined);
+    await this.refresh();
+  }
   refresh = (): Promise<void> => {
     this.refreshing ??= this.read().finally(() => {
       this.refreshing = null;
@@ -508,7 +515,7 @@ export class ApiOperationsService implements OperationsService {
       const result = await run(c);
       await Promise.all([
         this.loadDetail(id, true).catch(() => undefined),
-        this.refresh(),
+        this.refreshAfterChange(),
       ]);
       return result;
     } catch (error) {
@@ -524,7 +531,7 @@ export class ApiOperationsService implements OperationsService {
 
   async setAutomatic(enabled: boolean) {
     await this.client.post(enabled ? "/worker/start" : "/worker/pause");
-    await this.refresh();
+    await this.refreshAfterChange();
   }
   /**
    * Ask the backend to investigate now. The request runs the real investigation and can take

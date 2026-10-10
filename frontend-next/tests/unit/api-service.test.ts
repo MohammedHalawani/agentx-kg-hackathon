@@ -188,6 +188,22 @@ describe("ApiOperationsService reads", () => {
     expect(snapshot.connection?.audit).toMatchObject({ total: 4, loaded: 4, truncated: false, loading: false });
   });
 
+  it("lists a decision once even though the case detail and the audit ledger both record it", async () => {
+    const { service } = backend({
+      [`GET /cases/${CASE_B}`]: () => ({
+        ...detailB(),
+        // The same approval as the audit record, on the dataset clock.
+        decisions: [{ decision: "approve", occurred_at: "2026-09-03T13:00:00+00:00", actor_id: "SYN-OPERATOR-LOCAL" }],
+      }),
+    });
+    await service.refresh();
+    expect(service.getSnapshot().decisions).toHaveLength(1);
+    await service.loadAudit();
+    const decisions = service.getSnapshot().decisions;
+    expect(decisions).toHaveLength(1);
+    expect(decisions[0].timestamp).toBe("2026-10-09T10:05:00+00:00");
+  });
+
   it("reads the live schema from the backend", async () => {
     const { service } = backend();
     const result = await service.schema();

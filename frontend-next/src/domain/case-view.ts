@@ -102,6 +102,8 @@ export function authorityLabel(c: OperationalCase): [string, string] {
     if (!c.recommendation.available)
       return ["No reviewed recommendation", "لا توجد توصية مُراجعة"];
     const risk = c.backend.riskClass;
+    if (c.backend.approvalRule?.startsWith("AUTH-22"))
+      return ["Rules-only proposal · not executable", "اقتراح قواعد فقط · غير قابل للتنفيذ"];
     if (risk === "AUTO")
       return ["Automatic · policy-authorized", "تلقائي · مصرح به"];
     if (risk === "APPROVAL_REQUIRED")

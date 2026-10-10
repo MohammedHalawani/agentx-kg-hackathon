@@ -334,7 +334,13 @@ export function detailA(overrides: Partial<ApiCaseDetail> = {}): ApiCaseDetail {
       approval_rule: "AUTH-10",
       approval_reason: "A person may authorize this evidence-gathering request.",
     },
-    review: { verdict: "accept", reason_code: "ACCEPTED", summary_en: "Accepted." },
+    review: {
+      verdict: "accept",
+      model_verdict: "ACCEPT",
+      mode: "model_review",
+      reason_code: "ACCEPTED",
+      summary_en: "Accepted.",
+    },
     rule_signals: {
       kind: "rule_signals",
       is_diagnosis: false,

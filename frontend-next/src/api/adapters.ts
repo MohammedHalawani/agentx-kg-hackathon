@@ -302,6 +302,8 @@ function graphKind(kind: string): GraphNode["kind"] | null {
   if (kind === "Driver") return "driver";
   if (kind === "Provider" || kind === "Organization") return "contractor";
   if (kind in OBSERVATION_RANK) return "observation";
+  // Scanners and driver apps are where observations come from; drawn with the observations.
+  if (kind === "Device") return "observation";
   if (kind === "OpsRecommendation") return "recommendation";
   if (kind === "OpsOutcome") return "outcome";
   return null;
@@ -319,6 +321,8 @@ function nodeLabel(node: ApiEvidenceNode) {
     return `Attempt · ${humanize(text(p.disposition))}`;
   if (kind === "StatusEvent") return `Status · ${humanize(text(p.status))}`;
   if (kind === "GPSObservation") return "Vehicle GPS";
+  if (kind === "Device")
+    return `Device · ${humanize(text(p.device_kind)) || shortId(node.id)}`;
   if (kind === "OpsRecommendation")
     return text(p.action_en) || text(p.action) || "Recommendation";
   if (kind === "OpsOutcome")
@@ -347,6 +351,7 @@ const DETAIL_KEYS = [
   "vehicle_class",
   "employment",
   "provider_type",
+  "device_kind",
   "report_code",
   "result",
   "verification_status",
@@ -383,6 +388,8 @@ const position = (point: ApiLayerPoint): [number, number] => [
 
 function stageSummary(event: ApiPipelineEvent): string {
   const out = event.output ?? {};
+  // Rule output and deterministic guards are named as such, never as an agent's finding.
+  const rules = out.agent === "evidence_rules";
   switch (event.stage) {
     case "extract":
       return out.evidence_ids
@@ -396,7 +403,7 @@ function stageSummary(event: ApiPipelineEvent): string {
       const first = out.diagnoses?.[0];
       const summary = first?.summary_en ?? first?.summary;
       return summary
-        ? `${humanize(first?.code)}: ${summary}`
+        ? `${rules ? "Rule check, not a diagnosis · " : ""}${humanize(first?.code)}: ${summary}`
         : out.diagnoses
           ? `${out.diagnoses.length} hypotheses recorded.`
           : `Hypothesis stage ${event.status.toLowerCase()}.`;
@@ -406,14 +413,12 @@ function stageSummary(event: ApiPipelineEvent): string {
         ? `${out.verified_precedents} verified precedents retrieved.`
         : `Precedent retrieval ${event.status.toLowerCase()}.`;
     case "recommend":
-      return (
-        out.proposal?.action_en ??
-        out.proposal?.action ??
-        `Recommendation stage ${event.status.toLowerCase()}.`
-      );
+      return out.proposal?.action_en || out.proposal?.action
+        ? `${rules ? "Rule-derived proposal · " : ""}${out.proposal.action_en ?? out.proposal.action}`
+        : `Recommendation stage ${event.status.toLowerCase()}.`;
     case "review":
       return out.verdict
-        ? `Reviewer verdict: ${out.verdict}${out.feedback ? `. ${out.feedback}` : ""}`
+        ? `${out.agent === "deterministic_guard" ? "Deterministic evidence guard (no model review)" : "Reviewer verdict"}: ${out.verdict}${out.feedback ? `. ${out.feedback}` : ""}`
         : `Review ${event.status.toLowerCase()}.`;
     default:
       return out.workflow_state
@@ -462,7 +467,7 @@ function recommendationOf(detail: ApiCaseDetail): Recommendation {
     title: r.action_en ?? r.action ?? humanize(r.action_type) ?? "Recommendation",
     detail:
       r.summary_en ??
-      detail.review?.summary_en ??
+      r.authority_reason ??
       (r.action_type ? `Action type: ${humanize(r.action_type)}.` : ""),
     authority:
       risk === "AUTO"
@@ -529,6 +534,8 @@ export function applyDetail(
   const nameOf = (id: string | undefined) => {
     const node = id ? byId.get(id) : undefined;
     if (!node) return id ? shortId(id) : "—";
+    // A delivered custody point is placed at its bound delivery proof, not at a facility.
+    if (node.kind === "DeliveryProof") return "Delivery proof location";
     return (
       text(node.properties.name).replace(/ synthetic facility$/, "") ||
       shortId(node.id)
@@ -810,6 +817,9 @@ export function applyDetail(
             verdict: detail.review.verdict ?? null,
             reasonCode: detail.review.reason_code ?? null,
             summary: detail.review.summary_en ?? detail.review.feedback ?? null,
+            byModel:
+              !!detail.review.model_verdict &&
+              detail.review.mode !== "deterministic_evidence_guard",
           }
         : undefined,
       investigation: investigationOf(detail),
