@@ -458,21 +458,55 @@ class WorldBuildTests(unittest.TestCase):
         self.assertEqual({type(n.properties["success"]) for n in outcomes}, {bool})
 
     def test_no_precedent_leaks_across_the_cutoff(self):
-        from world.build import CUTOFF_EXEMPT, mechanism_active_until
         result = self.report["precedent_cutoff"]
         self.assertTrue(result["pass"], result["failed_counts"])
+        for code in ("AUTHORED_OR_NOT_IMPORTED", "NOT_IMPORTED_FOR_A_VISIBLE_REASON", "TIME_RULE_FROM_THE_OPENING_TIME",
+                     "NO_OUTCOME_NOT_ASSOCIATED_WITH_HIDDEN_ACTIVITY", "VERIFIED_BEFORE_LIVE_WINDOW"):
+            self.assertGreater(result["checked"][code], 0, code)
         for split, (imported, items, truth, live_start) in self.build.exports.items():
             outcomes = [n for n in imported.nodes.values() if n.kind == "Outcome"]
             for outcome in outcomes:
                 self.assertLess(instant(outcome.properties["verified_at"]), live_start, outcome.id)
-                sid = outcome.properties["holdout_group"]
-                for m in self.build.truth[sid]["mechanisms"]:
-                    if m["type"] not in CUTOFF_EXEMPT:
-                        until = mechanism_active_until(self.build, m, sid)
-                        self.assertIsNotNone(until, (sid, m["mechanism_id"]))
-                        self.assertLess(until, live_start, (sid, m["mechanism_id"]))
-            excluded = self.build.history_reports[split]["not_imported"]
-            self.assertFalse(set(excluded) & {n.properties["holdout_group"] for n in outcomes})
+            not_imported = self.build.history_reports[split]["not_imported"]
+            self.assertFalse(set(not_imported) & {n.properties["holdout_group"] for n in outcomes})
+            self.assertLessEqual(set(not_imported.values()), V.VISIBLE_NOT_IMPORTED, split)
+
+    def test_history_case_state_does_not_track_hidden_mechanism_activity(self):
+        """Review finding N1. Among history cases opened early enough to be verified before the cut-off (a visible
+        fact), having an outcome or not must not depend on a hidden fault still acting on the shipment. The old rule
+        (no outcome whenever a mechanism is still active, decided from the private record) is measured on the same
+        world as a counterfactual and must be caught."""
+        from world.build import mechanism_active_at_cutoff
+        from world.history import verification_window
+        from world.rand import Draws
+        for split, (imported, items, truth, live_start) in self.build.exports.items():
+            cases = [n for n in imported.nodes.values() if n.kind == "Case" and n.properties["split"] == "history"]
+            authored = {n.properties["holdout_group"] for n in imported.nodes.values() if n.kind == "Outcome"}
+            active = {n.properties["holdout_group"] for n in cases if mechanism_active_at_cutoff(self.build, n.properties["holdout_group"], live_start)}
+            now = V.history_state_association(self.build, imported, live_start)
+            stratum = now["counts"]["stratum"]
+            # The measurement has something to measure: verifiable cases with and without a fault still acting.
+            self.assertGreaterEqual(stratum["active"]["outcome"] + stratum["active"]["no_outcome"], 5, split)
+            self.assertGreaterEqual(stratum["not_active"]["outcome"] + stratum["not_active"]["no_outcome"], 5, split)
+            self.assertLessEqual(now["stratum_rate_difference"], V.HIDDEN_ACTIVITY_TOLERANCE, (split, now["no_outcome_rate"]))
+            # A fault still acting does not keep a verifiable case out of the precedents.
+            self.assertGreater(stratum["active"]["outcome"], 0, split)
+            self.assertLess(now["stratum_no_outcome_among_active"], .5, split)
+            # Every case without an outcome is explained by its own opening time or another visible reason.
+            draws = Draws(self.build.config.seed)
+            reasons = self.build.history_reports[split]["not_imported"]
+            for case in cases:
+                sid = case.properties["holdout_group"]
+                if sid not in authored and reasons[sid] == "NOT_VERIFIABLE_BEFORE_CUTOFF":
+                    self.assertIsNone(verification_window(instant(case.properties["opened_at"]), sid, draws, live_start,
+                                                          instant(imported.config.as_of)), sid)
+                # Visible state: an authored case is closed one way or the other, the others are as the monitor left them.
+                self.assertEqual(case.properties["state"] in ("RESOLVED", "ESCALATED"), sid in authored, sid)
+            # The old behaviour on the same world: the measure must fail it.
+            old = V.history_state_association(self.build, imported, live_start, authored=authored - active)
+            self.assertGreater(old["stratum_rate_difference"], V.HIDDEN_ACTIVITY_TOLERANCE, (split, old["no_outcome_rate"]))
+            self.assertGreater(old["stratum_no_outcome_among_active"], .9, split)
+            self.assertGreater(old["active_share_among_no_outcome_all_cases"], .9, split)
 
     def test_history_authoring_reads_no_truth_labels(self):
         from operations.authority import default_action

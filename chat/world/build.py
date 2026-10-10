@@ -210,23 +210,21 @@ def mechanism_active_until(build, mechanism, sid):
 
 
 # A provider retransmission repeats a record already counted (same identity, same payload) and is never a case: it
-# carries nothing about a history case's outcome, so it does not block a precedent.
+# says nothing about a fault still acting on a shipment.
 CUTOFF_EXEMPT = {"DUPLICATE_EVENTS"}
 
 
-def precedent_exclusions(build, sids, live_start):
-    """History shipments that must not become precedents: a mechanism instance that caused something on them is still
-    active at or after the cut-off (addendum A2). Private: never written into the graph."""
-    out = {}
-    for sid in sorted(sids):
-        for mechanism in build.truth[sid]["mechanisms"]:
-            if mechanism["type"] in CUTOFF_EXEMPT:
-                continue
-            until = mechanism_active_until(build, mechanism, sid)
-            if until is None or until >= live_start:
-                out[sid] = "MECHANISM_ACTIVE_AT_OR_AFTER_CUTOFF"
-                break
-    return out
+def mechanism_active_at_cutoff(build, sid, live_start):
+    """Private, for measurement only (validate.precedent_cutoff and the tests): is a mechanism instance that caused
+    something on the shipment still active at or after the cut-off? It never decides what is exported: which history
+    cases get an outcome is decided in world.history from visible evidence and time (review finding N1)."""
+    for mechanism in build.truth[sid]["mechanisms"]:
+        if mechanism["type"] in CUTOFF_EXEMPT:
+            continue
+        until = mechanism_active_until(build, mechanism, sid)
+        if until is None or until >= live_start:
+            return True
+    return False
 
 
 # ---------------------------------------------------------------------- export
@@ -278,8 +276,8 @@ def export_bundle(build: WorldBuild, live_split="development"):
         world.gold[sid] = {"shipment_id": sid, "holdout_group": sid, "split": label[sid], "initial_snapshot_at": iso(snapshot[sid]),
                            "reference_kind": "world-1 scoring row; mechanisms and causes live only in the external truth directory"}
     derive_world(world)
-    excluded = precedent_exclusions(build, history, live_start)
-    build.history_reports[live_split] = author_history(world, snapshot, Draws(config.seed), live_start, excluded)
+    # History outcomes are authored from the visible world alone: no private exclusion list (review finding N1).
+    build.history_reports[live_split] = author_history(world, snapshot, Draws(config.seed), live_start)
     ref = Reference.from_world(world)
     moving, kept_booking = set(), 0
     booked = {sid: build.shipments[sid].booked_at for sid in included}

@@ -14,12 +14,16 @@ Case at the shipment's history snapshot), the history record is what operations 
             reweigh agreed with the declaration, the parcel was delivered, the recipient confirmed receipt);
             otherwise failed. The outcome cites only that shipment's records recorded before verification.
 
-Cut-off (addendum A2). Every verification happens before the development window starts. A case whose
-verification cannot finish before then, or whose shipment a mechanism instance still touched at or after the
-cut-off (decided by the generator from its private record and passed in as `excluded`, never written into the
-graph), is not imported as a precedent: it keeps its derived Case and Exception but gets no action, resolution
-or outcome, so PRECEDENTS never returns it. The simulated world is not changed by these history actions (a
-documented limitation): a success means the world's own later evidence cleared the case.
+Cut-off (addendum A2) and what decides a history case's visible state (review finding N1). Every verification
+happens before the development window starts. Whether a history case gets an action and an outcome is decided only
+from what operations could see by the cut-off: when the case opened (`verification_window`: is there time to act and
+verify before the live window), its rule codes, and the shipment's own records up to verification. Nothing private
+is consulted: not whether a hidden fault is still acting on the shipment, and no exclusion list is passed in. A case
+whose verification cannot finish before the cut-off is not imported as a precedent: it keeps its derived Case and
+Exception but gets no action, resolution or outcome, so PRECEDENTS never returns it. A case that can be verified is
+always authored, whatever is still going on behind it, and then its outcome says what the visible evidence showed
+(a fault that is still acting usually reads as "failed"). The simulated world is not changed by these history
+actions (a documented limitation): a success means the world's own later evidence cleared the case.
 """
 from datetime import timedelta
 
@@ -45,6 +49,8 @@ ACTION_EVIDENCE = {
 }
 VERIFY_AFTER = timedelta(hours=20)          # operations re-check a case about a day after acting
 VERIFY_MARGIN = timedelta(minutes=30)       # the last verification before the development window
+MIN_VERIFY_AFTER = timedelta(minutes=45)    # an action checked sooner than this has shown nothing yet
+LATEST_ACTION_START = timedelta(minutes=90) # operations act on a case 20 to 90 minutes after it opens
 ALTERNATIVE_ACTION_SHARE = .15
 
 
@@ -83,8 +89,18 @@ def action_evidence(action, after, owned, opened):
     return False
 
 
-def author_history(world, as_of, draws, live_start, excluded):
-    """Author precedents for history cases. excluded: {shipment id: reason} that must not become precedents.
+def verification_window(opened, sid, draws, live_start, horizon):
+    """(action start, verification) of a history case opened at `opened`, or None when the verification cannot finish
+    before the cut-off. Visible time only: the opening, the live start and the end of the horizon."""
+    start = opened + timedelta(minutes=draws.integer(20, 90, "history-start", sid))
+    verified = min(start + VERIFY_AFTER, live_start - VERIFY_MARGIN)
+    if verified < start + MIN_VERIFY_AFTER or verified >= horizon:
+        return None
+    return start, verified
+
+
+def author_history(world, as_of, draws, live_start):
+    """Author precedents for history cases, from visible evidence and time only.
     Returns {"authored": n, "not_imported": {shipment id: reason}}."""
     from dataset_v2.derive import assess_shipment
     nodes = world.nodes
@@ -94,12 +110,8 @@ def author_history(world, as_of, draws, live_start, excluded):
         if owner:
             by_owner.setdefault(owner, []).append(node)
     authored, skipped = 0, {}
-    latest_verification = live_start - VERIFY_MARGIN
     for case in sorted((n for n in nodes.values() if n.kind == "Case" and n.properties["split"] == "history"), key=lambda n: n.id):
         sid = case.properties["holdout_group"]
-        if sid in excluded:
-            skipped[sid] = excluded[sid]
-            continue
         opened = instant(case.properties["opened_at"])
         codes = by_specificity(case.properties.get("codes") or [])
         if not codes:
@@ -113,11 +125,11 @@ def author_history(world, as_of, draws, live_start, excluded):
         if ACTIONS.get(action, ("",))[0] == "PROHIBITED":
             skipped[sid] = "PROHIBITED_ACTION"
             continue
-        start = opened + timedelta(minutes=draws.integer(20, 90, "history-start", sid))
-        verified = min(start + VERIFY_AFTER, latest_verification)
-        if verified < start + timedelta(minutes=45) or verified >= instant(world.config.as_of):
+        window = verification_window(opened, sid, draws, live_start, instant(world.config.as_of))
+        if window is None:
             skipped[sid] = "NOT_VERIFIABLE_BEFORE_CUTOFF"
             continue
+        start, verified = window
         still = {e["code"] for e in assess_shipment(world, sid, iso(verified))["exceptions"]}
         after = [n for n in by_owner[sid] if n.properties.get("recorded_at") and start < instant(n.properties["recorded_at"]) <= verified]
         success = not (still & set(codes)) or action_evidence(action, after, by_owner[sid], opened)
