@@ -46,7 +46,7 @@ def main(argv=None):
     if store.status()["session"]["session_id"] != first["session_id"]:
         raise SystemExit("The database's live session is not the pilot's session; nothing to re-investigate")
     cap = model_call_cap()
-    spent = lambda: sum(pilot.provider_calls()["succeeded"].values()) + sum(pilot.provider_calls()["failed"].values())  # noqa: E731
+    spent = pilot.provider_calls
     rows = []
     for number, row in zip(numbers, chosen):
         case_id = row["case_id"]
