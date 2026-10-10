@@ -95,3 +95,116 @@ The S5 reviewer accepted 47 of 53 wrong diagnoses. In Stage 2 the reviewer must 
 retrieved, that contradicting evidence the investigator retrieved was addressed, and that at least one alternative was
 tested, and it must be able to return "evidence insufficient". The evidence and citation format from Stage 1 must carry
 what it needs for that: stable ids for every comparison baseline and every cross-shipment query result.
+
+---
+
+## Amendment 1 (2026-10-10, before any evaluation world or evaluation case exists)
+
+Reason: an independent review of the design above (coordinator, 2026-10-10) found that it under-specified truth timing,
+leakage controls, the no-tools baseline, the statistics, abstention and the budget. No evaluation world, case or run exists
+yet, so this is still pre-registration. Where this amendment conflicts with the sections above, the amendment wins; the
+original text is kept unedited for the record.
+
+### A. Truth timing (replaces "knowable_at is the first evidence" in section 1)
+- t is the investigation's start in simulated time. Tools return only records with recorded_at <= t.
+- A mechanism is knowable at t when the run's own ingestion log contains, at or before t, a record that separates it from
+  the other mechanisms sharing the case's opening symptoms, or when an expected observation that would separate them is
+  overdue at t by the monitor's threshold. The separating evidence for each mechanism is the world's committed
+  discrimination spec (see F). The scorer computes knowability from the run's ingestion log, never from generator intent.
+- Precedents are cut at each case's t: a precedent counts only if its outcome was verified before t, and no mechanism
+  instance may span the history/development cut-off (the generator ends it or excludes that history case from precedents).
+
+### B. Leakage controls (new)
+- Truth labels live outside the runtime filesystem (default `C:\Projects\suhail-eval-truth\<dataset_id>\`) and are read
+  only by a separate post-run scoring process. The operational simulator reads only private physical state, which carries no
+  cause codes, mechanism names or labels.
+- A canary token is stored in every truth row. After every run the graph, tool outputs, API responses, execution receipts
+  and logs are scanned for the canary and for every mechanism name and id; any hit invalidates the run.
+- No simulated human finding is derived from truth labels. Simulated field responses come only from private physical state.
+- Pre-run tell test: a lookup classifier on opening case data, trained on development-world data only, must not beat
+  B_rulecode on the ambiguous stratum of an evaluation world. If it does, the generator is fixed and new evaluation worlds
+  are generated; the scorer is never changed to compensate.
+
+### C. Baselines (adds to section 2)
+- **B_notools:** the agent's model, temperature, prompts, cause catalogue and output format, given the same opening case data
+  (symptoms and the case summary the investigator receives) and no tools; INSUFFICIENT_EVIDENCE allowed; same cases.
+- B_rulecode's primary is the first code in this fixed order among the monitor's rule codes at opening: CONFLICTING_CUSTODY,
+  MANIFEST_CONFLICT, DELIVERY_DISPUTE, PROOF_INSUFFICIENT, BARCODE_MISMATCH, WEIGHT_MISMATCH, ADDRESS_CONFLICT, WRONG_GATE,
+  RECIPIENT_UNAVAILABLE, UNRECONCILED_CUSTODY, TRAFFIC_DELAY, JOURNEY_DELAY, CUSTODY_GAP, MISSED_MILESTONE; no code gives
+  INSUFFICIENT_EVIDENCE. Its cause set is all its codes. (Stage 0 used the alphabetically first code other than
+  MISSED_MILESTONE; the stratum test in F reproduces that S5 split with the Stage 0 rule.)
+- B_symptom's table is committed with the stratum script before any evaluation case exists. Its cause set is its primary.
+- B_notools and the agent: the cause set is the primary plus at most three supported hypotheses.
+
+### D. Statistics (replaces section 6 where they differ)
+- One result per case; repetitions never count as extra cases. The main test is one agent run per case.
+- Stability: a seeded subset of 40 cases run three times, reported as run-to-run agreement only.
+- Degraded or invalid model output counts as wrong.
+- Pass bars, each on the identifiable ambiguous stratum only, each an exact two-sided McNemar test at alpha 0.05 that also
+  requires more agent wins than losses: (1) agent vs B_rulecode; (2) agent vs B_notools. Only (2) supports the claim that
+  retrieval helps.
+- Determined stratum: the lower bound of the 95% interval of the paired difference (agent minus B_rulecode) must be above
+  minus 5 points.
+- Power: detecting a 15-point gain at 80% power needs about 120 to 155 identifiable ambiguous cases (discordance 35% to 45%).
+  The target is at least 150 in the primary evaluation world. A 600-shipment development world is expected to give about 60,
+  so evaluation worlds are dedicated fresh-seed worlds sized from the development world's measured yield.
+- Headlines are reported per stratum against each baseline, never pooled across strata.
+- The over-sampling weights are fixed in the world package's committed config before any evaluation world is generated.
+- 26 of 41 appears only as history. 31 of 41 never appears in a comparison.
+
+### E. Abstention (adds to sections 1 and 3)
+- Cases not identifiable at t form their own stratum, outside the main test. There, INSUFFICIENT_EVIDENCE plus escalation
+  with no automatic action is correct.
+- INSUFFICIENT_EVIDENCE on an identifiable case is wrong.
+- Reported: coverage, abstention rate, accuracy when answering, INSUFFICIENT_EVIDENCE precision and recall.
+
+### F. Committed before any evaluation case exists
+- The acceptable-codes table per mechanism and the evidence-to-cause discrimination map (both in the world package).
+- The stratum script: a case's stratum comes from truth knowable at opening, using the evaluation world's census when a
+  symptom set has at least 5 shipments, else the generator's mechanism-to-symptom map.
+- A test that reproduces a named S5 split (Stage 0: 19 determined, 22 ambiguous) with that script's rules.
+- After an evaluation world is generated and before any agent run, the per-case stratum list is written and its hash is
+  committed.
+
+### G. Held-out (replaces section 5's seeds and held-out variation)
+- Seeds 7101 to 7103 are withdrawn because they are public. Evaluation seeds are int(sha256("<commit>:<k>")[:8], 16) for
+  k = 1, 2, where <commit> is the hash of the commit that freezes the investigator, tools and reviewer for the evaluation.
+- World E1 (k = 1): primary evaluation world, development providers, sized for at least 150 identifiable ambiguous cases.
+- World E2 (k = 2): held-out world with at least one provider never seen in development and mechanism pairings never
+  paired in development, sized for at least 60 identifiable ambiguous cases, reported separately and descriptively.
+- World-1's own held-out days are used for detection and safety checks, not for the main accuracy test.
+- Expected sizes are stated in the evaluation config committed before E1 and E2 are generated.
+
+### H. Freeze and rerun rules
+- Every edit after b1d331f is a dated amendment with reasons. Configuration and baseline tables are sealed with the stratum
+  script (F).
+- The first complete run on E1 and E2 counts. A run may be declared invalid only for: provider failures on more than 5% of
+  calls (from the run's provenance), an infrastructure crash before completion, a code, data or prompt hash differing from
+  the sealed configuration, or a canary or truth-vocabulary hit (B). Every attempt, valid or not, is disclosed with its
+  partial results. A rerun uses the same seeds and configuration.
+
+### I. Investigating, not explaining
+- Evidence-grounded accuracy: a correct answer that also cites at least one valid, retrieved, discriminating record (per
+  the committed discrimination map) other than the opening alert's own evidence. Reported next to plain accuracy.
+- Also reported: agreement with B_rulecode, and accuracy on the cases where the agent's answer departs from B_rulecode.
+
+### J. Pairs and ablation (replaces section 4's ablation)
+- Matched pairs are drawn by a seeded procedure and do not overlap. Same-cause pairs are scored on consistency.
+- Ablation: every identifiable ambiguous case is rerun with the cross-shipment tools disabled, compared by a paired exact
+  McNemar test. A drop is predicted only for mechanisms whose discriminating evidence is cross-shipment (device outage,
+  facility backlog, late linehaul trip, container-level missort, traffic); no drop is predicted for the others.
+
+### K. Outcome metrics and their denominators
+Wrong automatic actions per automatic execution; false automatic resolutions per automatic closure; premature closures
+(re-detected within 24 simulated hours) per closure; safe automatic resolutions per eligible case; human interventions per
+case; verifier verdicts against truth per execution. Release bar, set by Fahad: zero unjustified or premature resolutions,
+otherwise an explicit failed gate. Reviewer failures are injected in a separate run on a seeded 30-case subset by making
+every reviewer call fail at the provider. Latency is reported as p50, p90 and p99 investigation wall time and p50 and p95
+per tool query.
+
+### L. Budget
+- At most 12 model calls per investigation (investigator turns, conclusion and reviewer rounds together), enforced in code.
+- Planned total for E1 and E2 together, including B_notools, the ablation and the stability subset: about 9,500 model calls
+  and about 45 million tokens at S5's rate (about 4,600 tokens per call). Hard cap: 12,000 calls.
+- No result-dependent stopping. If this exceeds what Fahad's Ollama Cloud plan allows, that is reported as a blocker for
+  his decision, and the evaluation is not silently shrunk.
