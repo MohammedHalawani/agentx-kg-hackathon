@@ -380,3 +380,18 @@ The run follows the pre-registered case order. It is paused, by a count given on
   mechanism-level answers are needed, and the report must show that split.
 - Results are reported in the categories Fahad asked for: correct, incorrect, appropriately uncertain, wrongly uncertain,
   evidence retrieval, recommendations, escalation, automatic resolutions and closures, usage, latency and cost.
+
+### Addendum to amendment 3 (2026-10-11, before any evaluation world or case exists)
+Reason: the coordinator asked for a Stage 4 reserve and two explicit statements.
+- **Stage 4 reserve.** Stage 3 stops when the campaign ledger reaches 3,600 calls, leaving 400 for the end-to-end
+  demonstration in Stage 4 and the UI integration tests, unless Fahad says otherwise. The budget of the evaluation is
+  therefore 3,600 minus the 173 already spent: 3,427 calls.
+- **What the 18 calls per case are.** At most 16 for the agent arm (investigator turns, reviewer rounds, revision rounds and
+  retries under one counter) plus at most 2 for the no-tools arm (one answer and one retry on invalid output). The rule-code
+  and symptom baselines make no model call.
+- **Size with the reserve.** N_main = floor(3,427 / 18) = 190 cases, sized by worst case so the run always finishes inside
+  the reserve line: E1 identifiable ambiguous 105 (the only pass or fail), E2 identifiable ambiguous 40, determined 30,
+  unidentifiable 15. Maximum spend 3,420; expected about 2,200. This replaces the 212 and the table of section 3. With 105
+  cases the smallest gain detectable at 80% power is about 17 to 19 points; the exact figure is printed at selection.
+- **Looks.** Look 1 stays after the first 40 main-test cases; look 2 moves to the first 100.
+- **Exclusion list.** `docs/evals/2026-10-10_world1_pilot/excluded_shipments.json` holds all 12 pilot shipments.
