@@ -193,3 +193,37 @@ in a dated amendment before E1 and E2 exist:
 7. Exact power: at 160 cases the minimum detectable gain is 13.5 points (discordance 0.35) to 15.3 points (0.45),
    slightly above amendment 2's "about 13 to 14"; at 60 cases 21.8 to 25.0.
 8. Run order: world by world, by expected opening time.
+
+## 11. As wired (`chat/scripts/stage3_wiring.py`, backend track)
+
+What the wiring added to or settled about the sections above:
+
+- **Wiring arguments.** The CLI passes a wiring function the keyword arguments it declares: `build(config, dry_run, resume,
+  selection)` and `build_scorer(config, run_dir)`. The case source needs the selection's `expected_opened_at` (the
+  horizon below); the scorer needs the run directory (session check, tool index). `provenance` is a callable, evaluated
+  when the run ends. A wiring may return `close`, which the CLI calls.
+- **Field names (section 2).** `records.FIELDS` reads `investigation_log.model_calls_used` (the one counter),
+  `investigation_log.snapshot_as_of` and `investigation_log.cap_reached`. The run record holds no tokens and no times:
+  tokens are the LiteLLM usage delta around the case, tool seconds are measured around each tool call.
+- **Per-case cap.** Stage 2 has one counter for investigator and reviewer, so the store's cap is set to `C_cap` and
+  `R_cap` stays 0.
+- **Horizon (section 3).** A selected case is waited for until 2 hours after its expected opening
+  (`OPEN_HORIZON_HOURS`); later cases are then investigated at a clock up to that much past their own opening.
+  A run that returns `snapshot_changed` is not retried (a second run could pass the reservation): degraded, settled at
+  the worst case.
+- **Rule codes and opening evidence.** The case record stores symptoms only, so the rule codes and the evidence ids of
+  the opening exceptions are recomputed with the monitor's own assessment on the evidence visible at the opening.
+- **The live session.** A run starts from a fresh session. One that has advanced (a dry run, an earlier attempt) is
+  continued only with `--resume`; otherwise the wiring refuses unless `SUHAIL_STAGE3_RESET_SESSION=1`, which runs the
+  store's development reset of the operations ledger and live-ingested records (not a database reset; imported records
+  stay). So after step 3 (the rehearsal) step 4 needs that variable. **Score before any reset:** the scorer refuses a
+  database whose session is not the run's.
+- **Capture (section 6).** Tool results are recorded as the model received them by wrapping `InvestigationTools.call`
+  (nothing the model sees changes; tested). A sixth directory, `captured/tool_index/`, holds every id a tool listed
+  as citable with its recorded time (a computed result: its snapshot). The graph dump is every node and relationship
+  of the run database in batches of 500.
+- **Resolver (section 7).** A cited id resolves from the database's `V2Entity` records first; an id that is not one
+  (a tool-computed `DEMO-CMP-` result, a precedent, a device) resolves from `captured/tool_index/`, written by the
+  tools' code. An id in neither does not resolve.
+- **Campaign ledger.** `select` seals `budget = 4000 - spent` from `docs/evals/model_call_ledger.json`; `run` refuses to
+  start past the cap, reserves the budget and writes what it used (README, design item table).

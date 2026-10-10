@@ -1,10 +1,11 @@
 """One normalised result shape for every arm, and the one adapter that reads the backend's run record into it.
 
 The agent arm's raw record is the OpsRun analysis the pipeline writes (result_json: investigation, review, trace,
-degraded, checks, authority, pipeline_events) plus the case's OpsExecution and OpsOutcome rows, as read back by
-scripts/s5_scenarios.py case_rows at fhd ac86013. Stage 2 adds a per-case model-call counter and per-round logging;
-their exact field names arrive with its gate report, so every field name this harness reads is in FIELDS below and
-nowhere else. Adjust FIELDS, not the scorer.
+degraded, checks, authority, investigation_log, pipeline_events) plus the case's OpsExecution and OpsOutcome rows.
+Every field name this harness reads is in FIELDS below and nowhere else; a name with dots is a path into nested
+objects. The Stage 2 names are those of docs/api/investigation-run.md: the one per-case model-call counter is
+investigation_log.model_calls_used, the snapshot investigation_log.snapshot_as_of and a cap hit
+investigation_log.cap_reached. Adjust FIELDS, not the scorer.
 """
 from dataclasses import asdict, dataclass, field
 import json
@@ -22,10 +23,13 @@ FIELDS = {
     "risk_class": ("risk_class",),
     "pipeline_events": ("pipeline_events",),
     "evidence_as_of": ("evidence_as_of",),
-    # Stage 2: one per-case counter over investigator turns, reviewer rounds, revisions and retries.
-    "calls_used": ("model_calls_used", "calls_used", "model_calls"),
+    # The evidence snapshot of the run (t). Older records carry it only on their stage events (evidence_as_of).
+    "snapshot": ("investigation_log.snapshot_as_of",),
+    # Stage 2: one per-case counter over investigator turns, reviewer rounds, revisions and retries. A degraded run
+    # with no log (the investigator failed before a round was logged) still has the investigator's own budget.
+    "calls_used": ("investigation_log.model_calls_used", "investigation.model_calls.model_calls_used", "model_calls_used", "calls_used"),
     "tokens": ("model_tokens", "tokens_used", "total_tokens"),
-    "cap_hit": ("call_cap_hit", "cap_hit"),
+    "cap_hit": ("investigation_log.cap_reached", "investigation.model_calls.cap_reached", "call_cap_hit", "cap_hit"),
     "wall_seconds": ("wall_seconds", "investigation_seconds"),
     "tool_seconds": ("tool_seconds", "query_seconds"),
 }
@@ -33,8 +37,13 @@ FIELDS = {
 
 def pick(record, name, default=None):
     for key in FIELDS[name]:
-        if isinstance(record, dict) and key in record and record[key] is not None:
-            return record[key]
+        value = record
+        for part in key.split("."):
+            value = value.get(part) if isinstance(value, dict) else None
+            if value is None:
+                break
+        if value is not None:
+            return value
     return default
 
 
@@ -132,7 +141,8 @@ def from_ops_run(case_key, shipment_id, *, case, runs, executions=(), outcomes=(
     inv = pick(analysis, "investigation", {}) or {}
     review = pick(analysis, "review", {}) or {}
     authority = pick(analysis, "authority", {}) or {}
-    snapshot = next((pick(e, "evidence_as_of") for e in pick(analysis, "pipeline_events", []) or [] if pick(e, "evidence_as_of")), None)
+    snapshot = pick(analysis, "snapshot") or next(
+        (pick(e, "evidence_as_of") for e in pick(analysis, "pipeline_events", []) or [] if pick(e, "evidence_as_of")), None)
     degraded_roles = [d.get("role") for d in pick(analysis, "degraded", []) or [] if isinstance(d, dict)]
     result = from_investigation(case_key, "agent", shipment_id, inv, case_id=case.get("entity_id"),
                                 as_of=str(snapshot) if snapshot else None,

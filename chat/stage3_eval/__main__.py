@@ -58,6 +58,15 @@ def _wiring(spec):
     return getattr(importlib.import_module(module), func)
 
 
+def _call_wiring(function, config, **context):
+    """Call a wiring function with the keyword arguments it declares (dry_run, resume, selection, run_dir): a wiring
+    written against the first interface (config, dry_run=...) keeps working."""
+    import inspect
+    accepted = inspect.signature(function).parameters
+    everything = any(p.kind is inspect.Parameter.VAR_KEYWORD for p in accepted.values())
+    return function(config, **{k: v for k, v in context.items() if everything or k in accepted})
+
+
 def _worlds(pairs):
     from stage3_eval.truth_io import load_replay_rows, load_truth
     out = {}
@@ -163,13 +172,13 @@ def main(argv=None):
     elif args.cmd == "run":
         from stage3_eval.runner import run
         from operations.call_ledger import LedgerError, LedgerRefused
-        config, _ = _config(args.selection)
+        config, selection = _config(args.selection)
         campaign = _campaign(args.ledger)
         try:
             campaign.check(0 if args.resume else config.budget)   # before any database is opened; a resume re-holds its own entry
         except (LedgerRefused, LedgerError) as refusal:
             raise SystemExit(f"Refusing to run: {refusal}") from None
-        wired = _wiring(args.wiring)(config, dry_run=args.dry_run)
+        wired = _call_wiring(_wiring(args.wiring), config, dry_run=args.dry_run, resume=args.resume, selection=selection)
         try:
             manifest = run(args.selection, args.out, arms=wired["arms"], case_source=wired["case_source"], config=config,
                            capture=wired.get("capture"), extras_arms=wired.get("extras_arms"), dry_run=args.dry_run, resume=args.resume,
@@ -186,7 +195,7 @@ def main(argv=None):
         from stage3_eval.scoring import score_run
         from stage3_eval.truth_io import truth_vocabulary
         config, selection = _config(args.selection)
-        wired = _wiring(args.wiring)(config)
+        wired = _call_wiring(_wiring(args.wiring), config, run_dir=args.run)
         worlds = {w: truth for w, (truth, _replay) in _worlds(args.world).items()}
         rows = score_run(args.run, selection, worlds, ingestion=wired.get("ingestion"), resolver=wired.get("resolver"))
         scans = {w: TruthScanner(truth_vocabulary(t)).scan_run(args.run) for w, t in worlds.items()}
@@ -194,6 +203,8 @@ def main(argv=None):
         canary = {"verdict": "invalid" if "invalid" in verdicts else "incomplete" if "incomplete" in verdicts else "clean", "per_world": scans,
                   "missing_surfaces": sorted({m for s in scans.values() for m in s["missing_surfaces"]})}
         Path(args.run, "canary.json").write_text(json.dumps(canary, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
+        if callable(wired.get("close")):
+            wired["close"]()
         print(json.dumps({"scored_rows": len(rows), "canary": canary["verdict"]}, indent=1))
     elif args.cmd == "report":
         _config(args.selection)
