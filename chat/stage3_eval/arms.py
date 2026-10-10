@@ -4,15 +4,18 @@ snapshot time, symptoms and rule codes), and this module imports nothing from th
 - agent:    the real pipeline (tools, investigator, reviewer, authority) on one opened case, through a callable the
             backend track supplies (WIRING.md). Worst case C_cap + R_cap calls, from the run record's own counter.
 - notools:  the agent's model, system prompt, cause catalogue, action catalogue and output format on the same opening
-            packet, with no tools; INSUFFICIENT_EVIDENCE (or UNKNOWN) allowed; at most 2 calls (one retry on
-            invalid output, as the agent gets). Invalid after the retry counts as degraded, exactly like the agent.
+            packet, with no tools; INSUFFICIENT_EVIDENCE (or UNKNOWN) allowed under the agent's own abstention rules;
+            at most 2 calls (one retry on invalid output, as the agent gets). Invalid after the retry counts as
+            degraded, exactly like the agent.
 - rulecode: the monitor's rule codes at opening, first in the frozen order (no model call).
 - symptom:  the opening symptom names through the frozen table (no model call).
 
 The no-tools arm cannot use operations.investigator.investigate as it stands: that validator requires a supported
 primary cause to cite retrieved evidence, so with no tools every specific answer is rejected and only UNKNOWN passes.
-This arm keeps the agent's prompt, catalogue, schema and safety rules and changes exactly one rule: no evidence can
-be cited (there is none), so a primary cause may be "supported" without ids. WIRING.md records this.
+This arm keeps the agent's prompt and catalogue and runs the agent's own validator (validate_conclusion), changing
+exactly one rule: no evidence can be cited (there is none), so a primary cause may be "supported" without ids. An
+answer the agent's validator accepts apart from citations is accepted here, and one it rejects is rejected here
+(tested against that validator). WIRING.md records this.
 """
 from dataclasses import dataclass, field
 import json
@@ -98,42 +101,34 @@ class CountingTurn:
         return self.turn(messages)
 
 
+NO_EVIDENCE = "<no evidence was retrieved>"    # Stands in for a citation inside the agent's validator; never stored or shown.
+
+
 def _notools_problem(out):
-    from operations.agents import BLAME, GPS_DELIVERY
-    from operations.authority import ACTIONS
-    from operations.investigator import CAUSE_CHOICES
+    """The agent's own validator (operations.investigator.validate_conclusion) with exactly one rule changed: no
+    evidence id may be cited, so a supported primary cause needs no citation. Every other rule is the agent's code
+    path, not a copy: the abstention rules (missing evidence named, an evidence-gathering or human next step, no
+    supported cause beside the abstention), the schema, the prohibited actions and the blame and GPS wording scan
+    (next_evidence_step included)."""
+    from operations.investigator import validate_conclusion
     if not isinstance(out, dict) or out.get("action") not in ("call", "conclude"):
         return "reply must be one JSON object with action call or conclude"
     if out["action"] == "call":
         return "no tools are available for this case; conclude now with what you have"
     hypotheses = out.get("hypotheses")
-    if not isinstance(hypotheses, list) or not hypotheses:
-        return "hypotheses must be a non-empty list"
-    if out.get("primary_cause") not in CAUSE_CHOICES:
-        return "primary_cause must be one of the cause codes"
-    if out.get("confidence") not in ("low", "medium", "high"):
-        return "confidence must be low|medium|high"
-    action = out.get("recommended_action")
-    if action not in ACTIONS:
-        return "recommended_action must be one of the action types"
-    if ACTIONS[action][0] == "PROHIBITED":
-        return "Prohibited actions (money, liability, blame) cannot be recommended"
-    primary = None
-    for h in hypotheses:
-        if not isinstance(h, dict) or h.get("cause") not in CAUSE_CHOICES or h.get("status") not in ("supported", "refuted", "uncertain"):
-            return "each hypothesis needs a cause code and status supported|refuted|uncertain"
-        if (h.get("supporting_evidence_ids") or []) or (h.get("contradicting_evidence_ids") or []):
-            return "no evidence was retrieved, so no evidence id can be cited"
-        if h["cause"] == out["primary_cause"]:
-            primary = h
-    if out["primary_cause"] != "UNKNOWN" and (primary is None or primary["status"] != "supported"):
+    probe = out
+    if isinstance(hypotheses, list):
+        for h in hypotheses:
+            if isinstance(h, dict) and ((h.get("supporting_evidence_ids") or []) or (h.get("contradicting_evidence_ids") or [])):
+                return "no evidence was retrieved, so no evidence id can be cited"
+        # The agent's validator asks a supported primary cause for a citation; here it gets a stand-in, on a copy.
+        probe = {**out, "hypotheses": [{**h, "supporting_evidence_ids": [NO_EVIDENCE]}
+                                       if isinstance(h, dict) and h.get("cause") == out.get("primary_cause") and h.get("status") == "supported"
+                                       else h for h in hypotheses]}
+    problem = validate_conclusion(probe, {NO_EVIDENCE})
+    if problem and problem.startswith("the primary cause must be a supported hypothesis"):
         return "the primary cause must be a supported hypothesis"
-    for text in [out.get("summary", ""), *[h.get("assessment", "") for h in hypotheses], *map(str, out.get("missing_evidence") or [])]:
-        if BLAME.search(text or ""):
-            return "output attributes blame or wrongdoing to a person"
-        if GPS_DELIVERY.search(text or ""):
-            return "output treats vehicle GPS as parcel delivery or location evidence"
-    return None
+    return problem
 
 
 def notools_messages(case: CaseRef):

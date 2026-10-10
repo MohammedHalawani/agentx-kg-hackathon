@@ -66,6 +66,54 @@ def test_notools_abstention_is_allowed():
     assert r.abstained and not r.degraded
 
 
+def agent_abstention(**over):
+    """The abstention the shared SYSTEM prompt asks for and the agent's validator accepts: the primary is
+    INSUFFICIENT_EVIDENCE, the candidate cause is an uncertain hypothesis, the missing evidence is named and the next
+    step gathers evidence. (No hypothesis carries the abstention code itself.)"""
+    base = {"action": "conclude", "primary_cause": "INSUFFICIENT_EVIDENCE", "confidence": "low",
+            "hypotheses": [{"cause": "HUB_DELAY", "status": "uncertain", "supporting_evidence_ids": [], "contradicting_evidence_ids": [],
+                            "assessment": "The symptoms alone do not separate a hub delay from a late upload."}],
+            "missing_evidence": ["the hub's scan log for the parcel"], "next_evidence_step": "Ask the hub for its scan log.",
+            "recommended_action": "REQUEST_ADDITIONAL_EVIDENCE", "requires_physical_check": False, "summary": "Not enough to name a cause."}
+    return {**base, **over}
+
+
+def test_notools_accepts_the_abstention_the_agents_validator_accepts():
+    from operations.investigator import validate_conclusion
+    answer = agent_abstention()
+    assert validate_conclusion(answer, set()) is None           # the agent arm accepts this shape
+    seen = []
+    r = NoToolsArm(turn=lambda m: seen.append(m) or answer).run(CASE)
+    assert not r.degraded and r.abstained and r.calls_used == 1 and len(seen) == 1
+
+
+def test_notools_applies_the_agents_abstention_and_wording_rules():
+    from operations.investigator import validate_conclusion
+    from stage3_eval.arms import _notools_problem
+    rejected = [
+        agent_abstention(missing_evidence=[]),                                   # the missing evidence is not named
+        agent_abstention(recommended_action="REROUTE_TO_CONFIRMED_DESTINATION"),              # not a next step that gathers evidence
+        agent_abstention(hypotheses=[{"cause": "HUB_DELAY", "status": "supported"}]),   # a cause supported beside the abstention
+        agent_abstention(primary_cause="UNKNOWN", missing_evidence=[]),          # UNKNOWN abstains under the same rules
+        agent_abstention(next_evidence_step="The driver stole the parcel; ask the depot."),
+        agent_abstention(next_evidence_step="The vehicle GPS proves the parcel was delivered."),
+    ]
+    for answer in rejected:
+        assert validate_conclusion(answer, set()) is not None, answer            # the agent's validator rejects it
+        assert _notools_problem(answer) == validate_conclusion(answer, set()), answer
+        r = NoToolsArm(turn=lambda m, a=answer: a).run(CASE)
+        assert r.degraded and r.calls_used == 2 and r.failure_mode == "invalid_model_output"
+    # The one difference: a supported specific cause needs no citation here, and a citation is refused.
+    specific = agent_abstention(primary_cause="HUB_DELAY", recommended_action="REQUEST_HUB_CHECK", missing_evidence=[],
+                                hypotheses=[{"cause": "HUB_DELAY", "status": "supported", "supporting_evidence_ids": []}])
+    assert _notools_problem(specific) is None and validate_conclusion(specific, set()) is not None
+    assert specific["hypotheses"][0]["supporting_evidence_ids"] == []            # the stand-in citation never reaches the answer
+    cited = agent_abstention(hypotheses=[{"cause": "HUB_DELAY", "status": "uncertain", "contradicting_evidence_ids": ["X"]}])
+    assert "no evidence id can be cited" in _notools_problem(cited)
+    unsupported = {**specific, "hypotheses": [{"cause": "HUB_DELAY", "status": "uncertain"}]}
+    assert _notools_problem(unsupported) == "the primary cause must be a supported hypothesis"
+
+
 def test_agent_arm_reads_an_s5_shaped_run_record():
     analysis = {"investigation": {"mode": "gpt-oss", "degraded": False, "steps": [{"tool": "scans", "args": {"package_id": "P"}, "evidence_ids": ["E1", "E2"]}],
                                   "retrieved_evidence_ids": ["E1", "E2"], "primary_cause": "HUB_DELAY", "confidence": "medium",
