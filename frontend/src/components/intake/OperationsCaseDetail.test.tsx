@@ -156,6 +156,37 @@ describe('Case lifecycle authority', () => {
     expect(layout()).toBe('map')
     expect(mock.post).not.toHaveBeenCalled()
   })
+  it('shows the recorded reason for a rejection in Arabic and never a vehicle-GPS story nobody wrote', () => {
+    localStorage.setItem('agentx-language', 'ar')
+    mock.data.workflow_state = 'ESCALATED'
+    mock.data.recommendation = { action_en: 'Request a package rescan at the current facility.', action_ar: 'طلب إعادة مسح الطرد في المنشأة الحالية.' }
+    mock.data.review = { verdict: 'reject', reason_code: 'MODEL_REVISE', model_verdict: 'REVISE', feedback: 'Re-check the scan device.', summary_en: 'Re-check the scan device.', summary_ar: 'طلب المراجع المستقل تعديل المقترح؛ ملاحظاته مسجلة بنصها الأصلي.' }
+    mock.data.pipeline = { topology: { engine: 'langgraph', mode: 'agent_tool_loop', nodes: ['recommend', 'review'], edges: [], retry_limit: 2 }, source: 'recorded_stage_events', status: 'REVIEWED', events: [
+      { sequence: 1, stage: 'recommend', status: 'COMPLETED', iteration: 0, recorded_at: '2026-10-09T01:00:00Z', evidence_as_of: '2026-09-11T14:01:00Z', output: { proposal: { action_en: 'Request a package rescan at the current facility.' } } },
+      { sequence: 2, stage: 'review', status: 'REJECTED', iteration: 1, recorded_at: '2026-10-09T01:00:01Z', evidence_as_of: '2026-09-11T14:01:00Z', output: { verdict: 'reject', feedback: 'Re-check the scan device.', summary_ar: 'طلب المراجع المستقل تعديل المقترح؛ ملاحظاته مسجلة بنصها الأصلي.' } },
+    ] }
+    mock.data.run = { result: { trace: [{ iteration: 0, mode: 'gpt-oss', review: { verdict: 'reject', feedback: 'Re-check the scan device.' }, proposal: { action_en: 'Request a package rescan at the current facility.' } }] } }
+    render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
+    expect(document.body.textContent).toContain('طلب المراجع المستقل تعديل المقترح')
+    fireEvent.click(screen.getByRole('button', { name: /مراجعة السلامة/ }))
+    expect(screen.getAllByText(/طلب المراجع المستقل تعديل المقترح/).length).toBeGreaterThan(0)
+    fireEvent.click(screen.getByRole('tab', { name: /المراجعة/ }))
+    // A legacy trace entry without an Arabic summary shows the reviewer's own words, not an invented reason.
+    expect(screen.getByTestId('review-round-reason').textContent).toBe('Re-check the scan device.')
+    expect(document.body.textContent).not.toContain('موقع المركبة')
+    expect(document.body.textContent).not.toMatch(/GPS/)
+    localStorage.clear(); mock.data.review = undefined; mock.data.run = undefined
+  })
+  it('shows a review with no proposal as such, not as a rejection', () => {
+    mock.data.workflow_state = 'HUMAN_REVIEW'
+    mock.data.review = { verdict: 'no_proposal', reason_code: 'INVESTIGATOR_UNAVAILABLE', feedback: 'The investigation agent did not reach a valid conclusion; there is no proposal to review and a person must review the case.' }
+    render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
+    expect(screen.getByTestId('review-verdict').getAttribute('data-verdict')).toBe('no_proposal')
+    expect(screen.getByText('No proposal to review')).toBeTruthy()
+    expect(screen.queryByText(/Recommendation rejected/)).toBeNull()
+    expect(document.body.textContent).not.toMatch(/GPS/)
+    mock.data.review = undefined
+  })
   it('opens Evidence on cited key evidence and focuses the graph on it without running anything', () => {
     mock.data.evidence = { nodes: [{ id: 'PROOF', kind: 'DeliveryProof', properties: {} }, { id: 'REPORT', kind: 'RecipientReport', properties: { report_code: 'NOT_RECEIVED' } }, { id: 'HUB', kind: 'Hub', properties: {} }], edges: [] }
     mock.data.reasoning = { workflow_state: 'HUMAN_REVIEW', diagnoses: [{ code: 'DELIVERY_DISPUTE', evidence_ids: ['PROOF', 'REPORT'] }] }

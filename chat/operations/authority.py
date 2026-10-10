@@ -36,6 +36,26 @@ ACTIONS = {
     "COMPENSATION": ("PROHIBITED", set(), False, "Compensation or refund."),
     "LIABILITY_DETERMINATION": ("PROHIBITED", set(), False, "Liability, fraud or theft determination."),
 }
+# Arabic summary of every catalogue action, with the same meaning as the English summary above. A
+# proposal's Arabic text comes from here, never from a scripted story.
+ACTION_SUMMARY_AR = {
+    "REQUEST_RESCAN": "طلب إعادة مسح الطرد في المنشأة الحالية.",
+    "REQUEST_REWEIGH": "طلب إعادة وزن الطرد بميزان معاير قبل متابعة مناولته.",
+    "INITIATE_CUSTODY_RECONCILIATION": "مطابقة حيازة الطرد بدءًا من آخر حائز تؤيده الأدلة.",
+    "REQUEST_HUB_CHECK": "مطالبة المنشأة المتوقعة بالبحث عن الطرد وتسجيل مسح له.",
+    "PRIORITIZE_NEXT_SESSION": "إعطاء الطرد الأولوية في دورة التسليم المؤهلة التالية.",
+    "REQUEST_ADDRESS_CONFIRMATION": "طلب تأكيد العنوان أو البوابة من المستلم قبل محاولة التسليم التالية.",
+    "REQUEST_ADDITIONAL_EVIDENCE": "طلب الأدلة التشغيلية المفقودة المرتبطة بالطرد.",
+    "REROUTE_TO_CONFIRMED_DESTINATION": "إعادة توجيه الطرد إلى وجهة أخرى مؤكدة.",
+    "RETURN_TO_SENDER": "إعادة الطرد إلى المرسل.",
+    "DELIVERY_DISPUTE_REVIEW": "مراجعة بشرية لبلاغ المستلم ودليل التسليم المرتبط بالطرد والعنوان والحيازة.",
+    "CONFLICTING_CUSTODY_REVIEW": "مطابقة بشرية لتقارير الحيازة المتعارضة.",
+    "REQUEST_DEVICE_SYNC": "مطالبة الجهاز برفع عمليات المسح المخزنة لديه؛ فالسجلات التي تصل متأخرة تؤكد الملاحظات المفقودة.",
+    "PHYSICAL_CUSTODY_CHECK": "يحدد شخص موقع الطرد فعليًا لدى آخر حائز تؤيده الأدلة.",
+    "MANIFEST_RECONCILIATION_REVIEW": "يطابق شخص بيان الإرسال مع الحيازة المؤكدة.",
+    "COMPENSATION": "تعويض أو استرداد.",
+    "LIABILITY_DETERMINATION": "تحديد المسؤولية أو الاحتيال أو السرقة.",
+}
 SENSITIVE_CODES = frozenset(("DELIVERY_DISPUTE", "POSSIBLE_MISDELIVERY", "CONFLICTING_CUSTODY"))
 # Observed symptoms that set a human-investigation floor whatever the diagnosis: a wrong diagnosis can
 # never lower such a case to automatic closure. Evidence-gathering may still run automatically.

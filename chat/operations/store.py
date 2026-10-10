@@ -57,14 +57,6 @@ SYMPTOM_STATUS = (("RECIPIENT_REPORTED_NOT_RECEIVED", "DELIVERY_DISPUTE"), ("CUS
 # Symptoms describing a condition that is still true at the clock (an observation still missing, custody
 # still unreconciled, a manifest still omitting a loaded package), as opposed to a past event that stays in
 # the record (a misread, a late scan). A case resolves only when none of these remain.
-# Arabic review summaries per stored verdict. An unavailable review or a request for human judgment is
-# never described as a pass.
-REVIEW_SUMMARY_AR = {
-    "accept": "تدعم الأدلة المقترح فقط. يلزم اعتماد المشغّل ونتيجة موثّقة مستقلة قبل الإغلاق.",
-    "reject": "رفضت مراجعة السلامة المقترح. يجب استخدام أدلة الشحنة وطلب اعتماد المشغّل؛ موقع المركبة لا يثبت تسليم الطرد.",
-    "review_unavailable": "تعذّر إكمال المراجعة المستقلة؛ أُوقف التنفيذ التلقائي ويجب أن يراجع شخص الحالة.",
-    "human_review": "طلب المراجع المستقل أن يقرر شخص؛ لا تنفيذ تلقائي.",
-}
 STANDING_SYMPTOMS = frozenset(("MILESTONE_OVERDUE", "SESSION_END_UNRECONCILED", "MANIFEST_CUSTODY_CONFLICT",
                                "CUSTODY_TRANSFER_UNCONFIRMED", "DELIVERY_PROOF_INCOMPLETE", "EVIDENCE_MISSING"))
 
@@ -738,12 +730,14 @@ class OperationsStore:
                     "authority_reason":(analysis.get("authority") or {}).get("reason"),"target_json":canonical(proposal.get("target") or {}),
                     "agent_mode":((proposal.get("planner") or {}).get("mode")) or analysis["mode"]})
                 self._link(tx,"OPS_PROPOSES",run_id,recommendation_id,case["shipment_id"],when)
+            from operations.worker import review_reason, REVIEW_SUMMARY_AR
             for item in analysis["trace"]:
                 review_id=identity("review",run_id,item["iteration"])
+                reason=review_reason(item["review"])
                 self._put(tx,"OpsReview",{"entity_id":review_id,"shipment_id":case["shipment_id"],"case_id":case["entity_id"],
                     "run_id":run_id,"recorded_at":when,"verdict":item["review"]["verdict"],"feedback":item["review"]["feedback"],
-                    "summary_en":item["review"]["feedback"],
-                    "summary_ar":REVIEW_SUMMARY_AR.get(item["review"]["verdict"],REVIEW_SUMMARY_AR["reject"]),
+                    "summary_en":item["review"]["feedback"],"reason_code":reason,
+                    "summary_ar":REVIEW_SUMMARY_AR[reason],  # Chosen from the reason that produced this verdict.
                     "model_verdict":item["review"].get("model_verdict"),"degraded":bool(item["review"].get("degraded")),
                     "iteration":item["iteration"],"mode":item["mode"]})
                 self._link(tx,"OPS_REVIEWED_BY",run_id,review_id,case["shipment_id"],when)
@@ -1075,8 +1069,15 @@ class OperationsStore:
             # and its review is that run's final round: an earlier run's pass never stands in for the current one.
             last=public_value(case.get("last_run_id")) if case.get("last_run_id") else None
             current=next((r for r in runs if r.get("entity_id")==last),None) or (None if last else (runs[0] if runs else None))
-            reviews=[r for r in linked("OpsReview") if current and r.get("run_id")==current.get("entity_id")]
-            if current:current["result"]=json.loads(current.pop("result_json"))
+            from operations.worker import with_review_reason
+            reviews=[with_review_reason(r) for r in linked("OpsReview") if current and r.get("run_id")==current.get("entity_id")]
+            if current:
+                current["result"]=json.loads(current.pop("result_json"))
+                for item in current["result"].get("trace") or []:
+                    item["review"]=with_review_reason(item.get("review"))
+                for event in current["result"].get("pipeline_events") or []:
+                    if event.get("stage")=="review" and (event.get("output") or {}).get("verdict"):
+                        event["output"]=with_review_reason(event["output"])
             if outcomes:outcomes[0]["outcome_id"]=outcomes[0]["entity_id"]
             return {"case_id":case_id,"shipment_id":case["shipment_id"],"workflow_state":case["workflow_state"],
                 "state_version":case["state_version"],"priority":case["priority"],"operational_status":case["operational_status"],

@@ -81,8 +81,9 @@ function StepDetail({ detail, step, onEvidence }: { detail: ShipmentDetail; step
         </ul>}
       </div>
     })()}
-    {step.key === 'recommend' && out?.proposal && <p dir="auto">{isArabic ? out.proposal.action_ar ?? t('ops.workspace.rejectedGpsProposal') : out.proposal.action_en ?? out.proposal.action}</p>}
-    {step.key === 'review' && out?.verdict && <p dir="auto">{t(`ops.review.${out.verdict}`)} · {isArabic ? t(out.verdict === 'accept' ? 'ops.overview.reviewGuard' : out.verdict === 'review_unavailable' ? 'ops.review.unavailableHint' : out.verdict === 'human_review' ? 'ops.review.humanHint' : 'ops.workspace.gpsGuard') : out.feedback}</p>}
+    {step.key === 'recommend' && out?.proposal && <p dir="auto">{isArabic ? out.proposal.action_ar ?? out.proposal.action_en ?? out.proposal.action : out.proposal.action_en ?? out.proposal.action}</p>}
+    {/* The review text is the recorded reason for this verdict (Arabic chosen by the backend from that reason), never a fixed story. */}
+    {step.key === 'review' && out?.verdict && <p dir="auto">{t(`ops.review.${out.verdict}`)}{(isArabic ? out.summary_ar ?? out.feedback : out.feedback) && <> · {isArabic ? out.summary_ar ?? out.feedback : out.feedback}</>}</p>}
     {step.key === 'route' && out?.workflow_state && <p>{t('ops.pipeline.routedTo', { state: t(`ops.states.${out.workflow_state}`) })} · {t('ops.transition.noSkipToResolved')}</p>}
     {step.key === 'route' && (out as { authority?: { risk_class: string; action_type: string } } | undefined)?.authority && (() => {
       const a = (out as { authority: { risk_class: string; action_type: string } }).authority
@@ -92,7 +93,12 @@ function StepDetail({ detail, step, onEvidence }: { detail: ShipmentDetail; step
     {['recommend', 'review'].includes(step.key) && rejected > 0 && <details className="pt-1">
       <summary className="cursor-pointer font-medium">{t('ops.pipeline.loop', { count: rejected })}</summary>
       <ol className="mt-1 flex flex-wrap items-center gap-1.5" aria-label={t('ops.pipeline.revision')}>{loop.map((e, i) => <li key={e.sequence} className="flex items-center gap-1.5"><span className={`rounded-md border px-1.5 py-0.5 ${e.status === 'REJECTED' ? 'border-chart-warning/60 bg-chart-warning/10' : 'border-border bg-card'}`}>{t(`ops.pipeline.short.${e.stage === 'recommend' ? 'recommend' : 'review'}`)} {e.stage === 'recommend' ? e.iteration + 1 : e.iteration} · {t(`ops.pipeline.states.${e.status}`)}</span>{i < loop.length - 1 && <span aria-hidden="true" className="text-muted-foreground">{isArabic ? '←' : '→'}</span>}</li>)}</ol>
-      <p className="mt-1 text-muted-foreground">{t('ops.workspace.gpsGuard')}</p>
+      {(() => {
+        // The reason the latest rejection actually recorded, not a fixed sentence.
+        const last = pipeline?.events.filter(e => e.stage === 'review' && e.status === 'REJECTED').at(-1)?.output
+        const reason = isArabic ? last?.summary_ar ?? last?.feedback : last?.feedback
+        return reason ? <p data-testid="rejection-reason" className="mt-1 text-muted-foreground" dir="auto">{reason}</p> : null
+      })()}
     </details>}
   </div>
 }

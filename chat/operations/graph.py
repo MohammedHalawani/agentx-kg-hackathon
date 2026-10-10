@@ -97,8 +97,8 @@ def action_target(tools):
 def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, events=None,
                 agents=None, live_session=False, symptoms=(), heartbeats=None):
     """agents: None (deterministic rules only) or an investigator (operations.investigator or a test double)."""
-    from operations.worker import review as guard
-    from operations.authority import authorize, symptom_floor, ACTIONS, STATE
+    from operations.worker import review as guard, REVIEW_SUMMARY_AR
+    from operations.authority import authorize, symptom_floor, ACTIONS, ACTION_SUMMARY_AR, STATE
     from operations.checks import fact_checks, cited_records
     events = events if events is not None else []
     holder = {}
@@ -121,8 +121,12 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
                 emit(name, "FAILED", state, {"error": "stage_failed"})
                 raise
             merged = {**state, **update}
-            status = ("REJECTED" if name == "review" and update["review"]["verdict"] == "reject" else
-                      "HUMAN_REVIEW" if name == "review" and update["review"]["verdict"] == "human_review" else
+            verdict = update["review"]["verdict"] if name == "review" else None
+            # Nothing to review: shown as not taken, or as unavailable when the investigator failed; never as a rejection.
+            status = ("REJECTED" if verdict == "reject" else
+                      "HUMAN_REVIEW" if verdict == "human_review" else
+                      ("DEGRADED" if update["review"].get("reason_code") == "INVESTIGATOR_UNAVAILABLE" else "SKIPPED")
+                      if verdict == "no_proposal" else
                       "DEGRADED" if len(update.get("degraded") or []) > len(state.get("degraded") or []) else "COMPLETED")
             emit(name, status, merged, output)
             return update
@@ -189,7 +193,8 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
                 basis = primary.get("supporting_evidence_ids") or inv.get("retrieved_evidence_ids", [])[:10]
                 code = inv["primary_cause"] if known else "INSUFFICIENT_EVIDENCE"
                 text = ACTIONS[action][3]
-                proposal = {"code": code, "action_code": code, "action_type": action, "action": text, "action_en": text, "action_ar": None,
+                proposal = {"code": code, "action_code": code, "action_type": action, "action": text, "action_en": text,
+                            "action_ar": ACTION_SUMMARY_AR[action],
                             "evidence_ids": basis, "requires_approval": True, "resolves": False, "target": action_target(tools_for(s)),
                             "planner": {"mode": inv["mode"], "action_type": action, "evidence_basis": basis}}
         elif s["result"]["recommendations"]:
@@ -204,11 +209,17 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
         kinds = {n["id"]: n["kind"] for n in s["context"]["nodes"]}
         tools = holder.get("tools")
         visible = set(kinds) | (set(tools.external) if tools else set())
-        verdict = guard(s["proposal"], visible, kinds) if s["proposal"] else {
-            "verdict": "reject", "feedback": "No grounded investigation action at this snapshot."}
+        inv = s.get("investigation")
+        if s["proposal"]:
+            verdict = guard(s["proposal"], visible, kinds)
+        elif agents and (inv is None or inv.get("degraded")):
+            # The investigator failed: there is nothing to review. Not a rejection, and no guard check fired.
+            verdict = {"verdict": "no_proposal", "reason_code": "INVESTIGATOR_UNAVAILABLE",
+                       "feedback": "The investigation agent did not reach a valid conclusion; there is no proposal to review and a person must review the case."}
+        else:
+            verdict = {"verdict": "no_proposal", "reason_code": "NO_PROPOSAL", "feedback": "No grounded investigation action at this snapshot."}
         degraded = list(s.get("degraded", []))
         checks, model_review = None, None
-        inv = s.get("investigation")
         if agents and inv and not inv.get("degraded"):
             tools = tools_for(s)
             checks = fact_checks(inv, tools)
@@ -218,16 +229,21 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
                     # Failure, timeout or invalid output: recorded as an unavailable review, never as a pass.
                     degraded.append({"role": "reviewer", "error": model_review["validation_error"]})
                     verdict = {"verdict": "review_unavailable", "guard_verdict": verdict["verdict"], "model_verdict": "UNAVAILABLE",
-                               "degraded": True,
+                               "degraded": True, "reason_code": "REVIEWER_UNAVAILABLE",
                                "feedback": "Independent model review could not be completed; automatic execution is blocked and a person must review."}
                 elif model_review["verdict"] == "REVISE":
-                    verdict = {"verdict": "reject", "model_verdict": "REVISE", "feedback": model_review["feedback"] or "Reviewer requested a revision."}
+                    verdict = {"verdict": "reject", "model_verdict": "REVISE", "reason_code": "MODEL_REVISE",
+                               "feedback": model_review["feedback"] or "Reviewer requested a revision."}
                 elif model_review["verdict"] in ("HUMAN_REVIEW", "ESCALATE"):
                     # The reviewer asked for a person to decide: not a pass either.
                     verdict = {"verdict": "human_review", "guard_verdict": verdict["verdict"], "model_verdict": model_review["verdict"],
+                               "reason_code": "MODEL_ESCALATE" if model_review["verdict"] == "ESCALATE" else "MODEL_HUMAN_REVIEW",
                                "feedback": model_review["feedback"] or "The independent reviewer asked for a person to decide."}
                 else:
-                    verdict = {**verdict, "model_verdict": model_review["verdict"], "feedback": model_review["feedback"] or verdict["feedback"]}
+                    verdict = {**verdict, "model_verdict": model_review["verdict"], "reason_code": "MODEL_ACCEPT",
+                               "feedback": model_review["feedback"] or verdict["feedback"]}
+        # Arabic text chosen from the reason that actually produced this verdict.
+        verdict = {**verdict, "summary_ar": REVIEW_SUMMARY_AR[verdict["reason_code"]]}
         trace = [*s["trace"], {"iteration": s.get("iteration", 0), "proposal": s["proposal"], "review": verdict,
             "feedback_received": s.get("feedback"), "mode": (model_review or {}).get("mode", "deterministic_evidence_guard")}]
         return {"review": verdict, "trace": trace, "feedback": verdict["feedback"], "iteration": s.get("iteration", 0)+1,
