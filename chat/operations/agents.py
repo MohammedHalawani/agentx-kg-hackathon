@@ -23,17 +23,32 @@ VERDICTS = ("ACCEPT", "REVISE", "HUMAN_REVIEW", "ESCALATE")
 # took it", "the neighbour deliberately ..."), or a wrongdoing noun. Neutral custody facts stay allowed: "the parcel
 # remains with the driver", "last corroborated custody is the driver", "the driver's device stopped syncing".
 _PERSON = r"(?:driver|courier|employee|customer|recipient|neighbou?r|contractor|staff|agent|sender|operator)s?"
+# An identifier the investigator cites may follow the person noun ("Driver DEMO-DRV-0042 kept ..."), bare or in brackets.
+_ID = r"(?:\s+\(?(?=[\w-]*\d)[A-Z][\w]*(?:-[\w]+)+\)?)?"
 _HEDGE = r"(?:\s+(?:apparently|probably|likely|possibly|may|might|must|could|have|has|had|then|also|simply))*"
 # Verbs that are only accusatory with the parcel as their object ("took a photo", "kept calling" stay allowed).
-# "took" and "kept" describe a neutral movement or storage when a destination or place follows ("took the parcel
-# to the depot", "kept the parcel at the depot"); bare, or with "home", they are accusations.
+# "took" and "kept" describe a neutral movement or storage only when an operational place or purpose follows ("took
+# the parcel to the depot", "kept the parcel in the van overnight", "took the parcel out for delivery"). Bare, or
+# with anything else ("home", "to his house", "for himself", "for personal use"), they are accusations.
 _OBJECT = r"(?:(?:the|a|this|that|these|those|their|his|her)\s+)?(?:parcels?|packages?|shipments?|items?|goods|it|them)"
+_PLACE = (r"(?:(?:the|a|an|this|that|its|their|his|her)\s+)?(?:[\w-]+(?:'s)?\s+)?"
+          r"(?:depot|hub|facility|warehouse|station|branch|locker|counter|office|sort(?:ing)?\s+cent(?:re|er)|vehicle|van|truck|car"
+          r"|address|door|destination|gate|building|entrance|reception|apartment|recipient|customer)s?\b")
+_PURPOSE = (r"(?:out\s+)?for\s+(?:the\s+)?(?:next\s+)?(?:delivery|redelivery|return|rescan\w*|scan\w*|sort\w*|reconciliation"
+            r"|inspection|session|attempt|dispatch|handover|collection)\b")
+_MOVED_TO = rf"(?:\s+(?:back\s+)?(?:to|into|onto|at|in|inside|on|aboard)\s+{_PLACE}|\s+from\b|\s+{_PURPOSE})"
+_STORED_AT = rf"(?:\s+(?:at|in|inside|on|aboard)\s+{_PLACE}|\s+(?:until|overnight|safe|secure|secured)\b|\s+{_PURPOSE})"
 _TAKING = (rf"(?:(?:hid|withheld|pocketed|misappropriated|abandoned|dumped|discarded)\s+{_OBJECT}"
-           rf"|took\s+{_OBJECT}(?!\s+(?:to|back|into|onto|from|for)\b)"
-           rf"|kept\s+{_OBJECT}(?!\s+(?:at|in|inside|on|for|until|overnight|safe|secure|secured)\b))")
+           rf"|took\s+{_OBJECT}(?!{_MOVED_TO})"
+           rf"|kept\s+{_OBJECT}(?!{_STORED_AT}))")
 _ACCUSATION = (rf"(?:{_TAKING}|lost|stole|faked|falsified|fabricated|lied|is lying|was lying|was negligent|is negligent|"
                r"is responsible|was responsible|is at fault|was at fault|is to blame|deliberately|intentionally|knowingly)")
-BLAME = re.compile(rf"\b{_PERSON}{_HEDGE}\s+{_ACCUSATION}\b|\b(theft|stolen|fraud|fraudulent|on purpose)\b", re.I)
+# The same acts with a pronoun subject ("He kept the parcel"), and in the passive ("The parcel was kept by the driver").
+_PRONOUN = rf"\b(?:he|she|they){_HEDGE}\s+(?:{_TAKING}|stole|faked|falsified|fabricated|lied)\b"
+_BY_PERSON = rf"\s+by\s+(?:(?:the|a|an|his|her|their)\s+)?{_PERSON}{_ID}"
+_PASSIVE = (rf"\b(?:was|were|been|being|is|are)\s+(?:taken{_BY_PERSON}(?!{_MOVED_TO})|kept{_BY_PERSON}(?!{_STORED_AT})"
+            rf"|(?:stolen|withheld|hidden|pocketed|misappropriated|lost|abandoned|dumped|discarded){_BY_PERSON})\b")
+BLAME = re.compile(rf"\b{_PERSON}{_ID}{_HEDGE}\s+{_ACCUSATION}\b|{_PRONOUN}|{_PASSIVE}|\b(theft|stolen|fraud|fraudulent|on purpose)\b", re.I)
 GPS_DELIVERY = re.compile(r"\bgps\b[^.]{0,80}\b(proves?|confirms?|establish(es)?|shows?)\b[^.]{0,40}\b(deliver|parcel|package)", re.I)
 OBSERVATION_KINDS = ("ScanEvent", "CustodyEvent", "DeliveryAttempt", "ContactAttempt", "GPSObservation", "TrafficObservation",
                      "DeliveryProof", "RecipientReport", "DepotReconciliation", "AddressVersion", "VehicleAssignment", "HandoffEvidence")

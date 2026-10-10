@@ -115,13 +115,27 @@ class BlameFilterTests(unittest.TestCase):
                   "The courier took the parcel.",
                   "The neighbour took the parcel.", "The contractor withheld the shipment.", "The driver may have kept the parcel.",
                   "Drivers kept the parcels.", "The driver lost the parcel.", "The recipient lied about the delivery.",
-                  "The courier deliberately skipped the scan.", "Possible theft.", "The recipient is at fault.")
+                  "The courier deliberately skipped the scan.", "Possible theft.", "The recipient is at fault.",
+                  # Independent review of 80dcbc1: a purpose, a private place, a cited id, the passive and a pronoun.
+                  "The driver kept the parcel for himself.", "The courier took the package for personal use.",
+                  "Driver DEMO-DRV-0042 kept the parcel.", "The driver (DEMO-DRV-0042) kept the parcel.",
+                  "The parcel was kept by the driver.", "The parcels were taken by the courier.",
+                  "The parcel was taken by driver DEMO-DRV-7 for himself.", "The parcel was lost by the courier.",
+                  "The driver took the parcel to his house.", "The driver kept the parcel at his home.",
+                  "The courier took the parcel back home.", "He kept the parcel.", "She took the parcel.", "They kept the parcels.")
     NEUTRAL = ("The parcel remains with the driver.", "Last corroborated custody is the driver; no return scan was recorded.",
                "The driver's device stopped syncing at 11:00.", "The recipient was unavailable at the address.",
                "The driver took a photo at the door.", "The customer kept calling the hotline.",
                "The driver has not returned the parcel to the depot yet.", "The parcel was kept at the depot overnight.",
                "Custody is with the contractor vehicle; the parcel is not reconciled.",
-               "The driver took the parcel back to the depot.", "The driver kept the parcel in the van overnight.")
+               "The driver took the parcel back to the depot.", "The driver kept the parcel in the van overnight.",
+               # Operational movements and storage stay allowed, with an id, a pronoun or in the passive.
+               "The courier took the parcel out for delivery at 09:10.", "The driver took the parcel to the recipient's address.",
+               "The parcel was taken by the courier to the hub.", "The parcel was kept by the driver in the vehicle overnight.",
+               "The driver kept the parcel until the next session.", "The driver kept the parcel for the next delivery attempt.",
+               "They took the parcels to the depot.", "Driver DEMO-DRV-0042 took the parcel to the depot.",
+               "The driver took the parcel from the locker.", "The courier took the package into the sorting centre.",
+               "They kept arriving late.")
 
     def test_accusations_are_blocked_and_neutral_custody_facts_are_not(self):
         self.assertEqual([s for s in self.ACCUSATORY if not BLAME.search(s)], [])
