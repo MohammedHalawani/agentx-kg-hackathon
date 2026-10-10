@@ -143,3 +143,35 @@ dataset has no operational simulator: `status()["execution"]` is `{adapter: "non
 "mechanism_world"}`, an authorized action is recorded `NOT_ACKNOWLEDGED`, nothing is verified and nothing resolves.
 A fed record's `recorded_at` is the provider's delivery time (`deliver_at`), never before `occurred_at` and never
 after the tick that ingested it; `ingested_at` is that tick.
+
+## 8. Pilot scripts
+
+`scripts/world_pilot.py` replays a mechanism world's feed hour by hour on its database with no simulator, investigates
+cases as the monitor opens them (real model calls through `process_one` only) and writes one results file. It never
+reads truth: it refuses to start when `SUHAIL_EVAL_TRUTH_ROOT`, `SUHAIL_SIM_STATE_ROOT` or any variable whose name
+contains `TRUTH` is set, and it never imports `world.truth`. It resets that database's operations ledger and
+live-ingested records first (the store's development reset, flag set for that call only).
+
+```
+cd chat
+uv run python ../scripts/world_pilot.py --out ../docs/evals/<dir>/pilot.json
+      [--database shipments-v2-world-1-small] [--per-alert 2] [--max-cases 12] [--max-calls 144]
+      [--call-cap N] [--check-after-hours 24] [--max-hours N] [--disable-tools a,b] [--allow-dirty]
+uv run python ../scripts/world_pilot_score.py ../docs/evals/<dir>/pilot.json --truth-dir <truth root>\<dataset id>
+```
+
+Results file (`schema: "world-pilot-1"`):
+
+| Field | Meaning |
+| --- | --- |
+| `provenance` | `commit`, `dirty_tree`, `tree_changed_during_run`, `database`, `manifest_hash`, `configured_model`, `model_api_base`, `investigator_prompt_sha256`, `reviewer_prompt_sha256`, `cause_catalogue_sha256`, `model_calls` (`succeeded` and `failed` by the model name the provider reported, `prompt_tokens`, `completion_tokens`, `total_tokens`), `model_calls_total`. |
+| `settings` | The arguments in force, `per_case_model_call_cap` and `execution_adapter` (`none`). |
+| `replay` | `clock_at_start`, `clock_at_end`, `feed_end`, `stop_reason` (`max_cases_reached`, `model_call_budget`, `feed_ended`, `max_hours_reached`), `hours`, `ingested`, `rejected`, `cases_opened`, `cases_opened_by_symptom_set`, `cases_investigated`, `cases_not_investigated` (by reason), `model_calls_counted`. |
+| `time_correct_check` | `as_of`, `pass`, `same_rows_with_the_clock_there_and_after_later_ingestion`, `queries_whose_rows_differ`, `queries_returning_a_record_from_after_as_of`, and both passes. |
+| `cases[]` | Public fields only: `case_id`, `shipment_id`, `opened_at`, `opening_symptoms`, `snapshot_as_of`, `rounds[]` (tool calls with `args`, `evidence_ids`, `computed_ids`, `failure`; hypotheses with status; citations; the review), `primary_cause`, `insufficient_evidence`, `missing_evidence`, `next_evidence_step`, `citations[]` (`exists`, `retrieved_in_this_run`, `recorded_at_or_before_snapshot`, `valid`), `review` (`model_verdict`, `reasons`), `authority` (`risk_class`, `rule_id`), `model_calls_used`, `provider_calls`, `wall_seconds`, `workflow_state_after_investigation`, `final_workflow_state`, `case_detail_returns` (`diagnosis`, `review`, `run`, `investigation_log`). |
+| `cases_not_investigated[]` | Cases the monitor opened that were not investigated, with the reason. |
+
+The scorer is a separate process. It reads the results, the truth directory and (read-only) the same database before
+its live session is reset again, and adds to every case `score`: `knowable_causes` (`world.truth.labels_at` at the
+case's snapshot from the run's own ingestion), `acceptable_codes_at_snapshot`, `eventual_causes` and a `verdict`:
+`correct`, `incorrect`, `appropriately uncertain`, `wrongly uncertain` or `no valid conclusion`.

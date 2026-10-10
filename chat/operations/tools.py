@@ -64,7 +64,8 @@ def _minutes(later, earlier):
 
 
 def _public(props):
-    return {k: _iso(v) for k, v in props.items() if k not in ENVELOPE and v is not None}
+    """A record as the investigator and the reviewer read it: no envelope or loader-internal property."""
+    return {k: _iso(v) for k, v in props.items() if k not in ENVELOPE and not k.startswith("_") and v is not None}
 
 
 class InvestigationTools:
