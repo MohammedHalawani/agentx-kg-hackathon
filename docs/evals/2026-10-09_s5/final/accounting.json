@@ -1,0 +1,557 @@
+{
+ "phase": "accounting",
+ "source": "pipeline.json",
+ "database": "shipments-v2-demo-test",
+ "clock": "2026-09-21T00:00:00.000000000+00:00",
+ "wrong_diagnoses": [
+  {
+   "case_id": "DEMO-OPS-CASE-f8295725822e30934884a6a0",
+   "shipment_id": "DEMO-SHP-000431",
+   "truth_recipe": "fulfillment",
+   "acceptable_causes": [
+    "DELAYED_SYNC"
+   ],
+   "primary_cause": "CUSTODY_GAP",
+   "authority": "HUMAN_REVIEW",
+   "executions": [],
+   "end_state": "routed_to_a_person_human_review"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-fb06ec173df7ded818211e7f",
+   "shipment_id": "DEMO-SHP-000392",
+   "truth_recipe": "conflicting_manifest",
+   "acceptable_causes": [
+    "DELAYED_SYNC",
+    "MANIFEST_CONFLICT"
+   ],
+   "primary_cause": "CUSTODY_GAP",
+   "authority": "APPROVAL_REQUIRED",
+   "executions": [],
+   "end_state": "approval_pending"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-6b9081c6aaaf5f5fae4a2b3c",
+   "shipment_id": "DEMO-SHP-000101",
+   "truth_recipe": "absent_session_receipt",
+   "acceptable_causes": [
+    "UNRECONCILED_CUSTODY"
+   ],
+   "primary_cause": "CUSTODY_GAP",
+   "authority": "HUMAN_REVIEW",
+   "executions": [],
+   "end_state": "routed_to_a_person_escalated"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-d9763c84e7549f2baac4e6ed",
+   "shipment_id": "DEMO-SHP-000482",
+   "truth_recipe": "absent_session_receipt",
+   "acceptable_causes": [
+    "UNRECONCILED_CUSTODY"
+   ],
+   "primary_cause": "CUSTODY_GAP",
+   "authority": "HUMAN_REVIEW",
+   "executions": [],
+   "end_state": "routed_to_a_person_human_review"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-75c8c391965f27edb3e3548e",
+   "shipment_id": "DEMO-SHP-000262",
+   "truth_recipe": "report_authorized_alternate",
+   "acceptable_causes": [
+    "DELIVERY_DISPUTE",
+    "PROOF_INSUFFICIENT"
+   ],
+   "primary_cause": null,
+   "authority": "HUMAN_REVIEW",
+   "executions": [],
+   "end_state": "routed_to_a_person_human_review"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-a11f873718d08527c9969261",
+   "shipment_id": "DEMO-SHP-000567",
+   "truth_recipe": "wrong_label_applied",
+   "acceptable_causes": [
+    "BARCODE_MISMATCH"
+   ],
+   "primary_cause": "INSUFFICIENT_EVIDENCE",
+   "authority": "APPROVAL_REQUIRED",
+   "executions": [],
+   "end_state": "approval_pending"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-862d774e57fb36225c4ee158",
+   "shipment_id": "DEMO-SHP-000337",
+   "truth_recipe": "absent_transfer_receipt",
+   "acceptable_causes": [
+    "CUSTODY_GAP",
+    "MISSED_MILESTONE"
+   ],
+   "primary_cause": null,
+   "authority": "HUMAN_REVIEW",
+   "executions": [],
+   "end_state": "routed_to_a_person_human_review"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-6099b57719b9041d5f236091",
+   "shipment_id": "DEMO-SHP-000067",
+   "truth_recipe": "report_different_location",
+   "acceptable_causes": [
+    "DELIVERY_DISPUTE",
+    "POSSIBLE_MISDELIVERY"
+   ],
+   "primary_cause": "PROOF_INSUFFICIENT",
+   "authority": "HUMAN_REVIEW",
+   "executions": [],
+   "end_state": "routed_to_a_person_human_review"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-1143b3ba8c16e684aba11559",
+   "shipment_id": "DEMO-SHP-000387",
+   "truth_recipe": "traffic_safe_return",
+   "acceptable_causes": [
+    "ROUTE_DELAY",
+    "TRAFFIC_DELAY"
+   ],
+   "primary_cause": "MISSED_MILESTONE",
+   "authority": "APPROVAL_REQUIRED",
+   "executions": [],
+   "end_state": "approval_pending"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-c0e5e27f2ffcb99c849d3f5a",
+   "shipment_id": "DEMO-SHP-000017",
+   "truth_recipe": "next_day",
+   "acceptable_causes": [
+    "DELAYED_SYNC"
+   ],
+   "primary_cause": "CUSTODY_GAP",
+   "authority": "HUMAN_REVIEW",
+   "executions": [],
+   "end_state": "routed_to_a_person_human_review"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-17390ea3640527245c64550b",
+   "shipment_id": "DEMO-SHP-000187",
+   "truth_recipe": "contractor_unreturned",
+   "acceptable_causes": [
+    "UNRECONCILED_CUSTODY"
+   ],
+   "primary_cause": "RECIPIENT_UNAVAILABLE",
+   "authority": "HUMAN_REVIEW",
+   "executions": [],
+   "end_state": "routed_to_a_person_human_review"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-ca6c6b44c831434180a380e8",
+   "shipment_id": "DEMO-SHP-000239",
+   "truth_recipe": "contractor_unreturned",
+   "acceptable_causes": [
+    "UNRECONCILED_CUSTODY"
+   ],
+   "primary_cause": "RECIPIENT_UNAVAILABLE",
+   "authority": "HUMAN_REVIEW",
+   "executions": [],
+   "end_state": "routed_to_a_person_human_review"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-c237bcc3c48609f5f3083418",
+   "shipment_id": "DEMO-SHP-000400",
+   "truth_recipe": "later_hub_departure",
+   "acceptable_causes": [
+    "HUB_DELAY",
+    "JOURNEY_DELAY",
+    "MISSED_MILESTONE"
+   ],
+   "primary_cause": "CUSTODY_GAP",
+   "authority": "HUMAN_REVIEW",
+   "executions": [],
+   "end_state": "routed_to_a_person_human_review"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-b44b5fbbbdf2e57e400a7d4c",
+   "shipment_id": "DEMO-SHP-000030",
+   "truth_recipe": "report_failed_authentication",
+   "acceptable_causes": [
+    "DELAYED_SYNC",
+    "DELIVERY_DISPUTE",
+    "PROOF_INSUFFICIENT"
+   ],
+   "primary_cause": "CUSTODY_GAP",
+   "authority": "HUMAN_REVIEW",
+   "executions": [],
+   "end_state": "routed_to_a_person_human_review"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-922feb9a63c82629361eec04",
+   "shipment_id": "DEMO-SHP-000029",
+   "truth_recipe": "partial_packages",
+   "acceptable_causes": [
+    "CUSTODY_GAP",
+    "UNRECONCILED_CUSTODY"
+   ],
+   "primary_cause": "DELAYED_SYNC",
+   "authority": "AUTO",
+   "executions": [
+    "REQUEST_DEVICE_SYNC"
+   ],
+   "end_state": "executed_verification_failed_unresolved"
+  }
+ ],
+ "wrong_diagnosis_end_states": {
+  "approval_pending": 3,
+  "executed_verification_failed_unresolved": 1,
+  "routed_to_a_person_escalated": 1,
+  "routed_to_a_person_human_review": 10
+ },
+ "false_resolutions_on_wrong_cause": [],
+ "resolved_cases": [
+  {
+   "case_id": "DEMO-OPS-CASE-3387f73da5d0e3e2cdb92eb1",
+   "shipment_id": "DEMO-SHP-000113",
+   "truth_recipe": "offline_device_sync",
+   "primary_cause": "DELAYED_SYNC",
+   "closed_at": "2026-09-04T01:00:12.000000000+00:00",
+   "standing_symptoms_at_closure": [],
+   "standing_symptoms_at_end": [],
+   "later_cases": []
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-f8d32f033fedf3decfe20aa3",
+   "shipment_id": "DEMO-SHP-000003",
+   "truth_recipe": "contractor_on_time",
+   "primary_cause": "DELAYED_SYNC",
+   "closed_at": "2026-09-04T18:00:12.000000000+00:00",
+   "standing_symptoms_at_closure": [],
+   "standing_symptoms_at_end": [],
+   "later_cases": []
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-a35fd772d8dd03dfcb83fcb5",
+   "shipment_id": "DEMO-SHP-000415",
+   "truth_recipe": "different_gate",
+   "primary_cause": "WRONG_GATE",
+   "closed_at": "2026-09-06T09:00:12.000000000+00:00",
+   "standing_symptoms_at_closure": [],
+   "standing_symptoms_at_end": [
+    "MILESTONE_OVERDUE"
+   ],
+   "later_cases": [
+    "DEMO-OPS-CASE-8d4aeed798e3f40c8bb05eb8"
+   ]
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-82b74eb66bd948240a28c800",
+   "shipment_id": "DEMO-SHP-000466",
+   "truth_recipe": "obsolete_address",
+   "primary_cause": "ADDRESS_CONFLICT",
+   "closed_at": "2026-09-08T08:00:12.000000000+00:00",
+   "standing_symptoms_at_closure": [],
+   "standing_symptoms_at_end": [
+    "MILESTONE_OVERDUE"
+   ],
+   "later_cases": [
+    "DEMO-OPS-CASE-6f775c2405d3e4f09baafdf8"
+   ]
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-2dde921b484071c6b1470fc1",
+   "shipment_id": "DEMO-SHP-000100",
+   "truth_recipe": "different_barcode",
+   "primary_cause": "BARCODE_MISMATCH",
+   "closed_at": "2026-09-10T09:00:12.000000000+00:00",
+   "standing_symptoms_at_closure": [],
+   "standing_symptoms_at_end": [],
+   "later_cases": []
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-8221f978d95ae46ed8fc720d",
+   "shipment_id": "DEMO-SHP-000120",
+   "truth_recipe": "offline_device_sync",
+   "primary_cause": "DELAYED_SYNC",
+   "closed_at": "2026-09-10T16:00:12.000000000+00:00",
+   "standing_symptoms_at_closure": [],
+   "standing_symptoms_at_end": [],
+   "later_cases": []
+  }
+ ],
+ "resolved_with_standing_symptom_at_closure": [],
+ "two_cause_shipments": [
+  {
+   "shipment_id": "DEMO-SHP-000030",
+   "recipe": "report_failed_authentication",
+   "root_cause": "PROOF_INSUFFICIENT",
+   "secondary_issue": "DELAYED_SYNC",
+   "second_cause_source": "truth generator: depot handheld outage window (propagate_outages)",
+   "outage_affected_event_ids": [
+    "DEMO-SHP-000030-RAW-CUST-01-07",
+    "DEMO-SHP-000030-CUST-01-07",
+    "DEMO-SHP-000030-RAW-CUST-02-07",
+    "DEMO-SHP-000030-CUST-02-07",
+    "DEMO-SHP-000030-RAW-CUST-03-07",
+    "DEMO-SHP-000030-CUST-03-07"
+   ],
+   "cases": [
+    {
+     "case_id": "DEMO-OPS-CASE-b44b5fbbbdf2e57e400a7d4c",
+     "opened_at": "2026-09-11T13:00:12.000000000+00:00",
+     "symptoms": [
+      "CUSTODY_TRANSFER_UNCONFIRMED",
+      "DELIVERY_PROOF_INCOMPLETE",
+      "MILESTONE_OVERDUE",
+      "RECIPIENT_REPORTED_NOT_RECEIVED",
+      "SESSION_END_UNRECONCILED"
+     ],
+     "primary_cause": "CUSTODY_GAP",
+     "executions": [],
+     "outcomes": [],
+     "final_state": "HUMAN_REVIEW",
+     "case_symptoms_now": [
+      "CUSTODY_TRANSFER_UNCONFIRMED",
+      "DELIVERY_PROOF_INCOMPLETE",
+      "MILESTONE_OVERDUE",
+      "RECIPIENT_REPORTED_NOT_RECEIVED",
+      "SESSION_END_UNRECONCILED"
+     ]
+    }
+   ],
+   "standing_symptoms_at_end": [
+    "CUSTODY_TRANSFER_UNCONFIRMED",
+    "DELIVERY_PROOF_INCOMPLETE",
+    "MILESTONE_OVERDUE",
+    "SESSION_END_UNRECONCILED"
+   ]
+  },
+  {
+   "shipment_id": "DEMO-SHP-000392",
+   "recipe": "conflicting_manifest",
+   "root_cause": "MANIFEST_CONFLICT",
+   "secondary_issue": "DELAYED_SYNC",
+   "second_cause_source": "truth generator: depot handheld outage window (propagate_outages)",
+   "outage_affected_event_ids": [
+    "DEMO-SHP-000392-RAW-CUST-01-04",
+    "DEMO-SHP-000392-CUST-01-04",
+    "DEMO-SHP-000392-RAW-CUST-02-04",
+    "DEMO-SHP-000392-CUST-02-04"
+   ],
+   "cases": [
+    {
+     "case_id": "DEMO-OPS-CASE-fb06ec173df7ded818211e7f",
+     "opened_at": "2026-09-02T13:00:12.000000000+00:00",
+     "symptoms": [
+      "MANIFEST_CUSTODY_CONFLICT",
+      "MILESTONE_OVERDUE"
+     ],
+     "primary_cause": "CUSTODY_GAP",
+     "executions": [],
+     "outcomes": [],
+     "final_state": "AWAITING_APPROVAL",
+     "case_symptoms_now": [
+      "MANIFEST_CUSTODY_CONFLICT",
+      "MILESTONE_OVERDUE"
+     ]
+    }
+   ],
+   "standing_symptoms_at_end": [
+    "MANIFEST_CUSTODY_CONFLICT"
+   ]
+  },
+  {
+   "shipment_id": "DEMO-SHP-000459",
+   "recipe": "contractor_unconfirmed_pickup",
+   "root_cause": "CUSTODY_GAP",
+   "secondary_issue": "DELAYED_SYNC",
+   "second_cause_source": "truth generator: depot handheld outage window (propagate_outages)",
+   "outage_affected_event_ids": [
+    "DEMO-SHP-000459-RAW-CUST-01-07",
+    "DEMO-SHP-000459-CUST-01-07",
+    "DEMO-SHP-000459-RAW-CUST-01-08",
+    "DEMO-SHP-000459-CUST-01-08",
+    "DEMO-SHP-000459-RAW-CUST-02-07",
+    "DEMO-SHP-000459-CUST-02-07",
+    "DEMO-SHP-000459-RAW-CUST-02-08",
+    "DEMO-SHP-000459-CUST-02-08",
+    "DEMO-SHP-000459-RAW-CUST-03-07",
+    "DEMO-SHP-000459-CUST-03-07",
+    "DEMO-SHP-000459-RAW-CUST-03-08",
+    "DEMO-SHP-000459-CUST-03-08",
+    "DEMO-SHP-000459-RAW-CUST-04-07",
+    "DEMO-SHP-000459-CUST-04-07",
+    "DEMO-SHP-000459-RAW-CUST-04-08",
+    "DEMO-SHP-000459-CUST-04-08"
+   ],
+   "cases": [
+    {
+     "case_id": "DEMO-OPS-CASE-51a935c40b45501a4944725e",
+     "opened_at": "2026-09-10T17:00:12.000000000+00:00",
+     "symptoms": [
+      "CUSTODY_TRANSFER_UNCONFIRMED",
+      "MILESTONE_OVERDUE",
+      "SESSION_END_UNRECONCILED"
+     ],
+     "primary_cause": "CUSTODY_GAP",
+     "executions": [],
+     "outcomes": [],
+     "final_state": "HUMAN_REVIEW",
+     "case_symptoms_now": [
+      "CUSTODY_TRANSFER_UNCONFIRMED",
+      "MILESTONE_OVERDUE",
+      "SESSION_END_UNRECONCILED"
+     ]
+    }
+   ],
+   "standing_symptoms_at_end": [
+    "CUSTODY_TRANSFER_UNCONFIRMED",
+    "MILESTONE_OVERDUE",
+    "SESSION_END_UNRECONCILED"
+   ]
+  }
+ ],
+ "scoring_transparency": {
+  "symptoms_from_one_rule_code": [
+   "BARCODE_READ_DIFFERS",
+   "CUSTODY_REPORTS_CONFLICT",
+   "CUSTODY_TRANSFER_UNCONFIRMED",
+   "DELIVERY_PROOF_INCOMPLETE",
+   "EVIDENCE_MISSING",
+   "MANIFEST_CUSTODY_CONFLICT",
+   "MILESTONE_OVERDUE",
+   "RECIPIENT_REPORTED_NOT_RECEIVED",
+   "SESSION_END_UNRECONCILED",
+   "WEIGHT_READ_DIFFERS"
+  ],
+  "symptoms_from_several_rule_codes": {
+   "MILESTONE_LATE": [
+    "JOURNEY_DELAY",
+    "TRAFFIC_DELAY"
+   ],
+   "DELIVERY_ATTEMPT_FAILED": [
+    "ADDRESS_CONFLICT",
+    "RECIPIENT_UNAVAILABLE",
+    "WRONG_GATE"
+   ]
+  },
+  "accuracy_all": {
+   "correct": 26,
+   "cases": 41,
+   "rate": 0.634
+  },
+  "accuracy_by_opening_symptom_rule_codes": {
+   "one_label_every_opening_symptom_from_one_rule_code": {
+    "correct": 21,
+    "cases": 33,
+    "rate": 0.636
+   },
+   "multi_label_an_opening_symptom_from_several_rule_codes": {
+    "correct": 5,
+    "cases": 8,
+    "rate": 0.625
+   },
+   "caveat": "a symptom from one rule code is not one diagnosis: delayed sync, hub delay, route delay, SLA risk and possible misdelivery have no rule code, so an overdue milestone (one rule code) has several possible causes; the named and not-named split below measures what the symptom name gives away"
+  },
+  "accuracy_when_an_opening_symptom_names_an_acceptable_cause": {
+   "correct": 17,
+   "cases": 22,
+   "rate": 0.773
+  },
+  "accuracy_when_no_opening_symptom_names_an_acceptable_cause": {
+   "correct": 9,
+   "cases": 19,
+   "rate": 0.474
+  },
+  "diagnosis_equals_the_label_of_an_opening_symptom": {
+   "strict_one_to_one": {
+    "correct": 15,
+    "wrong": 2
+   },
+   "inclusive": {
+    "correct": 20,
+    "wrong": 4
+   },
+   "correct_total": 26,
+   "wrong_total": 15
+  },
+  "second_cause_credit": {
+   "source": "network.propagate_outages adds DELAYED_SYNC to acceptable_causes of abnormal shipments caught in another shipment's handheld outage window (secondary_issue); introduced in e4207f9 together with the run that used it",
+   "accuracy_with": {
+    "correct": 26,
+    "cases": 41,
+    "rate": 0.634
+   },
+   "accuracy_without": {
+    "correct": 26,
+    "cases": 41,
+    "rate": 0.634
+   },
+   "resolved_on_a_wrong_cause_with": 0,
+   "resolved_on_a_wrong_cause_without": 0,
+   "cases_credited_only_by_it": []
+  },
+  "delayed_sync_only_cases": {
+   "correct": 3,
+   "cases": 5,
+   "rate": 0.6
+  },
+  "opening_trigger_symptoms": {
+   "BARCODE_READ_DIFFERS": 4,
+   "MILESTONE_OVERDUE": 19,
+   "MANIFEST_CUSTODY_CONFLICT": 2,
+   "RECIPIENT_REPORTED_NOT_RECEIVED": 5,
+   "CUSTODY_REPORTS_CONFLICT": 2,
+   "CUSTODY_TRANSFER_UNCONFIRMED": 2,
+   "DELIVERY_ATTEMPT_FAILED": 7,
+   "WEIGHT_READ_DIFFERS": 5,
+   "MILESTONE_LATE": 1
+  },
+  "scoring_unit": "per shipment: every case of a shipment is scored against all of that shipment's acceptable causes"
+ },
+ "ledger": {
+  "session_id": "DEMO-OPS-SESSION-3b03876cb812499678998bd8",
+  "cases": 41,
+  "runs": 41
+ },
+ "provenance": {
+  "phase": "accounting",
+  "commit": "f36736b926efe819f1432b597273492340b5553d",
+  "dirty_tree": false,
+  "tree_changed_during_run": false,
+  "started_at": "2026-10-10T00:49:15.019773+00:00",
+  "finished_at": "2026-10-10T00:50:57.980980+00:00",
+  "configured_model": "openai/gpt-oss:120b",
+  "model_api_base": "https://ollama.com/v1",
+  "database": "shipments-v2-demo-test",
+  "generator": "live-network-1",
+  "investigator_prompt_sha256": "b86db16097bb6836404e89b3f2640597791fee8cedd9d812f1464bc183907e5f",
+  "reviewer_prompt_sha256": "ed2e6a2b66a982fd793d5d8dbbebb92b88e96f57eafba3534db3ad5509a9eee1",
+  "model_calls": {
+   "succeeded": {},
+   "failed": {},
+   "total_tokens": 0
+  },
+  "manifest_hash": "d8707c05f218937a87bac829922c8b61b5cb5e252d117a712aadf74dd04efddf"
+ },
+ "source_provenance": {
+  "phase": "pipeline",
+  "commit": "f36736b926efe819f1432b597273492340b5553d",
+  "dirty_tree": false,
+  "tree_changed_during_run": false,
+  "started_at": "2026-10-10T00:04:02.260810+00:00",
+  "finished_at": "2026-10-10T00:49:11.746844+00:00",
+  "configured_model": "openai/gpt-oss:120b",
+  "model_api_base": "https://ollama.com/v1",
+  "database": "shipments-v2-demo-test",
+  "generator": "live-network-1",
+  "investigator_prompt_sha256": "b86db16097bb6836404e89b3f2640597791fee8cedd9d812f1464bc183907e5f",
+  "reviewer_prompt_sha256": "ed2e6a2b66a982fd793d5d8dbbebb92b88e96f57eafba3534db3ad5509a9eee1",
+  "model_calls": {
+   "succeeded": {
+    "gpt-oss:120b": 416
+   },
+   "failed": {},
+   "total_tokens": 1898608
+  },
+  "dataset_id": "DEMO-SUHAIL-LIVE-TEST",
+  "manifest_hash": "d8707c05f218937a87bac829922c8b61b5cb5e252d117a712aadf74dd04efddf",
+  "feed_hash": "650656eb92efb99f903c45234f882d31543071b5a9f931bb31d7cad111aa9f30",
+  "truth_hash": "077559722ad0def054fbdad1c7601ed93badd4f7c4a51c733cc58d07e6a4f277"
+ }
+}

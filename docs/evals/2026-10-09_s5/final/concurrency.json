@@ -1,0 +1,135 @@
+{
+ "phase": "concurrency",
+ "model": "openai/gpt-oss:120b",
+ "run_seconds": 420,
+ "samples": 138,
+ "investigation_paused_check": {
+  "paused_seconds": 210,
+  "events_ingested": 782,
+  "monitor_checks": 85,
+  "cases_opened": 2,
+  "cases_waiting_open": 2,
+  "investigations_run": 0,
+  "runs_recorded": 0
+ },
+ "investigation_windows": [
+  {
+   "case_id": "DEMO-OPS-CASE-cd87e58dc65660bd23ce51e5",
+   "wall_seconds": 37,
+   "events_ingested_meanwhile": 144,
+   "monitor_checks_meanwhile": 14,
+   "simulated_clock": [
+    "2026-09-02T11:24:43.800000+00:00",
+    "2026-09-02T17:39:43.800000+00:00"
+   ]
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-d7ad62b8d0444df33d309054",
+   "wall_seconds": 12,
+   "events_ingested_meanwhile": 40,
+   "monitor_checks_meanwhile": 4,
+   "simulated_clock": [
+    "2026-09-02T18:38:47.400000+00:00",
+    "2026-09-02T20:42:23.400000+00:00"
+   ]
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-bb9a16b1dd6f87a7c5eb3620",
+   "wall_seconds": 21,
+   "events_ingested_meanwhile": 130,
+   "monitor_checks_meanwhile": 18,
+   "simulated_clock": [
+    "2026-09-05T03:51:36+00:00",
+    "2026-09-05T07:27:32.400000+00:00"
+   ]
+  }
+ ],
+ "worker_heartbeats": {
+  "ingestion": {
+   "state": "running",
+   "iterations": 515,
+   "last_started_at": "2026-10-10T00:53:10.969882+00:00",
+   "last_finished_at": "2026-10-10T00:53:09.960104+00:00",
+   "last_result": {
+    "advanced": true,
+    "events": 0,
+    "as_of": "2026-09-05T08:53:57+00:00"
+   },
+   "last_error": null,
+   "busy": true
+  },
+  "monitor": {
+   "state": "stopped",
+   "iterations": 555,
+   "last_started_at": "2026-10-10T00:53:10.580884+00:00",
+   "last_finished_at": "2026-10-10T00:53:10.965867+00:00",
+   "last_result": {
+    "checked": 2,
+    "opened": 0
+   },
+   "last_error": null,
+   "busy": false
+  },
+  "investigation": {
+   "state": "running",
+   "iterations": 523,
+   "last_started_at": "2026-10-10T00:53:06.063454+00:00",
+   "last_finished_at": "2026-10-10T00:53:05.055136+00:00",
+   "last_result": {
+    "processed": false,
+    "case_id": "DEMO-OPS-CASE-bb9a16b1dd6f87a7c5eb3620",
+    "workflow_state": "OPEN"
+   },
+   "last_error": null,
+   "busy": true
+  },
+  "execution": {
+   "state": "stopped",
+   "iterations": 309,
+   "last_started_at": "2026-10-10T00:53:10.768881+00:00",
+   "last_finished_at": "2026-10-10T00:53:10.804869+00:00",
+   "last_result": {
+    "executed": 0
+   },
+   "last_error": null,
+   "busy": false
+  },
+  "verification": {
+   "state": "stopped",
+   "iterations": 310,
+   "last_started_at": "2026-10-10T00:53:10.880872+00:00",
+   "last_finished_at": "2026-10-10T00:53:10.902883+00:00",
+   "last_result": {
+    "verified": 0
+   },
+   "last_error": null,
+   "busy": false
+  }
+ },
+ "total_events": 2520,
+ "provenance": {
+  "phase": "concurrency",
+  "commit": "f36736b926efe819f1432b597273492340b5553d",
+  "dirty_tree": false,
+  "tree_changed_during_run": false,
+  "started_at": "2026-10-10T00:40:22.478943+00:00",
+  "finished_at": "2026-10-10T00:53:11.426826+00:00",
+  "configured_model": "openai/gpt-oss:120b",
+  "model_api_base": "https://ollama.com/v1",
+  "database": "shipments-v2-demo-test2",
+  "generator": "live-network-1",
+  "investigator_prompt_sha256": "b86db16097bb6836404e89b3f2640597791fee8cedd9d812f1464bc183907e5f",
+  "reviewer_prompt_sha256": "ed2e6a2b66a982fd793d5d8dbbebb92b88e96f57eafba3534db3ad5509a9eee1",
+  "model_calls": {
+   "succeeded": {
+    "gpt-oss:120b": 29
+   },
+   "failed": {},
+   "total_tokens": 122106
+  },
+  "dataset_id": "DEMO-SUHAIL-LIVE-TEST",
+  "manifest_hash": "2a755dd11884abd1907aea5565855e94eff7c95997f4eb8db5ebeba5e6c0d07f",
+  "feed_hash": "fb6f758ae7aecbc1ad82811e4e51024a9255f2a1c7048a68bc2a45a321dd73f5",
+  "truth_hash": "4c0fd081378e175ddca8deefa3093c6339141f149ff7dab3c4f98ee626f736ef"
+ }
+}

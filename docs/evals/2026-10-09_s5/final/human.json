@@ -1,0 +1,115 @@
+{
+ "phase": "human",
+ "database": "shipments-v2-demo-test",
+ "clock": "2026-09-21T00:00:00.000000000+00:00",
+ "human_findings": [
+  {
+   "case_id": "DEMO-OPS-CASE-6b9081c6aaaf5f5fae4a2b3c",
+   "truth_recipe": "absent_session_receipt",
+   "state_before": "ESCALATED",
+   "outcome_type": "returned_to_depot",
+   "evidence_ids": [
+    "DEMO-SHP-000101-CUST-01-07",
+    "DEMO-SHP-000101-CUST-01-08",
+    "DEMO-SHP-000101-NEXT-SESSION"
+   ],
+   "state_after": "RESOLVED",
+   "verification_status": "HUMAN_VERIFIED",
+   "verifier_id": "DEMO-OPERATOR-LOCAL",
+   "exception_cleared": true,
+   "rule_id": "VERIFY-human-finding"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-b7fd15c6f10198140bac0834",
+   "truth_recipe": "contractor_unconfirmed_pickup",
+   "state_before": "HUMAN_REVIEW",
+   "outcome_type": "parcel_located",
+   "evidence_ids": [
+    "DEMO-SHP-000404-CUST-01-04",
+    "DEMO-SHP-000404-CUST-01-05",
+    "DEMO-SHP-000404-NEXT-SESSION"
+   ],
+   "state_after": "RESOLVED",
+   "verification_status": "HUMAN_VERIFIED",
+   "verifier_id": "DEMO-OPERATOR-LOCAL",
+   "exception_cleared": true,
+   "rule_id": "VERIFY-human-finding"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-17390ea3640527245c64550b",
+   "truth_recipe": "contractor_unreturned",
+   "state_before": "HUMAN_REVIEW",
+   "outcome_type": "parcel_not_found",
+   "evidence_ids": [
+    "DEMO-SHP-000187-CUST-01-07",
+    "DEMO-SHP-000187-CUST-01-08",
+    "DEMO-SHP-000187-NEXT-SESSION"
+   ],
+   "state_after": "ESCALATED",
+   "verification_status": "HUMAN_VERIFIED",
+   "verifier_id": "DEMO-OPERATOR-LOCAL",
+   "exception_cleared": false,
+   "rule_id": "VERIFY-human-finding"
+  }
+ ],
+ "approval_refusals": [
+  {
+   "case_id": "DEMO-OPS-CASE-d217f89a7896883c8913f000",
+   "action_type": "DELIVERY_DISPUTE_REVIEW",
+   "refused_by_rule": "AUTH-12-human-review-action",
+   "reason": "AUTH-12-human-review-action: A person carries out this action; the system never executes it. Record the person's verified finding instead.",
+   "executions_before": 0,
+   "executions_after": 0,
+   "state_after": "HUMAN_REVIEW"
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-929c9c9ee6a98ab49adcf2f9",
+   "action_type": "CONFLICTING_CUSTODY_REVIEW",
+   "refused_by_rule": "AUTH-12-human-review-action",
+   "reason": "AUTH-12-human-review-action: A person carries out this action; the system never executes it. Record the person's verified finding instead.",
+   "executions_before": 0,
+   "executions_after": 0,
+   "state_after": "HUMAN_REVIEW"
+  }
+ ],
+ "approvals": [
+  {
+   "case_id": "DEMO-OPS-CASE-fb06ec173df7ded818211e7f",
+   "action_type": "REQUEST_DEVICE_SYNC",
+   "risk_class": "APPROVAL_REQUIRED",
+   "state_after_approval": "AWAITING_OUTCOME",
+   "execution_status": "ACKNOWLEDGED",
+   "authority": "OPERATOR_APPROVAL",
+   "permission_rule": "AUTH-19-operator-approved",
+   "receipt": {
+    "acknowledged": true,
+    "behaviour": "Sync request delivered to the device."
+   }
+  }
+ ],
+ "ledger": {
+  "session_id": "DEMO-OPS-SESSION-3b03876cb812499678998bd8",
+  "cases": 41,
+  "runs": 41
+ },
+ "provenance": {
+  "phase": "human",
+  "commit": "f36736b926efe819f1432b597273492340b5553d",
+  "dirty_tree": false,
+  "tree_changed_during_run": false,
+  "started_at": "2026-10-10T00:50:59.954634+00:00",
+  "finished_at": "2026-10-10T00:52:43.720347+00:00",
+  "configured_model": "openai/gpt-oss:120b",
+  "model_api_base": "https://ollama.com/v1",
+  "database": "shipments-v2-demo-test",
+  "generator": "live-network-1",
+  "investigator_prompt_sha256": "b86db16097bb6836404e89b3f2640597791fee8cedd9d812f1464bc183907e5f",
+  "reviewer_prompt_sha256": "ed2e6a2b66a982fd793d5d8dbbebb92b88e96f57eafba3534db3ad5509a9eee1",
+  "model_calls": {
+   "succeeded": {},
+   "failed": {},
+   "total_tokens": 0
+  },
+  "manifest_hash": "d8707c05f218937a87bac829922c8b61b5cb5e252d117a712aadf74dd04efddf"
+ }
+}

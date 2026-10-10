@@ -1,0 +1,177 @@
+{
+ "phase": "checks",
+ "public_id_resolution": {
+  "cited": 133,
+  "resolve_to_case_evidence": 130,
+  "device_telemetry_citations": 3,
+  "unresolved": 0,
+  "unresolved_ids": []
+ },
+ "authority_bypass_executions": [],
+ "executions": 11,
+ "executions_checked": [
+  {
+   "execution": "DEMO-OPS-EXECUTION-67b03005dc28c6f994395650",
+   "authority": "AUTO_POLICY",
+   "action_type": "REQUEST_DEVICE_SYNC",
+   "status": "ACKNOWLEDGED",
+   "permission_rule": "AUTH-10-auto-allowlist",
+   "authorized_by_its_own_decision": true
+  },
+  {
+   "execution": "DEMO-OPS-EXECUTION-1be300f427b6203b65901678",
+   "authority": "AUTO_POLICY",
+   "action_type": "REQUEST_DEVICE_SYNC",
+   "status": "ACKNOWLEDGED",
+   "permission_rule": "AUTH-10-auto-allowlist",
+   "authorized_by_its_own_decision": true
+  },
+  {
+   "execution": "DEMO-OPS-EXECUTION-8db8b937e76ee93b8f7383d5",
+   "authority": "AUTO_POLICY",
+   "action_type": "PRIORITIZE_NEXT_SESSION",
+   "status": "ACKNOWLEDGED",
+   "permission_rule": "AUTH-10-auto-allowlist",
+   "authorized_by_its_own_decision": true
+  },
+  {
+   "execution": "DEMO-OPS-EXECUTION-4091cfb711ccfabd735b852a",
+   "authority": "AUTO_POLICY",
+   "action_type": "REQUEST_ADDRESS_CONFIRMATION",
+   "status": "ACKNOWLEDGED",
+   "permission_rule": "AUTH-10-auto-allowlist",
+   "authorized_by_its_own_decision": true
+  },
+  {
+   "execution": "DEMO-OPS-EXECUTION-00025ab669a51c265a8e8b9d",
+   "authority": "AUTO_POLICY",
+   "action_type": "REQUEST_ADDRESS_CONFIRMATION",
+   "status": "ACKNOWLEDGED",
+   "permission_rule": "AUTH-10-auto-allowlist",
+   "authorized_by_its_own_decision": true
+  },
+  {
+   "execution": "DEMO-OPS-EXECUTION-0ecd71c870c8bea778e4a555",
+   "authority": "AUTO_POLICY",
+   "action_type": "REQUEST_ADDRESS_CONFIRMATION",
+   "status": "ACKNOWLEDGED",
+   "permission_rule": "AUTH-10-auto-allowlist",
+   "authorized_by_its_own_decision": true
+  },
+  {
+   "execution": "DEMO-OPS-EXECUTION-25efc497c5f619502faba380",
+   "authority": "AUTO_POLICY",
+   "action_type": "REQUEST_ADDRESS_CONFIRMATION",
+   "status": "ACKNOWLEDGED",
+   "permission_rule": "AUTH-10-auto-allowlist",
+   "authorized_by_its_own_decision": true
+  },
+  {
+   "execution": "DEMO-OPS-EXECUTION-f26093fee23d87068b18641b",
+   "authority": "AUTO_POLICY",
+   "action_type": "REQUEST_RESCAN",
+   "status": "ACKNOWLEDGED",
+   "permission_rule": "AUTH-10-auto-allowlist",
+   "authorized_by_its_own_decision": true
+  },
+  {
+   "execution": "DEMO-OPS-EXECUTION-8b52d3621d14b188e853adee",
+   "authority": "AUTO_POLICY",
+   "action_type": "REQUEST_DEVICE_SYNC",
+   "status": "ACKNOWLEDGED",
+   "permission_rule": "AUTH-10-auto-allowlist",
+   "authorized_by_its_own_decision": true
+  },
+  {
+   "execution": "DEMO-OPS-EXECUTION-e700d4ac2101a06877a1ec17",
+   "authority": "AUTO_POLICY",
+   "action_type": "REQUEST_DEVICE_SYNC",
+   "status": "ACKNOWLEDGED",
+   "permission_rule": "AUTH-10-auto-allowlist",
+   "authorized_by_its_own_decision": true
+  },
+  {
+   "execution": "DEMO-OPS-EXECUTION-05bdf9988cd2d8cc027d847b",
+   "authority": "OPERATOR_APPROVAL",
+   "action_type": "REQUEST_DEVICE_SYNC",
+   "status": "ACKNOWLEDGED",
+   "permission_rule": "AUTH-19-operator-approved",
+   "authorized_by_its_own_decision": true
+  }
+ ],
+ "authority_decisions_recorded": 41,
+ "opening_trigger_symptoms": {
+  "BARCODE_READ_DIFFERS": 4,
+  "MILESTONE_OVERDUE": 19,
+  "MANIFEST_CUSTODY_CONFLICT": 2,
+  "RECIPIENT_REPORTED_NOT_RECEIVED": 5,
+  "CUSTODY_REPORTS_CONFLICT": 2,
+  "CUSTODY_TRANSFER_UNCONFIRMED": 2,
+  "DELIVERY_ATTEMPT_FAILED": 7,
+  "WEIGHT_READ_DIFFERS": 5,
+  "MILESTONE_LATE": 1
+ },
+ "final_symptom_sets": {
+  "BARCODE_READ_DIFFERS": 4,
+  "CUSTODY_TRANSFER_UNCONFIRMED": 7,
+  "MILESTONE_OVERDUE": 27,
+  "SESSION_END_UNRECONCILED": 14,
+  "MANIFEST_CUSTODY_CONFLICT": 3,
+  "RECIPIENT_REPORTED_NOT_RECEIVED": 6,
+  "CUSTODY_REPORTS_CONFLICT": 2,
+  "DELIVERY_ATTEMPT_FAILED": 8,
+  "WEIGHT_READ_DIFFERS": 5,
+  "DELIVERY_PROOF_INCOMPLETE": 3,
+  "MILESTONE_LATE": 2
+ },
+ "answer_key_scan": {
+  "terms": 109,
+  "state_words": [
+   "foundation_recipe",
+   "last_activity_at",
+   "last_mile_provider_id",
+   "last_mile_vehicle_ownership",
+   "miscalibrated",
+   "misread",
+   "offline_from",
+   "unreachable",
+   "unresponsive"
+  ],
+  "records_scanned": {
+   "execution_receipts": 11,
+   "outcomes": 13,
+   "audit": 1433,
+   "reviews": 58,
+   "recommendations": 39,
+   "case_api_responses": 41,
+   "commands": 6
+  },
+  "leaks": [],
+  "leak_count": 0
+ },
+ "ledger": {
+  "session_id": "DEMO-OPS-SESSION-3b03876cb812499678998bd8",
+  "cases": 41,
+  "runs": 41
+ },
+ "provenance": {
+  "phase": "checks",
+  "commit": "f36736b926efe819f1432b597273492340b5553d",
+  "dirty_tree": false,
+  "tree_changed_during_run": false,
+  "started_at": "2026-10-10T00:52:45.663678+00:00",
+  "finished_at": "2026-10-10T00:54:53.176656+00:00",
+  "configured_model": "openai/gpt-oss:120b",
+  "model_api_base": "https://ollama.com/v1",
+  "database": "shipments-v2-demo-test",
+  "generator": "live-network-1",
+  "investigator_prompt_sha256": "b86db16097bb6836404e89b3f2640597791fee8cedd9d812f1464bc183907e5f",
+  "reviewer_prompt_sha256": "ed2e6a2b66a982fd793d5d8dbbebb92b88e96f57eafba3534db3ad5509a9eee1",
+  "model_calls": {
+   "succeeded": {},
+   "failed": {},
+   "total_tokens": 0
+  },
+  "manifest_hash": "d8707c05f218937a87bac829922c8b61b5cb5e252d117a712aadf74dd04efddf"
+ }
+}

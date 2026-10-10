@@ -1,0 +1,92 @@
+{
+ "phase": "reviewer_failure",
+ "case_id": "DEMO-OPS-CASE-59ce4febd6c78454ad1a8e0c",
+ "truth_recipe": "different_barcode",
+ "investigator_mode": "gpt-oss",
+ "primary_cause": "BARCODE_MISMATCH",
+ "review": {
+  "degraded": true,
+  "feedback": "Independent model review could not be completed; automatic execution is blocked and a person must review.",
+  "guard_verdict": "accept",
+  "model_verdict": "UNAVAILABLE",
+  "verdict": "review_unavailable"
+ },
+ "degraded": [
+  {
+   "error": "model call failed (InternalServerError)",
+   "role": "reviewer"
+  }
+ ],
+ "authority": {
+  "action_type": "REQUEST_RESCAN",
+  "inputs": {
+   "action_type": "REQUEST_RESCAN",
+   "degraded": [
+    "reviewer"
+   ],
+   "diagnosis_codes": [
+    "BARCODE_MISMATCH"
+   ],
+   "fact_checks": {
+    "contractor_custody": false,
+    "sensitive": false,
+    "unsupported": false
+   },
+   "requires_physical_check": false,
+   "review_verdict": "UNAVAILABLE",
+   "symptoms": [
+    "BARCODE_READ_DIFFERS"
+   ]
+  },
+  "policy": "deterministic_action_authority",
+  "reason": "Model role unavailable (reviewer); automatic execution blocked.",
+  "risk_class": "HUMAN_REVIEW",
+  "rule_id": "AUTH-02-model-degraded"
+ },
+ "final_state": "HUMAN_REVIEW",
+ "executions": [],
+ "stored_reviews": [
+  {
+   "verdict": "review_unavailable",
+   "model_verdict": "UNAVAILABLE",
+   "degraded": true,
+   "mode": "model_unavailable",
+   "summary_en": "Independent model review could not be completed; automatic execution is blocked and a person must review.",
+   "summary_ar": "\u062a\u0639\u0630\u0651\u0631 \u0625\u0643\u0645\u0627\u0644 \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629 \u0627\u0644\u0645\u0633\u062a\u0642\u0644\u0629\u061b \u0623\u064f\u0648\u0642\u0641 \u0627\u0644\u062a\u0646\u0641\u064a\u0630 \u0627\u0644\u062a\u0644\u0642\u0627\u0626\u064a \u0648\u064a\u062c\u0628 \u0623\u0646 \u064a\u0631\u0627\u062c\u0639 \u0634\u062e\u0635 \u0627\u0644\u062d\u0627\u0644\u0629."
+  }
+ ],
+ "audit_events": [
+  "AUTHORITY_DECISION",
+  "CASE_CLAIMED",
+  "CASE_OPENED",
+  "MODEL_DEGRADED",
+  "PIPELINE_STAGE"
+ ],
+ "provenance": {
+  "phase": "reviewer",
+  "commit": "f36736b926efe819f1432b597273492340b5553d",
+  "dirty_tree": false,
+  "tree_changed_during_run": false,
+  "started_at": "2026-10-10T00:30:27.387331+00:00",
+  "finished_at": "2026-10-10T00:40:19.344921+00:00",
+  "configured_model": "openai/gpt-oss:120b",
+  "model_api_base": "https://ollama.com/v1",
+  "database": "shipments-v2-demo-test2",
+  "generator": "live-network-1",
+  "investigator_prompt_sha256": "b86db16097bb6836404e89b3f2640597791fee8cedd9d812f1464bc183907e5f",
+  "reviewer_prompt_sha256": "ed2e6a2b66a982fd793d5d8dbbebb92b88e96f57eafba3534db3ad5509a9eee1",
+  "model_calls": {
+   "succeeded": {
+    "gpt-oss:120b": 4
+   },
+   "failed": {
+    "gpt-oss:120b": 2
+   },
+   "total_tokens": 13655
+  },
+  "dataset_id": "DEMO-SUHAIL-LIVE-TEST",
+  "manifest_hash": "d8707c05f218937a87bac829922c8b61b5cb5e252d117a712aadf74dd04efddf",
+  "feed_hash": "650656eb92efb99f903c45234f882d31543071b5a9f931bb31d7cad111aa9f30",
+  "truth_hash": "077559722ad0def054fbdad1c7601ed93badd4f7c4a51c733cc58d07e6a4f277"
+ }
+}

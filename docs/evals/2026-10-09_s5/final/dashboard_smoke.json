@@ -1,0 +1,12 @@
+{
+ "phase": "dashboard_smoke",
+ "how": "Built frontend (no frontend change after fbeb3c0, so identical at f36736b) served by the backend with agents off, against shipments-v2-demo-test after the final pipeline, accounting, human and checks phases. Values read from the rendered DOM (data-lifecycle, data-verdict, button state); only navigation was clicked. The reviewer-outage display was checked in the browser at 154dd3e (run4_154dd3e/dashboard_smoke.json) and is covered at f36736b by the frontend tests; the case API check (case_api_smoke.json) shows every served review belongs to the case's last run.",
+ "cases": [
+  {"shipment": "SYN-SHP-000113", "state": "Resolved", "lifecycle": "verified", "action": "REQUEST_DEVICE_SYNC", "authorized_by": "Authority policy (automatic)"},
+  {"shipment": "SYN-SHP-000415", "case": "second", "state": "Human review", "lifecycle": "exception_remains", "text": "Action verified, but the exception remains · unresolved, with a person"},
+  {"shipment": "SYN-SHP-000362", "state": "Human review", "lifecycle": "human_investigation", "approve_button": "disabled", "approval_note": "A person carries out this action; the system cannot execute it. Record the finding below."},
+  {"shipment": "SYN-SHP-000029", "state": "Human review", "lifecycle": "verification_failed", "action": "REQUEST_DEVICE_SYNC"},
+  {"shipment": "SYN-SHP-000187", "state": "Escalated", "lifecycle": "human_escalated", "text": "A person's verified finding: not resolved · escalated · Recorded by a person"},
+  {"shipment": "SYN-SHP-000583", "state": "Escalated", "review_verdict": "reject", "lifecycle": "human_investigation"}
+ ]
+}

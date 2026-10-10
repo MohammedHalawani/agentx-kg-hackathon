@@ -1,0 +1,154 @@
+{
+ "phase": "concurrency",
+ "model": "openai/gpt-oss:120b",
+ "run_seconds": 420,
+ "samples": 139,
+ "investigation_paused_check": {
+  "paused_seconds": 210,
+  "events_ingested": 782,
+  "monitor_checks": 76,
+  "cases_opened": 2,
+  "cases_waiting_open": 2,
+  "investigations_run": 0,
+  "runs_recorded": 0
+ },
+ "investigation_windows": [
+  {
+   "case_id": "DEMO-OPS-CASE-cd87e58dc65660bd23ce51e5",
+   "wall_seconds": 30,
+   "events_ingested_meanwhile": 102,
+   "monitor_checks_meanwhile": 9,
+   "simulated_clock": [
+    "2026-09-02T11:31:17.400000+00:00",
+    "2026-09-02T16:24:53.400000+00:00"
+   ]
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-d7ad62b8d0444df33d309054",
+   "wall_seconds": 21,
+   "events_ingested_meanwhile": 78,
+   "monitor_checks_meanwhile": 8,
+   "simulated_clock": [
+    "2026-09-02T17:00:30.600000+00:00",
+    "2026-09-02T20:32:04.200000+00:00"
+   ]
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-bb9a16b1dd6f87a7c5eb3620",
+   "wall_seconds": 6,
+   "events_ingested_meanwhile": 61,
+   "monitor_checks_meanwhile": 6,
+   "simulated_clock": [
+    "2026-09-05T04:29:15.600000+00:00",
+    "2026-09-05T05:04:43.800000+00:00"
+   ]
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-bb9a16b1dd6f87a7c5eb3620",
+   "wall_seconds": 6,
+   "events_ingested_meanwhile": 32,
+   "monitor_checks_meanwhile": 5,
+   "simulated_clock": [
+    "2026-09-05T06:21:55.200000+00:00",
+    "2026-09-05T07:23:47.400000+00:00"
+   ]
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-7837a50115c3ad08c87a460f",
+   "wall_seconds": 3,
+   "events_ingested_meanwhile": 9,
+   "monitor_checks_meanwhile": 2,
+   "simulated_clock": [
+    "2026-09-05T08:27:13.800000+00:00",
+    "2026-09-05T08:50:49.200000+00:00"
+   ]
+  }
+ ],
+ "worker_heartbeats": {
+  "ingestion": {
+   "state": "stopped",
+   "iterations": 526,
+   "last_started_at": "2026-10-09T21:58:41.589559+00:00",
+   "last_finished_at": "2026-10-09T21:58:42.297200+00:00",
+   "last_result": {
+    "advanced": true,
+    "events": 20,
+    "as_of": "2026-09-05T09:01:55.200000+00:00"
+   },
+   "last_error": null,
+   "busy": false
+  },
+  "monitor": {
+   "state": "stopped",
+   "iterations": 568,
+   "last_started_at": "2026-10-09T21:58:41.129116+00:00",
+   "last_finished_at": "2026-10-09T21:58:41.494559+00:00",
+   "last_result": {
+    "checked": 2,
+    "opened": 0
+   },
+   "last_error": null,
+   "busy": false
+  },
+  "investigation": {
+   "state": "running",
+   "iterations": 524,
+   "last_started_at": "2026-10-09T21:58:35.849581+00:00",
+   "last_finished_at": "2026-10-09T21:58:34.833896+00:00",
+   "last_result": {
+    "processed": true,
+    "case_id": "DEMO-OPS-CASE-bb9a16b1dd6f87a7c5eb3620",
+    "workflow_state": "HUMAN_REVIEW"
+   },
+   "last_error": null,
+   "busy": true
+  },
+  "execution": {
+   "state": "stopped",
+   "iterations": 309,
+   "last_started_at": "2026-10-09T21:58:40.704264+00:00",
+   "last_finished_at": "2026-10-09T21:58:40.723265+00:00",
+   "last_result": {
+    "executed": 0
+   },
+   "last_error": null,
+   "busy": false
+  },
+  "verification": {
+   "state": "stopped",
+   "iterations": 311,
+   "last_started_at": "2026-10-09T21:58:41.764024+00:00",
+   "last_finished_at": "2026-10-09T21:58:41.785039+00:00",
+   "last_result": {
+    "verified": 0
+   },
+   "last_error": null,
+   "busy": false
+  }
+ },
+ "total_events": 2528,
+ "provenance": {
+  "phase": "concurrency",
+  "commit": "154dd3e9601034813be8817872af9bba4281a02a",
+  "dirty_tree": false,
+  "started_at": "2026-10-09T21:46:27.624762+00:00",
+  "finished_at": "2026-10-09T21:58:42.507938+00:00",
+  "configured_model": "openai/gpt-oss:120b",
+  "model_api_base": "https://ollama.com/v1",
+  "database": "shipments-v2-demo-test2",
+  "generator": "live-network-1",
+  "investigator_prompt_sha256": "b86db16097bb6836404e89b3f2640597791fee8cedd9d812f1464bc183907e5f",
+  "reviewer_prompt_sha256": "ed2e6a2b66a982fd793d5d8dbbebb92b88e96f57eafba3534db3ad5509a9eee1",
+  "model_calls": {
+   "succeeded": {
+    "gpt-oss:120b": 38
+   },
+   "failed": {},
+   "total_tokens": 168203
+  },
+  "dataset_id": "DEMO-SUHAIL-LIVE-TEST",
+  "manifest_hash": "2a755dd11884abd1907aea5565855e94eff7c95997f4eb8db5ebeba5e6c0d07f",
+  "feed_hash": "fb6f758ae7aecbc1ad82811e4e51024a9255f2a1c7048a68bc2a45a321dd73f5",
+  "truth_hash": "4c0fd081378e175ddca8deefa3093c6339141f149ff7dab3c4f98ee626f736ef"
+ }
+}

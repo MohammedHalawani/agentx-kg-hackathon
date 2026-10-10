@@ -1,0 +1,58 @@
+{
+ "phase": "checks",
+ "public_id_resolution": {
+  "cited": 158,
+  "resolve_to_case_evidence": 155,
+  "device_telemetry_citations": 3,
+  "unresolved": 0,
+  "unresolved_ids": []
+ },
+ "authority_bypass_executions": [],
+ "executions": 17,
+ "authority_decisions_recorded": 42,
+ "trigger_symptoms": {
+  "BARCODE_READ_DIFFERS": 4,
+  "CUSTODY_TRANSFER_UNCONFIRMED": 8,
+  "MILESTONE_OVERDUE": 27,
+  "SESSION_END_UNRECONCILED": 14,
+  "MANIFEST_CUSTODY_CONFLICT": 3,
+  "RECIPIENT_REPORTED_NOT_RECEIVED": 6,
+  "CUSTODY_REPORTS_CONFLICT": 2,
+  "DELIVERY_ATTEMPT_FAILED": 8,
+  "WEIGHT_READ_DIFFERS": 5,
+  "DELIVERY_PROOF_INCOMPLETE": 3,
+  "MILESTONE_LATE": 2
+ },
+ "answer_key_scan": {
+  "terms": 109,
+  "records_scanned": {
+   "execution_receipts": 17,
+   "outcomes": 17,
+   "audit": 1444,
+   "reviews": 56,
+   "recommendations": 42,
+   "case_api_responses": 42
+  },
+  "leaks": [],
+  "leak_count": 0
+ },
+ "provenance": {
+  "phase": "checks",
+  "commit": "154dd3e9601034813be8817872af9bba4281a02a",
+  "dirty_tree": false,
+  "started_at": "2026-10-09T21:54:15.246592+00:00",
+  "finished_at": "2026-10-09T21:56:02.914248+00:00",
+  "configured_model": "openai/gpt-oss:120b",
+  "model_api_base": "https://ollama.com/v1",
+  "database": "shipments-v2-demo-test",
+  "generator": "live-network-1",
+  "investigator_prompt_sha256": "b86db16097bb6836404e89b3f2640597791fee8cedd9d812f1464bc183907e5f",
+  "reviewer_prompt_sha256": "ed2e6a2b66a982fd793d5d8dbbebb92b88e96f57eafba3534db3ad5509a9eee1",
+  "model_calls": {
+   "succeeded": {},
+   "failed": {},
+   "total_tokens": 0
+  },
+  "manifest_hash": "d8707c05f218937a87bac829922c8b61b5cb5e252d117a712aadf74dd04efddf"
+ }
+}

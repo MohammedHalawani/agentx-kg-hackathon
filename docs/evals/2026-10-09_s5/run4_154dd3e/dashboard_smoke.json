@@ -1,0 +1,28 @@
+{
+ "phase": "dashboard_smoke",
+ "how": "Built frontend served by the backend at commit dfe5e4c (agents off, no simulator attached), against shipments-v2-demo-test after the final pipeline, checks, accounting and human phases, and against shipments-v2-demo-test2 after a separate reviewer-outage run at 154dd3e. Values were read from the rendered DOM (data-lifecycle, data-verdict, button state) in the in-app browser; nothing was clicked except navigation.",
+ "operator_intake": {
+  "start_or_pause_world_button": false,
+  "new_live_session_button": false,
+  "session_bar": "LIVE SESSION · SYNTHETIC OPERATIONAL DATA · Scenario clock 21 Sept, 03:00 · 2240 shipment checks · 42 cases opened by monitor · Synthetic world clock paused",
+  "sidebar": ["Intake", "Decisions", "Explore", "Audit", "Development: Simulation"]
+ },
+ "development_simulation_view": {
+  "buttons": ["Start world", "New live session", "Advance replay by 60 seconds at selected speed"],
+  "label": "Development · Synthetic simulation · Development tooling, not an operator feature"
+ },
+ "cases": [
+  {"shipment": "SYN-SHP-000583", "state": "Resolved", "lifecycle": "verified", "receipt": "Rescan request sent to the facility holding the parcel.", "review": "accept"},
+  {"shipment": "SYN-SHP-000120", "state": "Resolved", "lifecycle": "verified", "receipt": "Sync request delivered to the device.", "review": "accept"},
+  {"shipment": "SYN-SHP-000441", "state": "Human review", "lifecycle": "verification_failed", "receipt": "Rescan request sent to the facility holding the parcel.", "verifier_rule": "verify-request-rescan-barcode-still-differs"},
+  {"shipment": "SYN-SHP-000415", "case": "second", "state": "Human review", "lifecycle": "exception_remains", "text": "Action verified, but the exception remains · unresolved, with a person", "receipt": "Address confirmation request sent to the recipient."},
+  {"shipment": "SYN-SHP-000482", "state": "Awaiting outcome", "lifecycle": "verification_pending", "authorized_by": "Operator approval", "receipt": "Sync request delivered to the device."},
+  {"shipment": "SYN-SHP-000101", "state": "Resolved", "lifecycle": "human_verified", "text": "Closed by a person with attached evidence (human-verified)"},
+  {"shipment": "SYN-SHP-000187", "state": "Escalated", "lifecycle": "human_escalated", "text": "A person's verified finding: not resolved · escalated · Recorded by a person · SYN-OPERATOR-LOCAL"},
+  {"shipment": "SYN-SHP-000392", "case": "second", "state": "Human review", "lifecycle": "human_investigation", "approve_button": "disabled", "approval_note": "A person carries out this action; the system cannot execute it. Record the finding below."},
+  {"shipment": "SYN-SHP-000583", "database": "shipments-v2-demo-test2 (reviewer outage)", "state": "Human review", "review_verdict": "review_unavailable",
+   "overview": "Independent review unavailable — routed to a person", "reason": "Human review required — the independent review could not be completed.",
+   "review_tab": ["Independent review unavailable — routed to a person", "Independent review unavailable — routed to a person"],
+   "reviewer_stage": "Unavailable · routed to a person", "safety_review_passed_shown": false}
+ ]
+}
