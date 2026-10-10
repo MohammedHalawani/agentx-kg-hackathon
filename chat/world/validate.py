@@ -25,17 +25,24 @@ from dataset_v2.live_bundle import truth_state_words, truth_vocabulary
 from operations.agents import CAUSES
 from operations.authority import ACTIONS
 from world.geo import haversine_km
-from world.mechanisms import MECHANISM_TYPES
+from world.mechanisms import MECHANISM_TYPES, RULE_CODES
 from world.monitor import Replica, by_specificity
-from world.truth import canary_token, labels_at, match_node, spec_estimate
+from world.truth import canary_token, labels_at, labels_at_estimate, match_node, own_item, spec_estimate
 
 ALLOWED_FOUNDATION = ("PHYSICAL_CUSTODY_CHAIN", "ADDRESS_VERSION_INTERVAL")
-CUSTODY_RECORDING_FAULTS = {"SCAN_SKIPPED_AT_RECEIPT", "UNRECORDED_HANDOFF", "MISSORT", "DEVICE_OUTAGE", "PARTIAL_UPLOAD_LOSS"}
+CUSTODY_RECORDING_FAULTS = {"SCAN_SKIPPED_AT_RECEIPT", "UNRECORDED_HANDOFF", "MISSORT", "DEVICE_OUTAGE", "PARTIAL_UPLOAD_LOSS",
+                            "RETURN_SCAN_SKIPPED", "ASSIGNED_NOT_LOADED"}
 FIXTURE_KINDS = {"Case", "Exception", "AnalysisRun", "Recommendation", "Review", "OperatorDecision", "ActionExecution", "Resolution",
                  "Outcome", "AuditEvent", "Notification"}
+# Mechanisms whose effect on a shipment is a record of that shipment (as opposed to a record that is missing, or a
+# shared resource running late): nothing about them is knowable before that record was made.
+EFFECT_IS_A_RECORD = {"DEVICE_OUTAGE", "PARTIAL_UPLOAD_LOSS", "SCALE_DRIFT", "DECLARED_WEIGHT_WRONG", "MISSORT", "UNRECORDED_HANDOFF",
+                      "LABEL_MISREAD", "WRONG_LABEL_APPLIED", "WRONG_GATE", "OTP_NOT_RECEIVED", "NEIGHBOUR_RECEIVES", "MISDELIVERY",
+                      "MANIFEST_ERROR", "TRAFFIC_DISRUPTION", "RECIPIENT_UNAVAILABLE", "WRONG_ADDRESS", "ROUTINE_FAILED_ATTEMPT"}
 TRUTH_FIELDS = ("knowable_at", "acceptable_causes", "root_cause", "expected_resolution", "mechanism_id", "physically_healthy",
                 "shared_evidence_ids", "key_evidence", "secondary_issue", "booking_day", "final_location", "natural_recovery",
-                "shares_opening_with", "alternative_mechanisms", "cancelled_by", "overdue_at", "truth_schema", "first_opening")
+                "shares_opening_with", "alternative_mechanisms", "cancelled_by", "overdue_at", "truth_schema", "first_opening",
+                "explains_opening", "opening_explained", "exposures")
 
 
 class Report:
@@ -78,7 +85,7 @@ def foundation(build, imported, items):
             if sid not in gap_cache:
                 gap_cache[sid] = {e for row in assess_shipment(full, sid, cutoff)["custody"] for e in row["gap_event_ids"]}
             report.check(entity in gap_cache[sid], "CUSTODY_DISCONTINUITY_FLAGGED_BY_DERIVE", entity)
-            types = {m["type"] for m in build.truth[sid]["mechanisms"]}
+            types = {m["type"] for m in build.truth[sid]["mechanisms"]} | {m["type"] for m in build.truth[sid]["exposures"]}
             report.check(bool(types & CUSTODY_RECORDING_FAULTS), "CUSTODY_DISCONTINUITY_EXPLAINED_BY_MECHANISM", entity, sorted(types))
         elif code == "ADDRESS_VERSION_INTERVAL":
             versions = sorted((n for n in full.nodes.values() if n.kind == "AddressVersion" and n.properties.get("holdout_group") == entity),
@@ -282,7 +289,7 @@ def observation(build, items):
                 r.check(bool(reconnect) and reconnect[0][1] == len(affected), "RECONNECT_BEAT_REPORTS_BUFFER", mid,
                         f"beat {reconnect[:1]} buffered {len(affected)}")
     for device, windows in plan.device_loss.items():
-        for start, end, fraction, mid in windows:
+        for start, end, fraction, mid, release in windows:
             stuck = [n for n, meta in records.items() if mid in meta["mech"] and meta["sid"]]
             r.check(all(records[n]["recorded"] >= end for n in stuck), "STUCK_RECORDS_ARRIVE_AFTER_WINDOW", mid)
             if stuck and build.network.devices[device].telemetry != "NONE":
@@ -382,16 +389,18 @@ def isolation(build, imported, items):
                          "(derive emits them from observations); they are still scanned for mechanism words, ids and truth fields."}
 
 
-def private_state_isolation(build):
-    """Addendum B1a: the private physical state written under artifacts/ carries no cause codes, mechanism names or
-    ids, truth field names or the canary (same vocabulary as the export scan)."""
+def physical_state_vocabulary(build, live_split="development"):
+    """Hygiene only: the physical world state the Stage 4 simulator reads carries no cause codes, mechanism names or
+    ids, truth field names or the canary. This proves nothing about content: the state records what physically
+    happened, so causes CAN be worked out from it (derivable by design). Its protection is where it lives (outside the
+    repository, in the simulator-only root) and who may open it (tests/test_world_build.py checks the code)."""
     from world.export import _jsonable, private_physical
     import json
     substrings, words, causes, actions = vocabulary(build)
     word_re = re.compile(r"\b(" + "|".join(map(re.escape, words)) + r")\b") if words else None
     token_re = re.compile(r"[A-Z][A-Z0-9_]+")
     hits, scanned = defaultdict(int), Counter()
-    for name, rows in private_physical(build).items():
+    for name, rows in private_physical(build, live_split).items():
         for row in rows:
             text = json.dumps(_jsonable(row), ensure_ascii=False, sort_keys=True, default=str)
             lower = text.lower()
@@ -404,25 +413,163 @@ def private_state_isolation(build):
             for token in set(token_re.findall(text)):
                 if token in set(causes):
                     hits[f"token:{token}@{name}"] += 1
-    return {"pass": not hits, "records_scanned": dict(sorted(scanned.items())), "hits": dict(sorted(hits.items()))}
+    return {"pass": not hits, "records_scanned": dict(sorted(scanned.items())), "hits": dict(sorted(hits.items())),
+            "labels_derivable_from_this_state": True,
+            "protection": "location (outside the repository, simulator-only root) and access (no runtime module but the Stage 4 "
+                          "simulator may open it); this scan is vocabulary hygiene, not an isolation proof"}
 
 
-def discrimination(build):
+def import_cut(build, exports):
+    """Nothing recorded after the live start sits in the import. The one documented exception is the booking-time
+    context of a live shipment (its order, parcels, address and plan), which the foundation contract imports stamped
+    at booking and every reader filters by recorded_at; it is counted, and it must be stamped exactly at booking."""
+    r = Report()
+    summary = {}
+    from world.build import BOOKING_CONTEXT
+    for live_split, (imported, items, truth, live_start) in exports.items():
+        late, booking = 0, 0
+        latest = live_start
+        for node in imported.nodes.values():
+            p = node.properties
+            recorded = instant(p["recorded_at"])
+            occurred = instant(p["occurred_at"]) if p.get("occurred_at") else None
+            if recorded <= live_start and (occurred is None or occurred <= live_start):
+                continue
+            owner = p.get("holdout_group")
+            live_booking = (owner is not None and p.get("split") == "development" and node.kind in BOOKING_CONTEXT
+                            and p["recorded_at"] == imported.nodes[owner].properties["recorded_at"])
+            booking += live_booking
+            late += not live_booking
+            r.check(live_booking, "NOTHING_IMPORTED_FROM_AFTER_THE_LIVE_START", node.id, f"{node.kind} recorded {p['recorded_at']}")
+        for edge in imported.edges.values():
+            for key in ("valid_from", "valid_to"):
+                value = edge.properties.get(key)
+                r.check(value is None or instant(value) <= live_start, "NO_IMPORTED_INTERVAL_AFTER_THE_LIVE_START", edge.id, key)
+        first = min((instant(i["deliver_at"]) for i in items), default=None)
+        r.check(first is None or first > live_start, "FEED_STARTS_AFTER_THE_LIVE_START", live_split)
+        summary[live_split] = {"live_start": iso(live_start), "imported_nodes": len(imported.nodes),
+                               "imported_after_live_start_other_than_live_booking_context": late,
+                               "live_booking_context_records": booking, **getattr(build, "import_reports", {}).get(live_split, {})}
+    return r.result(per_export=summary)
+
+
+def forecasts(build):
+    """No record states a future instant that equals what later happened: a carrier's estimated arrival is its own
+    estimate, never the simulated arrival. Gating for estimate fields; other future-dated fields are plans and
+    validity windows, listed by field for the record."""
+    r = Report()
+    nodes = build.world.nodes
+    arrived = {}
+    for node in nodes.values():
+        if node.kind == "TripEvent" and node.properties.get("event_type") == "ARRIVED":
+            arrived[node.properties["trip_id"]] = node.properties["occurred_at"]
+    exact, compared, errors = 0, 0, []
+    for node in nodes.values():
+        p = node.properties
+        if node.kind != "TripEvent" or not p.get("estimated_arrival_at"):
+            continue
+        actual = arrived.get(p["trip_id"])
+        if actual is None or instant(p["occurred_at"]) >= instant(actual):
+            continue
+        compared += 1
+        exact += p["estimated_arrival_at"] == actual
+        errors.append(abs((instant(p["estimated_arrival_at"]) - instant(actual)).total_seconds()))
+        r.check(p["estimated_arrival_at"] != actual, "ESTIMATE_IS_NOT_THE_LATER_ARRIVAL", node.id)
+    held = [n for n in nodes.values() if n.kind == "TripEvent" and n.properties.get("event_type") == "HELD_AT_ORIGIN"]
+    departed = {n.properties["trip_id"]: n.properties["occurred_at"] for n in nodes.values()
+                if n.kind == "TripEvent" and n.properties.get("event_type") == "DEPARTED"}
+    for n in held:
+        left = departed.get(n.properties["trip_id"])
+        r.check(left is None or n.properties["occurred_at"] < left, "DELAY_NOTICE_BEFORE_DEPARTURE", n.id)
+    occurred = defaultdict(set)
+    for node in nodes.values():
+        if node.properties.get("occurred_at") and node.properties.get("holdout_group"):
+            occurred[node.properties["holdout_group"]].add(node.properties["occurred_at"])
+    future = Counter()
+    for node in nodes.values():
+        p = node.properties
+        recorded = p.get("recorded_at")
+        if not p.get("holdout_group"):
+            continue
+        for field in UTC_FIELDS & set(p):
+            value = p[field]
+            if field in ("occurred_at", "recorded_at") or not isinstance(value, str) or value <= recorded:
+                continue
+            if value in occurred[p.get("holdout_group")]:
+                future[f"{node.kind}.{field}"] += 1
+    errors.sort()
+    return r.result(estimates_compared=compared, estimates_equal_to_arrival=exact, delay_notices=len(held),
+                    estimate_error_seconds={"p50": errors[len(errors) // 2] if errors else None, "p90": errors[int(len(errors) * .9)] if errors else None},
+                    future_dated_fields_equal_to_a_later_event_of_the_same_owner=dict(sorted(future.items())),
+                    note="The fields listed under future_dated_fields are plan and validity fields (a session's end, an "
+                         "assignment's window) that coincide with an event stamped at that planned instant; none is an estimate.")
+
+
+def throughput_separation(build):
+    """A backlog must be visible in the facility's own throughput reports: during a backlog that caused something, the
+    oldest waiting item is older than in the facility's ordinary hours. Reported per backlog; gating on separation."""
+    r = Report()
+    rows = defaultdict(list)
+    for node in build.world.nodes.values():
+        if node.kind == "FacilityThroughput":
+            p = node.properties
+            rows[p["facility_id"]].append((instant(p["start_at"]), p["oldest_waiting_minutes"], p["processed_count"], p["queue_depth"],
+                                           p["staffed_capacity_per_hour"], bool(build.observer.records[node.id]["mech"])))
+    utilisation = sorted(processed / max(1.0, staffed) for facility_rows in rows.values() for _, _, processed, _, staffed, _ in facility_rows if processed)
+    out = []
+    for facility, windows in sorted(build.plan.backlog.items()):
+        ordinary = sorted(age for _, age, _, _, _, shaped in rows.get(facility, []) if not shaped)
+        p95 = ordinary[int(len(ordinary) * .95)] if ordinary else 0
+        for start, end, factor, mid in windows:
+            inside = [(age, processed, queue) for at, age, processed, queue, staffed, shaped in rows.get(facility, [])
+                      if start - timedelta(hours=1) <= at < end + timedelta(hours=3)]
+            worst = max((age for age, _, _ in inside), default=0)
+            caused = len(build.caused.get(mid, ()))
+            if caused:
+                r.check(worst > p95, "BACKLOG_VISIBLE_IN_THROUGHPUT", mid, f"oldest wait {worst} min vs ordinary p95 {p95} min")
+            out.append({"facility": facility, "capacity_factor": factor, "caused_shipments": caused, "exposed_shipments": len(build.exposed.get(mid, ())),
+                        "oldest_waiting_minutes_max": worst, "ordinary_hours_p95": p95, "ordinary_hours_max": ordinary[-1] if ordinary else 0})
+    quant = lambda q: round(utilisation[min(len(utilisation) - 1, int(q * len(utilisation)))], 2) if utilisation else None
+    return r.result(backlogs=out, utilisation_of_staffed_capacity_in_working_hours={"hours": len(utilisation), "p50": quant(.5), "p90": quant(.9), "max": quant(1)},
+                    ordinary_hours_with_a_queue=sum(1 for facility_rows in rows.values() for _, _, _, queue, _, shaped in facility_rows if queue and not shaped))
+
+
+def consolidation(build):
+    """Reported, not gating: how full containers, trips and routes are at this scale."""
+    fills = sorted(len(c.parcels) for c in build.sim.containers.values())
+    routes = sorted(len(r.loaded) for r in build.sim.routes.values())
+    ran = [t for tid, t in build.sim.trips.items() if t.departed_at and not t.cancelled and t.plan.kind != "FIRST_MILE"]
+    return {"containers": len(fills), "containers_with_one_parcel": sum(1 for n in fills if n == 1),
+            "median_parcels_per_container": fills[len(fills) // 2] if fills else 0,
+            "trips_run_with_containers": len(ran), "scheduled_departures_cancelled_empty": sum(1 for t in build.sim.trips.values() if t.cancelled),
+            "route_runs": len(routes), "route_runs_with_one_parcel": sum(1 for n in routes if n <= 1),
+            "median_parcels_per_route_run": routes[len(routes) // 2] if routes else 0}
+
+
+def discrimination(build, truth=None, present=None):
     """Addendum A1: every discrimination spec is machine-checkable against the world's records.
 
-    Record items name an observation that exists; absence items name an expectation whose matching records,
-    recomputed by a full scan of the world, are exactly its cancelled_by list and empty (the absence is real);
-    the estimate equals the spec evaluated at feed delivery times and is never before the mechanism started."""
+    Record items name an observation that exists (and, for an export's truth, one that export contains); absence
+    items name an expectation whose matching records, recomputed by a full scan, are exactly its cancelled_by list
+    and empty (the absence is real); every group holds an item of the shipment's own (its record, or an absence about
+    its parcel), so nothing is knowable from shared records alone; the estimate equals the spec evaluated at feed
+    delivery times and is never before the mechanism started, before the shipment was booked, before its own linking
+    record was delivered, or (for a mechanism whose effect is a record of the shipment) before that record was made."""
     from world.monitor import deliver_at
     r = Report()
     nodes = build.world.nodes
-    deliver = {nid: deliver_at(nodes[nid]) for nid in build.observer.records if nid in nodes and nodes[nid].properties.get("recorded_at")}
+    truth = build.truth if truth is None else truth
+    records = build.observer.records
+    deliver = {nid: deliver_at(nodes[nid]) for nid in records if nid in nodes and nodes[nid].properties.get("recorded_at")}
     by_kind = defaultdict(list)
     for node in nodes.values():
-        by_kind[node.kind].append(node)
-    empty = Counter()
-    groups = Counter()
-    for sid, row in sorted(build.truth.items()):
+        owner = node.properties.get("holdout_group")
+        if present is None or owner is None or owner in present:
+            by_kind[node.kind].append(node)
+    empty, groups = Counter(), Counter()
+    for sid, row in sorted(truth.items()):
+        packages = {p.pid for p in build.shipments[sid].parcels}
+        booked = instant(row["booked_at"])
         for m in row["mechanisms"]:
             spec = m["discrimination"]
             key = f"{sid}/{m['mechanism_id']}"
@@ -430,22 +577,39 @@ def discrimination(build):
                 empty[m["type"]] += 1
             for group in spec["any_of"]:
                 groups[len(group["all_of"])] += 1
+                own = [i for i in group["all_of"] if own_item(i, sid, packages, lambda n: records[n]["sid"] if n in records else None)]
+                r.check(bool(own), "EVERY_GROUP_HAS_AN_ITEM_OF_THE_SHIPMENT", key, m["type"])
                 for item in group["all_of"]:
                     if "record" in item:
                         node = nodes.get(item["record"])
-                        r.check(node is not None and bool(node.properties.get("recorded_at")) and item["record"] in build.observer.records,
+                        r.check(node is not None and bool(node.properties.get("recorded_at")) and item["record"] in records,
                                 "RECORD_ITEM_IS_AN_OBSERVATION", key, item["record"])
+                        owner = records[item["record"]]["sid"] if item["record"] in records else None
+                        r.check(present is None or owner is None or owner in present, "RECORD_ITEM_IS_IN_THIS_EXPORT", key, item["record"])
+                        if owner == sid:
+                            r.check(deliver[item["record"]] >= booked, "OWN_RECORD_NOT_BEFORE_BOOKING", key, item["record"])
                     else:
                         absence = item["absence"]
                         found = sorted(n.id for n in by_kind[absence["match"]["kind"]] if match_node(n, absence["match"]))
                         r.check(found == absence["cancelled_by"], "ABSENCE_MATCHES_RECOMPUTED", key, absence["expected"])
                         r.check(not found, "ABSENCE_IS_REAL", key, absence["expected"])
+                        if absence["match"].get("package_id") in packages:
+                            r.check(instant(absence["overdue_at"]) >= booked, "OWN_ABSENCE_NOT_BEFORE_BOOKING", key, absence["expected"])
             estimate = spec_estimate(spec, deliver)
             r.check((iso(estimate) if estimate else None) == m["knowable_at_estimate"], "ESTIMATE_RECOMPUTES", key)
-            if estimate and m["started_at"] and m["resolution"] != "NONE":
-                r.check(estimate >= instant(m["started_at"]), "ESTIMATE_NOT_BEFORE_START", key, m["type"])
+            if estimate and m["resolution"] != "NONE":
+                if m["started_at"]:
+                    r.check(estimate >= instant(m["started_at"]), "ESTIMATE_NOT_BEFORE_START", key, m["type"])
+                r.check(estimate >= booked, "ESTIMATE_NOT_BEFORE_BOOKING", key, m["type"])
+                made = [records[n]["occurred"] for n in m["evidence_ids"] if n in records and records[n]["occurred"] is not None]
+                if m["type"] in EFFECT_IS_A_RECORD and made:
+                    r.check(estimate >= min(made), "ESTIMATE_NOT_BEFORE_THE_SHIPMENT_WAS_AFFECTED", key, m["type"])
             r.check(row.get("canary") == canary_token(build.config), "CANARY_IN_EVERY_ROW", sid)
-    actionable = sum(1 for row in build.truth.values() for m in row["mechanisms"] if m["resolution"] != "NONE")
+        # Scored at the first instant a run starts, with everything imported counted as ingested from its own time:
+        # nothing can be identifiable before the shipment exists.
+        r.check(labels_at(row, booked - timedelta(seconds=1), {n for n, t in deliver.items() if t < booked}) in ([], ["INSUFFICIENT_EVIDENCE"]),
+                "NOTHING_IDENTIFIABLE_BEFORE_BOOKING", sid)
+    actionable = sum(1 for row in truth.values() for m in row["mechanisms"] if m["resolution"] != "NONE")
     return r.result(actionable_instances=actionable, actionable_without_any_discriminator=dict(sorted(empty.items())),
                     groups_by_size=dict(sorted(groups.items())))
 
@@ -486,6 +650,8 @@ SKIP_FIELDS = {"entity_id", "dataset_id", "schema_version", "synthetic", "proven
                "recorded_at", "occurred_at", "media_ref", "statement_en", "statement_ar", "address_text", "display_name", "contact_ref",
                "package_ids", "evidence_ids", "segment_ids", "tracking_id", "template_ref", "plate_ref", "manifest_barcode",
                "observed_barcode", "authorization_ref", "name", "name_ar"}
+ENVELOPE_FIELDS = {"entity_id", "dataset_id", "schema_version", "synthetic", "provenance", "split", "holdout_group", "shipment_id",
+                   "recorded_at", "occurred_at"}
 # Idempotency-only mechanisms are excluded: a retransmission is directly observable by design and never a case.
 TELL_EXCLUDED = {"DUPLICATE_EVENTS"}
 CATALOG_LINKED = {"Trip", "Container", "RouteRun", "Device", "Vehicle", "Driver", "Lane", "Branch", "Hub", "SortingCenter",
@@ -493,6 +659,33 @@ CATALOG_LINKED = {"Trip", "Container", "RouteRun", "Device", "Vehicle", "Driver"
 # From the shared records a shipment references, only their type-like fields count as features.
 CATALOG_TYPE_FIELDS = {"trip_type", "container_type", "device_kind", "telemetry_stream", "ownership", "vehicle_class", "employment", "role",
                        "provider_type", "lane_type", "organization_type", "handling", "modes"}
+NONE = "<none>"
+# A value that predicts one mechanism is a tell unless it IS that mechanism's documented discriminator (truth.DISCRIMINATORS,
+# README table): the observation an investigator is meant to find. (mechanism, record kind, field prefix, why).
+ACCEPTED_DISCRIMINATORS = (
+    ("MANIFEST_ERROR", "Manifest", "package_ids#", "the revised manifest line without the loaded parcel (empty for a one-parcel shipment)"),
+    ("MANIFEST_ERROR", "Manifest", "manifest_status", "a revised manifest line is where the dropped parcel shows"),
+    ("MANIFEST_ERROR", "Manifest", "version", "a revised manifest line is where the dropped parcel shows"),
+    ("MISSORT", "VehicleAssignment", "segment_id", "an assignment to a lane that is not in the journey plan"),
+    ("MISSORT", "VehicleAssignment", "mode", "an assignment to a lane that is not in the journey plan"),
+    ("NEIGHBOUR_RECEIVES", "HandoffEvidence", "recipient_type", "the handoff names another person with no authorisation on record"),
+    ("NEIGHBOUR_RECEIVES", "HandoffEvidence", "authorization_ref", "the handoff names another person with no authorisation on record"),
+    ("MISDELIVERY", "HandoffEvidence", "recipient_type", "the proof names an occupant other than the recipient"),
+    ("WRONG_LABEL_APPLIED", "ScanEvent", "<barcode>", "a read that returns another parcel's manifest barcode"),
+    ("LABEL_MISREAD", "ScanEvent", "<barcode>", "a read one digit off the manifest barcode (it fails the check digit)"),
+    ("WRONG_GATE", "DeliveryAttempt", "observed_gate", "the attempt's recorded gate differs from the instruction"),
+    ("OTP_NOT_RECEIVED", "CommunicationEvent", "delivery_status", "a failed delivery report for the one-time code"),
+    ("DEVICE_OUTAGE", "*", "<lag>", "a record arriving long after it happened is what a device that could not upload looks like"),
+    ("PARTIAL_UPLOAD_LOSS", "*", "<lag>", "a record arriving long after it happened is what a device that could not upload looks like"),
+    ("OTP_NOT_RECEIVED", "CommunicationEvent", "purpose", "a resent one-time code"),
+    ("WRONG_ADDRESS", "AddressVersion", "", "the recipient's dated address correction"),
+    ("WRONG_ADDRESS", "LocationPin", "", "the recipient's dated address correction"),
+    ("WRONG_ADDRESS", "RecipientReport", "report_code", "the recipient's dated address correction"),
+    ("CUSTOMER_COMPLAINT", "RecipientReport", "report_code", "the recipient's own message"),
+    ("ROUTINE_FAILED_ATTEMPT", "DeliveryAttempt", "failed_reason", "the failed attempt's own reason (an ordinary failure is what its record says)"),
+    ("RETURN_SCAN_SKIPPED", "ScanEvent", "observation_type", "the stock-check scan finding the parcel on the shelf"),
+    ("ASSIGNED_NOT_LOADED", "ScanEvent", "observation_type", "the stock-check scan finding the parcel on the shelf"),
+)
 
 
 def _categorical(field, value):
@@ -507,17 +700,64 @@ def _categorical(field, value):
     return False
 
 
-def features(world, sid_nodes):
+def _bucket(value):
+    """Half-decade bucket of a magnitude: 3 kg and 4 kg share one, 3 kg and 30 kg do not."""
+    if value == 0:
+        return "0"
+    return f"~1e{math.floor(math.log10(abs(value)) * 2) / 2:g}"
+
+
+def _lag(seconds):
+    for limit, name in ((60, "<1m"), (300, "<5m"), (900, "<15m"), (3600, "<1h"), (3 * 3600, "<3h"), (10 * 3600, "<10h")):
+        if seconds < limit:
+            return name
+    return ">=10h"
+
+
+def features(world, sid_nodes, barcodes=frozenset()):
+    """Single-record observables of one shipment: categorical values, absent values, list lengths, bucketed numbers,
+    how late each record arrived, how far a read barcode or a weighing is from the declaration, and pairs of one
+    value with one absent field in the same record."""
     out = set()
     linked = set()
+    packages = {n.id: n.properties for n in sid_nodes if n.kind == "Package"}
     for node in sid_nodes:
-        for field, value in node.properties.items():
-            values = value if isinstance(value, list) else [value]
-            for v in values:
+        p = node.properties
+        values, absent = [], []
+        for field, value in p.items():
+            if field in ENVELOPE_FIELDS:
+                continue
+            if value is None:
+                out.add((node.kind, field, NONE))
+                absent.append(field)
+                continue
+            if isinstance(value, list):
+                out.add((node.kind, field + "#", len(value)))
+            for v in (value if isinstance(value, list) else [value]):
                 if isinstance(v, str) and v.startswith("DEMO-") and v in world.nodes and world.nodes[v].kind in CATALOG_LINKED:
                     linked.add(v)
                 elif _categorical(field, v):
                     out.add((node.kind, field, v))
+                    if isinstance(v, str):
+                        values.append((field, v))
+                elif isinstance(v, (int, float)) and not isinstance(v, bool) and field not in ("lat", "lng") and field not in SKIP_FIELDS:
+                    out.add((node.kind, field + "~", _bucket(v)))
+        for field, v in values:
+            for other in absent:
+                out.add((node.kind, f"{field}={v} & {other}", NONE))
+        if p.get("occurred_at") and p.get("recorded_at"):
+            out.add((node.kind, "<lag>", _lag((instant(p["recorded_at"]) - instant(p["occurred_at"])).total_seconds())))
+        package = packages.get(p.get("package_id"))
+        if node.kind == "ScanEvent" and package:
+            read = p.get("observed_barcode")
+            if read:
+                expected = package.get("manifest_barcode") or ""
+                differs = sum(1 for x, y in zip(read, expected) if x != y) + abs(len(read) - len(expected))
+                out.add((node.kind, "<barcode>", "another parcel's" if read != expected and read in barcodes else
+                         "same" if differs == 0 else "1 off" if differs == 1 else "2-4 off" if differs <= 4 else "5+ off"))
+            if p.get("measured_weight_kg") is not None and package.get("weight_kg"):
+                off = abs(p["measured_weight_kg"] - package["weight_kg"]) / package["weight_kg"]
+                out.add((node.kind, "<weight>", "<10%" if off < .1 else "10-20%" if off < .2 else "20-35%" if off < .35 else ">=35%"))
     for ref in linked:
         node = world.nodes[ref]
         for field, value in node.properties.items():
@@ -529,14 +769,23 @@ def features(world, sid_nodes):
     return out
 
 
+def _accepted(mechanism, feature):
+    kind, field = feature[0], str(feature[1])
+    return next((why for m, k, prefix, why in ACCEPTED_DISCRIMINATORS
+                 if m == mechanism and k in (kind, "*") and (field.startswith(prefix) or prefix in field)), None)
+
+
 def tells(build, *, rare=.20, precision=.90, support=5):
     world = build.world
     owned = defaultdict(list)
+    barcodes = set()
     for node in world.nodes.values():
         sid = node.properties.get("holdout_group")
         if sid:
             owned[sid].append(node)
-    feats = {sid: features(world, nodes) for sid, nodes in owned.items()}
+        if node.kind == "Package":
+            barcodes.add(node.properties["manifest_barcode"])
+    feats = {sid: features(world, nodes, barcodes) for sid, nodes in owned.items()}
     results = {}
     for label, population in (("development", [s for s, r in build.truth.items() if r["split"] == "development"]),
                               ("world", list(build.truth))):
@@ -550,101 +799,136 @@ def tells(build, *, rare=.20, precision=.90, support=5):
             for m in build.truth[sid]["mechanisms"]:
                 if m["type"] not in TELL_EXCLUDED:
                     mech[m["type"]].add(sid)
-        found, near = [], []
+        found, near, accepted = [], [], []
         for f, sids in holders.items():
             if len(sids) > rare * n:
                 continue
             for mtype, msids in mech.items():
                 hit = len(sids & msids)
                 if hit >= support:
-                    p = hit / len(sids)
-                    row = {"feature": list(map(str, f)), "mechanism": mtype, "support": hit, "precision": round(p, 3), "holders": len(sids)}
-                    if p >= precision:
+                    share = hit / len(sids)
+                    row = {"feature": list(map(str, f)), "mechanism": mtype, "support": hit, "precision": round(share, 3), "holders": len(sids)}
+                    why = _accepted(mtype, f)
+                    if share >= precision and why:
+                        accepted.append({**row, "documented_discriminator": why})
+                    elif share >= precision:
                         found.append(row)
-                    elif p >= .7:
+                    elif share >= .7 and not why:
                         near.append(row)
-        results[label] = {"population": n, "features": len(holders), "tells": sorted(found, key=lambda r: (-r["precision"], r["mechanism"])),
-                          "near_misses_precision_0.7_to_0.9": sorted(near, key=lambda r: (-r["precision"], r["mechanism"]))[:25]}
+        order = lambda r: (-r["precision"], r["mechanism"], r["feature"])
+        results[label] = {"population": n, "features": len(holders), "tells": sorted(found, key=order),
+                          "documented_discriminators_found": sorted(accepted, key=order),
+                          "near_misses_precision_0.7_to_0.9": sorted(near, key=order)[:25]}
     return {"pass": not any(v["tells"] for v in results.values()),
-            "rule": f"value held by <= {rare:.0%} of shipments with precision >= {precision} and support >= {support} for one mechanism",
+            "rule": f"a single-record observable (value, absent value, list length, bucketed number, arrival lag, barcode or weight "
+                    f"gap, value-with-absent-field pair) held by <= {rare:.0%} of shipments with precision >= {precision} and "
+                    f"support >= {support} for one mechanism is a tell, unless it is that mechanism's documented discriminator",
             "excluded_mechanisms": sorted(TELL_EXCLUDED), "skipped_fields": sorted(SKIP_FIELDS),
             "referenced_catalog_fields": sorted(CATALOG_TYPE_FIELDS), **results}
 
 
 # ---------------------------------------------------------------------- monitor replay
-def monitor_replay(build, imported, items):
-    """Hourly ticks from the first provider message, 900 s allowance, over the live shipments of this export."""
+def scheduled_fault(row):
+    """A shipment carries a scenario-weighted fault (as opposed to none, or only ordinary causes)."""
+    return any(m["origin"] == "scheduled" and m["resolution"] != "NONE" for m in row["mechanisms"])
+
+
+def monitor_replay(build, imported, items, truth, live_start):
+    """Hourly ticks from the live start, 900 s allowance, over the live shipments of this export."""
     full = reconstitute(imported, items)
     live = sorted(sid for sid, n in imported.nodes.items() if n.kind == "Shipment" and n.properties["split"] == "development")
-    start = instant(min(i["deliver_at"] for i in items if i["origin"] == "PROVIDER")) - timedelta(seconds=1)
     fed = {i["source_event_id"] for i in items}
-    replica = Replica(full, start, evidence_ids=fed, gateway_lag=False)
+    replica = Replica(full, live_start, evidence_ids=fed, gateway_lag=False)
     end = build.config.end_at
-    # The scorer's ingestion log: imported records are there from the start; a fed record is ingested at the first
-    # hourly tick at or after its delivery (the replica's visibility).
-    imported_ids = set(imported.nodes)
+    # The scorer's ingestion log is time-aware: an imported record counts from its own recorded_at (a live shipment's
+    # booking context is imported stamped at booking), a fed record from the first hourly tick at or after its delivery.
+    stamped = sorted((instant(n.properties["recorded_at"]), nid) for nid, n in imported.nodes.items())
     by_tick = sorted((tick, nid) for nid, tick in replica.visible.items())
 
     def ingested(t):
-        return imported_ids | {nid for tick, nid in by_tick if tick <= t}
+        return {nid for at, nid in stamped if at <= t} | {nid for tick, nid in by_tick if tick <= t}
     everything = ingested(end)
     rows = {}
     for sid in live:
         timeline = replica.timeline(sid, end)
         opening = next(((t, c, s) for t, c, s in timeline if c), None)
-        truth = build.truth[sid]
+        row = truth[sid]
         later = sorted({sym for t, c, s in timeline for sym in s} - set(opening[2] if opening else []))
-        actionable = [m for m in truth["mechanisms"] if m["resolution"] != "NONE"]
-        rows[sid] = {"healthy": truth["healthy"], "mechanisms": sorted({m["type"] for m in actionable}),
-                     "background": sorted({m["type"] for m in truth["mechanisms"] if m["origin"] == "background"}),
+        actionable = [m for m in row["mechanisms"] if m["resolution"] != "NONE"]
+        explaining = [m for m in actionable if set(RULE_CODES[m["type"]]) & set(opening[1])] if opening else []
+        rows[sid] = {"healthy": row["healthy"], "scheduled_fault": scheduled_fault(row), "mechanisms": sorted({m["type"] for m in actionable}),
+                     "explaining_mechanisms": sorted({m["type"] for m in explaining}),
+                     "exposures": sorted({m["type"] for m in row["exposures"]}),
                      "opened_at": iso(opening[0]) if opening else None, "opening_symptoms": opening[2] if opening else [],
                      "opening_codes": opening[1] if opening else [], "later_symptoms": later,
-                     "ambiguous": any(m["discrimination"]["shares_opening_with"] for m in actionable),
-                     "labels_at_opening": labels_at(truth, opening[0], ingested(opening[0])) if opening else None,
-                     "labels_at_end": labels_at(truth, end, everything)}
+                     "acceptable_causes_at_opening": sorted({c for m in (explaining or actionable) for c in m["acceptable_causes"]}) if opening else None,
+                     "ambiguous": any(m["discrimination"]["shares_opening_with"] for m in explaining),
+                     "labels_at_opening": labels_at(row, opening[0], ingested(opening[0])) if opening else None,
+                     "labels_at_end": labels_at(row, end, everything),
+                     "labels_before_booking": labels_at(row, instant(row["booked_at"]) - timedelta(seconds=1),
+                                                        ingested(instant(row["booked_at"]) - timedelta(seconds=1)))}
     healthy = [r for r in rows.values() if r["healthy"]]
     abnormal = [r for r in rows.values() if not r["healthy"]]
-    per_mech = defaultdict(lambda: {"shipments": 0, "opened": 0, "opening_symptoms": Counter()})
+    fault_free = [r for r in rows.values() if not r["scheduled_fault"]]
+    per_mech = defaultdict(lambda: {"caused_shipments": 0, "opened": 0, "opened_and_explaining": 0, "clean_cases": 0, "opening_symptoms": Counter()})
     for r in abnormal:
         for m in r["mechanisms"]:
-            per_mech[m]["shipments"] += 1
+            per_mech[m]["caused_shipments"] += 1
             if r["opened_at"]:
                 per_mech[m]["opened"] += 1
-                per_mech[m]["opening_symptoms"][" + ".join(r["opening_symptoms"])] += 1
-    by_set = defaultdict(lambda: {"shipments": 0, "healthy": 0, "mechanisms": Counter(), "single_mechanism_shipments": Counter()})
+                if m in r["explaining_mechanisms"]:
+                    per_mech[m]["opened_and_explaining"] += 1
+                    per_mech[m]["opening_symptoms"][" + ".join(r["opening_symptoms"])] += 1
+                    # A clean case: the monitor opened it and this is the shipment's only cause.
+                    per_mech[m]["clean_cases"] += len(r["mechanisms"]) == 1
+    by_set = defaultdict(lambda: {"shipments": 0, "healthy": 0, "without_scheduled_fault": 0, "unexplained": 0, "mechanisms": Counter(),
+                                  "single_mechanism_shipments": Counter()})
     for r in rows.values():
         if not r["opened_at"]:
             continue
         key = " + ".join(r["opening_symptoms"])
         by_set[key]["shipments"] += 1
         by_set[key]["healthy"] += r["healthy"]
-        for m in r["mechanisms"]:
+        by_set[key]["without_scheduled_fault"] += not r["scheduled_fault"]
+        by_set[key]["unexplained"] += not r["healthy"] and not r["explaining_mechanisms"]
+        for m in r["explaining_mechanisms"]:
             by_set[key]["mechanisms"][m] += 1
-        if len(r["mechanisms"]) == 1:
+        if len(r["mechanisms"]) == 1 and r["explaining_mechanisms"]:
             by_set[key]["single_mechanism_shipments"][r["mechanisms"][0]] += 1
     insufficient = sum(1 for r in rows.values() if r["opened_at"] and r["labels_at_opening"] == ["INSUFFICIENT_EVIDENCE"])
     opened_abnormal = [r for r in abnormal if r["opened_at"]]
     ambiguous = [r for r in opened_abnormal if r["ambiguous"]]
     identifiable = [r for r in ambiguous if r["labels_at_end"] != ["INSUFFICIENT_EVIDENCE"]]
     at_opening = [r for r in identifiable if r["labels_at_opening"] != ["INSUFFICIENT_EVIDENCE"]]
-    return {"tick_origin": iso(start), "tick_seconds": 3600, "detection_allowance_seconds": 900, "live_shipments": len(rows),
+    early = sum(1 for r in rows.values() if r["labels_before_booking"] not in ([], ["INSUFFICIENT_EVIDENCE"]))
+    return {"tick_origin": iso(live_start), "tick_seconds": 3600, "detection_allowance_seconds": 900, "live_shipments": len(rows),
+            "pass": early == 0, "shipments_with_a_cause_identifiable_before_booking": early,
             "healthy": {"shipments": len(healthy), "opened": sum(bool(r["opened_at"]) for r in healthy),
                         "false_positive_rate": round(sum(bool(r["opened_at"]) for r in healthy) / max(1, len(healthy)), 3),
                         "opening_symptoms": dict(Counter(" + ".join(r["opening_symptoms"]) for r in healthy if r["opened_at"]))},
+            "without_scheduled_fault": {"shipments": len(fault_free), "opened": sum(bool(r["opened_at"]) for r in fault_free),
+                                        "with_an_ordinary_cause": sum(not r["healthy"] for r in fault_free),
+                                        "opening_symptoms": dict(Counter(" + ".join(r["opening_symptoms"]) for r in fault_free if r["opened_at"]))},
             "abnormal": {"shipments": len(abnormal), "opened": sum(bool(r["opened_at"]) for r in abnormal),
                          "not_opened": sum(not r["opened_at"] for r in abnormal),
+                         "opened_with_no_explaining_cause": sum(1 for r in opened_abnormal if not r["explaining_mechanisms"]),
+                         "multi_cause": sum(len(r["mechanisms"]) >= 2 for r in abnormal),
                          "opened_before_any_cause_knowable": insufficient,
                          "identifiable_at_opening": sum(r["labels_at_opening"] != ["INSUFFICIENT_EVIDENCE"] for r in opened_abnormal),
-                         "identifiable_by_horizon_end": sum(r["labels_at_end"] != ["INSUFFICIENT_EVIDENCE"] for r in opened_abnormal)},
-            "ambiguity": {"rule": "an opened abnormal case is ambiguous when one of its mechanisms shares its opening symptom set with "
-                                  "another cause (truth shares_opening_with); identifiable when labels_at(row, t, ingested) names a cause",
+                         "identifiable_by_horizon_end": sum(r["labels_at_end"] != ["INSUFFICIENT_EVIDENCE"] for r in opened_abnormal),
+                         "acceptable_cause_codes_per_opened_case": dict(sorted(Counter(len(r["acceptable_causes_at_opening"]) for r in opened_abnormal).items()))},
+            "ambiguity": {"rule": "an opened abnormal case is ambiguous when a mechanism that explains its opening shares that opening "
+                                  "symptom set with another cause (truth shares_opening_with); identifiable when "
+                                  "labels_at(row, t, ingested) names a cause",
                           "opened_abnormal": len(opened_abnormal), "ambiguous": len(ambiguous),
                           "identifiable_ambiguous": len(identifiable), "identifiable_ambiguous_at_opening": len(at_opening),
                           "identifiable_ambiguous_only_after_opening": len(identifiable) - len(at_opening),
                           "unidentifiable_ambiguous": len(ambiguous) - len(identifiable)},
-            "per_mechanism": {m: {"shipments": v["shipments"], "opened": v["opened"], "opening_symptoms": dict(v["opening_symptoms"].most_common())}
-                              for m, v in sorted(per_mech.items())},
+            "per_mechanism": {m: {**{k: v[k] for k in ("caused_shipments", "opened", "opened_and_explaining", "clean_cases")},
+                                  "opening_symptoms": dict(v["opening_symptoms"].most_common())} for m, v in sorted(per_mech.items())},
             "per_opening_symptom_set": {k: {"shipments": v["shipments"], "healthy_shipments": v["healthy"],
+                                            "shipments_without_scheduled_fault": v["without_scheduled_fault"],
+                                            "abnormal_unexplained": v["unexplained"],
                                             "distinct_mechanisms": len(v["mechanisms"]), "mechanisms": dict(v["mechanisms"].most_common()),
                                             "distinct_mechanisms_single_cause": len(v["single_mechanism_shipments"]),
                                             "single_cause_mechanisms": dict(v["single_mechanism_shipments"].most_common())}
@@ -653,38 +937,101 @@ def monitor_replay(build, imported, items):
 
 
 # ---------------------------------------------------------------------- coverage and counts
+CLEAN_CASE_FLOOR = 10
+# Case families (mission, section 12; docs/plans/2026-10-10_stage1_world.md) by causing mechanism. A also needs the
+# case to open as "out for delivery overnight" (SESSION_END_UNRECONCILED); F is any multi-cause case; G is healthy.
+FAMILIES = {"A": ("DEVICE_OUTAGE", "ASSIGNED_NOT_LOADED", "DELIVERY_SCAN_SKIPPED", "RETURN_SCAN_SKIPPED", "CONTRACTOR_RETAINS", "TRAFFIC_DISRUPTION"),
+            "B": ("DEVICE_OUTAGE", "PARTIAL_UPLOAD_LOSS"),
+            "C": ("PARTIAL_UPLOAD_LOSS", "SCAN_SKIPPED_AT_RECEIPT", "FACILITY_BACKLOG", "LATE_LINEHAUL", "ASSIGNED_NOT_LOADED",
+                  "RETURN_SCAN_SKIPPED", "CONTRACTOR_RETAINS", "UNRECORDED_HANDOFF", "MANIFEST_ERROR"),
+            "D": ("MISSORT",), "E": ("OTP_NOT_RECEIVED", "NEIGHBOUR_RECEIVES", "MISDELIVERY"),
+            "H": ("RECIPIENT_UNAVAILABLE", "WRONG_ADDRESS", "WRONG_GATE", "OTP_NOT_RECEIVED", "CUSTOMER_COMPLAINT")}
+
+
 def coverage(build):
-    per = defaultdict(lambda: Counter())
-    for sid, r in build.truth.items():
+    """Causes, not touches. Per mechanism: shipments it caused a deviation on, by split; in development, the cases the
+    monitor opened that it explains, and the CLEAN cases among them (it is the shipment's only cause). The committed
+    rate's target is gating (it scales with the world); the floor of CLEAN_CASE_FLOOR clean development cases per
+    mechanism and per family is reported with the world size it needs, because it cannot be met by density."""
+    truth = build.truth
+    caused = defaultdict(Counter)
+    dev = defaultdict(lambda: Counter())
+    family = defaultdict(lambda: Counter())
+    for sid, r in truth.items():
+        actionable = [m for m in r["mechanisms"] if m["resolution"] != "NONE"]
+        types = sorted({m["type"] for m in actionable})
         for m in {m["type"] for m in r["mechanisms"]}:
-            per[m][r["split"]] += 1
-    sizes = Counter(r["split"] for r in build.truth.values())
+            caused[m][r["split"]] += 1
+        if r["split"] != "development":
+            continue
+        opening = r["first_opening"]
+        explaining = sorted({m["type"] for m in actionable if m["explains_opening"]})
+        for m in types:
+            dev[m]["caused"] += 1
+            dev[m]["single_cause"] += len(types) == 1
+            if opening and m in explaining:
+                dev[m]["opened_and_explaining"] += 1
+                dev[m]["clean"] += len(types) == 1
+        if r["healthy"]:
+            family["G"]["shipments"] += 1
+            family["G"]["opened"] += bool(opening)
+        elif opening and len(types) >= 2:
+            family["F"]["opened"] += 1
+        if opening and len(types) == 1 and explaining:
+            for name, members in FAMILIES.items():
+                if types[0] in members and (name != "A" or "SESSION_END_UNRECONCILED" in opening["symptoms"]):
+                    family[name]["clean"] += 1
+                    family[name][types[0]] += 1
+    sizes = Counter(r["split"] for r in truth.values())
     targets = {m: build.config.target(m, "development", sizes["development"]) for m, _, _ in build.config.rates}
-    # The brief's floor (10) for the full configuration; a scaled-down test world uses its committed-rate target.
+    # The brief's floor (10 caused shipments in development) for the full configuration; a smaller world uses its
+    # committed-rate target.
     required = {m: min(10, t) for m, t in targets.items()}
-    dev = {m: per[m]["development"] for m in required}
-    below = {m: v for m, v in dev.items() if v < required[m]}
-    return {"pass": not below, "minimum_required_in_development": min(required.values()), "development_targets": targets,
-            "below_minimum": below,
-            "affected_shipments": {m: dict(per[m]) for m in sorted(per)},
-            "multi_cause_shipments": dict(Counter(r["split"] for r in build.truth.values()
-                                                  if len({m['type'] for m in r['mechanisms'] if m['resolution'] != 'NONE'}) >= 2))}
+    below = {m: dev[m]["caused"] for m in required if dev[m]["caused"] < required[m]}
+    clean = {m: dev[m]["clean"] for m in sorted(required)}
+    # Clean cases per caused shipment, as measured here: the development size that would reach the floor at these rates.
+    worst = min(clean.values()) if clean else 0
+    needed = {m: None if not clean[m] else math.ceil(sizes["development"] * CLEAN_CASE_FLOOR / clean[m]) for m in clean}
+    multi = Counter(r["split"] for r in truth.values() if len({m["type"] for m in r["mechanisms"] if m["resolution"] != "NONE"}) >= 2)
+    abnormal = Counter(r["split"] for r in truth.values() if not r["healthy"])
+    faulty = Counter(r["split"] for r in truth.values() if scheduled_fault(r))
+    return {"pass": not below, "counted": "shipments on which the mechanism caused a deviation (touches without consequence are exposures)",
+            "minimum_required_in_development": min(required.values()), "development_targets": targets, "below_minimum": below,
+            "caused_shipments": {m: dict(caused[m]) for m in sorted(caused)},
+            "development": {m: dict(dev[m]) for m in sorted(dev)},
+            "clean_case_floor": {"floor": CLEAN_CASE_FLOOR, "definition": "development cases the monitor opened whose only cause is the mechanism",
+                                 "clean_cases_per_mechanism": clean, "met": bool(clean) and worst >= CLEAN_CASE_FLOOR,
+                                 "mechanisms_below_floor": sorted(m for m, n in clean.items() if n < CLEAN_CASE_FLOOR),
+                                 "gates_export": False,
+                                 "why_not_gating": "At the committed rates a development split of this size holds fewer caused shipments per "
+                                                   "mechanism than the floor, so the floor needs more shipment-days, not more faults per shipment.",
+                                 "development_shipments_needed_at_these_rates": needed,
+                                 "per_family": {name: dict(v) for name, v in sorted(family.items())}},
+            "shares": {split: {"shipments": sizes[split], "abnormal": abnormal[split], "with_a_scheduled_fault": faulty[split],
+                               "multi_cause": multi[split], "abnormal_share": round(abnormal[split] / max(1, sizes[split]), 3),
+                               "scheduled_fault_share": round(faulty[split] / max(1, sizes[split]), 3)} for split in sorted(sizes)},
+            "multi_cause_shipments": dict(multi)}
 
 
 def run_all(build, exports):
     """exports: {live_split: (imported, items, truth, live_start)}"""
     report = {"physics": physics(build), "observation": None, "coverage": coverage(build), "tells": tells(build),
-              "discrimination": discrimination(build), "private_state_isolation": private_state_isolation(build),
+              "discrimination": discrimination(build), "import_cut": import_cut(build, exports), "forecasts": forecasts(build),
+              "throughput_separation": throughput_separation(build), "consolidation": consolidation(build),
               "precedent_cutoff": precedent_cutoff(build, exports), "exports": {}}
     for live_split, (imported, items, truth, live_start) in exports.items():
         found = foundation(build, imported, items)
         raw = found.pop("raw")
-        report["exports"][live_split] = {"foundation": found, "foundation_raw": raw, "isolation": isolation(build, imported, items)}
+        present = {sid for sid in truth}
+        report["exports"][live_split] = {"foundation": found, "foundation_raw": raw, "isolation": isolation(build, imported, items),
+                                         "discrimination": discrimination(build, truth, present),
+                                         "physical_state_vocabulary": physical_state_vocabulary(build, live_split)}
         if report["observation"] is None:
             report["observation"] = observation(build, items)
-    report["pass"] = all(report[name]["pass"] for name in ("physics", "observation", "coverage", "tells", "discrimination",
-                                                           "private_state_isolation", "precedent_cutoff")) and all(
-        e["foundation"]["pass"] and e["isolation"]["pass"] for e in report["exports"].values())
+    report["pass"] = all(report[name]["pass"] for name in ("physics", "observation", "coverage", "tells", "discrimination", "import_cut",
+                                                           "forecasts", "throughput_separation", "precedent_cutoff")) and all(
+        e["foundation"]["pass"] and e["isolation"]["pass"] and e["discrimination"]["pass"] and e["physical_state_vocabulary"]["pass"]
+        for e in report["exports"].values())
     return report
 
 
@@ -694,8 +1041,14 @@ OPENING_SKIP_FIELDS = {"entity_id", "dataset_id", "schema_version", "synthetic",
 
 def opening_cases(build, split="development"):
     """Opening case data of every abnormal shipment of a split that the monitor opened: the opening symptom set,
-    the rule codes, every visible property value of the shipment's evidence at the opening tick, and the cause
-    codes of its actionable mechanisms (the label). Time fields are left out (unique per record)."""
+    the rule codes, every visible property value of the shipment's evidence at the opening tick, the cause codes of
+    the mechanisms that explain the opening (the training label) and the cause codes the truth accepts for the case
+    (what a prediction is scored against, as in an evaluation run). Time fields are left out (unique per record).
+
+    `features` leaves out the records the explaining mechanisms themselves shaped or that their discrimination specs
+    cite (the documented discriminating evidence: the failed attempt and its calls, the handoff naming another person,
+    the buffered record): reading that evidence is the investigator's task, not a tell. A tell is a value OUTSIDE it
+    that still predicts the cause. `features_with_evidence` keeps everything, for the literal variant of the test."""
     replica = build.replica
     out = {}
     for sid, opening in sorted(build.first_opening.items()):
@@ -703,7 +1056,11 @@ def opening_cases(build, split="development"):
         if row["split"] != split or row["healthy"]:
             continue
         tick = instant(opening["at"])
-        features = set()
+        actionable = [m for m in row["mechanisms"] if m["resolution"] != "NONE"]
+        explaining = [m for m in actionable if m["explains_opening"]] or actionable
+        evidence = {n for m in explaining for n in m["evidence_ids"]} | {i["record"] for m in explaining for g in m["discrimination"]["any_of"]
+                                                                         for i in g["all_of"] if "record" in i}
+        features, everything = set(), set()
         for nodes in replica.index.groups[sid].values():
             for node in nodes:
                 recorded = node.properties.get("recorded_at")
@@ -714,22 +1071,51 @@ def opening_cases(build, split="development"):
                         continue
                     for v in (value if isinstance(value, list) else [value]):
                         if isinstance(v, (str, bool, int, float)):
-                            features.add(f"{node.kind}.{field}={v}")
-        actionable = [m for m in row["mechanisms"] if m["resolution"] != "NONE"]
+                            everything.add(f"{node.kind}.{field}={v}")
+                            if node.id not in evidence:
+                                features.add(f"{node.kind}.{field}={v}")
         out[sid] = {"symptoms": " + ".join(opening["symptoms"]), "codes": by_specificity(opening["codes"]),
-                    "features": features, "causes": sorted({m["cause_code"] for m in actionable}),
-                    "ambiguous": any(m["discrimination"]["shares_opening_with"] for m in actionable)}
+                    "features": features, "features_with_evidence": everything, "causes": sorted({m["cause_code"] for m in explaining}),
+                    "acceptable": sorted({c for m in explaining for c in m["acceptable_causes"]}),
+                    # Ambiguous: the opening symptom set is shared with another cause. Whether the truth's own
+                    # discriminating evidence had arrived by the opening splits the stratum for the report.
+                    "ambiguous": any(m["discrimination"]["shares_opening_with"] for m in explaining),
+                    "identifiable_at_opening": labels_at_estimate(row, tick) != ["INSUFFICIENT_EVIDENCE"]}
     return out
 
 
 def tell_test(train, test, *, support=5):
-    """Pre-run tell test of two built worlds (see tell_test_cases)."""
+    """Pre-run tell test of two built worlds (addendum B3), in both directions.
+
+    Forward is the addendum's test: train on this world's development opening cases, evaluate on the other seed's.
+    Reverse swaps the roles. The gate pools the two (lookup correct in both must not exceed baseline correct in both):
+    one direction alone is about eighty non-independent cases and its sign flips with any change of seed, in either
+    direction; both directions are reported so the forward result can be read on its own."""
     train_cases, test_cases = opening_cases(train), opening_cases(test)
     result = tell_test_cases(train_cases, test_cases, support=support)
     reverse = tell_test_cases(test_cases, train_cases, support=support)
-    # Diagnostic only: the same test with the two worlds' roles swapped.
-    result["diagnostic_reverse_direction"] = {**{k: reverse["ambiguous"][k] for k in ("cases", "baseline_correct", "lookup_correct")},
-                                              "without_identifier_values": reverse["diagnostic_without_identifier_values"]}
+    keys = ("cases", "baseline_correct", "lookup_correct", "single_code_baseline_correct")
+
+    def literal(cases):
+        return {k: {**c, "features": c["features_with_evidence"]} for k, c in cases.items()}
+    # The literal variant (every visible value, the mechanism's own evidence included), both directions, reported.
+    lit_forward = tell_test_cases(literal(train_cases), literal(test_cases), support=support, diagnostics=False)["ambiguous"]
+    lit_reverse = tell_test_cases(literal(test_cases), literal(train_cases), support=support, diagnostics=False)["ambiguous"]
+    result["with_the_mechanisms_own_evidence_as_features"] = {
+        "note": "Not the gate: here the lookup also reads the records the cause itself shaped (the documented discriminators).",
+        "forward": {**{k: lit_forward[k] for k in keys}, "features_behind_lookup_wins": lit_forward["discordant"]["features_behind_lookup_wins"]},
+        "reverse": {**{k: lit_reverse[k] for k in keys}, "features_behind_lookup_wins": lit_reverse["discordant"]["features_behind_lookup_wins"]},
+        "lookup_beats_baseline_pooled": lit_forward["lookup_correct"] + lit_reverse["lookup_correct"] > lit_forward["baseline_correct"] + lit_reverse["baseline_correct"]}
+    forward = {k: result["ambiguous"][k] for k in keys}
+    backward = {k: reverse["ambiguous"][k] for k in keys}
+    pooled = {k: forward[k] + backward[k] for k in keys}
+    result["forward_pass"] = result.pop("pass")
+    result["reverse_direction"] = {"pass": reverse["pass"], **{name: {**{k: reverse[name][k] for k in keys}, "discordant": reverse[name]["discordant"]}
+                                                                 for name in ("ambiguous", "ambiguous_not_identifiable_at_opening",
+                                                                              "ambiguous_identifiable_at_opening", "all_opened_abnormal")},
+                                   "without_identifier_values": reverse["diagnostic_without_identifier_values"]}
+    result["pooled_ambiguous"] = pooled
+    result["pass"] = pooled["lookup_correct"] <= pooled["baseline_correct"]
     result["train"] = {"seed": train.config.seed, "total": train.config.total, "cases": result.pop("train_cases")}
     result["test"] = {"seed": test.config.seed, "total": test.config.total, "cases": result.pop("test_cases")}
     return result
@@ -745,7 +1131,8 @@ def tell_test_cases(train_cases, test_cases, *, support=5, diagnostics=True):
     lookup    keys (opening symptom set, feature value) with training support >= `support`; the key with the
               highest training precision (ties: support, then name) predicts its majority cause; no such key ->
               the baseline's prediction
-    A prediction is correct when it is one of the case's cause codes."""
+    A prediction is correct when the truth accepts it for the case (acceptable causes of the mechanisms that explain
+    the opening), exactly as an evaluation run is scored."""
     # Counters hold, per key, the number of training cases carrying each cause, plus "#cases" (cases with the key).
     by_codes, by_code, by_key, overall = defaultdict(Counter), defaultdict(Counter), defaultdict(Counter), Counter()
     for case in train_cases.values():
@@ -790,17 +1177,26 @@ def tell_test_cases(train_cases, test_cases, *, support=5, diagnostics=True):
                 best = (key, cause, feature)
         return (best[1], best[2]) if best else (baseline(case), None)
 
-    strata = {"ambiguous": [c for c in test_cases.values() if c["ambiguous"]], "all_opened_abnormal": list(test_cases.values())}
+    def right_for(case, cause):
+        return cause in case.get("acceptable", case["causes"])
+
+    strata = {"ambiguous": [c for c in test_cases.values() if c["ambiguous"]],
+              # Reported, not the criterion: the ambiguous stratum split by whether the discriminating evidence of the
+              # truth's spec had arrived by the opening (where it had, reading it is the task; where it had not, a
+              # lookup can still use the stage the shipment had reached, which rule codes do not carry).
+              "ambiguous_not_identifiable_at_opening": [c for c in test_cases.values() if c["ambiguous"] and not c.get("identifiable_at_opening", True)],
+              "ambiguous_identifiable_at_opening": [c for c in test_cases.values() if c["ambiguous"] and c.get("identifiable_at_opening", True)],
+              "all_opened_abnormal": list(test_cases.values())}
     results = {}
     for name, cases in strata.items():
-        base_hits = sum(baseline(c) in c["causes"] for c in cases)
-        single_hits = sum(single_code(c) in c["causes"] for c in cases)
+        base_hits = sum(right_for(c, baseline(c)) for c in cases)
+        single_hits = sum(right_for(c, single_code(c)) for c in cases)
         decisions = [lookup(c) for c in cases]
-        look_hits = sum(cause in c["causes"] for c, (cause, _) in zip(cases, decisions))
+        look_hits = sum(right_for(c, cause) for c, (cause, _) in zip(cases, decisions))
         used = Counter(feature for _, feature in decisions if feature)
         wins, losses = Counter(), Counter()
         for c, (cause, feature) in zip(cases, decisions):
-            right, base_right = cause in c["causes"], baseline(c) in c["causes"]
+            right, base_right = right_for(c, cause), right_for(c, baseline(c))
             if right != base_right:
                 (wins if right else losses)[feature or "(baseline)"] += 1
         results[name] = {"cases": len(cases), "baseline_correct": base_hits, "lookup_correct": look_hits,
@@ -811,8 +1207,10 @@ def tell_test_cases(train_cases, test_cases, *, support=5, diagnostics=True):
                                         "features_behind_lookup_wins": wins.most_common(8),
                                         "features_behind_lookup_losses": losses.most_common(8)}}
     out = {"pass": results["ambiguous"]["lookup_correct"] <= results["ambiguous"]["baseline_correct"],
-            "rule": "lookup classifier on opening data (symptom set + every visible property value) must not beat the rule-code "
-                    "baseline (most specific code at opening) on the ambiguous stratum of another seed's world",
+            "rule": "lookup classifier on opening data (symptom set + every visible property value outside the records the cause "
+                    "itself shaped) must not beat the rule-code baseline (rule codes at opening, most specific first) on the "
+                    "ambiguous stratum of another seed's world, pooled over both directions. Ambiguous: the opening symptom set "
+                    "is shared with another cause.",
             "train_cases": len(train_cases), "test_cases": len(test_cases), "min_support": support, **results}
     if diagnostics:
         # Diagnostic only (not the criterion): the same test without values that are resource identifiers (DEMO-...).

@@ -12,7 +12,7 @@ import json
 from datetime import timedelta
 
 from dataset_v2.contracts import ALIASES, SCHEMA_VERSION, UTC_FIELDS, digest, instant
-from dataset_v2.feed import INGESTIBLE_KINDS, Reference, decode
+from dataset_v2.feed import INGESTIBLE_KINDS, Reference, decode, ingestible_kinds
 
 INGEST_SOURCE_REF = "live-ingestion-1"
 # (kind, property, relationship, outward): outward means (node)-[rel]->(referenced), else (referenced)-[rel]->(node).
@@ -46,6 +46,14 @@ EDGE_RULES = (
     ("VehicleAssignment", "vehicle_id", "USES_VEHICLE", True), ("VehicleAssignment", "driver_id", "ASSIGNED_DRIVER", True),
     ("VehicleAssignment", "session_id", "IN_SESSION", True), ("VehicleAssignment", "package_ids", "CARRIES", True),
     ("VehicleAssignment", "route_run_id", "ON_ROUTE_RUN", True), ("VehicleAssignment", "trip_id", "ON_TRIP", True),
+    # Mechanism world, additive: shared transport records created after the live start arrive as messages and link
+    # like their imported equivalents (a trip to its lane, vehicle, driver, ends and provider; a container to its
+    # ends; a route run to its depot, vehicle, driver and driver app).
+    ("Trip", "lane_id", "ON_LANE", True), ("Trip", "vehicle_id", "USES_VEHICLE", True), ("Trip", "driver_id", "ASSIGNED_DRIVER", True),
+    ("Trip", "from_facility_id", "FROM", True), ("Trip", "to_facility_id", "TO", True), ("Trip", "provider_id", "OPERATED_BY", True),
+    ("Container", "origin_facility_id", "FROM", True), ("Container", "destination_facility_id", "TO", True),
+    ("RouteRun", "depot_id", "AT_FACILITY", True), ("RouteRun", "vehicle_id", "USES_VEHICLE", True),
+    ("RouteRun", "driver_id", "ASSIGNED_DRIVER", True), ("RouteRun", "device_ref", "USES_DEVICE", True),
 )
 
 
@@ -121,7 +129,7 @@ class Gateway:
             kind, entity_id, sid, occurred_at, props = decode(item["channel"], item["message_type"], json.loads(item["payload_json"]), ref)
         except (KeyError, ValueError, StopIteration, TypeError):
             return "REJECTED", None, None, "undecodable_or_unresolvable_payload"
-        if kind not in INGESTIBLE_KINDS or not str(entity_id).startswith("DEMO-") or (sid and sid not in self._splits):
+        if kind not in ingestible_kinds(self.dataset_id) or not str(entity_id).startswith("DEMO-") or (sid and sid not in self._splits):
             return "REJECTED", None, None, "unknown_kind_identity_or_shipment"
         existing = tx.run("MATCH (n:V2Entity {entity_id:$id}) RETURN n.raw_payload_hash AS hash, n:LiveIngested AS live",
                           id=entity_id).single()

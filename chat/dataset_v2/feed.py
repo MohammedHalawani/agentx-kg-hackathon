@@ -35,9 +35,25 @@ SHARED_OBSERVATIONS = frozenset(("DeviceHeartbeat", "FacilityThroughput", "TripE
 # corrected address, the person a parcel was handed to). Dated records, so a live shipment receives them
 # through the feed instead of the import.
 DATED_CONTEXT = frozenset(("DeliverySession", "VehicleAssignment", "AddressVersion", "Customer"))
-WORLD_FEED_KINDS = frozenset(FEED_KINDS | SHARED_OBSERVATIONS | DATED_CONTEXT)
+# Mechanism world: shared transport records created during operations (a trip published with the schedule, a
+# container opened at a sort, a route run planned in the morning). Dated records: one created after the live
+# start reaches Suhail through the feed, like any other record, instead of sitting in the import beforehand.
+DATED_SHARED = frozenset(("Trip", "Container", "RouteRun"))
+WORLD_FEED_KINDS = frozenset(FEED_KINDS | SHARED_OBSERVATIONS | DATED_CONTEXT | DATED_SHARED)
 # The gateway also accepts an AddressVersion: a recipient confirms or corrects an address via the portal.
-INGESTIBLE_KINDS = frozenset(FEED_KINDS | {"AddressVersion"} | WORLD_FEED_KINDS)
+# CommunicationEvent is an observation kind of the mechanism world only (context.OBSERVATIONS lists it for the
+# evidence readers); the live-network gateway never accepted it and still does not.
+INGESTIBLE_KINDS = frozenset((FEED_KINDS - {"CommunicationEvent"}) | {"AddressVersion"})
+# The mechanism world's wider set is accepted only for mechanism-world datasets; the live-network dataset's
+# gateway keeps rejecting those kinds.
+WORLD_DATASET_PREFIX = "DEMO-SUHAIL-WORLD"
+
+
+def ingestible_kinds(dataset_id):
+    """Kinds the gateway accepts for a dataset: the live-network set, widened only for mechanism-world datasets."""
+    if isinstance(dataset_id, str) and dataset_id.startswith(WORLD_DATASET_PREFIX):
+        return INGESTIBLE_KINDS | WORLD_FEED_KINDS
+    return INGESTIBLE_KINDS
 # Envelope fields the gateway sets itself; never carried in a provider payload.
 ENVELOPE = frozenset(("entity_id", "dataset_id", "schema_version", "synthetic", "provenance", "split", "holdout_group",
                       "recorded_at", "shipment_id", "occurred_at"))
