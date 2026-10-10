@@ -13,7 +13,7 @@ hand-specified stand-in labelled FIXTURE, not a world-1 export.
 | Step | Process | Reads truth? | Writes |
 |---|---|---|---|
 | `select` | before any run | yes (truth.jsonl, monitor_replay_rows.jsonl) | `selection.json` (run side), `selection_scorer.json`, `extras.json`, `pairs.json`, `strata.json` (scorer side), each with `.sha256`, written once |
-| `run` | the evaluation | **no**: refuses to start with `SUHAIL_EVAL_TRUTH_ROOT`, `SUHAIL_SIM_STATE_ROOT` or any variable naming TRUTH set (before the wiring is built); imports nothing truth-side (tested); invalid if a truth-side module is loaded when it ends | `ledger.jsonl`, `cases.jsonl`, `results/`, `captured/`, `run_manifest.json` |
+| `run` | the evaluation | **no**: refuses to start with `SUHAIL_EVAL_TRUTH_ROOT`, `SUHAIL_SIM_STATE_ROOT` or any variable naming TRUTH set (before the wiring is built); imports nothing truth-side (tested); invalid if a truth-side module is loaded when it ends | `ledger.jsonl`, `cases.jsonl`, `settled.jsonl`, `results/`, `captured/`, `run_manifest.json` |
 | `score` | after the run | yes | `scores.jsonl`, `canary.json` |
 | `report` | after scoring | no | `report.json`, `report.md` |
 
@@ -24,6 +24,25 @@ main-test flag of each case and the allocation are in `selection_scorer.json`; t
 which the run opens only when `--extras` names it and only after the last main-test case. Shipments listed in
 `docs/evals/2026-10-10_world1_pilot/excluded_shipments.json` are never drawn from a world with that dataset id
 (`exclusions.py`).
+
+## Taking the run in parts (`run --max-cases N`)
+
+`run --max-cases N` stops before starting case N + 1 of the pre-registered order (the order of `selection.json`;
+cases already settled in the run directory count), never inside a case. N counts the selection's cases: the run
+cannot count the cases of the E1 gate cell, because it never learns a case's stratum. The stop reads that number and
+nothing any case answered. The manifest's status is then `paused` (not invalid, not completed) and its `progress`
+block gives N and the total. A paused run has no open reservation in `ledger.jsonl`, has run no extra and has not
+opened `extras.json`, has captured the run-level surfaces as of the pause (`captured/<surface>/paused_after_NNNN.jsonl`),
+and its campaign-ledger entry is settled at the calls committed so far, so the unspent part of its budget is free
+until it is resumed. `run --resume` (with a larger N, or none) reserves the whole sealed budget again (refused if it
+no longer fits), reruns, recaptures and reconciles no settled case (`settled.jsonl`), and ends with the results an
+unpaused run gives (`tests/test_pause.py`). The manifest keeps every earlier part in `earlier_segments`; validity is
+judged over all of them (provider failures summed, a part that ended as anything but paused makes the run invalid).
+
+`score` and `report` work on a paused run. The report is then titled INTERIM, states "the first N of T cases in the
+pre-registered order", shows the pass bars' counts with the verdict `interim (no verdict)` (the fixed test is on the
+whole sample, once) and gives an interim validity verdict. Scoring reads truth, so do it in its own process and never
+hand its output to a later part of the run.
 
 ## Design item to module
 

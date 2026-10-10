@@ -9,12 +9,16 @@
       TRUTH_DIR holds truth.jsonl and monitor_replay_rows.jsonl (world.export's <truth-root>/.../<live split>/).
 
   python -m stage3_eval run --selection DIR/selection.json --out RUN_DIR --wiring MODULE:FUNCTION [--extras DIR/extras.json]
-      [--dry-run] [--resume]
+      [--dry-run] [--resume] [--max-cases N]
       FUNCTION(config, dry_run=...) returns {"arms", "case_source", "capture", "extras_arms", "provenance"} (WIRING.md).
       Run with SUHAIL_EVAL_TRUTH_ROOT, SUHAIL_SIM_STATE_ROOT and every variable naming TRUTH unset (refused before
       the wiring is built). The run reads selection.json only (key, world, shipment and expected
       opening per case). --extras names the exploratory extras' case lists, which are derived from truth: the file is
       opened only after the last main-test case has run, and without it no extra runs.
+      --max-cases N takes the run in parts: it stops before starting case N + 1 of the pre-registered order (cases
+      already settled in RUN_DIR count), with manifest status "paused", no extras run and the campaign ledger holding
+      the calls committed so far. --resume with a larger N, or none, carries on. N is the only thing the stop reads.
+      `score` and `report` work on a paused run; the report is then labelled an interim look over the first N cases.
 
   python -m stage3_eval score --selection DIR/selection.json --run RUN_DIR --world E1=TRUTH_DIR [...] --wiring MODULE:FUNCTION
       FUNCTION(config) returns {"ingestion", "resolver"}. Writes RUN_DIR/scores.jsonl and RUN_DIR/canary.json.
@@ -151,6 +155,8 @@ def main(argv=None):
     r.add_argument("--extras", help="extras.json of the pre-registration (opened only after the main test has finished)")
     r.add_argument("--dry-run", action="store_true")
     r.add_argument("--resume", action="store_true")
+    r.add_argument("--max-cases", type=int, metavar="N",
+                   help="stop (status paused) before starting case N + 1 of the pre-registered order; continue with --resume")
     r.add_argument("--ledger", help="campaign model-call ledger (default docs/evals/model_call_ledger.json)")
     sc = sub.add_parser("score")
     sc.add_argument("--selection", required=True)
@@ -186,6 +192,8 @@ def main(argv=None):
             refuse_truth_environment()        # BEFORE the wiring opens a database or anything else is read
         except RuntimeError as refusal:
             raise SystemExit(f"Refusing to run: {refusal}") from None
+        if args.max_cases is not None and args.max_cases < 1:
+            raise SystemExit("Refusing to run: --max-cases must be 1 or more")
         from operations.call_ledger import LedgerError, LedgerRefused
         config, selection = _config(args.selection)
         campaign = _campaign(args.ledger)
@@ -198,13 +206,14 @@ def main(argv=None):
             manifest = run(args.selection, args.out, arms=wired["arms"], case_source=wired["case_source"], config=config,
                            capture=wired.get("capture"), extras_arms=wired.get("extras_arms"), dry_run=args.dry_run, resume=args.resume,
                            provenance=wired.get("provenance"), campaign=campaign, campaign_commit=_head_commit(),
-                           provider_calls=wired.get("provider_calls"), extras_path=args.extras, enforce_isolation=True)
+                           provider_calls=wired.get("provider_calls"), extras_path=args.extras, enforce_isolation=True,
+                           max_cases=args.max_cases)
         except (LedgerRefused, LedgerError) as refusal:
             raise SystemExit(f"Refusing to run: {refusal}") from None
         finally:
             if callable(wired.get("close")):
                 wired["close"]()
-        print(json.dumps({"campaign_ledger": campaign.summary(), **{k: manifest[k] for k in ("status", "counts", "ledger", "extras")}},
+        print(json.dumps({"campaign_ledger": campaign.summary(), **{k: manifest[k] for k in ("status", "progress", "counts", "ledger", "extras")}},
                          indent=1, default=str))
     elif args.cmd == "score":
         from stage3_eval.canary import TruthScanner

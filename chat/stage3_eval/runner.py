@@ -19,6 +19,12 @@ scoring; tested). When the run ends its manifest records whether such a variable
 module is loaded in the process; from the command line either makes the run invalid. After each case its captured
 surfaces and its arms' outputs are screened for canary-shaped and mechanism-id-shaped tokens, and a hit stops the run. A dry run reserves nothing, calls no model and no
 backend case runner, and still writes the ledger plan, the case list and the free baselines.
+
+A run can be taken in parts (max_cases, `--max-cases N` on the command line): it stops before starting case N + 1 of
+the pre-registered order, counting every case settled in this run directory, whatever any case answered. Such a run
+is "paused": no reservation is open, the campaign ledger holds the calls committed so far, no extra has run, and
+`--resume` (with a larger N, or none) carries on from case N + 1. Each settled case is one line of settled.jsonl, so
+a resumed run neither captures nor reconciles it a second time.
 """
 from dataclasses import replace
 from datetime import datetime, timezone
@@ -143,7 +149,7 @@ def _previous_results(out_dir, phase):
 
 def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, capture=None, extras_arms=None, dry_run=False,
         resume=False, provenance=None, campaign=None, campaign_commit=None, provider_calls=None, extras_path=None,
-        enforce_isolation=False):
+        enforce_isolation=False, max_cases=None):
     """Run every arm over the selection. arms: {"agent": AgentArm, "notools": NoToolsArm, "rulecode": ..., "symptom": ...};
     extras_arms: {"cross_shipment_ablation": AgentArm (cross-shipment tools disabled), "stability_rerun": AgentArm}.
     provenance: a dict, or a callable returning one, called when the run has finished (so it can report the model calls
@@ -161,17 +167,32 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
     enforce_isolation: the command line sets it. The manifest always records the truth variables set and the truth-side
     modules loaded when the run ends; with this flag a loaded truth-side module makes the run invalid (a test process
     has them loaded for its own scoring, so the flag is off by default). A truth variable set at the end always does.
+    max_cases: stop before starting case max_cases + 1 of the selection's order (cases settled by earlier attempts in
+    this directory count). The stop reads nothing but that number and the position in the order. The run then ends
+    with status "paused": no extra runs, the run-level surfaces are captured as of the pause, and the campaign entry
+    is settled at the calls committed so far (a resume reserves the run's maximum again).
     Returns the run manifest (also written to <out_dir>/run_manifest.json)."""
     refuse_truth_environment()
     selection, selection_sha = load_selection(selection_path)
     if selection["sealed_config_hash"] != sealed_hash(config):
         raise ValueError("the configuration differs from the one the selection was sealed with (amendment 1, H)")
+    if max_cases is not None and (isinstance(max_cases, bool) or not isinstance(max_cases, int) or max_cases < 1):
+        raise ValueError("max_cases must be a whole number of cases, one or more")
     missing = [a for a in MAIN_ARM_ORDER if a not in arms]
     if missing:
         raise ValueError(f"every arm runs on the same cases; missing: {missing}")
     out = Path(out_dir)
     if out.exists() and any(out.iterdir()) and not resume:
         raise FileExistsError(f"{out} is not empty; every attempt gets its own directory (and is disclosed)")
+    # What the earlier attempts in this directory left: their manifest (kept as an earlier segment of this run) and
+    # the cases they settled. Read before anything is written.
+    earlier_manifest = None
+    if resume and (out / "run_manifest.json").exists():
+        earlier_manifest = json.loads((out / "run_manifest.json").read_text(encoding="utf-8"))
+    settled_before = []
+    if resume and (out / "settled.jsonl").exists():
+        settled_before = [json.loads(line) for line in (out / "settled.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
+    settled_keys = {row["key"] for row in settled_before}
     campaign_run = f"stage3 run {out.name} selection {selection_sha[:12]}"
     if campaign is not None:
         if dry_run:
@@ -188,8 +209,9 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
     if resume and (out / "cases.jsonl").exists():
         written_cases = {json.loads(line)["key"] for line in (out / "cases.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()}
     status, counts = "completed", {"cases": 0, "not_opened": 0, "budget_refused": 0, "arm_errors": 0}
-    screened = {"cases_screened_for_truth_markers": 0, "run_level_marker_hits": 0}
+    screened = {"cases_screened_for_truth_markers": sum(1 for row in settled_before if row.get("screened")), "run_level_marker_hits": 0}
     refs, agent_t = {}, {}
+    total, settled_count, paused = len(selection["cases"]), 0, False
     # The provider's count starts at this process; so does the ledger's side of the comparison (a resumed ledger already
     # holds the earlier attempt's calls, crash recoveries included).
     reconcile = None
@@ -197,7 +219,12 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
         base_ledger, base_provider = ledger.committed, int(provider_calls())
         reconcile = lambda key, phase="main": ledger.reconcile(key, int(provider_calls()) - base_provider, ledger.committed - base_ledger, phase=phase)
     try:
-        for row in selection["cases"]:
+        for index, row in enumerate(selection["cases"]):
+            if max_cases is not None and index >= max_cases:
+                # The only stopping rule: the count given by the caller. Before the next case is asked for, so the
+                # backend's clock has not moved towards it and nothing is reserved for it.
+                paused = True
+                break
             key, world, sid = row["key"], row["world"], row["shipment_id"]
             counts["cases"] += 1
             ref = case_source.case_ref(world, sid)
@@ -214,6 +241,9 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
             for name in MAIN_ARM_ORDER:
                 if (key, name) in done:
                     results[name] = done[(key, name)]
+                    # What an earlier attempt counted for this case stays counted.
+                    counts["budget_refused"] += done[(key, name)].not_run == "budget_refused"
+                    counts["arm_errors"] += str(done[(key, name)].failure_mode or "").startswith("arm_error:")
                     continue
                 arm = arms[name]
                 if (key, name) in ledger.done:
@@ -232,7 +262,8 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
                 writer.result(result)
             if results.get("agent") is not None and results["agent"].as_of:
                 agent_t[key] = results["agent"].as_of
-            if ref is not None and not dry_run:
+            was_screened = ref is not None and not dry_run
+            if was_screened and key not in settled_keys:
                 # Screened as the run goes (shapes only; the scorer's scan with the vocabulary is the verdict): a canary
                 # or a mechanism id in anything this case was shown or produced stops the run here, after it is written.
                 found = {"arm_outputs": sum(marker_hits(r.to_dict()) for r in results.values())}
@@ -242,14 +273,25 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
                 found = {surface: n for surface, n in sorted(found.items()) if n}
                 if found:
                     raise RunStopped(f"truth marker in the captured surfaces of {key} (hits by surface: {found})")
-            if reconcile is not None:
-                reconcile(key)
-        # Only now: every main-test arm has answered, so nothing in the extras lists can reach the main test.
-        extras_plan = load_extras(extras_path, selection_sha) if extras_path else {}
-        extras = _run_extras(extras_plan, refs, agent_t, extras_arms or {}, ledger, writer, dry_run, counts, reconcile)
+            if key not in settled_keys:
+                if reconcile is not None:
+                    reconcile(key)
+                writer.append("settled.jsonl", {"order": index, "key": key, "screened": was_screened})
+                settled_keys.add(key)
+            settled_count += 1
+        if paused:
+            # No extras: their lists are opened only after the last main-test case, and that case has not run.
+            status, extras = "paused", {}
+        else:
+            # Only now: every main-test arm has answered, so nothing in the extras lists can reach the main test.
+            extras_plan = load_extras(extras_path, selection_sha) if extras_path else {}
+            extras = _run_extras(extras_plan, refs, agent_t, extras_arms or {}, ledger, writer, dry_run, counts, reconcile)
         if capture is not None and not dry_run:
+            # A pause captures the run-level surfaces too (this process's log lines exist nowhere else), under its own
+            # label, so an interim scan covers everything served so far.
+            label = f"paused_after_{settled_count:04d}" if paused else "run"
             for surface, items in (capture.capture_run() or {}).items():
-                screened["run_level_marker_hits"] += writer.capture(surface, "run", items)
+                screened["run_level_marker_hits"] += writer.capture(surface, label, items)
             if screened["run_level_marker_hits"]:
                 status = f"invalid: {screened['run_level_marker_hits']} truth markers in the run-level captured surfaces"
     except CapViolation as exc:
@@ -267,6 +309,10 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
                 "sealed_config_hash": selection["sealed_config_hash"], "config": config.as_dict(),
                 "arms": {k: {"worst_case": v.worst_case(), "uses_model": v.uses_model} for k, v in arms.items()},
                 "counts": counts, "extras": extras, "ledger": ledger.summary(), "isolation": isolation,
+                "progress": {"paused": paused, "cases_settled": settled_count, "cases_total": total, "max_cases": max_cases,
+                             "order": "pre-registered (selection.json)",
+                             "stop_rule": "the case count given to the run; no result is read" if max_cases is not None else None},
+                "earlier_segments": _earlier_segments(earlier_manifest),
                 "provenance": (provenance() if callable(provenance) else provenance) or {}}
     if campaign is not None and not dry_run:
         # Committed, not only settled: a reservation still open here (there is none on a clean finish) counts in full.
@@ -274,6 +320,18 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
         manifest["campaign_ledger"] = {"run": campaign_run, "calls": settled["calls"], "reserved": settled.get("reserved")}
     (out / "run_manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
     return manifest
+
+
+def _earlier_segments(manifest):
+    """The attempts this run directory already held, oldest first: what each ended as and its own provenance (the
+    model calls its process counted), so a run taken in parts is validated over all of them."""
+    if not manifest:
+        return []
+    progress = manifest.get("progress") or {}
+    return list(manifest.get("earlier_segments") or []) + [{
+        "status": manifest.get("status"), "started_at": manifest.get("started_at"), "finished_at": manifest.get("finished_at"),
+        "cases_settled": progress.get("cases_settled"), "max_cases": progress.get("max_cases"),
+        "committed_calls": (manifest.get("ledger") or {}).get("committed_calls"), "provenance": manifest.get("provenance") or {}}]
 
 
 def _whole(value, name):

@@ -11,6 +11,10 @@ Correct answers are also split by level, per arm and per cell, and never pooled 
 - abstention: a correct INSUFFICIENT_EVIDENCE or UNKNOWN on a case not knowable at t (unless an opening symptom maps
   to that code, which is observation level by the same rule).
 The three add up to the cell's correct count. The pass bars are unchanged: they stay on plain accuracy.
+
+A run paused by its case count (`run --max-cases N`) is reported as an interim look: the title and a paragraph say
+how many cases of the pre-registered order it covers and of how many, the pass bars show their counts with no
+verdict (the fixed test is on the whole sample), and the validity verdict says interim.
 """
 from collections import Counter, defaultdict
 import json
@@ -88,9 +92,26 @@ def _cell_rows(scores, world, stratum, arm):
     return [r for r in scores if r["world"] == world and r["stratum"] == stratum and r["arm"] == arm and r.get("phase", "main") == "main"]
 
 
+INTERIM_VERDICT = "interim (no verdict)"
+
+
+def interim_look(run_manifest):
+    """None, or what an interim report must state: the run was paused by its case count after the first N cases of
+    the pre-registered order, of how many."""
+    progress = (run_manifest or {}).get("progress") or {}
+    if not progress.get("paused"):
+        return None
+    n, total = progress.get("cases_settled"), progress.get("cases_total")
+    return {"cases_settled": n, "cases_total": total, "max_cases": progress.get("max_cases"),
+            "statement": f"Interim look over the first {n} of {total} cases in the pre-registered order. The run was paused by the case "
+                         "count given on its command line (no result was read to decide the stop), no extra has run, and "
+                         "this is not the evaluation's result: the pass bars are tested once, on the whole sample."}
+
+
 def build_report(selection, *, scores=None, run_manifest=None, ledger_summary=None, canary=None, pairs=None):
     scores = scores or []
     dry = not scores
+    interim = interim_look(run_manifest)
     alloc = selection["allocation"]
     planned = defaultdict(int)
     for c in selection["cases"]:
@@ -126,10 +147,12 @@ def build_report(selection, *, scores=None, run_manifest=None, ledger_summary=No
             entry["result"] = p
             if not p["n"]:
                 entry["verdict"] = "not run"
+            elif interim:
+                entry["verdict"] = INTERIM_VERDICT      # the counts are shown; the fixed test is on the whole sample
             else:
                 entry["verdict"] = "PASS" if (p["mcnemar_p"] < bar["alpha"] and p["agent_only"] > p["baseline_only"]) else "FAIL"
         bars.append(entry)
-    report = {"schema": "stage3-report-1", "dry_run": dry, "selection_n": len(selection["cases"]), "n_main": selection.get("n_main"),
+    report = {"schema": "stage3-report-1", "dry_run": dry, "interim": interim, "selection_n": len(selection["cases"]), "n_main": selection.get("n_main"),
               "sealed_config_hash": selection["sealed_config_hash"], "pass_bars": bars, "cells": cells, "release_bar": RELEASE_BAR,
               "history": HISTORY_ONLY, "ledger": ledger_summary or (run_manifest or {}).get("ledger"), "canary": canary,
               "validity": _validity(selection, run_manifest, canary, scores)}
@@ -145,18 +168,23 @@ def _validity(selection, manifest, canary, scores):
     if not manifest:
         return {"verdict": "not run"}
     reasons = []
-    prov = manifest.get("provenance") or {}
-    calls = prov.get("model_calls") or {}
-    ok = sum((calls.get("succeeded") or {}).values())
-    failed = sum((calls.get("failed") or {}).values())
+    # A run taken in parts (paused and resumed) is judged over every part: each process counted its own model calls.
+    earlier = manifest.get("earlier_segments") or []
+    provs = [s.get("provenance") or {} for s in earlier] + [manifest.get("provenance") or {}]
+    ok = sum(sum(((p.get("model_calls") or {}).get("succeeded") or {}).values()) for p in provs)
+    failed = sum(sum(((p.get("model_calls") or {}).get("failed") or {}).values()) for p in provs)
     rate = failed / (ok + failed) if (ok + failed) else None
+    interim = interim_look(manifest)
     if rate is not None and rate > PROVIDER_FAILURE_LIMIT:
         reasons.append(f"provider failures {round(100 * rate, 1)}% of calls (limit {int(100 * PROVIDER_FAILURE_LIMIT)}%)")
-    if manifest.get("status") != "completed":
+    if manifest.get("status") != "completed" and not (interim and manifest.get("status") == "paused"):
         reasons.append(f"run did not complete: {manifest.get('status')}")
+    not_paused = [str(s.get("status")) for s in earlier if s.get("status") != "paused"]
+    if not_paused:
+        reasons.append(f"an earlier part of this run did not end as paused: {'; '.join(not_paused)}")
     if manifest.get("sealed_config_hash") != selection["sealed_config_hash"]:
         reasons.append("configuration hash differs from the sealed selection")
-    if prov.get("dirty_tree") or prov.get("tree_changed_during_run"):
+    if any(p.get("dirty_tree") or p.get("tree_changed_during_run") for p in provs):
         reasons.append("code tree dirty or changed during the run")
     if canary and canary.get("verdict") == "invalid":
         reasons.append("canary or truth vocabulary found in a runtime surface")
@@ -166,8 +194,16 @@ def _validity(selection, manifest, canary, scores):
         return {"verdict": "dry run (no calls; nothing to validate)", "reasons": reasons}
     incomplete = canary is None or canary.get("verdict") == "incomplete"
     verdict = "invalid" if reasons else ("valid pending a complete canary scan" if incomplete else "valid")
-    return {"verdict": verdict, "reasons": reasons, "provider_failure_rate": _pct(rate),
-            "canary_missing_surfaces": (canary or {}).get("missing_surfaces")}
+    out = {"verdict": verdict, "reasons": reasons, "provider_failure_rate": _pct(rate),
+           "canary_missing_surfaces": (canary or {}).get("missing_surfaces")}
+    if interim and not reasons:
+        out["verdict"] = (f"interim: paused after {interim['cases_settled']} of {interim['cases_total']} cases, not a final result"
+                          + (" (canary scan not complete)" if incomplete else " (nothing invalid so far)"))
+    if earlier:
+        # Disclosed, not judged here: a commit made between two parts (the interim report itself, say) changes this.
+        out["parts"] = len(provs)
+        out["commits_across_parts"] = sorted({str(p["commit"]) for p in provs if p.get("commit")})
+    return out
 
 
 def _details(scores, pairs):
@@ -277,8 +313,13 @@ def _fmt_acc(a):
 
 
 def render_markdown(report):
-    lines = ["# Stage 3 blind evaluation report" + (" (dry-run skeleton)" if report["dry_run"] else ""), "",
+    interim = report.get("interim")
+    title = "# Stage 3 blind evaluation report"
+    if interim:
+        title += f" (INTERIM: first {interim['cases_settled']} of {interim['cases_total']} cases in the pre-registered order)"
+    lines = [title + (" (dry-run skeleton)" if report["dry_run"] else ""), "",
              "All data is synthetic. Nothing here describes real SPL operations.", "",
+             *([f"**{interim['statement']}**", ""] if interim else []),
              f"Sealed configuration: `{report['sealed_config_hash'][:16]}`. Cases selected: {report['selection_n']} (N_main {report['n_main']}).", ""]
     lines += ["## Pass bars (fixed before any case existed)", "", "| Bar | Cell | Test | Verdict | Agent only / baseline only | p |", "|---|---|---|---|---|---|"]
     for b in report["pass_bars"]:

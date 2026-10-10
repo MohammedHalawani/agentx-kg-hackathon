@@ -177,6 +177,15 @@ python -m stage3_eval report --selection .../selection.json --run <run dir>
 at the crash is counted at its worst case and its case is scored as degraded. Every attempt, valid or not, keeps its
 own directory and is disclosed (amendment 1, H).
 
+`--max-cases N` takes step 4 in parts: the run stops before starting case N + 1 of the selection's order (settled
+cases of the directory count; N is the only thing the stop reads), with status `paused`, no extras, and the campaign
+ledger holding the calls committed so far. Continue with `--resume --max-cases M` (M > N) or `--resume` alone, in the
+same directory and on the same live session (the wiring's `--resume` rule; do not reset the session or start another
+run in between: the pause frees the unspent budget and the resume must be able to reserve it again). Step 5 works on
+a paused run and labels its report an interim look over the first N of the total cases (README, "Taking the run in
+parts"). The wiring needs no change: a resumed run asks `case_ref` for the settled cases again (the clock does not
+move for them) and calls `capture_case` only for cases it settles itself; `capture_run` is also called at a pause.
+
 ## 9. What must not happen
 
 - **No truth readable from any arm.** The run process never gets a truth path: `SUHAIL_EVAL_TRUTH_ROOT`,
