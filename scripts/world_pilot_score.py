@@ -189,6 +189,15 @@ def main(argv=None):
             raise SystemExit(str(error))
     scored["scoring"] = {"script": "scripts/world_pilot_score.py", "split": args.split, "truth_rows": len(truth),
                          "truth_schema": next(iter(truth.values()), {}).get("truth_schema"), "database": database}
+    # Truth-derived fields never enter the repository: the full scoring goes under the truth directory, and the file
+    # next to the results keeps only the verdict per case and the summary.
+    full = Path(args.truth_dir) / "pilot_scores" / (Path(args.results).stem + ".scored.full.json")
+    full.parent.mkdir(parents=True, exist_ok=True)
+    full.write_text(json.dumps(scored, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    for case in scored["cases"]:
+        if isinstance(case.get("score"), dict):
+            case["score"] = {"verdict": case["score"].get("verdict")}
+    scored["scoring_note"] = "Truth-derived fields are kept outside the repository; only the verdict per case is committed."
     out.write_text(json.dumps(scored, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     print(json.dumps({"out": str(out), **scored["summary"]}))
 
