@@ -8,9 +8,11 @@ const diagnosis = (over: Partial<Diagnosis> = {}): Diagnosis => ({ available: tr
 const signals = (codes: string[], ids: string[] = []): RuleSignals => ({ kind: 'rule_signals', is_diagnosis: false, source: 'deterministic_evidence_rules', as_of: '2026-09-12T08:00:00Z', signals: codes.map(code => ({ code, evidence_ids: ids, summary_en: 'Rule text.' })), expected_vs_actual: [] })
 vi.mock('@/hooks/useFetch', () => ({ useFetch: () => ({ data: mock.data, loading: false, error: null, refetch: mock.refetch }) }))
 vi.mock('@/lib/operationsClient', () => ({ operationsPost: mock.post }))
+const pipeline = vi.hoisted(() => ({ live: null as null | { events: []; status: string; workflow_state: string; state_version: number; run_id?: string } }))
+vi.mock('@/hooks/useCasePipeline', () => ({ useCasePipeline: () => ({ live: pipeline.live, unavailable: false }) }))
 vi.mock('@/components/artifacts/Graph', () => ({ Graph: ({ highlightedIds }: { highlightedIds?: string[] }) => <div data-testid="highlighted-graph" data-ids={highlightedIds?.join(',')}>Evidence graph</div> }))
 vi.mock('@/components/operations/ShipmentRouteMap', () => ({ ShipmentRouteMap: ({ highlightedIds }: { highlightedIds?:string[] }) => <div data-testid="highlighted-map" data-ids={highlightedIds?.join(',')}>Route evidence preview</div> }))
-beforeEach(() => { vi.clearAllMocks(); localStorage.clear(); mock.post.mockResolvedValue({}); mock.data.workflow_state = 'AWAITING_APPROVAL'; mock.data.diagnosis = undefined; mock.data.rule_signals = undefined; mock.data.outcome = null; mock.data.recommendation = { action_en: 'Compare bound custody evidence' }; mock.data.pipeline = undefined; mock.data.synthetic = true; mock.data.evidence = { nodes: [], edges: [] } })
+beforeEach(() => { vi.clearAllMocks(); localStorage.clear(); pipeline.live = null; mock.data.run = undefined; mock.data.executions = undefined; mock.data.last_run_id = undefined; mock.post.mockResolvedValue({}); mock.data.workflow_state = 'AWAITING_APPROVAL'; mock.data.diagnosis = undefined; mock.data.rule_signals = undefined; mock.data.outcome = null; mock.data.recommendation = { action_en: 'Compare bound custody evidence' }; mock.data.pipeline = undefined; mock.data.synthetic = true; mock.data.evidence = { nodes: [], edges: [] } })
 describe('Case lifecycle authority', () => {
   it('uses ledger state rather than fresh inferred OPEN and approves without resolving', async () => {
     render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
@@ -78,6 +80,47 @@ describe('Case lifecycle authority', () => {
     render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
     expect(screen.getByRole('button', { name: 'Approve action' }).hasAttribute('disabled')).toBe(true)
     expect(screen.getByTestId('approval-blocked').textContent).toContain('A person carries out this action')
+  })
+  it('names the recorded reason a case is with a person, not a fixed evidence-conflict line', () => {
+    mock.data.workflow_state = 'HUMAN_REVIEW'
+    for (const [rule, text] of [
+      ['AUTH-04-contractor-custody', /contractor or independent driver/],
+      ['AUTH-14-symptom-floor', /observed symptom reserves this case/],
+      ['AUTH-23-physical-check-requested', /asked for a physical check/],
+      ['AUTH-06-evidence-conflict', /evidence conflict remains/],
+      ['AUTH-99-something-new', /see the recorded authority decision/],
+    ] as const) {
+      mock.data.run = { result: { authority: { rule_id: rule, risk_class: 'HUMAN_REVIEW' } } }
+      const { unmount } = render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
+      expect(screen.getByTestId('human-reason').textContent).toMatch(text)
+      if (rule !== 'AUTH-06-evidence-conflict') expect(screen.getByTestId('human-reason').textContent).not.toMatch(/evidence conflict/)
+      unmount()
+    }
+    mock.data.outcome = { verification_status: 'VERIFIED', success: true, exception_cleared: false, remaining_symptoms: ['DELIVERY_ATTEMPT_FAILED'] }
+    const { unmount } = render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
+    expect(screen.getByTestId('human-reason').textContent).toMatch(/verified, but the exception remains/)
+    unmount()
+    mock.data.outcome = null
+    mock.data.executions = [{ action_type: 'REQUEST_RESCAN', authority: 'OPERATOR_APPROVAL', status: 'REFUSED', permission_rule: 'AUTH-20-approval-context-stale' }]
+    render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
+    expect(screen.getByTestId('human-reason').textContent).toMatch(/refused the action/)
+  })
+  it('shows no review or diagnosis as current while a newer investigation runs', () => {
+    mock.data.workflow_state = 'AWAITING_APPROVAL'
+    mock.data.last_run_id = 'SYN-OPS-RUN-OLD'
+    mock.data.review = { verdict: 'accept', reason_code: 'MODEL_ACCEPT', feedback: 'Supported by the cited scans.' }
+    mock.data.diagnosis = diagnosis({ run_id: 'SYN-OPS-RUN-OLD' })
+    mock.data.pipeline = { topology: { engine: 'langgraph', mode: 'agent_tool_loop', nodes: ['extract'], edges: [], retry_limit: 2 }, source: 'recorded_stage_events', status: 'REVIEWED', events: [] }
+    const { unmount } = render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
+    expect(screen.getByTestId('review-verdict')).toBeTruthy()
+    expect(screen.getByTestId('diagnosis-primary').textContent).toBe('Delayed device synchronization')
+    unmount()
+    pipeline.live = { events: [], status: 'RUNNING', workflow_state: 'INVESTIGATING', state_version: 9, run_id: 'SYN-OPS-RUN-NEW' }
+    render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
+    expect(screen.queryByTestId('review-verdict')).toBeNull()
+    expect(screen.queryByText('Supported by the cited scans.')).toBeNull()
+    expect(screen.getByTestId('diagnosis-absent').textContent).toMatch(/An investigation is running now/)
+    mock.data.review = undefined
   })
   it('explains each approval refusal the backend recheck returns', () => {
     mock.data.recommendation_id = 'REC-1'

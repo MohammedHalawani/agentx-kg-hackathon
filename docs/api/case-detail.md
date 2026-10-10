@@ -30,7 +30,8 @@ reviewed GPT-OSS agent investigation fills it. Rule output never does.
 | `tool_calls` | Number of evidence queries the investigator made. |
 | `snapshot_superseded` | Evidence kept arriving during the run; the case went to a person. |
 
-While a newer run is queued or running, the earlier diagnosis is not served as current.
+While a newer run is queued or running, the earlier diagnosis is not served as current, and neither
+is its review: `review` is `null` until the new run has been reviewed.
 
 ## `rule_signals`: deterministic rule checks, labelled, with their own as-of time
 

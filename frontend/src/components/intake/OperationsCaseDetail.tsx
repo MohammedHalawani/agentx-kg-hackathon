@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/button'
 import { AskSuhailPanel } from '@/components/operations/AskSuhailPanel'
 import { notifyOperator, OperatorToastRegion } from '@/components/operations/OperatorToast'
 import { AgentProse } from '@/components/i18n/AgentProse'
+import { absentDiagnosis } from '@/lib/humanReviewReason'
 
 const SECTIONS = ['overview', 'evidence', 'diagnosis', 'recommendation', 'review', 'map', 'history'] as const
 /** Why approval is unavailable, by the authority rule the backend's recheck returned. */
@@ -86,7 +87,12 @@ export function OperationsCaseDetail({ caseId, shipmentId, onBack }: { caseId?: 
   useCompactSidebar()
   const { data: fetched, loading, error, refetch } = useFetch<ShipmentDetail>(caseId ? `/cases/${encodeURIComponent(caseId)}` : `/shipments/${encodeURIComponent(shipmentId)}/context`, true)
   const { live, unavailable } = useCasePipeline(caseId, refetch, fetched?.state_version)
-  const data = useMemo(() => fetched && live && fetched.pipeline ? { ...fetched, pipeline: { ...fetched.pipeline, events: live.events.length ? live.events : fetched.pipeline.events, status: live.status } } : fetched, [fetched, live])
+  const data = useMemo(() => {
+    const merged = fetched && live && fetched.pipeline ? { ...fetched, pipeline: { ...fetched.pipeline, events: live.events.length ? live.events : fetched.pipeline.events, status: live.status } } : fetched
+    // A newer investigation is running: the fetched review and diagnosis belong to the earlier run and are not current.
+    const newer = !!merged && !!live && (live.status === 'RUNNING' || (!!live.run_id && !!fetched?.last_run_id && live.run_id !== fetched.last_run_id))
+    return newer && merged ? { ...merged, review: null, diagnosis: absentDiagnosis('investigation_in_progress', live?.run_id ?? null) } : merged
+  }, [fetched, live])
   const [pinnedStage, setPinnedStage] = useState<InspectStage | null>(null)
   // Evidence chosen from the Evidence tab overrides stage emphasis until a stage is inspected again.
   const [focusIds, setFocusIds] = useState<string[] | null>(null)

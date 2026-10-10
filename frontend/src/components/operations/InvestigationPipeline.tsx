@@ -27,6 +27,8 @@ function Glyph({ status }: { status: StepStatus }) {
 /** Which engine actually produced a stage: model roles only when the recorded event says so. */
 function engineKey(step: string, agent?: string): string {
   if (agent === 'deterministic_fallback') return 'fallback'
+  if (agent === 'model_unavailable') return 'modelUnavailable'
+  if (agent === 'invalid_model_output') return 'invalidOutput'
   if (agent === 'gpt-oss') return step === 'diagnose' ? 'investigator' : step === 'recommend' ? 'planner' : 'reviewer'
   if (agent === 'authority_policy') return 'authority'
   return ({ collect: 'rules', graph: 'neo4j', diagnose: 'rules', precedent: 'graphrag', recommend: 'rules', review: 'guard', route: 'routing', outcome: 'verifier' } as Record<string, string>)[step] ?? 'rules'

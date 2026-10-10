@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { PipelineEvent } from '@/contracts/caseDetail'
 
 export function useCasePipeline(caseId: string | undefined, refetch: () => void, stateVersion?: number) {
-  const [live, setLive] = useState<{ events: PipelineEvent[]; status:string; workflow_state:string; state_version:number } | null>(null)
+  const [live, setLive] = useState<{ events: PipelineEvent[]; status:string; workflow_state:string; state_version:number; run_id?: string | null } | null>(null)
   const [unavailable, setUnavailable] = useState(false)
   const version = useRef<number | undefined>(undefined)
   const refreshedVersion = useRef<number | undefined>(undefined)
