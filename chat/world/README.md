@@ -242,6 +242,20 @@ driver and vehicle and the job the parcel was dispatched on (`assignment_id`), s
 not an empty field. Custody DELIVERED always names the consignee; the
 HandoffEvidence names who physically took the parcel. No code value is ever stored.
 
+Recipient messages (RecipientReport `statement_en` / `statement_ar`; review finding N2). What a message says follows
+what physically happened to that parcel in the private simulation; only the wording is drawn (`observe.STATEMENTS`,
+two to four texts per situation, and three in ten messages say only the plain thing). The simulator keeps, privately,
+how each shipment left the network (`physical.received`: when, into whose hands, whether the recipient was home). A
+confirmation says "a neighbour passed it to me" only when someone next door took the parcel, and likewise for a
+family member, the reception, the door and another building; a non-receipt report says the writer was home or out as
+they were, and says tracking shows a delivery only once the delivery record had arrived; "late" and "was due" are
+written only after the promise; every day a text names ("yesterday", "on Sunday", "after Monday") is the real day of
+the handover, the promise, the failed attempt or the end of the absence; an address message says "I moved" for an
+outdated address and "a more exact pin" for a refinement. Nobody asks where a parcel is after it was handed over,
+thanks for a parcel that went elsewhere, or confirms and then reports non-receipt. A customer's own non-receipt claim
+on a parcel their household received contradicts the handover by its nature and gets only the plain wording. No text
+names a mechanism, a cause code or an action (tested); the tell detector does not read free text (`SKIP_FIELDS`).
+
 ## 5. Truth labels and physical state (`truth.py`, `export.py`; never imported, never in the repository)
 
 Two private outputs, kept apart (addendum B1) and both outside the repository. `truth_directory` and `state_directory`

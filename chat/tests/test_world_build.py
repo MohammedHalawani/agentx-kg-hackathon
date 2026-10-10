@@ -522,6 +522,199 @@ class WorldBuildTests(unittest.TestCase):
             allowed = {default_action(c) for c in by_specificity(case.properties["codes"])}
             self.assertIn(rec.properties["action_type"], allowed)
 
+    # ------------------------------------------------------------------ recipient messages (review finding N2)
+    WEEKDAY_NAMES = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+    # What a recipient's text says about who took the parcel -> who may physically have taken it (this test's own
+    # reading of the English text, checked against the simulator's parcel timeline and person acts).
+    TAKER_CLAIMS = ((("neighbour", "next door"), {"NEIGHBOUR_AUTHORIZED", "NEIGHBOUR_UNAUTHORIZED"}),
+                    (("family member", "someone at home"), {"FAMILY"}),
+                    (("reception", "front desk"), {"RECEPTION"}),
+                    (("at my door", "by the door", "handed me"), {"SELF"}),
+                    (("another building", "nearby building"), {"OCCUPANT"}))
+    HOME_CLAIMS = (("i was home", "we were in"), ("i was out", "nobody was home", "i came back"))
+    SHOWN_DELIVERED = ("says delivered", "shows as delivered", "marked delivered", "shows delivered")
+    LATE_CLAIMS = ("is late", "was due", "was expected")
+    MOVED_CLAIMS, REFINED_CLAIMS = ("i moved", "needs updating", "outdated"), ("more exact pin", "entrance", "updated pin")
+    AWAY_CLAIMS, ASKED_CLAIMS = ("travelling", "i am away"), ("told the driver", "could not take")
+
+    def physical_handover(self):
+        """sid -> (first instant a parcel of the shipment passed to a person, who took it), from the private timeline."""
+        sim = self.build.sim
+        roles = {a["person"]: a["role"] for a in sim.acts if a["type"] == "person"}
+        out = {}
+        for sid, s in self.build.shipments.items():
+            rows = sorted((row[0], row[2]) for p in s.parcels for row in sim.p[p.pid].timeline if row[1] == "PERSON")
+            if rows:
+                when, ref = rows[0]
+                out[sid] = (when, "SELF" if ref == s.recipient_id else "OCCUPANT" if str(ref).startswith("PRIVATE-OCCUPANT") else roles[ref])
+        return out
+
+    def named_day(self, text, written):
+        """The local date a statement's day words name, or None when it names none."""
+        from world.config import local_date
+        today = local_date(written)
+        lowered = text.lower()
+        if "two days ago" in lowered:
+            return today - timedelta(days=2)
+        if "yesterday" in lowered:
+            return today - timedelta(days=1)
+        if re.search(r"\btoday\b", lowered):
+            return today
+        found = re.search(r"\bon (%s)\b" % "|".join(self.WEEKDAY_NAMES), text)
+        if found:
+            back = (today.weekday() - self.WEEKDAY_NAMES.index(found.group(1))) % 7 or 7
+            return today - timedelta(days=back)
+        return None
+
+    def assert_statement_is_physical(self, sid, code, text, written, handover, context=""):
+        """One statement against what happened to that shipment's parcel in the private simulation."""
+        from world.config import local_date
+        sim, s = self.build.sim, self.build.shipments[sid]
+        lowered, where = text.lower(), (sid, code, text, context)
+        taken = handover.get(sid)
+        if taken and taken[0] > written:
+            taken = None
+        for words, takers in self.TAKER_CLAIMS:
+            if any(w in lowered for w in words):
+                self.assertTrue(taken and taken[1] in takers, where)
+        at_home, out = (any(w in lowered for w in words) for words in self.HOME_CLAIMS)
+        if at_home or out:
+            self.assertTrue(taken and taken[1] not in ("SELF", "FAMILY"), where)
+            self.assertEqual(sim.received[sid]["at_home"], at_home, where)
+            if taken[1].startswith("NEIGHBOUR"):
+                self.assertTrue(out, where)     # A parcel goes next door only when the recipient is out.
+        if code == "RECEIVED_CONFIRMATION":
+            self.assertTrue(taken, where)
+        if code == "WHERE_IS_PARCEL":
+            self.assertIsNone(taken, where)
+        if any(w in lowered for w in self.LATE_CLAIMS):
+            self.assertGreater(written, s.promise_at, where)
+        day = self.named_day(text, written)
+        if day is not None:
+            if code in ("RECEIVED_CONFIRMATION", "NOT_RECEIVED"):
+                self.assertEqual(day, local_date(taken[0]), where)
+            elif code == "WHERE_IS_PARCEL":
+                self.assertEqual(day, local_date(s.promise_at), where)
+            else:
+                asked = [a["t"] for a in sim.acts if a["type"] == "attempt" and a["sid"] == sid and a["t"] <= written
+                         and a.get("reason") == "CUSTOMER_REQUESTED_RESCHEDULE"]
+                self.assertTrue(asked and day == local_date(min(asked)), where)
+        return bool(day)
+
+    def test_recipient_statements_follow_what_physically_happened(self):
+        """Review finding N2: every exported recipient statement is consistent with the private simulation (who took
+        the parcel, whether the recipient was home, the days it names, whether tracking showed the delivery, whether
+        it is late, why an address or a day changes), is varied, and names no mechanism, cause code or action."""
+        from operations.agents import CAUSES
+        from operations.authority import ACTIONS
+        from world import observe as O
+        from world.config import local_date
+        build, sim = self.build, self.build.sim
+        handover = self.physical_handover()
+        nodes = build.world.nodes
+        reports = sorted((n for n in nodes.values() if n.kind == "RecipientReport"), key=lambda n: n.id)
+        self.assertGreater(len(reports), 30)
+        delivered_shown = defaultdict(list)
+        for n in nodes.values():
+            if n.kind == "DeliveryAttempt" and n.properties["disposition"] == "DELIVERED":
+                delivered_shown[n.properties["holdout_group"]].append(instant(n.properties["recorded_at"]))
+        minor = {a["sid"]: bool(a.get("minor")) for a in sim.acts if a["type"] == "address_v2"}
+        forbidden = set(MECHANISM_TYPES) | set(CAUSES) | set(ACTIONS) | {m.subtype for m in build.plan.items.values() if m.subtype and "_" in m.subtype}
+        templates, by_code, with_day = set(), defaultdict(set), 0
+        for n in reports:
+            p = n.properties
+            sid, code, text, written = p["holdout_group"], p["report_code"], p["statement_en"], instant(p["occurred_at"])
+            s = build.shipments[sid]
+            lowered, where = text.lower(), (n.id, code, text)
+            with_day += self.assert_statement_is_physical(sid, code, text, written, handover)
+            self.assertIn(s.tracking, text, where)
+            self.assertIn(s.tracking, p["statement_ar"], where)
+            self.assertNotRegex(text + p["statement_ar"], r"\{|\}|  | \.|W1M-", where)
+            for word in forbidden:
+                self.assertNotIn(word, text.upper(), where)
+                self.assertNotIn(word.replace("_", " "), text.upper(), where)
+            if any(w in lowered for w in self.SHOWN_DELIVERED):
+                self.assertTrue(any(t <= written for t in delivered_shown[sid]), where)
+            if code == "ADDRESS_CORRECTION":
+                self.assertEqual(any(w in lowered for w in self.REFINED_CLAIMS), minor[sid], where)
+                self.assertEqual(any(w in lowered for w in self.MOVED_CLAIMS), not minor[sid], where)
+            if any(w in lowered for w in self.AWAY_CLAIMS):
+                flag = build.plan.shipment_flag(sid, "RECIPIENT_UNAVAILABLE")
+                self.assertTrue(flag and flag[1]["start"] <= written and flag[1]["end"] - written > timedelta(days=1), where)
+                after = re.search(r"after (%s)" % "|".join(self.WEEKDAY_NAMES), text)
+                if after:
+                    self.assertEqual(after.group(1), self.WEEKDAY_NAMES[local_date(flag[1]["end"] - timedelta(days=1)).weekday()], where)
+            if any(w in lowered for w in self.ASKED_CLAIMS):
+                self.assertTrue(any(a["type"] == "attempt" and a["sid"] == sid and a["t"] <= written
+                                    and a.get("reason") == "CUSTOMER_REQUESTED_RESCHEDULE" for a in sim.acts), where)
+            template = re.sub(r"\b(today|yesterday|two days ago|on (%s))\b" % "|".join(self.WEEKDAY_NAMES), "{d}", text.replace(s.tracking, "{t}"))
+            templates.add(template)
+            by_code[code].add(template)
+        self.assertGreater(with_day, 5)
+        # Nobody reports a parcel as not received after confirming it, and nobody thanks for a parcel left elsewhere.
+        by_shipment = defaultdict(list)
+        for n in reports:
+            by_shipment[n.properties["holdout_group"]].append((instant(n.properties["occurred_at"]), n.properties["report_code"]))
+        for sid, rows in by_shipment.items():
+            codes = [code for _, code in sorted(rows)]
+            if "RECEIVED_CONFIRMATION" in codes:
+                self.assertNotIn("NOT_RECEIVED", codes[codes.index("RECEIVED_CONFIRMATION"):], sid)
+        # Varied wording: several texts per kind of message, not one sentence per situation.
+        self.assertGreaterEqual(len(templates), 15, sorted(templates))
+        for code in ("NOT_RECEIVED", "WHERE_IS_PARCEL", "RECEIVED_CONFIRMATION"):
+            self.assertGreaterEqual(len(by_code[code]), 3, (code, sorted(by_code[code])))
+        # Every wording that says something specific is one this test can read (a new wording cannot slip past it),
+        # and every situation has more than one wording.
+        readable = [w for words, _ in self.TAKER_CLAIMS for w in words] + [w for words in self.HOME_CLAIMS for w in words] + list(
+            self.SHOWN_DELIVERED + self.LATE_CLAIMS + self.MOVED_CLAIMS + self.REFINED_CLAIMS + self.AWAY_CLAIMS + self.ASKED_CLAIMS)
+        for (code, group), pool in O.STATEMENTS.items():
+            self.assertGreaterEqual(len(pool), 2, (code, group))
+            self.assertEqual(len({en for en, _ in pool}), len(pool), (code, group))
+            for en, ar in pool:
+                self.assertIn("{t}", en)
+                self.assertIn("{t}", ar)
+                self.assertEqual("{d}" in en, "{d}" in ar, en)
+                self.assertEqual("{w}" in en, "{w}" in ar, en)
+                if group not in ("ANY", "UNSEEN", "FOUND"):
+                    self.assertTrue("{d}" in en or any(w in en.lower() for w in readable), (code, group, en))
+            if group == "ANY" and code == "RECEIVED_CONFIRMATION":
+                for en, _ in pool:
+                    self.assertFalse(any(w in en.lower() for w in readable), en)
+
+    def test_a_statement_never_describes_a_handover_that_did_not_happen(self):
+        """Review finding N2 on every delivered consumer shipment, not only the few that wrote in: the confirmation
+        and the non-receipt message each recipient would send are worded from that parcel's own handover. In the
+        first builds the wording was drawn at random (4 of 5 "a neighbour passed it to me" statements sat on parcels
+        no neighbour had touched): any such statement fails here."""
+        build, sim, observer = self.build, self.build.sim, self.build.observer
+        handover = self.physical_handover()
+        said, takers = defaultdict(int), defaultdict(int)
+        for sid in sorted(sim.received):
+            s = build.shipments[sid]
+            if s.recipient_kind != "Customer":
+                continue
+            when, taker = handover[sid]
+            self.assertEqual(when, sim.received[sid]["t"], sid)
+            takers[taker] += 1
+            for hours in (5, 30, 80):
+                written = when + timedelta(hours=hours)
+                for code in ("RECEIVED_CONFIRMATION", "NOT_RECEIVED"):
+                    text, arabic = observer.statement(s, code, written)
+                    self.assert_statement_is_physical(sid, code, text, written, handover, context=hours)
+                    self.assertIn(s.tracking, arabic)
+                    for words, _ in self.TAKER_CLAIMS:
+                        if any(w in text.lower() for w in words):
+                            said[(taker, words[0])] += 1
+        self.assertGreater(takers["SELF"], 50)
+        for taker in ("NEIGHBOUR_UNAUTHORIZED", "FAMILY", "OCCUPANT"):
+            self.assertGreater(takers[taker], 0, taker)
+        # The neighbour wording occurs, and only where someone next door took the parcel.
+        neighbour = {taker: n for (taker, word), n in said.items() if word == "neighbour"}
+        self.assertTrue(neighbour)
+        self.assertLessEqual(set(neighbour), {"NEIGHBOUR_AUTHORIZED", "NEIGHBOUR_UNAUTHORIZED"}, neighbour)
+        self.assertGreater(said[("FAMILY", "family member")], 0)
+        self.assertGreater(said[("OCCUPANT", "another building")], 0)
+
     # ------------------------------------------------------------------ monitor replay
     def test_monitor_replay_measures_false_positives_and_shared_opening_symptoms(self):
         replay = self.replays["development"]
