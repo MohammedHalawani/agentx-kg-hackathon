@@ -4,7 +4,10 @@ stage3_eval/WIRING.md asks. Loaded by the harness, from chat/:
   python -m stage3_eval run   --selection .../selection.json --out RUN --wiring scripts.stage3_wiring:build [--dry-run]
   python -m stage3_eval score --selection .../selection.json --run RUN --world E1=TRUTH ... --wiring scripts.stage3_wiring:build_scorer
 
+  python -m stage3_eval checkpoint --selection .../selection.json --run RUN --wiring scripts.stage3_wiring:build_checkpoint
+
 build(config, dry_run, resume, selection) -> arms, case source, capture, extras, provenance (the run process: no truth).
+build_checkpoint(config, run_dir)         -> evidence resolver for the checkpoint of a paused run (read-only, no truth).
 build_scorer(config, run_dir)             -> ingestion log and evidence resolver (the scorer process, after the run).
 
 What the run side does, and does not do:
@@ -599,3 +602,13 @@ def build_scorer(config, *, run_dir=None, driver=None):
     return {"ingestion": WorldIngestionLog(read_times),
             "resolver": WorldResolver(read_recorded, read_tool_index(run_dir) if run_dir else {}),
             "close": (driver.close if owns_driver else None)}
+
+
+def build_checkpoint(config, *, run_dir=None, driver=None):
+    """The checkpoint of a paused run (python -m stage3_eval checkpoint): the evidence resolver over the run's own
+    databases, read-only, and the run's captured tool index. No truth: refused while a truth path variable is set, as
+    the run side is, and nothing but the databases the sealed configuration names and the run directory is read. Like
+    the scorer, it refuses a database whose live session is not the one the run manifest names (a paused session is)."""
+    _pilot().refuse_truth_access()
+    wired = build_scorer(config, run_dir=run_dir, driver=driver)
+    return {"resolver": wired["resolver"], "close": wired["close"]}

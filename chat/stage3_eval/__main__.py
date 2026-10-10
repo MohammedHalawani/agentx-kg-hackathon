@@ -25,6 +25,15 @@
   python -m stage3_eval score --selection DIR/selection.json --run RUN_DIR --world E1=TRUTH_DIR [...] --wiring MODULE:FUNCTION
       FUNCTION(config) returns {"ingestion", "resolver"}. Writes RUN_DIR/scores.jsonl and RUN_DIR/canary.json.
 
+  python -m stage3_eval checkpoint --selection DIR/selection.json --run RUN_DIR --wiring MODULE:FUNCTION [--out FILE]
+      The recorded automatic checkpoint of a paused run (run --max-cases 40, checkpoint, run --resume). Reads NO truth
+      (refused, as `run` is, while a truth variable is set): the run directory, selection.json and, through
+      FUNCTION(config, run_dir=...) -> {"resolver"}, the run's database, read-only. Writes RUN_DIR/checkpoint.json (or
+      --out FILE) with every condition and "pass": true or false; exit code 0 on pass, 3 on fail. The thresholds are
+      options (--max-degraded 0.15, --max-cap-hit 0.10, --max-provider-failures 0.05, --min-citations-valid 0.90,
+      --min-opened 0.90); the others are fixed: no evidence after a snapshot, markers clean, ledger reconciled, no
+      truth module loaded.
+
   python -m stage3_eval report --selection DIR/selection.json [--run RUN_DIR]
       Writes report.json and report.md (into RUN_DIR, or beside the selection for a skeleton).
 
@@ -171,6 +180,16 @@ def main(argv=None):
     sc.add_argument("--run", required=True)
     sc.add_argument("--world", action="append", required=True)
     sc.add_argument("--wiring", required=True)
+    cp = sub.add_parser("checkpoint")
+    cp.add_argument("--selection", required=True)
+    cp.add_argument("--run", required=True)
+    cp.add_argument("--wiring", required=True, help="MODULE:FUNCTION(config, run_dir=...) -> {'resolver'} (scripts.stage3_wiring:build_checkpoint)")
+    cp.add_argument("--out", help="where to write the checkpoint (default RUN_DIR/checkpoint.json)")
+    cp.add_argument("--max-degraded", type=float, default=None)
+    cp.add_argument("--max-cap-hit", type=float, default=None)
+    cp.add_argument("--max-provider-failures", type=float, default=None)
+    cp.add_argument("--min-citations-valid", type=float, default=None)
+    cp.add_argument("--min-opened", type=float, default=None)
     rp = sub.add_parser("report")
     rp.add_argument("--selection", required=True)
     rp.add_argument("--run")
@@ -252,6 +271,27 @@ def main(argv=None):
         if callable(wired.get("close")):
             wired["close"]()
         print(json.dumps({"scored_rows": len(rows), "canary": canary["verdict"]}, indent=1))
+    elif args.cmd == "checkpoint":
+        from stage3_eval.checkpoint import DEFAULT_THRESHOLDS, checkpoint, write_checkpoint
+        from stage3_eval.runner import refuse_truth_environment
+        try:
+            refuse_truth_environment()        # as `run`: BEFORE the wiring opens a database or anything else is read
+        except RuntimeError as refusal:
+            raise SystemExit(f"Refusing to checkpoint: {refusal}") from None
+        config, _selection = _config(args.selection)
+        given = {"degraded_max": args.max_degraded, "cap_hit_max": args.max_cap_hit, "provider_failures_max": args.max_provider_failures,
+                 "citations_all_valid_min": args.min_citations_valid, "opened_min": args.min_opened}
+        thresholds = {**DEFAULT_THRESHOLDS, **{k: v for k, v in given.items() if v is not None}}
+        wired = _call_wiring(_wiring(args.wiring), config, run_dir=args.run)
+        try:
+            document = checkpoint(args.selection, args.run, resolver=wired.get("resolver"), thresholds=thresholds)
+        finally:
+            if callable(wired.get("close")):
+                wired["close"]()
+        path = write_checkpoint(document, args.out or Path(args.run) / "checkpoint.json")
+        print(json.dumps({"checkpoint": str(path), "pass": document["pass"], "failed": document["failed"],
+                          "cases_settled": document["cases_settled"], "measures": document["measures"]}, indent=1, default=str))
+        return 0 if document["pass"] else 3
     elif args.cmd == "report":
         _config(args.selection)
         print(_report(_scorer_selection(args.selection), args.run, Path(args.selection).parent))

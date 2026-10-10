@@ -32,6 +32,9 @@ FIELDS = {
     "calls_used": ("investigation_log.model_calls_used", "investigation.model_calls.model_calls_used", "model_calls_used", "calls_used"),
     "tokens": ("model_tokens", "tokens_used", "total_tokens"),
     "cap_hit": ("investigation_log.cap_reached", "investigation.model_calls.cap_reached", "call_cap_hit", "cap_hit"),
+    # The pipeline's own deterministic citation check of the recorded conclusion (operations.checks.citation_validity:
+    # every cited id resolves, was retrieved in this investigation and was recorded by the snapshot). No truth in it.
+    "citations_valid": ("checks.citations.all_valid", "citation_validity.all_valid"),
     "wall_seconds": ("wall_seconds", "investigation_seconds"),
     "tool_seconds": ("tool_seconds", "query_seconds"),
 }
@@ -88,6 +91,7 @@ class ArmResult:
     wall_seconds: float | None = None
     tool_seconds: list = field(default_factory=list)
     cap_hit: bool = False
+    citations_valid: bool | None = None              # the run record's own citation check (None: the record carries none)
     provider_failures: int = 0                       # provider (transport) failures among this arm's calls
     rule_codes: list = field(default_factory=list)   # baselines: the codes or symptoms they read
     cause_set_override: list | None = None           # B_rulecode: all its codes
@@ -172,7 +176,8 @@ def from_ops_run(case_key, shipment_id, *, case, runs, executions=(), outcomes=(
                                 tokens=pick(analysis, "tokens", pick(first, "tokens", accept=is_count), accept=is_count),
                                 wall_seconds=pick(analysis, "wall_seconds", pick(first, "wall_seconds")),
                                 tool_seconds=list(pick(analysis, "tool_seconds", []) or []),
-                                cap_hit=pick(analysis, "cap_hit", False, accept=is_flag))
+                                cap_hit=pick(analysis, "cap_hit", False, accept=is_flag),
+                                citations_valid=pick(analysis, "citations_valid", accept=is_flag))
     if "investigator" in degraded_roles and not result.degraded:
         result.degraded, result.failure_mode = True, "investigator_degraded"
     return result
