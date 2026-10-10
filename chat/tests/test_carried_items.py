@@ -58,8 +58,13 @@ class InvalidOutputLabelTests(ti.Base):
         out = investigator.investigate(self.tools(), turn=ti.scripted(boom, boom))
         self.assertEqual((out["mode"], out["degraded"]), ("model_unavailable", True))
         call = {"action": "call", "tool": "policy", "args": {}, "purpose": "Read thresholds."}
-        out = investigator.investigate(self.tools(), turn=ti.scripted(*[call] * (investigator.MAX_TOOL_CALLS + 2)))
+        # With calls to spare, a model that answers but never concludes runs out of turns: invalid output.
+        out = investigator.investigate(self.tools(), turn=ti.scripted(*[call] * (investigator.MAX_TURNS + 2)),
+                                       session=investigator.Session(cap=30))
         self.assertEqual(out["mode"], "invalid_model_output")  # The model answered but never concluded validly.
+        # Under the default per-case cap the same behaviour ends at the cap: a degraded run, labelled as such.
+        out = investigator.investigate(self.tools(), turn=ti.scripted(*[call] * (investigator.MAX_TOOL_CALLS + 2)))
+        self.assertEqual((out["mode"], out["degraded"], out["primary_cause"]), ("model_call_cap", True, None))
 
     def test_reviewer_invalid_output_stays_unavailable_for_authority_but_says_why(self):
         def garbage(system, user, default): return {"verdict": "LOOKS_FINE", "feedback": "x"}
@@ -144,7 +149,8 @@ class BlameFilterTests(unittest.TestCase):
     def test_the_investigator_rejects_a_conclusion_that_blames_the_driver(self):
         out = {"hypotheses": [{"cause": "UNKNOWN", "status": "uncertain", "supporting_evidence_ids": [], "contradicting_evidence_ids": [],
                                "assessment": "No receipt scan."}], "primary_cause": "UNKNOWN", "confidence": "low",
-               "recommended_action": "REQUEST_ADDITIONAL_EVIDENCE", "missing_evidence": [], "summary": "The driver kept the parcel."}
+               "recommended_action": "REQUEST_ADDITIONAL_EVIDENCE", "missing_evidence": ["a return scan of the parcel"],
+               "summary": "The driver kept the parcel."}
         self.assertIn("blame", investigator.validate_conclusion(out, set()))
         out["summary"] = "The parcel remains with the driver; no return scan is recorded."
         self.assertIsNone(investigator.validate_conclusion(out, set()))

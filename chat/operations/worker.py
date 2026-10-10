@@ -16,6 +16,7 @@ REVIEW_SUMMARY_AR = {
     "EVIDENCE_NOT_BOUND": "رفض فحص السلامة المقترح لأنه لا يستشهد بأدلة مرئية مرتبطة بهذه الشحنة.",
     "MODEL_REVISE": "طلب المراجع المستقل تعديل المقترح؛ ملاحظاته مسجلة بنصها الأصلي.",
     "MODEL_HUMAN_REVIEW": "طلب المراجع المستقل أن يقرر شخص؛ لا تنفيذ تلقائي.",
+    "MODEL_INSUFFICIENT_EVIDENCE": "رأى المراجع المستقل أن الأدلة غير كافية لدعم الاستنتاج؛ لا تنفيذ تلقائي، ويلزم جمع أدلة إضافية أو قرار من شخص.",
     "MODEL_ESCALATE": "رأى المراجع المستقل أن المقترح قد يسبب ضررًا وطلب التصعيد إلى شخص؛ لا تنفيذ تلقائي.",
     "REVIEWER_UNAVAILABLE": "تعذّر إكمال المراجعة المستقلة؛ أُوقف التنفيذ التلقائي ويجب أن يراجع شخص الحالة.",
     "INVESTIGATOR_UNAVAILABLE": "لم يصل وكيل التحقيق إلى استنتاج صالح، فلا يوجد مقترح للمراجعة؛ يجب أن يراجع شخص الحالة.",
@@ -42,6 +43,8 @@ def review_reason(review):
         return "MODEL_ACCEPT" if model == "ACCEPT" else "EVIDENCE_BOUND"
     if model == "REVISE":
         return "MODEL_REVISE"
+    if model == "INSUFFICIENT_EVIDENCE":
+        return "MODEL_INSUFFICIENT_EVIDENCE"
     return next((code for prefix, code in _LEGACY_GUARD_FEEDBACK if feedback.startswith(prefix)), "UNCLASSIFIED")
 
 

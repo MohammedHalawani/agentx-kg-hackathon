@@ -115,13 +115,45 @@ class RecommendationToApprovalTests(_Base):
         store, driver, result = self.approvable()
         case = store.case_detail(result["case_id"])
         stored = next(v for k, v in driver.ledger.values() if k == "OpsCase" and v["entity_id"] == case["case_id"])
-        self.add_symptom_through_monitor(store, driver, stored, "DELIVERY_PROOF_INCOMPLETE")
+        # A past-event symptom (not a standing or human-floor one): the monitor records it and leaves the case with the person.
+        self.add_symptom_through_monitor(store, driver, stored, "WEIGHT_READ_DIFFERS")
         current = store.case_detail(case["case_id"])
+        self.assertEqual(current["workflow_state"], "AWAITING_APPROVAL")
         # The operator reloads and approves at the new version: the version check passes, the context check does not.
         with self.assertRaises(OperationsConflict) as refused:
             store.decide(case["case_id"], "approve", "DEMO-OPERATOR-LOCAL", current["state_version"], "approve-new-symptom")
         self.assertIn("symptoms", str(refused.exception))
         self.assertEqual(store.case_detail(case["case_id"])["workflow_state"], "OPEN")
+        self.assertEqual(self.kind(driver, "OpsExecution"), [])
+
+    def test_a_standing_symptom_added_after_the_recommendation_requeues_the_case_before_any_approval(self):
+        store, driver, result = self.approvable()
+        case = store.case_detail(result["case_id"])
+        stored = next(v for k, v in driver.ledger.values() if k == "OpsCase" and v["entity_id"] == case["case_id"])
+        self.add_symptom_through_monitor(store, driver, stored, "DELIVERY_PROOF_INCOMPLETE")
+        current = store.case_detail(case["case_id"])
+        # The monitor sent the investigated case back for re-investigation: there is nothing left to approve.
+        self.assertEqual((current["workflow_state"], current["recommendation_id"]), ("OPEN", None))
+        self.assertIn("REINVESTIGATION_QUEUED", self.audit(driver, case["case_id"]))
+        with self.assertRaises(OperationsConflict):
+            store.decide(case["case_id"], "approve", "DEMO-OPERATOR-LOCAL", current["state_version"], "approve-new-symptom")
+        self.assertEqual(self.kind(driver, "OpsExecution"), [])
+
+    def test_once_reinvestigations_are_used_up_the_approval_recheck_still_refuses_changed_symptoms(self):
+        from operations.store import MAX_SYMPTOM_REINVESTIGATIONS
+        store, driver, result = self.approvable()
+        def used_up(tx):
+            tx.ledger[result["case_id"]][1]["symptom_reinvestigations"] = MAX_SYMPTOM_REINVESTIGATIONS
+        driver.execute_write(used_up)
+        case = store.case_detail(result["case_id"])
+        stored = next(v for k, v in driver.ledger.values() if k == "OpsCase" and v["entity_id"] == case["case_id"])
+        self.add_symptom_through_monitor(store, driver, stored, "DELIVERY_PROOF_INCOMPLETE")
+        current = store.case_detail(case["case_id"])
+        self.assertEqual(current["workflow_state"], "AWAITING_APPROVAL")  # Not requeued again: bounded.
+        self.assertIn("REINVESTIGATION_LIMIT", self.audit(driver, case["case_id"]))
+        with self.assertRaises(OperationsConflict) as refused:
+            store.decide(case["case_id"], "approve", "DEMO-OPERATOR-LOCAL", current["state_version"], "approve-after-limit")
+        self.assertIn("symptoms", str(refused.exception))
         self.assertEqual(self.kind(driver, "OpsExecution"), [])
 
 
@@ -287,13 +319,14 @@ class Shipment000392SequenceTests(_Base):
         case = store.case_detail(result["case_id"])
         self.assertIn("MANIFEST_CUSTODY_CONFLICT", next(v for k, v in driver.ledger.values()
                                                        if k == "OpsCase" and v["entity_id"] == case["case_id"])["symptom_codes"])
-        self.assertFalse(case["recommendation"]["approvable"])
-        with self.assertRaises(OperationsConflict) as refused:
+        # The human-floor symptom arrived after the investigation: the monitor queued the case for re-investigation, so
+        # the recommendation made without it is gone and cannot be approved.
+        self.assertEqual((case["workflow_state"], case["recommendation"]), ("OPEN", None))
+        with self.assertRaises(OperationsConflict):
             store.decide(case["case_id"], "approve", "DEMO-OPERATOR-LOCAL", case["state_version"], "approve-000392")
-        self.assertIn("AUTH-20-approval-context-stale", str(refused.exception))
         self.assertEqual(self.kind(driver, "OpsExecution"), [])
         self.assertEqual(store.case_detail(case["case_id"])["workflow_state"], "OPEN")
-        self.assertIn("APPROVAL_CONTEXT_STALE", self.audit(driver, case["case_id"]))
+        self.assertIn("REINVESTIGATION_QUEUED", self.audit(driver, case["case_id"]))
         # Re-investigated with the same wrong diagnosis and the same routing: the floor symptom now makes it a
         # human-investigation case. A consequential action cannot be approved...
         store.agents = agent_investigator(cause="CUSTODY_GAP", action="REROUTE_TO_CONFIRMED_DESTINATION")

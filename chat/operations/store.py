@@ -45,9 +45,10 @@ def reset_token(control):
     """Names the current session (its digest part, unchanged by the public identifier mapping)."""
     session = control.get("session_id") or ""
     return "RESET-LEDGER-" + (session[-24:] if session else "NO-SESSION")
-# The foundation replay database and the live provider-feed database (plus its isolated test twin).
-OPERATIONS_DATABASES = ("shipments-v2-demo", "shipments-v2-demo-live", "shipments-v2-demo-test", "shipments-v2-demo-test2",
-                        "shipments-v2-demo-ci-test")  # ci-test: scratch database for the Neo4j integration tests
+# The fixed databases (foundation replay, live provider feed and its test twins) are listed in operations.datasets;
+# a mechanism-world database is accepted there by its name pattern, for a mechanism-world dataset only.
+from operations.datasets import (OPERATIONS_DATABASES, dataset_kind, is_feed_dataset, operations_database_allowed,
+                                 pairing_error)
 INGEST_BATCH = 500
 
 
@@ -59,6 +60,15 @@ DETECTION_ALLOWANCE_SECONDS = 900
 # A case whose shipment keeps receiving evidence mid-investigation is re-investigated at most this
 # many times before it goes to a person instead of acting on a superseded snapshot.
 MAX_SNAPSHOT_REFRESHES = 2
+# A case that was already investigated is requeued when the monitor adds a standing or human-floor symptom to it
+# (the first diagnosis could not have known it). Bounded: after this many such re-investigations the case stays
+# where it is, and the approval and dispatch rechecks keep refusing a recommendation whose symptoms changed.
+MAX_SYMPTOM_REINVESTIGATIONS = 2
+# States in which an investigation has been recorded and nothing is being dispatched right now. ACTION_INITIATED is
+# left to the dispatch recheck (which refuses and requeues on a changed context); OPEN, REOPENED and INVESTIGATING are
+# already queued or running (a running investigation notices the change and refreshes its snapshot).
+REINVESTIGABLE_STATES = frozenset(("RECOMMENDATION_READY", "AWAITING_APPROVAL", "HUMAN_REVIEW", "NEEDS_EVIDENCE", "ESCALATED",
+                                   "AWAITING_OUTCOME"))
 
 
 def monitor_enqueue(queue, shipment_ids):
@@ -153,11 +163,14 @@ def temporal_properties(props):
 class OperationsStore:
     def __init__(self, driver, database, dataset_id, config=None, reader=None, *, uri="bolt://localhost:7687", protected=(), agents=None):
         target_guard(uri, database, protected)
-        if database not in OPERATIONS_DATABASES or not str(dataset_id).startswith("DEMO-"):
+        if not operations_database_allowed(database) or not str(dataset_id).startswith("DEMO-"):
             raise OperationsConflict("Operations requires the fixed audited local shadow")
+        if pairing_error(database, dataset_id):
+            raise OperationsConflict(pairing_error(database, dataset_id))
         self.driver, self.database, self.dataset_id = driver, database, dataset_id
-        # Live datasets receive observations only through the provider gateway, never by replaying imports.
-        self.live = str(dataset_id).startswith("DEMO-SUHAIL-LIVE")
+        # Live-network and mechanism-world datasets receive observations only through the provider gateway, never by
+        # replaying imports.
+        self.live = is_feed_dataset(dataset_id)
         if self.live:
             from operations.ingestion import Gateway
             self.gateway = Gateway(driver, database, dataset_id)
@@ -165,6 +178,10 @@ class OperationsStore:
         self.reader = reader
         self.agents = agents  # operations.investigator (GPT-OSS tool loop + reviewer) or None for rules only
         self.adapter = None   # Execution adapter; in development the synthetic operational simulator
+        # Evaluation switches: tools withheld from the investigator (an ablation), and the per-case model-call cap
+        # (None: SUHAIL_MODEL_CALL_CAP, default 12). Both are recorded with every run.
+        self.disabled_tools = tuple(t for t in os.environ.get("SUHAIL_DISABLED_TOOLS", "").replace(" ", "").split(",") if t)
+        self.model_call_cap = None
         self._subscribers={}
         self._subscribers_lock=threading.RLock()
 
@@ -320,6 +337,10 @@ class OperationsStore:
             "development_reset": {"enabled": development_reset_enabled(),
                                   "confirmation": reset_token(control) if development_reset_enabled() else None,
                                   "last": (json.loads(control.get("reset_audit_json") or "[]") or [None])[-1]},
+            # What carries out an authorized action. With no adapter nothing is sent: an authorized action is recorded
+            # as not acknowledged, nothing can be verified and the case goes to a person (never resolved).
+            "execution": {"adapter": "none" if self.adapter is None else getattr(self.adapter, "name", "synthetic_operational_simulator"),
+                          "dataset_kind": dataset_kind(self.dataset_id)},
             "notifications": {"mode": "dry_run", "external_calls": 0}}
 
     def control(self, component, action, speed=None, actor_id="DEMO-OPERATOR-LOCAL", replay_mode=None):
@@ -438,7 +459,9 @@ class OperationsStore:
             return {"events_replayed": 0, "as_of": control["as_of"], "case_ids": [], "status": self.status()}
         ingested, counts = [], {"duplicate": 0, "conflicting_duplicate": 0, "rejected": 0}
         while True:
-            batch = self.gateway.ingest_due(target, limit=INGEST_BATCH)
+            # Every message delivered by the previous clock was already ingested: one that turns up now with an
+            # earlier delivery time was enqueued late and is stamped at this tick, never back-dated before it.
+            batch = self.gateway.ingest_due(target, limit=INGEST_BATCH, not_before=control["as_of"])
             ingested.extend(batch["items"])
             for key in counts: counts[key] += batch[key]
             if batch["messages"] < INGEST_BATCH: break
@@ -513,6 +536,7 @@ class OperationsStore:
                         if not case.get("diagnosis_available"):case["operational_status"]=symptom_status(case["symptom_codes"])
                         self._put(tx,"OpsCase",case,update=True)
                         self._audit(tx,case,"SYMPTOMS_UPDATED",as_of,actor="SUHAIL-MONITOR",result="New symptoms: "+", ".join(new))
+                        self._reinvestigate_for_symptoms(tx,case,new,as_of)
                     continue
                 seen=set().union(*[set(x.get("symptom_codes") or []) for x in cases]) if cases else set()
                 if cases and set(finding["symptoms"])<=seen:
@@ -523,6 +547,45 @@ class OperationsStore:
             return opened
         opened=self._execute(record,write=True)
         return {"checked":len(findings),"opened":opened}
+
+    def _reinvestigate_for_symptoms(self,tx,case,new,when):
+        """A standing or human-floor symptom was added to a case that was already investigated: its diagnosis was made
+        without it, so the case is queued for re-investigation. Bounded by MAX_SYMPTOM_REINVESTIGATIONS (no loops). An
+        action already executed and awaiting its outcome is superseded: it is never verified or credited for a case whose
+        basis changed, and whatever it caused arrives as ordinary evidence for the new investigation."""
+        from operations.authority import HUMAN_FLOOR_SYMPTOMS
+        significant=sorted(set(new)&(STANDING_SYMPTOMS|HUMAN_FLOOR_SYMPTOMS))
+        if not significant or not case.get("last_run_id") or case["workflow_state"] not in REINVESTIGABLE_STATES:
+            return False
+        done=case.get("symptom_reinvestigations") or 0
+        if done>=MAX_SYMPTOM_REINVESTIGATIONS:
+            self._audit(tx,case,"REINVESTIGATION_LIMIT",when,actor="SUHAIL-MONITOR",key="symptoms:"+",".join(significant),
+                        result=f"New symptoms ({', '.join(significant)}) after {done} symptom-driven re-investigations; the case stays "
+                               f"{case['workflow_state']} for a person, and approval and dispatch keep rechecking its context.")
+            return False
+        old=case["workflow_state"]
+        if old=="AWAITING_OUTCOME":
+            executions=[public_value(row["props"]) for row in tx.run(
+                "MATCH(n:OpsEntity:OpsExecution {case_id:$case_id,dataset_id:$dataset}) RETURN properties(n) AS props "
+                "ORDER BY n.recorded_at DESC,n.entity_id DESC LIMIT 20",case_id=case["entity_id"],dataset=self.dataset_id)]
+            if any(e.get("status") in ("AUTHORIZED","EXECUTING") for e in executions):
+                # Authorized but not dispatched yet: the dispatch recheck sees the changed symptoms, refuses the action
+                # and requeues the case itself.
+                return False
+            for execution in executions:
+                if execution.get("status")=="ACKNOWLEDGED":
+                    execution["status"]="SUPERSEDED";self._put(tx,"OpsExecution",execution,update=True)
+                    self._audit(tx,case,"EXECUTION_SUPERSEDED",when,actor="SUHAIL-MONITOR",key=execution["entity_id"],old=old,
+                                result=f"{execution.get('action_type')} was executed before new symptoms ({', '.join(significant)}) were "
+                                       "observed; it is not verified or credited, and the case is re-investigated.")
+        case.update(workflow_state="OPEN",recommendation_id=None,state_version=case["state_version"]+1,
+                    symptom_reinvestigations=done+1,outcome_checked_as_of=None)
+        without_diagnosis(case,pending=True)
+        self._put(tx,"OpsCase",case,update=True)
+        self._audit(tx,case,"REINVESTIGATION_QUEUED",when,actor="SUHAIL-MONITOR",old=old,key="symptoms:"+",".join(significant),
+                    result=f"New symptoms ({', '.join(significant)}) were observed after the investigation; the earlier investigation "
+                           "remains recorded and the case is investigated again with the evidence visible now.")
+        return True
 
     def _risk_flag(self,tx,sid,forecast,when):
         identifier=identity("risk",sid)
@@ -950,7 +1013,8 @@ class OperationsStore:
                     self._audit(tx,current,"SNAPSHOT_SUPERSEDED",when,actor="SUHAIL-INVESTIGATION-WORKER",key="snapshot",
                                 result="New evidence arrived during each investigation attempt; routed to a person, no automatic action.")
                     continue
-                failure=("returned output that failed validation" if item.get("kind")=="invalid_model_output" else "unavailable")
+                failure=("returned output that failed validation" if item.get("kind")=="invalid_model_output" else
+                         "reached the per-case model-call cap" if item.get("kind")=="model_call_cap" else "unavailable")
                 self._audit(tx,current,"MODEL_DEGRADED",when,actor="SUHAIL-"+item["role"].upper(),key=item["role"],
                             result=f"{item['role']} {failure} ({item.get('error') or 'no valid output'}); automatic execution blocked.")
             from operations.authority import execution_permission
@@ -1025,7 +1089,9 @@ class OperationsStore:
                 commit=lambda a:self._execute(lambda tx:finish(tx,a),write=True),
                 on_event=lambda event,events:self._record_stage(case,event,events),
                 agents=self.agents,live_session=True,symptoms=case.get("symptom_codes") or [],
-                heartbeats=getattr(self.reader,"heartbeats",None))
+                heartbeats=getattr(self.reader,"heartbeats",None),
+                # The read model's fixed cross-shipment queries (None for a reader without them: tools then say UNKNOWN).
+                port=getattr(self.reader,"fetch",None),disabled_tools=self.disabled_tools,call_cap=self.model_call_cap)
             analysis["writeback"]=result
             self._save_run_trace(case,analysis)
             return result

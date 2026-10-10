@@ -25,6 +25,7 @@ FIELDS = {
     "OpsCase": {"opened_by", "session_id", "source_case_id", "workflow_state", "operational_status", "priority", "cause_codes", "symptom_codes", "city", "opened_at",
                 "as_of", "state_version", "last_run_id", "recommendation_id", "issue_summary", "claim_id", "claim_at",
                 "is_terminal", "closed_at", "verified_outcome_id", "outcome_checked_as_of", "snapshot_refreshes",
+                "symptom_reinvestigations",
                 # Whether issue_summary/cause_codes come from an accepted agent diagnosis; rule triage codes kept apart.
                 "diagnosis_available", "rule_signal_codes"},
     "OpsAudit": {"case_id", "event_type", "actor_id", "decision", "result", "from_state", "to_state", "run_id",

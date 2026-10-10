@@ -3,14 +3,19 @@
 With an investigator (GPT-OSS, operations.investigator) the `classify` stage is an iterative tool
 loop over the shipment's time-correct Neo4j evidence: each tool call is emitted as a RUNNING event
 with the evidence ids it returned. A rejection by the independent reviewer sends the case back to
-`classify` with the reviewer's feedback (bounded). Deterministic code builds the proposal from the
-agent's recommended catalog action, runs the safety guard and fact checks, and the deterministic
-authority policy alone decides who may act.
+`classify` with the reviewer's feedback (bounded): the same conversation, tool belt and retrieved
+records continue, under one model-call budget for the whole case investigation. Deterministic code
+builds the proposal from the agent's recommended catalog action, runs the safety guard, the fact
+checks and the citation-validity check, and the deterministic authority policy alone decides who
+may act. Every round is logged with the run (tool calls and arguments, returned record and
+computed-result ids, the conclusion, the reviewer's verdict, feedback and unsupported claims, the
+snapshot time, model calls used, validation errors); no chain-of-thought is requested or stored.
 
 Without an investigator the graph runs the deterministic evidence rules only; such runs never
 receive automatic authority (no independent model review).
 """
 from datetime import datetime, timezone
+import inspect
 from typing import TypedDict, Any
 
 from langgraph.graph import StateGraph, END
@@ -18,6 +23,8 @@ from dataset_v2.contracts import digest
 from operations.reasoning import triage, operational_status
 
 MAX_REVIEW_ROUNDS = 2
+# Reviewer verdicts that send the investigation back for another round while rounds and model calls remain.
+REVISION_VERDICTS = ("REVISE", "INSUFFICIENT_EVIDENCE")
 
 
 class Investigation(TypedDict, total=False):
@@ -38,6 +45,7 @@ class Investigation(TypedDict, total=False):
     checks: dict
     authority: dict
     mode: str
+    log: dict
 
 
 def topology():
@@ -54,6 +62,8 @@ def analysis(state, events):
             "afl": {"iterations": len(state["trace"])}, "degraded": state.get("degraded") or [],
             "mode": state.get("mode", "deterministic_evidence_rules"), "outcome": None,
             "investigation": state.get("investigation"), "checks": state.get("checks"), "authority": state.get("authority"),
+            # Every investigation round, for audit and later scoring (None for rules-only runs).
+            "investigation_log": state.get("log"),
             "pipeline_events": list(events), "topology": topology()}
 
 
@@ -88,19 +98,39 @@ def action_target(tools):
     the expected observations that are missing now and the silent device that should have made them."""
     rows = [r for r in tools._journey()["milestones"] if r["state"] == "missing_after_deadline"]
     silent = [d for d, report in tools.device_reports.items() if report.get("reporting_state") == "SILENT"]
-    expected = [r["facility_handheld"] for r in rows if r.get("facility_handheld")]
+    expected = []
+    for r in rows:
+        briefs = r.get("expected_device_telemetry")
+        expected += [b["device_id"] for b in briefs if b.get("device_id")] if isinstance(briefs, list) else []
+        if r.get("facility_handheld"):
+            expected.append(r["facility_handheld"])
+    expected = list(dict.fromkeys(expected))
     # The device that should have made the missing observation, when it is silent; else any silent device.
     device = next((d for d in expected if d in silent), None) or (silent[0] if silent else (expected[0] if expected else None))
     return {"device_id": device, "expected_evidence": [{"package_id": r["package_id"], "predicate": r["predicate"],
                                                         "location_id": r["location_id"]} for r in rows]}
 
 
+def _accepted(function, **extra):
+    """The keyword arguments an agent callable accepts: newer ones (session, review context) are passed only where the
+    callable declares them, so older investigator doubles keep working."""
+    try:
+        parameters = inspect.signature(function).parameters
+    except (TypeError, ValueError):
+        return {}
+    if any(p.kind is inspect.Parameter.VAR_KEYWORD for p in parameters.values()):
+        return extra
+    return {k: v for k, v in extra.items() if k in parameters}
+
+
 def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, events=None,
-                agents=None, live_session=False, symptoms=(), heartbeats=None):
-    """agents: None (deterministic rules only) or an investigator (operations.investigator or a test double)."""
+                agents=None, live_session=False, symptoms=(), heartbeats=None, port=None, disabled_tools=(), call_cap=None):
+    """agents: None (deterministic rules only) or an investigator (operations.investigator or a test double).
+    port: the read model's fixed cross-shipment queries (fetch), or None. call_cap: the per-case model-call cap."""
     from operations.worker import review as guard, REVIEW_SUMMARY_AR
-    from operations.authority import authorize, symptom_floor, ACTIONS, ACTION_SUMMARY_AR, STATE
-    from operations.checks import fact_checks, cited_records
+    from operations.authority import authorize, symptom_floor, abstention_floor, ACTIONS, ACTION_SUMMARY_AR, STATE
+    from operations.checks import fact_checks, cited_records, review_context
+    from operations.investigator import Session, abstains
     events = events if events is not None else []
     holder = {}
 
@@ -147,11 +177,15 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
 
     def tools_for(s):
         from operations.tools import InvestigationTools
-        # A fresh tool belt per investigation round: a revision gets its own bounded budget.
-        if "tools" not in holder or holder["tools"].as_of != s["as_of"] or holder.get("round") != s.get("iteration", 0):
-            holder["round"] = s.get("iteration", 0)
+        # One tool belt for the whole case investigation: a revision round keeps every record, computed result and
+        # call of the earlier round. Only the round number changes.
+        if "tools" not in holder or holder["tools"].as_of != s["as_of"]:
             holder["tools"] = InvestigationTools(s["context"], config, symptoms=s.get("symptoms") or [], heartbeats=heartbeats,
-                                                 precedents=lambda cause: precedents(s["shipment_id"], [cause]))
+                                                 precedents=lambda cause: precedents(s["shipment_id"], [cause]), port=port,
+                                                 disabled=disabled_tools)
+            holder["session"] = Session(call_cap)
+            holder["rounds"] = []
+        holder["tools"].begin_round(s.get("iteration", 0))
         return holder["tools"]
 
     def classify(s):
@@ -161,9 +195,14 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
                 "requires_human_review": result["assessment"]["requires_human_review"],
                 "evidence_ids": sorted({i for d in result["diagnoses"] for i in d["evidence_ids"]}), "agent": "evidence_rules"}
         tools = tools_for(s)
+        session = holder["session"]
         def on_step(step):
             emit("classify", "RUNNING", s, {"kind": "tool_call", "agent": "gpt-oss", **step})
-        investigation = agents.investigate(tools, on_step=on_step, feedback=s.get("feedback") if s.get("iteration") else None)
+        revising = bool(s.get("iteration"))
+        investigation = agents.investigate(tools, on_step=on_step, feedback=s.get("feedback") if revising else None,
+                                           **_accepted(agents.investigate, session=session,
+                                                       review=(session.reviews[-1] if revising and session.reviews else None)))
+        holder["investigation"] = investigation
         update = {"investigation": investigation, "mode": "gpt_oss_agents", "result": agent_result(investigation, s["context"])}
         if investigation.get("degraded"):
             update["degraded"] = [*s.get("degraded", []), {"role": "investigator", "error": investigation["validation_error"],
@@ -171,9 +210,11 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
         cited = sorted({i for h in investigation.get("hypotheses") or [] for i in h.get("supporting_evidence_ids", []) + h.get("contradicting_evidence_ids", [])})
         return update, {"diagnoses": update["result"]["diagnoses"], "evidence_ids": cited or investigation.get("retrieved_evidence_ids", []),
                         "agent": investigation["mode"], "tool_calls": len(investigation.get("steps") or []),
+                        "model_calls": session.budget.snapshot(),
                         "investigation": {"primary_hypothesis": investigation.get("primary_cause"), "confidence": investigation.get("confidence"),
                                           "summary": investigation.get("summary"), "hypotheses": investigation.get("hypotheses"),
                                           "missing_evidence": investigation.get("missing_evidence"),
+                                          "next_evidence_step": investigation.get("next_evidence_step"),
                                           "requires_physical_check": investigation.get("requires_physical_check"),
                                           "steps": investigation.get("steps")}}
 
@@ -190,7 +231,7 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
         if agents:
             if inv and not inv.get("degraded") and inv.get("recommended_action"):
                 action = inv["recommended_action"]
-                known = inv.get("primary_cause") not in (None, "UNKNOWN")
+                known = inv.get("primary_cause") is not None and not abstains(inv.get("primary_cause"))
                 primary = next((h for h in inv["hypotheses"] if h["cause"] == inv["primary_cause"]), {}) if known else {}
                 basis = primary.get("supporting_evidence_ids") or inv.get("retrieved_evidence_ids", [])[:10]
                 code = inv["primary_cause"] if known else "INSUFFICIENT_EVIDENCE"
@@ -211,6 +252,47 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
             "feedback_received": s.get("feedback"), "verified_precedents": len(s.get("precedents", [])),
             "agent": "authority_catalog" if agents else "evidence_rules"}
 
+    def round_log(s, inv, tools, checks, verdict, model_review):
+        """One investigation round as later scoring reads it. Declared outputs only; no reasoning text beyond them."""
+        session = holder.get("session")
+        number = s.get("iteration", 0)
+        calls = [{k: c.get(k) for k in ("tool", "args", "evidence_ids", "computed_ids", "omitted_rows", "failure")}
+                 for c in (tools.round_calls(number) if tools else [])]
+        conclusion = None
+        if inv and not inv.get("degraded"):
+            conclusion = {k: inv.get(k) for k in ("primary_cause", "confidence", "hypotheses", "missing_evidence", "next_evidence_step",
+                                                  "recommended_action", "requires_physical_check", "summary")}
+        return {"round": number, "snapshot_as_of": s["as_of"], "tool_calls": calls, "conclusion": conclusion,
+                "investigator": {"mode": (inv or {}).get("mode"), "degraded": bool((inv or {}).get("degraded")),
+                                 "validation_error": (inv or {}).get("validation_error"),
+                                 "validation_errors": (inv or {}).get("validation_errors") or []},
+                "citation_validity": (checks or {}).get("citations"),
+                "fact_checks": (checks or {}).get("checks"),
+                "review": {"verdict": verdict.get("verdict"), "model_verdict": verdict.get("model_verdict"), "reason_code": verdict.get("reason_code"),
+                           "feedback": (model_review or {}).get("feedback") if model_review else verdict.get("feedback"),
+                           "unsupported_claims": (model_review or {}).get("unsupported_claims") or [],
+                           "unaddressed_contradictions": (model_review or {}).get("unaddressed_contradictions") or [],
+                           "alternatives_tested": (model_review or {}).get("alternatives_tested"),
+                           "mode": (model_review or {}).get("mode", "deterministic_evidence_guard"),
+                           "degraded": bool((model_review or {}).get("degraded")),
+                           "validation_error": (model_review or {}).get("validation_error")},
+                **(session.budget.snapshot() if session else {})}
+
+    def run_log(tools):
+        session = holder.get("session")
+        if session is None:
+            return None
+        rounds = holder.get("rounds") or []
+        cited = {i for r in rounds for h in ((r.get("conclusion") or {}).get("hypotheses") or [])
+                 for i in [*(h.get("supporting_evidence_ids") or []), *(h.get("contradicting_evidence_ids") or [])]}
+        seen = [k for k in tools.computed if k in tools.retrieved] if tools else []
+        return {"snapshot_as_of": tools.as_of if tools else None, **session.budget.snapshot(), "rounds": rounds,
+                # What the investigator saw beyond the shipment's own evidence nodes, kept so a citation can be resolved later.
+                "computed_results": {k: tools.computed[k] for k in seen} if tools else {},
+                "cited_external_records": {k: tools.external[k] for k in sorted(cited) if tools and k in tools.external and k not in tools.computed},
+                "evidence_index": {k: tools.index[k] for k in sorted(tools.retrieved) if k in tools.index} if tools else {},
+                "disabled_tools": sorted(tools.disabled) if tools else []}
+
     def review_stage(s):
         kinds = {n["id"]: n["kind"] for n in s["context"]["nodes"]}
         tools = holder.get("tools")
@@ -226,11 +308,20 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
             verdict = {"verdict": "no_proposal", "reason_code": "NO_PROPOSAL", "feedback": "No grounded investigation action at this snapshot."}
         degraded = list(s.get("degraded", []))
         checks, model_review = None, None
+        session = holder.get("session")
         if agents and inv and not inv.get("degraded"):
             tools = tools_for(s)
             checks = fact_checks(inv, tools)
             if s["proposal"] and verdict["verdict"] == "accept":
-                model_review = agents.review(inv, cited_records(inv, tools), checks["checks"], s.get("symptoms") or [])
+                context = review_context(inv, tools, checks["citations"], round_number=s.get("iteration", 0),
+                                         previous_reviews=session.reviews if session else ())
+                model_review = agents.review(inv, cited_records(inv, tools), checks["checks"], s.get("symptoms") or [],
+                                             **_accepted(agents.review, context=context, session=session))
+                if session is not None:
+                    session.reviews.append({"round": s.get("iteration", 0), "verdict": model_review["verdict"], "model_verdict": model_review["verdict"],
+                                            "feedback": model_review.get("feedback"), "unsupported_claims": model_review.get("unsupported_claims") or [],
+                                            "unaddressed_contradictions": model_review.get("unaddressed_contradictions") or [],
+                                            "invalid_citations": checks["citations"]["invalid_ids"]})
                 if model_review["verdict"] == "UNAVAILABLE":
                     # Failure, timeout or invalid output: recorded as an unavailable review, never as a pass.
                     degraded.append({"role": "reviewer", "error": model_review["validation_error"], "kind": model_review.get("mode")})
@@ -240,6 +331,10 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
                 elif model_review["verdict"] == "REVISE":
                     verdict = {"verdict": "reject", "model_verdict": "REVISE", "reason_code": "MODEL_REVISE",
                                "feedback": model_review["feedback"] or "Reviewer requested a revision."}
+                elif model_review["verdict"] == "INSUFFICIENT_EVIDENCE":
+                    # Evidence-insufficient: more evidence gathering while a round remains, then a person. Never a pass.
+                    verdict = {"verdict": "reject", "model_verdict": "INSUFFICIENT_EVIDENCE", "reason_code": "MODEL_INSUFFICIENT_EVIDENCE",
+                               "feedback": model_review["feedback"] or "The reviewer found the evidence insufficient for this conclusion."}
                 elif model_review["verdict"] in ("HUMAN_REVIEW", "ESCALATE"):
                     # The reviewer asked for a person to decide: not a pass either.
                     verdict = {"verdict": "human_review", "guard_verdict": verdict["verdict"], "model_verdict": model_review["verdict"],
@@ -252,12 +347,19 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
         verdict = {**verdict, "summary_ar": REVIEW_SUMMARY_AR[verdict["reason_code"]]}
         trace = [*s["trace"], {"iteration": s.get("iteration", 0), "proposal": s["proposal"], "review": verdict,
             "feedback_received": s.get("feedback"), "mode": (model_review or {}).get("mode", "deterministic_evidence_guard")}]
+        log = None
+        if agents and session is not None:
+            holder["rounds"].append(round_log(s, inv, holder.get("tools"), checks, verdict, model_review))
+            log = run_log(holder.get("tools"))
+        # The checks as recorded with the run: per-citation rows stay in the investigation log.
+        recorded = None if checks is None else {**checks, "citations": {k: v for k, v in checks["citations"].items() if k != "citations"}}
         return {"review": verdict, "trace": trace, "feedback": verdict["feedback"], "iteration": s.get("iteration", 0)+1,
-                "degraded": degraded, "checks": checks}, {
+                "degraded": degraded, "checks": recorded, "log": log}, {
             **verdict, "degraded": degraded, "evidence_ids": (s["proposal"] or {}).get("evidence_ids", []),
             "checks": ["shipment_bound_evidence", "operator_approval", "no_gps_delivery_certification", "independent_verified_outcome"],
-            "fact_checks": (checks or {}).get("checks"), "agent": (model_review or {}).get("mode", "deterministic_guard"),
-            "model_review": model_review}
+            "fact_checks": (checks or {}).get("checks"), "citation_validity": (recorded or {}).get("citations"),
+            "agent": (model_review or {}).get("mode", "deterministic_guard"),
+            "model_review": model_review, "model_calls": session.budget.snapshot() if (agents and session) else None}
 
     def route(s):
         state = s
@@ -269,7 +371,9 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
             state = {**s, "authority": authority, "result": {**s["result"], "workflow_state": "HUMAN_REVIEW"}}
         elif s["review"]["verdict"] not in ("accept", "human_review"):
             # Denials are policy decisions too: recorded with their rule and inputs.
-            reason = ("Reviewer rejected the proposal after the bounded revision rounds." if s["proposal"]
+            insufficient = s["review"].get("model_verdict") == "INSUFFICIENT_EVIDENCE"
+            reason = ("Reviewer found the evidence insufficient; a person or further evidence gathering must follow." if s["proposal"] and insufficient
+                      else "Reviewer rejected the proposal after the bounded revision rounds." if s["proposal"]
                       else "No grounded proposal at this snapshot; evidence is needed first.")
             authority = {"risk_class": "HUMAN_REVIEW", "reason": reason, "action_type": (s.get("proposal") or {}).get("action_type"),
                          "policy": "deterministic_action_authority"}
@@ -286,6 +390,8 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
                                      degraded=bool(s.get("degraded")), contractor_custody=bool(checks.get("contractor_custody")),
                                      physical_check=physical)
             risk, reason, closure = symptom_floor(risk, reason, s["proposal"]["action_type"], s.get("symptoms"))
+            # An insufficient-evidence conclusion never carries automatic closing authority.
+            risk, reason, closure = abstention_floor(risk, reason, closure, s["proposal"]["action_type"], codes)
             authority = {"risk_class": risk, "reason": reason, "action_type": s["proposal"]["action_type"], "closure": closure,
                          "policy": "deterministic_action_authority"}
             state = {**s, "authority": authority, "result": {**s["result"], "workflow_state": STATE[risk]}}
@@ -294,7 +400,9 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
             state["authority"] = {**state["authority"], "rule_id": rule_id(state["authority"]["reason"]), "inputs": {
                 "action_type": (s.get("proposal") or {}).get("action_type"), "diagnosis_codes": s["result"]["assessment"]["supported_codes"],
                 "review_verdict": s["review"].get("model_verdict") or s["review"].get("verdict"), "symptoms": list(s.get("symptoms") or []),
-                "degraded": [d["role"] for d in s.get("degraded") or []], "fact_checks": {k: checks.get(k) for k in ("unsupported", "sensitive", "contractor_custody")},
+                "degraded": [d["role"] for d in s.get("degraded") or []],
+                "fact_checks": {k: checks.get(k) for k in ("unsupported", "sensitive", "contractor_custody")},
+                "citations_valid": (checks.get("citations") or {}).get("all_valid"),
                 "requires_physical_check": bool((s.get("investigation") or {}).get("requires_physical_check")),
                 "rule_conflict": bool(not s.get("investigation") and s["result"]["assessment"]["requires_human_review"])}}
         receipt = commit(analysis(state, events)) if commit else None
@@ -308,7 +416,11 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
         # which routes the last two to a person; only a rejection loops back for revision.
         if s["review"]["verdict"] in ("accept", "review_unavailable", "human_review"): return "writeback"
         if s["iteration"] < MAX_REVIEW_ROUNDS and s.get("proposal"):
-            return "classify" if agents and s["review"].get("model_verdict") == "REVISE" else "recommend"
+            if agents and s["review"].get("model_verdict") in REVISION_VERDICTS:
+                # A revision needs at least one investigator turn and one review within the case's model-call cap.
+                session = holder.get("session")
+                return "classify" if session is None or session.budget.remaining >= 2 else "escalate"
+            return "recommend"
         return "escalate"
 
     g = StateGraph(Investigation)
@@ -325,10 +437,11 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
 
 
 def investigate(shipment_id, as_of, config, retrieve, precedents, *, commit=None, on_event=None,
-                agents=None, live_session=False, symptoms=(), heartbeats=None):
+                agents=None, live_session=False, symptoms=(), heartbeats=None, port=None, disabled_tools=(), call_cap=None):
     events = []
     graph = build_graph(config,retrieve,precedents,commit=commit,on_event=on_event,events=events,
-                        agents=agents,live_session=live_session,symptoms=symptoms,heartbeats=heartbeats)
+                        agents=agents,live_session=live_session,symptoms=symptoms,heartbeats=heartbeats,
+                        port=port,disabled_tools=disabled_tools,call_cap=call_cap)
     result = graph.invoke({"shipment_id":shipment_id,"as_of":as_of,"symptoms":list(symptoms),"trace":[],"iteration":0,
                            "feedback":None,"degraded":[]})
     return analysis(result,events), result.get("disposition")
