@@ -9,13 +9,17 @@ from dataset_v2.contracts import World, instant
 OBSERVATIONS=frozenset(("ScanEvent","CustodyEvent","DeliveryAttempt","ContactAttempt",
     "GPSObservation","TrafficObservation","DeliveryProof","AuthenticationEvidence",
     "SignatureEvidence","PhotoEvidence","HandoffEvidence","RecipientReport",
-    "DepotReconciliation","StatusEvent","LocationPin","Manifest"))
+    "DepotReconciliation","StatusEvent","LocationPin","Manifest",
+    # Mechanism world: outbound messages and their delivery reports (never a code value).
+    "CommunicationEvent"))
 CONTEXT=frozenset(("Shipment","Package","Customer","Organization","InventoryRecord",
     "Address","AddressVersion","DeliveryInstruction","Route","RouteSegment",
     "RouteMilestone","JourneyPlan","ExpectedMilestone","DeliverySession","VehicleAssignment"))
 CATALOG=frozenset(("City","Organization","OrganizationWarehouse","FulfillmentWarehouse",
     "Branch","Hub","SortingCenter","DeliveryDepot","ShipmentType","ServiceLevel",
-    "HandlingRequirement","Vehicle","VehicleType","Driver","Policy","Provider","Device"))
+    "HandlingRequirement","Vehicle","VehicleType","Driver","Policy","Provider","Device",
+    # Mechanism world: shared transport records several shipments reference (plan data only).
+    "Container","Trip","RouteRun","Lane"))
 PRIVATE=frozenset(("split","holdout_group","recipe_id","intended_healthy","assessment"))
 
 

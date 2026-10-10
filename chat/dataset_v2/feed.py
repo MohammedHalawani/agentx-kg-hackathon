@@ -24,14 +24,26 @@ from dataset_v2.network import device_for_driver, stable_fraction
 
 FEED_VERSION = "provider-feed-1"
 CHANNELS = ("SPL_CORE", "DRIVER_APP", "CARRIER_EDI", "TELEMATICS", "RECIPIENT_PORTAL", "TRAFFIC", "MDM")
+# Mechanism world (chat/world) only: the messaging gateway's delivery reports (SMS/WhatsApp/email).
+# Kept out of CHANNELS so the live-network dataset's channel set is unchanged.
+WORLD_CHANNELS = ("MESSAGING",)
 FEED_KINDS = frozenset(OBSERVATIONS | {"DeviceHeartbeat"})
+# Mechanism world: observations that are about a facility, trip, device or road rather than one parcel.
+# They are shared records (no shipment group) delivered through the feed like any provider message.
+SHARED_OBSERVATIONS = frozenset(("DeviceHeartbeat", "FacilityThroughput", "TripEvent", "TrafficEvent", "GPSObservation"))
+# Mechanism world: per-shipment context created during the journey (a route's session and assignment, a
+# corrected address, the person a parcel was handed to). Dated records, so a live shipment receives them
+# through the feed instead of the import.
+DATED_CONTEXT = frozenset(("DeliverySession", "VehicleAssignment", "AddressVersion", "Customer"))
+WORLD_FEED_KINDS = frozenset(FEED_KINDS | SHARED_OBSERVATIONS | DATED_CONTEXT)
 # The gateway also accepts an AddressVersion: a recipient confirms or corrects an address via the portal.
-INGESTIBLE_KINDS = frozenset(FEED_KINDS | {"AddressVersion"})
+INGESTIBLE_KINDS = frozenset(FEED_KINDS | {"AddressVersion"} | WORLD_FEED_KINDS)
 # Envelope fields the gateway sets itself; never carried in a provider payload.
 ENVELOPE = frozenset(("entity_id", "dataset_id", "schema_version", "synthetic", "provenance", "split", "holdout_group",
                       "recorded_at", "shipment_id", "occurred_at"))
 CHANNEL_PROVIDER = {"SPL_CORE": "DEMO-PROV-SPL", "DRIVER_APP": "DEMO-PROV-INDEP-01", "CARRIER_EDI": "DEMO-PROV-3PL-01",
-                    "TELEMATICS": "DEMO-PROV-SPL", "RECIPIENT_PORTAL": "DEMO-PROV-SPL", "TRAFFIC": "DEMO-PROV-SPL", "MDM": "DEMO-PROV-SPL"}
+                    "TELEMATICS": "DEMO-PROV-SPL", "RECIPIENT_PORTAL": "DEMO-PROV-SPL", "TRAFFIC": "DEMO-PROV-SPL", "MDM": "DEMO-PROV-SPL",
+                    "MESSAGING": "DEMO-PROV-MSG-01"}
 
 APP_TYPES = {"ScanEvent": "PARCEL_SCAN", "CustodyEvent": "HANDOVER", "DeliveryAttempt": "STOP_RESULT", "ContactAttempt": "CALL_LOG",
              "DeliveryProof": "POD", "AuthenticationEvidence": "POD_OTP", "SignatureEvidence": "POD_SIGNATURE",
@@ -40,8 +52,13 @@ APP_RENAME = {"disposition": "stop_outcome", "failed_reason": "reason_code", "us
               "observed_gate": "gate_seen", "attempt_id": "stop_ref", "vehicle_id": "car_ref", "assignment_id": "job_ref",
               "session_id": "shift_ref", "accuracy_m": "geo_acc_m", "driver_id": "driver_ref"}
 APP_VALUES = {"stop_outcome": {"DELIVERED": "DONE", "FAILED": "NOT_DONE"}}
-EDI_CODES = {"LOADED": "AF", "RECEIVED": "X1", "DELIVERED": "D1", "RETURNED": "RT"}
+EDI_CODES = {"LOADED": "AF", "RECEIVED": "X1", "DELIVERED": "D1", "RETURNED": "RT",
+             # Mechanism world: carrier trip status (departure, arrival, ETA revision).
+             "DEPARTED": "P1", "ARRIVED": "X3", "ETA_REVISED": "AG"}
 EDI_RENAME = {"from_id": "origin_party", "to_id": "destination_party", "vehicle_id": "equipment", "facility_id": "location"}
+# Messaging gateway delivery reports (mechanism world): the gateway's own field names and epoch time.
+MSG_RENAME = {"recipient_id": "subscriber_ref", "purpose": "template_purpose", "delivery_status": "dlr_status",
+              "channel_type": "bearer", "carrier_route": "route", "attempt_id": "context_ref", "direction": "flow"}
 
 
 def _without(props, *drop):
@@ -108,6 +125,15 @@ def encode(node, channel, ref):
     if channel == "MDM":
         return "HEARTBEAT", {"device_serial": p["device_id"], "ref": node.id, "seen_at": p["occurred_at"], "src": p["source_ref"],
                              "queue_depth": p["pending_uploads"], "last_upload": p["last_upload_at"], "net": p["connectivity"]}
+    if channel == "MESSAGING":
+        attrs = {}
+        for key, value in _without(p).items():
+            name = MSG_RENAME.get(key, key)
+            if name in attrs:
+                raise ValueError(f"Messaging field collision: {name}")
+            attrs[name] = value
+        return "DLR", {"msg_id": node.id, "tracking_no": ref.tracking_by_shipment.get(sid),
+                       "submitted_epoch": int(instant(p["occurred_at"]).timestamp()), "dlr": attrs}
     # SPL_CORE, RECIPIENT_PORTAL, TRAFFIC: canonical names, UTC.
     return kind.upper(), {"type": kind, "id": node.id, "shipment": sid, "at": p["occurred_at"], "fields": _without(p)}
 
@@ -142,6 +168,11 @@ def decode(channel, message_type, payload, ref):
         props = {"device_id": payload["device_serial"], "pending_uploads": payload["queue_depth"], "source_ref": payload["src"],
                  "last_upload_at": payload["last_upload"], "connectivity": payload["net"]}
         return "DeviceHeartbeat", payload["ref"], None, payload["seen_at"], props
+    if channel == "MESSAGING":
+        inverse = {v: k for k, v in MSG_RENAME.items()}
+        props = {inverse.get(k, k): v for k, v in payload["dlr"].items()}
+        when = iso(datetime.fromtimestamp(payload["submitted_epoch"], tz=timezone.utc))
+        return "CommunicationEvent", payload["msg_id"], ref.shipment_by_tracking.get(payload["tracking_no"]), when, props
     return payload["type"], payload["id"], payload["shipment"], payload["at"], dict(payload["fields"])
 
 
@@ -164,10 +195,14 @@ def channel_for(world, node):
         return vehicle_channel(assignment.properties["vehicle_id"]) if assignment else "SPL_CORE"
     if kind == "DeviceHeartbeat":
         return "MDM"
-    if kind == "TrafficObservation":
+    if kind in ("TrafficObservation", "TrafficEvent"):
         return "TRAFFIC"
-    if kind in ("RecipientReport", "LocationPin"):
+    if kind in ("RecipientReport", "LocationPin", "AddressVersion"):
         return "RECIPIENT_PORTAL"
+    if kind == "CommunicationEvent":
+        return "MESSAGING"
+    if kind == "TripEvent":
+        return vehicle_channel(p.get("vehicle_id"))
     if kind == "GPSObservation":
         channel = vehicle_channel(p["vehicle_id"])
         return "TELEMATICS" if channel == "SPL_CORE" else channel

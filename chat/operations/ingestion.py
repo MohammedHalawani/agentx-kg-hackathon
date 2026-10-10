@@ -30,13 +30,31 @@ EDGE_RULES = (
     ("Manifest", "assignment_id", "HAS_MANIFEST", False), ("Manifest", "package_ids", "LISTS", True),
     ("Manifest", "supersedes_id", "SUPERSEDES", True), ("LocationPin", "address_version_id", "HAS_PIN", False),
     ("TrafficObservation", "segment_id", "HAS_DELAY_EVIDENCE", False),
+    # Mechanism world (chat/world), additive: a parcel's record links to the shared container, trip or route
+    # run it shared with other parcels; shared observations link to their facility, trip or city; dated
+    # per-shipment context (sessions, assignments, corrected addresses) links like its imported equivalent.
+    # None of these properties or kinds occur in the live-network dataset.
+    ("ScanEvent", "container_id", "IN_CONTAINER", True), ("CustodyEvent", "trip_id", "ON_TRIP", True),
+    ("CustodyEvent", "route_run_id", "ON_ROUTE_RUN", True), ("DeliveryAttempt", "route_run_id", "ON_ROUTE_RUN", True),
+    ("Manifest", "route_manifest_ref", "ON_ROUTE_RUN", True), ("CommunicationEvent", "shipment_id", "HAS_COMMUNICATION", False),
+    ("FacilityThroughput", "facility_id", "HAS_THROUGHPUT", False), ("TripEvent", "trip_id", "HAS_TRIP_EVENT", False),
+    ("GPSObservation", "trip_id", "ON_TRIP", True), ("GPSObservation", "route_run_id", "ON_ROUTE_RUN", True),
+    ("TrafficEvent", "city_id", "IN_CITY", True),
+    ("AddressVersion", "address_id", "VERSION_OF", True), ("AddressVersion", "supersedes_id", "SUPERSEDES", True),
+    ("AddressVersion", "shipment_id", "HAS_ADDRESS_VERSION", False),
+    ("DeliverySession", "depot_id", "AT_FACILITY", True), ("DeliverySession", "route_run_id", "ON_ROUTE_RUN", True),
+    ("VehicleAssignment", "vehicle_id", "USES_VEHICLE", True), ("VehicleAssignment", "driver_id", "ASSIGNED_DRIVER", True),
+    ("VehicleAssignment", "session_id", "IN_SESSION", True), ("VehicleAssignment", "package_ids", "CARRIES", True),
+    ("VehicleAssignment", "route_run_id", "ON_ROUTE_RUN", True), ("VehicleAssignment", "trip_id", "ON_TRIP", True),
 )
 
 
 # Properties that reference other feed evidence (everything else references imported reference data).
 REFERENCED_KIND = {"source_event_id": "ScanEvent", "attempt_id": "DeliveryAttempt", "authentication_id": "AuthenticationEvidence",
                    "signature_id": "SignatureEvidence", "photo_id": "PhotoEvidence", "handoff_id": "HandoffEvidence",
-                   "pin_id": "LocationPin", "supersedes_id": "Manifest"}
+                   "pin_id": "LocationPin", "supersedes_id": "Manifest",
+                   # Mechanism world: an assignment may arrive before the session it belongs to.
+                   "session_id": "DeliverySession"}
 
 
 def _neo(props):

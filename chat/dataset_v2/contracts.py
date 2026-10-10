@@ -136,6 +136,11 @@ KINDS = frozenset((
     "OperatorDecision", "ActionExecution", "Resolution", "Outcome", "Notification", "AuditEvent",
     # Live network (DEMO-SUHAIL-LIVE): carriers, devices, dispatch manifests and device telemetry.
     "Provider", "Device", "Manifest", "DeviceHeartbeat",
+    # Mechanism world (DEMO-SUHAIL-WORLD-*, chat/world): shared transport catalog (containers, trips,
+    # route runs, lanes), shared observations (facility throughput, trip status, traffic incidents)
+    # and per-shipment customer communications.
+    "Container", "Trip", "RouteRun", "Lane", "FacilityThroughput", "TripEvent", "TrafficEvent",
+    "CommunicationEvent",
 ))
 RELATIONSHIPS = frozenset((
     "IN_CITY", "OWNS", "OPERATES", "STORED_AT", "ALLOCATES", "SENDS", "RECEIVES", "HAS_PACKAGE",
@@ -150,11 +155,17 @@ RELATIONSHIPS = frozenset((
     "HAS_DECISION", "INITIATES", "RESOLVED_BY", "HAS_OUTCOME", "VERIFIED_BY", "CITES",
     "HAS_NOTIFICATION", "HAS_AUDIT", "OBSERVED_BY", "NEXT_SESSION", "FOR_PACKAGE",
     "WORKS_FOR", "OPERATED_BY", "USES_DEVICE", "HAS_MANIFEST", "LISTS",
+    # Mechanism world: shared-reference links (a parcel's record to the container, trip or route run
+    # it shared with other parcels) and shared observation feeds.
+    "IN_CONTAINER", "ON_TRIP", "ON_ROUTE_RUN", "ON_LANE", "HAS_COMMUNICATION", "HAS_THROUGHPUT",
+    "HAS_TRIP_EVENT",
 ))
 UTC_FIELDS = frozenset((
     "occurred_at", "recorded_at", "effective_at", "valid_from", "valid_to", "earliest_at",
     "latest_at", "promise_at", "as_of", "opened_at", "resolved_at", "verified_at", "expires_at",
     "start_at", "end_at", "acknowledged_at", "invalidated_at",
+    # Mechanism world: trip cutoffs and carrier ETA revisions.
+    "cutoff_at", "estimated_arrival_at",
 ))
 CASE_STATES = frozenset(("OPEN", "INVESTIGATING", "RECOMMENDATION_READY", "AWAITING_APPROVAL",
                          "ACTION_INITIATED", "AWAITING_OUTCOME", "RESOLVED", "NEEDS_MORE_EVIDENCE",
