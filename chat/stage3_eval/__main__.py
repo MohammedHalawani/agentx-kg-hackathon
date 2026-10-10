@@ -182,7 +182,8 @@ def main(argv=None):
         try:
             manifest = run(args.selection, args.out, arms=wired["arms"], case_source=wired["case_source"], config=config,
                            capture=wired.get("capture"), extras_arms=wired.get("extras_arms"), dry_run=args.dry_run, resume=args.resume,
-                           provenance=wired.get("provenance"), campaign=campaign, campaign_commit=_head_commit())
+                           provenance=wired.get("provenance"), campaign=campaign, campaign_commit=_head_commit(),
+                           provider_calls=wired.get("provider_calls"))
         except (LedgerRefused, LedgerError) as refusal:
             raise SystemExit(f"Refusing to run: {refusal}") from None
         finally:

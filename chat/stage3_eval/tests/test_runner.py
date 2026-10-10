@@ -144,6 +144,36 @@ def test_an_unreadable_call_count_never_aborts_the_run_with_an_open_reservation(
     assert settles[1]["calls"] == 12 and settles[1]["source"].startswith("reserved_worst_case")
 
 
+def test_the_ledger_is_reconciled_with_the_providers_count_after_every_case(tmp_path, selected, worlds):
+    """Gate fix 3: after each case the ledger's count and the provider's own count are both written, and a provider
+    count above the ledger (calls no reservation covered) stops the run."""
+    config, sel_dir, _ = selected
+    truth = {w: worlds[w][0] for w in worlds}
+    agent = FakeAgent(truth)
+    turn, notools_calls = notools_turn_factory()
+    provider = lambda: 9 * len(agent.seen) + len(notools_calls)          # what the provider's callbacks would have counted
+    manifest = run(sel_dir / "selection.json", tmp_path / "ok", arms=build_arms(config, agent, turn), case_source=FixtureCaseSource(),
+                   config=config, provider_calls=provider)
+    checks = [e for e in read_ledger(tmp_path / "ok" / "ledger.jsonl") if e["event"] == "reconcile"]
+    assert manifest["status"] == "completed" and len(checks) == 70 and all(e["ok"] for e in checks)
+    assert [(e["ledger_calls"], e["provider_calls"]) for e in checks[:2]] == [(10, 10), (20, 20)]
+    assert manifest["ledger"]["cases_reconciled_with_provider"] == 70 and manifest["ledger"]["provider_calls_at_last_reconciliation"] == 700
+
+    agent = FakeAgent(truth)
+    turn, notools_calls = notools_turn_factory()
+    hidden = lambda: 9 * len(agent.seen) + len(notools_calls) + (3 if len(agent.seen) >= 3 else 0)   # three calls nobody reserved
+    manifest = run(sel_dir / "selection.json", tmp_path / "bad", arms=build_arms(config, agent, turn), case_source=FixtureCaseSource(),
+                   config=config, provider_calls=hidden)
+    assert manifest["status"].startswith("stopped: after ") and "provider counted 33 calls and the ledger holds 30" in manifest["status"]
+    assert len(agent.seen) == 3                                           # nothing more was called
+    last = [e for e in read_ledger(tmp_path / "bad" / "ledger.jsonl") if e["event"] == "reconcile"][-1]
+    assert (last["ok"], last["ledger_calls"], last["provider_calls"]) == (False, 30, 33)
+    # A dry run makes no call and compares nothing.
+    dry = run(sel_dir / "selection.json", tmp_path / "dry", arms=build_arms(config, agent, turn), case_source=FixtureCaseSource(),
+              config=config, dry_run=True, provider_calls=hidden)
+    assert dry["ledger"]["cases_reconciled_with_provider"] == 0
+
+
 def test_crash_then_resume_never_spends_twice(tmp_path, selected, worlds):
     config, sel_dir, _ = selected
     truth = {w: worlds[w][0] for w in worlds}

@@ -25,6 +25,11 @@ class CapViolation(RuntimeError):
     """A case reported more calls than it reserved: the per-case cap did not hold."""
 
 
+class RunStopped(RuntimeError):
+    """The run cannot go on without breaking a guarantee (the backend's cap is not the sealed one, the provider counted
+    more calls than the ledger holds, truth vocabulary reached a runtime surface). Never swallowed as an arm error."""
+
+
 class BudgetLedger:
     def __init__(self, path, budget, *, dry_run=False, resume=False, meta=None):
         self.path = Path(path)
@@ -39,6 +44,8 @@ class BudgetLedger:
         self.refused = 0
         self.violations = []
         self.recovered = 0
+        self.reconciled = 0     # cases after which the ledger was compared with the provider's own count
+        self.provider_calls = None
         self.seq = 0
         if self.path.exists():
             if not resume:
@@ -83,6 +90,8 @@ class BudgetLedger:
                     self.refused += 1
                 elif kind == "violation":
                     self.violations.append(e)
+                elif kind == "reconcile":
+                    self.reconciled += 1
 
     def _settle_state(self, rid, calls, tokens):
         case_key, arm, _reserved = self.open.pop(rid)
@@ -143,6 +152,20 @@ class BudgetLedger:
                      "tokens": tokens, "source": source})
         self._settle_state(rid, calls_used, tokens or 0)
 
+    def reconcile(self, case_key, provider_calls, ledger_calls, *, phase="main"):
+        """After a case: write the calls this ledger holds for this process beside the calls the provider's callbacks
+        counted in it. The ledger is the larger or equal one by construction (a case with no readable count is settled
+        at its worst case); a provider count above it means calls were made that no reservation covered, and the run
+        stops (RunStopped, after the entry is written)."""
+        provider_calls, ledger_calls = int(provider_calls), int(ledger_calls)
+        ok = provider_calls <= ledger_calls
+        self._write({"event": "reconcile", "case_key": case_key, "phase": phase, "ledger_calls": ledger_calls,
+                     "provider_calls": provider_calls, "ok": ok})
+        self.reconciled += 1
+        self.provider_calls = provider_calls
+        if not ok:
+            raise RunStopped(f"after {case_key} the provider counted {provider_calls} calls and the ledger holds {ledger_calls}")
+
     def close(self, status):
         self._write({"event": "close", "status": status, **self.summary()})
 
@@ -150,7 +173,8 @@ class BudgetLedger:
         return {"budget": self.budget, "dry_run": self.dry_run, "settled_calls": self.settled, "open_reservations": len(self.open),
                 "committed_calls": self.committed, "planned_calls": self.planned, "remaining": self.remaining,
                 "calls_by_arm": dict(sorted(self.by_arm.items())), "tokens": self.tokens, "refused": self.refused,
-                "cap_violations": len(self.violations), "recovered_after_crash": self.recovered}
+                "cap_violations": len(self.violations), "recovered_after_crash": self.recovered,
+                "cases_reconciled_with_provider": self.reconciled, "provider_calls_at_last_reconciliation": self.provider_calls}
 
 
 def read_ledger(path):

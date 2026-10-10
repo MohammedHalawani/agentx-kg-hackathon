@@ -39,6 +39,7 @@ import sys
 import time
 
 from stage3_eval.arms import AgentArm, CaseRef, NoToolsArm, RuleCodeArm, SymptomArm
+from stage3_eval.budget import RunStopped
 from stage3_eval.records import ArmResult, from_ops_run
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -133,6 +134,23 @@ def open_world(driver, world, spec, agents):
         raise SystemExit(f"the sealed configuration names no database for {world} (select with --database {world}=<name>)")
     store, reader, manifest_hash = _pilot().open_store(driver, database, agents)
     return WorldSession(world, driver, database, store, reader, manifest_hash)
+
+
+def backend_cap(store):
+    """The per-case model-call cap the backend will enforce for this store's next investigation: the investigator's
+    own reading of the store's setting (None there means the environment's default, which is not the sealed one)."""
+    from operations import investigator
+    return investigator.CallBudget(store.model_call_cap).cap
+
+
+def require_sealed_cap(ws, c_cap):
+    """The backend's per-case cap must BE the sealed C_cap, not merely fit under the reservation: a lower cap would
+    degrade cases the design allows to finish, a higher one would break the reservation. Stops the run otherwise."""
+    cap = backend_cap(ws.store)
+    if ws.store.model_call_cap != c_cap or cap != c_cap:
+        raise RunStopped(f"{ws.database}: the backend's per-case model-call cap is {cap} (store setting {ws.store.model_call_cap!r}); "
+                         f"the sealed C_cap is {c_cap}")
+    return cap
 
 
 def prepare_session(ws, *, resume, c_cap, allow_reset=None):
@@ -282,9 +300,12 @@ def _degraded(case, mode, **extra):
                      failure_mode=mode, **extra)
 
 
-def run_case(ws, case, *, tap=None, tokens=None):
+def run_case(ws, case, *, tap=None, tokens=None, c_cap=None):
     """The agent arm on one opened case (WIRING.md section 2): the real pipeline on this case only, read back from the
-    ledger. The calls are the run record's own counter; a run that left no record is settled at its worst case."""
+    ledger. The calls are the run record's own counter; a run that left no record is settled at its worst case.
+    With c_cap, the backend's cap is checked against the sealed one before anything is called (RunStopped if not)."""
+    if c_cap is not None:
+        require_sealed_cap(ws, c_cap)
     tokens_before = tokens() if tokens else None
     seconds_from = len(tap.calls) if tap else 0
     outcome = ws.store.process_one(case.case_id, manual=True)      # tools, investigator, reviewer, authority
@@ -310,10 +331,12 @@ def run_case(ws, case, *, tap=None, tokens=None):
     return result
 
 
-def investigate_as_of(ws, case, *, disabled=(), tap=None, tokens=None, arm="extra"):
+def investigate_as_of(ws, case, *, disabled=(), tap=None, tokens=None, arm="extra", c_cap=None):
     """An exploratory extra (WIRING.md section 5): the same investigation as of the main run's snapshot with some
     tools withheld. Read-only: no commit, so no run, recommendation, execution or audit is written for the case."""
     from operations.graph import investigate
+    if c_cap is not None:
+        require_sealed_cap(ws, c_cap)
     tokens_before = tokens() if tokens else None
     seconds_from = len(tap.calls) if tap else 0
     reader, store = ws.reader, ws.store
@@ -379,9 +402,11 @@ class WorldCapture:
 
 
 # ---------------------------------------------------------------------- build (the run process)
-def build(config, *, dry_run=False, resume=False, selection=None, agents=None, notools_turn=None, driver=None, allow_reset=None):
-    """The run side. `agents`, `notools_turn`, `driver` and `allow_reset` are for tests (a scripted model, a given
-    driver); the command line passes none of them, so the real investigator and model are used."""
+def build(config, *, dry_run=False, resume=False, selection=None, agents=None, notools_turn=None, driver=None, allow_reset=None,
+          provider_calls=None):
+    """The run side. `agents`, `notools_turn`, `driver`, `allow_reset` and `provider_calls` are for tests (a scripted
+    model, a given driver, a stand-in for the provider's call count); the command line passes none of them, so the real
+    investigator and model are used and the provider count is LiteLLM's callbacks."""
     pilot = _pilot()
     pilot.refuse_truth_access()
     from operations import investigator
@@ -403,6 +428,8 @@ def build(config, *, dry_run=False, resume=False, selection=None, agents=None, n
     for world, spec in config.worlds.items():
         sessions[world] = open_world(driver, world, spec, tap)
         prepared[world] = prepare_session(sessions[world], resume=resume, c_cap=config.c_cap, allow_reset=allow_reset)
+        # Equality with the sealed cap, read back from the store the investigations will use (and again before each case).
+        prepared[world]["backend_model_call_cap"] = require_sealed_cap(sessions[world], config.c_cap)
         log.info("%s: %s session %s clock %s", world, prepared[world]["database"], prepared[world]["session_id"], prepared[world]["clock_at_start"])
     if real_model:
         pilot.record_model_calls()           # LiteLLM callbacks: every provider call, completed or failed, and its tokens
@@ -414,7 +441,7 @@ def build(config, *, dry_run=False, resume=False, selection=None, agents=None, n
     def extra(name, disabled):
         def run_extra(case):
             try:
-                return investigate_as_of(sessions[case.world], case, disabled=disabled, tap=tap, tokens=tokens, arm=name)
+                return investigate_as_of(sessions[case.world], case, disabled=disabled, tap=tap, tokens=tokens, arm=name, c_cap=config.c_cap)
             finally:
                 capture.stash_extra(case, name)
         return AgentArm(run_extra, config.c_cap, config.r_cap, name=name)
@@ -442,12 +469,15 @@ def build(config, *, dry_run=False, resume=False, selection=None, agents=None, n
         if owns_driver:
             driver.close()
 
-    return {"arms": {"agent": AgentArm(lambda case: run_case(sessions[case.world], case, tap=tap, tokens=tokens), config.c_cap, config.r_cap),
+    return {"arms": {"agent": AgentArm(lambda case: run_case(sessions[case.world], case, tap=tap, tokens=tokens, c_cap=config.c_cap),
+                                       config.c_cap, config.r_cap),
                      "notools": NoToolsArm(turn=notools_turn),    # None: operations.investigator.model_turn, the agent's model
                      "rulecode": RuleCodeArm(), "symptom": SymptomArm()},
             "case_source": source, "capture": capture,
             "extras_arms": {"cross_shipment_ablation": extra("cross_shipment_ablation", CROSS_SHIPMENT_TOOLS),
                             "stability_rerun": extra("stability_rerun", ())},
+            # Every provider call of this process, completed or failed: the harness compares it with its ledger after each case.
+            "provider_calls": pilot.provider_calls if real_model else provider_calls,
             "provenance": provenance, "close": close, "sessions": sessions}
 
 

@@ -268,6 +268,30 @@ class RunCaseTests(unittest.TestCase):
         result = wiring.run_case(self.session, self.case, tap=tap, tokens=lambda: next(tokens))
         self.assertEqual((result.tokens, result.tool_seconds, result.calls_used), (4600, [0.02, 0.05], 9))
 
+    def test_a_backend_cap_that_is_not_the_sealed_one_stops_the_run_before_anything_is_called(self):
+        """Gate fix 3: the store's per-case cap must equal the sealed C_cap, at build and again before each case."""
+        from stage3_eval.arms import AgentArm
+        from stage3_eval.budget import BudgetLedger, RunStopped
+        from stage3_eval.runner import _run_arm
+        self.store.model_call_cap = 12
+        self.assertEqual(wiring.require_sealed_cap(self.session, 12), 12)
+        for wrong in (None, 11, 20):          # None: the environment's default, whatever it is, is not the sealed setting
+            self.store.model_call_cap = wrong
+            with self.assertRaisesRegex(RunStopped, "sealed C_cap is 12"):
+                wiring.require_sealed_cap(self.session, 12)
+            with self.assertRaises(RunStopped):
+                wiring.run_case(self.session, self.case, c_cap=12)
+            with self.assertRaises(RunStopped):
+                wiring.investigate_as_of(self.session, self.case, c_cap=12)
+        self.assertEqual(self.store.processed, [])
+        # The runner does not turn it into an arm error: the run stops, the reservation stays counted at its worst case.
+        with tempfile.TemporaryDirectory() as directory:
+            ledger, counts = BudgetLedger(Path(directory) / "ledger.jsonl", 100), {"arm_errors": 0}
+            arm = AgentArm(lambda case: wiring.run_case(self.session, case, c_cap=12), 12)
+            with self.assertRaises(RunStopped):
+                _run_arm(arm, self.case, ledger, False, counts)
+            self.assertEqual((counts["arm_errors"], ledger.committed, self.store.processed), (0, 12, []))
+
 
 class RecordFieldTests(unittest.TestCase):
     """records.FIELDS reads the Stage 2 run record (docs/api/investigation-run.md)."""

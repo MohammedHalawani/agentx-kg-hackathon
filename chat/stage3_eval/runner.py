@@ -24,7 +24,7 @@ from pathlib import Path
 import re
 
 from stage3_eval.arms import CaseRef
-from stage3_eval.budget import BudgetExceeded, BudgetLedger, CapViolation
+from stage3_eval.budget import BudgetExceeded, BudgetLedger, CapViolation, RunStopped
 from stage3_eval.design import EXTRAS_ORDER, EvalConfig, canonical_bytes, sealed_hash
 from stage3_eval.records import ArmResult
 
@@ -90,7 +90,7 @@ def _previous_results(out_dir, phase):
 
 
 def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, capture=None, extras_arms=None, dry_run=False,
-        resume=False, provenance=None, campaign=None, campaign_commit=None):
+        resume=False, provenance=None, campaign=None, campaign_commit=None, provider_calls=None):
     """Run every arm over the selection. arms: {"agent": AgentArm, "notools": NoToolsArm, "rulecode": ..., "symptom": ...};
     extras_arms: {"cross_shipment_ablation": AgentArm (cross-shipment tools disabled), "stability_rerun": AgentArm}.
     provenance: a dict, or a callable returning one, called when the run has finished (so it can report the model calls
@@ -99,6 +99,9 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
     is config.budget: the run refuses to start if the calls already spent in the campaign plus that maximum would
     exceed the campaign cap, reserves the maximum before the first case and writes the calls it actually committed
     at the end. A run that dies leaves its reservation counted at the maximum. A dry run checks and writes nothing.
+    provider_calls: a callable returning the model calls the provider's own callbacks have counted in this process
+    (completed and failed). After every case, and after every extra, that count and the ledger's are written to the
+    ledger, and the run stops if the provider counted more than the ledger holds.
     Returns the run manifest (also written to <out_dir>/run_manifest.json)."""
     if os.environ.get(TRUTH_ENV):
         raise RuntimeError(f"{TRUTH_ENV} is set: the run step must not be able to find truth labels; unset it for the run")
@@ -128,6 +131,12 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
         written_cases = {json.loads(line)["key"] for line in (out / "cases.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()}
     status, counts = "completed", {"cases": 0, "not_opened": 0, "budget_refused": 0, "arm_errors": 0}
     refs, agent_t = {}, {}
+    # The provider's count starts at this process; so does the ledger's side of the comparison (a resumed ledger already
+    # holds the earlier attempt's calls, crash recoveries included).
+    reconcile = None
+    if provider_calls is not None and not dry_run:
+        base_ledger, base_provider = ledger.committed, int(provider_calls())
+        reconcile = lambda key, phase="main": ledger.reconcile(key, int(provider_calls()) - base_provider, ledger.committed - base_ledger, phase=phase)
     try:
         for row in selection["cases"]:
             key, world, sid = row["key"], row["world"], row["shipment_id"]
@@ -167,12 +176,16 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
             if ref is not None and capture is not None and not dry_run:
                 for surface, items in (capture.capture_case(ref, results) or {}).items():
                     writer.capture(surface, key, items)
-        extras = _run_extras(selection, refs, agent_t, extras_arms or {}, ledger, writer, dry_run, counts)
+            if reconcile is not None:
+                reconcile(key)
+        extras = _run_extras(selection, refs, agent_t, extras_arms or {}, ledger, writer, dry_run, counts, reconcile)
         if capture is not None and not dry_run:
             for surface, items in (capture.capture_run() or {}).items():
                 writer.capture(surface, "run", items)
     except CapViolation as exc:
         status, extras = f"stopped: per-case cap violated ({exc})", {}
+    except RunStopped as exc:
+        status, extras = f"stopped: {exc}", {}
     ledger.close(status)
     manifest = {"schema": "stage3-run-1", "status": status, "dry_run": dry_run, "started_at": started,
                 "finished_at": datetime.now(timezone.utc).isoformat(), "selection_sha256": selection_sha,
@@ -214,6 +227,8 @@ def _run_arm(arm, case: CaseRef, ledger, dry_run, counts):
             # arm error like any other, so it can never abort the run with this reservation still open.
             result.calls_used = _whole(result.calls_used, "calls_used")
             result.tokens = _whole(result.tokens, "tokens")
+    except RunStopped:         # not an arm error: the reservation stays open, counted at its worst case
+        raise
     except Exception as exc:   # one bad case never loses the run; it counts as degraded (wrong)
         counts["arm_errors"] += 1
         result = ArmResult(case_key=case.key, arm=arm.name, shipment_id=case.shipment_id, case_id=case.case_id, as_of=case.as_of,
@@ -223,7 +238,7 @@ def _run_arm(arm, case: CaseRef, ledger, dry_run, counts):
     return result
 
 
-def _run_extras(selection, refs, agent_t, extras_arms, ledger, writer, dry_run, counts):
+def _run_extras(selection, refs, agent_t, extras_arms, ledger, writer, dry_run, counts, reconcile=None):
     """The exploratory extras, in their fixed order, while each case's worst case still fits. Each extra case is
     investigated AS OF the main agent run's own snapshot (the clock has moved on by then), so the comparison with the
     main run is at the same t; its arm must investigate as of CaseRef.as_of (WIRING.md)."""
@@ -253,6 +268,8 @@ def _run_extras(selection, refs, agent_t, extras_arms, ledger, writer, dry_run, 
             result = _run_arm(arm, ref, ledger, dry_run, counts)
             result.arm = name
             writer.result(result, phase="extras")
+            if reconcile is not None:
+                reconcile(key, f"extras:{name}")
             entry["completed"] += result.not_run is None
         report[name] = entry
     return report
