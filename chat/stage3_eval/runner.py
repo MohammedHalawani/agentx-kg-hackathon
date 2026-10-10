@@ -25,7 +25,7 @@ import re
 
 from stage3_eval.arms import CaseRef
 from stage3_eval.budget import BudgetExceeded, BudgetLedger, CapViolation
-from stage3_eval.design import EXTRAS_ORDER, EvalConfig, sealed_hash
+from stage3_eval.design import EXTRAS_ORDER, EvalConfig, canonical_bytes, sealed_hash
 from stage3_eval.records import ArmResult
 
 TRUTH_ENV = "SUHAIL_EVAL_TRUTH_ROOT"
@@ -40,7 +40,7 @@ def load_selection(path):
     if not sidecar.exists():
         raise ValueError(f"{sidecar} is missing; a selection without its pre-registered hash is not run")
     expected = sidecar.read_text(encoding="utf-8").split()[0]
-    actual = hashlib.sha256(data).hexdigest()
+    actual = hashlib.sha256(canonical_bytes(data)).hexdigest()   # line endings normalised: the same on every checkout
     if actual != expected:
         raise ValueError("selection.json does not match its pre-registered sha256")
     return json.loads(data), actual

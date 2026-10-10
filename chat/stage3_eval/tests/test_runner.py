@@ -191,3 +191,25 @@ def test_cli_select_then_report_skeleton(tmp_path, capsys):
     assert sealed == {"E1": {"database": "shipments-v2-world-e1"}, "E2": {"database": "shipments-v2-world-e2"}}
     assert main(["report", "--selection", str(tmp_path / "pre" / "selection.json")]) == 0
     assert "dry-run skeleton" in (tmp_path / "pre" / "report.md").read_text()
+
+
+def test_selection_hash_is_the_same_whatever_the_line_endings(tmp_path, selected):
+    """The pre-registered files are written with LF on every platform, and a checkout that turned them into CRLF
+    (Git's line-ending conversion on Windows) still verifies; a change of content still does not."""
+    import hashlib
+    from stage3_eval.runner import load_selection
+    _config, sel_dir, summary = selected
+    for name in ("selection.json", "pairs.json", "strata.json"):
+        data = (sel_dir / name).read_bytes()
+        assert b"\r" not in data and b"\r" not in (sel_dir / f"{name}.sha256").read_bytes()
+        assert (sel_dir / f"{name}.sha256").read_text().split()[0] == hashlib.sha256(data).hexdigest()   # as sha256sum reads it
+    _document, digest = load_selection(sel_dir / "selection.json")
+    assert digest == summary["hashes"]["selection"]
+    path = sel_dir / "selection.json"
+    path.write_bytes(path.read_bytes().replace(b"\n", b"\r\n"))
+    sidecar = sel_dir / "selection.json.sha256"
+    sidecar.write_bytes(sidecar.read_bytes().replace(b"\n", b"\r\n"))
+    assert load_selection(path)[1] == digest
+    path.write_bytes(path.read_bytes().replace(b'"order": 0', b'"order": 9'))
+    with pytest.raises(ValueError, match="pre-registered sha256"):
+        load_selection(path)

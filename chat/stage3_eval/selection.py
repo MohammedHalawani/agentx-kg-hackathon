@@ -18,7 +18,7 @@ from pathlib import Path
 import random
 
 from stage3_eval.design import (ALLOCATION_AT_PLANNING, CROSS_SHIPMENT_MECHANISMS, E1_MAIN_FLOOR, MAIN_TEST_CELL, SHRINK_ORDER,
-                                STABILITY_MAX, STRATA, WORLDS, EvalConfig, n_main, sealed_hash, selection_seed)
+                                STABILITY_MAX, STRATA, WORLDS, EvalConfig, canonical_bytes, n_main, sealed_hash, selection_seed)
 from stage3_eval.strata import assign_strata, opened_cases
 
 SELECTION_SCHEMA = "stage3-selection-1"
@@ -111,10 +111,13 @@ def _check_runtime_safe(document, vocabulary):
 def _write_once(path: Path, document):
     if path.exists():
         raise FileExistsError(f"{path} exists; a pre-registered selection is never replaced")
-    data = json.dumps(document, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
-    path.write_text(data, encoding="utf-8")
-    digest = hashlib.sha256(data.encode("utf-8")).hexdigest()
-    path.with_name(path.name + ".sha256").write_text(f"{digest}  {path.name}\n", encoding="utf-8")
+    # Bytes, not text: text mode turns "\n" into "\r\n" on Windows, and the file would no longer match the digest
+    # taken here. The run step hashes the same canonical bytes (design.canonical_bytes), so a checkout that converts
+    # line endings still verifies.
+    data = (json.dumps(document, indent=2, sort_keys=True, ensure_ascii=False) + "\n").encode("utf-8")
+    path.write_bytes(data)
+    digest = hashlib.sha256(canonical_bytes(data)).hexdigest()
+    path.with_name(path.name + ".sha256").write_bytes(f"{digest}  {path.name}\n".encode("utf-8"))
     return digest
 
 

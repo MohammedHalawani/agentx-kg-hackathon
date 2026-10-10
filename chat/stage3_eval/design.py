@@ -175,6 +175,14 @@ class EvalConfig:
         return asdict(self)
 
 
+def canonical_bytes(data: bytes) -> bytes:
+    """The bytes a pre-registered file is hashed over: its content with CRLF (and lone CR) line endings as LF. The
+    files are written with LF, but a Git checkout that converts line endings (core.autocrlf on Windows) may hand back
+    CRLF, and the hash must not depend on that. Canonical JSON never holds a raw line break inside a string, so this
+    cannot hide a change of content."""
+    return data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+
+
 def sealed_hash(config: EvalConfig) -> str:
     """Hash of the configuration and every frozen table above; a run whose hash differs is not the sealed run."""
     payload = {"config": config.as_dict(), "allocation": sorted((list(k), v) for k, v in ALLOCATION_AT_PLANNING.items()),

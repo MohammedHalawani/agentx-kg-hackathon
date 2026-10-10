@@ -91,10 +91,10 @@ def write(root=HERE):
         base = Path(root) / f"world_{world.lower()}"
         (base / "truth").mkdir(parents=True, exist_ok=True)
         (base / "runtime").mkdir(parents=True, exist_ok=True)
-        (base / "truth" / "truth.jsonl").write_text("".join(json.dumps(r, sort_keys=True) + "\n" for r in truth), encoding="utf-8")
-        (base / "truth" / "monitor_replay_rows.jsonl").write_text("".join(json.dumps(r, sort_keys=True) + "\n" for r in replay), encoding="utf-8")
-        (base / "runtime" / "cases.json").write_text(json.dumps(cases, indent=1, sort_keys=True) + "\n", encoding="utf-8")
-        (base / "runtime" / "records.json").write_text(json.dumps(records, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+        (base / "truth" / "truth.jsonl").write_text("".join(json.dumps(r, sort_keys=True) + "\n" for r in truth), encoding="utf-8", newline="\n")
+        (base / "truth" / "monitor_replay_rows.jsonl").write_text("".join(json.dumps(r, sort_keys=True) + "\n" for r in replay), encoding="utf-8", newline="\n")
+        (base / "runtime" / "cases.json").write_text(json.dumps(cases, indent=1, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+        (base / "runtime" / "records.json").write_text(json.dumps(records, indent=1, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
 
 
 if __name__ == "__main__":
