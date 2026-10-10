@@ -249,6 +249,8 @@ class WorldPilotNeo4jTests(unittest.TestCase):
         # A case is not started when fewer calls than the per-case cap remain: 38 calls cover at most three ten-call cases.
         self.assertLessEqual(len(result["cases"]), 3)
         self.assertLessEqual(replay["model_calls_counted"], 38)
+        self.assertEqual(replay["model_calls_by_case_counters"], replay["model_calls_counted"])   # Both counts agree.
+        self.assertEqual(replay["model_calls_counted"], sum(case["model_calls_used"] for case in result["cases"]))
         self.assertIn(replay["stop_reason"], ("model_call_budget", "max_cases_reached", "feed_ended"))
         per_set = {}
         for case in result["cases"]:

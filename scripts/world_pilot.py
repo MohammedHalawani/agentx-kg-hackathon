@@ -361,6 +361,11 @@ def run_pilot(driver, database, *, agents=None, per_alert=2, max_cases=12, max_c
     counts = {"hours": 0, "ingested": 0, "duplicate": 0, "conflicting_duplicate": 0, "rejected": 0, "monitor_checked": 0}
     opened_order, investigated, by_symptoms, skipped, cases = [], [], {}, {}, []
     check, stop_reason, budget_refused = None, None, False
+    in_code = {"calls": 0}   # The store's own per-case counters, added up: exact and synchronous.
+
+    def spent():
+        """Model calls used so far: the larger of LiteLLM's callback count (which can lag a call) and the per-case counters."""
+        return max(calls_used(), in_code["calls"])
 
     def skip(case_id, reason):
         skipped[case_id] = reason
@@ -375,7 +380,7 @@ def run_pilot(driver, database, *, agents=None, per_alert=2, max_cases=12, max_c
             return skip(case_id, "max_cases_reached")
         if by_symptoms.get(key, 0) >= per_alert:
             return skip(case_id, "per_alert_limit")
-        if max_calls - calls_used() < per_case_cap:
+        if max_calls - spent() < per_case_cap:
             budget_refused = True
             return skip(case_id, "model_call_budget")
         before, started = calls_used(), time.perf_counter()
@@ -386,7 +391,10 @@ def run_pilot(driver, database, *, agents=None, per_alert=2, max_cases=12, max_c
             except Exception as failure:  # The store paused its worker and released the claim; the case is reported as failed.
                 error = type(failure).__name__
                 break
-            if result.get("processed") or result.get("reason") != "snapshot_changed" or max_calls - calls_used() < per_case_cap:
+            if result.get("processed") or result.get("reason") != "snapshot_changed":
+                break
+            in_code["calls"] += per_case_cap   # An aborted run's calls are not in a stored record: counted at the cap.
+            if max_calls - spent() < per_case_cap:
                 break
         wall = time.perf_counter() - started
         by_symptoms[key] = by_symptoms.get(key, 0) + 1
@@ -399,6 +407,8 @@ def run_pilot(driver, database, *, agents=None, per_alert=2, max_cases=12, max_c
         executed = store.execute_step(limit=25) if error is None else []
         record = case_record(store, reader, case_id, opened, result, wall, before, calls_used(), state_after)
         record.update(error=error, executions_dispatched=len(executed) if isinstance(executed, list) else None)
+        # A run without a readable counter is counted at the cap, so the total budget can never be exceeded.
+        in_code["calls"] += record["model_calls_used"] if isinstance(record.get("model_calls_used"), int) else per_case_cap
         cases.append(record)
         log(f"pilot: case {len(cases)} {case_id} {key} -> {record['primary_cause']} review {record['review']['model_verdict']} "
             f"authority {record['authority']['risk_class']} calls {record['model_calls_used']} ({record['wall_seconds']} s)")
@@ -470,7 +480,8 @@ def run_pilot(driver, database, *, agents=None, per_alert=2, max_cases=12, max_c
                        "cases_opened": len(opened_order), "cases_opened_by_symptom_set": dict(sorted(by_set.items())),
                        "cases_investigated": len(investigated), "cases_not_investigated": dict(sorted(
                            (reason, sum(1 for r in skipped.values() if r == reason)) for reason in set(skipped.values()))),
-                       "model_calls_counted": calls_used(), "truth_environment_set": truth_environment(), "world_truth_imported": truth_module_loaded()},
+                       "model_calls_counted": calls_used(), "model_calls_by_case_counters": in_code["calls"],
+                       "truth_environment_set": truth_environment(), "world_truth_imported": truth_module_loaded()},
             "time_correct_check": time_check,
             "cases": cases,
             "cases_not_investigated": [{"case_id": case_id, "reason": skipped[case_id], **(opened_all.get(case_id) or {})}
@@ -523,6 +534,10 @@ def main(argv=None):
         result = run_pilot(driver, args.database, per_alert=args.per_alert, max_cases=args.max_cases, max_calls=args.max_calls,
                            call_cap=args.call_cap, check_after_hours=args.check_after_hours, max_hours=args.max_hours,
                            disabled_tools=tuple(t for t in args.disable_tools.replace(" ", "").split(",") if t))
+    for _ in range(50):   # LiteLLM reports a finished call from a worker thread: let the last ones arrive.
+        if provider_calls() >= result["replay"]["model_calls_by_case_counters"]:
+            break
+        time.sleep(0.1)
     if result["replay"]["world_truth_imported"] or result["replay"]["truth_environment_set"]:
         raise SystemExit("world.truth or a truth path reached the pilot process; no results were written")
     result = {"provenance": provenance(started_at, code_state, result["manifest_hash"], args.database),
