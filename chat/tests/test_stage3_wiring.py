@@ -492,6 +492,15 @@ class SessionTests(unittest.TestCase):
         self.assertEqual(store.ticks, 0)
         self.assertEqual(source.case_ref("E1", "DEMO-SHP-000002").shipment_id, "DEMO-SHP-000002")
 
+    def test_the_no_tools_arm_is_built_at_the_sealed_cap(self):
+        """Its packet states the agent's per-case cap; the wiring gives it the sealed C_cap, not the runner's binding."""
+        clean = {k: v for k, v in os.environ.items() if "TRUTH" not in k.upper() and k != "SUHAIL_SIM_STATE_ROOT"}
+        with mock.patch.dict(os.environ, clean, clear=True):
+            wired = wiring.build(EvalConfig(freeze_commit="a" * 40, c_cap=16, budget=100, worlds={}), dry_run=True, agents=object(), driver=object())
+        self.addCleanup(wired["close"])
+        self.assertEqual((wired["arms"]["notools"].c_cap, wired["arms"]["notools"].worst_case()), (16, 2))
+        self.assertEqual((wired["arms"]["agent"].worst_case(), wired["extras_arms"]["stability_rerun"].worst_case()), (16, 16))
+
     def test_the_run_side_refuses_a_truth_path_and_reads_no_truth(self):
         with mock.patch.dict(os.environ, {"SUHAIL_EVAL_TRUTH_ROOT": r"C:\somewhere"}):
             with self.assertRaises(SystemExit):
@@ -596,7 +605,7 @@ class HarnessOverAFakeWorldTests(unittest.TestCase):
             self.assertTrue(any((self.root / "run" / "captured" / surface).iterdir()), surface)
         # Score and report (the scorer side reads truth; the fixture's database answers the two seams).
         truth = {w: self.worlds[w][0] for w in self.worlds}
-        self.assertEqual(manifest["extras"]["stability_rerun"]["completed"], 20)
+        self.assertEqual(manifest["extras"]["stability_rerun"]["completed"], 34)   # the whole main-test cell (34 <= design.STABILITY_MAX)
         scores = score_run(self.root / "run", self.scored_selection, truth, ingestion=self.database, resolver=self.database)
         self.assertEqual(len([s for s in scores if s["phase"] == "main"]), selected * 4)
         canary = TruthScanner(truth_vocabulary(truth["E1"])).scan_run(self.root / "run")

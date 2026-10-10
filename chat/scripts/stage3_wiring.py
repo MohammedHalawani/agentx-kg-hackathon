@@ -491,7 +491,9 @@ def build(config, *, dry_run=False, resume=False, selection=None, agents=None, n
 
     return {"arms": {"agent": AgentArm(lambda case: run_case(sessions[case.world], case, tap=tap, tokens=tokens, c_cap=config.c_cap),
                                        config.c_cap, config.r_cap),
-                     "notools": NoToolsArm(turn=notools_turn),    # None: operations.investigator.model_turn, the agent's model
+                     # turn None: operations.investigator.model_turn, the agent's model. The packet states the sealed
+                     # per-case cap, as the agent's does: given here, not left to the runner's bind_config.
+                     "notools": NoToolsArm(turn=notools_turn, c_cap=config.c_cap),
                      "rulecode": RuleCodeArm(), "symptom": SymptomArm()},
             "case_source": source, "capture": capture,
             "extras_arms": {"cross_shipment_ablation": extra("cross_shipment_ablation", CROSS_SHIPMENT_TOOLS),
