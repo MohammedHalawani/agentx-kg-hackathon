@@ -395,3 +395,67 @@ Reason: the coordinator asked for a Stage 4 reserve and two explicit statements.
   cases the smallest gain detectable at 80% power is about 17 to 19 points; the exact figure is printed at selection.
 - **Looks.** Look 1 stays after the first 40 main-test cases; look 2 moves to the first 100.
 - **Exclusion list.** `docs/evals/2026-10-10_world1_pilot/excluded_shipments.json` holds all 12 pilot shipments.
+
+---
+
+## Amendment 4 (2026-10-11, before any evaluation case is selected or run)
+
+Reason: on 2026-10-10 Fahad lifted the model-call budget as a project limit ("treat calls as an engineering resource";
+the 4,000 cap, the 3,600 stop line and the 400-call reserve are no longer required) and asked that the first 40 cases be a
+diagnostic checkpoint after which the run continues automatically. The two evaluation worlds exist but no case has been
+selected or run. This amendment is written once; where it conflicts with earlier text it wins. Nothing here was chosen
+after seeing an evaluation result.
+
+### 1. Budget becomes accounting plus a runaway guard
+- The campaign ledger stays: every run checks, reserves and settles in it, it is reconciled with the provider count after
+  every case, and it recovers from a crash. Its cap is now 20,000 calls, a guard that only a runaway could reach, not an
+  allowance. Spent before this amendment: 173.
+- The 3,600 stop line and the 400 reserve of the addendum to amendment 3 are withdrawn. The options that implement them
+  remain in the harness, off by default.
+
+### 2. Size from the statistical targets
+- The main test goes back to the planning allocation of amendment 2, capped by what each world contains:
+  E1 identifiable ambiguous 160 (the only pass or fail), E2 identifiable ambiguous 60, determined 40 (30 + 10),
+  unidentifiable 25 (20 + 5): 285 cases if every cell is available. The pre-registration records target and available per cell.
+- Power on E1 at 160 cases: smallest detectable gain 13.5 to 15.3 points at 80% power (the exact routine of the harness).
+
+### 3. Per-case caps
+- Agent arm: 20 model calls per case, one counter for investigator turns, reviewer rounds, revision rounds and retries, so
+  a complex case can ask for more evidence and another round. Development data only shows that 12 was too low (2 of 13
+  correct runs used all 12 and 1 of 18 runs was cut off); 20 is a judgment, not a fitted value. A cap hit is still a degraded
+  run and counts as wrong. The tool-call limit inside the investigator is unchanged (frozen at 284220f).
+- No-tools arm: 2 calls, as designed. Rule-code and symptom baselines: no model call.
+- Worst case for the main test: 285 x 22 = 6,270 calls. Expected, at the development rate: about 3,400.
+
+### 4. Extras, no longer conditional on leftover calls
+After the main test, in this fixed order, exploratory, never pooled, no pass or fail: the cross-shipment ablation on every
+eligible E1 identifiable ambiguous case, then one stability re-run on 40 seeded E1 cases. Worst case about 4,000 more calls.
+
+### 5. Automatic checkpoint after the first 40 cases (replaces the looks of amendment 3)
+The run pauses by count after the first 40 cases in the pre-registered order. A recorded check, which reads no truth and
+makes no accuracy judgment, must show all of:
+- canary and mechanism-id screen of the captured surfaces: clean;
+- campaign ledger reconciled with the provider count;
+- no truth module loaded in the run process;
+- agent-arm degraded rate at most 15% and cap-hit rate at most 10%;
+- provider failures at most 5% of calls;
+- every citation valid in at least 90% of concluded agent cases;
+- at least 90% of selected cases opened by the monitor;
+- no agent case with retrieved or cited evidence recorded after its snapshot.
+If all hold, the run resumes at once to the end with no further look and no approval. If any fails, the run stops, the
+defect is fixed, and what happens next is recorded in a dated note: a fix to infrastructure (harness, wiring, capture)
+resumes the same run; a fix that changes the investigator, tools, reviewer or prompts invalidates the run and requires
+new seeds, as the design header says. There is no interim accuracy look and no early stop on results.
+
+### 6. Worlds, as built
+- Freeze commit for investigator, tools, reviewer and generator: 284220f. Seeds from it: E1 1603049562, E2 1238420110.
+- E1: 900 shipments, as planned. E2: planned at 500 shipments, where the export failed its own coverage and tell checks and
+  was not written; regenerated with the same seed at 900 shipments, where every check passes. This deviation is recorded
+  here before any case exists. E2 remains a second fresh seed of the same generator, descriptive only.
+- Databases: `shipments-v2-world-eval-e1` and `shipments-v2-world-eval-e2`.
+
+### 7. Fair comparison (unchanged, restated)
+The agent and the no-tools arm use the same model, settings, system prompt, cause catalogue and opening packet, built by
+the same function; the only difference is that the no-tools arm has no tools and may not cite evidence. All arms are scored
+on the same cases at the same snapshot against truth knowable at that time, in a separate process after the run. The 12
+pilot shipments are excluded. Truth stays outside the runtime and the repository.
