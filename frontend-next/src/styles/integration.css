@@ -1,0 +1,24 @@
+/* Connected-product additions only. Built from the existing brand tokens; nothing here restyles the lab design. */
+.backend-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 24px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--warning-soft);
+  color: var(--foreground);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.backend-notice svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--warning);
+}
+@media (max-width: 600px) {
+  .backend-notice {
+    margin: 0 12px;
+  }
+}

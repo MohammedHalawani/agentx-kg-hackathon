@@ -77,14 +77,17 @@ function EntityNode({ data }: NodeProps<EvidenceNode>) {
 }
 const nodeTypes = { evidence: EntityNode };
 type SimNode = SimulationNodeDatum & { id: string };
-function positions(c: OperationalCase, layout: "force" | "tree") {
+function positions(
+  c: Pick<OperationalCase, "nodes" | "relationships">,
+  layout: "force" | "tree",
+) {
   if (layout === "tree")
     return c.nodes.map((node, index) => ({
       id: node.id,
       x:
-        node.id === "shipment"
+        node.kind === "shipment"
           ? 0
-          : node.id === "package"
+          : node.kind === "package"
             ? 220
             : node.kind === "observation"
               ? 440
@@ -102,6 +105,12 @@ function positions(c: OperationalCase, layout: "force" | "tree") {
             115
           : node.id === "shipment" || node.id === "package"
             ? 0
+            : node.kind === "shipment"
+              ? 0
+              : node.kind === "package"
+                ? c.nodes
+                    .filter((n) => n.kind === "package")
+                    .findIndex((n) => n.id === node.id) * 90
             : ((index % 5) - 2) * 125,
     }));
   const nodes: SimNode[] = c.nodes.map((n, i) => ({
@@ -152,7 +161,12 @@ function GraphInner({
   const flow = useReactFlow();
   const [nodes, setNodes, onNodesChange] = useNodesState<EvidenceNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
-  const layoutPositions = useMemo(() => positions(c, layout), [c, layout]);
+  // Keyed on the graph itself: a status update that leaves the graph unchanged keeps the layout.
+  const { nodes: graphNodes, relationships: graphEdges } = c;
+  const layoutPositions = useMemo(
+    () => positions({ nodes: graphNodes, relationships: graphEdges }, layout),
+    [graphNodes, graphEdges, layout],
+  );
   useEffect(() => {
     const selectedNode = c.nodes.find(
       (n) => n.id === selected || n.evidenceId === selected,
@@ -274,7 +288,7 @@ function GraphInner({
       80,
     );
     return () => clearTimeout(timer);
-  }, [layout, c, filter, flow, preferences.motion]);
+  }, [layout, graphNodes, filter, flow, preferences.motion]);
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;

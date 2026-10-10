@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import type { DateRange } from "react-day-picker";
@@ -46,7 +46,13 @@ import {
 import { PageAssistant } from "@/components/page-assistant";
 import { useOperations } from "@/state/operations";
 import { usePreferences } from "@/state/preferences";
-import { queryAudit, cityLocations, LAB_TODAY } from "@/services/page-queries";
+import {
+  queryAudit,
+  LAB_TODAY,
+  rangeStarts,
+  riyadhToday,
+} from "@/services/page-queries";
+import { displayId } from "@/domain/case-view";
 import {
   emptyAuditFilters,
   supportedStatuses,
@@ -96,20 +102,43 @@ const arabic = {
   resolution: "الحل",
 };
 type AuditMode = "events" | "by_shipment";
+/** Backend ledger: open on everything recorded, newest first (stored runs are rarely from today). */
+const backendAuditFilters: AuditFilters = {
+  ...emptyAuditFilters,
+  timeRange: "all",
+  sort: "newest",
+};
+const shortDate = (day: string) =>
+  new Date(`${day}T12:00:00Z`).toLocaleDateString("en-GB", {
+    timeZone: "UTC",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 export function AuditPage() {
   const snapshot = useOperations();
-  const { cases, events } = snapshot;
+  const { cases, events, backend, service, connection, catalog } = snapshot;
+  const base = backend ? backendAuditFilters : emptyAuditFilters;
+  // Lab fixtures are anchored to a fixed day; backend records use the real calendar.
+  const today = backend ? riyadhToday() : LAB_TODAY;
+  useEffect(() => {
+    void service.loadAudit?.();
+  }, [service]);
+  const label = (id: string) => {
+    const found = cases.find((c) => c.id === id);
+    return found ? displayId(found) : id;
+  };
   const { t, preferences } = usePreferences();
   const [params, setParams] = useSearchParams();
   const filters = {
-    ...emptyAuditFilters,
+    ...base,
     ...Object.fromEntries(
-      Object.keys(emptyAuditFilters).map((key) => [
+      Object.keys(base).map((key) => [
         key,
         params.get(key === "shipmentId" ? "case" : key) ??
           (key === "timeRange" && params.has("case")
             ? "all"
-            : emptyAuditFilters[key as keyof AuditFilters]),
+            : base[key as keyof AuditFilters]),
       ]),
     ),
   } as AuditFilters;
@@ -123,19 +152,25 @@ export function AuditPage() {
     null,
   );
   const [timelineId, setTimelineId] = useState(
-    params.get("case") ?? "SHP-10482",
+    params.get("case") ?? (backend ? "" : "SHP-10482"),
   );
   const [dateOpen, setDateOpen] = useState(false);
   const [range, setRange] = useState<DateRange | undefined>({
-    from: new Date(`${LAB_TODAY}T12:00:00`),
-    to: new Date(`${LAB_TODAY}T12:00:00`),
+    from: new Date(`${today}T12:00:00`),
+    to: new Date(`${today}T12:00:00`),
   });
   const previous = useRef<{ params: string; timelineId: string } | null>(null);
   const filterKey = JSON.stringify(filters);
   const result = useMemo(
     () =>
-      queryAudit(snapshot, JSON.parse(filterKey), 0, Number.MAX_SAFE_INTEGER),
-    [snapshot, filterKey],
+      queryAudit(
+        snapshot,
+        JSON.parse(filterKey),
+        0,
+        Number.MAX_SAFE_INTEGER,
+        backend ? today : undefined,
+      ),
+    [snapshot, filterKey, backend, today],
   );
   const safePagination = {
     ...pagination,
@@ -171,7 +206,7 @@ export function AuditPage() {
     const next = { ...filters, ...patch },
       query = new URLSearchParams();
     Object.entries(next).forEach(([key, value]) => {
-      if (value !== emptyAuditFilters[key as keyof AuditFilters])
+      if (value !== base[key as keyof AuditFilters])
         query.set(key === "shipmentId" ? "case" : key, value);
     });
     // Preserve an explicit Today range when a shipment is selected.
@@ -206,7 +241,13 @@ export function AuditPage() {
       next.timeRange = "all";
       id = next.shipmentId;
     }
-    const output = queryAudit(snapshot, next, 0, Number.MAX_SAFE_INTEGER);
+    const output = queryAudit(
+      snapshot,
+      next,
+      0,
+      Number.MAX_SAFE_INTEGER,
+      backend ? today : undefined,
+    );
     update(next, nextMode);
     setTimelineId(id);
     toast.info(
@@ -255,7 +296,9 @@ export function AuditPage() {
       id: "shipment",
       header: t("Shipment", "الشحنة"),
       size: 130,
-      cell: ({ row }) => <CaseLink id={row.original.caseId} />,
+      cell: ({ row }) => (
+        <CaseLink id={row.original.caseId} label={label(row.original.caseId)} />
+      ),
     },
     {
       id: "type",
@@ -300,7 +343,7 @@ export function AuditPage() {
         <span className="actor-label">
           {row.original.actor}
           <small className="cell-secondary">
-            {row.original.actorRole ?? "simulation"}
+            {row.original.actorRole ?? (backend ? "system" : "simulation")}
           </small>
         </span>
       ),
@@ -309,10 +352,16 @@ export function AuditPage() {
       id: "source",
       header: t("Source", "المصدر"),
       size: 95,
-      cell: () => <span className="micro-tag">{t("SIMULATED", "محاكاة")}</span>,
+      cell: ({ row }) => (
+        <span className="micro-tag">
+          {row.original.simulated
+            ? t("SIMULATED", "محاكاة")
+            : t("BACKEND", "الخادم")}
+        </span>
+      ),
     },
   ];
-  const cities = Object.keys(cityLocations).map((city) => ({
+  const cities = catalog.cities.map((city) => ({
     value: city,
     label: city,
   }));
@@ -333,7 +382,9 @@ export function AuditPage() {
       >
         <span className="date-pill">
           <ShieldCheck size={13} />
-          {t("Traceable · simulated", "قابل للتتبع · محاكاة")}
+          {backend
+            ? t("Backend audit ledger · synthetic data", "سجل تدقيق الخادم · بيانات اصطناعية")
+            : t("Traceable · simulated", "قابل للتتبع · محاكاة")}
         </span>
       </PageTitle>
       <div className="audit-view-row">
@@ -398,7 +449,7 @@ export function AuditPage() {
             }}
             options={[
               { value: "all", label: t("All shipments", "كل الشحنات") },
-              ...cases.map((c) => ({ value: c.id, label: c.id })),
+              ...cases.map((c) => ({ value: c.id, label: displayId(c) })),
             ]}
           />
           <SelectControl
@@ -432,7 +483,7 @@ export function AuditPage() {
                 mode="range"
                 selected={range}
                 onSelect={setRange}
-                defaultMonth={new Date("2026-10-01T12:00:00")}
+                defaultMonth={new Date(`${today.slice(0, 7)}-01T12:00:00`)}
                 numberOfMonths={1}
               />
               <p>
@@ -558,14 +609,27 @@ export function AuditPage() {
             variant="ghost"
             size="icon-sm"
             aria-label="Refresh audit"
-            onClick={() =>
+            onClick={() => {
+              if (service.loadAudit) {
+                // Backend: read new ledger records now and report the real count.
+                void service.loadAudit().then(() => {
+                  const state = service.getSnapshot();
+                  toast.info(
+                    t(
+                      `Audit ledger read · ${state.events.length} events loaded`,
+                      `تمت قراءة سجل التدقيق · ${state.events.length} أحداث محمّلة`,
+                    ),
+                  );
+                });
+                return;
+              }
               toast.info(
                 t(
                   `Up to date · ${events.length} local events`,
                   `محدث · ${events.length} أحداث محلية`,
                 ),
-              )
-            }
+              );
+            }}
           >
             <RefreshCw size={14} />
           </Button>
@@ -573,7 +637,7 @@ export function AuditPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => update(emptyAuditFilters)}
+              onClick={() => update(base)}
             >
               {t("Clear", "مسح")}
             </Button>
@@ -597,9 +661,25 @@ export function AuditPage() {
             )}
           </span>
           <span>
+            {backend && connection?.audit?.loading
+              ? `${t("Reading the ledger…", "جارٍ قراءة السجل…")} · `
+              : backend && connection?.audit?.truncated
+                ? `${t(
+                    `Showing the first ${connection.audit.loaded} of ${connection.audit.total} recorded events`,
+                    `عرض أول ${connection.audit.loaded} من ${connection.audit.total} حدثاً مسجلاً`,
+                  )} · `
+                : ""}
             {filters.timeRange === "custom"
               ? `${filters.from} → ${filters.to}`
-              : t(
+              : backend
+                ? {
+                    today: shortDate(today),
+                    week: `${shortDate(rangeStarts(today).week)} → ${shortDate(today)}`,
+                    month: `${shortDate(rangeStarts(today).month)} → ${shortDate(today)}`,
+                    all: t("All recorded dates", "كل الأوقات"),
+                    custom: "",
+                  }[filters.timeRange]
+                : t(
                   {
                     today: "09 Oct 2026",
                     week: "05–09 Oct 2026",
@@ -628,7 +708,7 @@ export function AuditPage() {
                   aria-label={`Clear audit ${key} filter`}
                   onClick={() =>
                     update({
-                      [key]: emptyAuditFilters[key as keyof AuditFilters],
+                      [key]: base[key as keyof AuditFilters],
                     })
                   }
                 >
@@ -670,14 +750,14 @@ export function AuditPage() {
                     data-testid={`audit-shipment-${c.id}`}
                   >
                     <b dir="ltr">
-                      {c.id}
+                      {displayId(c)}
                       <ChevronRight size={12} />
                     </b>
                     <p>
                       {c.shipment.origin} → {c.shipment.destination}
                     </p>
                     <div>
-                      <StatusBadge status={c.status} />
+                      <StatusBadge status={c.status} c={c} />
                       <small>
                         {result.items.filter((e) => e.caseId === c.id).length}{" "}
                         {t("events", "أحداث")}
@@ -692,7 +772,7 @@ export function AuditPage() {
                 <>
                   <div className="timeline-header">
                     <div>
-                      <h2 dir="ltr">{timelineCase.id}</h2>
+                      <h2 dir="ltr">{displayId(timelineCase)}</h2>
                       <p>
                         {timelineCase.issue} · {timelineCase.shipment.origin} →{" "}
                         {timelineCase.shipment.destination}
@@ -738,7 +818,10 @@ export function AuditPage() {
                               </Button>
                               <p>{e.detail}</p>
                               <small>
-                                {e.actor} · {t("simulated", "محاكاة")}
+                                {e.actor} ·{" "}
+                                {e.simulated
+                                  ? t("simulated", "محاكاة")
+                                  : t("recorded by the backend", "سجّله الخادم")}
                               </small>
                             </div>
                           </div>
@@ -762,10 +845,15 @@ export function AuditPage() {
       </section>
       <div className="audit-footnote">
         <ShieldCheck size={12} />
-        {t(
-          "Counts reflect the filtered records. Each synthetic shipment has one case. Times use Asia/Riyadh.",
-          "الأعداد من السجلات المُصفاة. لكل شحنة محاكاة حالة واحدة. الأوقات بتوقيت الرياض.",
-        )}
+        {backend
+          ? t(
+              "Counts reflect the loaded, filtered ledger records for cases in the queue. Recorded time is when the backend wrote the event; evidence time is the dataset clock. Times use Asia/Riyadh.",
+              "الأعداد من سجلات التدقيق المحمّلة والمُصفاة للحالات في القائمة. وقت التسجيل هو وقت كتابة الخادم للحدث، ووقت الدليل هو ساعة البيانات. الأوقات بتوقيت الرياض.",
+            )
+          : t(
+              "Counts reflect the filtered records. Each synthetic shipment has one case. Times use Asia/Riyadh.",
+              "الأعداد من السجلات المُصفاة. لكل شحنة محاكاة حالة واحدة. الأوقات بتوقيت الرياض.",
+            )}
       </div>
       <Sheet
         open={!!selected}
@@ -780,8 +868,10 @@ export function AuditPage() {
           <SheetHeader>
             <SheetTitle>{selected?.title}</SheetTitle>
             <SheetDescription>
-              {selected?.caseId} ·{" "}
-              {t("Simulated audit event", "حدث تدقيق محاكى")}
+              {selected ? label(selected.caseId) : ""} ·{" "}
+              {selected && !selected.simulated
+                ? t("Backend audit event", "حدث تدقيق من الخادم")
+                : t("Simulated audit event", "حدث تدقيق محاكى")}
             </SheetDescription>
           </SheetHeader>
           {selected && (
@@ -805,11 +895,15 @@ export function AuditPage() {
                   </dd>
                   <dt>{t("Actor / role", "الفاعل / الدور")}</dt>
                   <dd>
-                    {selected.actor} · {selected.actorRole ?? "simulation"}
+                    {selected.actor} ·{" "}
+                    {selected.actorRole ?? (backend ? "system" : "simulation")}
                   </dd>
                   <dt>{t("Shipment / case", "الشحنة / الحالة")}</dt>
                   <dd>
-                    <CaseLink id={selected.caseId} />
+                    <CaseLink
+                      id={selected.caseId}
+                      label={label(selected.caseId)}
+                    />
                   </dd>
                   <dt>{t("Event ID", "معرف الحدث")}</dt>
                   <dd>
@@ -829,10 +923,15 @@ export function AuditPage() {
                   <dd>{selected.evidenceIds?.join(", ") ?? "—"}</dd>
                   <dt>{t("Source", "المصدر")}</dt>
                   <dd>
-                    {t(
-                      "Local synthetic fixture / mock service",
-                      "محاكاة محلية",
-                    )}
+                    {selected.simulated
+                      ? t(
+                          "Local synthetic fixture / mock service",
+                          "محاكاة محلية",
+                        )
+                      : t(
+                          `Suhail backend audit ledger · ${selected.eventType ?? "event"} · synthetic dataset`,
+                          `سجل تدقيق خادم سهيل · ${selected.eventType ?? "حدث"} · بيانات اصطناعية`,
+                        )}
                   </dd>
                 </dl>
                 <Button asChild variant="outline" className="w-full">

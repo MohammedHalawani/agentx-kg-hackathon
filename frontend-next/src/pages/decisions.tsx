@@ -32,9 +32,15 @@ import { dateTimeLabel } from "@/lib/dates";
 import { useOperations } from "@/state/operations";
 import { usePreferences } from "@/state/preferences";
 import type { AuthorityDecision, OperationalCase } from "@/domain/types";
+import {
+  authorityLabel,
+  awaitingApproval,
+  controls,
+  displayId,
+} from "@/domain/case-view";
 import { useCanopus, useCanopusScreen } from "@/state/canopus";
 export function DecisionsPage() {
-  const { cases, decisions } = useOperations();
+  const { cases, decisions, service, backend } = useOperations();
   const { t, preferences } = usePreferences();
   const [params] = useSearchParams();
   const { key: navigationKey } = useLocation();
@@ -66,13 +72,14 @@ export function DecisionsPage() {
     .filter(
       (c) =>
         (tab === "review" ||
-          c.status ===
-            {
-              approval: "human_review",
-              evidence: "needs_evidence",
-              escalated: "escalated",
-            }[tab]) &&
-        `${c.id} ${c.issue} ${c.recommendation.title}`
+          (tab === "approval"
+            ? awaitingApproval(c)
+            : c.status ===
+              {
+                evidence: "needs_evidence",
+                escalated: "escalated",
+              }[tab])) &&
+        `${c.id} ${c.shipment.id} ${c.issue} ${c.recommendation.title}`
           .toLowerCase()
           .includes(query.toLowerCase()),
     )
@@ -83,6 +90,28 @@ export function DecisionsPage() {
       .includes(query.toLowerCase()),
   );
   const details = cases.find((c) => c.id === detailsId);
+  // Backend: the proposed action and the allowed controls come from each case's detail.
+  const pendingIds = rows
+    .slice(
+      pagination.pageIndex * pagination.pageSize,
+      (pagination.pageIndex + 1) * pagination.pageSize,
+    )
+    .map((c) => c.id)
+    .join(",");
+  useEffect(() => {
+    if (pendingIds) void service.loadCases?.(pendingIds.split(","));
+  }, [pendingIds, service]);
+  useEffect(() => {
+    void service.loadAudit?.();
+  }, [service]);
+  useEffect(
+    () => (detailsId ? service.watchCase?.(detailsId) : undefined),
+    [detailsId, service],
+  );
+  const caseLabel = (id: string) => {
+    const found = cases.find((c) => c.id === id);
+    return found ? displayId(found) : undefined;
+  };
   const canopus = useCanopus();
   useCanopusScreen({
     screen: "decisions",
@@ -98,7 +127,9 @@ export function DecisionsPage() {
       id: "shipment",
       header: t("Shipment", "الشحنة"),
       size: 140,
-      cell: ({ row }) => <CaseLink id={row.original.id} />,
+      cell: ({ row }) => (
+        <CaseLink id={row.original.id} label={displayId(row.original)} />
+      ),
     },
     {
       id: "exception",
@@ -121,9 +152,16 @@ export function DecisionsPage() {
         <div className="decision-proposed">
           <b>{row.original.recommendation.title}</b>
           <span className="cell-secondary">
-            {row.original.recommendation.authority === "operator"
-              ? t("Requires operator authorization", "يتطلب تفويض المشغل")
-              : t("Independent evidence required", "يتطلب أدلة مستقلة")}
+            {row.original.backend
+              ? row.original.backend.detailLoaded
+                ? t(
+                    authorityLabel(row.original)[0],
+                    authorityLabel(row.original)[1],
+                  )
+                : t("Loading from the backend…", "جارٍ التحميل من الخادم…")
+              : row.original.recommendation.authority === "operator"
+                ? t("Requires operator authorization", "يتطلب تفويض المشغل")
+                : t("Independent evidence required", "يتطلب أدلة مستقلة")}
           </span>
         </div>
       ),
@@ -138,7 +176,9 @@ export function DecisionsPage() {
       id: "status",
       header: t("Workflow", "سير العمل"),
       size: 140,
-      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      cell: ({ row }) => (
+        <StatusBadge status={row.original.status} c={row.original} />
+      ),
     },
     {
       id: "review",
@@ -149,7 +189,7 @@ export function DecisionsPage() {
           variant="outline"
           size="sm"
           onClick={() => setDetailsId(row.original.id)}
-          aria-label={`Review ${row.original.id}`}
+          aria-label={`Review ${displayId(row.original)}`}
         >
           <FileSearch size={13} />
           {t("Review", "مراجعة")}
@@ -162,7 +202,12 @@ export function DecisionsPage() {
       id: "shipment",
       header: t("Shipment", "الشحنة"),
       size: 140,
-      cell: ({ row }) => <CaseLink id={row.original.caseId} />,
+      cell: ({ row }) => (
+        <CaseLink
+          id={row.original.caseId}
+          label={caseLabel(row.original.caseId)}
+        />
+      ),
     },
     {
       accessorKey: "action",
@@ -182,7 +227,23 @@ export function DecisionsPage() {
         </Badge>
       ),
     },
-    { accessorKey: "reason", header: t("Reason", "السبب"), size: 340 },
+    {
+      id: "reason",
+      header: t("Reason", "السبب"),
+      size: 340,
+      cell: ({ row }) =>
+        row.original.reason ||
+        (backend ? (
+          <span className="cell-secondary">
+            {t(
+              "Not stored by the backend yet",
+              "لا يخزنه الخادم بعد",
+            )}
+          </span>
+        ) : (
+          ""
+        )),
+    },
     {
       id: "actor",
       header: t("Operator / time", "المشغل / الوقت"),
@@ -216,16 +277,21 @@ export function DecisionsPage() {
       >
         <span className="date-pill">
           <ShieldCheck size={13} />
-          {t(
-            "Operator authority · simulated policy C-04",
-            "صلاحية المشغل · سياسة محاكاة C-04",
-          )}
+          {backend
+            ? t(
+                "Operator authority · enforced by the backend",
+                "صلاحية المشغل · يفرضها الخادم",
+              )
+            : t(
+                "Operator authority · simulated policy C-04",
+                "صلاحية المشغل · سياسة محاكاة C-04",
+              )}
         </span>
       </PageTitle>
       <div className="decision-counts">
         <span>
           <Clock3 size={12} />
-          <b>{pending.filter((c) => c.status === "human_review").length}</b>
+          <b>{pending.filter(awaitingApproval).length}</b>
           {t("awaiting approval", "بانتظار الموافقة")}
         </span>
         <span>
@@ -316,10 +382,15 @@ export function DecisionsPage() {
       </section>
       <p className="decision-footnote">
         <ShieldCheck size={12} />
-        {t(
-          "Approval authorizes the named mock action. A case resolves only after independent outcome verification.",
-          "تفوض الموافقة إجراء المحاكاة المحدد. لا تُحل الحالة إلا بعد تحقق مستقل من النتيجة.",
-        )}
+        {backend
+          ? t(
+              "Approval authorizes the named action; the backend re-checks authority before dispatch. A case resolves only after independent outcome verification.",
+              "تفوض الموافقة الإجراء المحدد، ويعيد الخادم فحص الصلاحية قبل التنفيذ. لا تُحل الحالة إلا بعد تحقق مستقل من النتيجة.",
+            )
+          : t(
+              "Approval authorizes the named mock action. A case resolves only after independent outcome verification.",
+              "تفوض الموافقة إجراء المحاكاة المحدد. لا تُحل الحالة إلا بعد تحقق مستقل من النتيجة.",
+            )}
       </p>
       <Sheet
         open={!!details}
@@ -333,7 +404,8 @@ export function DecisionsPage() {
         >
           <SheetHeader>
             <SheetTitle>
-              {details?.id} · {t("Decision review", "مراجعة القرار")}
+              {details ? displayId(details) : ""} ·{" "}
+              {t("Decision review", "مراجعة القرار")}
             </SheetTitle>
             <SheetDescription>{details?.issue}</SheetDescription>
           </SheetHeader>
@@ -342,7 +414,7 @@ export function DecisionsPage() {
               <ScrollArea className="flex-1">
                 <div className="sheet-body">
                   <div className="flex items-center gap-3 mb-6">
-                    <StatusBadge status={details.status} />
+                    <StatusBadge status={details.status} c={details} />
                     <PriorityLabel priority={details.priority} />
                   </div>
                   <section className="detail-section">
@@ -408,23 +480,43 @@ export function DecisionsPage() {
               <div className="decision-sheet-actions">
                 {details.status === "human_review" ? (
                   <>
-                    <Button onClick={() => decide(details, "approved")}>
-                      {t("Review & authorize", "مراجعة وتفويض")}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => decide(details, "rejected")}
-                    >
-                      {t("Reject / request evidence", "رفض / طلب أدلة")}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      onClick={() => decide(details, "escalated")}
-                    >
-                      {t("Escalate case", "تصعيد الحالة")}
-                    </Button>
+                    {controls(details).approve && (
+                      <Button onClick={() => decide(details, "approved")}>
+                        {t("Review & authorize", "مراجعة وتفويض")}
+                      </Button>
+                    )}
+                    {details.backend && !controls(details).approve && (
+                      <p className="text-xs text-muted-foreground">
+                        {details.backend.detailLoaded
+                          ? (details.backend.approvalReason ??
+                            t(
+                              "The backend does not offer an approval for this case.",
+                              "لا يتيح الخادم الموافقة على هذه الحالة.",
+                            ))
+                          : t("Loading from the backend…", "جارٍ التحميل من الخادم…")}
+                      </p>
+                    )}
+                    {controls(details).reject && (
+                      <Button
+                        variant="outline"
+                        onClick={() => decide(details, "rejected")}
+                      >
+                        {backend
+                          ? t("Reject the action", "رفض الإجراء")
+                          : t("Reject / request evidence", "رفض / طلب أدلة")}
+                      </Button>
+                    )}
+                    {controls(details).escalate && (
+                      <Button
+                        variant="ghost"
+                        onClick={() => decide(details, "escalated")}
+                      >
+                        {t("Escalate case", "تصعيد الحالة")}
+                      </Button>
+                    )}
                   </>
-                ) : details.status === "needs_evidence" ? (
+                ) : details.status === "needs_evidence" &&
+                  controls(details).escalate ? (
                   <Button
                     variant="outline"
                     onClick={() => decide(details, "escalated")}
@@ -433,10 +525,15 @@ export function DecisionsPage() {
                   </Button>
                 ) : (
                   <p className="text-xs text-muted-foreground">
-                    {t(
-                      "Assigned to dispatch supervision.",
-                      "مُسند إلى إشراف الإرسال.",
-                    )}
+                    {backend
+                      ? t(
+                          "No operator decision is open for this case.",
+                          "لا يوجد قرار مشغل مفتوح لهذه الحالة.",
+                        )
+                      : t(
+                          "Assigned to dispatch supervision.",
+                          "مُسند إلى إشراف الإرسال.",
+                        )}
                   </p>
                 )}
               </div>

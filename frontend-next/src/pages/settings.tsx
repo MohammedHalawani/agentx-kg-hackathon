@@ -1,43 +1,26 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Sun,
   Moon,
   Globe2,
   SlidersHorizontal,
-  FlaskConical,
-  Plus,
-  RotateCcw,
   ShieldCheck,
+  Server,
 } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from "@/components/ui/alert-dialog";
 import { PageTitle } from "@/components/shared";
 import { usePreferences } from "@/state/preferences";
-import { useCanopus, useCanopusScreen } from "@/state/canopus";
+import { useCanopusScreen } from "@/state/canopus";
 import { useOperations } from "@/state/operations";
-import { scenarioInfo, initialSnapshot } from "@/data/fixtures";
 import { SelectControl } from "@/components/select-control";
-import type { Scenario } from "@/domain/types";
+import { dateTimeLabel } from "@/lib/dates";
+
+// Lab builds only: the fixture simulation controls (null in the connected product).
+import { LabSettings } from "@/services/lab-entry";
 export function SettingsPage() {
-  const canopus = useCanopus();
   useCanopusScreen({ screen: "settings" });
   const { preferences, update, t } = usePreferences();
-  const { service, cases, events } = useOperations();
-  const navigate = useNavigate();
-  const [scenario, setScenario] = useState<Scenario>("barcode");
-  const [reset, setReset] = useState(false);
+  const { cases, events, backend, connection } = useOperations();
   return (
     <>
       <PageTitle
@@ -208,143 +191,169 @@ export function SettingsPage() {
               </span>
             </div>
           </section>
-          <section className="surface settings-section simulation-settings">
-            <div className="settings-heading">
-              <FlaskConical size={18} />
-              <div>
-                <h2>{t("Local simulation", "المحاكاة المحلية")}</h2>
-                <p>
-                  {t(
-                    "Test operational scenarios inside this isolated UI lab.",
-                    "اختبر السيناريوهات التشغيلية في مختبر الواجهة المستقل.",
-                  )}
-                </p>
+          {LabSettings && <LabSettings />}
+          {backend && (
+            <section className="surface settings-section">
+              <div className="settings-heading">
+                <Server size={18} />
+                <div>
+                  <h2>{t("Backend connection", "الاتصال بالخادم")}</h2>
+                  <p>
+                    {t(
+                      "What this workspace is reading. Cases, evidence, decisions and outcomes come from the Suhail backend.",
+                      "ما تقرؤه مساحة العمل. الحالات والأدلة والقرارات والنتائج تأتي من خادم سهيل.",
+                    )}
+                  </p>
+                </div>
+                <span className="micro-tag">
+                  {t("SYNTHETIC DATA", "بيانات اصطناعية")}
+                </span>
               </div>
-              <span className="micro-tag">{t("LAB ONLY", "المختبر فقط")}</span>
-            </div>
-            <div className="setting-row">
-              <div>
-                <b>{t("Add a synthetic case", "إضافة حالة محاكاة")}</b>
-                <p>
-                  {t(
-                    "The new case enters the incoming queue with a current timestamp.",
-                    "تدخل الحالة الجديدة إلى قائمة الوارد بوقت حالي.",
-                  )}
-                </p>
+              <div className="setting-row">
+                <div>
+                  <b>{t("Connection", "الاتصال")}</b>
+                  <p>
+                    {connection?.error ??
+                      t(
+                        "Queue and worker status are re-read every few seconds.",
+                        "تُعاد قراءة القائمة وحالة المعالجة كل بضع ثوانٍ.",
+                      )}
+                  </p>
+                </div>
+                <span className="date-pill">
+                  {connection?.state === "online"
+                    ? t("Connected", "متصل")
+                    : connection?.state === "connecting"
+                      ? t("Connecting…", "جارٍ الاتصال…")
+                      : connection?.state === "degraded"
+                        ? t("Connection interrupted", "انقطع الاتصال")
+                        : t("Backend unreachable", "تعذر الوصول إلى الخادم")}
+                </span>
               </div>
-              <div className="simulation-add">
-                <SelectControl
-                  label="Simulation scenario"
-                  value={scenario}
-                  onChange={(value) => setScenario(value as Scenario)}
-                  options={Object.entries(scenarioInfo).map(([value, s]) => ({
-                    value,
-                    label: s.issue,
-                  }))}
-                />
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    const id = service.addCase(scenario);
-                    toast.info(
-                      `${id} ${t("added to the queue", "أُضيفت إلى القائمة")}`,
-                      {
-                        action: {
-                          label: t("Open case", "فتح الحالة"),
-                          onClick: () => navigate(`/cases/${id}`),
-                        },
-                      },
-                    );
-                  }}
-                >
-                  <Plus size={14} />
-                  {t("Add case", "إضافة حالة")}
-                </Button>
+              <div className="setting-row">
+                <div>
+                  <b>{t("Dataset", "مجموعة البيانات")}</b>
+                  <p>
+                    {t(
+                      "A synthetic logistics dataset. It is not SPL operational data.",
+                      "مجموعة بيانات لوجستية اصطناعية. ليست بيانات تشغيلية لسبل.",
+                    )}
+                  </p>
+                </div>
+                <span className="date-pill" dir="ltr">
+                  {connection?.database ?? "—"}
+                </span>
               </div>
-            </div>
-            <div className="setting-row">
-              <div>
-                <b>{t("Reset simulation", "إعادة المحاكاة")}</b>
-                <p>
-                  {t(
-                    `Restore ${initialSnapshot().cases.length} synthetic cases and the seed history. Clears local changes and operator decisions.`,
-                    `استعادة ${initialSnapshot().cases.length} حالات المحاكاة والسجل الأصلي. يمسح التغييرات والقرارات المحلية.`,
-                  )}
-                </p>
+              <div className="setting-row">
+                <div>
+                  <b>{t("Dataset clock", "ساعة البيانات")}</b>
+                  <p>
+                    {t(
+                      "Evidence is visible up to this time. Audit records also carry their recording time.",
+                      "تظهر الأدلة حتى هذا الوقت. تحمل سجلات التدقيق وقت تسجيلها أيضاً.",
+                    )}
+                  </p>
+                </div>
+                <span className="date-pill">
+                  {connection?.asOf ? dateTimeLabel(connection.asOf) : "—"}
+                </span>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setReset(true)}
-              >
-                <RotateCcw size={14} />
-                {t("Reset lab", "إعادة المختبر")}
-              </Button>
-            </div>
-          </section>
+              <div className="setting-row">
+                <div>
+                  <b>{t("Investigation worker", "معالج التحقيق")}</b>
+                  <p>
+                    {t(
+                      "Controlled by the Auto switch on Operations. The backend processes the oldest eligible case first.",
+                      "يتحكم به مفتاح التلقائي في العمليات. يعالج الخادم أقدم حالة مؤهلة أولاً.",
+                    )}
+                  </p>
+                </div>
+                <span className="date-pill">
+                  {connection?.worker
+                    ? `${connection.worker.state} · ${connection.worker.processedCount} ${t("processed", "تمت معالجتها")}`
+                    : "—"}
+                </span>
+              </div>
+              <div className="setting-row">
+                <div>
+                  <b>{t("Operator session", "جلسة المشغل")}</b>
+                  <p>
+                    {connection?.controls === "unavailable"
+                      ? t(
+                          "The backend grants operator controls only to a local, same-origin page. This page can read but not decide.",
+                          "يمنح الخادم صلاحيات المشغل لصفحة محلية من المصدر نفسه فقط. هذه الصفحة للقراءة دون قرار.",
+                        )
+                      : t(
+                          "A local development session chosen by the backend. It is not production identity.",
+                          "جلسة تطوير محلية يحددها الخادم. ليست هوية إنتاجية.",
+                        )}
+                  </p>
+                </div>
+                <span className="date-pill" dir="ltr">
+                  {connection?.operator
+                    ? `${connection.operator.actorId} · ${connection.operator.role}`
+                    : "—"}
+                </span>
+              </div>
+              <div className="setting-row">
+                <div>
+                  <b>Canopus</b>
+                  <p>
+                    {t(
+                      "The conversation interface is in place. Its backend does not exist yet, so it answers nothing.",
+                      "واجهة المحادثة جاهزة. خادمها غير موجود بعد، لذا لا تجيب بشيء.",
+                    )}
+                  </p>
+                </div>
+                <span className="date-pill">
+                  {t("Not connected", "غير متصل")}
+                </span>
+              </div>
+            </section>
+          )}
         </div>
         <aside className="settings-aside surface">
           <span className="settings-shield">
             <ShieldCheck size={24} />
           </span>
-          <h3>{t("An isolated workspace", "مساحة عمل مستقلة")}</h3>
+          <h3>
+            {backend
+              ? t("Connected to the Suhail backend", "متصل بخادم سهيل")
+              : t("An isolated workspace", "مساحة عمل مستقلة")}
+          </h3>
           <p>
-            {t(
-              "This UI lab uses a typed mock operations service. It does not connect to FastAPI, Neo4j, Ollama, or the original Suhail database.",
-              "يستخدم هذا المختبر خدمة عمليات محاكاة ذات أنواع محددة. لا يتصل بخدمات FastAPI أو Neo4j أو Ollama أو قاعدة سهيل الأصلية.",
-            )}
+            {backend
+              ? t(
+                  "Diagnosis, review, approval, execution and verification are decided by the backend. This page shows what it recorded and sends operator requests; it resolves nothing by itself.",
+                  "التشخيص والمراجعة والموافقة والتنفيذ والتحقق يقررها الخادم. تعرض هذه الصفحة ما سجّله وترسل طلبات المشغل، ولا تحل شيئاً بنفسها.",
+                )
+              : t(
+                  "This UI lab uses a typed mock operations service. It does not connect to FastAPI, Neo4j, Ollama, or the original Suhail database.",
+                  "يستخدم هذا المختبر خدمة عمليات محاكاة ذات أنواع محددة. لا يتصل بخدمات FastAPI أو Neo4j أو Ollama أو قاعدة سهيل الأصلية.",
+                )}
           </p>
           <div>
             <small>{t("CURRENT STATE", "الحالة الحالية")}</small>
             <b>
               {cases.length} {t("cases", "حالات")} · {events.length}{" "}
-              {t("events", "أحداث")}
+              {backend
+                ? t("audit events loaded", "أحداث تدقيق محمّلة")
+                : t("events", "أحداث")}
             </b>
           </div>
           <p className="small-print">
-            {t(
-              "Case state and preferences are saved in this browser. Chat history is retained for this browser session.",
-              "تُحفظ الحالات والتفضيلات في هذا المتصفح. يُحفظ سجل الدردشة لجلسة المتصفح الحالية.",
-            )}
+            {backend
+              ? t(
+                  "Only interface preferences are saved in this browser. Case state lives in the backend.",
+                  "تُحفظ تفضيلات الواجهة فقط في هذا المتصفح. حالة الحالات محفوظة في الخادم.",
+                )
+              : t(
+                  "Case state and preferences are saved in this browser. Chat history is retained for this browser session.",
+                  "تُحفظ الحالات والتفضيلات في هذا المتصفح. يُحفظ سجل الدردشة لجلسة المتصفح الحالية.",
+                )}
           </p>
         </aside>
       </div>
-      <AlertDialog open={reset} onOpenChange={setReset}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t(
-                "Reset the local simulation?",
-                "إعادة تعيين المحاكاة المحلية؟",
-              )}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t(
-                "This restores the original synthetic cases and clears local decisions, activity, and case outcomes. Interface preferences are preserved.",
-                "سيؤدي ذلك إلى استعادة حالات المحاكاة الأصلية ومسح القرارات والنشاط والنتائج المحلية. تُحفظ تفضيلات الواجهة.",
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("Cancel", "إلغاء")}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                service.reset();
-                canopus.clear();
-                sessionStorage.removeItem("suhail-ui-lab.chat");
-                toast.info(
-                  t(
-                    "Local simulation restored",
-                    "تمت استعادة المحاكاة المحلية",
-                  ),
-                );
-              }}
-            >
-              {t("Reset simulation", "إعادة المحاكاة")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }

@@ -1,44 +1,45 @@
-# Suhail UI Lab
+# Suhail interface (frontend-next)
 
-A complete, interactive frontend design lab for Saudi logistics exception operations. Built with React 19, TypeScript, Vite, Tailwind CSS 4, and the official shadcn/ui **Nova / Radix** preset. All cases, investigations, decisions, chat replies, and outcomes are synthetic browser data.
+The redesigned Suhail operations interface: React 19, TypeScript, Vite, Tailwind CSS 4 and the
+official shadcn/ui **Nova / Radix** preset. It started as the standalone UI lab
+(`C:\Projects\suhail_ui`, copied verbatim in the first commit; hashes in
+`SOURCE_MANIFEST.sha256`) and is now connected to the Suhail backend.
 
-## Run locally
+The backend serves the built app at **`/app/`**. The previous interface (`frontend/`) is
+unchanged and still served at `/`.
 
-```powershell
-cd C:\Projects\suhail_ui
-npm install
-npm run dev
-```
-
-Open **http://127.0.0.1:5180/**. Vite uses a strict port so it cannot silently open a different address.
+## Connected app
 
 ```powershell
+cd frontend-next
+npm ci
 npm run build
-npm run lint
-npm test
-npm run test:e2e
+# start the backend, then open http://127.0.0.1:8000/app/
 ```
 
-Browser tests use the installed Google Chrome channel. `screenshots/` contains desktop, mobile, and Canopus previews. Open the test report with `npx playwright show-report` after running the browser suite.
+Every case, stage, decision and outcome on screen comes from the backend. The data is a
+synthetic logistics dataset and is labelled as such; it is not SPL operational data.
+See [INTEGRATION.md](INTEGRATION.md) for what is connected, the rules the app follows and the
+gaps that still need backend work.
 
-## Try the workspace
+## UI lab (design and regression)
 
-- **Operations:** search and filter the unresolved table, change sorting or page size, and expand the verified Resolved rail. Enable Auto to watch the oldest eligible case progress. Pausing Auto stops new investigations; the current case and required checks continue.
-- **Investigation:** open SHP-10482. The map and knowledge graph stay side by side at desktop and laptop sizes. Select markers or graph nodes, inspect each pipeline stage, switch Force/Tree, resize the panels, and open the assessment.
-- **Decisions:** review a proposed action, supply a reason, and authorize, reject, or escalate. Authorization starts simulated execution. Only an independently verified outcome moves a case to Resolved.
-- **Explore:** use route filters, select a shipment, follow clustered markers, or inspect its graph and the evidence schema. Canopus applies supported filter requests through the existing page controls and offers Undo.
-- **Audit:** filter dates, shipments, event types, actors, routes, and workflows; change the timestamp basis and sort order; page through events; inspect metadata or switch to a shipment timeline.
-- **Canopus:** click the purple star on any screen to open a 420px floating conversation. The window overlays the workspace without resizing it; expand for longer reports or minimize back to the launcher. Inline **Ask Suhail** actions open the same conversation with case context. Minimize/reopen retains messages, the selected case, draft, and exact reading position. Try `@investigator explain the highlighted node`, `@reviewer why is approval required?`, or `Explain the selected investigation stage`. Compact expandable notes separate observations, hypotheses, proposed actions, operator decisions, and verified outcomes. Citations focus evidence, stages, assessments, decisions, or timelines, including when reopening the same reference. The working conversation menu provides a simulated response error for exercising Retry.
-- **Settings:** switch light/dark mode, English/Arabic, table density, or reduced motion. Add a synthetic scenario or reset the lab.
+```powershell
+npm run dev:lab        # http://127.0.0.1:5180/
+```
 
-## Frontend boundaries
+The lab is the original browser-only build: fixture cases, a local timer and a scripted
+assistant. It is for design work and for checking that the integrated code still looks and
+behaves like the original lab. None of it is in the connected build. The lab's own notes are in
+[VERIFICATION.md](VERIFICATION.md); the reference screenshots are in `screenshots/` (`final-*`
+are the lab, `connected-*` are the connected app).
 
-This project has no authentication, backend endpoints, LLM calls, cloud inference, database connections, ingestion pipeline, or production execution engine. Browser state is retained in localStorage; case conversations are retained in sessionStorage. Reset lab restores the fixtures and clears conversations and operator decisions.
+## Checks
 
-Map evidence is synthetic. The street basemap uses OpenStreetMap tiles with attribution; an interactive offline schematic is available and activates when tiles cannot load. Vehicle GPS is explicitly distinguished from parcel custody evidence.
-
-The historical dataset and Audit shortcuts are anchored to **9 October 2026**, Saudi time, so examples remain reproducible. Arabic interface controls and Canopus replies are localized; original logistics fixture names and identifiers can remain in English.
-
-See [INTEGRATION.md](INTEGRATION.md) for the small, typed service seams available for a future application integration.
-
-See [VERIFICATION.md](VERIFICATION.md) for browser coverage, responsive screenshots, and the completed build and test checks.
+```powershell
+npm run typecheck
+npm run lint
+npm test               # unit: adapters, backend service, original lab units
+npm run test:e2e       # connected app in Chrome against a scripted backend stand-in
+npm run test:e2e:lab   # the original 20 lab browser tests on this codebase
+```

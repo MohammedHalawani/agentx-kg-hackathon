@@ -33,6 +33,8 @@ import { useOperations } from "@/state/operations";
 import { usePreferences } from "@/state/preferences";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import type { ChatParticipant } from "@/domain/chat";
+import { LAB, asset } from "@/config";
+import { displayId } from "@/domain/case-view";
 
 const screenLabels = {
   operations: ["Operations", "العمليات"],
@@ -44,7 +46,12 @@ const screenLabels = {
 } as const;
 export function CanopusPanel() {
   const canopus = useCanopus();
-  const { panelContext: context, panelOpen: open, presentation } = canopus;
+  const {
+    panelContext: context,
+    panelOpen: open,
+    presentation,
+    connected,
+  } = canopus;
   const { cases } = useOperations();
   const { t, preferences } = usePreferences();
   const systemReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
@@ -149,7 +156,7 @@ export function CanopusPanel() {
             ),
           ];
   function send(text: string, fail = false) {
-    if (!text.trim() || thread.busy) return;
+    if (!connected || !text.trim() || thread.busy) return;
     const participant = text
       .match(/@(suhail|investigator|reviewer)\b/i)?.[1]
       ?.toLowerCase() as ChatParticipant | undefined;
@@ -232,11 +239,16 @@ export function CanopusPanel() {
           }}
         >
           <header className="canopus-panel-header">
-            <img src="/suhail.svg" width="34" height="34" alt="" />
+            <img src={asset("suhail.svg")} width="34" height="34" alt="" />
             <div className="canopus-heading">
               <h2 id={titleId}>Canopus</h2>
               <p id={descriptionId}>
-                {t("Suhail operations assistant", "مساعد سهيل للعمليات")}
+                {connected
+                  ? t("Suhail operations assistant", "مساعد سهيل للعمليات")
+                  : t(
+                      "Not connected · development preview",
+                      "غير متصل · معاينة تطويرية",
+                    )}
               </p>
             </div>
             <div className="canopus-panel-actions">
@@ -275,6 +287,7 @@ export function CanopusPanel() {
                     : t("Expand conversation", "توسيع المحادثة")}
                 </TooltipContent>
               </Tooltip>
+              {LAB && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -309,6 +322,7 @@ export function CanopusPanel() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              )}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -347,7 +361,7 @@ export function CanopusPanel() {
                   value: "all",
                   label: t("Workspace overview", "نظرة عامة على المساحة"),
                 },
-                ...cases.map((c) => ({ value: c.id, label: c.id })),
+                ...cases.map((c) => ({ value: c.id, label: displayId(c) })),
               ]}
             />
           </div>
@@ -368,19 +382,29 @@ export function CanopusPanel() {
                   <div className="canopus-welcome">
                     <Sparkles size={19} />
                     <h3>
-                      {selected
-                        ? t("Let’s follow the evidence.", "لنتتبع الأدلة.")
-                        : t("How can I help?", "كيف يمكنني مساعدتك؟")}
+                      {!connected
+                        ? t(
+                            "Canopus is not connected yet.",
+                            "كانوبس غير متصل بعد.",
+                          )
+                        : selected
+                          ? t("Let’s follow the evidence.", "لنتتبع الأدلة.")
+                          : t("How can I help?", "كيف يمكنني مساعدتك؟")}
                     </h3>
                     <p>
-                      {t(
-                        "Understand evidence, decisions, and outcomes. Or ask me to find what matters on this page.",
-                        "افهم الأدلة والقرارات والنتائج، أو اطلب مني العثور على ما يهمك في هذه الصفحة.",
-                      )}
+                      {connected
+                        ? t(
+                            "Understand evidence, decisions, and outcomes. Or ask me to find what matters on this page.",
+                            "افهم الأدلة والقرارات والنتائج، أو اطلب مني العثور على ما يهمك في هذه الصفحة.",
+                          )
+                        : t(
+                            "This conversation interface is in place, but Canopus has no backend yet, so it cannot answer and nothing is generated here. The recorded evidence, review, decisions and outcomes are on the case, Decisions and Audit screens.",
+                            "واجهة المحادثة جاهزة، لكن كانوبس بلا خادم بعد، فلا يستطيع الإجابة ولا يُولَّد شيء هنا. الأدلة والمراجعة والقرارات والنتائج المسجلة في شاشات الحالة والقرارات والتدقيق.",
+                          )}
                     </p>
                   </div>
                   <div className="suggested-questions">
-                    {questions.map((question) => (
+                    {(connected ? questions : []).map((question) => (
                       <Button
                         variant="outline"
                         key={question}
@@ -411,18 +435,30 @@ export function CanopusPanel() {
                 setDrafts((all) => ({ ...all, [key]: value }))
               }
               onSend={send}
-              disabled={thread.busy}
+              disabled={thread.busy || !connected}
               label={t("Ask Canopus", "اسأل كانوبس")}
-              placeholder={t(
-                "Ask Canopus, or mention @reviewer…",
-                "اسأل كانوبس، أو اذكر @reviewer…",
-              )}
+              placeholder={
+                connected
+                  ? t(
+                      "Ask Canopus, or mention @reviewer…",
+                      "اسأل كانوبس، أو اذكر @reviewer…",
+                    )
+                  : t(
+                      "Canopus is not connected to a backend yet.",
+                      "كانوبس غير متصل بخادم بعد.",
+                    )
+              }
             />
             <div className="chat-readonly">
-              {t(
-                "Synthetic replies · local simulation",
-                "إجابات اصطناعية · محاكاة محلية",
-              )}
+              {connected
+                ? t(
+                    "Synthetic replies · local simulation",
+                    "إجابات اصطناعية · محاكاة محلية",
+                  )
+                : t(
+                    "Not connected · no AI responses are generated",
+                    "غير متصل · لا تُولَّد إجابات ذكاء اصطناعي",
+                  )}
             </div>
           </footer>
         </motion.section>

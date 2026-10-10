@@ -45,18 +45,18 @@ import { PageAssistant } from "@/components/page-assistant";
 import { useOperations } from "@/state/operations";
 import { usePreferences } from "@/state/preferences";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { filterShipments, cityLocations } from "@/services/page-queries";
+import { filterShipments } from "@/services/page-queries";
 import {
   emptyShipmentFilters,
   type PageAction,
   type ShipmentFilters,
 } from "@/domain/page-actions";
-import { scenarioInfo } from "@/data/fixtures";
+import { displayId } from "@/domain/case-view";
 import { useCanopusScreen } from "@/state/canopus";
 
 type ExploreView = "map" | "graph" | "schema";
 export function ExplorePage() {
-  const { cases } = useOperations();
+  const { cases, catalog, service, backend } = useOperations();
   const { t, preferences } = usePreferences();
   const [params, setParams] = useSearchParams();
   const filters = {
@@ -74,7 +74,7 @@ export function ExplorePage() {
       : "map"
   ) as ExploreView;
   const [selectedId, setSelectedId] = useState(
-    params.get("shipment") ?? "SHP-10482",
+    params.get("shipment") ?? (backend ? "" : "SHP-10482"),
   );
   const [selectedEvidence, setSelectedEvidence] = useState<string | null>(null);
   const [entityFilter, setEntityFilter] = useState("all");
@@ -96,6 +96,12 @@ export function ExplorePage() {
     [cases, filterKey],
   );
   const c = matching.find((c) => c.id === selectedId) ?? matching[0];
+  // Backend: the selected shipment's evidence and graph are loaded when it is selected.
+  const watchedId = c?.backend ? c.id : null;
+  useEffect(
+    () => (watchedId ? service.watchCase?.(watchedId) : undefined),
+    [watchedId, service],
+  );
   useCanopusScreen({
     screen: "explore",
     caseId: c?.id,
@@ -197,7 +203,7 @@ export function ExplorePage() {
   const activeFilters = Object.entries(filters).filter(
     ([, value]) => value !== "all" && value !== "",
   );
-  const cities = Object.keys(cityLocations).map((city) => ({
+  const cities = catalog.cities.map((city) => ({
     value: city,
     label: city,
   }));
@@ -233,6 +239,8 @@ export function ExplorePage() {
           )}
         />
       )
+    ) : backend ? (
+      <BackendSchemaView />
     ) : (
       <SchemaView />
     );
@@ -342,10 +350,7 @@ export function ExplorePage() {
                     value: "all",
                     label: t("All exceptions", "كل الاستثناءات"),
                   },
-                  ...Object.entries(scenarioInfo).map(([value, s]) => ({
-                    value,
-                    label: s.issue,
-                  })),
+                  ...catalog.causes,
                 ]}
               />
             </label>
@@ -508,7 +513,7 @@ export function ExplorePage() {
                         data-testid={`shipment-result-${item.id}`}
                       >
                         <div className="result-heading">
-                          <b dir="ltr">{item.id}</b>
+                          <b dir="ltr">{displayId(item)}</b>
                           <PriorityLabel priority={item.priority} />
                         </div>
                         <p>{item.issue}</p>
@@ -517,7 +522,7 @@ export function ExplorePage() {
                           <ArrowRight size={10} />
                           {item.shipment.destination}
                         </span>
-                        <StatusBadge status={item.status} />
+                        <StatusBadge status={item.status} c={item} />
                       </Button>
                     ))}
                   </div>
@@ -525,7 +530,7 @@ export function ExplorePage() {
                 {c && (
                   <div className="selected-result-footer">
                     <small>{t("SELECTED SHIPMENT", "الشحنة المحددة")}</small>
-                    <b dir="ltr">{c.id}</b>
+                    <b dir="ltr">{displayId(c)}</b>
                     <div>
                       <Button asChild variant="outline" size="sm">
                         <Link to={`/cases/${c.id}`}>
@@ -556,7 +561,7 @@ export function ExplorePage() {
             {evidence?.label ??
               entity?.label ??
               relationship?.label ??
-              c?.id ??
+              (c ? displayId(c) : undefined) ??
               t("Network overview", "نظرة عامة على الشبكة")}
           </b>
           <p>
@@ -573,7 +578,9 @@ export function ExplorePage() {
         </div>
         <span>
           <ShieldCheck size={12} />
-          {t("Simulated evidence", "أدلة محاكاة")}
+          {backend
+            ? t("Backend evidence · synthetic dataset", "أدلة الخادم · بيانات اصطناعية")
+            : t("Simulated evidence", "أدلة محاكاة")}
         </span>
       </div>
       <PageAssistant
@@ -636,6 +643,104 @@ const schema = [
     links: "VERIFIES → Recommendation · SUPPORTED_BY → Observation",
   },
 ];
+/** The live label topology of the backend graph (GET /schema): labels and relationship types only. */
+function BackendSchemaView() {
+  const { t } = usePreferences();
+  const { service } = useOperations();
+  const [schema, setSchema] = useState<Awaited<
+    ReturnType<NonNullable<typeof service.schema>>
+  > | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    service
+      .schema?.()
+      .then((result) => {
+        if (!cancelled) setSchema(result);
+      })
+      .catch((e: Error) => {
+        if (!cancelled) setError(e.message);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [service]);
+  const nodes = [...(schema?.nodes ?? [])].sort((a, b) =>
+    a.label.localeCompare(b.label),
+  );
+  const entity = nodes.find((n) => n.id === selected) ?? nodes[0];
+  const label = (id: string) => nodes.find((n) => n.id === id)?.label ?? "?";
+  const links = (schema?.relationships ?? []).filter(
+    (r) => entity && (r.from === entity.id || r.to === entity.id),
+  );
+  return (
+    <section className="schema-view visualization">
+      <div className="viz-header">
+        <div className="flex gap-2 items-center">
+          <GitBranch size={14} />
+          <h2>{t("Graph schema", "بنية الرسم")}</h2>
+          <span className="subtle-count">{nodes.length}</span>
+        </div>
+        <Badge variant="secondary">{t("Neo4j labels", "تسميات Neo4j")}</Badge>
+      </div>
+      <div className="schema-canvas" style={{ overflowY: "auto" }}>
+        <p>
+          {error ??
+            (schema
+              ? t(
+                  "Select a label to see the relationship types connected to it.",
+                  "اختر تسمية لعرض أنواع العلاقات المرتبطة بها.",
+                )
+              : t("Reading the schema from the backend…", "جارٍ قراءة البنية من الخادم…"))}
+        </p>
+        <div className="schema-entities">
+          {nodes.map((n) => (
+            <Button
+              variant="outline"
+              key={n.id}
+              className={`schema-entity ${entity?.id === n.id ? "selected" : ""}`}
+              onClick={() => setSelected(n.id)}
+            >
+              <GitBranch size={25} />
+              <b>{n.label}</b>
+              <span>
+                {t("View connections", "عرض العلاقات")}
+                <ArrowRight size={10} />
+              </span>
+            </Button>
+          ))}
+        </div>
+        {entity && (
+          <div className="schema-inspector">
+            <b>{entity.label}</b>
+            <p>
+              {links.length} {t("relationship types", "أنواع علاقات")}
+            </p>
+            <code>
+              {links
+                .map((r) =>
+                  r.from === entity.id
+                    ? `${r.type} → ${label(r.to)}`
+                    : `${r.type} ← ${label(r.from)}`,
+                )
+                .join(" · ") || "—"}
+            </code>
+          </div>
+        )}
+      </div>
+      <div className="viz-legend">
+        <span>
+          <i className="dot purple" />
+          {t(
+            "Live label topology from the backend graph · no shipment properties",
+            "بنية التسميات الحية من رسم الخادم · دون خصائص الشحنات",
+          )}
+        </span>
+      </div>
+    </section>
+  );
+}
 function SchemaView() {
   const { t } = usePreferences();
   const [selected, setSelected] = useState("Package");

@@ -1,52 +1,113 @@
-# Frontend integration seams
+# frontend-next: the redesigned Suhail interface, connected to the backend
 
-The UI is isolated in `C:\Projects\suhail_ui`. Work in this lab does not require access to `C:\Projects\demo`.
+`frontend-next` is the redesigned Suhail UI (snapshot of `C:\Projects\suhail_ui`, see
+`SOURCE_MANIFEST.sha256`) wired to the real Suhail backend. The backend serves the built app
+under **`/app/`**. The previous interface in `frontend/` is untouched and still served at `/`
+as the rollback.
 
-| Area                   | Contract and implementation                                                                                                                                                                   |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| UI data                | `src/domain/types.ts`: typed shipments, parcel observations, graph relationships, proposed actions, operator decisions, execution receipts, independently verified outcomes, and audit events |
-| Operations adapter     | `OperationsService` in `src/domain/types.ts`; current implementation `src/services/mock-operations.ts` is a browser-only fixture store                                                        |
-| Canopus adapter        | `CanopusService` in `src/domain/canopus.ts`; current implementation `src/services/mock-canopus.ts` uses fixture selection and timed text fragments                                            |
-| Read-only page actions | `src/domain/page-actions.ts`; `src/services/mock-intents.ts` validates a supported set of requests; page handlers apply the resulting filters, selections, and views                          |
-| Queries                | `src/services/page-queries.ts`: shipment filtering and audit filtering, chronological sorting, unique counts, and pagination                                                                  |
-| Display state          | `src/state/operations.tsx`, `src/state/preferences.tsx`, and `src/state/canopus.tsx`                                                                                                          |
-| Design system          | `components.json` records the Nova / Radix preset; official components are in `src/components/ui`; brand tokens are in `src/styles/brand.css`                                                 |
+## Two builds from one codebase
 
-## Canopus and a future V2 integration
+| Build | Command | Data | Where |
+| --- | --- | --- | --- |
+| Connected (default) | `npm run build` → `dist/` | The Suhail API only | Served by the backend at `/app/` |
+| UI lab | `npm run dev:lab`, `npm run build:lab` → `dist-lab/` | Browser fixtures, local timer, scripted assistant | `http://127.0.0.1:5180/` |
 
-`CanopusProvider` accepts an optional `CanopusService` adapter. A later Claude V2 integration can supply that implementation without changing the conversation, citation, loading, retry, or scrolling components. The lab supplies no credentials or remote implementation.
+The lab build exists for design work and for regression against the original lab. The swap is
+made at build time (`src/services/lab-entry.ts` is aliased to `src/services/lab.ts` in lab
+mode), so the connected bundle contains no fixture cases, no mock service and no scripted
+assistant replies. `npm run build` followed by a search of `dist/` for fixture text is part of
+the checks.
 
-```ts
-interface CanopusService {
-  stream(
-    request: CanopusRequest,
-    options: { signal: AbortSignal },
-  ): AsyncIterable<CanopusStreamEvent>;
-}
+## Running the connected app
+
+```powershell
+cd frontend-next
+npm ci
+npm run build          # writes frontend-next/dist
+# then start the backend as usual; open http://127.0.0.1:8000/app/
 ```
 
-A request includes its ID, message, participant, language, and screen context: selected case, selected evidence, stage, and current filters. The adapter emits `activity`, text `delta`, and a final typed `complete` reply. Cancellation uses AbortSignal. Adapter errors are displayed with a retry control that retains the original request and avoids duplicating the question.
+`npm run dev` starts Vite on `http://127.0.0.1:5190/app/` and proxies API reads to
+`SUHAIL_BACKEND` (default `http://127.0.0.1:8000`). Operator controls need the same-origin
+build served by the backend: the backend refuses state changes from another origin.
 
-Each assistant message retains its own request context. Retry continues to target that message after a later question or a reload; an interrupted stream is shown with explicit retry feedback. Conversation history is stored in sessionStorage. Presentation has three states: collapsed, floating, and expanded. The non-modal floating window remains mounted and inert while minimized, preserving its transcript position and per-thread draft without exposing hidden controls to the keyboard.
+## What is connected
 
-The final reply contains a summary and labeled blocks for `observation`, `hypothesis`, `recommendation`, `decision`, and `outcome`. The outcome’s `verified` flag must describe independently supported results, never a recommendation or approval. Each reference includes its kind, label, and navigation target.
+| Screen | Backend source |
+| --- | --- |
+| Operations queue, counts, Resolved rail | `GET /cases/queue?scope=all` (cursor pages), `GET /worker/status`, case details for resolved cases |
+| Auto switch | `POST /worker/start`, `POST /worker/pause`; shows the worker state the backend then reports |
+| Investigation: rail, map, graph, assessment | `GET /cases/{id}` (evidence, `route_layers`, `ledger_graph`, `pipeline`, `diagnosis`, `recommendation`, `review`, executions, outcome) and the live `GET /cases/{id}/events` stream |
+| Investigate now | `POST /cases/{id}/investigate` (runs the real investigation) |
+| Decisions | Pending cases from the queue; `POST /cases/{id}/decision` with `expected_version` and an idempotency key; history from `OPERATOR_DECISION` audit records |
+| Verify | `POST /cases/{id}/outcomes` asks the independent verifier to check; there is no success flag |
+| Explore | Queue cases joined with `GET /explore` (origin and destination); schema from `GET /schema` |
+| Audit | `GET /audit` (cursor pages, then incremental by `from`) |
+| Settings | Connection, dataset, clock, worker and operator session as reported by the backend |
 
-Currently supported citation targets:
+Code: `src/api/contracts.ts` (wire types), `src/api/client.ts` (HTTP, session token),
+`src/api/adapters.ts` (pure mappings), `src/services/api-operations.ts` (the service),
+`src/domain/case-view.ts` (how a case is presented for either data source).
 
-- `/cases/:id?evidence=:evidenceId` focuses the parcel observation in the map, graph, and inspector.
-- `/cases/:id?stage=:stageIndex` selects the corresponding investigation stage.
-- `/cases/:id?section=assessment` opens the case assessment.
-- `/decisions?case=:id` opens the matching decision review.
-- `/audit?case=:id&mode=by_shipment&timeRange=all` opens its chronological history.
+## Rules the connected app follows
 
-One global `CanopusPanel` renders through a portal above normal page, map, and graph controls. The case's inline Ask Suhail action opens this same window. Expanding changes only the conversation geometry; it does not change the application layout. Case history follows navigation, while opening a new screen adopts that screen's current context.
+- **The backend is the source of truth.** The browser runs no timer that advances a case and
+  never marks anything executed, verified or resolved. After every operator request the case is
+  re-read from the backend.
+- **Only what the backend allows is offered.** Approval is shown only when the case detail says
+  `recommendation.approvable`; otherwise the backend's `approval_reason` is shown. Reject and
+  escalate follow the backend lifecycle (`chat/operations/lifecycle.py`) and the backend
+  re-checks every request. A refused or stale request reloads the case and shows the refusal.
+- **Case and shipment identities stay separate.** Routes and API calls use the case id; screens
+  show the shipment id.
+- **A diagnosis is shown only when the backend accepted one.** Without it the queue shows the
+  monitor's observed symptoms and the case shows the backend's reason for the absence. Rule
+  signals are not presented as a cause.
+- **Vehicle GPS is never parcel custody.** Custody markers come from `custody_points`
+  (corroborated custody); `vehicle_path` is drawn as vehicle telemetry only; a delivery attempt
+  is a recorded attempt at an address reference, not proof of delivery.
+- **A receipt is not an outcome; a partial effect is not a resolution.** An outcome is shown
+  only when it is verified, not invalidated and belongs to the current cycle; `success` with
+  `exception_cleared: false` is not shown as successful. The Resolved rail lists only cases the
+  backend reports as `RESOLVED` with such an outcome.
+- **Failures are shown, never papered over.** If the backend is unreachable nothing is shown
+  and the page says so; if it drops out later, the last read stays, marked as possibly out of
+  date. There is no fallback to fixtures.
+- **Bounded reads are labelled.** The queue loads up to 1,000 cases and the audit ledger up to
+  3,000 events; the graph draws up to 64 of a case's recorded nodes (cited evidence first) and
+  states the total.
+- **Synthetic data is labelled synthetic** and is not presented as SPL operations.
 
-`PageAssistant` is a headless bridge to the existing Explore and Audit callbacks. `CanopusPageTools` supplies the pathname, current page context, apply handler, and Undo handler. Supported frontend rules update the actual filters, selection, and view through those callbacks. Unsupported requests leave the page unchanged. These tools never authorize or execute operational actions.
+## Known gaps (need backend work, not faked here)
 
-## Verification and notifications
+| Gap | Current behaviour |
+| --- | --- |
+| Decision reasons are not stored | The reason field is disabled and says so; history shows "Not stored by the backend yet" |
+| No served list of allowed decisions | Reject and escalate availability mirrors the lifecycle table; the backend still enforces it |
+| Queue has no server-side sort or origin filter | Sorting and filtering run in the browser over the loaded (bounded) queue |
+| `request_evidence` and `reopen` decisions, human outcomes | Not offered yet; the redesigned UI has no control for them |
+| Audit is served oldest-first only | Loaded in bounded pages, then incrementally |
+| Canopus has no conversation backend | The floating window opens, states that it is not connected and sends nothing |
+| Shipments without a case | Explore lists cases; healthy shipments are not listed yet |
+| New Saudi logistics world | Not readable by the backend until its Stage 2; the app shows whatever dataset the backend serves |
 
-Automatic investigation is a local 2.4-second demonstration timer. Pausing it stops new starts and lets the active case finish its mandatory review, execution, and verification path. A proposed action and an operator decision remain distinct from an execution receipt and a verified outcome.
+## Canopus
 
-Operational notifications observe actual mock-state transitions. One official shadcn Sonner Toaster lives at the application root, on the opposite side from Canopus on desktop and at the top on mobile. The existing Nova / Radix foundation is preserved. Message, MessageGroup, Bubble, Message Scroller, Marker, Spinner, Command, and Popover use compatible official implementations. The composer remains fixed while the transcript scrolls independently, with user-turn anchoring and a jump-to-latest control.
+`CanopusProvider` takes an optional `CanopusService` adapter (`src/domain/canopus.ts`). The
+connected build uses `DisconnectedCanopusService`, which never yields text. Supplying a real
+adapter is the only change needed when the Canopus API exists; the conversation, citation,
+retry and scrolling components are unchanged from the lab.
 
-English and Arabic direction are supplied by the shared preferences and DirectionProvider. Map and graph coordinates remain left-to-right spatial canvases inside the localized shell. Reduced-motion preferences apply to transitions, transcript navigation, and message presentation.
+## Tests
+
+| Check | Command |
+| --- | --- |
+| TypeScript | `npm run typecheck` |
+| Lint | `npm run lint` |
+| Unit (adapters, service, original lab units) | `npm test` |
+| Connected app in a browser, against a scripted backend stand-in | `npm run test:e2e` |
+| Original lab browser suite on this codebase (visual and behavioural regression) | `npm run test:e2e:lab` |
+| Backend serves `/app/` and keeps its API routes | `pytest chat/tests/test_frontend_next_mount.py` |
+
+The scripted stand-in (`tests/e2e-backend/backend-stub.ts`, `tests/fixtures/backend.ts`) answers
+HTTP in the backend's wire format for tests only; the application never imports it.

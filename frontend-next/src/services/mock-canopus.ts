@@ -307,7 +307,7 @@ export class MockCanopusService implements CanopusService {
     blocks.push({
       kind: "decision",
       text: decision
-        ? `${ar ? { approved: "مفوّض", rejected: "مرفوض", escalated: "تم التصعيد" }[decision.verdict] : decision.verdict} · ${decision.actor} · ${timeLabel(decision.timestamp)} AST. ${decision.reason}`
+        ? `${ar ? ({ approved: "مفوّض", rejected: "مرفوض", escalated: "تم التصعيد" } as Record<string, string>)[decision.verdict] : decision.verdict} · ${decision.actor} · ${timeLabel(decision.timestamp)} AST. ${decision.reason}`
         : ar
           ? "لم يسجل مشغل قراراً لهذه الحالة. لا تُفوّض الدردشة أي إجراء ولا تغيّر حالة الشحنة."
           : "No operator decision has been recorded. Chat cannot authorize, execute, or resolve a case; use the explicit case controls.",

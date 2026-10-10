@@ -47,21 +47,38 @@ import { KnowledgeGraph } from "@/components/knowledge-graph";
 import { DecisionDialog } from "@/components/decision-dialog";
 import { StatusBadge, PriorityLabel, EmptyState } from "@/components/shared";
 import { timeLabel } from "@/lib/dates";
-import { stages, type AuthorityDecision } from "@/domain/types";
+import {
+  stages,
+  type AuthorityDecision,
+  type OperationalCase,
+} from "@/domain/types";
+import { authorityLabel, controls, displayId } from "@/domain/case-view";
 import { useOperations } from "@/state/operations";
 import { usePreferences } from "@/state/preferences";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useCanopus, useCanopusScreen } from "@/state/canopus";
 
+/** Backend cases: the first evidence the recorded stage cited that this screen can show. */
+function stageTarget(c: OperationalCase, index: number) {
+  const ids = c.backend?.stageEvidence[index] ?? [];
+  return (
+    ids.find((id) => c.evidence.some((e) => e.id === id)) ??
+    ids.find((id) => c.nodes.some((n) => n.id === id)) ??
+    null
+  );
+}
 export function InvestigationPage() {
   const { caseId } = useParams();
   const { key: navigationKey } = useLocation();
   const [params] = useSearchParams();
-  const { cases, events, decisions, service } = useOperations();
+  const { cases, events, decisions, service, backend } = useOperations();
   const { t, preferences } = usePreferences();
   const canopus = useCanopus();
   const c = cases.find((c) => c.id === caseId);
-  const [selected, setSelected] = useState<string | null>("warehouse");
+  // Lab fixtures open on a known marker; backend evidence has no predetermined focus.
+  const [selected, setSelected] = useState<string | null>(
+    backend ? null : "warehouse",
+  );
   const [relationship, setRelationship] = useState<string | null>(null);
   const [previewStage, setPreviewStage] = useState<number | null>(null);
   const [split, setSplit] = useState(50);
@@ -81,7 +98,12 @@ export function InvestigationPage() {
     Number.isInteger(requestedStage) &&
     requestedStage >= 0 &&
     requestedStage <= 7;
-  const stageEvidence = [
+  // Backend: hold the case open so its evidence loads and its recorded stages stream in.
+  useEffect(
+    () => (caseId ? service.watchCase?.(caseId) : undefined),
+    [caseId, service],
+  );
+  const labStageEvidence = [
     "origin",
     "package",
     c?.scenario === "custody" ? "handover" : "warehouse",
@@ -91,6 +113,9 @@ export function InvestigationPage() {
     "gps",
     c?.evidence.some((e) => e.id === "recovery") ? "recovery" : "destination",
   ][requestedStage ?? 0];
+  const stageEvidence = c?.backend
+    ? stageTarget(c, requestedStage ?? 0)
+    : labStageEvidence;
   const requestedSection = params.get("section");
   useCanopusScreen({
     screen: "investigation",
@@ -99,12 +124,17 @@ export function InvestigationPage() {
     stage: previewStage ?? c?.run?.stage ?? 0,
   });
   useEffect(() => {
-    setSelected("warehouse");
+    setSelected(backend ? null : "warehouse");
     setRelationship(null);
     setPreviewStage(null);
     setSplit(50);
     groupRef.current?.setLayout({ map: 50, graph: 50 });
-  }, [caseId, groupRef]);
+  }, [caseId, groupRef, backend]);
+  const detailsOpenFor = details ? caseId : null;
+  useEffect(() => {
+    // The case activity list reads the audit ledger; load it when the assessment opens.
+    if (detailsOpenFor) void service.loadAudit?.();
+  }, [detailsOpenFor, service]);
   useEffect(() => {
     if (stageIsValid) {
       setPreviewStage(requestedStage);
@@ -125,15 +155,38 @@ export function InvestigationPage() {
     requestedSection,
     navigationKey,
   ]);
-  if (!c)
+  const missing = c?.backend && !c.backend.detailLoaded && c.backend.detailError;
+  if (c?.backend && !c.backend.detailLoaded && !missing && !c.shipment.id)
+    return (
+      <EmptyState
+        title={t("Loading the case from the backend…", "جارٍ تحميل الحالة من الخادم…")}
+        description={t(
+          "Evidence, recorded stages and decisions are read from the Suhail backend.",
+          "تُقرأ الأدلة والمراحل المسجلة والقرارات من خادم سهيل.",
+        )}
+      />
+    );
+  if (!c || (missing && !c.shipment.id))
     return (
       <>
         <EmptyState
-          title={t("Shipment not found", "لم يتم العثور على الشحنة")}
-          description={t(
-            "This shipment is not part of the local simulation.",
-            "هذه الشحنة غير موجودة في المحاكاة المحلية.",
-          )}
+          title={
+            backend
+              ? t("Case not available", "الحالة غير متاحة")
+              : t("Shipment not found", "لم يتم العثور على الشحنة")
+          }
+          description={
+            backend
+              ? (c?.backend?.detailError ??
+                t(
+                  "The backend has no case with this identifier.",
+                  "لا توجد لدى الخادم حالة بهذا المعرف.",
+                ))
+              : t(
+                  "This shipment is not part of the local simulation.",
+                  "هذه الشحنة غير موجودة في المحاكاة المحلية.",
+                )
+          }
         />
         <Button asChild>
           <Link to="/operations">
@@ -148,9 +201,14 @@ export function InvestigationPage() {
     (n) => n.id === selected || n.evidenceId === selected,
   );
   const edge = c.relationships.find((e) => e.id === relationship);
-  const active = cases.some((c) =>
-    ["investigating", "executing", "verifying"].includes(c.status),
-  );
+  // Lab: one simulated run at a time. Backend: the server decides and refuses if it must.
+  const active =
+    !backend &&
+    cases.some((c) =>
+      ["investigating", "executing", "verifying"].includes(c.status),
+    );
+  const can = controls(c);
+  const authority = authorityLabel(c);
   const lastCustody = c.evidence
     .filter((e) => e.confidence === "confirmed" && e.kind !== "gps")
     .at(-1);
@@ -159,9 +217,9 @@ export function InvestigationPage() {
     setSelected(id);
     setRelationship(null);
   };
-  const act = (fn: () => void) => {
+  const act = (fn: () => void | Promise<void>) => {
     try {
-      fn();
+      void Promise.resolve(fn()).catch((e: Error) => toast.error(e.message));
     } catch (e) {
       toast.error((e as Error).message);
     }
@@ -172,6 +230,16 @@ export function InvestigationPage() {
   }
   function inspectStage(index: number) {
     setPreviewStage(index);
+    if (c?.backend) {
+      // Highlight what the recorded stage actually cited, or nothing.
+      const target = stageTarget(c, index);
+      if (target) select(target);
+      else {
+        setSelected(null);
+        setRelationship(null);
+      }
+      return;
+    }
     if (index === 0) select("origin");
     if (index === 1) select("package");
     if (index === 2)
@@ -200,15 +268,15 @@ export function InvestigationPage() {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage dir="ltr">{c.id}</BreadcrumbPage>
+            <BreadcrumbPage dir="ltr">{displayId(c)}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
       <div className="case-title">
         <div>
           <div className="case-heading">
-            <h1>{c.id}</h1>
-            <StatusBadge status={c.status} />
+            <h1>{displayId(c)}</h1>
+            <StatusBadge status={c.status} c={c} />
             <PriorityLabel priority={c.priority} />
           </div>
           <p>
@@ -239,7 +307,7 @@ export function InvestigationPage() {
             <MessageSquare size={14} />
             {t("Ask Suhail", "اسأل سهيل")}
           </Button>
-          {c.status === "queued" && (
+          {can.investigate && (
             <Button
               size="sm"
               disabled={active}
@@ -262,7 +330,15 @@ export function InvestigationPage() {
           <span>
             {c.status === "resolved"
               ? t("Verified · completed", "تحقق · مكتمل")
-              : c.status === "human_review"
+              : c.backend && !c.backend.detailLoaded
+                ? (c.backend.detailError ??
+                  t("Loading evidence from the backend…", "جارٍ تحميل الأدلة من الخادم…"))
+                : c.backend?.workflowState === "HUMAN_REVIEW"
+                  ? t(
+                      "Waiting for a person to investigate",
+                      "بانتظار تحقيق بشري",
+                    )
+                  : c.status === "human_review"
                 ? t("Waiting for operator authority", "بانتظار صلاحية المشغل")
                 : c.status === "needs_evidence"
                   ? t(
@@ -275,7 +351,16 @@ export function InvestigationPage() {
                         "تم التصعيد · متابعة بشرية",
                       )
                     : c.run
-                      ? t("Simulated run in progress", "تحقيق محاكى جارٍ")
+                      ? backend
+                        ? c.status === "investigating"
+                          ? t("Investigation in progress", "التحقيق جارٍ")
+                          : c.status === "verifying"
+                            ? t(
+                                "Executed · awaiting independent verification",
+                                "نُفذ · بانتظار التحقق المستقل",
+                              )
+                            : t("Recorded run", "تحقيق مسجل")
+                        : t("Simulated run in progress", "تحقيق محاكى جارٍ")
                       : t("Queued", "في الانتظار")}
           </span>
           {previewStage !== null && (
@@ -352,11 +437,25 @@ export function InvestigationPage() {
           <span className="purple-stage-dot" />
           <b>{t(stages[stage].label, stages[stage].arabic)}</b>
           <span>
-            {stage === 2
-              ? c.diagnosis
-              : stage === 4
-                ? c.recommendation.title
-                : stages[stage].detail}
+            {c.backend
+              ? (c.backend.stageDetail[stage] ??
+                (stage === 7
+                  ? (c.outcome?.detail ??
+                    t(
+                      "No independently verified outcome is recorded.",
+                      "لا توجد نتيجة متحقق منها بشكل مستقل.",
+                    ))
+                  : stage === 6 && c.execution
+                    ? c.execution.detail
+                    : t(
+                        "No event is recorded for this stage in the current run.",
+                        "لا يوجد حدث مسجل لهذه المرحلة في التحقيق الحالي.",
+                      )))
+              : stage === 2
+                ? c.diagnosis
+                : stage === 4
+                  ? c.recommendation.title
+                  : stages[stage].detail}
           </span>
         </div>
       </section>
@@ -368,6 +467,12 @@ export function InvestigationPage() {
               "Map and graph share selected evidence",
               "الخريطة والرسم يشتركان في الدليل المحدد",
             )}
+            {c.backend?.graphTotals &&
+              c.backend.graphTotals.shown < c.backend.graphTotals.nodes &&
+              ` · ${t(
+                `graph shows ${c.backend.graphTotals.shown} of ${c.backend.graphTotals.nodes} recorded nodes`,
+                `يعرض الرسم ${c.backend.graphTotals.shown} من ${c.backend.graphTotals.nodes} عقدة مسجلة`,
+              )}`}
           </span>
         </div>
         <div className="view-modes" role="group" aria-label="Workspace view">
@@ -409,66 +514,95 @@ export function InvestigationPage() {
           </div>
           <div className="context-section">
             <small>{t("LAST CONFIRMED CUSTODY", "آخر حيازة مؤكدة")}</small>
-            <b>{lastCustody?.facility}</b>
-            <span className="context-custody">
-              <ShieldCheck size={11} />
-              {lastCustody?.time} AST
-            </span>
+            <b>
+              {lastCustody?.facility ??
+                t("No confirmed custody observation", "لا توجد حيازة مؤكدة")}
+            </b>
+            {lastCustody && (
+              <span className="context-custody">
+                <ShieldCheck size={11} />
+                {lastCustody.time} AST
+              </span>
+            )}
           </div>
           <div className="context-section">
             <small>{t("RECOMMENDATION", "التوصية")}</small>
             <b>{c.recommendation.title}</b>
             <Badge variant="secondary" className="context-authority">
-              {c.recommendation.authority === "operator"
-                ? t("Operator authority", "صلاحية المشغل")
-                : c.recommendation.authority === "evidence"
-                  ? t("Needs evidence", "يتطلب أدلة")
-                  : t("Low-risk action", "إجراء منخفض المخاطر")}
+              {t(authority[0], authority[1])}
             </Badge>
           </div>
           <div className="context-actions">
             {c.status === "human_review" ? (
               <>
-                <Button size="sm" onClick={() => setVerdict("approved")}>
-                  {t("Review & authorize", "مراجعة وتفويض")}
-                  <ArrowRight size={12} />
+                {can.approve && (
+                  <Button size="sm" onClick={() => setVerdict("approved")}>
+                    {t("Review & authorize", "مراجعة وتفويض")}
+                    <ArrowRight size={12} />
+                  </Button>
+                )}
+                {c.backend && !can.approve && c.backend.detailLoaded && (
+                  <p className="context-assigned">
+                    {c.backend.approvalReason ??
+                      t(
+                        "The backend does not offer an approval for this case.",
+                        "لا يتيح الخادم الموافقة على هذه الحالة.",
+                      )}
+                  </p>
+                )}
+                {can.reject && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setVerdict("rejected")}
+                  >
+                    {backend
+                      ? t("Reject the action", "رفض الإجراء")
+                      : t("Reject / request evidence", "رفض / طلب أدلة")}
+                  </Button>
+                )}
+                {can.escalate && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setVerdict("escalated")}
+                  >
+                    {t("Escalate case", "تصعيد الحالة")}
+                  </Button>
+                )}
+              </>
+            ) : c.status === "verifying" ? (
+              can.verify && (
+                <Button
+                  size="sm"
+                  onClick={() => act(() => service.verify(c.id))}
+                >
+                  <ShieldCheck size={13} />
+                  {backend
+                    ? t("Ask the verifier to check now", "اطلب من المتحقق الفحص الآن")
+                    : t("Verify outcome", "التحقق من النتيجة")}
                 </Button>
+              )
+            ) : c.status === "resolved" ? (
+              <StatusBadge status={c.status} c={c} />
+            ) : c.status === "needs_evidence" ? (
+              can.escalate && (
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => setVerdict("rejected")}
-                >
-                  {t("Reject / request evidence", "رفض / طلب أدلة")}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
                   onClick={() => setVerdict("escalated")}
                 >
-                  {t("Escalate case", "تصعيد الحالة")}
+                  {t("Escalate for evidence", "التصعيد لطلب الأدلة")}
                 </Button>
-              </>
-            ) : c.status === "verifying" ? (
-              <Button size="sm" onClick={() => act(() => service.verify(c.id))}>
-                <ShieldCheck size={13} />
-                {t("Verify outcome", "التحقق من النتيجة")}
-              </Button>
-            ) : c.status === "resolved" ? (
-              <StatusBadge status={c.status} />
-            ) : c.status === "needs_evidence" ? (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setVerdict("escalated")}
-              >
-                {t("Escalate for evidence", "التصعيد لطلب الأدلة")}
-              </Button>
+              )
             ) : c.status === "escalated" ? (
               <p className="context-assigned">
-                {t(
-                  "Assigned to dispatch supervision",
-                  "مُسند إلى إشراف الإرسال",
-                )}
+                {backend
+                  ? t("Escalated for human follow-up", "صُعّدت لمتابعة بشرية")
+                  : t(
+                      "Assigned to dispatch supervision",
+                      "مُسند إلى إشراف الإرسال",
+                    )}
               </p>
             ) : null}
             <Button size="sm" variant="ghost" onClick={() => setDetails(true)}>
@@ -478,7 +612,9 @@ export function InvestigationPage() {
           </div>
           <span className="context-lab">
             <span className="live-dot" />
-            {t("Synthetic evidence", "أدلة محاكاة")}
+            {backend
+              ? t("Backend evidence · synthetic dataset", "أدلة الخادم · بيانات اصطناعية")
+              : t("Synthetic evidence", "أدلة محاكاة")}
           </span>
         </aside>
         <ResizablePanelGroup
@@ -549,7 +685,9 @@ export function InvestigationPage() {
                   ? t("CONFIRMED CUSTODY", "حيازة مؤكدة")
                   : evidence.confidence === "vehicle_only"
                     ? t("VEHICLE TELEMETRY ONLY", "موقع المركبة فقط")
-                    : t("EXPECTED · UNCONFIRMED", "متوقع · غير مؤكد")}
+                    : c.backend && evidence.kind === "delivery"
+                      ? t("RECORDED ATTEMPT · NOT PROOF", "محاولة مسجلة · ليست إثباتاً")
+                      : t("EXPECTED · UNCONFIRMED", "متوقع · غير مؤكد")}
               </Badge>
             )}
           </div>
@@ -601,10 +739,15 @@ export function InvestigationPage() {
         >
           <SheetHeader>
             <SheetTitle>
-              {c.id} · {t("Case assessment", "تقييم الحالة")}
+              {displayId(c)} · {t("Case assessment", "تقييم الحالة")}
             </SheetTitle>
             <SheetDescription>
-              {t(
+              {backend
+                ? t(
+                    `Case ${c.id}. Evidence, review and outcomes as recorded by the backend (synthetic dataset).`,
+                    `الحالة ${c.id}. الأدلة والمراجعة والنتائج كما سجلها الخادم (بيانات اصطناعية).`,
+                  )
+                : t(
                 "Synthetic evidence, recommendation, and recorded outcomes.",
                 "أدلة المحاكاة والتوصية والنتائج المسجلة.",
               )}
@@ -615,12 +758,15 @@ export function InvestigationPage() {
               <dl className="case-detail-fields">
                 <div>
                   <dt>{t("Package", "الطرد")}</dt>
-                  <dd>{c.shipment.packageId}</dd>
+                  <dd>{c.shipment.packageId || "—"}</dd>
                 </div>
                 <div>
                   <dt>{t("Service / weight", "الخدمة / الوزن")}</dt>
                   <dd>
-                    {c.shipment.service} · {c.shipment.weight} kg
+                    {c.shipment.service || "—"} ·{" "}
+                    {c.shipment.weight === null
+                      ? "—"
+                      : `${c.shipment.weight} kg`}
                   </dd>
                 </div>
                 <div>
@@ -632,9 +778,24 @@ export function InvestigationPage() {
                 {c.diagnosis}
               </DetailSection>
               <DetailSection title={t("Expected journey", "الرحلة المتوقعة")}>
-                {c.shipment.origin} → {c.shipment.destination} →{" "}
-                {t("Delivery depot", "مستودع التسليم")}
+                {c.shipment.origin} → {c.shipment.destination}
+                {!backend && (
+                  <>
+                    {" "}
+                    → {t("Delivery depot", "مستودع التسليم")}
+                  </>
+                )}
               </DetailSection>
+              {c.backend?.review && (
+                <DetailSection
+                  title={t("Independent review", "المراجعة المستقلة")}
+                >
+                  {t("Verdict", "الحكم")}: {c.backend.review.verdict ?? "—"}
+                  {c.backend.review.summary && (
+                    <p className="mt-2">{c.backend.review.summary}</p>
+                  )}
+                </DetailSection>
+              )}
               <div className="detail-section">
                 <h3>{t("Actual evidence", "الأدلة الفعلية")}</h3>
                 {c.evidence.map((e) => (
@@ -678,7 +839,11 @@ export function InvestigationPage() {
                 .filter((d) => d.caseId === c.id)
                 .map((d, i) => (
                   <DetailSection key={i} title={`${d.verdict} · ${d.actor}`}>
-                    {d.reason}
+                    {d.reason ||
+                      t(
+                        "The backend does not store a reason for decisions yet.",
+                        "لا يخزن الخادم سبب القرارات بعد.",
+                      )}
                     <p className="mt-2 text-xs">{timeLabel(d.timestamp)} AST</p>
                   </DetailSection>
                 ))}

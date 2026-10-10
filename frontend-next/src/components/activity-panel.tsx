@@ -13,7 +13,7 @@ import { timeLabel } from "@/lib/dates";
 
 /** The case activity survives in Canopus without a second floating chat dock. */
 export function CaseActivityMarkers({ c }: { c: OperationalCase }) {
-  const { events } = useOperations();
+  const { events, backend } = useOperations();
   const { t } = usePreferences();
   const active = ["investigating", "executing", "verifying"].includes(c.status);
   const waiting = ["human_review", "needs_evidence"].includes(c.status);
@@ -37,7 +37,10 @@ export function CaseActivityMarkers({ c }: { c: OperationalCase }) {
           <MarkerContent>
             {event.title}
             <small>
-              {timeLabel(event.timestamp)} · {t("simulated", "محاكاة")}
+              {timeLabel(event.timestamp)} ·{" "}
+              {event.simulated
+                ? t("simulated", "محاكاة")
+                : t("backend", "الخادم")}
             </small>
           </MarkerContent>
         </Marker>
@@ -78,11 +81,19 @@ export function CaseActivityMarkers({ c }: { c: OperationalCase }) {
                         "تحتاج المعالجة متابعة بشرية",
                       )
                     : c.run
-                      ? stages[c.run.stage].detail
-                      : t(
-                          "Ready for a simulated investigation",
-                          "جاهز لتحقيق محاكى",
-                        )}
+                      ? c.backend
+                        ? (c.backend.stageDetail[c.run.stage] ??
+                          t(
+                            stages[c.run.stage].label,
+                            stages[c.run.stage].arabic,
+                          ))
+                        : stages[c.run.stage].detail
+                      : backend
+                        ? t("Queued for investigation", "في انتظار التحقيق")
+                        : t(
+                            "Ready for a simulated investigation",
+                            "جاهز لتحقيق محاكى",
+                          )}
         </MarkerContent>
       </Marker>
     </div>

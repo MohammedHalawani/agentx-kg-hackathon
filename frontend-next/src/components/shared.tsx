@@ -7,8 +7,9 @@ import {
   LoaderCircle,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import type { CaseStatus, Priority } from "@/domain/types";
+import type { CaseStatus, OperationalCase, Priority } from "@/domain/types";
 import { statusLabels } from "@/domain/types";
+import { workflowLabels } from "@/domain/case-view";
 import { usePreferences } from "@/state/preferences";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -30,8 +31,16 @@ const arabicStatus: Record<CaseStatus, string> = {
   escalated: "تم التصعيد",
   resolved: "تم الحل",
 };
-export function StatusBadge({ status }: { status: CaseStatus }) {
+export function StatusBadge({
+  status,
+  c,
+}: {
+  status: CaseStatus;
+  /** A backend case shows its exact workflow state, not the lab's coarser label. */
+  c?: OperationalCase;
+}) {
   const { t } = usePreferences();
+  const workflow = c?.backend ? workflowLabels[c.backend.workflowState] : null;
   return (
     <Badge variant="outline" className={`status-badge status-${status}`}>
       {status === "resolved" ? (
@@ -41,7 +50,9 @@ export function StatusBadge({ status }: { status: CaseStatus }) {
       ) : (
         <span className="status-dot" />
       )}
-      {t(statusLabels[status], arabicStatus[status])}
+      {workflow
+        ? t(workflow[0], workflow[1])
+        : t(statusLabels[status], arabicStatus[status])}
     </Badge>
   );
 }
@@ -51,16 +62,20 @@ export function PriorityLabel({ priority }: { priority: Priority }) {
     <span className={`priority priority-${priority}`}>
       <i />
       {t(
-        { high: "High", medium: "Medium", low: "Low" }[priority],
-        { high: "مرتفع", medium: "متوسط", low: "منخفض" }[priority],
+        { high: "High", medium: "Medium", low: "Low", unknown: "Not set" }[
+          priority
+        ],
+        { high: "مرتفع", medium: "متوسط", low: "منخفض", unknown: "غير محدد" }[
+          priority
+        ],
       )}
     </span>
   );
 }
-export function CaseLink({ id }: { id: string }) {
+export function CaseLink({ id, label }: { id: string; label?: string }) {
   return (
-    <Link className="case-link" to={`/cases/${id}`}>
-      {id}
+    <Link className="case-link" to={`/cases/${id}`} title={label ? id : undefined}>
+      {label || id}
       <ArrowUpRight size={12} />
     </Link>
   );

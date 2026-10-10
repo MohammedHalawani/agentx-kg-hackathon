@@ -4,16 +4,10 @@ import type {
   OperationalCase,
 } from "@/domain/types";
 import type { AuditFilters, ShipmentFilters } from "@/domain/page-actions";
+import { matchesCause, searchText } from "@/domain/case-view";
 
 export const LAB_TODAY = "2026-10-09";
-export const cityLocations: Record<string, [number, number]> = {
-  Riyadh: [24.7136, 46.6753],
-  Dammam: [26.4207, 50.0888],
-  Khobar: [26.2794, 50.2083],
-  Jeddah: [21.5433, 39.1728],
-  "Al Hofuf": [25.3646, 49.5876],
-  Buraydah: [26.3592, 43.9818],
-};
+export { cityLocations } from "@/domain/geo";
 export function filterShipments(
   cases: OperationalCase[],
   filters: ShipmentFilters,
@@ -31,23 +25,42 @@ export function filterShipments(
           (filters.status === "attention" && c.status !== "resolved") ||
           c.status === filters.status) &&
         (filters.priority === "all" || c.priority === filters.priority) &&
-        (filters.cause === "all" || c.scenario === filters.cause) &&
-        `${c.id} ${c.issue} ${c.shipment.origin} ${c.shipment.destination}`
-          .toLowerCase()
-          .includes(filters.search.toLowerCase()),
+        matchesCause(c, filters.cause) &&
+        searchText(c).includes(filters.search.toLowerCase()),
     )
     .sort((a, b) => Date.parse(b.openedAt) - Date.parse(a.openedAt));
 }
-export function timeBounds(filters: AuditFilters) {
+/** Today in Saudi time, as YYYY-MM-DD. */
+export function riyadhToday(now = new Date()) {
+  return new Date(now.getTime() + 3 * 3600000).toISOString().slice(0, 10);
+}
+/** The week (from Sunday) and month containing `today`, as YYYY-MM-DD. */
+export function rangeStarts(today: string) {
+  const date = new Date(`${today}T00:00:00Z`);
+  const week = new Date(date.getTime() - date.getUTCDay() * 86400000);
+  return {
+    week: week.toISOString().slice(0, 10),
+    month: `${today.slice(0, 7)}-01`,
+  };
+}
+/**
+ * The lab's fixtures are anchored to LAB_TODAY with its original fixed week and month. Backend
+ * records use the real calendar: pass `today` (Saudi time).
+ */
+export function timeBounds(filters: AuditFilters, today?: string) {
+  const starts = today
+    ? rangeStarts(today)
+    : { week: "2026-10-05", month: "2026-10-01" };
+  const anchor = today ?? LAB_TODAY;
   const start =
     filters.timeRange === "week"
-      ? "2026-10-05"
+      ? starts.week
       : filters.timeRange === "month"
-        ? "2026-10-01"
+        ? starts.month
         : filters.timeRange === "custom"
           ? filters.from
-          : LAB_TODAY;
-  const end = filters.timeRange === "custom" ? filters.to : LAB_TODAY;
+          : anchor;
+  const end = filters.timeRange === "custom" ? filters.to : anchor;
   return {
     start:
       filters.timeRange === "all"
@@ -72,13 +85,14 @@ export function queryAudit(
   filters: AuditFilters,
   pageIndex: number,
   pageSize: number,
+  today?: string,
 ): AuditPageResult {
   const matchingShipments = filterShipments(snapshot.cases, {
     ...filters,
     search: filters.shipmentId === "all" ? "" : filters.shipmentId,
   });
   const ids = new Set(matchingShipments.map((c) => c.id));
-  const bounds = timeBounds(filters);
+  const bounds = timeBounds(filters, today);
   const all = snapshot.events
     .filter((e) => {
       const timestamp = Date.parse(

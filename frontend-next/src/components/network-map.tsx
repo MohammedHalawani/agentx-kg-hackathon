@@ -19,9 +19,9 @@ import {
   Building2,
 } from "lucide-react";
 import "leaflet/dist/leaflet.css";
-import { facilities } from "@/data/fixtures";
 import type { OperationalCase } from "@/domain/types";
-import { cityLocations } from "@/services/page-queries";
+import { useOperations } from "@/state/operations";
+import { displayId } from "@/domain/case-view";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -33,23 +33,38 @@ import { SelectControl } from "@/components/select-control";
 import { usePreferences } from "@/state/preferences";
 
 type MapFocus = { city: string; revision: number } | null;
-function observationLocation(c: OperationalCase) {
-  return (
+type Cities = Record<string, [number, number]>;
+/**
+ * Where a shipment is drawn: its last confirmed custody observation. A backend case whose
+ * evidence is not loaded yet is drawn at its destination city instead, and labelled so.
+ */
+function observationLocation(c: OperationalCase, cities: Cities) {
+  const observed =
     c.evidence
       .filter((e) => e.confidence === "confirmed" && e.kind !== "gps")
-      .at(-1) ?? c.evidence[0]
-  );
+      .at(-1) ?? (c.backend ? undefined : c.evidence[0]);
+  if (observed)
+    return { location: observed.location, facility: observed.facility };
+  const city = cities[c.shipment.destination];
+  return city
+    ? { location: city, facility: `${c.shipment.destination} · destination city` }
+    : null;
 }
 function NetworkEffects({
   cases,
   selected,
   fitKey,
   focus,
+  cityLocations,
+  stable,
 }: {
   cases: OperationalCase[];
   selected?: OperationalCase;
   fitKey: number;
   focus: MapFocus;
+  cityLocations: Cities;
+  /** Backend queues are re-read on a timer: refit only when the set of shipments changes. */
+  stable: boolean;
 }) {
   const map = useMap();
   const { preferences } = usePreferences();
@@ -66,30 +81,32 @@ function NetworkEffects({
   useEffect(() => {
     const points = cases
       .flatMap((c) => [
-        observationLocation(c).location,
+        observationLocation(c, cityLocations)?.location,
         cityLocations[c.shipment.origin],
         cityLocations[c.shipment.destination],
       ])
-      .filter(Boolean);
+      .filter((point): point is [number, number] => !!point);
     if (points.length)
       map.fitBounds(points, { padding: [55, 55], maxZoom: 8, animate: false });
     else map.setView([24.8, 45.3], 5, { animate: false });
-  }, [cases, fitKey, map]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refit when the shipments change (backend: their set, not every poll)
+  }, [stable ? ids : cases, fitKey, map]);
   useEffect(() => {
     if (
       selected &&
       previous.current.ids === ids &&
       previous.current.selectedId !== selected.id
-    )
-      map.panTo(observationLocation(selected).location, {
-        animate,
-        duration: 0.35,
-      });
+    ) {
+      const target = observationLocation(selected, cityLocations);
+      if (target) map.panTo(target.location, { animate, duration: 0.35 });
+    }
     previous.current = { ids, selectedId: selected?.id };
-  }, [map, animate, selected, ids]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- pan when the selection changes
+  }, [map, animate, stable ? selected?.id : selected, ids]);
   useEffect(() => {
     if (focus && cityLocations[focus.city])
       map.setView(cityLocations[focus.city], 10, { animate });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- focus requests carry their own revision
   }, [focus, map, animate]);
   return null;
 }
@@ -128,6 +145,8 @@ export function NetworkMap({
   focus: MapFocus;
 }) {
   const { t } = usePreferences();
+  const { catalog, backend } = useOperations();
+  const { facilities, cityLocations } = catalog;
   const [basemap, setBasemap] = useState("street");
   const [errors, setErrors] = useState(0);
   const [layers, setLayers] = useState({
@@ -143,7 +162,8 @@ export function NetworkMap({
       { location: [number, number]; facility: string; cases: OperationalCase[] }
     >();
     for (const c of cases) {
-      const e = observationLocation(c);
+      const e = observationLocation(c, cityLocations);
+      if (!e) continue;
       const key = e.location.join(",");
       const group = groups.get(key);
       if (group) group.cases.push(c);
@@ -155,7 +175,7 @@ export function NetworkMap({
         });
     }
     return [...groups.entries()];
-  }, [cases]);
+  }, [cases, cityLocations]);
   return (
     <section
       className="visualization network-map"
@@ -182,6 +202,8 @@ export function NetworkMap({
             selected={selected}
             fitKey={fitKey}
             focus={focus}
+            cityLocations={cityLocations}
+            stable={backend}
           />
           <NetworkZoom />
           {effectiveBasemap === "street" ? (
@@ -271,7 +293,7 @@ export function NetworkMap({
               }}
             >
               <MapTooltip>
-                {selected.id} ·{" "}
+                {displayId(selected)} ·{" "}
                 {t(
                   "Planned route, not confirmed custody",
                   "مسار مخطط وليس حيازة مؤكدة",
@@ -321,7 +343,7 @@ export function NetworkMap({
                         onClick={() => onSelect(c.id)}
                         className={c.id === selected?.id ? "selected" : ""}
                       >
-                        {c.id}
+                        {displayId(c)}
                         <span>{c.issue}</span>
                       </Button>
                     ))}
@@ -395,7 +417,9 @@ export function NetworkMap({
           <span className="live-dot" />
           {t(
             effectiveBasemap === "street"
-              ? "Interactive map · synthetic observations"
+              ? backend
+                ? "Street map · backend records (synthetic)"
+                : "Interactive map · synthetic observations"
               : "Offline schematic · synthetic observations",
             "خريطة تفاعلية · ملاحظات محاكاة",
           )}
@@ -404,7 +428,12 @@ export function NetworkMap({
       <div className="viz-legend">
         <span>
           <i className="dot purple" />
-          {t("Confirmed parcel observations", "ملاحظات طرود مؤكدة")}
+          {backend
+            ? t(
+                "Last confirmed custody, or destination city until evidence is loaded",
+                "آخر حيازة مؤكدة، أو مدينة الوجهة حتى تُحمّل الأدلة",
+              )
+            : t("Confirmed parcel observations", "ملاحظات طرود مؤكدة")}
         </span>
         <span>
           <Building2 size={11} />

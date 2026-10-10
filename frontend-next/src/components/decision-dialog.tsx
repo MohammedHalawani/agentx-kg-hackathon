@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { AuthorityDecision, OperationalCase } from "@/domain/types";
 import { useOperations } from "@/state/operations";
 import { usePreferences } from "@/state/preferences";
+import { displayId } from "@/domain/case-view";
 export function DecisionDialog({
   c,
   verdict,
@@ -21,19 +22,24 @@ export function DecisionDialog({
   verdict: AuthorityDecision["verdict"];
   onClose: () => void;
 }) {
-  const { service } = useOperations();
+  const { service, backend } = useOperations();
   const { t } = usePreferences();
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");
-  function submit() {
-    if (!c) return;
+  const [sending, setSending] = useState(false);
+  async function submit() {
+    if (!c || sending) return;
+    setSending(true);
     try {
-      service.decide(c.id, verdict, reason);
+      // Backend: the dialog stays open until the backend accepts or refuses the decision.
+      await service.decide(c.id, verdict, reason);
       setReason("");
       setError("");
       onClose();
     } catch (e) {
       setError((e as Error).message);
+    } finally {
+      setSending(false);
     }
   }
   return (
@@ -57,7 +63,7 @@ export function DecisionDialog({
                 : t("Escalate this case", "تصعيد هذه الحالة")}
           </DialogTitle>
           <DialogDescription>
-            {c?.id} ·{" "}
+            {c ? displayId(c) : ""} ·{" "}
             {t(
               "Your decision will be recorded in the audit history.",
               "سيُسجل قرارك في سجل التدقيق.",
@@ -97,7 +103,16 @@ export function DecisionDialog({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               rows={3}
+              disabled={backend}
             />
+            {backend && (
+              <p className="text-xs text-muted-foreground">
+                {t(
+                  "The backend does not store decision reasons yet, so none is collected here. The decision, operator and time are audited.",
+                  "لا يخزن الخادم أسباب القرارات بعد، لذا لا يُجمع سبب هنا. يُدقق القرار والمشغل والوقت.",
+                )}
+              </p>
+            )}
             {error && (
               <p className="form-error" role="alert">
                 {error}
@@ -117,7 +132,7 @@ export function DecisionDialog({
               <Button
                 variant={verdict === "rejected" ? "destructive" : "default"}
                 onClick={submit}
-                disabled={!reason.trim()}
+                disabled={sending || (!backend && !reason.trim())}
               >
                 {verdict === "approved"
                   ? t("Authorize action", "تفويض الإجراء")

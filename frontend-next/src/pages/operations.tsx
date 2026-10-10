@@ -38,12 +38,19 @@ import {
 import { timeLabel } from "@/lib/dates";
 import { useOperations } from "@/state/operations";
 import { usePreferences } from "@/state/preferences";
-import { scenarioInfo } from "@/data/fixtures";
 import { stages, type OperationalCase } from "@/domain/types";
+import {
+  displayId,
+  matchesCause,
+  matchesOperational,
+  operationalOf,
+  searchText,
+} from "@/domain/case-view";
 import { useCanopusScreen } from "@/state/canopus";
 
 export function OperationsPage() {
-  const { cases, automatic, service } = useOperations();
+  const { cases, automatic, service, catalog, backend, connection } =
+    useOperations();
   const { t } = usePreferences();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
@@ -64,9 +71,12 @@ export function OperationsPage() {
   const resolved = cases.filter(
     (c) => c.status === "resolved" && c.outcome?.successful,
   );
-  const running = cases.find((c) =>
-    ["investigating", "executing", "verifying"].includes(c.status),
-  );
+  // Backend: the case the investigation worker holds now. Lab: the one simulated run.
+  const running = backend
+    ? cases.find((c) => c.id === connection?.worker?.activeCaseId)
+    : cases.find((c) =>
+        ["investigating", "executing", "verifying"].includes(c.status),
+      );
   const human = active.filter((c) =>
     ["human_review", "needs_evidence", "escalated"].includes(c.status),
   );
@@ -84,20 +94,14 @@ export function OperationsPage() {
         (city === "all" ||
           c.shipment.destination === city ||
           c.shipment.origin === city) &&
-        (cause === "all" || c.scenario === cause) &&
-        (operational === "all" ||
-          (operational === "held" &&
-            ["weight", "address"].includes(c.scenario)) ||
-          (operational === "disputed" && c.scenario === "delivery") ||
-          (operational === "exception" && !["normal"].includes(c.scenario))) &&
-        `${c.id} ${c.issue} ${c.shipment.origin} ${c.shipment.destination}`
-          .toLowerCase()
-          .includes(query.toLowerCase()),
+        matchesCause(c, cause) &&
+        matchesOperational(c, operational) &&
+        searchText(c).includes(query.toLowerCase()),
     )
     .sort((a, b) =>
       sort === "priority"
-        ? { high: 0, medium: 1, low: 2 }[a.priority] -
-          { high: 0, medium: 1, low: 2 }[b.priority]
+        ? { high: 0, medium: 1, low: 2, unknown: 3 }[a.priority] -
+          { high: 0, medium: 1, low: 2, unknown: 3 }[b.priority]
         : sort === "newest"
           ? Date.parse(b.openedAt) - Date.parse(a.openedAt)
           : Date.parse(a.openedAt) - Date.parse(b.openedAt),
@@ -116,7 +120,7 @@ export function OperationsPage() {
       size: 140,
       cell: ({ row }) => (
         <>
-          <CaseLink id={row.original.id} />
+          <CaseLink id={row.original.id} label={displayId(row.original)} />
           <span className="cell-secondary">
             {row.original.shipment.origin}
             <span className="route-arrow">→</span>
@@ -143,7 +147,9 @@ export function OperationsPage() {
       accessorKey: "status",
       header: t("Workflow", "سير العمل"),
       size: 145,
-      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      cell: ({ row }) => (
+        <StatusBadge status={row.original.status} c={row.original} />
+      ),
     },
     {
       id: "operational",
@@ -151,11 +157,7 @@ export function OperationsPage() {
       size: 130,
       cell: ({ row }) => (
         <span className="tracking-label">
-          {row.original.scenario === "delivery"
-            ? t("Delivery disputed", "التسليم محل نزاع")
-            : ["address", "weight"].includes(row.original.scenario)
-              ? t("Parcel held", "الطرد محتجز")
-              : t("Exception open", "استثناء مفتوح")}
+          {t(operationalOf(row.original)[1], operationalOf(row.original)[2])}
         </span>
       ),
     },
@@ -184,7 +186,7 @@ export function OperationsPage() {
       cell: ({ row }) => (
         <Button asChild variant="ghost" size="icon-sm">
           <Link
-            aria-label={`Open investigation for ${row.original.id}`}
+            aria-label={`Open investigation for ${displayId(row.original)}`}
             to={`/cases/${row.original.id}`}
           >
             <ArrowRight size={14} />
@@ -210,10 +212,33 @@ export function OperationsPage() {
   };
   function refresh() {
     setRefreshing(true);
+    if (service.refresh) {
+      // Backend: read the queue again now, and say what actually happened.
+      void service.refresh().then(() => {
+        setRefreshing(false);
+        const state = service.getSnapshot().connection;
+        if (state?.state === "online")
+          toast.info(
+            t("Queue read from the backend.", "تمت قراءة القائمة من الخادم."),
+          );
+        else
+          toast.error(
+            state?.error ??
+              t("The backend is not reachable.", "تعذر الوصول إلى الخادم."),
+          );
+      });
+      return;
+    }
     window.setTimeout(() => {
       setRefreshing(false);
       toast.info(t("Local queue is up to date.", "القائمة المحلية محدّثة."));
     }, 450);
+  }
+  function setAutomatic(enabled: boolean) {
+    // The switch reflects the backend worker; it changes only when the backend confirms.
+    void Promise.resolve()
+      .then(() => service.setAutomatic(enabled))
+      .catch((error: Error) => toast.error(error.message));
   }
   return (
     <>
@@ -331,10 +356,7 @@ export function OperationsPage() {
                   }}
                   options={[
                     { value: "all", label: t("All causes", "كل الأسباب") },
-                    ...Object.entries(scenarioInfo).map(([value, info]) => ({
-                      value,
-                      label: info.issue,
-                    })),
+                    ...catalog.causes,
                   ]}
                 />
                 <label>{t("Operational status", "الحالة التشغيلية")}</label>
@@ -347,15 +369,10 @@ export function OperationsPage() {
                   }}
                   options={[
                     { value: "all", label: t("All statuses", "كل الحالات") },
-                    { value: "held", label: t("Parcel held", "الطرد محتجز") },
-                    {
-                      value: "disputed",
-                      label: t("Delivery disputed", "تسليم محل نزاع"),
-                    },
-                    {
-                      value: "exception",
-                      label: t("Exception open", "استثناء مفتوح"),
-                    },
+                    ...catalog.operational.map((item) => ({
+                      value: item.value,
+                      label: t(item.label, item.arabic),
+                    })),
                   ]}
                 />
                 <Button
@@ -390,7 +407,8 @@ export function OperationsPage() {
                 aria-label="Automatic investigation"
                 aria-describedby="automatic-state-note"
                 checked={automatic}
-                onCheckedChange={service.setAutomatic.bind(service)}
+                onCheckedChange={setAutomatic}
+                disabled={backend && connection?.controls === "unavailable"}
               />
               <span className="auto-switch-state">
                 {t(
@@ -401,7 +419,11 @@ export function OperationsPage() {
             </label>
             <Button
               aria-label="Refresh queue"
-              title={t("Refresh local queue", "تحديث القائمة المحلية")}
+              title={
+                backend
+                  ? t("Read the queue from the backend", "قراءة القائمة من الخادم")
+                  : t("Refresh local queue", "تحديث القائمة المحلية")
+              }
               variant="ghost"
               size="icon-sm"
               onClick={refresh}
@@ -416,7 +438,7 @@ export function OperationsPage() {
                 className={automatic || running ? "live-dot" : "paused-dot"}
               />
               {running
-                ? `${running.id} · ${t(stages[running.run?.stage ?? 0].label, stages[running.run?.stage ?? 0].arabic)}`
+                ? `${displayId(running)} · ${t(stages[running.run?.stage ?? 0].label, stages[running.run?.stage ?? 0].arabic)}`
                 : automatic
                   ? t(
                       "Picking the oldest eligible case",
@@ -454,11 +476,24 @@ export function OperationsPage() {
             onRowClick={(c) => navigate(`/cases/${c.id}`)}
             pagination={safePagination}
             onPaginationChange={setPagination}
-            emptyTitle={t("No matching exceptions", "لا توجد استثناءات مطابقة")}
-            emptyDescription={t(
-              "Try another search or clear the filters.",
-              "جرّب بحثاً آخر أو امسح عوامل التصفية.",
-            )}
+            emptyTitle={
+              backend && connection?.state === "connecting"
+                ? t("Reading the queue from the backend…", "جارٍ قراءة القائمة من الخادم…")
+                : backend && connection?.state === "offline"
+                  ? t("The Suhail backend is not reachable", "تعذر الوصول إلى خادم سهيل")
+                  : t("No matching exceptions", "لا توجد استثناءات مطابقة")
+            }
+            emptyDescription={
+              backend && connection?.state === "offline"
+                ? (connection.error ??
+                  t("No cases are shown until it answers.", "لا تُعرض حالات حتى يستجيب."))
+                : backend && connection?.state === "connecting"
+                  ? t("No cases are shown until it answers.", "لا تُعرض حالات حتى يستجيب.")
+                  : t(
+                      "Try another search or clear the filters.",
+                      "جرّب بحثاً آخر أو امسح عوامل التصفية.",
+                    )
+            }
             animate
           />
           <div className="ledger-bottom">
@@ -539,7 +574,7 @@ export function OperationsPage() {
                             <CheckCheck size={14} />
                           </span>
                           <div>
-                            <b dir="ltr">{c.id}</b>
+                            <b dir="ltr">{displayId(c)}</b>
                             <p>{c.issue}</p>
                             <small>
                               <Clock3 size={10} />
@@ -559,7 +594,7 @@ export function OperationsPage() {
                       <small>
                         {t("CURRENTLY INVESTIGATING", "قيد التحقيق الآن")}
                       </small>
-                      <b>{running.id}</b>
+                      <b>{displayId(running)}</b>
                       <p>
                         {t(
                           stages[running.run?.stage ?? 0].label,

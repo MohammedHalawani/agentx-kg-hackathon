@@ -3,10 +3,15 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useOperations } from "@/state/operations";
 import { usePreferences } from "@/state/preferences";
+import { displayId } from "@/domain/case-view";
 
-/** Notifications reflect observed mock-state changes, never a speculative outcome. */
+/**
+ * Notifications reflect observed state changes, never a speculative outcome: the lab's own
+ * mock transitions, or changes the backend reported between two reads of the queue.
+ */
 export function OperationalNotifications() {
-  const { cases, events } = useOperations();
+  const { cases, events, backend, connection } = useOperations();
+  const primed = useRef(false);
   const { t } = usePreferences();
   const navigate = useNavigate();
   const previous = useRef(new Map(cases.map((c) => [c.id, c.status])));
@@ -20,8 +25,15 @@ export function OperationalNotifications() {
     const localChange =
       newEvent !== previousEvent.current && newEvent?.startsWith("evt-");
     previousEvent.current = newEvent;
-    if (!localChange) return;
+    if (backend) {
+      // The first read of the queue is the starting point, not a set of changes.
+      if (!primed.current) {
+        if (connection?.lastSyncAt) primed.current = true;
+        return;
+      }
+    } else if (!localChange) return;
     for (const c of changed) {
+      const id = displayId(c);
       const options = {
         description: c.issue,
         action: {
@@ -31,15 +43,17 @@ export function OperationalNotifications() {
       };
       if (c.status === "investigating")
         toast.info(
-          t(
-            `${c.id} · simulated investigation started`,
-            `${c.id} · بدأ التحقيق المحاكى`,
-          ),
+          backend
+            ? t(`${id} · investigation started`, `${id} · بدأ التحقيق`)
+            : t(
+                `${c.id} · simulated investigation started`,
+                `${c.id} · بدأ التحقيق المحاكى`,
+              ),
           options,
         );
       if (c.status === "executing")
         toast.info(
-          t(`${c.id} · action authorized`, `${c.id} · تم تفويض الإجراء`),
+          t(`${id} · action authorized`, `${id} · تم تفويض الإجراء`),
           {
             ...options,
             description: t(
@@ -50,22 +64,22 @@ export function OperationalNotifications() {
         );
       if (c.status === "human_review")
         toast.warning(
-          t(`${c.id} · human review required`, `${c.id} · يتطلب مراجعة بشرية`),
+          t(`${id} · human review required`, `${id} · يتطلب مراجعة بشرية`),
           options,
         );
       if (c.status === "needs_evidence")
         toast.warning(
           t(
-            `${c.id} · additional evidence requested`,
-            `${c.id} · طُلبت أدلة إضافية`,
+            `${id} · additional evidence requested`,
+            `${id} · طُلبت أدلة إضافية`,
           ),
           options,
         );
       if (c.status === "verifying")
         toast.warning(
           t(
-            `${c.id} · outcome verification pending`,
-            `${c.id} · التحقق من النتيجة معلق`,
+            `${id} · outcome verification pending`,
+            `${id} · التحقق من النتيجة معلق`,
           ),
           options,
         );
@@ -73,8 +87,8 @@ export function OperationalNotifications() {
         if (c.outcome?.successful === false)
           toast.error(
             t(
-              `${c.id} · outcome verification failed`,
-              `${c.id} · فشل التحقق من النتيجة`,
+              `${id} · outcome verification failed`,
+              `${id} · فشل التحقق من النتيجة`,
             ),
             {
               ...options,
@@ -86,19 +100,19 @@ export function OperationalNotifications() {
           );
         else
           toast.info(
-            t(`${c.id} · case escalated`, `${c.id} · تم تصعيد الحالة`),
+            t(`${id} · case escalated`, `${id} · تم تصعيد الحالة`),
             options,
           );
       }
       if (c.status === "resolved" && c.outcome?.successful)
         toast.success(
           t(
-            `Shipment ${c.id} resolved — outcome verified.`,
-            `حُلت الشحنة ${c.id} — تم التحقق من النتيجة.`,
+            `Shipment ${id} resolved — outcome verified.`,
+            `حُلت الشحنة ${id} — تم التحقق من النتيجة.`,
           ),
           { ...options, duration: 8000 },
         );
     }
-  }, [cases, events, navigate, t]);
+  }, [cases, events, navigate, t, backend, connection?.lastSyncAt]);
   return null;
 }

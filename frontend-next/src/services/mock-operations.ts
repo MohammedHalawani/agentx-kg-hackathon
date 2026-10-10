@@ -1,4 +1,9 @@
-import { initialSnapshot, makeCase } from "@/data/fixtures";
+import {
+  facilities,
+  initialSnapshot,
+  makeCase,
+  scenarioInfo,
+} from "@/data/fixtures";
 import { cityLocations } from "@/services/page-queries";
 import {
   stages,
@@ -6,6 +11,7 @@ import {
   type AuthorityDecision,
   type CaseQueue,
   type OperationalCase,
+  type OperationsCatalog,
   type OperationsService,
   type Scenario,
 } from "@/domain/types";
@@ -421,6 +427,27 @@ export class MockOperationsService implements OperationsService {
   }
   reset() {
     this.commit(initialSnapshot());
+  }
+  catalog(): OperationsCatalog {
+    return {
+      source: "lab",
+      causes: Object.entries(scenarioInfo).map(([value, info]) => ({
+        value,
+        label: info.issue,
+      })),
+      operational: [
+        { value: "held", label: "Parcel held", arabic: "الطرد محتجز" },
+        {
+          value: "disputed",
+          label: "Delivery disputed",
+          arabic: "تسليم محل نزاع",
+        },
+        { value: "exception", label: "Exception open", arabic: "استثناء مفتوح" },
+      ],
+      cities: Object.keys(cityLocations),
+      cityLocations,
+      facilities,
+    };
   }
   answer(id: string, question: string) {
     const c = this.find(id),

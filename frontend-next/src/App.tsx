@@ -9,6 +9,7 @@ import { OperationsPage } from "@/pages/operations";
 import { Button } from "@/components/ui/button";
 import { CanopusProvider } from "@/state/canopus";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { BASE_PATH, LAB, asset } from "@/config";
 const InvestigationPage = lazy(() =>
   import("@/pages/investigation").then((m) => ({
     default: m.InvestigationPage,
@@ -41,9 +42,13 @@ class ErrorBoundary extends Component<
     if (this.state.failed)
       return (
         <div className="app-error">
-          <img src="/suhail.svg" width="44" alt="Suhail" />
+          <img src={asset("suhail.svg")} width="44" alt="Suhail" />
           <h1>The workspace could not load.</h1>
-          <p>Reload to restore your locally saved cases.</p>
+          <p>
+            {LAB
+              ? "Reload to restore your locally saved cases."
+              : "Reload to read the workspace from the Suhail backend again."}
+          </p>
           <Button onClick={() => window.location.reload()}>
             Reload workspace
           </Button>
@@ -57,7 +62,7 @@ function AppRoutes() {
   const mobile = useMediaQuery("(max-width: 600px)");
   return (
     <>
-      <BrowserRouter>
+      <BrowserRouter basename={BASE_PATH}>
         <CanopusProvider>
           <Routes>
             <Route element={<AppShell />}>
@@ -66,7 +71,12 @@ function AppRoutes() {
               <Route path="/cases/:caseId" element={<InvestigationPage />} />
               <Route
                 path="/investigation"
-                element={<Navigate to="/cases/SHP-10482" replace />}
+                element={
+                  <Navigate
+                    to={LAB ? "/cases/SHP-10482" : "/operations"}
+                    replace
+                  />
+                }
               />
               <Route path="/decisions" element={<DecisionsPage />} />
               <Route path="/explore" element={<ExplorePage />} />

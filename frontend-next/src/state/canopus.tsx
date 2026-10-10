@@ -16,12 +16,15 @@ import type {
   CanopusService,
 } from "@/domain/canopus";
 import type { ChatEntry, ChatParticipant } from "@/domain/chat";
-import { MockCanopusService } from "@/services/mock-canopus";
+import { DisconnectedCanopusService } from "@/services/disconnected-canopus";
+import { LAB } from "@/config";
 import { useOperations } from "@/state/operations";
 import { usePreferences } from "@/state/preferences";
 import { CanopusPanel } from "@/components/canopus-panel";
-import { parsePageIntent } from "@/services/mock-intents";
 import type { AssistantContext, PageAction } from "@/domain/page-actions";
+import { createLabCanopus, parsePageIntent } from "@/services/lab-entry";
+/** Lab transcripts hold scripted replies; the connected product never restores them. */
+const CHAT_KEY = LAB ? "suhail-ui-lab.chat" : "suhail.canopus.chat";
 
 export type CanopusPresentation = "collapsed" | "floating" | "expanded";
 export interface CanopusPageTools {
@@ -41,6 +44,8 @@ const keyFor = (context: CanopusContext) =>
   context.caseId ?? `screen:${context.screen}`;
 const emptyThread: Thread = { messages: [], busy: false };
 const Context = createContext<{
+  /** False until a real Canopus backend adapter exists; the lab's scripted adapter counts in lab builds only. */
+  connected: boolean;
   screenContext: CanopusContext;
   panelContext: CanopusContext;
   panelOpen: boolean;
@@ -74,9 +79,16 @@ export function CanopusProvider({
   const location = useLocation();
   const { service, cases } = useOperations();
   const { preferences } = usePreferences();
+  // Connected product: no Canopus backend exists yet, so the adapter answers nothing.
+  // Lab builds only: the scripted fixture adapter.
   const [canopus] = useState<CanopusService>(
-    () => adapter ?? new MockCanopusService(service.getSnapshot),
+    () =>
+      adapter ??
+      (createLabCanopus
+        ? createLabCanopus(service.getSnapshot)
+        : new DisconnectedCanopusService()),
   );
+  const connected = !!adapter || !!createLabCanopus;
   const [registered, setRegistered] = useState<RegistryContext | null>(null);
   const [presentation, setPresentationState] =
     useState<CanopusPresentation>("collapsed");
@@ -94,7 +106,7 @@ export function CanopusProvider({
   const [threads, setThreads] = useState<Record<string, Thread>>(() => {
     try {
       const saved = JSON.parse(
-        sessionStorage.getItem("suhail-ui-lab.chat") ?? "{}",
+        sessionStorage.getItem(CHAT_KEY) ?? "{}",
       ) as Record<string, ChatEntry[]>;
       return Object.fromEntries(
         Object.entries(saved).map(([id, messages]) => [
@@ -137,7 +149,7 @@ export function CanopusProvider({
   useEffect(() => {
     try {
       sessionStorage.setItem(
-        "suhail-ui-lab.chat",
+        CHAT_KEY,
         JSON.stringify(
           Object.fromEntries(
             Object.entries(threads).map(([id, thread]) => [
@@ -268,6 +280,8 @@ export function CanopusProvider({
     participant: ChatParticipant = "suhail",
     simulateFailure = false,
   ) {
+    // Without a connected adapter nothing is sent and nothing is answered.
+    if (!connected) return;
     if (!message.trim() || requests.current.has(keyFor(context))) return;
     const key = keyFor(context),
       now = new Date().toISOString(),
@@ -308,6 +322,7 @@ export function CanopusProvider({
     // Page tools remain local UI rules. Explanatory questions use the replaceable service.
     const tools = pageTools.current;
     if (
+      parsePageIntent &&
       !simulateFailure &&
       tools?.pathname === location.pathname &&
       tools.context().page === context.screen &&
@@ -363,6 +378,7 @@ export function CanopusProvider({
         }
       : panelContext;
   const value = {
+    connected,
     screenContext,
     panelContext: currentPanelContext,
     panelOpen: presentation !== "collapsed",

@@ -12,8 +12,8 @@ import {
 import L from "leaflet";
 import { Layers, LocateFixed, MapPinned } from "lucide-react";
 import "leaflet/dist/leaflet.css";
-import { facilities } from "@/data/fixtures";
-import type { OperationalCase } from "@/domain/types";
+import type { Facility, OperationalCase } from "@/domain/types";
+import { useOperations } from "@/state/operations";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -48,11 +48,13 @@ function MapEffects({
   selected,
   network,
   fitKey,
+  facilities,
 }: {
   c: OperationalCase;
   selected: string | null;
   network: boolean;
   fitKey: number;
+  facilities: Facility[];
 }) {
   const map = useMap();
   const { preferences } = usePreferences();
@@ -63,7 +65,11 @@ function MapEffects({
       : c.evidence.map((e) => e.location),
   );
   useEffect(() => {
-    map.fitBounds(JSON.parse(boundsKey), { padding: [35, 45], animate: false });
+    const points = JSON.parse(boundsKey) as [number, number][];
+    // A backend case can have no located evidence yet: keep the country view.
+    if (points.length)
+      map.fitBounds(points, { padding: [35, 45], maxZoom: 13, animate: false });
+    else map.setView([24.8, 45.3], 5, { animate: false });
     const observer = new ResizeObserver(() => map.invalidateSize());
     observer.observe(map.getContainer());
     return () => observer.disconnect();
@@ -100,6 +106,9 @@ export function RouteMap({
   onFacility?: (id: string) => void;
 }) {
   const { t } = usePreferences();
+  const { catalog, backend } = useOperations();
+  // Lab: the fixture network. Backend: facilities located in evidence the backend served.
+  const facilities = catalog.facilities;
   const [layers, setLayers] = useState({
     expected: true,
     actual: true,
@@ -111,8 +120,9 @@ export function RouteMap({
   const [errors, setErrors] = useState(0);
   const [fitKey, setFitKey] = useState(0);
   const effectiveBasemap = errors >= 3 ? "schematic" : basemap;
-  const activeEvidence =
-    stage === 1
+  const activeEvidence = c.backend
+    ? (c.backend.stageEvidence[stage] ?? [])
+    : stage === 1
       ? ["origin", "destination"]
       : stage === 2
         ? ["origin", "handover", "warehouse"]
@@ -151,6 +161,7 @@ export function RouteMap({
             selected={selected}
             network={network}
             fitKey={fitKey}
+            facilities={facilities}
           />
           <ZoomButtons />
           {effectiveBasemap === "street" && (
@@ -378,7 +389,9 @@ export function RouteMap({
           {t(
             effectiveBasemap === "schematic"
               ? "Offline schematic · evidence available"
-              : "Live map · synthetic evidence",
+              : backend
+                ? "Street map · backend evidence (synthetic)"
+                : "Live map · synthetic evidence",
             effectiveBasemap === "schematic"
               ? "مخطط دون اتصال · الأدلة متاحة"
               : "خريطة تفاعلية · أدلة محاكاة",

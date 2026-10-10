@@ -64,7 +64,18 @@ import { OperationalNotifications } from "@/components/operational-notifications
 import { useOperations } from "@/state/operations";
 import { usePreferences } from "@/state/preferences";
 import { StatusBadge } from "@/components/shared";
-import { timeLabel } from "@/lib/dates";
+import { dateLabel, timeLabel } from "@/lib/dates";
+import { asset } from "@/config";
+import { displayId, searchText } from "@/domain/case-view";
+
+const LAST_CASE = "suhail.last-case";
+function lastCase() {
+  try {
+    return sessionStorage.getItem(LAST_CASE);
+  } catch {
+    return null;
+  }
+}
 
 const navigation = [
   {
@@ -85,12 +96,33 @@ const navigation = [
 ];
 function Navigation() {
   const { t, preferences } = usePreferences();
-  const { cases } = useOperations();
+  const { cases, backend, connection } = useOperations();
   const { setOpenMobile, isMobile } = useSidebar();
   const location = useLocation();
   const [workspace, setWorkspace] = useState(false);
   const [help, setHelp] = useState(false);
   const attention = cases.filter((c) => c.status === "human_review").length;
+  // Backend: "Investigation" opens the case being viewed, the last one opened, or the queue.
+  const openCase = location.pathname.startsWith("/cases/")
+    ? decodeURIComponent(location.pathname.split("/")[2] ?? "")
+    : null;
+  useEffect(() => {
+    if (!backend || !openCase) return;
+    try {
+      sessionStorage.setItem(LAST_CASE, openCase);
+    } catch {
+      /* Session storage is optional. */
+    }
+  }, [backend, openCase]);
+  const remembered = openCase ?? lastCase();
+  const investigation = !backend
+    ? "/cases/SHP-10482"
+    : remembered && cases.some((c) => c.id === remembered)
+      ? `/cases/${remembered}`
+      : cases[0]
+        ? `/cases/${cases[0].id}`
+        : "/operations";
+  const online = connection?.state === "online";
   const closeMobile = () => {
     if (isMobile) setOpenMobile(false);
   };
@@ -103,7 +135,7 @@ function Navigation() {
       >
         <SidebarHeader className="brand-header">
           <Link to="/operations" className="brand" onClick={closeMobile}>
-            <img src="/suhail.svg" alt="" />
+            <img src={asset("suhail.svg")} alt="" />
             <span>
               suhail<span className="brand-arabic">سهيل</span>
             </span>
@@ -121,8 +153,12 @@ function Navigation() {
             >
               <span className="workspace-icon">S</span>
               <span className="workspace-text">
-                <b>SPL Operations</b>
-                <small>{t("Saudi network", "شبكة المملكة")}</small>
+                <b>{backend ? "Suhail Operations" : "SPL Operations"}</b>
+                <small>
+                  {backend
+                    ? t("Synthetic network", "شبكة اصطناعية")
+                    : t("Saudi network", "شبكة المملكة")}
+                </small>
               </span>
               <ChevronsUpDown size={13} />
             </Button>
@@ -143,7 +179,10 @@ function Navigation() {
                     }
                     tooltip={t(item.en, item.ar)}
                   >
-                    <NavLink to={item.to} onClick={closeMobile}>
+                    <NavLink
+                      to={item.en === "Investigation" ? investigation : item.to}
+                      onClick={closeMobile}
+                    >
                       <item.icon size={17} />
                       <span>{t(item.en, item.ar)}</span>
                       {item.en === "Decisions" && attention > 0 && (
@@ -177,10 +216,20 @@ function Navigation() {
         </SidebarContent>
         <SidebarFooter>
           <div className="sidebar-system">
-            <span className="live-dot" />
+            <span className={!backend || online ? "live-dot" : "paused-dot"} />
             <span>
-              {t("Local simulation", "محاكاة محلية")}
-              <small>{t("Isolated UI lab", "مختبر واجهة مستقل")}</small>
+              {backend
+                ? online
+                  ? t("Backend connected", "الخادم متصل")
+                  : connection?.state === "connecting"
+                    ? t("Connecting to backend", "جارٍ الاتصال بالخادم")
+                    : t("Backend unreachable", "تعذر الوصول إلى الخادم")
+                : t("Local simulation", "محاكاة محلية")}
+              <small>
+                {backend
+                  ? t("Synthetic dataset", "بيانات اصطناعية")
+                  : t("Isolated UI lab", "مختبر واجهة مستقل")}
+              </small>
             </span>
             <ShieldCheck size={14} />
           </div>
@@ -199,14 +248,27 @@ function Navigation() {
               <SidebarMenuButton
                 asChild
                 className="operator-button"
-                tooltip="Noura Al-Salem"
+                tooltip={
+                  backend
+                    ? (connection?.operator?.actorId ?? "Operator")
+                    : "Noura Al-Salem"
+                }
               >
                 <Link to="/settings" onClick={closeMobile}>
-                  <span className="avatar">NA</span>
+                  <span className="avatar">{backend ? "OP" : "NA"}</span>
                   <span className="operator-name">
-                    {t("Noura Al-Salem", "نورة السالم")}
+                    {backend ? (
+                      <span dir="ltr">
+                        {connection?.operator?.actorId ??
+                          t("No operator session", "لا توجد جلسة مشغل")}
+                      </span>
+                    ) : (
+                      t("Noura Al-Salem", "نورة السالم")
+                    )}
                     <small>
-                      {t("Operations supervisor", "مشرفة العمليات")}
+                      {backend
+                        ? t("Local operator session", "جلسة مشغل محلية")
+                        : t("Operations supervisor", "مشرفة العمليات")}
                     </small>
                   </span>
                   <ChevronDown size={13} className="ms-auto" />
@@ -220,10 +282,17 @@ function Navigation() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {t("SPL Operations workspace", "مساحة عمليات سبل")}
+              {backend
+                ? t("Suhail Operations workspace", "مساحة عمليات سهيل")
+                : t("SPL Operations workspace", "مساحة عمليات سبل")}
             </DialogTitle>
             <DialogDescription>
-              {t(
+              {backend
+                ? t(
+                    "The Suhail operations workspace, connected to the Suhail backend.",
+                    "مساحة عمليات سهيل، متصلة بخادم سهيل.",
+                  )
+                : t(
                 "A standalone Suhail frontend lab for the Saudi logistics network.",
                 "مختبر واجهة سهيل المستقل للشبكة اللوجستية السعودية.",
               )}
@@ -232,7 +301,12 @@ function Navigation() {
           <div className="info-box">
             <ShieldCheck size={20} />
             <p>
-              {t(
+              {backend
+                ? t(
+                    "Shipments and evidence come from a synthetic logistics dataset served by the Suhail backend. It is not SPL operational data. Investigations, decisions and outcomes are recorded by the backend, not by this browser.",
+                    "الشحنات والأدلة من مجموعة بيانات لوجستية اصطناعية يقدمها خادم سهيل. ليست بيانات تشغيلية لسبل. يسجل الخادم التحقيقات والقرارات والنتائج، لا هذا المتصفح.",
+                  )
+                : t(
                 "All shipments, evidence, decisions, and outcomes are synthetic. State is saved in this browser. The lab has no connection to the operational database.",
                 "جميع الشحنات والأدلة والقرارات والنتائج محاكاة. تُحفظ الحالة في هذا المتصفح، ولا يوجد اتصال بقاعدة البيانات التشغيلية.",
               )}
@@ -248,8 +322,10 @@ function Navigation() {
             </SheetTitle>
             <SheetDescription>
               {t(
-                "A quick guide to the Suhail UI lab.",
-                "دليل سريع لمختبر واجهة سهيل.",
+                backend
+                  ? "A quick guide to the Suhail workspace."
+                  : "A quick guide to the Suhail UI lab.",
+                backend ? "دليل سريع لمساحة عمل سهيل." : "دليل سريع لمختبر واجهة سهيل.",
               )}
             </SheetDescription>
           </SheetHeader>
@@ -314,7 +390,7 @@ function Guide({
 }
 function TopBar() {
   const { t, preferences, update } = usePreferences();
-  const { cases, events } = useOperations();
+  const { cases, events, backend, connection, service } = useOperations();
   const location = useLocation();
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -336,9 +412,7 @@ function TopBar() {
     return () => window.removeEventListener("keydown", handler);
   }, []);
   const results = cases.filter((c) =>
-    `${c.id} ${c.issue} ${c.shipment.destination}`
-      .toLowerCase()
-      .includes(query.toLowerCase()),
+    searchText(c).includes(query.toLowerCase()),
   );
   return (
     <>
@@ -364,9 +438,24 @@ function TopBar() {
             <span>{t("Search shipments…", "البحث عن الشحنات…")}</span>
             <kbd>Ctrl K</kbd>
           </Button>
-          <span className="environment-badge">
-            <span className="live-dot" />
-            {t("UI lab", "مختبر الواجهة")}
+          <span
+            className="environment-badge"
+            title={backend ? (connection?.error ?? undefined) : undefined}
+          >
+            <span
+              className={
+                !backend || connection?.state === "online"
+                  ? "live-dot"
+                  : "paused-dot"
+              }
+            />
+            {backend
+              ? connection?.state === "online"
+                ? t("Synthetic data", "بيانات اصطناعية")
+                : connection?.state === "connecting"
+                  ? t("Connecting…", "جارٍ الاتصال…")
+                  : t("Backend offline", "الخادم غير متصل")
+              : t("UI lab", "مختبر الواجهة")}
           </span>
           <Button
             variant="ghost"
@@ -399,12 +488,35 @@ function TopBar() {
             variant="ghost"
             size="icon-sm"
             aria-label={t("Notifications", "الإشعارات")}
-            onClick={() => setNotifications(true)}
+            onClick={() => {
+              // Backend: the activity list reads the audit ledger.
+              void service.loadAudit?.();
+              setNotifications(true);
+            }}
           >
             <Bell size={16} />
           </Button>
         </div>
       </header>
+      {backend &&
+        connection &&
+        (connection.state === "offline" || connection.state === "degraded") && (
+          <div className="backend-notice" role="status">
+            <ShieldCheck size={14} />
+            <span>
+              {connection.state === "offline"
+                ? t(
+                    "The Suhail backend is not reachable. Nothing is shown until it answers; no stand-in data is used.",
+                    "تعذر الوصول إلى خادم سهيل. لا يُعرض شيء حتى يستجيب، ولا تُستخدم بيانات بديلة.",
+                  )
+                : t(
+                    `The connection to the backend was interrupted. Showing what was last read at ${connection.lastSyncAt ? timeLabel(connection.lastSyncAt) : "—"} AST; it may be out of date.`,
+                    `انقطع الاتصال بالخادم. يُعرض آخر ما قُرئ عند ${connection.lastSyncAt ? timeLabel(connection.lastSyncAt) : "—"} بتوقيت السعودية، وقد يكون قديماً.`,
+                  )}
+              {connection.error ? ` (${connection.error})` : ""}
+            </span>
+          </div>
+        )}
       <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
         <DialogContent className="search-dialog">
           <DialogHeader>
@@ -421,7 +533,11 @@ function TopBar() {
           <Input
             autoFocus
             aria-label="Global shipment search"
-            placeholder="SHP-10482, barcode, Dammam…"
+            placeholder={
+              backend
+                ? t("Shipment, case or city…", "شحنة أو حالة أو مدينة…")
+                : "SHP-10482, barcode, Dammam…"
+            }
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -433,12 +549,12 @@ function TopBar() {
                 onClick={() => setSearchOpen(false)}
               >
                 <span>
-                  <b>{c.id}</b>
+                  <b>{displayId(c)}</b>
                   <small>
                     {c.issue} · {c.shipment.destination}
                   </small>
                 </span>
-                <StatusBadge status={c.status} />
+                <StatusBadge status={c.status} c={c} />
               </Link>
             ))}
             {results.length === 0 && (
@@ -454,15 +570,21 @@ function TopBar() {
               {t("Operational activity", "النشاط التشغيلي")}
             </SheetTitle>
             <SheetDescription>
-              {t(
-                "Recent events from the local simulation.",
-                "أحداث حديثة من المحاكاة المحلية.",
-              )}
+              {backend
+                ? t(
+                    "Recent events recorded in the backend audit ledger.",
+                    "أحداث حديثة مسجلة في سجل تدقيق الخادم.",
+                  )
+                : t(
+                    "Recent events from the local simulation.",
+                    "أحداث حديثة من المحاكاة المحلية.",
+                  )}
             </SheetDescription>
           </SheetHeader>
           <div className="sheet-body">
             {[...events]
               .sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp))
+              .filter((e) => e.caseId)
               .slice(0, 12)
               .map((e) => (
                 <Link
@@ -476,8 +598,10 @@ function TopBar() {
                     <b>{e.title}</b>
                     <p>{e.detail}</p>
                     <small>
-                      {e.caseId} · {timeLabel(e.timestamp)} ·{" "}
-                      {t("simulated", "محاكاة")}
+                      {e.shipmentId ?? e.caseId} · {timeLabel(e.timestamp)} ·{" "}
+                      {e.simulated
+                        ? t("simulated", "محاكاة")
+                        : t("backend", "الخادم")}
                     </small>
                   </div>
                 </Link>
@@ -491,17 +615,24 @@ function TopBar() {
 function ResolutionTransfer() {
   const { cases } = useOperations();
   const { t } = usePreferences();
+  const { backend, connection } = useOperations();
   const resolved = cases
     .filter((c) => c.status === "resolved")
     .map((c) => c.id);
   const previous = useRef(new Set(resolved));
+  // Backend: cases already resolved when the queue is first read are not "just transferred".
+  const primed = useRef(!backend);
   const [recent, setRecent] = useState<string | null>(null);
   useEffect(() => {
-    const next = cases.filter((c) => c.status === "resolved").map((c) => c.id);
-    const added = next.find((id) => !previous.current.has(id));
-    previous.current = new Set(next);
-    if (added) setRecent(added);
-  }, [cases]);
+    const next = cases.filter((c) => c.status === "resolved");
+    const added = next.find((c) => !previous.current.has(c.id));
+    previous.current = new Set(next.map((c) => c.id));
+    if (!primed.current) {
+      if (connection?.lastSyncAt) primed.current = true;
+      return;
+    }
+    if (added) setRecent(displayId(added));
+  }, [cases, connection?.lastSyncAt]);
   useEffect(() => {
     if (!recent) return;
     const timer = setTimeout(() => setRecent(null), 4200);
@@ -536,6 +667,7 @@ function ResolutionTransfer() {
 export function AppShell() {
   const location = useLocation();
   const { t } = usePreferences();
+  const { backend, connection } = useOperations();
   return (
     <SidebarProvider
       style={
@@ -579,11 +711,21 @@ export function AppShell() {
             {t("Logistics intelligence", "الذكاء اللوجستي")}
           </span>
           <span>
-            {t(
-              "Synthetic data · local simulation",
-              "بيانات اصطناعية · محاكاة محلية",
-            )}
-            <span>·</span> 09 OCT 2026
+            {backend
+              ? t(
+                  "Synthetic data · Suhail backend",
+                  "بيانات اصطناعية · خادم سهيل",
+                )
+              : t(
+                  "Synthetic data · local simulation",
+                  "بيانات اصطناعية · محاكاة محلية",
+                )}
+            <span>·</span>{" "}
+            {backend
+              ? connection?.asOf
+                ? `${t("dataset clock", "ساعة البيانات")} ${dateLabel(connection.asOf).toUpperCase()}`
+                : "—"
+              : "09 OCT 2026"}
           </span>
         </footer>
       </div>
