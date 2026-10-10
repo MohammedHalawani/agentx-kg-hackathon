@@ -1,8 +1,9 @@
 """The frozen Stage 3 design, as constants the harness enforces.
 
 Source: docs/plans/2026-10-10_stage3_evaluation_design.md on fhd, frozen at b1d331f, with amendment 1 (001bcbf),
-amendment 2 (ac6f857, Fahad's 4,000-call cap) and the addendum to amendment 2 (7af0d5c). Where they differ, the
-later text wins. Nothing here is computed from results: every bar, size and order is fixed before any evaluation
+amendment 2 (ac6f857, Fahad's 4,000-call cap), the addendum to amendment 2 (7af0d5c), amendment 3 (15514ac: the budget
+is what the campaign ledger has left, per-case cap 16, progressive looks) and the addendum to amendment 3 (6f0ed49:
+Stage 3 stops at 3,600 calls, 190 cases). Where they differ, the later text wins. Nothing here is computed from results: every bar, size and order is fixed before any evaluation
 case exists. Changing a value here after the first evaluation run changes the sealed configuration hash, and the
 run validity check then reports the run as not matching its sealed configuration (amendment 1, H).
 
@@ -14,20 +15,27 @@ import hashlib
 import json
 
 DESIGN_DOCUMENT = "docs/plans/2026-10-10_stage3_evaluation_design.md"
-DESIGN_COMMITS = {"frozen": "b1d331f", "amendment_1": "001bcbf", "amendment_2": "ac6f857", "addendum_2": "7af0d5c"}
+DESIGN_COMMITS = {"frozen": "b1d331f", "amendment_1": "001bcbf", "amendment_2": "ac6f857", "addendum_2": "7af0d5c",
+                  "amendment_3": "15514ac", "addendum_3": "6f0ed49"}
 
-# ---------------------------------------------------------------------------------------------- budget (amendment 2)
+# ------------------------------------------------------------------------------ budget (amendments 2 and 3)
 CALL_BUDGET = 4000            # Fahad's hard cap for the blind evaluation on E1 and E2, every arm and retry included.
 # Stage 3 stops when the campaign ledger reaches this many calls; the rest of the cap is the Stage 4 reserve (addendum
 # to amendment 3). `select` seals budget = min(campaign remaining, STAGE3_STOP_AT - spent), and `run` refuses to start
 # if the calls spent plus the sealed budget would pass it.
 STAGE3_STOP_AT = 3600
-C_CAP_PLANNING = 12           # Planning value; the real C_cap is the 95th percentile of correct development runs.
+# Amendment 2's planning value, kept only as the origin of the allocation table below (285 cases at 12) and as the
+# default of a configuration nobody sealed (the fixture). It is not the cap of the evaluation: C_cap is given to
+# `select` (--c-cap, required), sealed in the selection with the budget, and the wiring refuses to run unless the
+# backend's cap equals it. Amendment 3 sets it to 16 (the development data is censored at 12), one counter, R_cap 0.
+C_CAP_PLANNING = 12
 NOTOOLS_MAX_CALLS = 2         # One call plus one retry on invalid output (addendum 2, item 2).
 
 
 def n_main(c_cap=C_CAP_PLANNING, r_cap=0, budget=CALL_BUDGET):
-    """N_main = floor(budget / (C_cap + R_cap + 2)) (amendment 2 and its addendum, item 1)."""
+    """N_main = floor(budget / (C_cap + R_cap + 2)) (amendment 2 and its addendum, item 1). The defaults are amendment
+    2's planning figures (12 and 4,000, giving 285); `select` passes the sealed C_cap and the sealed budget instead
+    (16 and 3,427 at a ledger of 173, giving 190: addendum to amendment 3)."""
     if c_cap < 1 or r_cap < 0:
         raise ValueError("C_cap must be at least 1 and R_cap at least 0")
     return budget // (c_cap + r_cap + NOTOOLS_MAX_CALLS)
@@ -47,7 +55,8 @@ def worst_case_per_case(c_cap=C_CAP_PLANNING, r_cap=0):
 # ---------------------------------------------------------------------------------------------- strata and worlds
 STRATA = ("identifiable_ambiguous", "determined", "unidentifiable")
 WORLDS = ("E1", "E2")
-# Amendment 2 allocation at C_cap = 12 (N_main = 285).
+# Amendment 2's allocation at its planning figures (C_cap 12, 4,000 calls: N_main = 285). The table the shrink order
+# starts from; the cells of a real selection are what is left of it at the sealed C_cap and budget (selection.allocate).
 ALLOCATION_AT_PLANNING = {
     ("E1", "identifiable_ambiguous"): 160,
     ("E2", "identifiable_ambiguous"): 60,
@@ -172,7 +181,8 @@ SYMPTOM_ORDER = tuple(SYMPTOM_CAUSE)
 
 @dataclass(frozen=True)
 class EvalConfig:
-    """What a run is sealed to. Filled on Fahad's machine once C_cap and the freeze commit are known."""
+    """What a run is sealed to. Filled by `select` on Fahad's machine from the freeze commit, the C_cap given there (16
+    per amendment 3; the default below is only the planning value) and the campaign ledger."""
     freeze_commit: str = ""
     c_cap: int = C_CAP_PLANNING
     r_cap: int = 0
@@ -204,8 +214,10 @@ def canonical_bytes(data: bytes) -> bytes:
 # selection.json is the only pre-registered file the run step opens before and during the main test. It may carry
 # these names and no others: every other fact about a case (its stratum, whether it is in the main test, which extras
 # it belongs to) is derived from truth and lives in the scorer-side files (selection_scorer.json, extras.json).
+# The case names are exactly the ones selection.select writes (tested): a case's id and snapshot time exist only once
+# the run has opened it, so they are the backend's to give (CaseRef) and have no place in a pre-registered file.
 RUN_SELECTION_KEYS = ("schema", "sealed_config_hash", "config", "n_main", "cases", "unit")
-RUN_CASE_KEYS = ("order", "key", "world", "shipment_id", "expected_opened_at", "case_id", "as_of")
+RUN_CASE_KEYS = ("order", "key", "world", "shipment_id", "expected_opened_at")
 TRUTH_DERIVED_KEYS = ("stratum", "stratum_rule", "main_test", "extras", "cross_shipment_ablation", "stability_rerun", "allocation",
                       "identifiable", "acceptable", "mechanism_types", "pairs", "census")
 

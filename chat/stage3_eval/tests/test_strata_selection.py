@@ -85,7 +85,13 @@ def test_the_run_readable_selection_carries_nothing_derived_from_truth(tmp_path,
     run_side = json.loads((tmp_path / "s" / "selection.json").read_text())
     assert set(run_side) == {"schema", "sealed_config_hash", "config", "n_main", "cases", "unit"}
     assert all(set(row) == {"order", "key", "world", "shipment_id", "expected_opened_at"} for row in run_side["cases"])
-    assert set(run_side["cases"][0]) <= set(RUN_CASE_KEYS)
+    assert all(set(row) == set(RUN_CASE_KEYS) for row in run_side["cases"])   # the screen permits what select writes, and no more
+    for runtime_only in ("case_id", "as_of"):                                # the backend's to give once a case is opened
+        assert runtime_only not in RUN_CASE_KEYS
+        carried = {**run_side, "cases": [{**run_side["cases"][0], runtime_only: "x"}, *run_side["cases"][1:]]}
+        assert "fields the run step must not read" in runtime_selection_problem(carried)
+        with pytest.raises(ValueError, match="truth-side field"):
+            sel_mod._check_runtime_safe(carried, truth_vocabulary(worlds["E1"][0]))
     text = (tmp_path / "s" / "selection.json").read_text()
     for name in ("stratum", "main_test", "cross_shipment_ablation", "stability_rerun", "extras", "allocation", "identifiable_ambiguous",
                  "determined"):

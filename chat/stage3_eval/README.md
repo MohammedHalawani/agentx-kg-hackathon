@@ -1,7 +1,8 @@
 # Stage 3 blind evaluation harness (`chat/stage3_eval`)
 
 Implements the frozen Stage 3 design (`docs/plans/2026-10-10_stage3_evaluation_design.md`: b1d331f, amendment 1
-001bcbf, amendment 2 ac6f857 and its addendum 7af0d5c) and the independent review of it, so the real-model pilot and
+001bcbf, amendment 2 ac6f857 and its addendum 7af0d5c, amendment 3 15514ac and its addendum 6f0ed49) and the
+independent review of it, so the real-model pilot and
 the evaluation can start once Stage 2 lands. It makes no model call and opens no database: the backend track plugs in
 the real investigator, tools and databases as described in [WIRING.md](WIRING.md).
 
@@ -48,9 +49,9 @@ hand its output to a later part of the run.
 
 | Design item | Where |
 |---|---|
-| Budget: 4,000 calls, C_cap (+ R_cap) per agent case, 2 for B_notools, N_main = floor(4000 / (C_cap + R_cap + 2)) | `design.py`, `budget.py` |
+| Budget: the campaign cap is 4,000 calls and Stage 3 stops at 3,600; the evaluation's budget is what the campaign ledger has left before that line at selection (3,427 at 173 spent), not 4,000. C_cap (+ R_cap) per agent case, sealed at selection (16 per amendment 3, R_cap 0), plus 2 for B_notools: N_main = floor(budget / (C_cap + R_cap + 2)) = floor(3,427 / 18) = 190, worst case 3,420 | `design.py`, `budget.py` |
 | One campaign ledger for every real model call (`docs/evals/model_call_ledger.json`, cap 4,000), and the Stage 3 stop line: Stage 3 stops when the ledger reaches 3,600 (`design.STAGE3_STOP_AT`, addendum to amendment 3; the other 400 are the Stage 4 reserve). `select` seals budget = min(cap - spent, 3,600 - spent) by default, so N_main = floor(budget / (C_cap + R_cap + 2)); `run` refuses to start if spent + budget would exceed the cap or pass the line, reserves its budget and writes what it used. `select --reserve N` keeps N more calls out when that is tighter: budget = min(cap - spent - N, 3,600 - spent), N sealed in the configuration, and `run` also refuses if spent + budget would exceed cap - N | `design.STAGE3_STOP_AT`, `design.evaluation_budget`, `operations/call_ledger.py`, `__main__.py`, `runner.refuse_past_stop_line`, `runner.run(campaign=...)` |
-| Allocation (160 / 60 / 30+10 / 20+5 at C_cap 12) and the shrink order | `design.py`, `selection.allocate` |
+| Allocation: amendment 2's table (160 / 60 / 30+10 / 20+5, 285 cases at its planning figures) cut down by the shrink order to the sealed N_main; at 190 that is E1 identifiable ambiguous 105, E2 identifiable ambiguous 40, determined 30, unidentifiable 15 | `design.py`, `selection.allocate` |
 | Strata: identifiable ambiguous, determined (census of >= 5, else the generator map), unidentifiable | `strata.py` |
 | Reproduces the Stage 0 S5 split (19 determined, 22 ambiguous) | `tests/test_strata_selection.py` |
 | Truth knowable at t from the run's ingestion log (world.truth discrimination specs) | `truth_io.truth_at` |

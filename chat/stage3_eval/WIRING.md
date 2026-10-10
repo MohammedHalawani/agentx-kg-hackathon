@@ -77,7 +77,8 @@ backend has no `read_one` or `read_all` helper, as an earlier version of this pa
   ledger never counts the agent's calls a second way. A record without a readable count is settled at its full worst
   case and flagged. A count above C_cap + R_cap stops the run as a cap violation.
 - If Stage 2 keeps a separate reviewer cap, put it in `EvalConfig.r_cap` before selecting: the sizing becomes
-  `floor(4000 / (C_cap + R_cap + 2))` (addendum, item 1) and each agent case reserves C_cap + R_cap.
+  `floor(budget / (C_cap + R_cap + 2))` (addendum to amendment 2, item 1; the budget is the one `select` seals from
+  the campaign ledger, not 4,000) and each agent case reserves C_cap + R_cap.
 - Also map, if Stage 2 adds them: `tokens`, `cap_hit`, `wall_seconds`, `tool_seconds` (per tool query, seconds) in
   `records.FIELDS`. They feed the usage and latency sections; nothing is scored on them.
 

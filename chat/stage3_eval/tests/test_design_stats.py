@@ -8,6 +8,24 @@ from stage3_eval.selection import allocate
 from stage3_eval.stats import mcnemar_exact, mcnemar_power, minimum_detectable_gain, paired_difference_interval, percentile, wilson
 
 
+def test_the_design_commits_name_every_amendment_and_the_cap_is_sealed_not_planned():
+    import subprocess
+    from pathlib import Path
+    assert design.DESIGN_COMMITS == {"frozen": "b1d331f", "amendment_1": "001bcbf", "amendment_2": "ac6f857", "addendum_2": "7af0d5c",
+                                     "amendment_3": "15514ac", "addendum_3": "6f0ed49"}
+    root = Path(__file__).resolve().parents[3]
+    try:
+        touched = subprocess.check_output(["git", "log", "--format=%h", "--abbrev=7", "--", design.DESIGN_DOCUMENT], cwd=root, text=True).split()
+    except Exception:
+        touched = None                                  # no git history here (an export of the tree): the names above stand
+    if touched:
+        assert set(design.DESIGN_COMMITS.values()) <= set(touched)   # each is a commit of the design document
+    # Amendment 3: C_cap 16 and the budget left before the stop line, both sealed at selection; 12 is only the planning value.
+    assert design.C_CAP_PLANNING == 12 and design.worst_case_per_case(16) == 18
+    assert design.n_main(16, budget=design.evaluation_budget(173)) == 190
+    assert allocate(16, budget=design.evaluation_budget(173))["cells"][design.MAIN_TEST_CELL] == 105
+
+
 def test_n_main_and_planning_allocation_match_amendment_2():
     assert design.n_main(12) == 285
     assert design.n_main(12, r_cap=2) == 250            # addendum item 1: R_cap joins the denominator
