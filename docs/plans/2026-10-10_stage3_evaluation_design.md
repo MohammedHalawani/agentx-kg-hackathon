@@ -287,3 +287,96 @@ Reason: a review of amendment 2 asked for four tightenings so the cap provably h
    providers; that is E2's claim, and E2 is descriptive (about 22 points detectable). The determined stratum is reported
    with Wilson intervals next to B_rulecode, and any agent result below B_rulecode there is flagged as a regression even
    though it is not a gate.
+
+---
+
+## Amendment 3 (2026-10-11, before any evaluation world or evaluation case exists)
+
+Reason: the 12-case development pilot and its 6-case re-run on world-1 (173 model calls, `docs/evals/2026-10-10_world1_pilot/`),
+the independent check of the harness (`chat/stage3_eval/`), and the instruction of 2026-10-10 from Fahad to evaluate
+progressively and not to spend the budget because it exists. No evaluation world, case or run exists yet. Where this
+amendment conflicts with earlier text it wins.
+
+### 1. Budget
+- The pilot calls count against the 4,000. The campaign ledger (`docs/evals/model_call_ledger.json`) shows 173 spent and
+  3,827 remaining. Every run (pilot, re-run, harness) checks, reserves and settles in that one ledger and refuses to start if
+  the cumulative cap would be exceeded. The pilot overran its own planned 144 calls by 29 because its re-run did not count the
+  first run; the shared ledger is the fix.
+- The budget of the evaluation is the remainder in the ledger at selection time, not 4,000.
+
+### 2. Per-case cap
+- Development data: calls per case were 6 to 12 in the pilot (median 9.5) and 7 to 12 in the re-run (median 10.5). Of 13
+  correct runs, 2 used all 12 calls, and one re-run case was cut off at 12 with no conclusion (1 of 18 runs, 5.6%). The data
+  is censored at 12, so it shows only that the 95% cap is at least 12.
+- C_cap is raised from 12 to 16, one counter for investigator turns, reviewer rounds, revision rounds and retries
+  (R_cap = 0). The wiring refuses to run unless the backend cap equals the sealed C_cap.
+- A degraded or cut-off case counts as wrong (so the development re-run reads 5 correct and 1 wrong).
+
+### 3. Size and arithmetic
+- N_main = floor(3,827 / (16 + 2)) = 212 cases.
+- Planned cells after the trim order of amendment 2 (unidentifiable to 15, determined to 30, E2 to 40, then E1):
+
+| World and stratum | Cases |
+|---|---|
+| E1, identifiable ambiguous (the only pass or fail) | 127 |
+| E2, identifiable ambiguous (descriptive) | 40 |
+| E1 and E2, determined (descriptive) | 30 |
+| E1 and E2, unidentifiable (descriptive) | 15 |
+| Total | 212 |
+
+- Maximum main-test spend: 212 x 18 = 3,816 calls; margin 11 of the 3,827. Expected spend at the development rate (about
+  10.5 per agent case plus about 1.1 for B_notools): about 2,450.
+- Extras (targeted cross-shipment ablation, then stability re-runs) run only from calls left after the main test is complete,
+  in their fixed order, each case reserved at its worst case of 16; at the expected spend that leaves room for at most
+  about 85 extra cases, and they may also not run at all. They are exploratory and never pooled.
+- Power on E1 with 127 identifiable ambiguous cases: the smallest gain detectable at 80% power is about 15 to 17 points
+  (discordance 35% to 45%); the exact figure is computed by the harness at selection and printed in the pre-registration.
+
+### 4. Progressive run (pre-registered, count-based only)
+The run follows the pre-registered case order. It is paused, by a count given on the command line and never by results, at:
+- Look 1, after the first 40 main-test cases: a safety and validity check only (canary and truth-vocabulary hits, cap
+  violations, provider failures, unjustified or premature automatic resolutions, cases not opening). No accuracy decision.
+  The run continues unless a validity or safety rule of amendment 1, H or the release bar of amendment 1, K fails.
+- Look 2, after the first 110 main-test cases: an interim report. The run stops here, with the reason stated, only if either
+  (a) on the E1 identifiable ambiguous cases so far the agent has no more wins than losses against both B_rulecode and
+  B_notools (futility: the remaining calls are not spent), or (b) Fahad or the coordinator decides the comparison is already
+  clear enough for the product decision. Otherwise it runs to the end.
+- An interim look inflates the chance of a false pass slightly. The final E1 tests stay exact two-sided McNemar at alpha 0.05;
+  the report states that one accuracy look was taken and whether the run stopped early. A run stopped at look 2 reports
+  what it has as an interim result and makes no pass claim.
+
+### 5. Worlds
+- E1 and E2 are fresh-seed worlds from the committed generator at the freeze commit, with the hash-derived seeds of
+  amendment 1. E1 has 900 shipments and E2 has 500, sized from the measured yield of world-1 (about 88 identifiable
+  ambiguous cases per 254 live shipments).
+- The generator has no option for unseen providers or new mechanism pairings, and Fahad ruled out expanding the dataset
+  for it. E2 is therefore a second fresh seed of the same generator. It is reported separately and descriptively, and no
+  claim about unseen providers is made from it. The "unseen providers and pairings" of amendment 1, G is withdrawn.
+- The generator fixes from the Stage 1 review are in before the freeze: history case states no longer follow hidden
+  mechanism activity, and recipient statements follow what happened to the parcel.
+- The 12 pilot shipments of world-1 are on a committed exclusion list; E1 and E2 are different worlds and contain none of them.
+
+### 6. Truth separation
+- The run reads a selection file with no truth-derived field; strata, the main-test flag and the extras lists are in
+  scorer-side files bound to it by hash. The run refuses to start if any truth or simulator-state variable is set, and
+  records at its end that no truth module was loaded. The captured surfaces of each case are screened for the canary as it runs.
+- Truth-derived scoring fields are written only under the truth directory outside the repository; committed results carry
+  verdicts and aggregate counts.
+
+### 7. Harness choices recorded (none changes a bar or an order)
+- The harness commit is the committed stratum script and B_symptom table. B_rulecode: codes not in the list of amendment 1
+  (for example POSSIBLE_MISDELIVERY) follow the list alphabetically. B_symptom: DELIVERY_ATTEMPT_FAILED maps to
+  RECIPIENT_UNAVAILABLE and MILESTONE_LATE to JOURNEY_DELAY.
+- Strata: the pre-run stratum uses the knowability estimate of the generator at the replica opening; scoring uses the
+  ingestion log of the run at the snapshot of the agent, all arms at the same time, and the report counts cases whose
+  knowability moved.
+- Within a cell, cases are drawn by a seeded round robin over the explaining mechanism types.
+- B_notools runs the validator of the agent with one change: it may not cite evidence, since it retrieved none.
+- Run order: world by world, by expected opening time. A selected case is waited for until 2 hours past its expected opening.
+- Between a zero-call rehearsal and the real run the wiring resets only the operations ledger and live-ingested records of
+  the evaluation database, as the pilot does; imported records stay.
+- The report separates correct answers into observation level (the cause the opening alert maps to) and mechanism level,
+  per arm and stratum. In the pilot all eight correct first answers were observation level; the ambiguous stratum is where
+  mechanism-level answers are needed, and the report must show that split.
+- Results are reported in the categories Fahad asked for: correct, incorrect, appropriately uncertain, wrongly uncertain,
+  evidence retrieval, recommendations, escalation, automatic resolutions and closures, usage, latency and cost.
