@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PriorityBadge } from '@/components/operations/PriorityBadge'
+import { CaseSummaryText } from '@/components/operations/CaseSummaryText'
 
 export const ATTENTION_STATES = ['HUMAN_REVIEW', 'AWAITING_APPROVAL', 'NEEDS_EVIDENCE', 'ESCALATED'] as const
 type AttentionState = (typeof ATTENTION_STATES)[number]
@@ -80,7 +81,7 @@ export function HumanAttentionRail({ counts, refreshKey, onOpen, collapsed, onCo
                   <PriorityBadge priority={row.priority} />
                   {waiting(row.openedAt, asOf) && <span className="ms-auto text-[11px] tabular-nums text-muted-foreground" dir="ltr">{t('ops.attention.waiting', { time: waiting(row.openedAt, asOf)! })}</span>}
                 </span>
-                <span className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{row.issueSummary}</span>
+                <CaseSummaryText row={row} className="mt-0.5 line-clamp-1 block text-xs text-muted-foreground" />
               </button>
             </li>
           ))}

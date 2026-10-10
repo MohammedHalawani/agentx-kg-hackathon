@@ -49,6 +49,11 @@ export interface OperationsCase {
   city?: string | null
   courier?: string | null
   category?: string | null
+  /**
+   * Whether issueSummary and category come from an agent investigation the independent reviewer accepted. When false the
+   * row has no diagnosis: show the observed symptoms, never a cause. Undefined for sources without the flag (V1 samples).
+   */
+  diagnosisAvailable?: boolean
   /** Observable symptoms the monitor detected; the cause is unknown until investigated. */
   symptoms?: string[]
   priority: CasePriority

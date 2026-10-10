@@ -10,6 +10,7 @@ import type { OperationsCase } from '@/contracts/operations'
 import { useLanguage } from '@/components/i18n/LanguageProvider'
 import { CaseWorkflowBadge, OperationalStatusBadge } from './StatusBadge'
 import { PriorityBadge } from './PriorityBadge'
+import { CaseSummaryText } from './CaseSummaryText'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -76,9 +77,9 @@ export function QueueCasesTable({
         id: 'issue',
         header: () => t('ops.table.issue'),
         cell: ({ row }) => (
-          <span className="line-clamp-2 text-sm" dir="auto">
-            {row.original.issueSummary || (row.original.category ? rootCauseLabel(row.original.category) : '—')}
-          </span>
+          row.original.diagnosisAvailable === undefined && !row.original.issueSummary
+            ? <span className="line-clamp-2 text-sm" dir="auto">{row.original.category ? rootCauseLabel(row.original.category) : '—'}</span>
+            : <CaseSummaryText row={row.original} className="line-clamp-2 text-sm" />
         ),
       },
       {

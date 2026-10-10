@@ -29,13 +29,13 @@ export function CaseCard({
     >
       <span className="min-w-0 flex-1" dir={isArabic ? 'rtl' : undefined}>
         <span className="block truncate text-sm text-ink group-hover:text-accent-foreground" dir="auto">
-          {caseRow.operationalStatus ? t(operationalLabelKey(caseRow.operationalStatus)) : caseRow.category ? rootCauseLabel(caseRow.category) : caseRow.issueSummary}
+          {caseRow.operationalStatus ? t(operationalLabelKey(caseRow.operationalStatus)) : caseRow.category && caseRow.diagnosisAvailable !== false ? rootCauseLabel(caseRow.category) : caseRow.diagnosisAvailable === false ? t('ops.queue.noDiagnosis') : caseRow.issueSummary}
         </span>
         <span className="mt-1 flex flex-wrap items-center gap-2">
           <span className="font-mono text-[11px] text-muted-foreground group-hover:text-accent-foreground/80" dir="ltr">
             {caseRow.shipmentId}
           </span>
-          {caseRow.category ? (
+          {caseRow.category && caseRow.diagnosisAvailable !== false ? (
             <span className="text-[11px] text-muted-foreground group-hover:text-accent-foreground/80" dir="auto">
               {rootCauseLabel(caseRow.category)}
             </span>

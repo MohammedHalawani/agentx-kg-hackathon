@@ -3,7 +3,7 @@ import { ActionLifecycle } from '@/components/intake/ActionLifecycle'
 import { useFetch } from '@/hooks/useFetch'
 import { useLanguage } from '@/components/i18n/LanguageProvider'
 import { operationsPost } from '@/lib/operationsClient'
-import type { InspectStage, ShipmentDetail } from '@/contracts/caseDetail'
+import type { InspectStage, ShipmentDetail, UnacceptedInvestigation } from '@/contracts/caseDetail'
 import { evidenceGraph } from '@/contracts/caseDetail'
 import { Graph } from '@/components/artifacts/Graph'
 import { CaseWorkflowBadge } from '@/components/operations/StatusBadge'
@@ -34,6 +34,7 @@ const SECTIONS = ['overview', 'evidence', 'diagnosis', 'recommendation', 'review
 const APPROVAL_BLOCKED: Record<string, string> = {
   'AUTH-01-unknown-action': 'ops.actions.neverExecuted', 'AUTH-12-human-review-action': 'ops.actions.personOnly', 'AUTH-13-prohibited': 'ops.actions.neverExecuted',
   'AUTH-20-approval-context-stale': 'ops.actions.contextStale', 'AUTH-21-human-investigation-required': 'ops.actions.humanInvestigation', 'AUTH-22-rules-only-proposal': 'ops.actions.rulesOnly',
+  'AUTH-24-recommendation-already-executed': 'ops.actions.alreadyExecuted',
 }
 type Section = typeof SECTIONS[number]
 function CaseAudit({ caseId }: { caseId: string }) {
@@ -46,15 +47,32 @@ function CaseAudit({ caseId }: { caseId: string }) {
   return <div className="space-y-3"><h3 className="font-semibold">{t('ops.audit.title')}</h3>{data?.items.length ? <Timeline events={data.items.map(adaptAudit)} /> : <p className="text-sm text-muted-foreground">{t('ops.audit.emptyTitle')}</p>}<CursorPagination total={data?.filtered_total ?? 0} limit={limit} cursorStart={pager.offset} nextCursor={data?.next_cursor ?? null} prevCursor={pager.hasPrevious ? 'visited' : null} onNext={() => pager.next(data?.next_cursor, limit)} onPrev={() => pager.previous(limit)} onLimitChange={n => { setLimit(n); pager.reset() }} /></div>
 }
 
-/** The current run's agent investigation, or why there is none. Rule output never fills it. */
+/** Findings the independent reviewer did not accept: shown apart and labelled, never as what happened. */
+function UnacceptedFindings({ findings }: { findings: UnacceptedInvestigation }) {
+  const { t, rootCauseLabel } = useLanguage()
+  return <section data-testid="unaccepted-investigation" className="space-y-2 rounded-lg border border-dashed border-chart-warning/60 p-3">
+    <h4 className="text-sm font-semibold">{t('ops.diagnosis.unaccepted.title')}</h4>
+    <p className="text-[11px] text-muted-foreground">{t('ops.diagnosis.unaccepted.hint')}</p>
+    {findings.review?.verdict && <p data-testid="unaccepted-review" className="text-xs">{t('ops.diagnosis.unaccepted.reviewer', { verdict: t(`ops.review.${findings.review.verdict}`) })}</p>}
+    <p className="text-xs">{t('ops.diagnosis.unaccepted.primary')}: {rootCauseLabel(findings.primary_cause ?? 'UNKNOWN')}</p>
+    {findings.summary && <p className="text-xs text-muted-foreground"><AgentProse text={findings.summary} /></p>}
+    {!!findings.hypotheses.length && <ul className="flex flex-wrap gap-1.5 text-[11px]">{findings.hypotheses.map(h => <li key={h.cause} data-testid="unaccepted-hypothesis" className="rounded-md border border-border px-1.5 py-0.5">{rootCauseLabel(h.cause)} · {t(`ops.pipeline.hypothesis.${h.status}`)}</li>)}</ul>}
+  </section>
+}
+
+/** The current run's accepted agent investigation, or why there is none. Rule output never fills it. */
 function DiagnosisPanel({ detail }: { detail: ShipmentDetail }) {
   const { t, rootCauseLabel } = useLanguage()
   const d = detail.diagnosis
   return <section data-testid="diagnosis-panel" className="space-y-3 rounded-xl border border-border bg-card p-4">
     <h3 className="font-semibold">{t('ops.diagnosis.title')}</h3>
-    {!d?.available ? <p data-testid="diagnosis-absent" className="text-sm text-muted-foreground">{t(`ops.diagnosis.absent.${d?.reason ?? 'not_investigated'}`)}</p> : <>
+    {!d?.available ? <>
+      <p data-testid="diagnosis-absent" className="text-sm text-muted-foreground">{t(`ops.diagnosis.absent.${d?.reason ?? 'not_investigated'}`)}</p>
+      {d?.reason === 'review_not_accepted' && d.unaccepted_investigation && <UnacceptedFindings findings={d.unaccepted_investigation} />}
+    </> : <>
       <p className="font-medium">{t('ops.diagnosis.primary')}: {rootCauseLabel(d.primary_cause ?? 'UNKNOWN')}</p>
       <p className="text-[11px] text-muted-foreground" dir="auto">{t('ops.diagnosis.provenance', { confidence: d.confidence ?? '—', run: d.run_id ?? '—', at: d.as_of ?? '—' })}</p>
+      {d.review?.accepted && <p data-testid="diagnosis-review" className="text-[11px] text-muted-foreground">{t('ops.diagnosis.reviewAccepted')}</p>}
       {d.summary && <p className="text-sm"><AgentProse text={d.summary} /></p>}
       {d.snapshot_superseded && <p className="text-xs text-muted-foreground">{t('ops.diagnosis.snapshotSuperseded')}</p>}
       {d.requires_physical_check && <p className="text-xs text-muted-foreground">{t('ops.diagnosis.physicalCheck')}</p>}
@@ -89,6 +107,11 @@ export function OperationsCaseDetail({ caseId, shipmentId, onBack }: { caseId?: 
   const { live, unavailable } = useCasePipeline(caseId, refetch, fetched?.state_version)
   const data = useMemo(() => {
     const merged = fetched && live && fetched.pipeline ? { ...fetched, pipeline: { ...fetched.pipeline, events: live.events.length ? live.events : fetched.pipeline.events, status: live.status } } : fetched
+    // A re-investigation is queued: the earlier run, its review rounds, stage events and diagnosis are not current.
+    if (merged && live?.status === 'QUEUED' && (live.workflow_state === 'OPEN' || live.workflow_state === 'REOPENED')) {
+      return { ...merged, review: null, run: null, diagnosis: merged.diagnosis?.reason === 'reinvestigation_pending' ? merged.diagnosis : absentDiagnosis('reinvestigation_pending'),
+        pipeline: merged.pipeline ? { ...merged.pipeline, events: [], status: 'QUEUED' } : merged.pipeline }
+    }
     // A newer investigation is running: the fetched review and diagnosis belong to the earlier run and are not current.
     const newer = !!merged && !!live && (live.status === 'RUNNING' || (!!live.run_id && !!fetched?.last_run_id && live.run_id !== fetched.last_run_id))
     return newer && merged ? { ...merged, review: null, diagnosis: absentDiagnosis('investigation_in_progress', live?.run_id ?? null) } : merged

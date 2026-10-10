@@ -6,8 +6,10 @@ import type { SubGraph } from '@/types/contract'
  * GET /shipments/{shipment_id}/context). See docs/api/case-detail.md.
  *
  * Two fields are easy to confuse and must stay separate:
- * - `diagnosis` is the current run's agent investigation (primary cause, hypotheses, confidence, run id,
- *   as-of), or explicitly absent with a reason. It is never filled from rule output.
+ * - `diagnosis` is the current run's agent investigation that the independent reviewer accepted (primary cause,
+ *   hypotheses, confidence, run id, as-of, review), or explicitly absent with a reason. It is never filled from rule
+ *   output. An investigation the reviewer did not accept is absent (`review_not_accepted`) and its findings are served
+ *   apart in `unaccepted_investigation`, labelled, never as what happened.
  * - `rule_signals` are deterministic rule checks over the evidence visible at their own `as_of` (the live
  *   clock). They are monitoring/fact-check signals, labelled `is_diagnosis: false`, never "what happened".
  */
@@ -26,9 +28,28 @@ export interface StageDiagnosis { code?: string; status?: string; summary?: stri
 export interface PipelineEvent { sequence: number; stage: PipelineStage; status: string; iteration: number; recorded_at: string; evidence_as_of: string; output: { evidence_ids?: string[]; edge_ids?: string[]; nodes?: number; relationships?: number; categories?: Record<string,number>; verified_precedents?: number; verdict?: string; feedback?: string; reason_code?: string; summary_ar?: string; workflow_state?: string; diagnoses?: StageDiagnosis[]; proposal?: ShipmentDetail['recommendation'] } }
 export interface Pipeline { topology: { nodes: PipelineStage[]; edges: { source:string; target:string; conditional:boolean }[]; engine:string; mode:string; retry_limit:number }; events: PipelineEvent[]; source: string; status: string; investigation_as_of?: string | null; evidence_after_investigation?: number }
 
-export type DiagnosisAbsentReason = 'not_a_case' | 'no_operations_ledger' | 'not_investigated' | 'investigation_in_progress' | 'reinvestigation_pending' | 'investigation_incomplete' | 'no_agent_investigation' | 'investigation_unavailable'
+export type DiagnosisAbsentReason = 'not_a_case' | 'no_operations_ledger' | 'not_investigated' | 'investigation_in_progress' | 'reinvestigation_pending' | 'investigation_incomplete' | 'no_agent_investigation' | 'investigation_unavailable' | 'review_not_accepted'
 export interface DiagnosisHypothesis { cause: string; status: 'supported' | 'refuted' | 'uncertain'; assessment?: string | null; supporting_evidence_ids?: string[]; contradicting_evidence_ids?: string[] }
-/** The current run's agent investigation. `available: false` carries `reason` and no cause. */
+/** What the independent reviewer decided about the investigation (its final round). */
+export interface DiagnosisReview { verdict: string | null; model_verdict: string | null; reason_code: string; accepted: boolean }
+/** An investigation the independent reviewer did not accept: the investigator's findings, labelled, never "what happened". */
+export interface UnacceptedInvestigation {
+  accepted: false
+  review: DiagnosisReview | null
+  run_id: string | null
+  as_of: string | null
+  investigated_at: string | null
+  primary_cause: string | null
+  confidence: 'low' | 'medium' | 'high' | null
+  summary: string | null
+  hypotheses: DiagnosisHypothesis[]
+  missing_evidence: string[]
+  requires_physical_check: boolean | null
+  tool_calls: number
+  snapshot_superseded: boolean
+  language: 'en' | null
+}
+/** The current run's accepted agent investigation. `available: false` carries `reason` and no cause. */
 export interface Diagnosis {
   available: boolean
   reason: DiagnosisAbsentReason | null
@@ -51,6 +72,10 @@ export interface Diagnosis {
   /** Evidence kept arriving during the investigation; the case went to a person. */
   snapshot_superseded: boolean
   language: 'en' | null
+  /** The reviewer's decision on the current run (accepted when the diagnosis is available); null when no run was reviewed. */
+  review?: DiagnosisReview | null
+  /** With `review_not_accepted` only: the findings the reviewer did not accept. */
+  unaccepted_investigation?: UnacceptedInvestigation | null
 }
 export interface ExpectedVsActual { milestone_id?: string; location_id?: string; latest_at?: string; actual_at?: string; late?: boolean; missing_due?: boolean }
 export interface RuleSignal { code: string; summary_en?: string; summary_ar?: string; evidence_ids?: string[]; certainty?: string; requires_human_review?: boolean }
@@ -70,10 +95,14 @@ export interface RuleSignals {
   note?: string
 }
 export interface AuthorityDecision { rule_id?: string; risk_class?: string; reason?: string; action_type?: string | null; closure?: string }
+type RunRecord = { entity_id?: string; recorded_at?: string; mode?: string; status?: string; result?: { authority?: AuthorityDecision | null; trace?: { iteration: number; mode: string; review: { verdict: string; feedback?: string; reason_code?: string; summary_ar?: string }; proposal?: { action?: string; action_en?: string; action_ar?: string } }[] } }
 export interface ShipmentDetail {
   shipment_id: string; case_id?: string; workflow_state?: CaseWorkflowState; state_version?: number; version?: number; as_of?: string; investigated_at?: string; synthetic?: boolean; priority?: string; operational_status?: string
   last_run_id?: string | null
-  run?: { entity_id?: string; recorded_at?: string; mode?: string; status?: string; result?: { authority?: AuthorityDecision | null; trace?: { iteration: number; mode: string; review: { verdict: string; feedback?: string; reason_code?: string; summary_ar?: string }; proposal?: { action?: string; action_en?: string; action_ar?: string } }[] } } | null
+  /** The current investigation run; null while a new one is queued (the earlier run is then `previous_run`). */
+  run?: RunRecord | null
+  /** While a re-investigation is queued: the earlier run, superseded. Not the current investigation, review or pipeline. */
+  previous_run?: (RunRecord & { superseded: true }) | null
   evidence: { nodes: EvidenceNode[]; edges: EvidenceEdge[] }
   diagnosis?: Diagnosis
   rule_signals?: RuleSignals
@@ -82,9 +111,10 @@ export interface ShipmentDetail {
   recommendation_id?: string | null
   recommendation?: { action?: string; action_en?: string; action_ar?: string; summary_en?: string; summary_ar?: string; evidence_ids?: string[]; action_type?: string; risk_class?: string; approvable?: boolean; approval_rule?: string; approval_reason?: string; approval_context_stale?: boolean } | null
   review?: { verdict?: string; reason_code?: string; feedback?: string; summary_en?: string; summary_ar?: string; model_verdict?: string | null; degraded?: boolean; mode?: string } | null
-  outcome?: { outcome_id?: string; id?: string; invalidated?: boolean; verification_status?: string; success?: boolean | null; outcome_type?: string; evidence_ids?: string[]; rule_id?: string; reason?: string; verifier_id?: string; exception_cleared?: boolean | null; remaining_symptoms?: string[] } | null
+  /** The latest outcome. `current_cycle` is false when it belongs to an earlier investigation cycle (history only). */
+  outcome?: { outcome_id?: string; id?: string; invalidated?: boolean; verification_status?: string; success?: boolean | null; outcome_type?: string; evidence_ids?: string[]; rule_id?: string; reason?: string; verifier_id?: string; exception_cleared?: boolean | null; remaining_symptoms?: string[]; run_id?: string | null; current_cycle?: boolean } | null
   decisions?: { decision?: string; occurred_at?: string }[]
-  executions?: { receipt_ref?: string; action_type?: string; occurred_at?: string; status?: string; authority?: string; adapter_result_json?: string; deadline_at?: string; closure?: string; permission_rule?: string; decided_risk?: string }[]
+  executions?: { receipt_ref?: string; action_type?: string; occurred_at?: string; status?: string; authority?: string; adapter_result_json?: string; deadline_at?: string; closure?: string; permission_rule?: string; decided_risk?: string; recommendation_id?: string | null; run_id?: string | null; current_cycle?: boolean }[]
   precedents?: Precedent[]
   route_layers?: { layers: RouteLayers; truncated?: Record<string, boolean> }
 }

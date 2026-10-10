@@ -15,17 +15,19 @@ const BY_RULE: Record<string, string> = {
 
 /**
  * Why a case is with a person, from what the backend actually recorded: the latest outcome or execution
- * when the case came back after an action, else the review and the routing rule. Never a default story.
+ * when the case came back after an action of the current investigation cycle, else the review and the routing rule.
+ * An outcome or execution of an earlier cycle (`current_cycle: false`) is history, never the reason. Never a default story.
  */
 export function humanReviewReasonKey(detail: ShipmentDetail): string {
   if (detail.workflow_state !== 'HUMAN_REVIEW') return 'ops.overview.evidenceSupported'
-  const outcome = detail.outcome
+  const outcome = detail.outcome?.current_cycle === false ? null : detail.outcome
   if (outcome && !outcome.invalidated && outcome.verification_status === 'VERIFIED') {
     if (outcome.success === false) return 'ops.overview.humanReason.verificationFailed'
     if (outcome.exception_cleared === false) return 'ops.overview.humanReason.exceptionRemains'
     return 'ops.overview.humanReason.closureReserved'
   }
-  const latest = detail.executions?.[0]  // Served newest first.
+  const newest = detail.executions?.[0]  // Served newest first.
+  const latest = newest?.current_cycle === false ? undefined : newest
   if (latest?.status === 'REFUSED') return 'ops.overview.humanReason.executionRefused'
   if (latest?.status === 'NOT_ACKNOWLEDGED') return 'ops.overview.humanReason.notAcknowledged'
   if (detail.review?.verdict === 'review_unavailable') return 'ops.overview.humanRequiredReview'
@@ -37,5 +39,6 @@ export function humanReviewReasonKey(detail: ShipmentDetail): string {
 /** A diagnosis explicitly absent for `reason` (used while a newer run supersedes the fetched one). */
 export function absentDiagnosis(reason: DiagnosisAbsentReason, runId: string | null = null): Diagnosis {
   return { available: false, reason, source: null, run_id: runId, superseded_run_id: null, as_of: null, investigated_at: null, primary_cause: null,
-    confidence: null, summary: null, hypotheses: [], missing_evidence: [], requires_physical_check: null, tool_calls: 0, snapshot_superseded: false, language: null }
+    confidence: null, summary: null, hypotheses: [], missing_evidence: [], requires_physical_check: null, tool_calls: 0, snapshot_superseded: false, language: null,
+    review: null, unaccepted_investigation: null }
 }

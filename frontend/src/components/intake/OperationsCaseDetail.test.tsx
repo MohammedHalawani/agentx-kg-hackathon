@@ -129,6 +129,7 @@ describe('Case lifecycle authority', () => {
       ['HUMAN_REVIEW', 'AUTH-21-human-investigation-required', /only evidence-gathering requests can be approved/],
       ['AWAITING_APPROVAL', 'AUTH-22-rules-only-proposal', /rule checks alone/],
       ['AWAITING_APPROVAL', 'AUTH-13-prohibited', /never executed by the system/],
+      ['HUMAN_REVIEW', 'AUTH-24-recommendation-already-executed', /already authorized and carried out/],
     ] as const) {
       mock.data.workflow_state = state
       mock.data.recommendation = { action_en: 'Request a rescan', action_type: 'REQUEST_RESCAN', approvable: false, approval_rule: rule }
@@ -277,6 +278,60 @@ describe('Case lifecycle authority', () => {
     expect(screen.queryByText(/Cited by diagnosis/)).toBeNull()
     fireEvent.click(screen.getByRole('tab', { name: 'Diagnosis' }))
     expect(within(screen.getByTestId('diagnosis-panel')).queryByText(/Delivery dispute/)).toBeNull()
+  })
+  it('shows an investigation the reviewer did not accept apart, labelled, never as what happened', () => {
+    mock.data.workflow_state = 'HUMAN_REVIEW'
+    const findings = diagnosis({ primary_cause: 'CUSTODY_GAP', hypotheses: [{ cause: 'CUSTODY_GAP', status: 'supported', supporting_evidence_ids: [] }] })
+    const review = { verdict: 'human_review', model_verdict: 'HUMAN_REVIEW', reason_code: 'MODEL_HUMAN_REVIEW', accepted: false }
+    mock.data.diagnosis = { ...diagnosis(), available: false, reason: 'review_not_accepted', source: null, primary_cause: null, confidence: null, summary: null, hypotheses: [], review,
+      unaccepted_investigation: { ...findings, accepted: false, review } as Diagnosis['unaccepted_investigation'] }
+    render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
+    expect(screen.getByTestId('diagnosis-primary').textContent).toBe('No diagnosis')
+    expect(screen.getByTestId('diagnosis-absent').textContent).toMatch(/did not accept this investigation/)
+    expect(document.body.textContent).not.toMatch(/Custody gap/)
+    fireEvent.click(screen.getByRole('tab', { name: 'Diagnosis' }))
+    const apart = screen.getByTestId('unaccepted-investigation')
+    expect(apart.textContent).toMatch(/not accepted by the independent reviewer/)
+    expect(screen.getByTestId('unaccepted-review').textContent).toBe('Reviewer decision: Reviewer asked for a person to decide')
+    expect(within(apart).getByTestId('unaccepted-hypothesis').textContent).toContain('Custody gap')
+    expect(screen.queryByText(/^Primary cause:/)).toBeNull()
+    mock.data.diagnosis = undefined
+  })
+  it('does not name an outcome or refusal of an earlier cycle as the reason a case is with a person', () => {
+    mock.data.workflow_state = 'HUMAN_REVIEW'
+    mock.data.run = { result: { authority: { rule_id: 'AUTH-03-reviewer-human', risk_class: 'HUMAN_REVIEW' } } }
+    mock.data.outcome = { verification_status: 'VERIFIED', success: true, exception_cleared: false, remaining_symptoms: ['MILESTONE_OVERDUE'], current_cycle: false }
+    const { unmount } = render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
+    expect(screen.getByTestId('human-reason').textContent).toMatch(/reviewer asked for a person to decide/)
+    expect(screen.getByTestId('human-reason').textContent).not.toMatch(/exception remains/)
+    unmount()
+    mock.data.outcome = null
+    mock.data.executions = [{ action_type: 'REQUEST_RESCAN', authority: 'OPERATOR_APPROVAL', status: 'REFUSED', permission_rule: 'AUTH-20-approval-context-stale', current_cycle: false }]
+    const second = render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
+    expect(screen.getByTestId('human-reason').textContent).not.toMatch(/refused the action/)
+    second.unmount()
+    // The same outcome in the current cycle is the reason.
+    mock.data.executions = undefined
+    mock.data.outcome = { verification_status: 'VERIFIED', success: true, exception_cleared: false, remaining_symptoms: ['MILESTONE_OVERDUE'], current_cycle: true }
+    render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
+    expect(screen.getByTestId('human-reason').textContent).toMatch(/exception remains/)
+  })
+  it('shows no earlier review, review round or diagnosis while a re-investigation is queued', () => {
+    mock.data.workflow_state = 'AWAITING_APPROVAL'  // As fetched, before the stream reports the requeue.
+    mock.data.last_run_id = 'SYN-OPS-RUN-OLD'
+    mock.data.review = { verdict: 'accept', reason_code: 'MODEL_ACCEPT', feedback: 'Supported by the cited scans.' }
+    mock.data.diagnosis = diagnosis({ run_id: 'SYN-OPS-RUN-OLD' })
+    mock.data.run = { result: { trace: [{ iteration: 0, mode: 'gpt-oss', review: { verdict: 'accept', feedback: 'Supported by the cited scans.' } }] } }
+    mock.data.pipeline = { topology: { engine: 'langgraph', mode: 'agent_tool_loop', nodes: ['review'], edges: [], retry_limit: 2 }, source: 'recorded_stage_events', status: 'REVIEWED', events: [
+      { sequence: 1, stage: 'review', status: 'COMPLETED', iteration: 1, recorded_at: '2026-10-09T01:00:01Z', evidence_as_of: '2026-09-11T14:01:00Z', output: { verdict: 'accept', feedback: 'Supported by the cited scans.' } }] }
+    pipeline.live = { events: [], status: 'QUEUED', workflow_state: 'OPEN', state_version: 9 }
+    render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
+    expect(screen.queryByTestId('review-verdict')).toBeNull()
+    expect(screen.getByTestId('diagnosis-absent').textContent).toMatch(/A new investigation is queued/)
+    fireEvent.click(screen.getByRole('tab', { name: 'Review' }))
+    expect(screen.queryByText('Supported by the cited scans.')).toBeNull()
+    expect(screen.queryByText(/Review round/)).toBeNull()
+    mock.data.review = undefined; mock.data.pipeline = undefined
   })
   it('opens Evidence on cited key evidence and focuses the graph on it without running anything', () => {
     mock.data.evidence = { nodes: [{ id: 'PROOF', kind: 'DeliveryProof', properties: {} }, { id: 'REPORT', kind: 'RecipientReport', properties: { report_code: 'NOT_RECEIVED' } }, { id: 'HUB', kind: 'Hub', properties: {} }], edges: [] }
