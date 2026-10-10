@@ -46,7 +46,8 @@ def reset_token(control):
     session = control.get("session_id") or ""
     return "RESET-LEDGER-" + (session[-24:] if session else "NO-SESSION")
 # The foundation replay database and the live provider-feed database (plus its isolated test twin).
-OPERATIONS_DATABASES = ("shipments-v2-demo", "shipments-v2-demo-live", "shipments-v2-demo-test", "shipments-v2-demo-test2")
+OPERATIONS_DATABASES = ("shipments-v2-demo", "shipments-v2-demo-live", "shipments-v2-demo-test", "shipments-v2-demo-test2",
+                        "shipments-v2-demo-ci-test")  # ci-test: scratch database for the Neo4j integration tests
 INGEST_BATCH = 500
 
 
