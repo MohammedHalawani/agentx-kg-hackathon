@@ -304,6 +304,70 @@ class EvidenceRequestClosureTests(_Base):
         self.assertEqual((case["workflow_state"], outcome["remaining_symptoms"]), ("HUMAN_REVIEW", ["OTHER_OPEN_CASE"]))
 
 
+class SymptomAfterExecutionTests(_Base):
+    """A standing or human-floor symptom observed after an action was executed never drops the verification of that
+    action: the case stays AWAITING_OUTCOME, the outcome verifier records the outcome and routes the case to a person,
+    and no second action is authorized."""
+
+    def executed(self):
+        store, driver, result = self.approvable()
+        case = store.case_detail(result["case_id"])
+        store.decide(case["case_id"], "approve", "DEMO-OPERATOR-LOCAL", case["state_version"], "approve-then-symptom")
+        store.adapter = Acknowledging()
+        store.execute_step()
+        self.assertEqual(store.case_detail(case["case_id"])["workflow_state"], "AWAITING_OUTCOME")
+        return store, driver, case
+
+    def stored(self, driver, case):
+        return next(v for k, v in driver.ledger.values() if k == "OpsCase" and v["entity_id"] == case["case_id"])
+
+    def check(self, symptom, verdict_status):
+        store, driver, case = self.executed()
+        [execution] = self.kind(driver, "OpsExecution")
+        self.add_symptom_through_monitor(store, driver, self.stored(driver, case), symptom)
+        current = store.case_detail(case["case_id"])
+        # Not requeued: the executed action is still awaiting its outcome and still verifiable.
+        self.assertEqual((current["workflow_state"], current["recommendation_id"]), ("AWAITING_OUTCOME", case["recommendation_id"]))
+        self.assertIn(symptom, self.stored(driver, case)["symptom_codes"])
+        [after] = self.kind(driver, "OpsExecution")
+        self.assertEqual((after["entity_id"], after["status"]), (execution["entity_id"], "ACKNOWLEDGED"))
+        audit = self.audit(driver, case["case_id"])
+        self.assertNotIn("REINVESTIGATION_QUEUED", audit)
+        self.assertNotIn("EXECUTION_SUPERSEDED", audit)
+        self.assertEqual(self.stored(driver, case).get("symptom_reinvestigations") or 0, 0)
+        # Nothing is queued for the investigation worker, so no new recommendation or execution can be authorized.
+        self.assertFalse(store.process_one(manual=True).get("case_id") == case["case_id"])
+        verdict = {"status": verdict_status, "outcome_type": "observed", "evidence_ids": [], "reason": "Observed after the action.",
+                   "rule_id": "VERIFY-test", "expected_effect": "effect"}
+        finding = {"open": True, "symptoms": sorted(self.stored(driver, case)["symptom_codes"])}
+        with mock.patch("operations.outcome_engine.evaluate", return_value=verdict),              mock.patch("dataset_v2.derive.assess_shipment", return_value={"exceptions": [], "delivery_assessment": []}),              mock.patch("operations.store.monitor_finding", return_value=finding):
+            store.request_verification(case["case_id"], "DEMO-OPERATOR-LOCAL", current["state_version"], "verify-after-symptom")
+        [outcome] = self.kind(driver, "OpsOutcome")
+        self.assertEqual((outcome["execution_id"], outcome["success"]), (execution["entity_id"], verdict_status == "success"))
+        final = store.case_detail(case["case_id"])
+        self.assertEqual(final["workflow_state"], "HUMAN_REVIEW")  # The exception remains or the action failed: a person.
+        self.assertEqual(len(self.kind(driver, "OpsExecution")), 1)  # No second action.
+        self.assertNotIn("CASE_RESOLVED", self.audit(driver, case["case_id"]))
+        return outcome
+
+    def test_a_standing_symptom_after_execution_keeps_the_action_verifiable_and_goes_to_a_person(self):
+        outcome = self.check("DELIVERY_PROOF_INCOMPLETE", "success")
+        self.assertFalse(outcome["exception_cleared"])
+        self.assertIn("DELIVERY_PROOF_INCOMPLETE", outcome["remaining_symptoms"])
+
+    def test_a_human_floor_symptom_after_execution_keeps_the_action_verifiable_and_goes_to_a_person(self):
+        outcome = self.check("MANIFEST_CUSTODY_CONFLICT", "success")
+        self.assertIn("MANIFEST_CUSTODY_CONFLICT", outcome["remaining_symptoms"])
+
+    def test_a_failed_action_is_still_recorded_as_failed_when_a_symptom_arrived_after_it(self):
+        outcome = self.check("DELIVERY_PROOF_INCOMPLETE", "failure")
+        self.assertFalse(outcome["exception_cleared"])
+
+    def test_awaiting_outcome_is_never_a_state_the_monitor_requeues(self):
+        from operations.store import REINVESTIGABLE_STATES
+        self.assertFalse({"AWAITING_OUTCOME", "ACTION_INITIATED", "INVESTIGATING"} & REINVESTIGABLE_STATES)
+
+
 class Shipment000392SequenceTests(_Base):
     """The real failure: routed APPROVAL_REQUIRED on a wrong CUSTODY_GAP diagnosis; MANIFEST_CUSTODY_CONFLICT (a
     human-floor symptom) was then observed; a device sync was approved and executed anyway."""

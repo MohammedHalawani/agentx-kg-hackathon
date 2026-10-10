@@ -43,6 +43,12 @@ While a re-investigation is queued (`OPEN`, `REOPENED`) `run` is `null` and the 
 (see `case-detail.md`). `run.status` is `RUNNING` while the graph executes, `REVIEWED` when the run was written
 back and `ABORTED` when it was not (snapshot changed).
 
+The monitor queues a re-investigation when a standing or human-floor symptom is added to a case that was already
+investigated and is in `RECOMMENDATION_READY`, `AWAITING_APPROVAL`, `HUMAN_REVIEW`, `NEEDS_EVIDENCE` or `ESCALATED`
+(at most twice per case). A case in `ACTION_INITIATED` or `AWAITING_OUTCOME` is never requeued this way: the dispatch
+recheck refuses an action whose context changed, and an executed action is always verified, its outcome recorded, and
+the case sent to a person when such a symptom is recorded or still visible.
+
 | `run.result` field | Meaning |
 | --- | --- |
 | `mode` | `gpt_oss_agents` for an agent investigation, `deterministic_evidence_rules` for a rules-only run. |

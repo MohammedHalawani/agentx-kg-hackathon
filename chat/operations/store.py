@@ -64,11 +64,13 @@ MAX_SNAPSHOT_REFRESHES = 2
 # (the first diagnosis could not have known it). Bounded: after this many such re-investigations the case stays
 # where it is, and the approval and dispatch rechecks keep refusing a recommendation whose symptoms changed.
 MAX_SYMPTOM_REINVESTIGATIONS = 2
-# States in which an investigation has been recorded and nothing is being dispatched right now. ACTION_INITIATED is
-# left to the dispatch recheck (which refuses and requeues on a changed context); OPEN, REOPENED and INVESTIGATING are
-# already queued or running (a running investigation notices the change and refreshes its snapshot).
-REINVESTIGABLE_STATES = frozenset(("RECOMMENDATION_READY", "AWAITING_APPROVAL", "HUMAN_REVIEW", "NEEDS_EVIDENCE", "ESCALATED",
-                                   "AWAITING_OUTCOME"))
+# States in which an investigation has been recorded and no action is authorized, being dispatched or awaiting its
+# outcome. ACTION_INITIATED is left to the dispatch recheck (which refuses and requeues on a changed context).
+# AWAITING_OUTCOME is left to the outcome verifier: an executed action is always verified and its outcome recorded, and
+# the verifier sends the case to a person when a standing or human-floor symptom is recorded or still visible, so a
+# symptom seen after execution can never drop that verification or lead to a second automatic action. OPEN, REOPENED
+# and INVESTIGATING are already queued or running (a running investigation notices the change and refreshes its snapshot).
+REINVESTIGABLE_STATES = frozenset(("RECOMMENDATION_READY", "AWAITING_APPROVAL", "HUMAN_REVIEW", "NEEDS_EVIDENCE", "ESCALATED"))
 
 
 def monitor_enqueue(queue, shipment_ids):
@@ -550,9 +552,9 @@ class OperationsStore:
 
     def _reinvestigate_for_symptoms(self,tx,case,new,when):
         """A standing or human-floor symptom was added to a case that was already investigated: its diagnosis was made
-        without it, so the case is queued for re-investigation. Bounded by MAX_SYMPTOM_REINVESTIGATIONS (no loops). An
-        action already executed and awaiting its outcome is superseded: it is never verified or credited for a case whose
-        basis changed, and whatever it caused arrives as ordinary evidence for the new investigation."""
+        without it, so the case is queued for re-investigation. Bounded by MAX_SYMPTOM_REINVESTIGATIONS (no loops). A
+        case whose action is authorized, dispatched or awaiting its outcome is never requeued here: the dispatch recheck
+        and the outcome verifier handle it, and the executed action keeps its verification."""
         from operations.authority import HUMAN_FLOOR_SYMPTOMS
         significant=sorted(set(new)&(STANDING_SYMPTOMS|HUMAN_FLOOR_SYMPTOMS))
         if not significant or not case.get("last_run_id") or case["workflow_state"] not in REINVESTIGABLE_STATES:
@@ -564,20 +566,6 @@ class OperationsStore:
                                f"{case['workflow_state']} for a person, and approval and dispatch keep rechecking its context.")
             return False
         old=case["workflow_state"]
-        if old=="AWAITING_OUTCOME":
-            executions=[public_value(row["props"]) for row in tx.run(
-                "MATCH(n:OpsEntity:OpsExecution {case_id:$case_id,dataset_id:$dataset}) RETURN properties(n) AS props "
-                "ORDER BY n.recorded_at DESC,n.entity_id DESC LIMIT 20",case_id=case["entity_id"],dataset=self.dataset_id)]
-            if any(e.get("status") in ("AUTHORIZED","EXECUTING") for e in executions):
-                # Authorized but not dispatched yet: the dispatch recheck sees the changed symptoms, refuses the action
-                # and requeues the case itself.
-                return False
-            for execution in executions:
-                if execution.get("status")=="ACKNOWLEDGED":
-                    execution["status"]="SUPERSEDED";self._put(tx,"OpsExecution",execution,update=True)
-                    self._audit(tx,case,"EXECUTION_SUPERSEDED",when,actor="SUHAIL-MONITOR",key=execution["entity_id"],old=old,
-                                result=f"{execution.get('action_type')} was executed before new symptoms ({', '.join(significant)}) were "
-                                       "observed; it is not verified or credited, and the case is re-investigated.")
         case.update(workflow_state="OPEN",recommendation_id=None,state_version=case["state_version"]+1,
                     symptom_reinvestigations=done+1,outcome_checked_as_of=None)
         without_diagnosis(case,pending=True)
