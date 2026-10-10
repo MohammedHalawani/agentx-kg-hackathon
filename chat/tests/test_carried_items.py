@@ -112,6 +112,7 @@ class EscalatedNotApprovableTests(_Store):
 class BlameFilterTests(unittest.TestCase):
     """L6: accusatory statements are blocked; neutral custody statements are not."""
     ACCUSATORY = ("The driver kept the parcel.", "the driver probably kept it", "The courier took the package home.",
+                  "The courier took the parcel.",
                   "The neighbour took the parcel.", "The contractor withheld the shipment.", "The driver may have kept the parcel.",
                   "Drivers kept the parcels.", "The driver lost the parcel.", "The recipient lied about the delivery.",
                   "The courier deliberately skipped the scan.", "Possible theft.", "The recipient is at fault.")
@@ -119,7 +120,8 @@ class BlameFilterTests(unittest.TestCase):
                "The driver's device stopped syncing at 11:00.", "The recipient was unavailable at the address.",
                "The driver took a photo at the door.", "The customer kept calling the hotline.",
                "The driver has not returned the parcel to the depot yet.", "The parcel was kept at the depot overnight.",
-               "Custody is with the contractor vehicle; the parcel is not reconciled.")
+               "Custody is with the contractor vehicle; the parcel is not reconciled.",
+               "The driver took the parcel back to the depot.", "The driver kept the parcel in the van overnight.")
 
     def test_accusations_are_blocked_and_neutral_custody_facts_are_not(self):
         self.assertEqual([s for s in self.ACCUSATORY if not BLAME.search(s)], [])

@@ -25,8 +25,12 @@ VERDICTS = ("ACCEPT", "REVISE", "HUMAN_REVIEW", "ESCALATE")
 _PERSON = r"(?:driver|courier|employee|customer|recipient|neighbou?r|contractor|staff|agent|sender|operator)s?"
 _HEDGE = r"(?:\s+(?:apparently|probably|likely|possibly|may|might|must|could|have|has|had|then|also|simply))*"
 # Verbs that are only accusatory with the parcel as their object ("took a photo", "kept calling" stay allowed).
-_TAKING = (r"(?:kept|took|hid|withheld|pocketed|misappropriated|abandoned|dumped|discarded)\s+"
-           r"(?:(?:the|a|this|that|these|those|their|his|her)\s+)?(?:parcels?|packages?|shipments?|items?|goods|it|them)")
+# "took" and "kept" describe a neutral movement or storage when a destination or place follows ("took the parcel
+# to the depot", "kept the parcel at the depot"); bare, or with "home", they are accusations.
+_OBJECT = r"(?:(?:the|a|this|that|these|those|their|his|her)\s+)?(?:parcels?|packages?|shipments?|items?|goods|it|them)"
+_TAKING = (rf"(?:(?:hid|withheld|pocketed|misappropriated|abandoned|dumped|discarded)\s+{_OBJECT}"
+           rf"|took\s+{_OBJECT}(?!\s+(?:to|back|into|onto|from|for)\b)"
+           rf"|kept\s+{_OBJECT}(?!\s+(?:at|in|inside|on|for|until|overnight|safe|secure|secured)\b))")
 _ACCUSATION = (rf"(?:{_TAKING}|lost|stole|faked|falsified|fabricated|lied|is lying|was lying|was negligent|is negligent|"
                r"is responsible|was responsible|is at fault|was at fault|is to blame|deliberately|intentionally|knowingly)")
 BLAME = re.compile(rf"\b{_PERSON}{_HEDGE}\s+{_ACCUSATION}\b|\b(theft|stolen|fraud|fraudulent|on purpose)\b", re.I)
