@@ -12,8 +12,8 @@ The 63% (26 of 41, Wilson 95% interval 48% to 76%) is not a reliable measure of 
 
 - **About a third of the error comes from how S5 was scored, not from the investigator.** Five of the 15 wrong cases were
   scored against labels the investigator could not have known at the time, or against answer keys that contradict each other.
-  Scoring each case against what was knowable at its own investigation time gives 31 of 41 (76%), and 131 of 168 (78%) over
-  all four runs.
+  As a sensitivity analysis only, scoring each case against what was knowable at its own investigation time gives 31 of 41,
+  and 131 of 168 over all four runs. That is not a new baseline: the measured S5 result stays 26 of 41 (63%).
 - **About half of what was right came from the alert's name.** Accuracy was 17 of 22 when an opening symptom named an
   acceptable cause, and 9 of 19 when none did. A plain symptom-name baseline scores 22 of 41.
 - **The investigator does not yet beat the deterministic rule engine.** Reporting the monitor's own rule code at opening
@@ -27,6 +27,9 @@ The 63% (26 of 41, Wilson 95% interval 48% to 76%) is not a reliable measure of 
 - **The dataset is too easy where it is scored and too thin where it matters.** 20 of 24 abnormal recipes have a one-to-one
   tell (a constant gate, a fixed barcode suffix, a fixed weight ratio). Healthy shipments never vary, so detection precision
   of 1.00 is guaranteed by construction. The only shared-world mechanism is one kind of device outage.
+
+The baseline every later evaluation must beat, on the same cases, is the rule-code baseline (28 of 41 here), alongside
+the measured agent result of 26 of 41. A rescored figure is never used as the baseline.
 
 So the honest reading is: on this dataset, the investigator mostly repeats what the alert already says, does slightly worse
 than the rule engine, and adds real value only when it reads telemetry. The dataset rarely requires investigation, and the
