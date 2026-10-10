@@ -549,14 +549,14 @@
         "DEMO-CMP-d8afabaf99632eedcf67"
        ],
        "contradicting_evidence_ids": [],
-       "assessment": "The scale reading (11.19 kg) differs from the declared weight (13.91 kg) by 2.72 kg, exceeding the policy tolerance of 1.391 kg. Same-device activity shows this is the only shipment out of tolerance on this scale, indicating the device is functioning correctly and the discrepancy stems from the declared weight."
+       "assessment": "The scale reading (11.19\u202fkg) differs from the declared weight (13.91\u202fkg) by 2.72\u202fkg, exceeding the policy tolerance of 1.391\u202fkg. Same-device activity shows this is the only shipment out of tolerance on this scale, indicating the device is functioning correctly and the discrepancy stems from the declared weight."
       }
      ],
      "missing_evidence": [],
      "next_evidence_step": "",
      "recommended_action": "REQUEST_REWEIGH",
      "requires_physical_check": true,
-     "summary": "The shipment’s weight reading is outside the allowed tolerance, while the scale device shows no other anomalies. This points to an incorrect declared weight rather than a device error. A reweigh is recommended to confirm the actual weight.",
+     "summary": "The shipment\u2019s weight reading is outside the allowed tolerance, while the scale device shows no other anomalies. This points to an incorrect declared weight rather than a device error. A reweigh is recommended to confirm the actual weight.",
      "investigator": {
       "degraded": false,
       "mode": "gpt-oss",
@@ -624,7 +624,7 @@
       "verdict": "reject",
       "model_verdict": "REVISE",
       "reason_code": "MODEL_REVISE",
-      "feedback": "The investigator did not test any alternative explanations (e.g., device calibration drift, scan mis‑read, or barcode mismatch). Add at least one alternative hypothesis and use the retrieved but uncited scan events or device telemetry to evaluate it.",
+      "feedback": "The investigator did not test any alternative explanations (e.g., device calibration drift, scan mis\u2011read, or barcode mismatch). Add at least one alternative hypothesis and use the retrieved but uncited scan events or device telemetry to evaluate it.",
       "unsupported_claims": [],
       "unaddressed_contradictions": [],
       "alternatives_tested": "no",
@@ -649,7 +649,7 @@
         "DEMO-CMP-d8afabaf99632eedcf67"
        ],
        "contradicting_evidence_ids": [],
-       "assessment": "The scale reading (11.19 kg) differs from the declared weight (13.91 kg) by 2.72 kg, exceeding the policy tolerance of 1.391 kg. Same‑device activity shows only this shipment out of tolerance on this scale, indicating the discrepancy is not due to a scale-wide calibration issue."
+       "assessment": "The scale reading (11.19\u202fkg) differs from the declared weight (13.91\u202fkg) by 2.72\u202fkg, exceeding the policy tolerance of 1.391\u202fkg. Same\u2011device activity shows only this shipment out of tolerance on this scale, indicating the discrepancy is not due to a scale-wide calibration issue."
       },
       {
        "cause": "BARCODE_MISMATCH",
@@ -667,7 +667,7 @@
      "next_evidence_step": "",
      "recommended_action": "REQUEST_REWEIGH",
      "requires_physical_check": true,
-     "summary": "The parcel’s measured weight is outside the allowed tolerance, while barcode scans are correct and the scale shows no systemic error. A reweigh is recommended to confirm the actual weight.",
+     "summary": "The parcel\u2019s measured weight is outside the allowed tolerance, while barcode scans are correct and the scale shows no systemic error. A reweigh is recommended to confirm the actual weight.",
      "investigator": {
       "degraded": false,
       "mode": "gpt-oss",
@@ -762,7 +762,7 @@
       "verdict": "accept",
       "model_verdict": "ACCEPT",
       "reason_code": "MODEL_ACCEPT",
-      "feedback": "Citations are valid and fully support the weight‑mismatch conclusion; alternative barcode‑mismatch hypothesis was tested and refuted; no contradictory evidence is left unaddressed; the recommended reweigh action is appropriate.",
+      "feedback": "Citations are valid and fully support the weight\u2011mismatch conclusion; alternative barcode\u2011mismatch hypothesis was tested and refuted; no contradictory evidence is left unaddressed; the recommended reweigh action is appropriate.",
       "unsupported_claims": [],
       "unaddressed_contradictions": [],
       "alternatives_tested": "yes",
@@ -785,7 +785,7 @@
       "DEMO-CMP-d8afabaf99632eedcf67"
      ],
      "contradicting_evidence_ids": [],
-     "assessment": "The scale reading (11.19 kg) differs from the declared weight (13.91 kg) by 2.72 kg, exceeding the policy tolerance of 1.391 kg. Same‑device activity shows only this shipment out of tolerance on this scale, indicating the discrepancy is not due to a scale-wide calibration issue."
+     "assessment": "The scale reading (11.19\u202fkg) differs from the declared weight (13.91\u202fkg) by 2.72\u202fkg, exceeding the policy tolerance of 1.391\u202fkg. Same\u2011device activity shows only this shipment out of tolerance on this scale, indicating the discrepancy is not due to a scale-wide calibration issue."
     },
     {
      "cause": "BARCODE_MISMATCH",
@@ -864,7 +864,7 @@
     "verdict": "accept",
     "model_verdict": "ACCEPT",
     "reason_code": "MODEL_ACCEPT",
-    "reasons": "Citations are valid and fully support the weight‑mismatch conclusion; alternative barcode‑mismatch hypothesis was tested and refuted; no contradictory evidence is left unaddressed; the recommended reweigh action is appropriate.",
+    "reasons": "Citations are valid and fully support the weight\u2011mismatch conclusion; alternative barcode\u2011mismatch hypothesis was tested and refuted; no contradictory evidence is left unaddressed; the recommended reweigh action is appropriate.",
     "unsupported_claims": []
    },
    "authority": {
@@ -902,31 +902,7 @@
    "error": null,
    "executions_dispatched": 0,
    "score": {
-    "verdict": "correct",
-    "matched": "knowable_cause",
-    "snapshot_as_of": "2026-09-14T13:01:27+00:00",
-    "shipment_healthy": false,
-    "knowable_causes": [
-     "WEIGHT_MISMATCH"
-    ],
-    "acceptable_codes_at_snapshot": [
-     "WEIGHT_MISMATCH"
-    ],
-    "eventual_causes": [
-     "WEIGHT_MISMATCH"
-    ],
-    "identifiable_mechanism_types": [
-     "DECLARED_WEIGHT_WRONG"
-    ],
-    "primary_cause": "WEIGHT_MISMATCH",
-    "primary_is_an_eventual_cause": true,
-    "knowable_causes_named": [
-     "WEIGHT_MISMATCH"
-    ],
-    "knowable_causes_not_named": [],
-    "supported_causes_not_knowable": [],
-    "spec_records_held_at_snapshot": 2,
-    "run_found_in_database": true
+    "verdict": "correct"
    }
   },
   {
@@ -1130,7 +1106,7 @@
         "DEMO-CMP-f1095498061929ffcd0e"
        ],
        "contradicting_evidence_ids": [],
-       "assessment": "Package DEMO-SHP-000082-PKG-02 was weighed at 5.08 kg by device DEMO-DEV-SCL-SORT-DMM-01-2, exceeding the policy tolerance (declared 6.12 kg, tolerance ±0.612 kg). The scale was online with no pending uploads, so the reading is reliable."
+       "assessment": "Package DEMO-SHP-000082-PKG-02 was weighed at 5.08\u202fkg by device DEMO-DEV-SCL-SORT-DMM-01-2, exceeding the policy tolerance (declared 6.12\u202fkg, tolerance \u00b10.612\u202fkg). The scale was online with no pending uploads, so the reading is reliable."
       },
       {
        "cause": "DELAYED_SYNC",
@@ -1140,7 +1116,7 @@
         "DEMO-DEV-SCL-SORT-DMM-01-2",
         "DEMO-CMP-a2d35043f46787b3b45c"
        ],
-       "assessment": "Device telemetry shows continuous heartbeats and zero pending uploads; no records were late, contradicting a delayed‑sync explanation for the mismatches."
+       "assessment": "Device telemetry shows continuous heartbeats and zero pending uploads; no records were late, contradicting a delayed\u2011sync explanation for the mismatches."
       }
      ],
      "missing_evidence": [],
@@ -1279,7 +1255,7 @@
       "DEMO-CMP-f1095498061929ffcd0e"
      ],
      "contradicting_evidence_ids": [],
-     "assessment": "Package DEMO-SHP-000082-PKG-02 was weighed at 5.08 kg by device DEMO-DEV-SCL-SORT-DMM-01-2, exceeding the policy tolerance (declared 6.12 kg, tolerance ±0.612 kg). The scale was online with no pending uploads, so the reading is reliable."
+     "assessment": "Package DEMO-SHP-000082-PKG-02 was weighed at 5.08\u202fkg by device DEMO-DEV-SCL-SORT-DMM-01-2, exceeding the policy tolerance (declared 6.12\u202fkg, tolerance \u00b10.612\u202fkg). The scale was online with no pending uploads, so the reading is reliable."
     },
     {
      "cause": "DELAYED_SYNC",
@@ -1289,7 +1265,7 @@
       "DEMO-DEV-SCL-SORT-DMM-01-2",
       "DEMO-CMP-a2d35043f46787b3b45c"
      ],
-     "assessment": "Device telemetry shows continuous heartbeats and zero pending uploads; no records were late, contradicting a delayed‑sync explanation for the mismatches."
+     "assessment": "Device telemetry shows continuous heartbeats and zero pending uploads; no records were late, contradicting a delayed\u2011sync explanation for the mismatches."
     }
    ],
    "insufficient_evidence": false,
@@ -1395,38 +1371,7 @@
    "error": null,
    "executions_dispatched": 0,
    "score": {
-    "verdict": "correct",
-    "matched": "knowable_cause",
-    "snapshot_as_of": "2026-09-14T20:01:27+00:00",
-    "shipment_healthy": false,
-    "knowable_causes": [
-     "BARCODE_MISMATCH",
-     "WEIGHT_MISMATCH"
-    ],
-    "acceptable_codes_at_snapshot": [
-     "BARCODE_MISMATCH",
-     "WEIGHT_MISMATCH"
-    ],
-    "eventual_causes": [
-     "BARCODE_MISMATCH",
-     "RECIPIENT_UNAVAILABLE",
-     "UNRECONCILED_CUSTODY",
-     "WEIGHT_MISMATCH"
-    ],
-    "identifiable_mechanism_types": [
-     "DECLARED_WEIGHT_WRONG",
-     "LABEL_MISREAD"
-    ],
-    "primary_cause": "BARCODE_MISMATCH",
-    "primary_is_an_eventual_cause": true,
-    "knowable_causes_named": [
-     "BARCODE_MISMATCH",
-     "WEIGHT_MISMATCH"
-    ],
-    "knowable_causes_not_named": [],
-    "supported_causes_not_knowable": [],
-    "spec_records_held_at_snapshot": 3,
-    "run_found_in_database": true
+    "verdict": "correct"
    }
   },
   {
@@ -1642,7 +1587,7 @@
       "verdict": "accept",
       "model_verdict": "ACCEPT",
       "reason_code": "MODEL_ACCEPT",
-      "feedback": "The cited custody event and device telemetry directly support the custody‑gap conclusion, and the delayed‑sync hypothesis was properly refuted. No contradictory evidence was found, and an alternative explanation was tested.",
+      "feedback": "The cited custody event and device telemetry directly support the custody\u2011gap conclusion, and the delayed\u2011sync hypothesis was properly refuted. No contradictory evidence was found, and an alternative explanation was tested.",
       "unsupported_claims": [],
       "unaddressed_contradictions": [],
       "alternatives_tested": "yes",
@@ -1708,7 +1653,7 @@
     "verdict": "accept",
     "model_verdict": "ACCEPT",
     "reason_code": "MODEL_ACCEPT",
-    "reasons": "The cited custody event and device telemetry directly support the custody‑gap conclusion, and the delayed‑sync hypothesis was properly refuted. No contradictory evidence was found, and an alternative explanation was tested.",
+    "reasons": "The cited custody event and device telemetry directly support the custody\u2011gap conclusion, and the delayed\u2011sync hypothesis was properly refuted. No contradictory evidence was found, and an alternative explanation was tested.",
     "unsupported_claims": []
    },
    "authority": {
@@ -1746,27 +1691,7 @@
    "error": null,
    "executions_dispatched": 0,
    "score": {
-    "verdict": "incorrect",
-    "matched": null,
-    "snapshot_as_of": "2026-09-14T20:01:27+00:00",
-    "shipment_healthy": false,
-    "knowable_causes": [
-     "INSUFFICIENT_EVIDENCE"
-    ],
-    "acceptable_codes_at_snapshot": [],
-    "eventual_causes": [
-     "UNRECONCILED_CUSTODY"
-    ],
-    "identifiable_mechanism_types": [],
-    "primary_cause": "CUSTODY_GAP",
-    "primary_is_an_eventual_cause": false,
-    "knowable_causes_named": [],
-    "knowable_causes_not_named": [],
-    "supported_causes_not_knowable": [
-     "CUSTODY_GAP"
-    ],
-    "spec_records_held_at_snapshot": 0,
-    "run_found_in_database": true
+    "verdict": "incorrect"
    }
   },
   {
@@ -2026,7 +1951,7 @@
       "verdict": "accept",
       "model_verdict": "ACCEPT",
       "reason_code": "MODEL_ACCEPT",
-      "feedback": "Citations are valid and directly support the custody‑gap conclusion; the delayed‑sync alternative was tested and refuted; no contradictory evidence is present and the recommended rescanning action is appropriate.",
+      "feedback": "Citations are valid and directly support the custody\u2011gap conclusion; the delayed\u2011sync alternative was tested and refuted; no contradictory evidence is present and the recommended rescanning action is appropriate.",
       "unsupported_claims": [],
       "unaddressed_contradictions": [],
       "alternatives_tested": "yes",
@@ -2120,7 +2045,7 @@
     "verdict": "accept",
     "model_verdict": "ACCEPT",
     "reason_code": "MODEL_ACCEPT",
-    "reasons": "Citations are valid and directly support the custody‑gap conclusion; the delayed‑sync alternative was tested and refuted; no contradictory evidence is present and the recommended rescanning action is appropriate.",
+    "reasons": "Citations are valid and directly support the custody\u2011gap conclusion; the delayed\u2011sync alternative was tested and refuted; no contradictory evidence is present and the recommended rescanning action is appropriate.",
     "unsupported_claims": []
    },
    "authority": {
@@ -2158,32 +2083,7 @@
    "error": null,
    "executions_dispatched": 0,
    "score": {
-    "verdict": "correct",
-    "matched": "knowable_cause",
-    "snapshot_as_of": "2026-09-15T02:01:27+00:00",
-    "shipment_healthy": false,
-    "knowable_causes": [
-     "CUSTODY_GAP"
-    ],
-    "acceptable_codes_at_snapshot": [
-     "CUSTODY_GAP",
-     "MISSED_MILESTONE"
-    ],
-    "eventual_causes": [
-     "CUSTODY_GAP"
-    ],
-    "identifiable_mechanism_types": [
-     "SCAN_SKIPPED_AT_RECEIPT"
-    ],
-    "primary_cause": "CUSTODY_GAP",
-    "primary_is_an_eventual_cause": true,
-    "knowable_causes_named": [
-     "CUSTODY_GAP"
-    ],
-    "knowable_causes_not_named": [],
-    "supported_causes_not_knowable": [],
-    "spec_records_held_at_snapshot": 2,
-    "run_found_in_database": true
+    "verdict": "correct"
    }
   },
   {
@@ -2494,7 +2394,7 @@
       "verdict": "reject",
       "model_verdict": "REVISE",
       "reason_code": "MODEL_REVISE",
-      "feedback": "The conclusion relies on pending device uploads but ignores retrieved custody events that indicate a custody gap, which contradicts the delayed‑sync hypothesis. Also, no alternative explanation (e.g., recipient unavailable) was tested with evidence.",
+      "feedback": "The conclusion relies on pending device uploads but ignores retrieved custody events that indicate a custody gap, which contradicts the delayed\u2011sync hypothesis. Also, no alternative explanation (e.g., recipient unavailable) was tested with evidence.",
       "unsupported_claims": [],
       "unaddressed_contradictions": [
        "DEMO-SHP-000019-CUST-001"
@@ -2579,7 +2479,7 @@
     "verdict": "reject",
     "model_verdict": "REVISE",
     "reason_code": "MODEL_REVISE",
-    "reasons": "The conclusion relies on pending device uploads but ignores retrieved custody events that indicate a custody gap, which contradicts the delayed‑sync hypothesis. Also, no alternative explanation (e.g., recipient unavailable) was tested with evidence.",
+    "reasons": "The conclusion relies on pending device uploads but ignores retrieved custody events that indicate a custody gap, which contradicts the delayed\u2011sync hypothesis. Also, no alternative explanation (e.g., recipient unavailable) was tested with evidence.",
     "unsupported_claims": []
    },
    "authority": {
@@ -2617,34 +2517,7 @@
    "error": null,
    "executions_dispatched": 0,
    "score": {
-    "verdict": "incorrect",
-    "matched": null,
-    "snapshot_as_of": "2026-09-15T06:01:27+00:00",
-    "shipment_healthy": false,
-    "knowable_causes": [
-     "CUSTODY_GAP"
-    ],
-    "acceptable_codes_at_snapshot": [
-     "CUSTODY_GAP",
-     "MISSED_MILESTONE"
-    ],
-    "eventual_causes": [
-     "CUSTODY_GAP"
-    ],
-    "identifiable_mechanism_types": [
-     "SCAN_SKIPPED_AT_RECEIPT"
-    ],
-    "primary_cause": "DELAYED_SYNC",
-    "primary_is_an_eventual_cause": false,
-    "knowable_causes_named": [],
-    "knowable_causes_not_named": [
-     "CUSTODY_GAP"
-    ],
-    "supported_causes_not_knowable": [
-     "DELAYED_SYNC"
-    ],
-    "spec_records_held_at_snapshot": 2,
-    "run_found_in_database": true
+    "verdict": "incorrect"
    }
   },
   {
@@ -3004,32 +2877,7 @@
    "error": null,
    "executions_dispatched": 0,
    "score": {
-    "verdict": "correct",
-    "matched": "knowable_cause",
-    "snapshot_as_of": "2026-09-15T07:01:27+00:00",
-    "shipment_healthy": false,
-    "knowable_causes": [
-     "RECIPIENT_UNAVAILABLE"
-    ],
-    "acceptable_codes_at_snapshot": [
-     "MISSED_MILESTONE",
-     "RECIPIENT_UNAVAILABLE"
-    ],
-    "eventual_causes": [
-     "RECIPIENT_UNAVAILABLE"
-    ],
-    "identifiable_mechanism_types": [
-     "ROUTINE_FAILED_ATTEMPT"
-    ],
-    "primary_cause": "RECIPIENT_UNAVAILABLE",
-    "primary_is_an_eventual_cause": true,
-    "knowable_causes_named": [
-     "RECIPIENT_UNAVAILABLE"
-    ],
-    "knowable_causes_not_named": [],
-    "supported_causes_not_knowable": [],
-    "spec_records_held_at_snapshot": 1,
-    "run_found_in_database": true
+    "verdict": "correct"
    }
   },
   {
@@ -3211,7 +3059,7 @@
       "verdict": "reject",
       "model_verdict": "REVISE",
       "reason_code": "MODEL_REVISE",
-      "feedback": "The conclusion does not address evidence that the handheld device produced multiple mismatched reads, which contradicts a simple operator‑error explanation, and no alternative hypothesis (e.g., device fault) was tested.",
+      "feedback": "The conclusion does not address evidence that the handheld device produced multiple mismatched reads, which contradicts a simple operator\u2011error explanation, and no alternative hypothesis (e.g., device fault) was tested.",
       "unsupported_claims": [],
       "unaddressed_contradictions": [
        "DEMO-CMP-b1a634ea644f87c2c4de"
@@ -3479,32 +3327,7 @@
    "error": null,
    "executions_dispatched": 0,
    "score": {
-    "verdict": "correct",
-    "matched": "knowable_cause",
-    "snapshot_as_of": "2026-09-15T07:01:27+00:00",
-    "shipment_healthy": false,
-    "knowable_causes": [
-     "BARCODE_MISMATCH"
-    ],
-    "acceptable_codes_at_snapshot": [
-     "BARCODE_MISMATCH"
-    ],
-    "eventual_causes": [
-     "BARCODE_MISMATCH",
-     "DELAYED_SYNC"
-    ],
-    "identifiable_mechanism_types": [
-     "WRONG_LABEL_APPLIED"
-    ],
-    "primary_cause": "BARCODE_MISMATCH",
-    "primary_is_an_eventual_cause": true,
-    "knowable_causes_named": [
-     "BARCODE_MISMATCH"
-    ],
-    "knowable_causes_not_named": [],
-    "supported_causes_not_knowable": [],
-    "spec_records_held_at_snapshot": 1,
-    "run_found_in_database": true
+    "verdict": "correct"
    }
   },
   {
@@ -3741,9 +3564,9 @@
       "verdict": "reject",
       "model_verdict": "REVISE",
       "reason_code": "MODEL_REVISE",
-      "feedback": "The conclusion asserts that the observed barcode belongs to shipment DEMO‑SHP‑000130, but no cited record actually shows that barcode for that shipment. Additionally, uncited scans (e.g., DEMO‑SHP‑000130‑SCAN‑001 and DEMO‑SHP‑000490‑SCAN‑002) could contain evidence that contradicts the barcode‑mismatch claim and were not examined.",
+      "feedback": "The conclusion asserts that the observed barcode belongs to shipment DEMO\u2011SHP\u2011000130, but no cited record actually shows that barcode for that shipment. Additionally, uncited scans (e.g., DEMO\u2011SHP\u2011000130\u2011SCAN\u2011001 and DEMO\u2011SHP\u2011000490\u2011SCAN\u2011002) could contain evidence that contradicts the barcode\u2011mismatch claim and were not examined.",
       "unsupported_claims": [
-       "The handheld scan at the Jeddah branch read a barcode belonging to a different shipment (DEMO‑SHP‑000130)."
+       "The handheld scan at the Jeddah branch read a barcode belonging to a different shipment (DEMO\u2011SHP\u2011000130)."
       ],
       "unaddressed_contradictions": [
        "DEMO-SHP-000130-SCAN-001",
@@ -3771,7 +3594,7 @@
         "DEMO-SHP-000490-SCAN-002"
        ],
        "contradicting_evidence_ids": [],
-       "assessment": "Both packages in shipment DEMO‑SHP‑000490 were scanned by the handheld device at DEMO‑BRANCH‑JED‑01 and each scan returned a barcode that does not match the package's manifest barcode. For PKG‑01 the observed barcode RB814633375SA matches the manifest barcode of a different shipment (DEMO‑SHP‑000130) as shown in DEMO‑SHP‑000130‑SCAN‑001. For PKG‑02 the observed barcode RB132929262SA differs from i"
+       "assessment": "Both packages in shipment DEMO\u2011SHP\u2011000490 were scanned by the handheld device at DEMO\u2011BRANCH\u2011JED\u201101 and each scan returned a barcode that does not match the package's manifest barcode. For PKG\u201101 the observed barcode RB814633375SA matches the manifest barcode of a different shipment (DEMO\u2011SHP\u2011000130) as shown in DEMO\u2011SHP\u2011000130\u2011SCAN\u2011001. For PKG\u201102 the observed barcode RB132929262SA differs from i"
       },
       {
        "cause": "CONFLICTING_CUSTODY",
@@ -3780,13 +3603,13 @@
        "contradicting_evidence_ids": [
         "DEMO-SHP-000490-CUST-001"
        ],
-       "assessment": "The custody chain for PKG‑01 shows a single, corroborated receipt transfer to the Jeddah branch with no other holder records, eliminating conflicting custody."
+       "assessment": "The custody chain for PKG\u201101 shows a single, corroborated receipt transfer to the Jeddah branch with no other holder records, eliminating conflicting custody."
       }
      ],
      "missing_evidence": [
       "Physical verification of the actual barcode label on each parcel at the branch to confirm the scan error"
      ],
-     "next_evidence_step": "Request a rescanning of both parcels at DEMO‑BRANCH‑JED‑01 to obtain correct barcode reads and compare them with the manifest.",
+     "next_evidence_step": "Request a rescanning of both parcels at DEMO\u2011BRANCH\u2011JED\u201101 to obtain correct barcode reads and compare them with the manifest.",
      "recommended_action": "REQUEST_RESCAN",
      "requires_physical_check": true,
      "summary": "The handheld scans at the origin branch recorded barcodes that belong to other shipments, indicating a barcode mismatch for both parcels. Custody records are consistent, so the mismatch is not due to conflicting custody. A rescanning is needed to confirm the correct barcodes.",
@@ -3866,9 +3689,9 @@
       "verdict": "reject",
       "model_verdict": "REVISE",
       "reason_code": "MODEL_REVISE",
-      "feedback": "The conclusion states that the barcode read for PKG‑01 belongs to shipment DEMO‑SHP‑000130, but no cited record shows that barcode for that shipment; the cited scan for DEMO‑SHP‑000130 shows a different barcode, contradicting the claim. Provide evidence that the observed barcode matches another shipment or revise the claim, and explicitly address the contradictory scan record.",
+      "feedback": "The conclusion states that the barcode read for PKG\u201101 belongs to shipment DEMO\u2011SHP\u2011000130, but no cited record shows that barcode for that shipment; the cited scan for DEMO\u2011SHP\u2011000130 shows a different barcode, contradicting the claim. Provide evidence that the observed barcode matches another shipment or revise the claim, and explicitly address the contradictory scan record.",
       "unsupported_claims": [
-       "The handheld scan at the Jeddah branch read a barcode belonging to a different shipment (DEMO‑SHP‑000130)."
+       "The handheld scan at the Jeddah branch read a barcode belonging to a different shipment (DEMO\u2011SHP\u2011000130)."
       ],
       "unaddressed_contradictions": [
        "DEMO-SHP-000130-SCAN-001"
@@ -3893,7 +3716,7 @@
       "DEMO-SHP-000490-SCAN-002"
      ],
      "contradicting_evidence_ids": [],
-     "assessment": "Both packages in shipment DEMO‑SHP‑000490 were scanned by the handheld device at DEMO‑BRANCH‑JED‑01 and each scan returned a barcode that does not match the package's manifest barcode. For PKG‑01 the observed barcode RB814633375SA matches the manifest barcode of a different shipment (DEMO‑SHP‑000130) as shown in DEMO‑SHP‑000130‑SCAN‑001. For PKG‑02 the observed barcode RB132929262SA differs from i"
+     "assessment": "Both packages in shipment DEMO\u2011SHP\u2011000490 were scanned by the handheld device at DEMO\u2011BRANCH\u2011JED\u201101 and each scan returned a barcode that does not match the package's manifest barcode. For PKG\u201101 the observed barcode RB814633375SA matches the manifest barcode of a different shipment (DEMO\u2011SHP\u2011000130) as shown in DEMO\u2011SHP\u2011000130\u2011SCAN\u2011001. For PKG\u201102 the observed barcode RB132929262SA differs from i"
     },
     {
      "cause": "CONFLICTING_CUSTODY",
@@ -3902,14 +3725,14 @@
      "contradicting_evidence_ids": [
       "DEMO-SHP-000490-CUST-001"
      ],
-     "assessment": "The custody chain for PKG‑01 shows a single, corroborated receipt transfer to the Jeddah branch with no other holder records, eliminating conflicting custody."
+     "assessment": "The custody chain for PKG\u201101 shows a single, corroborated receipt transfer to the Jeddah branch with no other holder records, eliminating conflicting custody."
     }
    ],
    "insufficient_evidence": false,
    "missing_evidence": [
     "Physical verification of the actual barcode label on each parcel at the branch to confirm the scan error"
    ],
-   "next_evidence_step": "Request a rescanning of both parcels at DEMO‑BRANCH‑JED‑01 to obtain correct barcode reads and compare them with the manifest.",
+   "next_evidence_step": "Request a rescanning of both parcels at DEMO\u2011BRANCH\u2011JED\u201101 to obtain correct barcode reads and compare them with the manifest.",
    "recommended_action": "REQUEST_RESCAN",
    "citations": [
     {
@@ -3954,9 +3777,9 @@
     "verdict": "reject",
     "model_verdict": "REVISE",
     "reason_code": "MODEL_REVISE",
-    "reasons": "The conclusion states that the barcode read for PKG‑01 belongs to shipment DEMO‑SHP‑000130, but no cited record shows that barcode for that shipment; the cited scan for DEMO‑SHP‑000130 shows a different barcode, contradicting the claim. Provide evidence that the observed barcode matches another shipment or revise the claim, and explicitly address the contradictory scan record.",
+    "reasons": "The conclusion states that the barcode read for PKG\u201101 belongs to shipment DEMO\u2011SHP\u2011000130, but no cited record shows that barcode for that shipment; the cited scan for DEMO\u2011SHP\u2011000130 shows a different barcode, contradicting the claim. Provide evidence that the observed barcode matches another shipment or revise the claim, and explicitly address the contradictory scan record.",
     "unsupported_claims": [
-     "The handheld scan at the Jeddah branch read a barcode belonging to a different shipment (DEMO‑SHP‑000130)."
+     "The handheld scan at the Jeddah branch read a barcode belonging to a different shipment (DEMO\u2011SHP\u2011000130)."
     ]
    },
    "authority": {
@@ -3994,33 +3817,7 @@
    "error": null,
    "executions_dispatched": 0,
    "score": {
-    "verdict": "correct",
-    "matched": "knowable_cause",
-    "snapshot_as_of": "2026-09-15T07:01:27+00:00",
-    "shipment_healthy": false,
-    "knowable_causes": [
-     "BARCODE_MISMATCH"
-    ],
-    "acceptable_codes_at_snapshot": [
-     "BARCODE_MISMATCH"
-    ],
-    "eventual_causes": [
-     "BARCODE_MISMATCH",
-     "RECIPIENT_UNAVAILABLE",
-     "ROUTE_DELAY"
-    ],
-    "identifiable_mechanism_types": [
-     "WRONG_LABEL_APPLIED"
-    ],
-    "primary_cause": "BARCODE_MISMATCH",
-    "primary_is_an_eventual_cause": true,
-    "knowable_causes_named": [
-     "BARCODE_MISMATCH"
-    ],
-    "knowable_causes_not_named": [],
-    "supported_causes_not_knowable": [],
-    "spec_records_held_at_snapshot": 1,
-    "run_found_in_database": true
+    "verdict": "correct"
    }
   },
   {
@@ -4806,33 +4603,7 @@
    "error": null,
    "executions_dispatched": 0,
    "score": {
-    "verdict": "incorrect",
-    "matched": null,
-    "snapshot_as_of": "2026-09-15T09:01:27+00:00",
-    "shipment_healthy": false,
-    "knowable_causes": [
-     "WRONG_GATE"
-    ],
-    "acceptable_codes_at_snapshot": [
-     "WRONG_GATE"
-    ],
-    "eventual_causes": [
-     "WRONG_GATE"
-    ],
-    "identifiable_mechanism_types": [
-     "WRONG_GATE"
-    ],
-    "primary_cause": "PROOF_INSUFFICIENT",
-    "primary_is_an_eventual_cause": false,
-    "knowable_causes_named": [
-     "WRONG_GATE"
-    ],
-    "knowable_causes_not_named": [],
-    "supported_causes_not_knowable": [
-     "PROOF_INSUFFICIENT"
-    ],
-    "spec_records_held_at_snapshot": 1,
-    "run_found_in_database": true
+    "verdict": "incorrect"
    }
   },
   {
@@ -5005,7 +4776,7 @@
         "DEMO-CMP-aefbb0cc8626eaa8ff73"
        ],
        "contradicting_evidence_ids": [],
-       "assessment": "The scale reading for package DEMO-SHP-000374-PKG-03 (9.09 kg) exceeds the declared weight (7.7 kg) by 1.39 kg, beyond the policy tolerance of 0.77 kg."
+       "assessment": "The scale reading for package DEMO-SHP-000374-PKG-03 (9.09\u202fkg) exceeds the declared weight (7.7\u202fkg) by 1.39\u202fkg, beyond the policy tolerance of 0.77\u202fkg."
       }
      ],
      "missing_evidence": [
@@ -5073,7 +4844,7 @@
       "verdict": "reject",
       "model_verdict": "REVISE",
       "reason_code": "MODEL_REVISE",
-      "feedback": "The weight mismatch claim is well‑supported, but the investigation did not test any alternative explanations (e.g., scale calibration error, mis‑declared weight, data entry mistake). Add at least one alternative hypothesis and use available evidence (device calibration logs, reweigh of other packages, or prior weighings) to refute or acknowledge uncertainty.",
+      "feedback": "The weight mismatch claim is well\u2011supported, but the investigation did not test any alternative explanations (e.g., scale calibration error, mis\u2011declared weight, data entry mistake). Add at least one alternative hypothesis and use available evidence (device calibration logs, reweigh of other packages, or prior weighings) to refute or acknowledge uncertainty.",
       "unsupported_claims": [],
       "unaddressed_contradictions": [],
       "alternatives_tested": "no",
@@ -5098,7 +4869,7 @@
         "DEMO-SHP-000374-SCAN-016"
        ],
        "contradicting_evidence_ids": [],
-       "assessment": "The scale reading for package DEMO-SHP-000374-PKG-03 (9.09 kg) exceeds the declared weight (7.7 kg) by 1.39 kg, which is beyond the policy tolerance of 0.77 kg."
+       "assessment": "The scale reading for package DEMO-SHP-000374-PKG-03 (9.09\u202fkg) exceeds the declared weight (7.7\u202fkg) by 1.39\u202fkg, which is beyond the policy tolerance of 0.77\u202fkg."
       },
       {
        "cause": "DELAYED_SYNC",
@@ -5108,7 +4879,7 @@
         "DEMO-CMP-84160dd2d0a743b51df2",
         "DEMO-CMP-7dad11dadf2dea4f5641"
        ],
-       "assessment": "The scale device (DEMO-DEV-SCL-SORT-JED-01-2) reported heartbeats continuously and had zero late records in the 12‑hour window, indicating no upload delay that could explain the weight discrepancy."
+       "assessment": "The scale device (DEMO-DEV-SCL-SORT-JED-01-2) reported heartbeats continuously and had zero late records in the 12\u2011hour window, indicating no upload delay that could explain the weight discrepancy."
       }
      ],
      "missing_evidence": [
@@ -5117,7 +4888,7 @@
      "next_evidence_step": "Obtain a calibrated reweigh of the parcel at its current facility to confirm the measured weight.",
      "recommended_action": "REQUEST_REWEIGH",
      "requires_physical_check": true,
-     "summary": "A weight mismatch is confirmed for package 3, with the measured weight exceeding the declared weight beyond allowed tolerance. Device telemetry shows no delayed uploads, refuting a delayed‑sync explanation. Further verification via reweigh and original weight documentation is needed.",
+     "summary": "A weight mismatch is confirmed for package 3, with the measured weight exceeding the declared weight beyond allowed tolerance. Device telemetry shows no delayed uploads, refuting a delayed\u2011sync explanation. Further verification via reweigh and original weight documentation is needed.",
      "investigator": {
       "degraded": false,
       "mode": "gpt-oss",
@@ -5208,7 +4979,7 @@
       "verdict": "accept",
       "model_verdict": "ACCEPT",
       "reason_code": "MODEL_ACCEPT",
-      "feedback": "Citations are valid and fully support the weight‑mismatch conclusion; the delayed‑sync alternative was tested and refuted, and no contradictory evidence was found.",
+      "feedback": "Citations are valid and fully support the weight\u2011mismatch conclusion; the delayed\u2011sync alternative was tested and refuted, and no contradictory evidence was found.",
       "unsupported_claims": [],
       "unaddressed_contradictions": [],
       "alternatives_tested": "yes",
@@ -5231,7 +5002,7 @@
       "DEMO-SHP-000374-SCAN-016"
      ],
      "contradicting_evidence_ids": [],
-     "assessment": "The scale reading for package DEMO-SHP-000374-PKG-03 (9.09 kg) exceeds the declared weight (7.7 kg) by 1.39 kg, which is beyond the policy tolerance of 0.77 kg."
+     "assessment": "The scale reading for package DEMO-SHP-000374-PKG-03 (9.09\u202fkg) exceeds the declared weight (7.7\u202fkg) by 1.39\u202fkg, which is beyond the policy tolerance of 0.77\u202fkg."
     },
     {
      "cause": "DELAYED_SYNC",
@@ -5241,7 +5012,7 @@
       "DEMO-CMP-84160dd2d0a743b51df2",
       "DEMO-CMP-7dad11dadf2dea4f5641"
      ],
-     "assessment": "The scale device (DEMO-DEV-SCL-SORT-JED-01-2) reported heartbeats continuously and had zero late records in the 12‑hour window, indicating no upload delay that could explain the weight discrepancy."
+     "assessment": "The scale device (DEMO-DEV-SCL-SORT-JED-01-2) reported heartbeats continuously and had zero late records in the 12\u2011hour window, indicating no upload delay that could explain the weight discrepancy."
     }
    ],
    "insufficient_evidence": false,
@@ -5302,7 +5073,7 @@
     "verdict": "accept",
     "model_verdict": "ACCEPT",
     "reason_code": "MODEL_ACCEPT",
-    "reasons": "Citations are valid and fully support the weight‑mismatch conclusion; the delayed‑sync alternative was tested and refuted, and no contradictory evidence was found.",
+    "reasons": "Citations are valid and fully support the weight\u2011mismatch conclusion; the delayed\u2011sync alternative was tested and refuted, and no contradictory evidence was found.",
     "unsupported_claims": []
    },
    "authority": {
@@ -5340,31 +5111,7 @@
    "error": null,
    "executions_dispatched": 0,
    "score": {
-    "verdict": "correct",
-    "matched": "knowable_cause",
-    "snapshot_as_of": "2026-09-15T15:01:27+00:00",
-    "shipment_healthy": false,
-    "knowable_causes": [
-     "WEIGHT_MISMATCH"
-    ],
-    "acceptable_codes_at_snapshot": [
-     "WEIGHT_MISMATCH"
-    ],
-    "eventual_causes": [
-     "WEIGHT_MISMATCH"
-    ],
-    "identifiable_mechanism_types": [
-     "DECLARED_WEIGHT_WRONG"
-    ],
-    "primary_cause": "WEIGHT_MISMATCH",
-    "primary_is_an_eventual_cause": true,
-    "knowable_causes_named": [
-     "WEIGHT_MISMATCH"
-    ],
-    "knowable_causes_not_named": [],
-    "supported_causes_not_knowable": [],
-    "spec_records_held_at_snapshot": 4,
-    "run_found_in_database": true
+    "verdict": "correct"
    }
   },
   {
@@ -5847,35 +5594,7 @@
    "error": null,
    "executions_dispatched": 0,
    "score": {
-    "verdict": "incorrect",
-    "matched": null,
-    "snapshot_as_of": "2026-09-15T18:01:27+00:00",
-    "shipment_healthy": false,
-    "knowable_causes": [
-     "ROUTE_DELAY"
-    ],
-    "acceptable_codes_at_snapshot": [
-     "MISSED_MILESTONE",
-     "ROUTE_DELAY"
-    ],
-    "eventual_causes": [
-     "ROUTE_DELAY",
-     "UNRECONCILED_CUSTODY"
-    ],
-    "identifiable_mechanism_types": [
-     "ROUTINE_FAILED_ATTEMPT"
-    ],
-    "primary_cause": "CUSTODY_GAP",
-    "primary_is_an_eventual_cause": false,
-    "knowable_causes_named": [],
-    "knowable_causes_not_named": [
-     "ROUTE_DELAY"
-    ],
-    "supported_causes_not_knowable": [
-     "CUSTODY_GAP"
-    ],
-    "spec_records_held_at_snapshot": 1,
-    "run_found_in_database": true
+    "verdict": "incorrect"
    }
   },
   {
@@ -6292,33 +6011,7 @@
    "error": null,
    "executions_dispatched": 0,
    "score": {
-    "verdict": "correct",
-    "matched": "knowable_cause",
-    "snapshot_as_of": "2026-09-16T06:01:27+00:00",
-    "shipment_healthy": false,
-    "knowable_causes": [
-     "MANIFEST_CONFLICT"
-    ],
-    "acceptable_codes_at_snapshot": [
-     "MANIFEST_CONFLICT"
-    ],
-    "eventual_causes": [
-     "MANIFEST_CONFLICT",
-     "RECIPIENT_UNAVAILABLE",
-     "UNRECONCILED_CUSTODY"
-    ],
-    "identifiable_mechanism_types": [
-     "MANIFEST_ERROR"
-    ],
-    "primary_cause": "MANIFEST_CONFLICT",
-    "primary_is_an_eventual_cause": true,
-    "knowable_causes_named": [
-     "MANIFEST_CONFLICT"
-    ],
-    "knowable_causes_not_named": [],
-    "supported_causes_not_knowable": [],
-    "spec_records_held_at_snapshot": 2,
-    "run_found_in_database": true
+    "verdict": "correct"
    }
   }
  ],
@@ -6625,5 +6318,6 @@
   "truth_rows": 528,
   "truth_schema": "world-truth-3",
   "database": "shipments-v2-world-1-small"
- }
+ },
+ "scoring_note": "Truth-derived fields are kept outside the repository; only the verdict per case is committed."
 }

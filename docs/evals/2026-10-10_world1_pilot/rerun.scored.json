@@ -254,14 +254,14 @@
         "DEMO-CMP-b32fabf9f1dbe249042e"
        ],
        "contradicting_evidence_ids": [],
-       "assessment": "Both recorded weighings (at sorting and at depot) differ from the declared 13.91 kg by more than the policy tolerance, and other shipments processed by the same scales show no weight mismatches, indicating the discrepancy is specific to this parcel."
+       "assessment": "Both recorded weighings (at sorting and at depot) differ from the declared 13.91\u202fkg by more than the policy tolerance, and other shipments processed by the same scales show no weight mismatches, indicating the discrepancy is specific to this parcel."
       }
      ],
      "missing_evidence": [],
      "next_evidence_step": "",
      "recommended_action": "REQUEST_REWEIGH",
      "requires_physical_check": false,
-     "summary": "The parcel’s weight readings at two points are outside the allowed tolerance, while the scales involved show no systemic error. The weight discrepancy is therefore confirmed as a WEIGHT_MISMATCH observation. A reweigh is recommended to verify the actual weight.",
+     "summary": "The parcel\u2019s weight readings at two points are outside the allowed tolerance, while the scales involved show no systemic error. The weight discrepancy is therefore confirmed as a WEIGHT_MISMATCH observation. A reweigh is recommended to verify the actual weight.",
      "investigator": {
       "degraded": false,
       "mode": "gpt-oss",
@@ -343,7 +343,7 @@
       "verdict": "reject",
       "model_verdict": "REVISE",
       "reason_code": "MODEL_REVISE",
-      "feedback": "The weight‑mismatch cause is well‑supported by the two scale readings and the tolerance calculations, but the investigation never tested any alternative explanation and there is contradictory evidence that the depot scale shows zero records while a weighing event exists. The claim that \"other shipments processed by the same scales show no weight mismatches\" lacks evidence for the depot scale.",
+      "feedback": "The weight\u2011mismatch cause is well\u2011supported by the two scale readings and the tolerance calculations, but the investigation never tested any alternative explanation and there is contradictory evidence that the depot scale shows zero records while a weighing event exists. The claim that \"other shipments processed by the same scales show no weight mismatches\" lacks evidence for the depot scale.",
       "unsupported_claims": [
        "The statement that other shipments processed by the same scales show no weight mismatches is not substantiated for the depot scale (no shipment records were retrieved for that device)."
       ],
@@ -403,7 +403,7 @@
         "DEMO-CMP-1597ee3a0cb4edb4c78f"
        ],
        "contradicting_evidence_ids": [],
-       "assessment": "Two independent scale readings (sorting scale and depot scale) both report a weight ~2.6‑2.7 kg below the declared 13.91 kg, exceeding the policy tolerance. The sorting scale has no other shipments with weight mismatches, indicating its reading is reliable; the depot scale only recorded this shipment, so systematic error cannot be confirmed. The consistent under‑weight across two devices supports "
+       "assessment": "Two independent scale readings (sorting scale and depot scale) both report a weight ~2.6\u20112.7\u202fkg below the declared 13.91\u202fkg, exceeding the policy tolerance. The sorting scale has no other shipments with weight mismatches, indicating its reading is reliable; the depot scale only recorded this shipment, so systematic error cannot be confirmed. The consistent under\u2011weight across two devices supports "
       }
      ],
      "missing_evidence": [],
@@ -515,7 +515,7 @@
       "DEMO-CMP-1597ee3a0cb4edb4c78f"
      ],
      "contradicting_evidence_ids": [],
-     "assessment": "Two independent scale readings (sorting scale and depot scale) both report a weight ~2.6‑2.7 kg below the declared 13.91 kg, exceeding the policy tolerance. The sorting scale has no other shipments with weight mismatches, indicating its reading is reliable; the depot scale only recorded this shipment, so systematic error cannot be confirmed. The consistent under‑weight across two devices supports "
+     "assessment": "Two independent scale readings (sorting scale and depot scale) both report a weight ~2.6\u20112.7\u202fkg below the declared 13.91\u202fkg, exceeding the policy tolerance. The sorting scale has no other shipments with weight mismatches, indicating its reading is reliable; the depot scale only recorded this shipment, so systematic error cannot be confirmed. The consistent under\u2011weight across two devices supports "
     }
    ],
    "insufficient_evidence": false,
@@ -613,31 +613,7 @@
    },
    "state_before_rerun": "HUMAN_REVIEW",
    "score": {
-    "verdict": "correct",
-    "matched": "knowable_cause",
-    "snapshot_as_of": "2026-09-16T06:01:27+00:00",
-    "shipment_healthy": false,
-    "knowable_causes": [
-     "WEIGHT_MISMATCH"
-    ],
-    "acceptable_codes_at_snapshot": [
-     "WEIGHT_MISMATCH"
-    ],
-    "eventual_causes": [
-     "WEIGHT_MISMATCH"
-    ],
-    "identifiable_mechanism_types": [
-     "DECLARED_WEIGHT_WRONG"
-    ],
-    "primary_cause": "WEIGHT_MISMATCH",
-    "primary_is_an_eventual_cause": true,
-    "knowable_causes_named": [
-     "WEIGHT_MISMATCH"
-    ],
-    "knowable_causes_not_named": [],
-    "supported_causes_not_knowable": [],
-    "spec_records_held_at_snapshot": 4,
-    "run_found_in_database": true
+    "verdict": "correct"
    }
   },
   {
@@ -914,7 +890,7 @@
         "DEMO-CMP-cfeeaa785254a5ce3daf"
        ],
        "contradicting_evidence_ids": [],
-       "assessment": "Package 02 was weighed twice at 5.08 kg and 5.00 kg, both outside the policy tolerance (0.612 kg) from the declared 6.12 kg."
+       "assessment": "Package 02 was weighed twice at 5.08\u202fkg and 5.00\u202fkg, both outside the policy tolerance (0.612\u202fkg) from the declared 6.12\u202fkg."
       },
       {
        "cause": "BARCODE_MISMATCH",
@@ -1088,7 +1064,7 @@
       "DEMO-CMP-cfeeaa785254a5ce3daf"
      ],
      "contradicting_evidence_ids": [],
-     "assessment": "Package 02 was weighed twice at 5.08 kg and 5.00 kg, both outside the policy tolerance (0.612 kg) from the declared 6.12 kg."
+     "assessment": "Package 02 was weighed twice at 5.08\u202fkg and 5.00\u202fkg, both outside the policy tolerance (0.612\u202fkg) from the declared 6.12\u202fkg."
     },
     {
      "cause": "BARCODE_MISMATCH",
@@ -1239,49 +1215,7 @@
    },
    "state_before_rerun": "HUMAN_REVIEW",
    "score": {
-    "verdict": "correct",
-    "matched": "knowable_cause",
-    "snapshot_as_of": "2026-09-16T06:01:27+00:00",
-    "shipment_healthy": false,
-    "knowable_causes": [
-     "BARCODE_MISMATCH",
-     "RECIPIENT_UNAVAILABLE",
-     "UNRECONCILED_CUSTODY",
-     "WEIGHT_MISMATCH"
-    ],
-    "acceptable_codes_at_snapshot": [
-     "BARCODE_MISMATCH",
-     "CUSTODY_GAP",
-     "MISSED_MILESTONE",
-     "RECIPIENT_UNAVAILABLE",
-     "UNRECONCILED_CUSTODY",
-     "WEIGHT_MISMATCH"
-    ],
-    "eventual_causes": [
-     "BARCODE_MISMATCH",
-     "RECIPIENT_UNAVAILABLE",
-     "UNRECONCILED_CUSTODY",
-     "WEIGHT_MISMATCH"
-    ],
-    "identifiable_mechanism_types": [
-     "DECLARED_WEIGHT_WRONG",
-     "LABEL_MISREAD",
-     "RETURN_SCAN_SKIPPED",
-     "ROUTINE_FAILED_ATTEMPT"
-    ],
-    "primary_cause": "RECIPIENT_UNAVAILABLE",
-    "primary_is_an_eventual_cause": true,
-    "knowable_causes_named": [
-     "BARCODE_MISMATCH",
-     "RECIPIENT_UNAVAILABLE",
-     "WEIGHT_MISMATCH"
-    ],
-    "knowable_causes_not_named": [
-     "UNRECONCILED_CUSTODY"
-    ],
-    "supported_causes_not_knowable": [],
-    "spec_records_held_at_snapshot": 7,
-    "run_found_in_database": true
+    "verdict": "correct"
    }
   },
   {
@@ -1528,7 +1462,7 @@
       "verdict": "reject",
       "model_verdict": "REVISE",
       "reason_code": "MODEL_REVISE",
-      "feedback": "The conclusion labels CUSTODY_GAP as the primary cause, but the evidence (session reconciliation state and deterministic check) points to UNRECONCILED_CUSTODY as the correct classification. Revise the primary cause to reflect the un‑reconciled custody evidence and explain how the custody gap leads to that state.",
+      "feedback": "The conclusion labels CUSTODY_GAP as the primary cause, but the evidence (session reconciliation state and deterministic check) points to UNRECONCILED_CUSTODY as the correct classification. Revise the primary cause to reflect the un\u2011reconciled custody evidence and explain how the custody gap leads to that state.",
       "unsupported_claims": [
        "Primary cause = CUSTODY_GAP is not supported by the reconciliation evidence"
       ],
@@ -1567,7 +1501,7 @@
         "DEMO-RR-MED-01-0915-1"
        ],
        "contradicting_evidence_ids": [],
-       "assessment": "The last corroborated custody transfer is a load onto the delivery vehicle at 05:15:42 (DEMO-SHP-000104-CUST-007). No subsequent handover, delivery attempt, or receipt scan is recorded (delivery_attempts NONE – DEMO-SHP-000104, and same_route_run shows outcome NO_OUTCOME_RECORDED – DEMO-RR-MED-01-0915-1), indicating a gap in custody after loading."
+       "assessment": "The last corroborated custody transfer is a load onto the delivery vehicle at 05:15:42 (DEMO-SHP-000104-CUST-007). No subsequent handover, delivery attempt, or receipt scan is recorded (delivery_attempts NONE \u2013 DEMO-SHP-000104, and same_route_run shows outcome NO_OUTCOME_RECORDED \u2013 DEMO-RR-MED-01-0915-1), indicating a gap in custody after loading."
       }
      ],
      "missing_evidence": [
@@ -1576,7 +1510,7 @@
      "next_evidence_step": "Request the driver device to sync pending uploads and check for any undisclosed delivery attempt or handover records.",
      "recommended_action": "REQUEST_DEVICE_SYNC",
      "requires_physical_check": false,
-     "summary": "The parcel was loaded onto the delivery vehicle but no further custody transfer was recorded, leading to an un‑reconciled delivery session. This reflects both a custody gap and the resulting UNRECONCILED_CUSTODY state. Syncing the driver device may reveal any delayed records.",
+     "summary": "The parcel was loaded onto the delivery vehicle but no further custody transfer was recorded, leading to an un\u2011reconciled delivery session. This reflects both a custody gap and the resulting UNRECONCILED_CUSTODY state. Syncing the driver device may reveal any delayed records.",
      "investigator": {
       "degraded": false,
       "mode": "gpt-oss",
@@ -1695,7 +1629,7 @@
       "DEMO-RR-MED-01-0915-1"
      ],
      "contradicting_evidence_ids": [],
-     "assessment": "The last corroborated custody transfer is a load onto the delivery vehicle at 05:15:42 (DEMO-SHP-000104-CUST-007). No subsequent handover, delivery attempt, or receipt scan is recorded (delivery_attempts NONE – DEMO-SHP-000104, and same_route_run shows outcome NO_OUTCOME_RECORDED – DEMO-RR-MED-01-0915-1), indicating a gap in custody after loading."
+     "assessment": "The last corroborated custody transfer is a load onto the delivery vehicle at 05:15:42 (DEMO-SHP-000104-CUST-007). No subsequent handover, delivery attempt, or receipt scan is recorded (delivery_attempts NONE \u2013 DEMO-SHP-000104, and same_route_run shows outcome NO_OUTCOME_RECORDED \u2013 DEMO-RR-MED-01-0915-1), indicating a gap in custody after loading."
     }
    ],
    "insufficient_evidence": false,
@@ -1802,33 +1736,7 @@
    },
    "state_before_rerun": "OPEN",
    "score": {
-    "verdict": "correct",
-    "matched": "knowable_cause",
-    "snapshot_as_of": "2026-09-16T06:01:27+00:00",
-    "shipment_healthy": false,
-    "knowable_causes": [
-     "UNRECONCILED_CUSTODY"
-    ],
-    "acceptable_codes_at_snapshot": [
-     "UNRECONCILED_CUSTODY"
-    ],
-    "eventual_causes": [
-     "UNRECONCILED_CUSTODY"
-    ],
-    "identifiable_mechanism_types": [
-     "CONTRACTOR_RETAINS"
-    ],
-    "primary_cause": "UNRECONCILED_CUSTODY",
-    "primary_is_an_eventual_cause": true,
-    "knowable_causes_named": [
-     "UNRECONCILED_CUSTODY"
-    ],
-    "knowable_causes_not_named": [],
-    "supported_causes_not_knowable": [
-     "CUSTODY_GAP"
-    ],
-    "spec_records_held_at_snapshot": 1,
-    "run_found_in_database": true
+    "verdict": "correct"
    }
   },
   {
@@ -2050,7 +1958,7 @@
      "next_evidence_step": "",
      "recommended_action": "INITIATE_CUSTODY_RECONCILIATION",
      "requires_physical_check": false,
-     "summary": "The parcel’s custody chain contains transfers that do not follow the last confirmed holder, revealing a missing handover scan (custody gap). Hub device telemetry shows no upload delays, ruling out delayed sync. Reconciliation of custody records is needed.",
+     "summary": "The parcel\u2019s custody chain contains transfers that do not follow the last confirmed holder, revealing a missing handover scan (custody gap). Hub device telemetry shows no upload delays, ruling out delayed sync. Reconciliation of custody records is needed.",
      "investigator": {
       "degraded": false,
       "mode": "gpt-oss",
@@ -2145,7 +2053,7 @@
       "verdict": "accept",
       "model_verdict": "ACCEPT",
       "reason_code": "MODEL_ACCEPT",
-      "feedback": "Citations are valid and directly support the custody‑gap conclusion; the delayed‑sync alternative was explicitly tested and refuted; no contradictory evidence is present and the recommended reconciliation action aligns with policy.",
+      "feedback": "Citations are valid and directly support the custody\u2011gap conclusion; the delayed\u2011sync alternative was explicitly tested and refuted; no contradictory evidence is present and the recommended reconciliation action aligns with policy.",
       "unsupported_claims": [],
       "unaddressed_contradictions": [],
       "alternatives_tested": "yes",
@@ -2247,7 +2155,7 @@
     "verdict": "accept",
     "model_verdict": "ACCEPT",
     "reason_code": "MODEL_ACCEPT",
-    "reasons": "Citations are valid and directly support the custody‑gap conclusion; the delayed‑sync alternative was explicitly tested and refuted; no contradictory evidence is present and the recommended reconciliation action aligns with policy.",
+    "reasons": "Citations are valid and directly support the custody\u2011gap conclusion; the delayed\u2011sync alternative was explicitly tested and refuted; no contradictory evidence is present and the recommended reconciliation action aligns with policy.",
     "unsupported_claims": []
    },
    "authority": {
@@ -2293,32 +2201,7 @@
    },
    "state_before_rerun": "HUMAN_REVIEW",
    "score": {
-    "verdict": "correct",
-    "matched": "knowable_cause",
-    "snapshot_as_of": "2026-09-16T06:01:27+00:00",
-    "shipment_healthy": false,
-    "knowable_causes": [
-     "CUSTODY_GAP"
-    ],
-    "acceptable_codes_at_snapshot": [
-     "CUSTODY_GAP",
-     "MISSED_MILESTONE"
-    ],
-    "eventual_causes": [
-     "CUSTODY_GAP"
-    ],
-    "identifiable_mechanism_types": [
-     "SCAN_SKIPPED_AT_RECEIPT"
-    ],
-    "primary_cause": "CUSTODY_GAP",
-    "primary_is_an_eventual_cause": true,
-    "knowable_causes_named": [
-     "CUSTODY_GAP"
-    ],
-    "knowable_causes_not_named": [],
-    "supported_causes_not_knowable": [],
-    "spec_records_held_at_snapshot": 2,
-    "run_found_in_database": true
+    "verdict": "correct"
    }
   },
   {
@@ -2559,7 +2442,7 @@
        "status": "uncertain",
        "supporting_evidence_ids": [],
        "contradicting_evidence_ids": [],
-       "assessment": "No evidence shows the manifest omitted or mis‑listed these parcels; the manifest barcodes all match the scans."
+       "assessment": "No evidence shows the manifest omitted or mis\u2011listed these parcels; the manifest barcodes all match the scans."
       }
      ],
      "missing_evidence": [
@@ -2646,7 +2529,7 @@
       "verdict": "reject",
       "model_verdict": "REVISE",
       "reason_code": "MODEL_REVISE",
-      "feedback": "The primary cause (weight mismatch) is well‑supported, but the investigation did not test any alternative explanation with evidence (e.g., manifest or barcode errors). Add evidence for at least one alternative hypothesis or explain why alternatives are ruled out.",
+      "feedback": "The primary cause (weight mismatch) is well\u2011supported, but the investigation did not test any alternative explanation with evidence (e.g., manifest or barcode errors). Add evidence for at least one alternative hypothesis or explain why alternatives are ruled out.",
       "unsupported_claims": [],
       "unaddressed_contradictions": [],
       "alternatives_tested": "no",
@@ -2804,7 +2687,7 @@
       "verdict": "reject",
       "model_verdict": "REVISE",
       "reason_code": "MODEL_REVISE",
-      "feedback": "The weight‑mismatch conclusion is well‑supported, but the claim that all barcodes match the manifest is not demonstrated by the cited records; the evidence only shows the scanned barcodes, not the manifest values. Add explicit manifest barcode data or a computed comparison showing no barcode mismatch, or explain why the scans are sufficient to refute that hypothesis.",
+      "feedback": "The weight\u2011mismatch conclusion is well\u2011supported, but the claim that all barcodes match the manifest is not demonstrated by the cited records; the evidence only shows the scanned barcodes, not the manifest values. Add explicit manifest barcode data or a computed comparison showing no barcode mismatch, or explain why the scans are sufficient to refute that hypothesis.",
       "unsupported_claims": [
        "All scans for the four packages show confident barcode reads that match the manifest barcodes."
       ],
@@ -2928,7 +2811,7 @@
     "verdict": "reject",
     "model_verdict": "REVISE",
     "reason_code": "MODEL_REVISE",
-    "reasons": "The weight‑mismatch conclusion is well‑supported, but the claim that all barcodes match the manifest is not demonstrated by the cited records; the evidence only shows the scanned barcodes, not the manifest values. Add explicit manifest barcode data or a computed comparison showing no barcode mismatch, or explain why the scans are sufficient to refute that hypothesis.",
+    "reasons": "The weight\u2011mismatch conclusion is well\u2011supported, but the claim that all barcodes match the manifest is not demonstrated by the cited records; the evidence only shows the scanned barcodes, not the manifest values. Add explicit manifest barcode data or a computed comparison showing no barcode mismatch, or explain why the scans are sufficient to refute that hypothesis.",
     "unsupported_claims": [
      "All scans for the four packages show confident barcode reads that match the manifest barcodes."
     ]
@@ -2976,31 +2859,7 @@
    },
    "state_before_rerun": "HUMAN_REVIEW",
    "score": {
-    "verdict": "correct",
-    "matched": "knowable_cause",
-    "snapshot_as_of": "2026-09-16T06:01:27+00:00",
-    "shipment_healthy": false,
-    "knowable_causes": [
-     "WEIGHT_MISMATCH"
-    ],
-    "acceptable_codes_at_snapshot": [
-     "WEIGHT_MISMATCH"
-    ],
-    "eventual_causes": [
-     "WEIGHT_MISMATCH"
-    ],
-    "identifiable_mechanism_types": [
-     "DECLARED_WEIGHT_WRONG"
-    ],
-    "primary_cause": "WEIGHT_MISMATCH",
-    "primary_is_an_eventual_cause": true,
-    "knowable_causes_named": [
-     "WEIGHT_MISMATCH"
-    ],
-    "knowable_causes_not_named": [],
-    "supported_causes_not_knowable": [],
-    "spec_records_held_at_snapshot": 4,
-    "run_found_in_database": true
+    "verdict": "correct"
    }
   },
   {
@@ -3448,38 +3307,7 @@
    },
    "state_before_rerun": "HUMAN_REVIEW",
    "score": {
-    "verdict": "no valid conclusion",
-    "matched": null,
-    "snapshot_as_of": "2026-09-16T06:01:27+00:00",
-    "shipment_healthy": false,
-    "knowable_causes": [
-     "ROUTE_DELAY",
-     "UNRECONCILED_CUSTODY"
-    ],
-    "acceptable_codes_at_snapshot": [
-     "CUSTODY_GAP",
-     "MISSED_MILESTONE",
-     "ROUTE_DELAY",
-     "UNRECONCILED_CUSTODY"
-    ],
-    "eventual_causes": [
-     "ROUTE_DELAY",
-     "UNRECONCILED_CUSTODY"
-    ],
-    "identifiable_mechanism_types": [
-     "RETURN_SCAN_SKIPPED",
-     "ROUTINE_FAILED_ATTEMPT"
-    ],
-    "primary_cause": null,
-    "primary_is_an_eventual_cause": false,
-    "knowable_causes_named": [],
-    "knowable_causes_not_named": [
-     "ROUTE_DELAY",
-     "UNRECONCILED_CUSTODY"
-    ],
-    "supported_causes_not_knowable": [],
-    "spec_records_held_at_snapshot": 3,
-    "run_found_in_database": true
+    "verdict": "no valid conclusion"
    }
   }
  ],
@@ -3511,5 +3339,6 @@
   "truth_rows": 528,
   "truth_schema": "world-truth-3",
   "database": "shipments-v2-world-1-small"
- }
+ },
+ "scoring_note": "Truth-derived fields are kept outside the repository; only the verdict per case is committed."
 }
