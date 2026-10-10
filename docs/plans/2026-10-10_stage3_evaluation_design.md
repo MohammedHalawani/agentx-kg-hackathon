@@ -271,3 +271,19 @@ across all runs.
   anyone looking at results: (1) a targeted ablation on E1 identifiable ambiguous cases whose mechanism's discriminating
   evidence is cross-shipment, seeded order, each case sized by worst-case cost; (2) a stability subset of up to 20 seeded E1
   cases run once more. Whatever completes inside the cap is reported; nothing else is run.
+
+### Addendum to amendment 2 (2026-10-10, before any evaluation world exists)
+Reason: a review of amendment 2 asked for four tightenings so the cap provably holds and the arms are treated alike.
+1. **C_cap counts every model call in the agent arm for a case:** investigator turns, reviewer rounds, revision rounds and
+   retries after invalid output, all under one per-case counter enforced in code. If the implementation keeps a separate
+   reviewer cap R_cap, the sizing formula becomes N_main = floor(4000 / (C_cap + R_cap + 2)) so the run provably finishes
+   inside 4,000 calls.
+2. **Both arms are treated the same on failure.** B_notools gets the same single retry on invalid output as the agent, and
+   an invalid result after that retry counts as wrong, exactly as a degraded agent run does.
+3. **The extras are exploratory.** The targeted cross-shipment ablation and the stability reruns run in their fixed order
+   regardless of the main results, are reported with whatever n they reach, carry no pass or fail claim, and are never pooled
+   into the E1 test.
+4. **Reporting.** E1 identifiable ambiguous is the only pass or fail. E1 is never described as generalisation to unseen
+   providers; that is E2's claim, and E2 is descriptive (about 22 points detectable). The determined stratum is reported
+   with Wilson intervals next to B_rulecode, and any agent result below B_rulecode there is flagged as a regression even
+   though it is not a gate.
