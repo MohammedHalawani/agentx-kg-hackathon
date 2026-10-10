@@ -1,9 +1,14 @@
-"""One persistent model-call ledger for the evaluation campaign (Fahad's cap: 4,000 calls in all).
+"""One persistent model-call ledger for the evaluation campaign.
+
+The ledger's `cap` is a runaway guard, not a budget: the 4,000-call allowance it once held was lifted (2026-10-11),
+and the number in the file is now only the line no run may cross by accident (20,000 in the committed file; change
+it there, with a note). What stays is the accounting: every real call is entered, a run holds its worst case while it
+is going, and a crashed run stays counted at that worst case.
 
 Every run that makes real model calls (the pilot, its re-runs, the Stage 3 evaluation run) goes through this file:
 
     ledger = CallLedger()                      # docs/evals/model_call_ledger.json, or SUHAIL_CALL_LEDGER
-    ledger.reserve(run, maximum, commit=...)   # refused (LedgerRefused) if spent + maximum would exceed the cap
+    ledger.reserve(run, maximum, commit=...)   # refused (LedgerRefused) if spent + maximum would cross the guard
     ...the run, under its own cap of `maximum` calls...
     ledger.settle(run, calls, tokens=...)      # what it actually used
 
@@ -23,7 +28,7 @@ from pathlib import Path
 import time
 
 SCHEMA = "model-call-ledger-1"
-CAMPAIGN_CAP = 4000
+CAMPAIGN_CAP = 20000   # The guard a new ledger file starts with; the file's own "cap" is what is enforced.
 LEDGER_ENV = "SUHAIL_CALL_LEDGER"
 # Relative to the repository root; git status checks leave this file out, because a run rewrites it by design.
 LEDGER_RELATIVE = "docs/evals/model_call_ledger.json"

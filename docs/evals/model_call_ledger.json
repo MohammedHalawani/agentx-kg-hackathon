@@ -1,7 +1,8 @@
 {
  "schema": "model-call-ledger-1",
- "campaign": "Real model calls counted against Fahad's cap of 4,000 for the blind evaluation (pilot calls included). Read and written by chat/operations/call_ledger.py; an entry's calls is what counts, and an unfinished run counts at its reserved maximum.",
- "cap": 4000,
+ "campaign": "Every real model call of the evaluation campaign (pilot calls included). Read and written by chat/operations/call_ledger.py; an entry's calls is what counts, and an unfinished run counts at its reserved maximum.",
+ "cap": 20000,
+ "note": "The cap is a runaway guard, not an allowance: the product owner lifted the 4,000-call budget (and its 3,600 stop line and 400 reserve) on 2026-10-11, and calls are now an engineering resource. A run is refused only if its reserved worst case would cross this number; raise it deliberately, with a note, if a planned run needs more.",
  "entries": [
   {
    "run": "world1 pilot (docs/evals/2026-10-10_world1_pilot/pilot.json)",

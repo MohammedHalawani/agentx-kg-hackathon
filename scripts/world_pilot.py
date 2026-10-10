@@ -5,7 +5,7 @@
         [--per-alert 2] [--max-cases 12] [--max-calls 144] [--call-cap N] [--check-after-hours 24] [--max-hours N]
         [--disable-tools a,b] [--allow-dirty] [--ledger FILE]
 
-Every run goes through the campaign's model-call ledger (docs/evals/model_call_ledger.json, cap 4,000 in all): it
+Every run goes through the campaign's model-call ledger (docs/evals/model_call_ledger.json; its cap is a runaway guard): it
 refuses to start if the calls already spent plus --max-calls would exceed the cap, reserves --max-calls before the
 first call and writes the calls it actually made at the end. A run that dies stays counted at --max-calls.
 

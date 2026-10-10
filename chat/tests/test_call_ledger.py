@@ -23,7 +23,7 @@ import world_pilot_rerun      # noqa: E402
 PILOT_DIR = ROOT / "docs" / "evals" / "2026-10-10_world1_pilot"
 
 
-def write_ledger(directory, entries=(), cap=CAMPAIGN_CAP):
+def write_ledger(directory, entries=(), cap=4000):   # A test ledger with a small guard of its own.
     path = Path(directory) / "ledger.json"
     path.write_text(json.dumps({"schema": SCHEMA, "campaign": "test", "cap": cap, "entries": list(entries)}), encoding="utf-8")
     return path
@@ -43,7 +43,10 @@ class LedgerTests(unittest.TestCase):
         self.assertEqual(DEFAULT_PATH, ROOT / LEDGER_RELATIVE)
         ledger = CallLedger(DEFAULT_PATH)
         document = ledger.load()
-        self.assertEqual((document["schema"], document["cap"]), (SCHEMA, 4000))
+        # The cap is a runaway guard since the budget was lifted (2026-10-11), and the file says so.
+        self.assertEqual((document["schema"], document["cap"]), (SCHEMA, CAMPAIGN_CAP))
+        self.assertEqual(CAMPAIGN_CAP, 20000)
+        self.assertIn("guard, not an allowance", document["note"])
         by_file = {name: next(e for e in document["entries"] if f"/{name})" in e["run"]) for name in ("pilot.json", "rerun.json")}
         for name, entry in by_file.items():
             provenance = json.loads((PILOT_DIR / name).read_text(encoding="utf-8"))["provenance"]
@@ -55,7 +58,7 @@ class LedgerTests(unittest.TestCase):
         self.assertEqual((by_file["pilot.json"]["calls"], by_file["pilot.json"]["tokens"]), (111, 985609))
         self.assertEqual((by_file["rerun.json"]["calls"], by_file["rerun.json"]["tokens"]), (62, 687366))
         self.assertGreaterEqual(ledger.spent, 173)
-        self.assertEqual(ledger.remaining, 4000 - ledger.spent)
+        self.assertEqual(ledger.remaining, 20000 - ledger.spent)
 
     def test_runs_add_up_and_a_run_that_would_cross_the_cap_is_refused_before_anything_is_written(self):
         path = write_ledger(self.directory.name, [spent_entry(111, "pilot"), spent_entry(62, "rerun")], cap=400)
