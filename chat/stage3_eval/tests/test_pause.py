@@ -229,3 +229,39 @@ def test_cli_max_cases_then_resume(tmp_path, selected, capsys, campaign_ledger_f
                                    "order": "pre-registered (selection.json)", "stop_rule": None}
     assert printed["campaign_ledger"]["spent"] == 700 and printed["ledger"]["open_reservations"] == 0
     assert len(read_jsonl(tmp_path / "run" / "results" / "main" / "agent.jsonl")) == 70
+
+
+def test_look_1_stops_after_40_cases_settles_the_calls_made_and_resume_continues_the_same_selection(tmp_path, selected, worlds):
+    """`run --max-cases 40` (look 1 of amendment 3): a clean stop after 40 cases, the campaign reservation settled to
+    the calls actually made, and `--resume` carrying on from case 41 of the same sealed selection."""
+    config, sel_dir, _ = selected
+    selection_sha = (sel_dir / "selection.json.sha256").read_text().split()[0]
+    campaign = CallLedger(write_campaign_ledger(tmp_path / "ledger.json", spent=0))
+    out = tmp_path / "run"
+    first, a1, x1 = _part(out, config, sel_dir, worlds, campaign=campaign, max_cases=40)
+    order = _order(sel_dir)
+    assert first["status"] == "paused" and a1.seen == order[:40] and not any(e.seen for e in x1.values())
+    assert first["progress"]["cases_settled"] == 40 and first["progress"]["cases_total"] == 70 and first["extras"] == {}
+    assert first["counts"] == {"cases": 40, "not_opened": 0, "budget_refused": 0, "arm_errors": 0}
+    for arm in ("agent", "notools", "rulecode", "symptom"):            # whole cases only
+        assert [r["case_key"] for r in read_jsonl(out / "results" / "main" / f"{arm}.jsonl")] == order[:40]
+    # The calls actually made: 9 per agent case and 1 per no-tools case, as the fakes' own counters say.
+    made = 9 * len(a1.seen) + 40
+    led = first["ledger"]
+    assert (led["settled_calls"], led["committed_calls"], led["open_reservations"], led["cap_violations"]) == (made, made, 0, 0)
+    assert led["provider_calls_at_last_reconciliation"] == made == 400
+    # The campaign reservation (the whole sealed budget while running) is settled to those calls, and nothing stays open.
+    entry = campaign.load()["entries"][-1]
+    assert (entry["calls"], entry["reserved"], bool(entry["finished_at"])) == (made, config.budget, True)
+    assert campaign.spent == made and campaign.summary()["open_reservations"] == [] and first["campaign_ledger"]["calls"] == made
+    assert (first["selection_sha256"], first["sealed_config_hash"]) == (selection_sha, json.loads((sel_dir / "selection.json").read_text())["sealed_config_hash"])
+    # Resume: the same sealed selection, from case 41, no case twice; a changed configuration is not the sealed run.
+    with pytest.raises(ValueError, match="differs from the one the selection was sealed with"):
+        _part(out, type(config)(**{**config.as_dict(), "c_cap": config.c_cap + 1}), sel_dir, worlds, campaign=campaign, resume=True)
+    assert campaign.spent == made
+    last, a2, _ = _part(out, config, sel_dir, worlds, campaign=campaign, resume=True)
+    assert last["status"] == "completed" and a2.seen == order[40:] and last["progress"]["cases_settled"] == 70
+    assert (last["selection_sha256"], last["sealed_config_hash"]) == (first["selection_sha256"], first["sealed_config_hash"])
+    assert [(s["status"], s["cases_settled"], s["committed_calls"]) for s in last["earlier_segments"]] == [("paused", 40, made)]
+    assert [r["key"] for r in read_jsonl(out / "settled.jsonl")] == order
+    assert len(campaign.load()["entries"]) == 1 and campaign.spent == last["ledger"]["committed_calls"] == last["campaign_ledger"]["calls"]
