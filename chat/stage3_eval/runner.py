@@ -8,9 +8,9 @@ reserves its worst case in the ledger before it runs and settles with the calls 
 case facts and everything the runtime produced (captured for the canary scan) are written as the run goes, one
 fsynced line at a time.
 
-After the main test, and only with calls left and extras.json named, the exploratory extras run in their fixed order (cross-shipment
-ablation, then stability reruns), each case only if its worst case still fits; whatever completes is reported,
-never pooled.
+After the main test, and only with extras.json named, the exploratory extras run in their fixed order (cross-shipment
+ablation, then stability reruns). Their worst case is part of the sealed budget, so they are not conditional on calls
+left over (the per-case fit check stays as a guard); whatever completes is reported, never pooled.
 
 The run step refuses to start while any variable that points at truth or at the simulator's private state is set
 (any set variable whose name contains TRUTH, plus SUHAIL_SIM_STATE_ROOT: the pilot's guard; the command line checks
@@ -38,7 +38,7 @@ import sys
 from stage3_eval.arms import CaseRef
 from stage3_eval.budget import BudgetExceeded, BudgetLedger, CapViolation, RunStopped
 from stage3_eval.canary import marker_hits
-from stage3_eval.design import EXTRAS_ORDER, STAGE3_STOP_AT, EvalConfig, canonical_bytes, runtime_selection_problem, sealed_hash
+from stage3_eval.design import EXTRAS_ORDER, EvalConfig, canonical_bytes, runtime_selection_problem, sealed_hash
 from stage3_eval.records import ArmResult
 
 TRUTH_ENV = "SUHAIL_EVAL_TRUTH_ROOT"
@@ -66,9 +66,9 @@ def truth_modules_loaded():
 
 
 def refuse_into_reserve(campaign, config, *, run_name=None):
-    """Refuse (LedgerRefused, nothing written) a run whose sealed budget would take the campaign past cap - reserve,
-    the reserve being the calls the selection set aside (select --reserve N). run_name: this run's own entry, left out
-    of the calls already spent when it is being resumed."""
+    """Refuse (LedgerRefused, nothing written) a run whose sealed budget would take the campaign past the ledger's
+    guard less the reserve, the reserve being the calls the selection set aside (select --reserve N; none by default).
+    run_name: this run's own entry, left out of the calls already spent when it is being resumed."""
     from operations.call_ledger import LedgerRefused
     if not config.reserve:
         return
@@ -81,16 +81,20 @@ def refuse_into_reserve(campaign, config, *, run_name=None):
 
 
 def refuse_past_stop_line(campaign, config, *, run_name=None):
-    """Refuse (LedgerRefused, nothing written) a run whose sealed budget would take the campaign ledger past the Stage 3
-    stop line (design.STAGE3_STOP_AT; the calls above it are the Stage 4 reserve), whatever reserve the selection
-    sealed. run_name: this run's own entry, left out of the calls already spent when it is being resumed."""
+    """Refuse (LedgerRefused, nothing written) a run whose sealed budget would take the campaign ledger past the stop
+    line the selection sealed (select --stop-at N). Off by default: with no stop line sealed nothing is checked (the
+    3,600 line of the addendum to amendment 3 was lifted on 2026-10-11). run_name: this run's own entry, left out of
+    the calls already spent when it is being resumed."""
     from operations.call_ledger import LedgerRefused
+    stop_at = getattr(config, "stop_at", None)
+    if stop_at is None:
+        return
     document = campaign.load()
     others = sum(entry["calls"] for entry in document["entries"] if entry["run"] != run_name)
-    if others + config.budget > STAGE3_STOP_AT:
-        raise LedgerRefused(f"refused: {others} campaign model calls are spent or reserved and Stage 3 stops at {STAGE3_STOP_AT}; "
-                            f"a run of up to {config.budget} calls would pass the Stage 3 stop line "
-                            f"({max(STAGE3_STOP_AT - others, 0)} remain before it)")
+    if others + config.budget > stop_at:
+        raise LedgerRefused(f"refused: {others} campaign model calls are spent or reserved and the selection's stop line is {stop_at}; "
+                            f"a run of up to {config.budget} calls would pass the stop line "
+                            f"({max(stop_at - others, 0)} remain before it)")
 
 
 def load_selection(path):
@@ -183,10 +187,11 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
     provenance: a dict, or a callable returning one, called when the run has finished (so it can report the model calls
     the provider counted and whether the code tree changed during the run).
     campaign: the campaign's persistent model-call ledger (operations.call_ledger.CallLedger). The run's own maximum
-    is config.budget: the run refuses to start if the calls already spent in the campaign plus that maximum would
-    exceed the campaign cap (less config.reserve, the calls the selection set aside) or pass the Stage 3 stop line
-    (design.STAGE3_STOP_AT), reserves the maximum before the first case and writes the calls it actually committed
-    at the end. A run that dies leaves its reservation counted at the maximum. A dry run checks and writes nothing.
+    is config.budget, the worst case of the selection sealed by `select`: the run refuses to start only if the calls
+    already spent in the campaign plus that maximum would cross the ledger's guard (its cap; less config.reserve, or
+    past config.stop_at, when the selection sealed either: neither by default), reserves the maximum before the first
+    case and writes the calls it actually committed at the end. A run that dies leaves its reservation counted at the
+    maximum. A dry run checks and writes nothing.
     extras_path: extras.json of the pre-registration. The lists in it are derived from truth (which cases are in the
     main test, which have a cross-shipment mechanism), so the file is opened only after the last main-test case has
     run; without it no extra runs.
@@ -205,6 +210,8 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
     selection, selection_sha = load_selection(selection_path)
     if selection["sealed_config_hash"] != sealed_hash(config):
         raise ValueError("the configuration differs from the one the selection was sealed with (amendment 1, H)")
+    if config.budget is None:
+        raise ValueError("the configuration has no sealed budget; run with the configuration `select` sealed (selection.json)")
     if max_cases is not None and (isinstance(max_cases, bool) or not isinstance(max_cases, int) or max_cases < 1):
         raise ValueError("max_cases must be a whole number of cases, one or more")
     missing = [a for a in MAIN_ARM_ORDER if a not in arms]
@@ -406,7 +413,8 @@ def _run_arm(arm, case: CaseRef, ledger, dry_run, counts):
 
 
 def _run_extras(plan, refs, agent_t, extras_arms, ledger, writer, dry_run, counts, reconcile=None):
-    """The exploratory extras, in their fixed order, while each case's worst case still fits. Each extra case is
+    """The exploratory extras, in their fixed order. Their worst case is inside the sealed budget, so every listed case
+    fits; the fit check below is the guard for a budget someone sealed smaller by hand. Each extra case is
     investigated AS OF the main agent run's own snapshot (the clock has moved on by then), so the comparison with the
     main run is at the same t; its arm must investigate as of CaseRef.as_of (WIRING.md)."""
     report = {}

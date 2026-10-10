@@ -155,10 +155,10 @@ def test_resuming_holds_the_whole_budget_again_and_is_refused_if_it_no_longer_fi
     campaign = CallLedger(write_campaign_ledger(tmp_path / "ledger.json", spent=0))
     _part(tmp_path / "run", config, sel_dir, worlds, campaign=campaign, max_cases=3)
     assert campaign.spent == 30 and campaign.summary()["open_reservations"] == []
-    campaign.reserve("something else", 100)                            # the pause freed the rest, and another run took some
-    with pytest.raises(LedgerRefused):
+    campaign.reserve("something else", 500)                            # the pause freed the rest, and another run took some
+    with pytest.raises(LedgerRefused):                                 # 30 + 500 + 3,600 would cross this ledger's guard (4,000)
         _part(tmp_path / "run", config, sel_dir, worlds, campaign=campaign, resume=True)
-    assert campaign.spent == 130 and len(read_jsonl(tmp_path / "run" / "settled.jsonl")) == 3   # nothing ran, nothing changed
+    assert campaign.spent == 530 and len(read_jsonl(tmp_path / "run" / "settled.jsonl")) == 3   # nothing ran, nothing changed
     campaign.settle("something else", 0)
     seen = {}
 
@@ -213,7 +213,7 @@ def test_cli_max_cases_then_resume(tmp_path, selected, capsys, campaign_ledger_f
     with pytest.raises(SystemExit, match="--max-cases must be 1 or more"):
         main(base + ["--max-cases", "0"])
     assert not (tmp_path / "run").exists()
-    # The fixture selection is sealed with the whole Stage 3 line (3,600), so the test's ledger starts empty.
+    # The fixture selection's budget is 3,600 and the test ledger's guard 4,000, so the test's ledger starts empty.
     write_campaign_ledger(campaign_ledger_file, spent=0)
     assert main(base + ["--max-cases", "5"]) == 0
     printed = json.loads(capsys.readouterr().out)

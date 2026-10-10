@@ -5,8 +5,10 @@
       runner never called) and write the report skeleton.
 
   python -m stage3_eval select --world E1=TRUTH_DIR [--world E2=TRUTH_DIR] --database E1=DB [--database E2=DB] \
-      --freeze-commit FULL_HASH --c-cap N [--r-cap N] [--reserve N] --out DIR
+      --freeze-commit FULL_HASH --c-cap N [--r-cap N] [--reserve N] [--stop-at N] --out DIR
       TRUTH_DIR holds truth.jsonl and monitor_replay_rows.jsonl (world.export's <truth-root>/.../<live split>/).
+      Sized from the design's statistical targets (E1 identifiable ambiguous 160, E2 60, determined 30 + 10,
+      unidentifiable 20 + 5 = 285), each cell capped by what the world holds; a short cell is recorded, not an error.
 
   python -m stage3_eval run --selection DIR/selection.json --out RUN_DIR --wiring MODULE:FUNCTION [--extras DIR/extras.json]
       [--dry-run] [--resume] [--max-cases N]
@@ -27,15 +29,13 @@
       Writes report.json and report.md (into RUN_DIR, or beside the selection for a skeleton).
 
 The campaign's model-call ledger (docs/evals/model_call_ledger.json, or --ledger FILE, or SUHAIL_CALL_LEDGER) holds
-every real model call made so far against the 4,000 cap. Stage 3 stops when that ledger reaches 3,600 calls
-(design.STAGE3_STOP_AT, addendum to amendment 3). `select` sizes the evaluation from what is left before that line:
-it seals budget = min(cap - spent, 3,600 - spent) and N_main = floor(budget / (C_cap + R_cap + 2)); `run` refuses to
-start if the calls spent plus the sealed budget would exceed the cap or pass the stop line, reserves the budget before
-the first case and writes what it used at the end (a run that dies stays counted at its whole budget). The fixture dry
-run touches no ledger.
-`select --reserve N` keeps N calls of the campaign out of the evaluation as well: the sealed budget is
-min(cap - spent - N, 3,600 - spent), N is sealed in the configuration, and `run` also refuses to start if the calls
-spent plus the sealed budget would exceed cap - N.
+every real model call made so far. Its cap is a runaway guard, not a budget (the 4,000 cap, the 3,600 stop line and
+the 400 reserve were lifted on 2026-10-11), and nothing is sized from it. `select` seals the worst case of what it
+selected as the run's own maximum: n_cases * (C_cap + R_cap + 2), plus C_cap + R_cap for every listed extra. `run`
+reserves that in the ledger before the first case, refuses to start only if it would cross the guard, and writes what
+it used at the end (a run that dies stays counted at its whole maximum). The fixture dry run touches no ledger.
+`select --reserve N` and `select --stop-at N` are optional and off by default; each is sealed in the configuration,
+and `run` then also refuses to start if the calls spent plus its maximum would exceed cap - N, or pass N.
 """
 import argparse
 import importlib
@@ -49,15 +49,9 @@ FIXTURE_COMMIT = "f" * 40   # The fixture's stand-in freeze commit; a real selec
 
 
 def _campaign(path):
-    """The campaign's model-call ledger. Its cap must be the design's (amendment 2): one number, in one place each."""
+    """The campaign's model-call ledger. Its cap is whatever the file says: a runaway guard, not the design's budget."""
     from operations.call_ledger import CallLedger
-    from stage3_eval.design import CALL_BUDGET, STAGE3_STOP_AT
-    if not 0 < STAGE3_STOP_AT <= CALL_BUDGET:
-        raise SystemExit(f"the Stage 3 stop line ({STAGE3_STOP_AT}) must lie inside the cap ({CALL_BUDGET})")
-    ledger = CallLedger(path)
-    if ledger.cap != CALL_BUDGET:
-        raise SystemExit(f"{ledger.path} has cap {ledger.cap}; the design's cap is {CALL_BUDGET}")
-    return ledger
+    return CallLedger(path)
 
 
 def _head_commit():
@@ -130,6 +124,7 @@ def dry_run_fixture(out):
                                                              for w in ("E1", "E2")}, notes="committed harness fixture; not a world-1 export")
     worlds = _worlds([f"{w}={world_dir(w) / 'truth'}" for w in ("E1", "E2")])
     summary = select(worlds, config, out)
+    config = EvalConfig(**summary["config"])      # as sealed: the budget is the worst case of what was selected
     arms = {"agent": AgentArm(refuse, config.c_cap, config.r_cap), "notools": NoToolsArm(turn=refuse), "rulecode": RuleCodeArm(), "symptom": SymptomArm()}
     extras = {"cross_shipment_ablation": AgentArm(refuse, config.c_cap, config.r_cap, name="cross_shipment_ablation"),
               "stability_rerun": AgentArm(refuse, config.c_cap, config.r_cap, name="stability_rerun")}
@@ -156,8 +151,11 @@ def main(argv=None):
     s.add_argument("--out", required=True)
     s.add_argument("--ledger", help="campaign model-call ledger (default docs/evals/model_call_ledger.json)")
     s.add_argument("--reserve", type=int, default=0, metavar="N",
-                   help="campaign calls kept out of this evaluation: the sealed budget is at most cap - spent - N, and never "
-                        "more than what is left before the Stage 3 stop line (default 0)")
+                   help="campaign calls kept out of this evaluation: sealed, and the run refuses to start if the calls spent "
+                        "plus its worst case would exceed the ledger's guard less N (default 0)")
+    s.add_argument("--stop-at", type=int, default=None, metavar="N",
+                   help="an optional stop line: sealed, and the run refuses to start if the calls spent plus its worst case "
+                        "would take the campaign ledger past N (default: none)")
     r = sub.add_parser("run")
     r.add_argument("--selection", required=True)
     r.add_argument("--out", required=True)
@@ -184,29 +182,26 @@ def main(argv=None):
                           "ledger": manifest["ledger"], "counts": manifest["counts"], "extras": manifest["extras"], "report": str(report_path)},
                          indent=1, default=str))
     elif args.cmd == "select":
-        from stage3_eval.design import STAGE3_STOP_AT, evaluation_budget, worst_case_per_case
         from stage3_eval.selection import select
         campaign = _campaign(args.ledger).summary()
         if args.reserve < 0:
             raise SystemExit("--reserve must be zero or more")
-        if campaign["remaining"] - args.reserve < 1:
-            raise SystemExit(f"no model calls remain in the campaign ledger ({campaign['spent']} of {campaign['cap']} spent or reserved"
-                             + (f", {args.reserve} set aside by --reserve)" if args.reserve else ")"))
-        # The evaluation's budget is what the campaign has left before the Stage 3 stop line (pilot and development
-        # calls already count), not 4,000: by default, with no --reserve, it already stops at design.STAGE3_STOP_AT.
-        budget = evaluation_budget(campaign["spent"], args.reserve, campaign["cap"])
-        if budget < 1:
-            raise SystemExit(f"the campaign ledger is at the Stage 3 stop line ({campaign['spent']} calls spent or reserved; "
-                             f"Stage 3 stops at {STAGE3_STOP_AT})")
+        if args.stop_at is not None and args.stop_at < 1:
+            raise SystemExit("--stop-at must be 1 or more")
+        # Sized from the design's targets and the world, never from the ledger: the budget is left for `select` to seal
+        # as the worst case of what it selected. The ledger is only read, to say whether a run would start today.
         config = EvalConfig(freeze_commit=args.freeze_commit, c_cap=args.c_cap, r_cap=args.r_cap, sampling=args.sampling,
-                            budget=budget, reserve=args.reserve,
+                            budget=None, reserve=args.reserve, stop_at=args.stop_at,
                             worlds={item.partition("=")[0]: {"database": dict(d.partition("=")[::2] for d in args.database or []).get(item.partition("=")[0])}
                                     for item in args.world})
         summary = select(_worlds(args.world), config, args.out)
-        print(json.dumps({"campaign_ledger": campaign, "budget": config.budget, "reserve": config.reserve,
-                          "stage3_stop_at": STAGE3_STOP_AT,
-                          "worst_case_calls": summary["allocation"]["n_main"] * worst_case_per_case(config.c_cap, config.r_cap),
-                          **{k: v for k, v in summary.items() if k != "census"}},
+        budget = summary["budget"]
+        limit = min(campaign["cap"] - args.reserve, args.stop_at if args.stop_at is not None else campaign["cap"])
+        print(json.dumps({"campaign_ledger": campaign, "budget": budget, "reserve": args.reserve, "stop_at": args.stop_at,
+                          "worst_case_calls": summary["sizing"]["worst_case_calls"]["total"],
+                          # Information only: `run` is what refuses, at the time it starts.
+                          "a_run_would_start_at_this_ledger": campaign["spent"] + budget <= limit,
+                          **{k: v for k, v in summary.items() if k not in ("census", "budget", "reserve", "stop_at")}},
                          indent=1, default=str))
     elif args.cmd == "run":
         from stage3_eval.runner import refuse_into_reserve, refuse_past_stop_line, refuse_truth_environment, run
@@ -222,7 +217,7 @@ def main(argv=None):
         try:
             campaign.check(0 if args.resume else config.budget)   # before any database is opened; a resume re-holds its own entry
             if not args.resume:
-                refuse_past_stop_line(campaign, config)           # Stage 3 stops at design.STAGE3_STOP_AT, reserve or none
+                refuse_past_stop_line(campaign, config)           # only when the selection sealed one (select --stop-at)
                 refuse_into_reserve(campaign, config)             # the calls the selection set aside (select --reserve)
         except (LedgerRefused, LedgerError) as refusal:
             raise SystemExit(f"Refusing to run: {refusal}") from None

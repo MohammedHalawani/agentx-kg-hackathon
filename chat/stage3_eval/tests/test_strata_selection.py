@@ -147,6 +147,49 @@ def test_selection_reports_shortfalls_and_covers_mechanisms(tmp_path, worlds):
     assert set(sel["extras"]["cross_shipment_ablation"]) <= main and sel["extras"]["cross_shipment_ablation"]
 
 
+def test_selection_is_sized_from_the_targets_and_the_world_and_seals_its_own_worst_case(tmp_path, worlds, monkeypatch):
+    """Sizing: each cell takes its target or every case the world holds in it (target, available and selected recorded
+    in the summary and the scorer file; a short cell is never an error). A budget left unset is sealed as the worst
+    case of the selection, extras included. The stability list is a seeded draw of the main-test cell."""
+    from stage3_eval import design, selection as sel_mod
+    from stage3_eval.runner import load_selection
+    summary = select(worlds, make_config(budget=None, c_cap=16), tmp_path / "s")
+    run_side, _sha = load_selection(tmp_path / "s" / "selection.json")
+    scorer_side = json.loads((tmp_path / "s" / "selection_scorer.json").read_text())
+    extras = json.loads((tmp_path / "s" / "extras.json").read_text())["extras"]
+    sizing = summary["sizing"]
+    assert scorer_side["sizing"] == sizing == scorer_view(tmp_path / "s" / "selection.json")["sizing"]
+    assert summary["allocation"]["target"] == sizing["n_target"] == 285 and scorer_side["allocation"]["E1/identifiable_ambiguous"] == 160
+    assert sizing["cells"]["E1/identifiable_ambiguous"] == {"target": 160, "available": 34, "selected": 34}
+    for cell in sizing["cells"].values():
+        assert cell["selected"] == min(cell["target"], cell["available"])
+    assert sum(c["selected"] for c in sizing["cells"].values()) == sizing["n_selected"] == run_side["n_main"] == len(run_side["cases"]) == 70
+    assert summary["allocation"]["notes"]                              # the main test below 150 is stated, not refused
+    ablation, stability = len(extras["cross_shipment_ablation"]), len(extras["stability_rerun"])
+    assert stability == 34 and sizing["extras"] == {"cross_shipment_ablation": ablation, "stability_rerun": 34, "stability_max": 40}
+    worst = {"main": 70 * (16 + 2), "cross_shipment_ablation": ablation * 16, "stability_rerun": 34 * 16}
+    assert sizing["worst_case_calls"] == {**worst, "total": sum(worst.values())} == design.worst_case_calls(70, ablation, 34, 16)
+    assert run_side["config"]["budget"] == summary["budget"] == sizing["sealed_budget"] == sum(worst.values())
+    sealed = design.EvalConfig(**summary["config"])
+    assert run_side["sealed_config_hash"] == design.sealed_hash(sealed) and "stop_at" not in run_side["config"]
+    # The same cases as with a budget given by hand: no budget, ledger or cap changes who is drawn.
+    select(worlds, make_config(budget=123456, c_cap=7), tmp_path / "other")
+    assert [c["key"] for c in json.loads((tmp_path / "other" / "selection.json").read_text())["cases"]] == [c["key"] for c in run_side["cases"]]
+    assert json.loads((tmp_path / "other" / "selection.json").read_text())["config"]["budget"] == 123456
+    # One world only: the missing world's cells are recorded as empty, and nothing fails.
+    alone = select({"E1": worlds["E1"]}, make_config(budget=None), tmp_path / "alone")
+    assert alone["sizing"]["cells"]["E2/determined"] == {"target": 10, "available": 0, "selected": 0}
+    # The stability rerun: a seeded draw of design.STABILITY_MAX main-test cases, in run order.
+    monkeypatch.setattr(sel_mod, "STABILITY_MAX", 10)
+    drawn = []
+    for name in ("d1", "d2"):
+        select(worlds, make_config(), tmp_path / name)
+        drawn.append(json.loads((tmp_path / name / "extras.json").read_text())["extras"]["stability_rerun"])
+    main = [c["key"] for c in scorer_view(tmp_path / "d1" / "selection.json")["cases"] if c["main_test"]]
+    assert drawn[0] == drawn[1] and len(drawn[0]) == 10 and drawn[0] == [k for k in main if k in set(drawn[0])] and drawn[0] != main[:10]
+    assert [c["key"] for c in json.loads((tmp_path / "d1" / "selection.json").read_text())["cases"]] == [c["key"] for c in run_side["cases"]]
+
+
 def test_round_robin_draw_spreads_over_mechanisms_when_the_cell_is_small(tmp_path, worlds, monkeypatch):
     from stage3_eval import selection as sel_mod
     monkeypatch.setitem(sel_mod.ALLOCATION_AT_PLANNING, ("E1", "identifiable_ambiguous"), 7)

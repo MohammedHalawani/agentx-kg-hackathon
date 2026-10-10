@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from stage3_eval.arms import AgentArm, NoToolsArm, RuleCodeArm, SymptomArm
-from stage3_eval.design import STAGE3_STOP_AT, EvalConfig
+from stage3_eval.design import EvalConfig
 from stage3_eval.fixtures.fakes import world_dir
 from stage3_eval.records import ArmResult
 from stage3_eval.truth_io import load_replay_rows, load_truth
@@ -23,8 +23,9 @@ def fixture_worlds():
 
 
 def make_config(**over):
-    """The fixture configuration: sealed at the whole Stage 3 line (3,600), the most a run may hold from an empty ledger."""
-    base = dict(freeze_commit=COMMIT, budget=STAGE3_STOP_AT, worlds={w: {"dataset_id": f"FIXTURE-{w}"} for w in ("E1", "E2")})
+    """The fixture configuration, with a budget given by hand (3,600: kept as it is by `select`, and roomy for every
+    fake run here). budget=None is the command line's: `select` then seals the worst case of the selection."""
+    base = dict(freeze_commit=COMMIT, budget=3600, worlds={w: {"dataset_id": f"FIXTURE-{w}"} for w in ("E1", "E2")})
     base.update(over)
     return EvalConfig(**base)
 
@@ -96,7 +97,8 @@ def read_jsonl(path):
 
 
 def write_campaign_ledger(path, spent=173, cap=4000):
-    """A campaign ledger file of the test's own (the committed one is never written by a test)."""
+    """A campaign ledger file of the test's own (the committed one is never written by a test). Its cap is a guard the
+    tests choose: small (4,000 by default), so a refusal at the guard is easy to reach."""
     entries = [{"run": "earlier runs", "started_at": "2026-10-10T00:00:00+00:00", "finished_at": "2026-10-10T01:00:00+00:00",
                 "commit": "c" * 40, "calls": spent, "tokens": 0, "note": "test", "reserved": None}] if spent else []
     Path(path).write_text(json.dumps({"schema": "model-call-ledger-1", "campaign": "test", "cap": cap, "entries": entries}), encoding="utf-8")

@@ -32,7 +32,12 @@ def test_dry_run_over_the_fixture_spends_zero_calls(tmp_path):
     out = tmp_path / "dry"
     for name in ("selection.json", "selection.json.sha256", "selection_scorer.json", "extras.json", "pairs.json", "strata.json"):
         assert (out / name).exists()
-    assert manifest["extras"]["stability_rerun"]["listed"] == 20            # planned from extras.json, after the main cases
+    assert manifest["extras"]["stability_rerun"]["listed"] == 34            # planned from extras.json, after the main cases (the whole cell: 34 <= 40)
+    # The fixture's budget is sealed by `select`: the worst case of what it selected, extras included, and the plan fits it.
+    sizing = summary["sizing"]
+    assert manifest["config"]["budget"] == summary["budget"] == sizing["worst_case_calls"]["total"] == 70 * 14 + (sizing["extras"]["cross_shipment_ablation"] + 34) * 12
+    assert manifest["ledger"]["planned_calls"] == 70 * 14 and manifest["ledger"]["refused"] == 0
+    assert all(e["would_fit_by_worst_case"] == e["listed"] for e in manifest["extras"].values() if e["available"] and e["listed"])
     ledger = read_ledger(out / "run" / "ledger.jsonl")
     assert manifest["ledger"]["settled_calls"] == 0 and manifest["ledger"]["committed_calls"] == 0
     assert not [e for e in ledger if e["event"] in ("reserve", "settle")]
@@ -245,7 +250,7 @@ def test_extras_run_only_when_their_file_is_named_and_only_after_the_main_test(t
                     config=config, extras_arms=extras, extras_path=sel_dir / "extras.json")
     finally:
         runner_mod.load_extras = real
-    assert seen_at_load == [70] and len(extra.seen) == named["extras"]["stability_rerun"]["completed"] == 20
+    assert seen_at_load == [70] and len(extra.seen) == named["extras"]["stability_rerun"]["completed"] == 34
     path = sel_dir / "extras.json"
     path.write_text(path.read_text().replace("E1:", "E2:", 1))
     with pytest.raises(ValueError, match="pre-registered sha256"):

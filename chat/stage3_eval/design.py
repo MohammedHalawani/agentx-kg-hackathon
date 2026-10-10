@@ -3,7 +3,10 @@
 Source: docs/plans/2026-10-10_stage3_evaluation_design.md on fhd, frozen at b1d331f, with amendment 1 (001bcbf),
 amendment 2 (ac6f857, Fahad's 4,000-call cap), the addendum to amendment 2 (7af0d5c), amendment 3 (15514ac: the budget
 is what the campaign ledger has left, per-case cap 16, progressive looks) and the addendum to amendment 3 (6f0ed49:
-Stage 3 stops at 3,600 calls, 190 cases). Where they differ, the later text wins. Nothing here is computed from results: every bar, size and order is fixed before any evaluation
+Stage 3 stops at 3,600 calls, 190 cases). Where they differ, the later text wins. On 2026-10-11 the product owner
+lifted the model-call budget: the 4,000 cap, the 3,600 stop line and the 400 reserve are no longer limits, the
+evaluation is sized from the planning allocation below (its statistical targets) and the campaign ledger's cap is only
+a runaway guard. Nothing here is computed from results: every bar, size and order is fixed before any evaluation
 case exists. Changing a value here after the first evaluation run changes the sealed configuration hash, and the
 run validity check then reports the run as not matching its sealed configuration (amendment 1, H).
 
@@ -19,31 +22,31 @@ DESIGN_COMMITS = {"frozen": "b1d331f", "amendment_1": "001bcbf", "amendment_2": 
                   "amendment_3": "15514ac", "addendum_3": "6f0ed49"}
 
 # ------------------------------------------------------------------------------ budget (amendments 2 and 3)
-CALL_BUDGET = 4000            # Fahad's hard cap for the blind evaluation on E1 and E2, every arm and retry included.
-# Stage 3 stops when the campaign ledger reaches this many calls; the rest of the cap is the Stage 4 reserve (addendum
-# to amendment 3). `select` seals budget = min(campaign remaining, STAGE3_STOP_AT - spent), and `run` refuses to start
-# if the calls spent plus the sealed budget would pass it.
+# HISTORICAL, and gating nothing: the cap of amendment 2 and the stop line of the addendum to amendment 3, both lifted
+# on 2026-10-11. They remain as the origin of the planning allocation (285 cases = floor(4,000 / 14)) and as the
+# defaults of the two historical helpers below (n_main, evaluation_budget), which `select` and `run` no longer call.
+# A stop line is now an option (`select --stop-at N`, off by default), sealed as EvalConfig.stop_at.
+CALL_BUDGET = 4000
 STAGE3_STOP_AT = 3600
 # Amendment 2's planning value, kept only as the origin of the allocation table below (285 cases at 12) and as the
 # default of a configuration nobody sealed (the fixture). It is not the cap of the evaluation: C_cap is given to
-# `select` (--c-cap, required), sealed in the selection with the budget, and the wiring refuses to run unless the
-# backend's cap equals it. Amendment 3 sets it to 16 (the development data is censored at 12), one counter, R_cap 0.
+# `select` (--c-cap, required), sealed in the selection, and the wiring refuses to run unless the backend's cap
+# equals it. Amendment 3 sets it to 16 (the development data is censored at 12), one counter, R_cap 0.
 C_CAP_PLANNING = 12
 NOTOOLS_MAX_CALLS = 2         # One call plus one retry on invalid output (addendum 2, item 2).
 
 
 def n_main(c_cap=C_CAP_PLANNING, r_cap=0, budget=CALL_BUDGET):
-    """N_main = floor(budget / (C_cap + R_cap + 2)) (amendment 2 and its addendum, item 1). The defaults are amendment
-    2's planning figures (12 and 4,000, giving 285); `select` passes the sealed C_cap and the sealed budget instead
-    (16 and 3,427 at a ledger of 173, giving 190: addendum to amendment 3)."""
+    """HISTORICAL (no longer sizes a selection). N_main = floor(budget / (C_cap + R_cap + 2)) (amendment 2 and its
+    addendum, item 1): 285 at the planning figures (12 and 4,000), 190 at 16 and 3,427 (addendum to amendment 3)."""
     if c_cap < 1 or r_cap < 0:
         raise ValueError("C_cap must be at least 1 and R_cap at least 0")
     return budget // (c_cap + r_cap + NOTOOLS_MAX_CALLS)
 
 
 def evaluation_budget(spent, reserve=0, cap=CALL_BUDGET, stop_at=STAGE3_STOP_AT):
-    """The budget `select` seals at a campaign ledger of `spent` calls: what the campaign has left (less the calls
-    --reserve keeps out), and never more than what is left before the Stage 3 stop line. Zero or less: nothing to seal."""
+    """HISTORICAL (no longer sizes a selection): the budget `select` sealed under amendment 3 at a campaign ledger of
+    `spent` calls, i.e. what the campaign had left, and never more than what was left before the stop line."""
     return min(cap - spent - reserve, stop_at - spent)
 
 
@@ -52,18 +55,32 @@ def worst_case_per_case(c_cap=C_CAP_PLANNING, r_cap=0):
     return c_cap + r_cap + NOTOOLS_MAX_CALLS
 
 
+def worst_case_calls(n_cases, n_ablation, n_stability, c_cap, r_cap=0):
+    """The most a selection can spend, part by part: every selected case at its per-case worst (agent arm plus
+    B_notools), and every listed extra at the agent arm's cap. `select` seals the total as the run's budget. Nothing
+    is sized from it (the sizes come from the allocation's targets and the world): it is what the run holds in the
+    campaign ledger while it is going, and what the run's own ledger refuses to pass."""
+    if c_cap < 1 or r_cap < 0:
+        raise ValueError("C_cap must be at least 1 and R_cap at least 0")
+    main = n_cases * worst_case_per_case(c_cap, r_cap)
+    ablation, stability = n_ablation * (c_cap + r_cap), n_stability * (c_cap + r_cap)
+    return {"main": main, "cross_shipment_ablation": ablation, "stability_rerun": stability, "total": main + ablation + stability}
+
+
 # ---------------------------------------------------------------------------------------------- strata and worlds
 STRATA = ("identifiable_ambiguous", "determined", "unidentifiable")
 WORLDS = ("E1", "E2")
-# Amendment 2's allocation at its planning figures (C_cap 12, 4,000 calls: N_main = 285). The table the shrink order
-# starts from; the cells of a real selection are what is left of it at the sealed C_cap and budget (selection.allocate).
+# The allocation: the design's statistical targets (amendment 2's table, 285 cases; 160 E1 cases detect a gain of
+# about 13 to 15 points). A selection takes each cell's target, or every case the world holds in that cell when it
+# holds fewer (recorded per cell, never an error). No budget shrinks it.
 ALLOCATION_AT_PLANNING = {
     ("E1", "identifiable_ambiguous"): 160,
     ("E2", "identifiable_ambiguous"): 60,
     ("E1", "determined"): 30, ("E2", "determined"): 10,
     ("E1", "unidentifiable"): 20, ("E2", "unidentifiable"): 5,
 }
-# If N_main < 285, cases are removed in this order, each step down to its floor (amendment 2, sizing rule).
+# HISTORICAL (selection.allocate, which `select` no longer calls): under a budget that gave N_main < 285, cases were
+# removed in this order, each step down to its floor (amendment 2, sizing rule).
 SHRINK_ORDER = (
     ("unidentifiable", ("E1", "E2"), 15),     # unidentifiable, both worlds together, down to 15
     ("determined", ("E1", "E2"), 30),         # determined, both worlds together, down to 30
@@ -102,9 +119,11 @@ RELEASE_BAR = "zero unjustified or premature automatic resolutions (set by Fahad
 HISTORY_ONLY = "S5 measured 26 of 41 (63%) in a different world; history only, never a comparison number"
 
 # ---------------------------------------------------------------------------------------------- extras (exploratory)
-# Run only if calls remain after the main test, in this fixed order, regardless of results; never pooled (addendum 2).
+# Run after the main test, in this fixed order, regardless of results; never pooled (addendum 2). Since the budget was
+# lifted they are part of the selection's sealed worst case, not conditional on calls left over: the ablation on every
+# eligible E1 identifiable ambiguous case, the stability rerun on STABILITY_MAX of that cell's cases, drawn by seed.
 EXTRAS_ORDER = ("cross_shipment_ablation", "stability_rerun")
-STABILITY_MAX = 20
+STABILITY_MAX = 40
 # Mechanisms whose discriminating evidence is cross-shipment (amendment 1, J).
 CROSS_SHIPMENT_MECHANISMS = ("DEVICE_OUTAGE", "PARTIAL_UPLOAD_LOSS", "FACILITY_BACKLOG", "LATE_LINEHAUL", "MISSORT",
                              "TRAFFIC_DISRUPTION")
@@ -181,24 +200,32 @@ SYMPTOM_ORDER = tuple(SYMPTOM_CAUSE)
 
 @dataclass(frozen=True)
 class EvalConfig:
-    """What a run is sealed to. Filled by `select` on Fahad's machine from the freeze commit, the C_cap given there (16
-    per amendment 3; the default below is only the planning value) and the campaign ledger."""
+    """What a run is sealed to. Filled by `select` on Fahad's machine from the freeze commit and the C_cap given there
+    (16 per amendment 3; the default below is only the planning value)."""
     freeze_commit: str = ""
     c_cap: int = C_CAP_PLANNING
     r_cap: int = 0
-    budget: int = CALL_BUDGET
+    # The run's own maximum: the worst case of the selection (worst_case_calls), which `select` fills in when it is
+    # None, as the command line leaves it. A number given here is kept as it is (tests). Not an allowance: it is what
+    # the run holds in the campaign ledger while it is going, and what its own ledger refuses to pass.
+    budget: int | None = None
     worlds: dict = field(default_factory=dict)      # {"E1": {"dataset_id", "export", "database"}, "E2": {...}}
     sampling: str = "round_robin_by_mechanism"      # within a stratum: seeded, balanced over explaining mechanisms
     notes: str = ""
-    # Campaign calls kept out of this evaluation at selection (select --reserve N): budget = cap - spent - reserve, and
-    # the run refuses to start if the calls spent plus the budget would go past cap - reserve.
+    # Campaign calls kept out of this evaluation at selection (select --reserve N): the run refuses to start if the
+    # calls spent plus its budget would go past the ledger's guard less the reserve.
     reserve: int = 0
+    # An optional stop line (select --stop-at N; off by default): the run refuses to start if the calls spent plus its
+    # budget would take the campaign ledger past N.
+    stop_at: int | None = None
 
     def as_dict(self):
-        """The sealed form. A zero reserve is left out, so a selection sealed before the reserve existed keeps its hash."""
+        """The sealed form. A zero reserve and an unset stop line are left out."""
         out = asdict(self)
         if not out["reserve"]:
             del out["reserve"]
+        if out["stop_at"] is None:
+            del out["stop_at"]
         return out
 
 
@@ -256,6 +283,5 @@ def sealed_hash(config: EvalConfig) -> str:
                "shrink": SHRINK_ORDER, "pass_bars": PASS_BARS, "rulecode_order": RULECODE_ORDER, "symptom_cause": SYMPTOM_CAUSE,
                "symptom_order": SYMPTOM_ORDER, "categories": CATEGORIES, "min_support": STRATUM_MIN_SUPPORT,
                "max_hypotheses": MAX_SUPPORTED_HYPOTHESES, "notools_max_calls": NOTOOLS_MAX_CALLS,
-               "cross_shipment": CROSS_SHIPMENT_MECHANISMS, "extras": EXTRAS_ORDER, "stability_max": STABILITY_MAX,
-               "stage3_stop_at": STAGE3_STOP_AT}
+               "cross_shipment": CROSS_SHIPMENT_MECHANISMS, "extras": EXTRAS_ORDER, "stability_max": STABILITY_MAX}
     return hashlib.sha256(json.dumps(payload, sort_keys=True, default=list).encode()).hexdigest()

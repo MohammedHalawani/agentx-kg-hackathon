@@ -26,6 +26,27 @@ def test_the_design_commits_name_every_amendment_and_the_cap_is_sealed_not_plann
     assert allocate(16, budget=design.evaluation_budget(173))["cells"][design.MAIN_TEST_CELL] == 105
 
 
+def test_the_lifted_budget_gates_nothing_and_the_worst_case_is_arithmetic(monkeypatch):
+    """2026-10-11: the 4,000 cap and the 3,600 stop line stay as historical constants; neither is part of what is
+    sealed, a configuration has no budget until `select` seals one, and a stop line exists only when one is given."""
+    assert (design.CALL_BUDGET, design.STAGE3_STOP_AT, design.STABILITY_MAX) == (4000, 3600, 40)
+    assert sum(design.ALLOCATION_AT_PLANNING.values()) == 285
+    config = design.EvalConfig(freeze_commit="a" * 40)
+    assert config.budget is None and config.stop_at is None and "stop_at" not in config.as_dict() and "reserve" not in config.as_dict()
+    sealed = design.sealed_hash(config)
+    monkeypatch.setattr(design, "STAGE3_STOP_AT", 1)
+    monkeypatch.setattr(design, "CALL_BUDGET", 1)
+    assert design.sealed_hash(config) == sealed
+    assert design.sealed_hash(dataclasses.replace(config, stop_at=3600)) != sealed
+    assert dataclasses.replace(config, stop_at=3600).as_dict()["stop_at"] == 3600
+    # 285 cases at C_cap 16, the ablation on 100 of them and the stability rerun on 40.
+    assert design.worst_case_calls(285, 100, 40, 16) == {"main": 285 * 18, "cross_shipment_ablation": 1600, "stability_rerun": 640,
+                                                         "total": 285 * 18 + 1600 + 640}
+    assert design.worst_case_calls(10, 0, 0, 12, r_cap=2)["total"] == 10 * 16
+    with pytest.raises(ValueError):
+        design.worst_case_calls(1, 0, 0, 0)
+
+
 def test_n_main_and_planning_allocation_match_amendment_2():
     assert design.n_main(12) == 285
     assert design.n_main(12, r_cap=2) == 250            # addendum item 1: R_cap joins the denominator
@@ -46,7 +67,7 @@ def test_shrink_order_removes_unidentifiable_then_determined_then_e2_then_e1():
     assert b["notes"], "E1 below 150 must be stated"
 
 
-def test_worst_case_plan_always_fits_the_cap():
+def test_the_historical_worst_case_plan_always_fitted_the_old_cap():
     for c_cap in range(4, 30):
         for r_cap in (0, 2, 4):
             total = sum(allocate(c_cap, r_cap)["cells"].values())
