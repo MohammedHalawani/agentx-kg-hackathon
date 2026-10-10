@@ -7,7 +7,7 @@ from dataset_v2.contracts import Config
 from dataset_v2.generate import generate
 from operations import agents
 from operations.authority import authorize, default_action, ACTIONS
-from tests.test_operations_store import Driver, Reader, LiveSessionTests
+from tests.test_operations_store import Driver, Reader, LiveSessionTests, development_reset
 from operations.store import OperationsStore
 
 PACKET = {"shipment_id": "S", "as_of": "2026-09-01T07:00:00+00:00", "visible_evidence_ids": ["S", "SCAN-1", "PKG-1"],
@@ -137,7 +137,7 @@ class AgentPipelineTests(unittest.TestCase):
     def live(self):
         d = Driver(self.world)
         s = OperationsStore(d, "shipments-v2-demo", self.world.config.dataset_id, self.world.config, Reader(self.world), agents=fake_agents())
-        s.initialize(); s.reset_session(); return s, d
+        s.initialize(); development_reset(s); return s, d
 
     def test_live_case_runs_agent_stages_and_low_risk_action_awaits_outcome_without_a_human(self):
         s, d = self.live(); LiveSessionTests.run_world(self, s, rounds=400)
@@ -175,7 +175,7 @@ class ReviewerFailureTests(unittest.TestCase):
         module = fake_agents(review_call=unreachable)
         d = Driver(self.world)
         s = OperationsStore(d, "shipments-v2-demo", self.world.config.dataset_id, self.world.config, Reader(self.world), agents=module)
-        s.initialize(); s.reset_session(); LiveSessionTests.run_world(self, s, rounds=400)
+        s.initialize(); development_reset(s); LiveSessionTests.run_world(self, s, rounds=400)
         routed = []
         while True:
             r = s.process_one(manual=True)
@@ -199,7 +199,7 @@ class OutcomeEngineTests(unittest.TestCase):
     def test_live_world_resolves_only_from_later_verified_evidence_with_no_human(self):
         d = Driver(self.world)
         s = OperationsStore(d, "shipments-v2-demo", self.world.config.dataset_id, self.world.config, Reader(self.world), agents=fake_agents())
-        s.initialize(); s.reset_session()
+        s.initialize(); development_reset(s)
         for _ in range(600):
             r = s.tick(seconds=3600, manual=True, speed=60)
             while s.status()["session"]["monitor_pending"]: s.monitor_step()

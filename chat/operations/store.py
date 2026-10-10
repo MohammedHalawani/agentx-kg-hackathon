@@ -2,7 +2,9 @@
 from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
 import json
+import logging
 import math
+import os
 import queue
 import threading
 
@@ -14,7 +16,22 @@ from operations.diagnosis import case_diagnosis
 from operations.simulator import SPEEDS, EVENT_KINDS
 from operations.worker import analyze
 
+log = logging.getLogger("suhail.operations")
 CONTROL_ID = "DEMO-OPS-CONTROL"
+# The development reset deletes the whole operations ledger. It is off unless the server process is started
+# with this variable set to 1, and each request must also carry the current session's confirmation.
+DEV_RESET_ENV = "SUHAIL_DEV_RESET"
+RESET_AUDIT_LIMIT = 50
+
+
+def development_reset_enabled():
+    return os.environ.get(DEV_RESET_ENV, "").strip() == "1"
+
+
+def reset_token(control):
+    """Names the current session (its digest part, unchanged by the public identifier mapping)."""
+    session = control.get("session_id") or ""
+    return "RESET-LEDGER-" + (session[-24:] if session else "NO-SESSION")
 # The foundation replay database and the live provider-feed database (plus its isolated test twin).
 OPERATIONS_DATABASES = ("shipments-v2-demo", "shipments-v2-demo-live", "shipments-v2-demo-test", "shipments-v2-demo-test2")
 INGEST_BATCH = 500
@@ -249,6 +266,9 @@ class OperationsStore:
                         "monitor_checked": control.get("monitor_checked", 0), "monitor_opened": control.get("monitor_opened", 0)},
             "simulator": {"state": control["simulator_state"], "speed": control["speed"], "replay_mode":control.get("replay_mode","timeline"), "event_count": control["event_count"],
                           "cursor": {"time": control["cursor_time"], "id": control["cursor_id"]}, "end_at": control["end_at"]},
+            "development_reset": {"enabled": development_reset_enabled(),
+                                  "confirmation": reset_token(control) if development_reset_enabled() else None,
+                                  "last": (json.loads(control.get("reset_audit_json") or "[]") or [None])[-1]},
             "notifications": {"mode": "dry_run", "external_calls": 0}}
 
     def control(self, component, action, speed=None, actor_id="DEMO-OPERATOR-LOCAL", replay_mode=None):
@@ -477,12 +497,43 @@ class OperationsStore:
         self._audit(tx,case,"CASE_OPENED",when,result="Monitor symptoms: "+", ".join(symptoms),actor="SUHAIL-MONITOR")
         return identifier
 
-    def reset_session(self, actor_id="DEMO-OPERATOR-LOCAL"):
-        """Start a fresh live session: clear derived operational ledger (never V2 evidence) and rewind the clock."""
+    def reset_confirmation(self):
+        """The confirmation a development reset must carry. It names the current session, so a replayed or
+        stale request (made before another reset) is refused."""
+        return reset_token(self._execute(lambda tx:self._control(tx)))
+
+    def _reset_audit(self,actor_id,result,reason,**details):
+        """Reset attempts are recorded on the control record, which the reset never deletes."""
+        entry={"result":result,"actor_id":actor_id,"wall_recorded_at":datetime.now(timezone.utc).isoformat(),"reason":reason,**details}
+        log.warning("Development ledger reset %s by %s: %s",result,actor_id,reason)
+        def record(tx):
+            c=self._control(tx,lock=True)
+            entry["clock"]=c["as_of"];entry.setdefault("session_id",c.get("session_id"))
+            c["reset_audit_json"]=canonical([*json.loads(c.get("reset_audit_json") or "[]"),entry][-RESET_AUDIT_LIMIT:])
+            self._put(tx,"OpsControl",c,update=True)
+        self._execute(record,write=True)
+        return entry
+
+    def reset_session(self, actor_id="DEMO-OPERATOR-LOCAL", confirmation=None):
+        """Development only: clear the derived operational ledger (never V2 evidence) and rewind the clock.
+
+        This deletes every case, run, decision, execution, outcome and audit record of the session. It runs only
+        when the server was started with SUHAIL_DEV_RESET=1 and the request carries the current confirmation
+        (reset_confirmation()); otherwise it is refused. Every attempt, refused or performed, is audited."""
         require_actor(actor_id)
+        if not development_reset_enabled():
+            self._reset_audit(actor_id,"REFUSED","development reset disabled")
+            raise OperationsConflict(f"Development reset is disabled. It deletes the operations ledger and runs only on a server "
+                                     f"started with {DEV_RESET_ENV}=1.")
+        expected=self.reset_confirmation()
+        if not isinstance(confirmation,str) or confirmation!=expected:
+            self._reset_audit(actor_id,"REFUSED","missing or stale confirmation")
+            raise OperationsConflict("Development reset needs the confirmation for the current session "
+                                     "(status: development_reset.confirmation); nothing was deleted.")
         if self.live:
             if self.status()["worker"]["active_case_id"]:raise OperationsConflict("Pause auto-triage before starting a new session")
             self.gateway.reset()
+        outcome={}
         def reset_tx(tx):
             c=self._control(tx,lock=True)
             if c.get("worker_claim"):raise OperationsConflict("Pause auto-triage before starting a new session")
@@ -494,15 +545,22 @@ class OperationsStore:
             start=public_value(row["start"]) if row and row["start"] else c["initial_as_of"]
             start=start.isoformat() if hasattr(start,"isoformat") else str(start)
             start=(instant(start)-timedelta(seconds=1)).isoformat()
-            tx.run("MATCH (n:OpsEntity {dataset_id:$dataset,split:'development'}) WHERE NOT n:OpsControl DETACH DELETE n",
-                   dataset=self.dataset_id).consume()
+            deleted=tx.run("MATCH (n:OpsEntity {dataset_id:$dataset,split:'development'}) WHERE NOT n:OpsControl DETACH DELETE n "
+                           "RETURN count(n) AS deleted",dataset=self.dataset_id).single()
             session=identity("session",c["state_version"],start)
+            outcome.update(deleted_records=deleted["deleted"] if deleted else None,session_before=c.get("session_id"),session_after=session,
+                           clock=c["as_of"])
             c.update(as_of=start,initial_as_of=start,cursor_time=start,cursor_id="",simulator_state="paused",worker_state="paused",
                      worker_claim=None,claim_at=None,claim_shipment_id=None,processed_count=0,event_count=0,
                      last_case_id=None,last_shipment_id=None,last_workflow_state=None,last_processed_at=None,
                      case_source="monitor",session_id=session,session_started_at=start,monitor_queue=[],monitor_checked=0,monitor_opened=0)
+            # Audited in the same transaction as the deletion, on the record the deletion keeps.
+            entry={"result":"PERFORMED","actor_id":actor_id,"wall_recorded_at":datetime.now(timezone.utc).isoformat(),
+                   "reason":"confirmed development reset","session_id":outcome["session_before"],**outcome}
+            c["reset_audit_json"]=canonical([*json.loads(c.get("reset_audit_json") or "[]"),entry][-RESET_AUDIT_LIMIT:])
             self._put(tx,"OpsControl",c,update=True)
         self._execute(reset_tx,write=True)
+        log.warning("Development ledger reset PERFORMED by %s: %s records deleted",actor_id,outcome.get("deleted_records"))
         return self.status()
 
     def outcome_step(self, limit=3, *, case_id=None, force=False):

@@ -32,8 +32,9 @@ class Tx:
                    if n.properties.get("split")=="development" and n.properties.get("occurred_at")]
             return Result([{"start":min(times)}])
         if "DETACH DELETE" in q:
-            for key in [k for k,(kind,_) in self.ledger.items() if kind!="OpsControl"]:del self.ledger[key]
-            return Result()
+            keys=[k for k,(kind,_) in self.ledger.items() if kind!="OpsControl"]
+            for key in keys:del self.ledger[key]
+            return Result([{"deleted":len(keys)}])
         if q.startswith("MATCH (m:V2Entity:ExpectedMilestone") or q.startswith("MATCH (s:V2Entity:DeliverySession"):
             kind,field,extra=("ExpectedMilestone","latest_at",0) if "ExpectedMilestone" in q else ("DeliverySession","end_at",60)
             sids=set()
@@ -130,6 +131,14 @@ class Reader:
     def precedents(self,sid,codes,as_of=None):return []
 
 
+def development_reset(store, actor="DEMO-OPERATOR-LOCAL"):
+    """Tests reset the ledger explicitly: the development flag on for this call only, with the current confirmation."""
+    import os
+    from unittest import mock
+    with mock.patch.dict(os.environ, {"SUHAIL_DEV_RESET": "1"}):
+        return store.reset_session(actor, confirmation=store.reset_confirmation())
+
+
 class Acknowledging:
     """A field system that accepts every request and reports nothing back."""
     def respond(self,execution,now):return {"acknowledged":True,"behaviour":"Request accepted."}
@@ -141,7 +150,7 @@ class StoreTests(unittest.TestCase):
     def make(self,rounds=12):
         """Cases exist only once the monitor has opened them from replayed, visible evidence."""
         d=Driver(self.world);s=OperationsStore(d,"shipments-v2-demo",self.world.config.dataset_id,self.world.config,Reader(self.world))
-        s.initialize();s.reset_session()
+        s.initialize();development_reset(s)
         for _ in range(rounds):
             s.tick(seconds=86400,manual=True,speed=60)
             while s.status()["session"]["monitor_pending"]:s.monitor_step()
@@ -327,7 +336,7 @@ class LiveSessionTests(unittest.TestCase):
     def setUpClass(cls):cls.world=generate(Config(total=90))
     def live(self):
         d=Driver(self.world);s=OperationsStore(d,"shipments-v2-demo",self.world.config.dataset_id,self.world.config,Reader(self.world))
-        s.initialize();s.reset_session();return s,d
+        s.initialize();development_reset(s);return s,d
     def cases(self,d):return [v for k,v in d.ledger.values() if k=="OpsCase"]
     def run_world(self,s,rounds=400):
         for _ in range(rounds):

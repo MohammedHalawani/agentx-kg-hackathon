@@ -322,10 +322,17 @@ def pause_simulation(request: Request):
     return invoke(get_runtime().store.control,"simulator","pause",actor_id=actor["actor_id"])
 
 
+class ResetBody(StrictBody):
+    """The current session's confirmation (status: development_reset.confirmation)."""
+    confirmation: str=Field(min_length=1,max_length=200)
+
+
 @router.post("/simulation/reset")
-def reset_session(request: Request):
+def reset_session(request: Request,body: ResetBody|None=None):
+    """Development only: deletes the operations ledger. Refused unless the server runs with SUHAIL_DEV_RESET=1
+    and the request carries the current confirmation; every attempt is audited."""
     actor=authority.authorize(request)
-    return invoke(get_runtime().store.reset_session,actor_id=actor["actor_id"])
+    return invoke(get_runtime().store.reset_session,actor_id=actor["actor_id"],confirmation=body.confirmation if body else None)
 
 
 @router.post("/simulation/tick")

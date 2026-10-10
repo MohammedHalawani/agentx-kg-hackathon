@@ -14,7 +14,7 @@ from llm.pipeline import cases, classifier, retrieve, reviewer
 from operations.reasoning import public_evidence
 from operations import store as store_module
 from operations.store import OperationsStore
-from tests.test_operations_store import Driver, Reader
+from tests.test_operations_store import Driver, Reader, development_reset
 
 SENTINEL_CATEGORY = "failed_attempt_wrong_gate"
 SENTINEL_DESCRIPTION = "ANSWER-LABEL-SENTINEL wrong gate recorded by courier"
@@ -78,7 +78,7 @@ class V2CaseBoundaryTests(unittest.TestCase):
 
     def test_monitor_opens_cases_with_symptoms_and_no_cause_codes(self):
         store, driver = self.store()
-        store.initialize(); store.reset_session()
+        store.initialize(); development_reset(store)
         for _ in range(40):
             store.tick(seconds=86400, manual=True, speed=60)
             while store.status()["session"]["monitor_pending"]:

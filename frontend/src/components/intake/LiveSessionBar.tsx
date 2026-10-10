@@ -20,6 +20,8 @@ export function LiveSessionBar({ status, running, pending, onToggle, onReset }: 
   const [confirm, setConfirm] = useState(false)
   const [resetting, setResetting] = useState(false)
   const session = status?.session
+  // The server deletes the ledger only when started with its development flag and given this session's confirmation.
+  const resetEnabled = status?.development_reset?.enabled === true && !!status.development_reset.confirmation
   const live = session?.case_source === 'monitor'
   const clock = status?.as_of ? new Date(status.as_of).toLocaleString(isArabic ? 'ar-SA-u-ca-gregory' : 'en-GB', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'
   return (
@@ -35,10 +37,12 @@ export function LiveSessionBar({ status, running, pending, onToggle, onReset }: 
         <Button size="sm" variant={running ? 'outline' : 'default'} disabled={pending || !status} onClick={onToggle}>
           {pending && <Loader2 className="animate-spin" aria-hidden="true" />}{t(running ? 'ops.session.pause' : 'ops.session.start')}
         </Button>
-        <Button size="sm" variant="outline" disabled={!status || resetting} onClick={() => setConfirm(true)}><RotateCcw aria-hidden="true" />{t('ops.session.new')}</Button>
+        <Button size="sm" variant="outline" disabled={!status || resetting || !resetEnabled} title={resetEnabled ? undefined : t('ops.session.resetDisabled')} onClick={() => setConfirm(true)}><RotateCcw aria-hidden="true" />{t('ops.session.new')}</Button>
       </span> : <span className="ms-auto text-[11px] text-muted-foreground">{t(running ? 'ops.session.worldRunning' : 'ops.session.worldPaused')}</span>}
+      {onReset && status && !resetEnabled && <p data-testid="reset-disabled" className="w-full text-[11px] text-muted-foreground">{t('ops.session.resetDisabled')}</p>}
       {onReset && <Dialog open={confirm} onOpenChange={setConfirm} title={t('ops.session.confirmTitle')}>
         <p className="text-sm text-muted-foreground">{t('ops.session.confirmBody')}</p>
+        {status?.development_reset?.confirmation && <p className="mt-2 font-mono text-xs text-muted-foreground" dir="ltr">{t('ops.session.resetConfirmation', { token: status.development_reset.confirmation })}</p>}
         <div className="mt-4 flex justify-end gap-2">
           <Button variant="outline" onClick={() => setConfirm(false)}>{t('ops.session.cancel')}</Button>
           <Button disabled={resetting} onClick={async () => { setResetting(true); try { await onReset() } finally { setResetting(false); setConfirm(false) } }}>

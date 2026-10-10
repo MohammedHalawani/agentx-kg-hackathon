@@ -30,7 +30,7 @@ export function SimulationView() {
           running={running}
           pending={simulation.pending}
           onToggle={() => void simulation.command(running ? 'pause' : 'start', running ? {} : { speed: 600, replay_mode: 'timeline' })}
-          onReset={async () => { await simulation.command('reset') }}
+          onReset={async () => { await simulation.command('reset', { confirmation: simulation.data?.development_reset?.confirmation }) }}
         />
         {simulation.data && <SimulationPanel
           running={running}

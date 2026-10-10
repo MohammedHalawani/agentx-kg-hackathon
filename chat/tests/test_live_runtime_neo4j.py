@@ -48,7 +48,8 @@ def make_store(driver, bundle, agents=None):
     store = OperationsStore(driver, TEST_DATABASE, cfg.dataset_id, cfg, reader=reader, agents=agents)
     reader.store = store
     store.initialize()
-    store.reset_session()
+    from tests.test_operations_store import development_reset
+    development_reset(store)  # The isolated test database only; the flag is on for this call alone.
     return store
 
 

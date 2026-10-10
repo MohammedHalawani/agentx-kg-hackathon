@@ -84,10 +84,20 @@ class OperationsAPITests(unittest.TestCase):
 
     def test_new_live_session_requires_server_authority(self):
         self.assertIn(self.client.post("/simulation/reset").status_code,(401,403))
+        self.assertIn(self.client.post("/simulation/reset",json={"confirmation":"RESET-LEDGER-abc"}).status_code,(401,403))
         self.store.reset_session.assert_not_called()
         self.store.reset_session.return_value={"session":{"case_source":"monitor"}}
-        self.assertEqual(self.client.post("/simulation/reset",headers=self.headers()).status_code,200)
-        self.store.reset_session.assert_called_once_with(actor_id="DEMO-OPERATOR-LOCAL")
+        self.assertEqual(self.client.post("/simulation/reset",json={"confirmation":"RESET-LEDGER-abc"},headers=self.headers()).status_code,200)
+        self.store.reset_session.assert_called_once_with(actor_id="DEMO-OPERATOR-LOCAL",confirmation="RESET-LEDGER-abc")
+
+    def test_reset_without_confirmation_reaches_the_store_refusal_as_a_conflict(self):
+        from operations.lifecycle import OperationsConflict
+        self.store.reset_session.side_effect=OperationsConflict("Development reset is disabled. It deletes the operations ledger and runs only on a server started with SUHAIL_DEV_RESET=1.")
+        response=self.client.post("/simulation/reset",headers=self.headers())
+        self.assertEqual(response.status_code,409)
+        self.assertIn("SUHAIL_DEV_RESET=1",response.json()["detail"])
+        self.store.reset_session.assert_called_once_with(actor_id="DEMO-OPERATOR-LOCAL",confirmation=None)
+        self.assertEqual(self.client.post("/simulation/reset",json={"confirmation":"x","extra":1},headers=self.headers()).status_code,422)
 
     def test_manual_replay_applies_selected_speed_and_mode(self):
         self.store.tick.return_value={"events_replayed":0}
