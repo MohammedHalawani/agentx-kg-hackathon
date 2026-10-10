@@ -3,10 +3,12 @@ snapshot time, symptoms and rule codes), and this module imports nothing from th
 
 - agent:    the real pipeline (tools, investigator, reviewer, authority) on one opened case, through a callable the
             backend track supplies (WIRING.md). Worst case C_cap + R_cap calls, from the run record's own counter.
-- notools:  the agent's model, system prompt, cause catalogue, action catalogue and output format on the same opening
-            packet, with no tools; INSUFFICIENT_EVIDENCE (or UNKNOWN) allowed under the agent's own abstention rules;
-            at most 2 calls (one retry on invalid output, as the agent gets). Invalid after the retry counts as
-            degraded, exactly like the agent.
+- notools:  the agent's model and system prompt on the agent's own opening packet, built by the agent's function
+            (operations.investigator.case_packet: the case, the cause catalogue with its definitions and guidance,
+            the action names with authority and summary, the limits, and no map from actions to causes), with one
+            difference: the tool list is empty. INSUFFICIENT_EVIDENCE (or UNKNOWN) allowed under the agent's own
+            abstention rules; at most 2 calls (one retry on invalid output, as the agent gets). Invalid after the
+            retry counts as degraded, exactly like the agent.
 - rulecode: the monitor's rule codes at opening, first in the frozen order (no model call).
 - symptom:  the opening symptom names through the frozen table (no model call).
 
@@ -131,24 +133,45 @@ def _notools_problem(out):
     return problem
 
 
-def notools_messages(case: CaseRef):
-    """The agent's opening messages with an empty tool catalogue (operations.investigator.investigate's packet)."""
-    from operations.authority import ACTIONS
-    from operations.investigator import CAUSE_CHOICES, SYSTEM
+class _NoTools:
+    """The agent's tool belt as operations.investigator.case_packet reads it (shipment, snapshot, symptoms, tool
+    descriptions), with no tool on it."""
+
+    def __init__(self, case: CaseRef):
+        self.sid, self.as_of, self.symptoms = case.shipment_id, case.as_of, list(case.symptoms)
+
+    def describe(self):
+        return []
+
+
+def notools_packet(case: CaseRef, c_cap=None):
+    """The agent's opening packet from the agent's own function (operations.investigator.case_packet), for a tool belt
+    with no tools: every entry but "tools" is what the agent is sent on this case at the same per-case cap (tested).
+    c_cap: the agent's per-case model-call cap (the sealed C_cap), which the packet's limits state; None is the
+    investigator's own default, as for an agent session built without a cap."""
+    from operations.investigator import Session, case_packet
+    return case_packet(_NoTools(case), Session(c_cap))
+
+
+def notools_messages(case: CaseRef, c_cap=None):
+    """The agent's opening messages (operations.investigator.investigate's) with an empty tool list."""
+    from operations.investigator import SYSTEM
     return [{"role": "system", "content": SYSTEM},
-            {"role": "user", "content": json.dumps({
-                "case": {"shipment_id": case.shipment_id, "as_of": case.as_of, "symptoms": list(case.symptoms)},
-                "tools": [], "cause_codes": list(CAUSE_CHOICES),
-                "action_types": {k: {"authority": v[0], "addresses": sorted(v[1]), "summary": v[3]} for k, v in ACTIONS.items()},
-                "limits": {"max_tool_calls": 0}}, ensure_ascii=False)}]
+            {"role": "user", "content": json.dumps(notools_packet(case, c_cap), ensure_ascii=False)}]
 
 
 class NoToolsArm(Arm):
     name = "notools"
     uses_model = True
 
-    def __init__(self, turn=None):
-        self.turn = turn
+    def __init__(self, turn=None, c_cap=None):
+        self.turn, self.c_cap = turn, c_cap
+
+    def bind_config(self, config):
+        """The run step hands every arm the sealed configuration before the first case: the packet states the agent's
+        sealed per-case cap unless one was given when the arm was built."""
+        if self.c_cap is None:
+            self.c_cap = config.c_cap
 
     def worst_case(self):
         return NOTOOLS_MAX_CALLS
@@ -156,7 +179,7 @@ class NoToolsArm(Arm):
     def run(self, case):
         from operations.investigator import model_turn
         counter = CountingTurn(self.turn or model_turn)
-        messages = notools_messages(case)
+        messages = notools_messages(case, self.c_cap)
         started = time.perf_counter()
         out, problem, provider_failures = None, None, 0
         for _attempt in range(NOTOOLS_MAX_CALLS):

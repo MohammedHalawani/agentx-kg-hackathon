@@ -382,3 +382,16 @@ def test_selection_hash_is_the_same_whatever_the_line_endings(tmp_path, selected
     path.write_bytes(path.read_bytes().replace(b'"order": 0', b'"order": 9'))
     with pytest.raises(ValueError, match="pre-registered sha256"):
         load_selection(path)
+
+
+def test_the_run_binds_the_notools_arm_to_the_sealed_cap(tmp_path, selected, worlds, monkeypatch):
+    """The no-tools packet states the agent's sealed per-case cap whatever SUHAIL_MODEL_CALL_CAP says in the process."""
+    config, sel_dir, _ = selected
+    monkeypatch.setenv("SUHAIL_MODEL_CALL_CAP", "7")
+    turn, calls = notools_turn_factory()
+    arms = build_arms(config, FakeAgent({w: worlds[w][0] for w in worlds}), turn)
+    assert arms["notools"].c_cap is None
+    run(sel_dir / "selection.json", tmp_path / "run", arms=arms, case_source=FixtureCaseSource(), config=config, max_cases=1)
+    packet = json.loads(calls[0][1]["content"])
+    assert arms["notools"].c_cap == config.c_cap and packet["limits"]["model_turns_available"] == config.c_cap - 1
+    assert packet["tools"] == [] and "cause_catalogue" in packet and "cause_codes" not in packet

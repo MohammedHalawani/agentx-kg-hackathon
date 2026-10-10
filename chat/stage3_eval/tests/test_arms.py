@@ -24,12 +24,46 @@ def test_symptom_baseline_uses_the_frozen_table():
     assert only.primary_cause == "MISSED_MILESTONE" and only.cause_set() == ["MISSED_MILESTONE"]
 
 
-def test_notools_arm_uses_the_agent_prompt_and_no_tools():
-    from operations.investigator import SYSTEM
-    messages = notools_messages(CASE)
-    packet = json.loads(messages[1]["content"])
-    assert messages[0]["content"] == SYSTEM and packet["tools"] == [] and packet["case"]["symptoms"] == list(CASE.symptoms)
-    assert "INSUFFICIENT_EVIDENCE" in packet["cause_codes"] and "UNKNOWN" in packet["cause_codes"]
+def _agent_packet(case, c_cap):
+    """The packet investigate() sends for this case: case_packet over the agent's real tool belt class (its catalogue
+    and describe(), with no database behind it) and a session at the given cap."""
+    from operations.investigator import Session, case_packet
+    from operations.tools import InvestigationTools
+    belt = InvestigationTools.__new__(InvestigationTools)
+    belt.sid, belt.as_of, belt.symptoms, belt.disabled = case.shipment_id, case.as_of, list(case.symptoms), frozenset()
+    return case_packet(belt, Session(c_cap))
+
+
+def test_notools_packet_is_the_agents_packet_apart_from_the_tools():
+    from operations.investigator import CATALOGUE_GUIDANCE, SYSTEM, cause_catalogue
+    for c_cap in (16, 12):
+        agent = json.loads(json.dumps(_agent_packet(CASE, c_cap), ensure_ascii=False))   # as it goes on the wire
+        messages = notools_messages(CASE, c_cap)
+        packet = json.loads(messages[1]["content"])
+        assert messages[0]["content"] == SYSTEM and len(messages) == 2
+        assert agent["tools"] and packet["tools"] == []                    # the one difference
+        assert list(packet) == list(agent)                                 # the same entries, in the same order
+        assert {k: v for k, v in packet.items() if k != "tools"} == {k: v for k, v in agent.items() if k != "tools"}
+        assert packet["limits"]["model_turns_available"] == c_cap - 1      # the agent's cap, less the call kept for review
+    # What the agent is sent: the catalogue with definitions and its guidance, and no map from actions to causes.
+    assert packet["cause_catalogue"] == cause_catalogue() and packet["cause_catalogue_guidance"] == CATALOGUE_GUIDANCE
+    assert "definition" in packet["cause_catalogue"]["abstention"]["INSUFFICIENT_EVIDENCE"]
+    assert "cause_codes" not in packet and all(set(entry) == {"authority", "summary"} for entry in packet["action_types"].values())
+    assert "addresses" not in messages[1]["content"] and packet["case"]["symptoms"] == list(CASE.symptoms)
+
+
+def test_notools_arm_sends_that_packet_at_the_sealed_cap(monkeypatch):
+    from .conftest import make_config
+    monkeypatch.setenv("SUHAIL_MODEL_CALL_CAP", "7")                       # the environment's cap is not the sealed one
+    turn, calls = notools_turn_factory("HUB_DELAY")
+    arm = NoToolsArm(turn=turn)
+    arm.bind_config(make_config(c_cap=16))                                 # what the run step does before the first case
+    arm.run(CASE)
+    assert calls[0] == notools_messages(CASE, 16)
+    assert json.loads(calls[0][1]["content"])["limits"] == _agent_packet(CASE, 16)["limits"]
+    given = NoToolsArm(turn=turn, c_cap=14)                                # a cap given at construction is kept
+    given.bind_config(make_config(c_cap=16))
+    assert given.c_cap == 14
 
 
 def test_notools_valid_first_answer_costs_one_call():

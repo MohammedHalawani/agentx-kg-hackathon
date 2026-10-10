@@ -101,8 +101,12 @@ agent's run record), so both model arms answer at the same t.
 ## 4. The no-tools arm
 
 `NoToolsArm()` with no argument uses `operations.investigator.model_turn`, i.e. the agent's model and settings, its
-`SYSTEM` prompt, cause catalogue (with INSUFFICIENT_EVIDENCE and UNKNOWN), action catalogue and output schema, given
-the same opening packet with an empty tool list. At most 2 calls (one retry on invalid output, the agent's own retry
+`SYSTEM` prompt and output schema, given the agent's own opening packet with an empty tool list. The packet is built
+by the agent's function, `operations.investigator.case_packet` (`arms.notools_packet`): the case, the cause catalogue
+with its definitions and guidance, the action names with authority and summary, the limits, and no map from actions
+to causes; every entry but `tools` equals the agent's (`tests/test_arms.py`). The limits state the agent's per-case
+cap: the run step binds the arm to the sealed `C_cap` before the first case (`NoToolsArm.bind_config`), or pass
+`NoToolsArm(c_cap=config.c_cap)`. At most 2 calls (one retry on invalid output, the agent's own retry
 message); invalid after that counts as degraded, as for the agent.
 
 One deliberate difference, which needs a line in the next dated design amendment: `investigate()`'s validator

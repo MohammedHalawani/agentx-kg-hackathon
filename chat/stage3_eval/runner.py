@@ -210,6 +210,9 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
     missing = [a for a in MAIN_ARM_ORDER if a not in arms]
     if missing:
         raise ValueError(f"every arm runs on the same cases; missing: {missing}")
+    for arm in [*arms.values(), *(extras_arms or {}).values()]:
+        if callable(getattr(arm, "bind_config", None)):
+            arm.bind_config(config)       # the no-tools arm's packet states the sealed per-case cap, as the agent's does
     out = Path(out_dir)
     if out.exists() and any(out.iterdir()) and not resume:
         raise FileExistsError(f"{out} is not empty; every attempt gets its own directory (and is disclosed)")
