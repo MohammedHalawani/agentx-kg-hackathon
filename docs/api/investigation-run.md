@@ -162,9 +162,17 @@ live-ingested records first (the store's development reset, flag set for that ca
 cd chat
 uv run python ../scripts/world_pilot.py --out ../docs/evals/<dir>/pilot.json
       [--database shipments-v2-world-1-small] [--per-alert 2] [--max-cases 12] [--max-calls 144]
-      [--call-cap N] [--check-after-hours 24] [--max-hours N] [--disable-tools a,b] [--allow-dirty]
+      [--call-cap N] [--check-after-hours 24] [--max-hours N] [--disable-tools a,b] [--allow-dirty] [--ledger FILE]
 uv run python ../scripts/world_pilot_score.py ../docs/evals/<dir>/pilot.json --truth-dir <truth root>\<dataset id>
 ```
+
+Every run that makes real model calls (`world_pilot.py`, `world_pilot_rerun.py`, `python -m stage3_eval run`) goes
+through one committed ledger, `docs/evals/model_call_ledger.json` (`chat/operations/call_ledger.py`; cap 4,000;
+entries `{run, started_at, finished_at, commit, calls, tokens, note, reserved}`). A run refuses to start when the calls
+already entered plus its own maximum (`--max-calls`, or the evaluation's sealed budget) would exceed the cap, enters
+its maximum before the first call, and replaces it with the calls it made when it ends. A run that dies stays entered
+at its maximum until a person corrects the entry with a note. Commit the ledger after each run. The dirty-tree check
+leaves this one file out.
 
 Results file (`schema: "world-pilot-1"`):
 

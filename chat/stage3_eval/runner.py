@@ -90,9 +90,15 @@ def _previous_results(out_dir, phase):
 
 
 def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, capture=None, extras_arms=None, dry_run=False,
-        resume=False, provenance=None):
+        resume=False, provenance=None, campaign=None, campaign_commit=None):
     """Run every arm over the selection. arms: {"agent": AgentArm, "notools": NoToolsArm, "rulecode": ..., "symptom": ...};
     extras_arms: {"cross_shipment_ablation": AgentArm (cross-shipment tools disabled), "stability_rerun": AgentArm}.
+    provenance: a dict, or a callable returning one, called when the run has finished (so it can report the model calls
+    the provider counted and whether the code tree changed during the run).
+    campaign: the campaign's persistent model-call ledger (operations.call_ledger.CallLedger). The run's own maximum
+    is config.budget: the run refuses to start if the calls already spent in the campaign plus that maximum would
+    exceed the campaign cap, reserves the maximum before the first case and writes the calls it actually committed
+    at the end. A run that dies leaves its reservation counted at the maximum. A dry run checks and writes nothing.
     Returns the run manifest (also written to <out_dir>/run_manifest.json)."""
     if os.environ.get(TRUTH_ENV):
         raise RuntimeError(f"{TRUTH_ENV} is set: the run step must not be able to find truth labels; unset it for the run")
@@ -105,6 +111,13 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
     out = Path(out_dir)
     if out.exists() and any(out.iterdir()) and not resume:
         raise FileExistsError(f"{out} is not empty; every attempt gets its own directory (and is disclosed)")
+    campaign_run = f"stage3 run {out.name} selection {selection_sha[:12]}"
+    if campaign is not None:
+        if dry_run:
+            campaign.check(config.budget)        # LedgerRefused if it would not fit; nothing is written
+        else:
+            campaign.reserve(campaign_run, config.budget, commit=campaign_commit, resume=resume,
+                             note=f"stage3_eval run in {out.name}; own cap {config.budget} (sealed in the selection)")
     writer = RunWriter(out)
     started = datetime.now(timezone.utc).isoformat()
     ledger = BudgetLedger(out / "ledger.jsonl", config.budget, dry_run=dry_run, resume=resume,
@@ -165,7 +178,12 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
                 "finished_at": datetime.now(timezone.utc).isoformat(), "selection_sha256": selection_sha,
                 "sealed_config_hash": selection["sealed_config_hash"], "config": config.as_dict(),
                 "arms": {k: {"worst_case": v.worst_case(), "uses_model": v.uses_model} for k, v in arms.items()},
-                "counts": counts, "extras": extras, "ledger": ledger.summary(), "provenance": provenance or {}}
+                "counts": counts, "extras": extras, "ledger": ledger.summary(),
+                "provenance": (provenance() if callable(provenance) else provenance) or {}}
+    if campaign is not None and not dry_run:
+        # Committed, not only settled: a reservation still open here (there is none on a clean finish) counts in full.
+        settled = campaign.settle(campaign_run, ledger.committed, tokens=ledger.tokens, note=f"status: {status}")
+        manifest["campaign_ledger"] = {"run": campaign_run, "calls": settled["calls"], "reserved": settled.get("reserved")}
     (out / "run_manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
     return manifest
 

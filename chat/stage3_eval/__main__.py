@@ -17,6 +17,12 @@
 
   python -m stage3_eval report --selection DIR/selection.json [--run RUN_DIR]
       Writes report.json and report.md (into RUN_DIR, or beside the selection for a skeleton).
+
+The campaign's model-call ledger (docs/evals/model_call_ledger.json, or --ledger FILE, or SUHAIL_CALL_LEDGER) holds
+every real model call made so far against the 4,000 cap. `select` sizes the evaluation from what REMAINS there
+(N_main = floor(remaining / (C_cap + R_cap + 2))) and seals that budget; `run` refuses to start if the calls spent
+plus the sealed budget would exceed the cap, reserves the budget before the first case and writes what it used at
+the end (a run that dies stays counted at its whole budget). The fixture dry run touches no ledger.
 """
 import argparse
 import importlib
@@ -27,6 +33,24 @@ import sys
 from stage3_eval.design import EvalConfig
 
 FIXTURE_COMMIT = "f" * 40   # The fixture's stand-in freeze commit; a real selection takes the evaluation freeze commit.
+
+
+def _campaign(path):
+    """The campaign's model-call ledger. Its cap must be the design's (amendment 2): one number, in one place each."""
+    from operations.call_ledger import CallLedger
+    from stage3_eval.design import CALL_BUDGET
+    ledger = CallLedger(path)
+    if ledger.cap != CALL_BUDGET:
+        raise SystemExit(f"{ledger.path} has cap {ledger.cap}; the design's cap is {CALL_BUDGET}")
+    return ledger
+
+
+def _head_commit():
+    import subprocess
+    try:
+        return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=Path(__file__).resolve().parent, text=True).strip()
+    except Exception:
+        return None
 
 
 def _wiring(spec):
@@ -100,12 +124,14 @@ def main(argv=None):
     s.add_argument("--sampling", default="round_robin_by_mechanism")
     s.add_argument("--database", action="append", help="WORLD=database name the run wiring opens (sealed into the config)")
     s.add_argument("--out", required=True)
+    s.add_argument("--ledger", help="campaign model-call ledger (default docs/evals/model_call_ledger.json)")
     r = sub.add_parser("run")
     r.add_argument("--selection", required=True)
     r.add_argument("--out", required=True)
     r.add_argument("--wiring", required=True)
     r.add_argument("--dry-run", action="store_true")
     r.add_argument("--resume", action="store_true")
+    r.add_argument("--ledger", help="campaign model-call ledger (default docs/evals/model_call_ledger.json)")
     sc = sub.add_parser("score")
     sc.add_argument("--selection", required=True)
     sc.add_argument("--run", required=True)
@@ -123,19 +149,38 @@ def main(argv=None):
                          indent=1, default=str))
     elif args.cmd == "select":
         from stage3_eval.selection import select
+        campaign = _campaign(args.ledger).summary()
+        if campaign["remaining"] < 1:
+            raise SystemExit(f"no model calls remain in the campaign ledger ({campaign['spent']} of {campaign['cap']} spent or reserved)")
+        # The evaluation's budget is what the campaign has left (pilot and development calls already count), not 4,000.
         config = EvalConfig(freeze_commit=args.freeze_commit, c_cap=args.c_cap, r_cap=args.r_cap, sampling=args.sampling,
+                            budget=campaign["remaining"],
                             worlds={item.partition("=")[0]: {"database": dict(d.partition("=")[::2] for d in args.database or []).get(item.partition("=")[0])}
                                     for item in args.world})
         summary = select(_worlds(args.world), config, args.out)
-        print(json.dumps({k: v for k, v in summary.items() if k != "census"}, indent=1, default=str))
+        print(json.dumps({"campaign_ledger": campaign, "budget": config.budget, **{k: v for k, v in summary.items() if k != "census"}},
+                         indent=1, default=str))
     elif args.cmd == "run":
         from stage3_eval.runner import run
+        from operations.call_ledger import LedgerError, LedgerRefused
         config, _ = _config(args.selection)
+        campaign = _campaign(args.ledger)
+        try:
+            campaign.check(0 if args.resume else config.budget)   # before any database is opened; a resume re-holds its own entry
+        except (LedgerRefused, LedgerError) as refusal:
+            raise SystemExit(f"Refusing to run: {refusal}") from None
         wired = _wiring(args.wiring)(config, dry_run=args.dry_run)
-        manifest = run(args.selection, args.out, arms=wired["arms"], case_source=wired["case_source"], config=config,
-                       capture=wired.get("capture"), extras_arms=wired.get("extras_arms"), dry_run=args.dry_run, resume=args.resume,
-                       provenance=wired.get("provenance"))
-        print(json.dumps({k: manifest[k] for k in ("status", "counts", "ledger", "extras")}, indent=1, default=str))
+        try:
+            manifest = run(args.selection, args.out, arms=wired["arms"], case_source=wired["case_source"], config=config,
+                           capture=wired.get("capture"), extras_arms=wired.get("extras_arms"), dry_run=args.dry_run, resume=args.resume,
+                           provenance=wired.get("provenance"), campaign=campaign, campaign_commit=_head_commit())
+        except (LedgerRefused, LedgerError) as refusal:
+            raise SystemExit(f"Refusing to run: {refusal}") from None
+        finally:
+            if callable(wired.get("close")):
+                wired["close"]()
+        print(json.dumps({"campaign_ledger": campaign.summary(), **{k: manifest[k] for k in ("status", "counts", "ledger", "extras")}},
+                         indent=1, default=str))
     elif args.cmd == "score":
         from stage3_eval.canary import TruthScanner
         from stage3_eval.scoring import score_run

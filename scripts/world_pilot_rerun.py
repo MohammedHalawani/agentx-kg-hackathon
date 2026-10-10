@@ -6,7 +6,9 @@
 Each named case (by its number in the pilot file) is put back in the queue through the product's own explicit
 re-analysis and investigated once with process_one. The clock stays where the pilot left it, so the snapshot is later
 than the first investigation's and may hold more evidence; the results say so. No truth is read here (same refusals as
-world_pilot.py); scoring stays a separate process. A hard model-call budget applies.
+world_pilot.py); scoring stays a separate process. A hard model-call budget applies, and the run goes through the
+campaign's model-call ledger exactly as world_pilot.py does (refused if spent + --max-calls would exceed the cap,
+--max-calls reserved before the first call, the calls actually made written at the end).
 """
 import argparse
 import json
@@ -28,8 +30,10 @@ def main(argv=None):
     parser.add_argument("--cases", required=True, help="comma-separated case numbers from the pilot file (1-based)")
     parser.add_argument("--out", required=True)
     parser.add_argument("--max-calls", type=int, default=72)
+    parser.add_argument("--ledger", type=Path, help="campaign model-call ledger (default docs/evals/model_call_ledger.json)")
     args = parser.parse_args(argv)
     pilot.refuse_truth_access()
+    ledger = pilot.campaign_ledger(args.ledger, args.max_calls)   # Refuses here if the campaign cap cannot cover --max-calls.
     first = json.loads(Path(args.results).read_text(encoding="utf-8"))
     numbers = [int(n) for n in args.cases.split(",")]
     chosen = [first["cases"][n - 1] for n in numbers]
@@ -45,8 +49,16 @@ def main(argv=None):
     store, reader, manifest_hash = pilot.open_store(driver, first["database"], investigator)
     if store.status()["session"]["session_id"] != first["session_id"]:
         raise SystemExit("The database's live session is not the pilot's session; nothing to re-investigate")
+    # Reserved at the run's own maximum before any call. If the run dies, the reservation stays counted at that maximum.
+    run_name = f"world_pilot_rerun {Path(args.out).name} {started_at}"
+    pilot.reserve_calls(ledger, run_name, args.max_calls, code_state[0],
+                        f"scripts/world_pilot_rerun.py, cases {args.cases} of {Path(args.results).name}; own cap {args.max_calls}")
     cap = model_call_cap()
-    spent = pilot.provider_calls
+    in_code = {"calls": 0}   # The stored per-case counters, added up (a run without one counts at the cap).
+
+    def spent():
+        """The larger of LiteLLM's callback count (which can lag a call) and the per-case counters, as in the pilot."""
+        return max(pilot.provider_calls(), in_code["calls"])
     rows = []
     for number, row in zip(numbers, chosen):
         case_id = row["case_id"]
@@ -66,6 +78,7 @@ def main(argv=None):
                                    result, round(time.time() - begun, 1), before, spent(), state_after)
         record.update(pilot_case=number, first_primary_cause=row["primary_cause"], first_authority=row["authority"],
                       state_before_rerun=state)
+        in_code["calls"] += record["model_calls_used"] if isinstance(record.get("model_calls_used"), int) else cap
         rows.append(record)
         print(f"rerun: pilot case {number} {row['primary_cause']} -> {record.get('primary_cause')} "
               f"authority {(record.get('authority') or {}).get('risk_class')} calls {record.get('model_calls_used')}", flush=True)
@@ -73,6 +86,7 @@ def main(argv=None):
            "rerun_of": str(args.results), "note": "Same cases re-investigated after a fix; the snapshot is the clock the pilot ended on, "
            "later than the first investigation's.", "provenance": pilot.provenance(started_at, code_state, manifest_hash, first["database"]),
            "cases": rows, "cases_not_investigated": []}
+    ledger.settle(run_name, spent(), tokens=pilot.MODEL_CALLS["total_tokens"])
     Path(args.out).write_text(json.dumps(out, indent=1, default=str), encoding="utf-8")
     print(json.dumps({"out": args.out, "cases": len(rows), "model_calls": spent()}))
 

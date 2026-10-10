@@ -3,7 +3,11 @@
   cd chat
   uv run python ../scripts/world_pilot.py --out ../docs/evals/<dir>/pilot.json [--database shipments-v2-world-1-small]
         [--per-alert 2] [--max-cases 12] [--max-calls 144] [--call-cap N] [--check-after-hours 24] [--max-hours N]
-        [--disable-tools a,b] [--allow-dirty]
+        [--disable-tools a,b] [--allow-dirty] [--ledger FILE]
+
+Every run goes through the campaign's model-call ledger (docs/evals/model_call_ledger.json, cap 4,000 in all): it
+refuses to start if the calls already spent plus --max-calls would exceed the cap, reserves --max-calls before the
+first call and writes the calls it actually made at the end. A run that dies stays counted at --max-calls.
 
 What it does, in order:
 1. Opens OperationsStore on a mechanism-world database (a shipments-v2-world-<name> database, or a scratch test
@@ -92,8 +96,33 @@ def provider_calls():
 
 def git_state(root=ROOT):
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
-    dirty = bool(subprocess.check_output(["git", "status", "--porcelain", "--untracked-files=all"], cwd=root, text=True).strip())
+    # The campaign's model-call ledger is left out: a run rewrites it by design (reservation at start, calls at the end).
+    from operations.call_ledger import LEDGER_RELATIVE
+    dirty = bool(subprocess.check_output(["git", "status", "--porcelain", "--untracked-files=all", "--", ".",
+                                          f":(exclude){LEDGER_RELATIVE}", f":(exclude){LEDGER_RELATIVE}.lock",
+                                          f":(exclude){LEDGER_RELATIVE}.tmp"], cwd=root, text=True).strip())
     return commit, dirty
+
+
+def campaign_ledger(path, maximum):
+    """The campaign's model-call ledger, after checking that a run of up to `maximum` calls still fits under the cap
+    (refuses to start otherwise; nothing is written by the check)."""
+    from operations.call_ledger import CallLedger, LedgerError, LedgerRefused
+    ledger = CallLedger(path)
+    try:
+        ledger.check(maximum)
+    except (LedgerRefused, LedgerError) as refusal:
+        raise SystemExit(f"Refusing to run: {refusal}") from None
+    return ledger
+
+
+def reserve_calls(ledger, run, maximum, commit, note):
+    """Hold the run's maximum in the campaign ledger before any model call (refuses to start if it no longer fits)."""
+    from operations.call_ledger import LedgerError, LedgerRefused
+    try:
+        return ledger.reserve(run, maximum, commit=commit, note=note)
+    except (LedgerRefused, LedgerError) as refusal:
+        raise SystemExit(f"Refusing to run: {refusal}") from None
 
 
 def _iso(value):
@@ -514,17 +543,23 @@ def main(argv=None):
     parser.add_argument("--max-hours", type=int, help="stop after this many simulated hours")
     parser.add_argument("--disable-tools", default="", help="comma-separated tool names withheld from the investigator")
     parser.add_argument("--allow-dirty", action="store_true", help="run on uncommitted changes (the results say so)")
+    parser.add_argument("--ledger", type=Path, help="campaign model-call ledger (default docs/evals/model_call_ledger.json)")
     args = parser.parse_args(argv)
     refuse_truth_access()
     if min(args.per_alert, args.max_cases, args.max_calls, args.check_after_hours) < 1:
         raise SystemExit("--per-alert, --max-cases, --max-calls and --check-after-hours must be at least 1")
     if args.out.exists():
         raise SystemExit(f"{args.out} exists; choose a new results file")
+    ledger = campaign_ledger(args.ledger, args.max_calls)   # Refuses here if the campaign cap cannot cover --max-calls.
     code_state = git_state()
     if code_state[1] and not args.allow_dirty:
         raise SystemExit(f"The working tree differs from {code_state[0][:12]}; commit first so results name the exact code (or pass --allow-dirty).")
     logging.getLogger("neo4j").setLevel(logging.ERROR)
     started_at = datetime.now(timezone.utc).isoformat()
+    # Reserved at the run's own maximum before any call. If the run dies, the reservation stays counted at that maximum.
+    run_name = f"world_pilot {args.out.name} {started_at}"
+    reserve_calls(ledger, run_name, args.max_calls, code_state[0],
+                  f"scripts/world_pilot.py on {args.database}, results {args.out.name}; own cap {args.max_calls}")
     record_model_calls()
     import config
     from neo4j import GraphDatabase
@@ -538,6 +573,8 @@ def main(argv=None):
         if provider_calls() >= result["replay"]["model_calls_by_case_counters"]:
             break
         time.sleep(0.1)
+    # The larger of the two counts, as the run's own budget guard uses: never fewer than were made.
+    ledger.settle(run_name, max(provider_calls(), result["replay"]["model_calls_by_case_counters"]), tokens=MODEL_CALLS["total_tokens"])
     if result["replay"]["world_truth_imported"] or result["replay"]["truth_environment_set"]:
         raise SystemExit("world.truth or a truth path reached the pilot process; no results were written")
     result = {"provenance": provenance(started_at, code_state, result["manifest_hash"], args.database),

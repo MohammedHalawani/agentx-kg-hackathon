@@ -1,0 +1,27 @@
+{
+ "schema": "model-call-ledger-1",
+ "campaign": "Real model calls counted against Fahad's cap of 4,000 for the blind evaluation (pilot calls included). Read and written by chat/operations/call_ledger.py; an entry's calls is what counts, and an unfinished run counts at its reserved maximum.",
+ "cap": 4000,
+ "entries": [
+  {
+   "run": "world1 pilot (docs/evals/2026-10-10_world1_pilot/pilot.json)",
+   "started_at": "2026-10-10T18:45:12.325252+00:00",
+   "finished_at": "2026-10-10T19:04:43.598853+00:00",
+   "commit": "e0081d35d6c9d0cb4c4a060154c5fd39669f32d2",
+   "calls": 111,
+   "tokens": 985609,
+   "note": "12 investigations on shipments-v2-world-1-small; entered afterwards from the results file's provenance (model_calls_total, total_tokens); its own cap was 144 (settings.max_calls)",
+   "reserved": null
+  },
+  {
+   "run": "world1 pilot re-run of six cases (docs/evals/2026-10-10_world1_pilot/rerun.json)",
+   "started_at": "2026-10-10T19:08:07.500259+00:00",
+   "finished_at": "2026-10-10T19:12:55.603336+00:00",
+   "commit": "cce4198bf53891ed7b7cfb0e9dab5812ada0c8ca",
+   "calls": 62,
+   "tokens": 687366,
+   "note": "cases 1, 2, 3, 4, 10 and 11 re-investigated after the prompt fix 907be31; entered afterwards from the results file's provenance",
+   "reserved": null
+  }
+ ]
+}

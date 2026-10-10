@@ -92,3 +92,19 @@ def build_arms(config, agent, turn):
 
 def read_jsonl(path):
     return [json.loads(l) for l in Path(path).read_text(encoding="utf-8").splitlines() if l.strip()]
+
+
+def write_campaign_ledger(path, spent=173, cap=4000):
+    """A campaign ledger file of the test's own (the committed one is never written by a test)."""
+    entries = [{"run": "earlier runs", "started_at": "2026-10-10T00:00:00+00:00", "finished_at": "2026-10-10T01:00:00+00:00",
+                "commit": "c" * 40, "calls": spent, "tokens": 0, "note": "test", "reserved": None}] if spent else []
+    Path(path).write_text(json.dumps({"schema": "model-call-ledger-1", "campaign": "test", "cap": cap, "entries": entries}), encoding="utf-8")
+    return Path(path)
+
+
+@pytest.fixture(autouse=True)
+def campaign_ledger_file(tmp_path_factory, monkeypatch):
+    """Every harness test that reaches the campaign ledger gets a temporary one with 173 calls already spent."""
+    path = write_campaign_ledger(tmp_path_factory.mktemp("campaign") / "model_call_ledger.json")
+    monkeypatch.setenv("SUHAIL_CALL_LEDGER", str(path))
+    return path
