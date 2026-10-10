@@ -1,0 +1,3515 @@
+{
+ "schema": "world-pilot-1",
+ "synthetic": true,
+ "database": "shipments-v2-world-1-small",
+ "dataset_id": "DEMO-SUHAIL-WORLD-1",
+ "manifest_hash": "bf6b0a5104431efcb0400810dcc3d1f1cb6acc136838109429bead2d9138679d",
+ "session_id": "DEMO-OPS-SESSION-888d5867375cbad1fc3c34be",
+ "settings": {
+  "per_alert": 2,
+  "max_cases": 12,
+  "max_calls": 144,
+  "per_case_model_call_cap": 12,
+  "check_after_hours": 24,
+  "max_hours": null,
+  "disabled_tools": [],
+  "tick_seconds": 3600,
+  "execution_adapter": "none"
+ },
+ "rerun_of": "../docs/evals/2026-10-10_world1_pilot/pilot.json",
+ "note": "Same cases re-investigated after a fix; the snapshot is the clock the pilot ended on, later than the first investigation's.",
+ "provenance": {
+  "script": "scripts/world_pilot.py",
+  "commit": "cce4198bf53891ed7b7cfb0e9dab5812ada0c8ca",
+  "dirty_tree": false,
+  "tree_changed_during_run": false,
+  "started_at": "2026-10-10T19:08:07.500259+00:00",
+  "finished_at": "2026-10-10T19:12:55.603336+00:00",
+  "database": "shipments-v2-world-1-small",
+  "manifest_hash": "bf6b0a5104431efcb0400810dcc3d1f1cb6acc136838109429bead2d9138679d",
+  "configured_model": "openai/gpt-oss:120b",
+  "model_api_base": "https://ollama.com/v1",
+  "investigator_prompt_sha256": "951acd2043a1a310451b64b160c69db6d3591f1a0590f5dac30dcb765c8ede73",
+  "reviewer_prompt_sha256": "79c23920095316fb693d00a7a93dcc9178187c130dcead684f144372b6ec4da3",
+  "cause_catalogue_sha256": "30df427fa75b6fa2785755c8831e834b3175e978b6ddd6af9fb0b3fb352d8855",
+  "model_calls": {
+   "succeeded": {
+    "gpt-oss:120b": 62
+   },
+   "failed": {},
+   "prompt_tokens": 619171,
+   "completion_tokens": 68195,
+   "total_tokens": 687366
+  },
+  "model_calls_total": 62
+ },
+ "cases": [
+  {
+   "case_id": "DEMO-OPS-CASE-1cc8c63001f5cd3aa6962c1f",
+   "shipment_id": "DEMO-SHP-000058",
+   "opened_at": "2026-09-14T13:01:27+00:00",
+   "opening_symptoms": [
+    "WEIGHT_READ_DIFFERS"
+   ],
+   "processed": true,
+   "run_id": "DEMO-OPS-RUN-ab2a836c4e8e0effde5df7b6",
+   "snapshot_as_of": "2026-09-16T06:01:27+00:00",
+   "rounds": [
+    {
+     "round": 0,
+     "tool_calls": [
+      {
+       "tool": "shipment_overview",
+       "args": {},
+       "evidence_ids": [
+        "DEMO-SHP-000058",
+        "DEMO-SHP-000058-PKG-01",
+        "DEMO-SHP-000058-JOURNEY",
+        "DEMO-SHP-000058-STATUS-002",
+        "DEMO-SHP-000058-STATUS-003",
+        "DEMO-SHP-000058-STATUS-004",
+        "DEMO-SHP-000058-STATUS-005",
+        "DEMO-SHP-000058-STATUS-006",
+        "DEMO-SHP-000058-STATUS-007",
+        "DEMO-SHP-000058-STATUS-008",
+        "DEMO-SHP-000058-STATUS-009"
+       ],
+       "computed_ids": [],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "scans",
+       "args": {
+        "package_id": "DEMO-SHP-000058-PKG-01"
+       },
+       "evidence_ids": [
+        "DEMO-SHP-000058-PKG-01",
+        "DEMO-POLICY-W1",
+        "DEMO-SHP-000058-SCAN-004",
+        "DEMO-CMP-30d28ac1ed7e7b97000c",
+        "DEMO-SHP-000058-SCAN-009",
+        "DEMO-CMP-450d222231d38dbf0569",
+        "DEMO-SHP-000058-SCAN-001",
+        "DEMO-SHP-000058-SCAN-002",
+        "DEMO-SHP-000058-SCAN-003",
+        "DEMO-SHP-000058-SCAN-005",
+        "DEMO-SHP-000058-SCAN-006",
+        "DEMO-SHP-000058-SCAN-007",
+        "DEMO-SHP-000058-SCAN-008",
+        "DEMO-SHP-000058-SCAN-010",
+        "DEMO-SHP-000058-SCAN-011",
+        "DEMO-SHP-000058-SCAN-012",
+        "DEMO-SHP-000058-SCAN-013",
+        "DEMO-SHP-000058-SCAN-014"
+       ],
+       "computed_ids": [
+        "DEMO-CMP-30d28ac1ed7e7b97000c",
+        "DEMO-CMP-450d222231d38dbf0569"
+       ],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "same_device_activity",
+       "args": {
+        "device_id": "DEMO-DEV-SCL-SORT-DMM-01-1",
+        "hours": 12
+       },
+       "evidence_ids": [
+        "DEMO-DEV-SCL-SORT-DMM-01-1",
+        "DEMO-DEV-SCL-SORT-DMM-01-1-HB-20260916T031322",
+        "DEMO-DEV-SCL-SORT-DMM-01-1-HB-20260916T034322",
+        "DEMO-DEV-SCL-SORT-DMM-01-1-HB-20260916T041322",
+        "DEMO-DEV-SCL-SORT-DMM-01-1-HB-20260916T044322",
+        "DEMO-DEV-SCL-SORT-DMM-01-1-HB-20260916T051322",
+        "DEMO-DEV-SCL-SORT-DMM-01-1-HB-20260916T054322",
+        "DEMO-CMP-a70402f78f563758e5e7",
+        "DEMO-CMP-772ebfc64d63252cc5b3",
+        "DEMO-CMP-74af68e4ee36bfbf59dc",
+        "DEMO-SHP-000058-SCAN-004",
+        "DEMO-CMP-29d702e7ae3dd25f05f8",
+        "DEMO-SHP-000480-SCAN-004",
+        "DEMO-SHP-000447-SCAN-009",
+        "DEMO-SHP-000066-SCAN-021"
+       ],
+       "computed_ids": [
+        "DEMO-CMP-a70402f78f563758e5e7",
+        "DEMO-CMP-772ebfc64d63252cc5b3",
+        "DEMO-CMP-74af68e4ee36bfbf59dc",
+        "DEMO-CMP-29d702e7ae3dd25f05f8"
+       ],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "custody_chain",
+       "args": {
+        "package_id": "DEMO-SHP-000058-PKG-01"
+       },
+       "evidence_ids": [
+        "DEMO-SHP-000058-PKG-01",
+        "DEMO-SHP-000058-CUST-010",
+        "DEMO-SHP-000058-SCAN-014",
+        "DEMO-SHP-000058-CUST-009",
+        "DEMO-SHP-000058-SCAN-013",
+        "DEMO-SHP-000058-CUST-008",
+        "DEMO-SHP-000058-SCAN-011",
+        "DEMO-SHP-000058-CUST-007",
+        "DEMO-SHP-000058-SCAN-010",
+        "DEMO-SHP-000058-CUST-006",
+        "DEMO-SHP-000058-SCAN-008",
+        "DEMO-SHP-000058-CUST-005",
+        "DEMO-SHP-000058-SCAN-007",
+        "DEMO-SHP-000058-CUST-004",
+        "DEMO-SHP-000058-SCAN-006",
+        "DEMO-SHP-000058-CUST-003",
+        "DEMO-SHP-000058-SCAN-003",
+        "DEMO-SHP-000058-SESSION-0915",
+        "DEMO-SHP-000058-RECON-001",
+        "DEMO-CMP-cb293b4791534e0a9165",
+        "DEMO-SHP-000058-SESSION-0916",
+        "DEMO-CMP-2fce08c18e5f5e5a3103"
+       ],
+       "computed_ids": [
+        "DEMO-CMP-cb293b4791534e0a9165",
+        "DEMO-CMP-2fce08c18e5f5e5a3103"
+       ],
+       "omitted_rows": {
+        "transfers": 2
+       },
+       "failure": null
+      },
+      {
+       "tool": "same_device_activity",
+       "args": {
+        "device_id": "DEMO-DEV-HH-DEPOT-JUB-01",
+        "hours": 12
+       },
+       "evidence_ids": [
+        "DEMO-DEV-HH-DEPOT-JUB-01",
+        "DEMO-DEV-HH-DEPOT-JUB-01-HB-20260916T031500",
+        "DEMO-DEV-HH-DEPOT-JUB-01-HB-20260916T034500",
+        "DEMO-DEV-HH-DEPOT-JUB-01-HB-20260916T041500",
+        "DEMO-DEV-HH-DEPOT-JUB-01-HB-20260916T044500",
+        "DEMO-DEV-HH-DEPOT-JUB-01-HB-20260916T051500",
+        "DEMO-DEV-HH-DEPOT-JUB-01-HB-20260916T054500",
+        "DEMO-CMP-0a9feb82d48f726c171a",
+        "DEMO-CMP-f1d8a325bdf8b6fb873c",
+        "DEMO-CMP-5d91f54f6fc2d7f90450",
+        "DEMO-SHP-000058-SCAN-008",
+        "DEMO-SHP-000058-SCAN-011",
+        "DEMO-SHP-000058-SCAN-012",
+        "DEMO-CMP-4ea4ff60ff8fd1889c77",
+        "DEMO-SHP-000177-SCAN-010",
+        "DEMO-SHP-000569-SCAN-011"
+       ],
+       "computed_ids": [
+        "DEMO-CMP-0a9feb82d48f726c171a",
+        "DEMO-CMP-f1d8a325bdf8b6fb873c",
+        "DEMO-CMP-5d91f54f6fc2d7f90450",
+        "DEMO-CMP-4ea4ff60ff8fd1889c77"
+       ],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "same_device_activity",
+       "args": {
+        "device_id": "DEMO-DEV-SCL-DEPOT-JUB-01",
+        "hours": 12
+       },
+       "evidence_ids": [
+        "DEMO-DEV-SCL-DEPOT-JUB-01",
+        "DEMO-DEV-SCL-DEPOT-JUB-01-HB-20260916T032653",
+        "DEMO-DEV-SCL-DEPOT-JUB-01-HB-20260916T035653",
+        "DEMO-DEV-SCL-DEPOT-JUB-01-HB-20260916T042653",
+        "DEMO-DEV-SCL-DEPOT-JUB-01-HB-20260916T045653",
+        "DEMO-DEV-SCL-DEPOT-JUB-01-HB-20260916T052653",
+        "DEMO-DEV-SCL-DEPOT-JUB-01-HB-20260916T055653",
+        "DEMO-CMP-02271c35de946a473810",
+        "DEMO-CMP-b32fabf9f1dbe249042e",
+        "DEMO-SHP-000058-SCAN-009",
+        "DEMO-CMP-4ea4ff60ff8fd1889c77"
+       ],
+       "computed_ids": [
+        "DEMO-CMP-02271c35de946a473810",
+        "DEMO-CMP-b32fabf9f1dbe249042e",
+        "DEMO-CMP-4ea4ff60ff8fd1889c77"
+       ],
+       "omitted_rows": {},
+       "failure": null
+      }
+     ],
+     "primary_cause": "WEIGHT_MISMATCH",
+     "confidence": "medium",
+     "hypotheses": [
+      {
+       "cause": "WEIGHT_MISMATCH",
+       "status": "supported",
+       "supporting_evidence_ids": [
+        "DEMO-SHP-000058-SCAN-004",
+        "DEMO-SHP-000058-SCAN-009",
+        "DEMO-CMP-74af68e4ee36bfbf59dc",
+        "DEMO-CMP-b32fabf9f1dbe249042e"
+       ],
+       "contradicting_evidence_ids": [],
+       "assessment": "Both recorded weighings (at sorting and at depot) differ from the declared 13.91 kg by more than the policy tolerance, and other shipments processed by the same scales show no weight mismatches, indicating the discrepancy is specific to this parcel."
+      }
+     ],
+     "missing_evidence": [],
+     "next_evidence_step": "",
+     "recommended_action": "REQUEST_REWEIGH",
+     "requires_physical_check": false,
+     "summary": "The parcel’s weight readings at two points are outside the allowed tolerance, while the scales involved show no systemic error. The weight discrepancy is therefore confirmed as a WEIGHT_MISMATCH observation. A reweigh is recommended to verify the actual weight.",
+     "investigator": {
+      "degraded": false,
+      "mode": "gpt-oss",
+      "validation_error": null,
+      "validation_errors": [
+       {
+        "error": "each hypothesis needs a cause code and status supported|refuted|uncertain",
+        "turn": 7
+       }
+      ]
+     },
+     "citations": [
+      {
+       "id": "DEMO-SHP-000058-SCAN-004",
+       "kind": "ScanEvent",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-SHP-000058-SCAN-009",
+       "kind": "ScanEvent",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-CMP-74af68e4ee36bfbf59dc",
+       "kind": "ComputedResult",
+       "scope": "computed",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-CMP-b32fabf9f1dbe249042e",
+       "kind": "ComputedResult",
+       "scope": "computed",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      }
+     ],
+     "citations_all_valid": true,
+     "fact_checks": [
+      {
+       "check": "cause_consistent_with_evidence_rules",
+       "detail": "evidence rules at this snapshot show WEIGHT_MISMATCH",
+       "passed": true
+      },
+      {
+       "check": "citations_valid",
+       "detail": "every cited id resolves, was retrieved in this investigation and was recorded by the snapshot",
+       "passed": true
+      },
+      {
+       "check": "sensitive_dispute_or_conflict",
+       "detail": "none",
+       "passed": true
+      },
+      {
+       "check": "parcel_held_by_contractor",
+       "detail": "no",
+       "passed": true
+      },
+      {
+       "check": "alternative_explanation_recorded",
+       "detail": "no hypothesis other than the primary cause cites evidence (informational; the reviewer judges it)",
+       "passed": false
+      }
+     ],
+     "review": {
+      "verdict": "reject",
+      "model_verdict": "REVISE",
+      "reason_code": "MODEL_REVISE",
+      "feedback": "The weight‑mismatch cause is well‑supported by the two scale readings and the tolerance calculations, but the investigation never tested any alternative explanation and there is contradictory evidence that the depot scale shows zero records while a weighing event exists. The claim that \"other shipments processed by the same scales show no weight mismatches\" lacks evidence for the depot scale.",
+      "unsupported_claims": [
+       "The statement that other shipments processed by the same scales show no weight mismatches is not substantiated for the depot scale (no shipment records were retrieved for that device)."
+      ],
+      "unaddressed_contradictions": [
+       "DEMO-CMP-b32fabf9f1dbe249042e"
+      ],
+      "alternatives_tested": "no",
+      "mode": "gpt-oss",
+      "degraded": false,
+      "validation_error": null
+     },
+     "model_calls_used_after_round": 9
+    },
+    {
+     "round": 1,
+     "tool_calls": [
+      {
+       "tool": "same_device_activity",
+       "args": {
+        "device_id": "DEMO-DEV-SCL-DEPOT-JUB-01",
+        "hours": 48
+       },
+       "evidence_ids": [
+        "DEMO-DEV-SCL-DEPOT-JUB-01",
+        "DEMO-DEV-SCL-DEPOT-JUB-01-HB-20260916T032653",
+        "DEMO-DEV-SCL-DEPOT-JUB-01-HB-20260916T035653",
+        "DEMO-DEV-SCL-DEPOT-JUB-01-HB-20260916T042653",
+        "DEMO-DEV-SCL-DEPOT-JUB-01-HB-20260916T045653",
+        "DEMO-DEV-SCL-DEPOT-JUB-01-HB-20260916T052653",
+        "DEMO-DEV-SCL-DEPOT-JUB-01-HB-20260916T055653",
+        "DEMO-CMP-fdda5372ee5116a3f0b1",
+        "DEMO-CMP-4100ded3b0e1a7bdc880",
+        "DEMO-CMP-1597ee3a0cb4edb4c78f",
+        "DEMO-SHP-000058-SCAN-009",
+        "DEMO-CMP-9455fe841efcc907f312"
+       ],
+       "computed_ids": [
+        "DEMO-CMP-fdda5372ee5116a3f0b1",
+        "DEMO-CMP-4100ded3b0e1a7bdc880",
+        "DEMO-CMP-1597ee3a0cb4edb4c78f",
+        "DEMO-CMP-9455fe841efcc907f312"
+       ],
+       "omitted_rows": {},
+       "failure": null
+      }
+     ],
+     "primary_cause": "WEIGHT_MISMATCH",
+     "confidence": "medium",
+     "hypotheses": [
+      {
+       "cause": "WEIGHT_MISMATCH",
+       "status": "supported",
+       "supporting_evidence_ids": [
+        "DEMO-SHP-000058-SCAN-004",
+        "DEMO-SHP-000058-SCAN-009",
+        "DEMO-CMP-74af68e4ee36bfbf59dc",
+        "DEMO-CMP-1597ee3a0cb4edb4c78f"
+       ],
+       "contradicting_evidence_ids": [],
+       "assessment": "Two independent scale readings (sorting scale and depot scale) both report a weight ~2.6‑2.7 kg below the declared 13.91 kg, exceeding the policy tolerance. The sorting scale has no other shipments with weight mismatches, indicating its reading is reliable; the depot scale only recorded this shipment, so systematic error cannot be confirmed. The consistent under‑weight across two devices supports "
+      }
+     ],
+     "missing_evidence": [],
+     "next_evidence_step": "",
+     "recommended_action": "REQUEST_REWEIGH",
+     "requires_physical_check": false,
+     "summary": "Both scale observations show the parcel is lighter than declared, and the sorting scale shows no other mismatches, confirming a weight discrepancy. A reweigh is recommended to verify the actual weight.",
+     "investigator": {
+      "degraded": false,
+      "mode": "gpt-oss",
+      "validation_error": null,
+      "validation_errors": []
+     },
+     "citations": [
+      {
+       "id": "DEMO-SHP-000058-SCAN-004",
+       "kind": "ScanEvent",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-SHP-000058-SCAN-009",
+       "kind": "ScanEvent",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-CMP-74af68e4ee36bfbf59dc",
+       "kind": "ComputedResult",
+       "scope": "computed",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-CMP-1597ee3a0cb4edb4c78f",
+       "kind": "ComputedResult",
+       "scope": "computed",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      }
+     ],
+     "citations_all_valid": true,
+     "fact_checks": [
+      {
+       "check": "cause_consistent_with_evidence_rules",
+       "detail": "evidence rules at this snapshot show WEIGHT_MISMATCH",
+       "passed": true
+      },
+      {
+       "check": "citations_valid",
+       "detail": "every cited id resolves, was retrieved in this investigation and was recorded by the snapshot",
+       "passed": true
+      },
+      {
+       "check": "sensitive_dispute_or_conflict",
+       "detail": "none",
+       "passed": true
+      },
+      {
+       "check": "parcel_held_by_contractor",
+       "detail": "no",
+       "passed": true
+      },
+      {
+       "check": "alternative_explanation_recorded",
+       "detail": "no hypothesis other than the primary cause cites evidence (informational; the reviewer judges it)",
+       "passed": false
+      }
+     ],
+     "review": {
+      "verdict": "reject",
+      "model_verdict": "REVISE",
+      "reason_code": "MODEL_REVISE",
+      "feedback": "Provide evidence that the depot scale indeed only processed this shipment (or explain the window issue) and test at least one alternative hypothesis such as scale calibration error or device malfunction.",
+      "unsupported_claims": [
+       "The statement that the depot scale only recorded this shipment and therefore systematic error cannot be confirmed"
+      ],
+      "unaddressed_contradictions": [
+       "DEMO-CMP-b32fabf9f1dbe249042e"
+      ],
+      "alternatives_tested": "no",
+      "mode": "gpt-oss",
+      "degraded": false,
+      "validation_error": null
+     },
+     "model_calls_used_after_round": 12
+    }
+   ],
+   "primary_cause": "WEIGHT_MISMATCH",
+   "confidence": "medium",
+   "hypotheses": [
+    {
+     "cause": "WEIGHT_MISMATCH",
+     "status": "supported",
+     "supporting_evidence_ids": [
+      "DEMO-SHP-000058-SCAN-004",
+      "DEMO-SHP-000058-SCAN-009",
+      "DEMO-CMP-74af68e4ee36bfbf59dc",
+      "DEMO-CMP-1597ee3a0cb4edb4c78f"
+     ],
+     "contradicting_evidence_ids": [],
+     "assessment": "Two independent scale readings (sorting scale and depot scale) both report a weight ~2.6‑2.7 kg below the declared 13.91 kg, exceeding the policy tolerance. The sorting scale has no other shipments with weight mismatches, indicating its reading is reliable; the depot scale only recorded this shipment, so systematic error cannot be confirmed. The consistent under‑weight across two devices supports "
+    }
+   ],
+   "insufficient_evidence": false,
+   "missing_evidence": [],
+   "next_evidence_step": "",
+   "recommended_action": "REQUEST_REWEIGH",
+   "citations": [
+    {
+     "id": "DEMO-SHP-000058-SCAN-004",
+     "kind": "ScanEvent",
+     "scope": "shipment",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    },
+    {
+     "id": "DEMO-SHP-000058-SCAN-009",
+     "kind": "ScanEvent",
+     "scope": "shipment",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    },
+    {
+     "id": "DEMO-CMP-74af68e4ee36bfbf59dc",
+     "kind": "ComputedResult",
+     "scope": "computed",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    },
+    {
+     "id": "DEMO-CMP-1597ee3a0cb4edb4c78f",
+     "kind": "ComputedResult",
+     "scope": "computed",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    }
+   ],
+   "citations_all_valid": true,
+   "review": {
+    "verdict": "reject",
+    "model_verdict": "REVISE",
+    "reason_code": "MODEL_REVISE",
+    "reasons": "Provide evidence that the depot scale indeed only processed this shipment (or explain the window issue) and test at least one alternative hypothesis such as scale calibration error or device malfunction.",
+    "unsupported_claims": [
+     "The statement that the depot scale only recorded this shipment and therefore systematic error cannot be confirmed"
+    ]
+   },
+   "authority": {
+    "risk_class": "HUMAN_REVIEW",
+    "rule_id": "AUTH-16-review-rejected",
+    "action_type": "REQUEST_REWEIGH",
+    "closure": null,
+    "reason": "Reviewer rejected the proposal after the bounded revision rounds."
+   },
+   "degraded": [],
+   "model_calls_used": 12,
+   "model_call_cap": 12,
+   "model_calls_by_role": {
+    "investigator": 10,
+    "reviewer": 2
+   },
+   "cap_reached": false,
+   "provider_calls": 12,
+   "disabled_tools": [],
+   "wall_seconds": 59.2,
+   "workflow_state_after_investigation": "ESCALATED",
+   "final_workflow_state": "ESCALATED",
+   "diagnosis_served": {
+    "available": false,
+    "reason": "review_not_accepted",
+    "primary_cause": null
+   },
+   "case_detail_returns": {
+    "diagnosis": true,
+    "review": true,
+    "run": true,
+    "investigation_log": true,
+    "error": null
+   },
+   "pilot_case": 1,
+   "first_primary_cause": "WEIGHT_MISMATCH",
+   "first_authority": {
+    "risk_class": "HUMAN_REVIEW",
+    "rule_id": "AUTH-23-physical-check-requested",
+    "action_type": "REQUEST_REWEIGH",
+    "closure": "AUTO",
+    "reason": "The investigation requested a physical check; a person must investigate."
+   },
+   "state_before_rerun": "HUMAN_REVIEW",
+   "score": {
+    "verdict": "correct",
+    "matched": "knowable_cause",
+    "snapshot_as_of": "2026-09-16T06:01:27+00:00",
+    "shipment_healthy": false,
+    "knowable_causes": [
+     "WEIGHT_MISMATCH"
+    ],
+    "acceptable_codes_at_snapshot": [
+     "WEIGHT_MISMATCH"
+    ],
+    "eventual_causes": [
+     "WEIGHT_MISMATCH"
+    ],
+    "identifiable_mechanism_types": [
+     "DECLARED_WEIGHT_WRONG"
+    ],
+    "primary_cause": "WEIGHT_MISMATCH",
+    "primary_is_an_eventual_cause": true,
+    "knowable_causes_named": [
+     "WEIGHT_MISMATCH"
+    ],
+    "knowable_causes_not_named": [],
+    "supported_causes_not_knowable": [],
+    "spec_records_held_at_snapshot": 4,
+    "run_found_in_database": true
+   }
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-11ace6c992d5a956cedef282",
+   "shipment_id": "DEMO-SHP-000082",
+   "opened_at": "2026-09-14T20:01:27+00:00",
+   "opening_symptoms": [
+    "BARCODE_READ_DIFFERS",
+    "WEIGHT_READ_DIFFERS"
+   ],
+   "processed": true,
+   "run_id": "DEMO-OPS-RUN-b6ce6d93369ab34674df0046",
+   "snapshot_as_of": "2026-09-16T06:01:27+00:00",
+   "rounds": [
+    {
+     "round": 0,
+     "tool_calls": [
+      {
+       "tool": "shipment_overview",
+       "args": {},
+       "evidence_ids": [
+        "DEMO-SHP-000082",
+        "DEMO-SHP-000082-PKG-01",
+        "DEMO-SHP-000082-PKG-02",
+        "DEMO-SHP-000082-PKG-03",
+        "DEMO-SHP-000082-JOURNEY",
+        "DEMO-SHP-000082-STATUS-005",
+        "DEMO-SHP-000082-STATUS-006",
+        "DEMO-SHP-000082-STATUS-007",
+        "DEMO-SHP-000082-STATUS-008",
+        "DEMO-SHP-000082-STATUS-009",
+        "DEMO-SHP-000082-STATUS-010",
+        "DEMO-SHP-000082-STATUS-011",
+        "DEMO-SHP-000082-STATUS-012"
+       ],
+       "computed_ids": [],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "scans",
+       "args": {
+        "package_id": "DEMO-SHP-000082-PKG-01"
+       },
+       "evidence_ids": [
+        "DEMO-SHP-000082-PKG-01",
+        "DEMO-SHP-000082-PKG-02",
+        "DEMO-SHP-000082-PKG-03",
+        "DEMO-POLICY-W1",
+        "DEMO-SHP-000082-SCAN-001",
+        "DEMO-SHP-000082-SCAN-004",
+        "DEMO-SHP-000082-SCAN-007",
+        "DEMO-SHP-000082-SCAN-008",
+        "DEMO-SHP-000082-SCAN-009",
+        "DEMO-SHP-000082-SCAN-017",
+        "DEMO-SHP-000082-SCAN-020",
+        "DEMO-SHP-000082-SCAN-023",
+        "DEMO-SHP-000082-SCAN-027",
+        "DEMO-SHP-000082-SCAN-031",
+        "DEMO-SHP-000082-SCAN-034"
+       ],
+       "computed_ids": [],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "scans",
+       "args": {
+        "package_id": "DEMO-SHP-000082-PKG-02"
+       },
+       "evidence_ids": [
+        "DEMO-SHP-000082-PKG-01",
+        "DEMO-SHP-000082-PKG-02",
+        "DEMO-SHP-000082-PKG-03",
+        "DEMO-POLICY-W1",
+        "DEMO-SHP-000082-SCAN-011",
+        "DEMO-CMP-a7cf0c4659edd0f9be8d",
+        "DEMO-SHP-000082-SCAN-025",
+        "DEMO-CMP-cfeeaa785254a5ce3daf",
+        "DEMO-SHP-000082-SCAN-002",
+        "DEMO-SHP-000082-SCAN-005",
+        "DEMO-SHP-000082-SCAN-010",
+        "DEMO-SHP-000082-SCAN-012",
+        "DEMO-SHP-000082-SCAN-018",
+        "DEMO-SHP-000082-SCAN-021",
+        "DEMO-SHP-000082-SCAN-024",
+        "DEMO-SHP-000082-SCAN-028",
+        "DEMO-SHP-000082-SCAN-030",
+        "DEMO-SHP-000082-SCAN-032",
+        "DEMO-SHP-000082-SCAN-035"
+       ],
+       "computed_ids": [
+        "DEMO-CMP-a7cf0c4659edd0f9be8d",
+        "DEMO-CMP-cfeeaa785254a5ce3daf"
+       ],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "delivery_attempts",
+       "args": {},
+       "evidence_ids": [
+        "DEMO-SHP-000082",
+        "DEMO-SHP-000082-ATT-001",
+        "DEMO-SHP-000082-CONTACT-001",
+        "DEMO-SHP-000082-ATT-002",
+        "DEMO-SHP-000082-CONTACT-002",
+        "DEMO-SHP-000082-ATT-003",
+        "DEMO-SHP-000082-CONTACT-003",
+        "DEMO-SHP-000082-RECON-001",
+        "DEMO-SHP-000082-RECON-002",
+        "DEMO-SHP-000082-RECON-003"
+       ],
+       "computed_ids": [],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "scans",
+       "args": {
+        "package_id": "DEMO-SHP-000082-PKG-03"
+       },
+       "evidence_ids": [
+        "DEMO-SHP-000082-PKG-01",
+        "DEMO-SHP-000082-PKG-02",
+        "DEMO-SHP-000082-PKG-03",
+        "DEMO-POLICY-W1",
+        "DEMO-SHP-000082-SCAN-013",
+        "DEMO-CMP-9256c533425b87c0feb8",
+        "DEMO-SHP-000082-SCAN-003",
+        "DEMO-CMP-af194e543f27cbbc759b",
+        "DEMO-SHP-000082-SCAN-006",
+        "DEMO-CMP-be56b26a028ba4cf7992",
+        "DEMO-SHP-000082-SCAN-015",
+        "DEMO-SHP-000082-SCAN-014",
+        "DEMO-CMP-84b31a475b2dd98e7244",
+        "DEMO-SHP-000082-SCAN-016",
+        "DEMO-SHP-000082-SCAN-019",
+        "DEMO-SHP-000082-SCAN-022",
+        "DEMO-SHP-000082-SCAN-026",
+        "DEMO-CMP-0a3d37e5b69f302d9ceb",
+        "DEMO-SHP-000082-SCAN-029",
+        "DEMO-CMP-8df1790e5d5a5a901325",
+        "DEMO-SHP-000082-SCAN-033",
+        "DEMO-CMP-8808a4f84e51aa21fd5e",
+        "DEMO-SHP-000082-SCAN-036",
+        "DEMO-CMP-9422f7efefa23d106d94"
+       ],
+       "computed_ids": [
+        "DEMO-CMP-9256c533425b87c0feb8",
+        "DEMO-CMP-af194e543f27cbbc759b",
+        "DEMO-CMP-be56b26a028ba4cf7992",
+        "DEMO-CMP-84b31a475b2dd98e7244",
+        "DEMO-CMP-0a3d37e5b69f302d9ceb",
+        "DEMO-CMP-8df1790e5d5a5a901325",
+        "DEMO-CMP-8808a4f84e51aa21fd5e",
+        "DEMO-CMP-9422f7efefa23d106d94"
+       ],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "same_device_activity",
+       "args": {
+        "device_id": "DEMO-DEV-SR-SORT-DMM-01",
+        "hours": 12
+       },
+       "evidence_ids": [
+        "DEMO-DEV-SR-SORT-DMM-01",
+        "DEMO-DEV-SR-SORT-DMM-01-HB-20260916T032030",
+        "DEMO-DEV-SR-SORT-DMM-01-HB-20260916T035030",
+        "DEMO-DEV-SR-SORT-DMM-01-HB-20260916T042030",
+        "DEMO-DEV-SR-SORT-DMM-01-HB-20260916T045030",
+        "DEMO-DEV-SR-SORT-DMM-01-HB-20260916T052030",
+        "DEMO-DEV-SR-SORT-DMM-01-HB-20260916T055030",
+        "DEMO-CMP-27dc9939773a04535b20",
+        "DEMO-CMP-33c5a0e178879833546d",
+        "DEMO-CMP-f32aa42a655d8c50bd4d",
+        "DEMO-SHP-000082-SCAN-007",
+        "DEMO-SHP-000082-SCAN-010",
+        "DEMO-SHP-000082-SCAN-013",
+        "DEMO-CMP-11ad5423984197d54e85",
+        "DEMO-SHP-000480-SCAN-003",
+        "DEMO-SHP-000447-SCAN-008",
+        "DEMO-SHP-000447-SCAN-005",
+        "DEMO-SHP-000357-SCAN-003",
+        "DEMO-SHP-000239-SCAN-003",
+        "DEMO-SHP-000229-SCAN-003",
+        "DEMO-SHP-000145-SCAN-003",
+        "DEMO-SHP-000066-SCAN-023"
+       ],
+       "computed_ids": [
+        "DEMO-CMP-27dc9939773a04535b20",
+        "DEMO-CMP-33c5a0e178879833546d",
+        "DEMO-CMP-f32aa42a655d8c50bd4d",
+        "DEMO-CMP-11ad5423984197d54e85"
+       ],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "same_device_activity",
+       "args": {
+        "device_id": "DEMO-DEV-SCL-SORT-DMM-01-2",
+        "hours": 12
+       },
+       "evidence_ids": [
+        "DEMO-DEV-SCL-SORT-DMM-01-2",
+        "DEMO-DEV-SCL-SORT-DMM-01-2-HB-20260916T031351",
+        "DEMO-DEV-SCL-SORT-DMM-01-2-HB-20260916T034351",
+        "DEMO-DEV-SCL-SORT-DMM-01-2-HB-20260916T041351",
+        "DEMO-DEV-SCL-SORT-DMM-01-2-HB-20260916T044351",
+        "DEMO-DEV-SCL-SORT-DMM-01-2-HB-20260916T051351",
+        "DEMO-DEV-SCL-SORT-DMM-01-2-HB-20260916T054351",
+        "DEMO-CMP-19153a026f2be23a9c20",
+        "DEMO-CMP-62a12cbab9a6083f37d9",
+        "DEMO-CMP-0851194a2f8cd846d3f1",
+        "DEMO-SHP-000082-SCAN-008",
+        "DEMO-SHP-000082-SCAN-011",
+        "DEMO-SHP-000082-SCAN-015",
+        "DEMO-CMP-11ad5423984197d54e85",
+        "DEMO-SHP-000447-SCAN-006",
+        "DEMO-SHP-000357-SCAN-004",
+        "DEMO-SHP-000239-SCAN-004",
+        "DEMO-SHP-000229-SCAN-004",
+        "DEMO-SHP-000145-SCAN-004",
+        "DEMO-SHP-000066-SCAN-024"
+       ],
+       "computed_ids": [
+        "DEMO-CMP-19153a026f2be23a9c20",
+        "DEMO-CMP-62a12cbab9a6083f37d9",
+        "DEMO-CMP-0851194a2f8cd846d3f1",
+        "DEMO-CMP-11ad5423984197d54e85"
+       ],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "address_and_instructions",
+       "args": {},
+       "evidence_ids": [
+        "DEMO-SHP-000082-ADDR-01",
+        "DEMO-SHP-000082-PIN-01",
+        "DEMO-SHP-000082-ATT-001",
+        "DEMO-SHP-000082-ATT-002",
+        "DEMO-SHP-000082-ATT-003"
+       ],
+       "computed_ids": [],
+       "omitted_rows": {},
+       "failure": null
+      }
+     ],
+     "primary_cause": "RECIPIENT_UNAVAILABLE",
+     "confidence": "high",
+     "hypotheses": [
+      {
+       "cause": "RECIPIENT_UNAVAILABLE",
+       "status": "supported",
+       "supporting_evidence_ids": [
+        "DEMO-SHP-000082-ATT-001",
+        "DEMO-SHP-000082-ATT-002",
+        "DEMO-SHP-000082-ATT-003"
+       ],
+       "contradicting_evidence_ids": [],
+       "assessment": "All delivery attempts for the three packages failed with reason RECIPIENT_NOT_REACHED, and the address used was valid at the time of each attempt."
+      },
+      {
+       "cause": "WEIGHT_MISMATCH",
+       "status": "supported",
+       "supporting_evidence_ids": [
+        "DEMO-SHP-000082-SCAN-011",
+        "DEMO-CMP-a7cf0c4659edd0f9be8d",
+        "DEMO-SHP-000082-SCAN-025",
+        "DEMO-CMP-cfeeaa785254a5ce3daf"
+       ],
+       "contradicting_evidence_ids": [],
+       "assessment": "Package 02 was weighed twice at 5.08 kg and 5.00 kg, both outside the policy tolerance (0.612 kg) from the declared 6.12 kg."
+      },
+      {
+       "cause": "BARCODE_MISMATCH",
+       "status": "supported",
+       "supporting_evidence_ids": [
+        "DEMO-SHP-000082-SCAN-013",
+        "DEMO-CMP-9256c533425b87c0feb8"
+       ],
+       "contradicting_evidence_ids": [],
+       "assessment": "Package 03 had a single sorter read reporting barcode CP667837776SA, which differs from the manifest barcode CP667507776SA; the same sorter device had no other mismatching reads."
+      }
+     ],
+     "missing_evidence": [],
+     "next_evidence_step": "",
+     "recommended_action": "REQUEST_ADDRESS_CONFIRMATION",
+     "requires_physical_check": false,
+     "summary": "Delivery attempts failed because the recipient was not reached, confirmed by failed_reason fields. Package 02 shows a weight mismatch beyond policy tolerance, and package 03 has an isolated barcode read error. No contradictory evidence was found.",
+     "investigator": {
+      "degraded": false,
+      "mode": "gpt-oss",
+      "validation_error": null,
+      "validation_errors": []
+     },
+     "citations": [
+      {
+       "id": "DEMO-SHP-000082-ATT-001",
+       "kind": "DeliveryAttempt",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-SHP-000082-ATT-002",
+       "kind": "DeliveryAttempt",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-SHP-000082-ATT-003",
+       "kind": "DeliveryAttempt",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-SHP-000082-SCAN-011",
+       "kind": "ScanEvent",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-CMP-a7cf0c4659edd0f9be8d",
+       "kind": "ComputedResult",
+       "scope": "computed",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-SHP-000082-SCAN-025",
+       "kind": "ScanEvent",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-CMP-cfeeaa785254a5ce3daf",
+       "kind": "ComputedResult",
+       "scope": "computed",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-SHP-000082-SCAN-013",
+       "kind": "ScanEvent",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-CMP-9256c533425b87c0feb8",
+       "kind": "ComputedResult",
+       "scope": "computed",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      }
+     ],
+     "citations_all_valid": true,
+     "fact_checks": [
+      {
+       "check": "cause_consistent_with_evidence_rules",
+       "detail": "evidence rules at this snapshot show BARCODE_MISMATCH, RECIPIENT_UNAVAILABLE, WEIGHT_MISMATCH",
+       "passed": true
+      },
+      {
+       "check": "citations_valid",
+       "detail": "every cited id resolves, was retrieved in this investigation and was recorded by the snapshot",
+       "passed": true
+      },
+      {
+       "check": "sensitive_dispute_or_conflict",
+       "detail": "none",
+       "passed": true
+      },
+      {
+       "check": "parcel_held_by_contractor",
+       "detail": "no",
+       "passed": true
+      },
+      {
+       "check": "alternative_explanation_recorded",
+       "detail": "a hypothesis other than the primary cause cites evidence",
+       "passed": true
+      }
+     ],
+     "review": {
+      "verdict": "accept",
+      "model_verdict": "ACCEPT",
+      "reason_code": "MODEL_ACCEPT",
+      "feedback": "Citations are valid and directly support the conclusion that the recipient was unavailable; no contradictory evidence is present and alternative hypotheses were examined.",
+      "unsupported_claims": [],
+      "unaddressed_contradictions": [],
+      "alternatives_tested": "yes",
+      "mode": "gpt-oss",
+      "degraded": false,
+      "validation_error": null
+     },
+     "model_calls_used_after_round": 10
+    }
+   ],
+   "primary_cause": "RECIPIENT_UNAVAILABLE",
+   "confidence": "high",
+   "hypotheses": [
+    {
+     "cause": "RECIPIENT_UNAVAILABLE",
+     "status": "supported",
+     "supporting_evidence_ids": [
+      "DEMO-SHP-000082-ATT-001",
+      "DEMO-SHP-000082-ATT-002",
+      "DEMO-SHP-000082-ATT-003"
+     ],
+     "contradicting_evidence_ids": [],
+     "assessment": "All delivery attempts for the three packages failed with reason RECIPIENT_NOT_REACHED, and the address used was valid at the time of each attempt."
+    },
+    {
+     "cause": "WEIGHT_MISMATCH",
+     "status": "supported",
+     "supporting_evidence_ids": [
+      "DEMO-SHP-000082-SCAN-011",
+      "DEMO-CMP-a7cf0c4659edd0f9be8d",
+      "DEMO-SHP-000082-SCAN-025",
+      "DEMO-CMP-cfeeaa785254a5ce3daf"
+     ],
+     "contradicting_evidence_ids": [],
+     "assessment": "Package 02 was weighed twice at 5.08 kg and 5.00 kg, both outside the policy tolerance (0.612 kg) from the declared 6.12 kg."
+    },
+    {
+     "cause": "BARCODE_MISMATCH",
+     "status": "supported",
+     "supporting_evidence_ids": [
+      "DEMO-SHP-000082-SCAN-013",
+      "DEMO-CMP-9256c533425b87c0feb8"
+     ],
+     "contradicting_evidence_ids": [],
+     "assessment": "Package 03 had a single sorter read reporting barcode CP667837776SA, which differs from the manifest barcode CP667507776SA; the same sorter device had no other mismatching reads."
+    }
+   ],
+   "insufficient_evidence": false,
+   "missing_evidence": [],
+   "next_evidence_step": "",
+   "recommended_action": "REQUEST_ADDRESS_CONFIRMATION",
+   "citations": [
+    {
+     "id": "DEMO-SHP-000082-ATT-001",
+     "kind": "DeliveryAttempt",
+     "scope": "shipment",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    },
+    {
+     "id": "DEMO-SHP-000082-ATT-002",
+     "kind": "DeliveryAttempt",
+     "scope": "shipment",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    },
+    {
+     "id": "DEMO-SHP-000082-ATT-003",
+     "kind": "DeliveryAttempt",
+     "scope": "shipment",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    },
+    {
+     "id": "DEMO-SHP-000082-SCAN-011",
+     "kind": "ScanEvent",
+     "scope": "shipment",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    },
+    {
+     "id": "DEMO-CMP-a7cf0c4659edd0f9be8d",
+     "kind": "ComputedResult",
+     "scope": "computed",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    },
+    {
+     "id": "DEMO-SHP-000082-SCAN-025",
+     "kind": "ScanEvent",
+     "scope": "shipment",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    },
+    {
+     "id": "DEMO-CMP-cfeeaa785254a5ce3daf",
+     "kind": "ComputedResult",
+     "scope": "computed",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    },
+    {
+     "id": "DEMO-SHP-000082-SCAN-013",
+     "kind": "ScanEvent",
+     "scope": "shipment",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    },
+    {
+     "id": "DEMO-CMP-9256c533425b87c0feb8",
+     "kind": "ComputedResult",
+     "scope": "computed",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    }
+   ],
+   "citations_all_valid": true,
+   "review": {
+    "verdict": "accept",
+    "model_verdict": "ACCEPT",
+    "reason_code": "MODEL_ACCEPT",
+    "reasons": "Citations are valid and directly support the conclusion that the recipient was unavailable; no contradictory evidence is present and alternative hypotheses were examined.",
+    "unsupported_claims": []
+   },
+   "authority": {
+    "risk_class": "APPROVAL_REQUIRED",
+    "rule_id": "AUTH-07-action-mismatch",
+    "action_type": "REQUEST_ADDRESS_CONFIRMATION",
+    "closure": "AUTO",
+    "reason": "Proposed action does not address a supported diagnosis."
+   },
+   "degraded": [],
+   "model_calls_used": 10,
+   "model_call_cap": 12,
+   "model_calls_by_role": {
+    "investigator": 9,
+    "reviewer": 1
+   },
+   "cap_reached": false,
+   "provider_calls": 10,
+   "disabled_tools": [],
+   "wall_seconds": 31.2,
+   "workflow_state_after_investigation": "AWAITING_APPROVAL",
+   "final_workflow_state": "AWAITING_APPROVAL",
+   "diagnosis_served": {
+    "available": true,
+    "reason": null,
+    "primary_cause": "RECIPIENT_UNAVAILABLE"
+   },
+   "case_detail_returns": {
+    "diagnosis": true,
+    "review": true,
+    "run": true,
+    "investigation_log": true,
+    "error": null
+   },
+   "pilot_case": 2,
+   "first_primary_cause": "BARCODE_MISMATCH",
+   "first_authority": {
+    "risk_class": "HUMAN_REVIEW",
+    "rule_id": "AUTH-23-physical-check-requested",
+    "action_type": "REQUEST_RESCAN",
+    "closure": "AUTO",
+    "reason": "The investigation requested a physical check; a person must investigate."
+   },
+   "state_before_rerun": "HUMAN_REVIEW",
+   "score": {
+    "verdict": "correct",
+    "matched": "knowable_cause",
+    "snapshot_as_of": "2026-09-16T06:01:27+00:00",
+    "shipment_healthy": false,
+    "knowable_causes": [
+     "BARCODE_MISMATCH",
+     "RECIPIENT_UNAVAILABLE",
+     "UNRECONCILED_CUSTODY",
+     "WEIGHT_MISMATCH"
+    ],
+    "acceptable_codes_at_snapshot": [
+     "BARCODE_MISMATCH",
+     "CUSTODY_GAP",
+     "MISSED_MILESTONE",
+     "RECIPIENT_UNAVAILABLE",
+     "UNRECONCILED_CUSTODY",
+     "WEIGHT_MISMATCH"
+    ],
+    "eventual_causes": [
+     "BARCODE_MISMATCH",
+     "RECIPIENT_UNAVAILABLE",
+     "UNRECONCILED_CUSTODY",
+     "WEIGHT_MISMATCH"
+    ],
+    "identifiable_mechanism_types": [
+     "DECLARED_WEIGHT_WRONG",
+     "LABEL_MISREAD",
+     "RETURN_SCAN_SKIPPED",
+     "ROUTINE_FAILED_ATTEMPT"
+    ],
+    "primary_cause": "RECIPIENT_UNAVAILABLE",
+    "primary_is_an_eventual_cause": true,
+    "knowable_causes_named": [
+     "BARCODE_MISMATCH",
+     "RECIPIENT_UNAVAILABLE",
+     "WEIGHT_MISMATCH"
+    ],
+    "knowable_causes_not_named": [
+     "UNRECONCILED_CUSTODY"
+    ],
+    "supported_causes_not_knowable": [],
+    "spec_records_held_at_snapshot": 7,
+    "run_found_in_database": true
+   }
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-ee49ac58b054a3062b032327",
+   "shipment_id": "DEMO-SHP-000104",
+   "opened_at": "2026-09-14T20:01:27+00:00",
+   "opening_symptoms": [
+    "CUSTODY_TRANSFER_UNCONFIRMED"
+   ],
+   "processed": true,
+   "run_id": "DEMO-OPS-RUN-b4ca6397b34756f530f77492",
+   "snapshot_as_of": "2026-09-16T06:01:27+00:00",
+   "rounds": [
+    {
+     "round": 0,
+     "tool_calls": [
+      {
+       "tool": "shipment_overview",
+       "args": {},
+       "evidence_ids": [
+        "DEMO-SHP-000104",
+        "DEMO-SHP-000104-PKG-01",
+        "DEMO-SHP-000104-JOURNEY",
+        "DEMO-SHP-000104-STATUS-001",
+        "DEMO-SHP-000104-STATUS-002",
+        "DEMO-SHP-000104-STATUS-003",
+        "DEMO-SHP-000104-STATUS-004",
+        "DEMO-SHP-000104-STATUS-005"
+       ],
+       "computed_ids": [],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "custody_chain",
+       "args": {
+        "package_id": "DEMO-SHP-000104-PKG-01"
+       },
+       "evidence_ids": [
+        "DEMO-SHP-000104-PKG-01",
+        "DEMO-SHP-000104-CUST-007",
+        "DEMO-SHP-000104-SCAN-009",
+        "DEMO-SHP-000104-CUST-006",
+        "DEMO-SHP-000104-SCAN-008",
+        "DEMO-SHP-000104-CUST-005",
+        "DEMO-SHP-000104-SCAN-007",
+        "DEMO-SHP-000104-CUST-004",
+        "DEMO-SHP-000104-SCAN-006",
+        "DEMO-SHP-000104-CUST-003",
+        "DEMO-SHP-000104-SCAN-003",
+        "DEMO-SHP-000104-CUST-002",
+        "DEMO-SHP-000104-SCAN-002",
+        "DEMO-SHP-000104-CUST-001",
+        "DEMO-SHP-000104-SCAN-001",
+        "DEMO-SHP-000104-SESSION-0915",
+        "DEMO-CMP-f7b6591e7701cad04616"
+       ],
+       "computed_ids": [
+        "DEMO-CMP-f7b6591e7701cad04616"
+       ],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "delivery_attempts",
+       "args": {},
+       "evidence_ids": [
+        "DEMO-SHP-000104"
+       ],
+       "computed_ids": [],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "device_status",
+       "args": {
+        "device_id": "DEMO-DEV-APP-DRV-MED-01-03",
+        "hours": 24
+       },
+       "evidence_ids": [
+        "DEMO-DEV-APP-DRV-MED-01-03",
+        "DEMO-DEV-APP-DRV-MED-01-03-HB-20260915T060800",
+        "DEMO-DEV-APP-DRV-MED-01-03-HB-20260915T062300",
+        "DEMO-CMP-6da3d5b6fa3545aecade"
+       ],
+       "computed_ids": [
+        "DEMO-CMP-6da3d5b6fa3545aecade"
+       ],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "same_route_run",
+       "args": {
+        "route_run_id": "DEMO-RR-MED-01-0915-1"
+       },
+       "evidence_ids": [
+        "DEMO-RR-MED-01-0915-1",
+        "DEMO-CMP-b3e302bfeef294f92dfd",
+        "DEMO-DEV-APP-DRV-MED-01-03",
+        "DEMO-CMP-e81793b901611b955b0f",
+        "DEMO-SHP-000104-MANIFEST-MED-01-0915-1-V1",
+        "DEMO-SHP-000104-CUST-007",
+        "DEMO-SHP-000133-CUST-009",
+        "DEMO-SHP-000358-CUST-009",
+        "DEMO-SHP-000083-CUST-017",
+        "DEMO-SHP-000083-CUST-019",
+        "DEMO-SHP-000083-ATT-001",
+        "DEMO-SHP-000083-RECON-001",
+        "DEMO-SHP-000083-CUST-018",
+        "DEMO-SHP-000083-CUST-020",
+        "DEMO-SHP-000083-ATT-002",
+        "DEMO-SHP-000083-RECON-002",
+        "DEMO-SHP-000254-CUST-017",
+        "DEMO-SHP-000254-CUST-019",
+        "DEMO-SHP-000254-ATT-001",
+        "DEMO-SHP-000254-RECON-001",
+        "DEMO-SHP-000254-CUST-018",
+        "DEMO-SHP-000254-CUST-020",
+        "DEMO-SHP-000254-ATT-002",
+        "DEMO-SHP-000254-RECON-002",
+        "DEMO-SHP-000278-CUST-011",
+        "DEMO-SHP-000278-CUST-012",
+        "DEMO-SHP-000278-ATT-002",
+        "DEMO-SHP-000278-RECON-002",
+        "DEMO-SHP-000458-CUST-009",
+        "DEMO-SHP-000458-CUST-010",
+        "DEMO-SHP-000458-ATT-001",
+        "DEMO-SHP-000458-RECON-001"
+       ],
+       "computed_ids": [
+        "DEMO-CMP-b3e302bfeef294f92dfd",
+        "DEMO-CMP-e81793b901611b955b0f"
+       ],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "same_device_activity",
+       "args": {
+        "device_id": "DEMO-DEV-APP-DRV-MED-01-03",
+        "end_at": "2026-09-16T06:01:27+00:00",
+        "hours": 12
+       },
+       "evidence_ids": [
+        "DEMO-DEV-APP-DRV-MED-01-03",
+        "DEMO-CMP-cb08faebaca19ff05ec2",
+        "DEMO-CMP-5dd75169ab115f451a19",
+        "DEMO-SHP-000104-SCAN-009"
+       ],
+       "computed_ids": [
+        "DEMO-CMP-cb08faebaca19ff05ec2",
+        "DEMO-CMP-5dd75169ab115f451a19"
+       ],
+       "omitted_rows": {},
+       "failure": null
+      }
+     ],
+     "primary_cause": "CUSTODY_GAP",
+     "confidence": "medium",
+     "hypotheses": [
+      {
+       "cause": "CUSTODY_GAP",
+       "status": "supported",
+       "supporting_evidence_ids": [
+        "DEMO-SHP-000104-CUST-007",
+        "DEMO-SHP-000104-SESSION-0915"
+       ],
+       "contradicting_evidence_ids": [],
+       "assessment": "The last recorded custody transfer is a load onto the delivery vehicle at 05:15:42, with no subsequent handover, delivery attempt, or receipt scan. The delivery session ended without reconciliation, and no delivery attempts are recorded."
+      },
+      {
+       "cause": "UNRECONCILED_CUSTODY",
+       "status": "supported",
+       "supporting_evidence_ids": [
+        "DEMO-SHP-000104-SESSION-0915"
+       ],
+       "contradicting_evidence_ids": [],
+       "assessment": "The session's reconciliation state is NOT_RECONCILED_AFTER_SESSION_END_AND_GRACE, confirming the parcel was neither delivered with proof nor returned."
+      }
+     ],
+     "missing_evidence": [
+      "any delivery attempt record or proof of handover for this parcel"
+     ],
+     "next_evidence_step": "Request the driver device to sync pending uploads and check for any undisclosed delivery attempt records.",
+     "recommended_action": "REQUEST_DEVICE_SYNC",
+     "requires_physical_check": false,
+     "summary": "The parcel was loaded onto the delivery vehicle but no subsequent custody transfer was recorded, and the delivery session ended without reconciliation. This indicates a custody gap leading to an un-reconciled session. Further device sync is needed to confirm whether a delivery attempt was made but not uploaded.",
+     "investigator": {
+      "degraded": false,
+      "mode": "gpt-oss",
+      "validation_error": null,
+      "validation_errors": []
+     },
+     "citations": [
+      {
+       "id": "DEMO-SHP-000104-CUST-007",
+       "kind": "CustodyEvent",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-SHP-000104-SESSION-0915",
+       "kind": "DeliverySession",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      }
+     ],
+     "citations_all_valid": true,
+     "fact_checks": [
+      {
+       "check": "cause_consistent_with_evidence_rules",
+       "detail": "evidence rules at this snapshot show UNRECONCILED_CUSTODY; no uncorroborated or discontinuous transfer in the custody chain",
+       "passed": false
+      },
+      {
+       "check": "citations_valid",
+       "detail": "every cited id resolves, was retrieved in this investigation and was recorded by the snapshot",
+       "passed": true
+      },
+      {
+       "check": "sensitive_dispute_or_conflict",
+       "detail": "none",
+       "passed": true
+      },
+      {
+       "check": "parcel_held_by_contractor",
+       "detail": "last corroborated holder is a contractor or independent vehicle for DEMO-SHP-000104-PKG-01",
+       "passed": false
+      },
+      {
+       "check": "alternative_explanation_recorded",
+       "detail": "a hypothesis other than the primary cause cites evidence",
+       "passed": true
+      }
+     ],
+     "review": {
+      "verdict": "reject",
+      "model_verdict": "REVISE",
+      "reason_code": "MODEL_REVISE",
+      "feedback": "The conclusion labels CUSTODY_GAP as the primary cause, but the evidence (session reconciliation state and deterministic check) points to UNRECONCILED_CUSTODY as the correct classification. Revise the primary cause to reflect the un‑reconciled custody evidence and explain how the custody gap leads to that state.",
+      "unsupported_claims": [
+       "Primary cause = CUSTODY_GAP is not supported by the reconciliation evidence"
+      ],
+      "unaddressed_contradictions": [
+       "DEMO-CMP-f7b6591e7701cad04616"
+      ],
+      "alternatives_tested": "yes",
+      "mode": "gpt-oss",
+      "degraded": false,
+      "validation_error": null
+     },
+     "model_calls_used_after_round": 8
+    },
+    {
+     "round": 1,
+     "tool_calls": [],
+     "primary_cause": "UNRECONCILED_CUSTODY",
+     "confidence": "medium",
+     "hypotheses": [
+      {
+       "cause": "UNRECONCILED_CUSTODY",
+       "status": "supported",
+       "supporting_evidence_ids": [
+        "DEMO-SHP-000104-SESSION-0915",
+        "DEMO-CMP-f7b6591e7701cad04616"
+       ],
+       "contradicting_evidence_ids": [],
+       "assessment": "The delivery session ended with reconciliation_state = NOT_RECONCILED_AFTER_SESSION_END_AND_GRACE (DEMO-CMP-f7b6591e7701cad04616), and no reconciliation record exists, confirming the parcel was neither delivered with proof nor returned."
+      },
+      {
+       "cause": "CUSTODY_GAP",
+       "status": "supported",
+       "supporting_evidence_ids": [
+        "DEMO-SHP-000104-CUST-007",
+        "DEMO-SHP-000104",
+        "DEMO-RR-MED-01-0915-1"
+       ],
+       "contradicting_evidence_ids": [],
+       "assessment": "The last corroborated custody transfer is a load onto the delivery vehicle at 05:15:42 (DEMO-SHP-000104-CUST-007). No subsequent handover, delivery attempt, or receipt scan is recorded (delivery_attempts NONE – DEMO-SHP-000104, and same_route_run shows outcome NO_OUTCOME_RECORDED – DEMO-RR-MED-01-0915-1), indicating a gap in custody after loading."
+      }
+     ],
+     "missing_evidence": [
+      "any delivery attempt record or proof of handover for this parcel"
+     ],
+     "next_evidence_step": "Request the driver device to sync pending uploads and check for any undisclosed delivery attempt or handover records.",
+     "recommended_action": "REQUEST_DEVICE_SYNC",
+     "requires_physical_check": false,
+     "summary": "The parcel was loaded onto the delivery vehicle but no further custody transfer was recorded, leading to an un‑reconciled delivery session. This reflects both a custody gap and the resulting UNRECONCILED_CUSTODY state. Syncing the driver device may reveal any delayed records.",
+     "investigator": {
+      "degraded": false,
+      "mode": "gpt-oss",
+      "validation_error": null,
+      "validation_errors": []
+     },
+     "citations": [
+      {
+       "id": "DEMO-SHP-000104-SESSION-0915",
+       "kind": "DeliverySession",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-CMP-f7b6591e7701cad04616",
+       "kind": "ComputedResult",
+       "scope": "computed",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-SHP-000104-CUST-007",
+       "kind": "CustodyEvent",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-SHP-000104",
+       "kind": "Shipment",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-RR-MED-01-0915-1",
+       "kind": "RouteRun",
+       "scope": "shared",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      }
+     ],
+     "citations_all_valid": true,
+     "fact_checks": [
+      {
+       "check": "cause_consistent_with_evidence_rules",
+       "detail": "evidence rules at this snapshot show UNRECONCILED_CUSTODY",
+       "passed": true
+      },
+      {
+       "check": "citations_valid",
+       "detail": "every cited id resolves, was retrieved in this investigation and was recorded by the snapshot",
+       "passed": true
+      },
+      {
+       "check": "sensitive_dispute_or_conflict",
+       "detail": "none",
+       "passed": true
+      },
+      {
+       "check": "parcel_held_by_contractor",
+       "detail": "last corroborated holder is a contractor or independent vehicle for DEMO-SHP-000104-PKG-01",
+       "passed": false
+      },
+      {
+       "check": "alternative_explanation_recorded",
+       "detail": "a hypothesis other than the primary cause cites evidence",
+       "passed": true
+      }
+     ],
+     "review": {
+      "verdict": "accept",
+      "model_verdict": "ACCEPT",
+      "reason_code": "MODEL_ACCEPT",
+      "feedback": "Citations are valid and the primary cause UNRECONCILED_CUSTODY is well supported; the alternative hypothesis was examined and the recommended device sync action is appropriate.",
+      "unsupported_claims": [],
+      "unaddressed_contradictions": [],
+      "alternatives_tested": "yes",
+      "mode": "gpt-oss",
+      "degraded": false,
+      "validation_error": null
+     },
+     "model_calls_used_after_round": 10
+    }
+   ],
+   "primary_cause": "UNRECONCILED_CUSTODY",
+   "confidence": "medium",
+   "hypotheses": [
+    {
+     "cause": "UNRECONCILED_CUSTODY",
+     "status": "supported",
+     "supporting_evidence_ids": [
+      "DEMO-SHP-000104-SESSION-0915",
+      "DEMO-CMP-f7b6591e7701cad04616"
+     ],
+     "contradicting_evidence_ids": [],
+     "assessment": "The delivery session ended with reconciliation_state = NOT_RECONCILED_AFTER_SESSION_END_AND_GRACE (DEMO-CMP-f7b6591e7701cad04616), and no reconciliation record exists, confirming the parcel was neither delivered with proof nor returned."
+    },
+    {
+     "cause": "CUSTODY_GAP",
+     "status": "supported",
+     "supporting_evidence_ids": [
+      "DEMO-SHP-000104-CUST-007",
+      "DEMO-SHP-000104",
+      "DEMO-RR-MED-01-0915-1"
+     ],
+     "contradicting_evidence_ids": [],
+     "assessment": "The last corroborated custody transfer is a load onto the delivery vehicle at 05:15:42 (DEMO-SHP-000104-CUST-007). No subsequent handover, delivery attempt, or receipt scan is recorded (delivery_attempts NONE – DEMO-SHP-000104, and same_route_run shows outcome NO_OUTCOME_RECORDED – DEMO-RR-MED-01-0915-1), indicating a gap in custody after loading."
+    }
+   ],
+   "insufficient_evidence": false,
+   "missing_evidence": [
+    "any delivery attempt record or proof of handover for this parcel"
+   ],
+   "next_evidence_step": "Request the driver device to sync pending uploads and check for any undisclosed delivery attempt or handover records.",
+   "recommended_action": "REQUEST_DEVICE_SYNC",
+   "citations": [
+    {
+     "id": "DEMO-SHP-000104-SESSION-0915",
+     "kind": "DeliverySession",
+     "scope": "shipment",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    },
+    {
+     "id": "DEMO-CMP-f7b6591e7701cad04616",
+     "kind": "ComputedResult",
+     "scope": "computed",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    },
+    {
+     "id": "DEMO-SHP-000104-CUST-007",
+     "kind": "CustodyEvent",
+     "scope": "shipment",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    },
+    {
+     "id": "DEMO-SHP-000104",
+     "kind": "Shipment",
+     "scope": "shipment",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    },
+    {
+     "id": "DEMO-RR-MED-01-0915-1",
+     "kind": "RouteRun",
+     "scope": "shared",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    }
+   ],
+   "citations_all_valid": true,
+   "review": {
+    "verdict": "accept",
+    "model_verdict": "ACCEPT",
+    "reason_code": "MODEL_ACCEPT",
+    "reasons": "Citations are valid and the primary cause UNRECONCILED_CUSTODY is well supported; the alternative hypothesis was examined and the recommended device sync action is appropriate.",
+    "unsupported_claims": []
+   },
+   "authority": {
+    "risk_class": "HUMAN_REVIEW",
+    "rule_id": "AUTH-04-contractor-custody",
+    "action_type": "REQUEST_DEVICE_SYNC",
+    "closure": "HUMAN",
+    "reason": "The parcel's last corroborated holder is a contractor or independent driver; physical reconciliation needs a person."
+   },
+   "degraded": [],
+   "model_calls_used": 10,
+   "model_call_cap": 12,
+   "model_calls_by_role": {
+    "investigator": 8,
+    "reviewer": 2
+   },
+   "cap_reached": false,
+   "provider_calls": 10,
+   "disabled_tools": [],
+   "wall_seconds": 47.6,
+   "workflow_state_after_investigation": "HUMAN_REVIEW",
+   "final_workflow_state": "HUMAN_REVIEW",
+   "diagnosis_served": {
+    "available": true,
+    "reason": null,
+    "primary_cause": "UNRECONCILED_CUSTODY"
+   },
+   "case_detail_returns": {
+    "diagnosis": true,
+    "review": true,
+    "run": true,
+    "investigation_log": true,
+    "error": null
+   },
+   "pilot_case": 3,
+   "first_primary_cause": "CUSTODY_GAP",
+   "first_authority": {
+    "risk_class": "HUMAN_REVIEW",
+    "rule_id": "AUTH-23-physical-check-requested",
+    "action_type": "REQUEST_HUB_CHECK",
+    "closure": "AUTO",
+    "reason": "The investigation requested a physical check; a person must investigate."
+   },
+   "state_before_rerun": "OPEN",
+   "score": {
+    "verdict": "correct",
+    "matched": "knowable_cause",
+    "snapshot_as_of": "2026-09-16T06:01:27+00:00",
+    "shipment_healthy": false,
+    "knowable_causes": [
+     "UNRECONCILED_CUSTODY"
+    ],
+    "acceptable_codes_at_snapshot": [
+     "UNRECONCILED_CUSTODY"
+    ],
+    "eventual_causes": [
+     "UNRECONCILED_CUSTODY"
+    ],
+    "identifiable_mechanism_types": [
+     "CONTRACTOR_RETAINS"
+    ],
+    "primary_cause": "UNRECONCILED_CUSTODY",
+    "primary_is_an_eventual_cause": true,
+    "knowable_causes_named": [
+     "UNRECONCILED_CUSTODY"
+    ],
+    "knowable_causes_not_named": [],
+    "supported_causes_not_knowable": [
+     "CUSTODY_GAP"
+    ],
+    "spec_records_held_at_snapshot": 1,
+    "run_found_in_database": true
+   }
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-bc49c87fe9acb077a80d6de3",
+   "shipment_id": "DEMO-SHP-000395",
+   "opened_at": "2026-09-15T02:01:27+00:00",
+   "opening_symptoms": [
+    "CUSTODY_TRANSFER_UNCONFIRMED"
+   ],
+   "processed": true,
+   "run_id": "DEMO-OPS-RUN-0959670590ab90091f84a90c",
+   "snapshot_as_of": "2026-09-16T06:01:27+00:00",
+   "rounds": [
+    {
+     "round": 0,
+     "tool_calls": [
+      {
+       "tool": "shipment_overview",
+       "args": {},
+       "evidence_ids": [
+        "DEMO-SHP-000395",
+        "DEMO-SHP-000395-PKG-01",
+        "DEMO-SHP-000395-PKG-02",
+        "DEMO-SHP-000395-JOURNEY",
+        "DEMO-SHP-000395-STATUS-001",
+        "DEMO-SHP-000395-STATUS-002",
+        "DEMO-SHP-000395-STATUS-003",
+        "DEMO-SHP-000395-STATUS-004",
+        "DEMO-SHP-000395-STATUS-005",
+        "DEMO-SHP-000395-STATUS-006",
+        "DEMO-SHP-000395-STATUS-007",
+        "DEMO-SHP-000395-STATUS-008"
+       ],
+       "computed_ids": [],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "custody_chain",
+       "args": {
+        "package_id": "DEMO-SHP-000395-PKG-01"
+       },
+       "evidence_ids": [
+        "DEMO-SHP-000395-PKG-01",
+        "DEMO-SHP-000395-CUST-005",
+        "DEMO-SHP-000395-CUST-007",
+        "DEMO-SHP-000395-SCAN-011",
+        "DEMO-CMP-9aa49d6eb1b7bb1a6a0e",
+        "DEMO-SHP-000395-CUST-009",
+        "DEMO-SHP-000395-SCAN-013",
+        "DEMO-CMP-e9f3a1297228387fe225",
+        "DEMO-SHP-000395-CUST-011",
+        "DEMO-SHP-000395-SCAN-015",
+        "DEMO-CMP-5d47a147d9530ed6ade1",
+        "DEMO-SHP-000395-CUST-013",
+        "DEMO-SHP-000395-SCAN-017",
+        "DEMO-CMP-57e8f807741d6a9489e6",
+        "DEMO-SHP-000395-SCAN-005",
+        "DEMO-SHP-000395-CUST-003",
+        "DEMO-SHP-000395-SCAN-003",
+        "DEMO-SHP-000395-CUST-001",
+        "DEMO-SHP-000395-SCAN-001",
+        "DEMO-SHP-000395-SESSION-0915",
+        "DEMO-SHP-000395-RECON-001",
+        "DEMO-CMP-5e43581223450f7059a0"
+       ],
+       "computed_ids": [
+        "DEMO-CMP-9aa49d6eb1b7bb1a6a0e",
+        "DEMO-CMP-e9f3a1297228387fe225",
+        "DEMO-CMP-5d47a147d9530ed6ade1",
+        "DEMO-CMP-57e8f807741d6a9489e6",
+        "DEMO-CMP-5e43581223450f7059a0"
+       ],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "device_status",
+       "args": {
+        "device_id": "DEMO-DEV-HH-HUB-RUH-01"
+       },
+       "evidence_ids": [
+        "DEMO-DEV-HH-HUB-RUH-01",
+        "DEMO-DEV-HH-HUB-RUH-01-HB-20260916T030543",
+        "DEMO-DEV-HH-HUB-RUH-01-HB-20260916T033543",
+        "DEMO-DEV-HH-HUB-RUH-01-HB-20260916T040543",
+        "DEMO-DEV-HH-HUB-RUH-01-HB-20260916T043543",
+        "DEMO-DEV-HH-HUB-RUH-01-HB-20260916T050543",
+        "DEMO-DEV-HH-HUB-RUH-01-HB-20260916T053543",
+        "DEMO-CMP-3f47cdac9463f70ff18b"
+       ],
+       "computed_ids": [
+        "DEMO-CMP-3f47cdac9463f70ff18b"
+       ],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "same_device_activity",
+       "args": {
+        "device_id": "DEMO-DEV-HH-HUB-RUH-01",
+        "hours": 12
+       },
+       "evidence_ids": [
+        "DEMO-DEV-HH-HUB-RUH-01",
+        "DEMO-DEV-HH-HUB-RUH-01-HB-20260916T030543",
+        "DEMO-DEV-HH-HUB-RUH-01-HB-20260916T033543",
+        "DEMO-DEV-HH-HUB-RUH-01-HB-20260916T040543",
+        "DEMO-DEV-HH-HUB-RUH-01-HB-20260916T043543",
+        "DEMO-DEV-HH-HUB-RUH-01-HB-20260916T050543",
+        "DEMO-DEV-HH-HUB-RUH-01-HB-20260916T053543",
+        "DEMO-CMP-a1efcf923a5b1b24df54",
+        "DEMO-CMP-4d253bb89b2931ca7961",
+        "DEMO-SHP-000395-SCAN-011",
+        "DEMO-SHP-000395-SCAN-012",
+        "DEMO-CMP-be18af7a47ff4f95ea6a",
+        "DEMO-SHP-000397-SCAN-040",
+        "DEMO-SHP-000397-SCAN-039",
+        "DEMO-SHP-000397-SCAN-038",
+        "DEMO-SHP-000397-SCAN-037",
+        "DEMO-SHP-000397-SCAN-036",
+        "DEMO-SHP-000383-SCAN-008",
+        "DEMO-SHP-000333-SCAN-008",
+        "DEMO-SHP-000030-SCAN-008"
+       ],
+       "computed_ids": [
+        "DEMO-CMP-a1efcf923a5b1b24df54",
+        "DEMO-CMP-4d253bb89b2931ca7961",
+        "DEMO-CMP-be18af7a47ff4f95ea6a"
+       ],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "same_route_run",
+       "args": {
+        "route_run_id": "DEMO-RR-RUH-N-0915-2"
+       },
+       "evidence_ids": [
+        "DEMO-RR-RUH-N-0915-2",
+        "DEMO-CMP-72a57ce52cb9c4b4ce96",
+        "DEMO-DEV-APP-DRV-RUH-N-02",
+        "DEMO-CMP-bb12991f77472a0341c1",
+        "DEMO-SHP-000395-MANIFEST-RUH-N-0915-2-V1",
+        "DEMO-SHP-000395-CUST-011",
+        "DEMO-SHP-000395-CUST-013",
+        "DEMO-SHP-000395-ATT-001",
+        "DEMO-SHP-000395-RECON-001",
+        "DEMO-SHP-000395-CUST-012",
+        "DEMO-SHP-000395-CUST-014",
+        "DEMO-SHP-000395-ATT-002",
+        "DEMO-SHP-000395-RECON-002",
+        "DEMO-SHP-000005-CUST-006",
+        "DEMO-SHP-000005-ATT-001",
+        "DEMO-SHP-000005-CUST-007",
+        "DEMO-SHP-000005-RECON-001",
+        "DEMO-SHP-000217-CUST-017",
+        "DEMO-SHP-000217-ATT-001",
+        "DEMO-SHP-000217-CUST-019",
+        "DEMO-SHP-000217-RECON-001",
+        "DEMO-SHP-000217-CUST-018",
+        "DEMO-SHP-000217-ATT-002",
+        "DEMO-SHP-000217-CUST-020",
+        "DEMO-SHP-000217-RECON-002",
+        "DEMO-SHP-000247-CUST-011",
+        "DEMO-SHP-000247-ATT-002",
+        "DEMO-SHP-000247-CUST-012",
+        "DEMO-SHP-000247-RECON-002",
+        "DEMO-SHP-000257-CUST-025",
+        "DEMO-SHP-000257-ATT-001",
+        "DEMO-SHP-000257-CUST-028",
+        "DEMO-SHP-000257-RECON-001",
+        "DEMO-SHP-000257-CUST-026",
+        "DEMO-SHP-000257-ATT-002",
+        "DEMO-SHP-000257-CUST-029",
+        "DEMO-SHP-000257-RECON-002",
+        "DEMO-SHP-000257-CUST-027",
+        "DEMO-SHP-000257-ATT-003",
+        "DEMO-SHP-000257-CUST-030",
+        "DEMO-SHP-000257-RECON-003"
+       ],
+       "computed_ids": [
+        "DEMO-CMP-72a57ce52cb9c4b4ce96",
+        "DEMO-CMP-bb12991f77472a0341c1"
+       ],
+       "omitted_rows": {
+        "parcels": 6
+       },
+       "failure": null
+      }
+     ],
+     "primary_cause": "CUSTODY_GAP",
+     "confidence": "high",
+     "hypotheses": [
+      {
+       "cause": "CUSTODY_GAP",
+       "status": "supported",
+       "supporting_evidence_ids": [
+        "DEMO-SHP-000395-CUST-005",
+        "DEMO-SHP-000395-CUST-007",
+        "DEMO-SHP-000395-CUST-009",
+        "DEMO-SHP-000395-CUST-011"
+       ],
+       "contradicting_evidence_ids": [],
+       "assessment": "The custody chain shows transfers that start from a holder other than the last corroborated holder, indicating missing handover scans between the sorting center, hub, and vehicle."
+      },
+      {
+       "cause": "DELAYED_SYNC",
+       "status": "refuted",
+       "supporting_evidence_ids": [],
+       "contradicting_evidence_ids": [
+        "DEMO-DEV-HH-HUB-RUH-01",
+        "DEMO-CMP-4d253bb89b2931ca7961"
+       ],
+       "assessment": "The hub device reported normally with no pending uploads and no late records, so delayed synchronization does not explain the gap."
+      }
+     ],
+     "missing_evidence": [],
+     "next_evidence_step": "",
+     "recommended_action": "INITIATE_CUSTODY_RECONCILIATION",
+     "requires_physical_check": false,
+     "summary": "The parcel’s custody chain contains transfers that do not follow the last confirmed holder, revealing a missing handover scan (custody gap). Hub device telemetry shows no upload delays, ruling out delayed sync. Reconciliation of custody records is needed.",
+     "investigator": {
+      "degraded": false,
+      "mode": "gpt-oss",
+      "validation_error": null,
+      "validation_errors": []
+     },
+     "citations": [
+      {
+       "id": "DEMO-SHP-000395-CUST-005",
+       "kind": "CustodyEvent",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-SHP-000395-CUST-007",
+       "kind": "CustodyEvent",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-SHP-000395-CUST-009",
+       "kind": "CustodyEvent",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-SHP-000395-CUST-011",
+       "kind": "CustodyEvent",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-DEV-HH-HUB-RUH-01",
+       "kind": "Device",
+       "scope": "shared",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-CMP-4d253bb89b2931ca7961",
+       "kind": "ComputedResult",
+       "scope": "computed",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      }
+     ],
+     "citations_all_valid": true,
+     "fact_checks": [
+      {
+       "check": "cause_consistent_with_evidence_rules",
+       "detail": "evidence rules at this snapshot show CUSTODY_GAP; uncorroborated or discontinuous transfer: DEMO-SHP-000395-CUST-007, DEMO-SHP-000395-CUST-008, DEMO-SHP-000395-CUST-009, DEMO-SHP-000395-CUST-010",
+       "passed": true
+      },
+      {
+       "check": "citations_valid",
+       "detail": "every cited id resolves, was retrieved in this investigation and was recorded by the snapshot",
+       "passed": true
+      },
+      {
+       "check": "sensitive_dispute_or_conflict",
+       "detail": "none",
+       "passed": true
+      },
+      {
+       "check": "parcel_held_by_contractor",
+       "detail": "no",
+       "passed": true
+      },
+      {
+       "check": "alternative_explanation_recorded",
+       "detail": "a hypothesis other than the primary cause cites evidence",
+       "passed": true
+      }
+     ],
+     "review": {
+      "verdict": "accept",
+      "model_verdict": "ACCEPT",
+      "reason_code": "MODEL_ACCEPT",
+      "feedback": "Citations are valid and directly support the custody‑gap conclusion; the delayed‑sync alternative was explicitly tested and refuted; no contradictory evidence is present and the recommended reconciliation action aligns with policy.",
+      "unsupported_claims": [],
+      "unaddressed_contradictions": [],
+      "alternatives_tested": "yes",
+      "mode": "gpt-oss",
+      "degraded": false,
+      "validation_error": null
+     },
+     "model_calls_used_after_round": 7
+    }
+   ],
+   "primary_cause": "CUSTODY_GAP",
+   "confidence": "high",
+   "hypotheses": [
+    {
+     "cause": "CUSTODY_GAP",
+     "status": "supported",
+     "supporting_evidence_ids": [
+      "DEMO-SHP-000395-CUST-005",
+      "DEMO-SHP-000395-CUST-007",
+      "DEMO-SHP-000395-CUST-009",
+      "DEMO-SHP-000395-CUST-011"
+     ],
+     "contradicting_evidence_ids": [],
+     "assessment": "The custody chain shows transfers that start from a holder other than the last corroborated holder, indicating missing handover scans between the sorting center, hub, and vehicle."
+    },
+    {
+     "cause": "DELAYED_SYNC",
+     "status": "refuted",
+     "supporting_evidence_ids": [],
+     "contradicting_evidence_ids": [
+      "DEMO-DEV-HH-HUB-RUH-01",
+      "DEMO-CMP-4d253bb89b2931ca7961"
+     ],
+     "assessment": "The hub device reported normally with no pending uploads and no late records, so delayed synchronization does not explain the gap."
+    }
+   ],
+   "insufficient_evidence": false,
+   "missing_evidence": [],
+   "next_evidence_step": "",
+   "recommended_action": "INITIATE_CUSTODY_RECONCILIATION",
+   "citations": [
+    {
+     "id": "DEMO-SHP-000395-CUST-005",
+     "kind": "CustodyEvent",
+     "scope": "shipment",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    },
+    {
+     "id": "DEMO-SHP-000395-CUST-007",
+     "kind": "CustodyEvent",
+     "scope": "shipment",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    },
+    {
+     "id": "DEMO-SHP-000395-CUST-009",
+     "kind": "CustodyEvent",
+     "scope": "shipment",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    },
+    {
+     "id": "DEMO-SHP-000395-CUST-011",
+     "kind": "CustodyEvent",
+     "scope": "shipment",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    },
+    {
+     "id": "DEMO-DEV-HH-HUB-RUH-01",
+     "kind": "Device",
+     "scope": "shared",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    },
+    {
+     "id": "DEMO-CMP-4d253bb89b2931ca7961",
+     "kind": "ComputedResult",
+     "scope": "computed",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    }
+   ],
+   "citations_all_valid": true,
+   "review": {
+    "verdict": "accept",
+    "model_verdict": "ACCEPT",
+    "reason_code": "MODEL_ACCEPT",
+    "reasons": "Citations are valid and directly support the custody‑gap conclusion; the delayed‑sync alternative was explicitly tested and refuted; no contradictory evidence is present and the recommended reconciliation action aligns with policy.",
+    "unsupported_claims": []
+   },
+   "authority": {
+    "risk_class": "AUTO",
+    "rule_id": "AUTH-10-auto-allowlist",
+    "action_type": "INITIATE_CUSTODY_RECONCILIATION",
+    "closure": "AUTO",
+    "reason": "Low-risk, reversible, evidence-bound action within the synthetic automation allowlist."
+   },
+   "degraded": [],
+   "model_calls_used": 7,
+   "model_call_cap": 12,
+   "model_calls_by_role": {
+    "investigator": 6,
+    "reviewer": 1
+   },
+   "cap_reached": false,
+   "provider_calls": 7,
+   "disabled_tools": [],
+   "wall_seconds": 31.4,
+   "workflow_state_after_investigation": "AWAITING_OUTCOME",
+   "final_workflow_state": "HUMAN_REVIEW",
+   "diagnosis_served": {
+    "available": true,
+    "reason": null,
+    "primary_cause": "CUSTODY_GAP"
+   },
+   "case_detail_returns": {
+    "diagnosis": true,
+    "review": true,
+    "run": true,
+    "investigation_log": true,
+    "error": null
+   },
+   "pilot_case": 4,
+   "first_primary_cause": "CUSTODY_GAP",
+   "first_authority": {
+    "risk_class": "HUMAN_REVIEW",
+    "rule_id": "AUTH-23-physical-check-requested",
+    "action_type": "REQUEST_RESCAN",
+    "closure": "AUTO",
+    "reason": "The investigation requested a physical check; a person must investigate."
+   },
+   "state_before_rerun": "HUMAN_REVIEW",
+   "score": {
+    "verdict": "correct",
+    "matched": "knowable_cause",
+    "snapshot_as_of": "2026-09-16T06:01:27+00:00",
+    "shipment_healthy": false,
+    "knowable_causes": [
+     "CUSTODY_GAP"
+    ],
+    "acceptable_codes_at_snapshot": [
+     "CUSTODY_GAP",
+     "MISSED_MILESTONE"
+    ],
+    "eventual_causes": [
+     "CUSTODY_GAP"
+    ],
+    "identifiable_mechanism_types": [
+     "SCAN_SKIPPED_AT_RECEIPT"
+    ],
+    "primary_cause": "CUSTODY_GAP",
+    "primary_is_an_eventual_cause": true,
+    "knowable_causes_named": [
+     "CUSTODY_GAP"
+    ],
+    "knowable_causes_not_named": [],
+    "supported_causes_not_knowable": [],
+    "spec_records_held_at_snapshot": 2,
+    "run_found_in_database": true
+   }
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-7e5eb36afcc86998a7fff524",
+   "shipment_id": "DEMO-SHP-000374",
+   "opened_at": "2026-09-15T15:01:27+00:00",
+   "opening_symptoms": [
+    "WEIGHT_READ_DIFFERS"
+   ],
+   "processed": true,
+   "run_id": "DEMO-OPS-RUN-3c8f936ffa3adaf6d3bac3df",
+   "snapshot_as_of": "2026-09-16T06:01:27+00:00",
+   "rounds": [
+    {
+     "round": 0,
+     "tool_calls": [
+      {
+       "tool": "shipment_overview",
+       "args": {},
+       "evidence_ids": [
+        "DEMO-SHP-000374",
+        "DEMO-SHP-000374-PKG-01",
+        "DEMO-SHP-000374-PKG-02",
+        "DEMO-SHP-000374-PKG-03",
+        "DEMO-SHP-000374-PKG-04",
+        "DEMO-SHP-000374-JOURNEY",
+        "DEMO-SHP-000374-STATUS-001",
+        "DEMO-SHP-000374-STATUS-002",
+        "DEMO-SHP-000374-STATUS-003",
+        "DEMO-SHP-000374-STATUS-004",
+        "DEMO-SHP-000374-STATUS-005",
+        "DEMO-SHP-000374-STATUS-006"
+       ],
+       "computed_ids": [],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "scans",
+       "args": {
+        "package_id": "optional"
+       },
+       "evidence_ids": [],
+       "computed_ids": [],
+       "omitted_rows": {},
+       "failure": "invalid_arguments"
+      },
+      {
+       "tool": "scans",
+       "args": {
+        "package_id": "DEMO-SHP-000374-PKG-01"
+       },
+       "evidence_ids": [
+        "DEMO-SHP-000374-PKG-01",
+        "DEMO-SHP-000374-PKG-02",
+        "DEMO-SHP-000374-PKG-03",
+        "DEMO-SHP-000374-PKG-04",
+        "DEMO-POLICY-W1",
+        "DEMO-SHP-000374-SCAN-001",
+        "DEMO-SHP-000374-SCAN-005",
+        "DEMO-SHP-000374-SCAN-009",
+        "DEMO-SHP-000374-SCAN-010",
+        "DEMO-SHP-000374-SCAN-011",
+        "DEMO-SHP-000374-SCAN-021",
+        "DEMO-SHP-000374-SCAN-025"
+       ],
+       "computed_ids": [],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "scans",
+       "args": {
+        "package_id": "DEMO-SHP-000374-PKG-02"
+       },
+       "evidence_ids": [
+        "DEMO-SHP-000374-PKG-01",
+        "DEMO-SHP-000374-PKG-02",
+        "DEMO-SHP-000374-PKG-03",
+        "DEMO-SHP-000374-PKG-04",
+        "DEMO-POLICY-W1",
+        "DEMO-SHP-000374-SCAN-002",
+        "DEMO-SHP-000374-SCAN-006",
+        "DEMO-SHP-000374-SCAN-012",
+        "DEMO-SHP-000374-SCAN-013",
+        "DEMO-SHP-000374-SCAN-014",
+        "DEMO-SHP-000374-SCAN-022",
+        "DEMO-SHP-000374-SCAN-026"
+       ],
+       "computed_ids": [],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "scans",
+       "args": {
+        "package_id": "DEMO-SHP-000374-PKG-03"
+       },
+       "evidence_ids": [
+        "DEMO-SHP-000374-PKG-01",
+        "DEMO-SHP-000374-PKG-02",
+        "DEMO-SHP-000374-PKG-03",
+        "DEMO-SHP-000374-PKG-04",
+        "DEMO-POLICY-W1",
+        "DEMO-SHP-000374-SCAN-016",
+        "DEMO-CMP-1eb011808ce18b2a4221",
+        "DEMO-SHP-000374-SCAN-003",
+        "DEMO-SHP-000374-SCAN-007",
+        "DEMO-SHP-000374-SCAN-015",
+        "DEMO-SHP-000374-SCAN-017",
+        "DEMO-SHP-000374-SCAN-023",
+        "DEMO-SHP-000374-SCAN-027"
+       ],
+       "computed_ids": [
+        "DEMO-CMP-1eb011808ce18b2a4221"
+       ],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "same_device_activity",
+       "args": {
+        "device_id": "DEMO-DEV-SCL-SORT-JED-01-2",
+        "hours": 12
+       },
+       "evidence_ids": [
+        "DEMO-DEV-SCL-SORT-JED-01-2",
+        "DEMO-DEV-SCL-SORT-JED-01-2-HB-20260916T031258",
+        "DEMO-DEV-SCL-SORT-JED-01-2-HB-20260916T034258",
+        "DEMO-DEV-SCL-SORT-JED-01-2-HB-20260916T041258",
+        "DEMO-DEV-SCL-SORT-JED-01-2-HB-20260916T044258",
+        "DEMO-DEV-SCL-SORT-JED-01-2-HB-20260916T051258",
+        "DEMO-DEV-SCL-SORT-JED-01-2-HB-20260916T054258",
+        "DEMO-CMP-91e8104212264a9818da",
+        "DEMO-CMP-64badf868ab40e095921",
+        "DEMO-CMP-2c173935b3fa23540b9d",
+        "DEMO-SHP-000374-SCAN-016",
+        "DEMO-CMP-1771695e814d4c597b3a",
+        "DEMO-SHP-000486-SCAN-009",
+        "DEMO-SHP-000486-SCAN-006",
+        "DEMO-SHP-000412-SCAN-004",
+        "DEMO-SHP-000403-SCAN-009",
+        "DEMO-SHP-000403-SCAN-006",
+        "DEMO-SHP-000384-SCAN-004",
+        "DEMO-SHP-000375-SCAN-008",
+        "DEMO-SHP-000340-SCAN-009"
+       ],
+       "computed_ids": [
+        "DEMO-CMP-91e8104212264a9818da",
+        "DEMO-CMP-64badf868ab40e095921",
+        "DEMO-CMP-2c173935b3fa23540b9d",
+        "DEMO-CMP-1771695e814d4c597b3a"
+       ],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "scans",
+       "args": {
+        "package_id": "DEMO-SHP-000374-PKG-04"
+       },
+       "evidence_ids": [
+        "DEMO-SHP-000374-PKG-01",
+        "DEMO-SHP-000374-PKG-02",
+        "DEMO-SHP-000374-PKG-03",
+        "DEMO-SHP-000374-PKG-04",
+        "DEMO-POLICY-W1",
+        "DEMO-SHP-000374-SCAN-019",
+        "DEMO-CMP-5e103ddfb2071c8f2bd8",
+        "DEMO-SHP-000374-SCAN-004",
+        "DEMO-SHP-000374-SCAN-008",
+        "DEMO-SHP-000374-SCAN-018",
+        "DEMO-SHP-000374-SCAN-020",
+        "DEMO-SHP-000374-SCAN-024",
+        "DEMO-SHP-000374-SCAN-028"
+       ],
+       "computed_ids": [
+        "DEMO-CMP-5e103ddfb2071c8f2bd8"
+       ],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "same_device_activity",
+       "args": {
+        "device_id": "DEMO-DEV-SCL-SORT-JED-01-1",
+        "hours": 12
+       },
+       "evidence_ids": [
+        "DEMO-DEV-SCL-SORT-JED-01-1",
+        "DEMO-DEV-SCL-SORT-JED-01-1-HB-20260916T031550",
+        "DEMO-DEV-SCL-SORT-JED-01-1-HB-20260916T034550",
+        "DEMO-DEV-SCL-SORT-JED-01-1-HB-20260916T041550",
+        "DEMO-DEV-SCL-SORT-JED-01-1-HB-20260916T044550",
+        "DEMO-DEV-SCL-SORT-JED-01-1-HB-20260916T051550",
+        "DEMO-DEV-SCL-SORT-JED-01-1-HB-20260916T054550",
+        "DEMO-CMP-9b055c4eabdf3c675f5e",
+        "DEMO-CMP-8bc62d7ef63bfd8a3657",
+        "DEMO-CMP-ef686916247480cf7880",
+        "DEMO-SHP-000374-SCAN-010",
+        "DEMO-SHP-000374-SCAN-013",
+        "DEMO-SHP-000374-SCAN-019",
+        "DEMO-CMP-1771695e814d4c597b3a",
+        "DEMO-SHP-000375-SCAN-015",
+        "DEMO-SHP-000375-SCAN-012",
+        "DEMO-SHP-000340-SCAN-006",
+        "DEMO-SHP-000312-SCAN-005",
+        "DEMO-SHP-000191-SCAN-004",
+        "DEMO-SHP-000059-SCAN-004"
+       ],
+       "computed_ids": [
+        "DEMO-CMP-9b055c4eabdf3c675f5e",
+        "DEMO-CMP-8bc62d7ef63bfd8a3657",
+        "DEMO-CMP-ef686916247480cf7880",
+        "DEMO-CMP-1771695e814d4c597b3a"
+       ],
+       "omitted_rows": {},
+       "failure": null
+      }
+     ],
+     "primary_cause": "WEIGHT_MISMATCH",
+     "confidence": "low",
+     "hypotheses": [
+      {
+       "cause": "WEIGHT_MISMATCH",
+       "status": "supported",
+       "supporting_evidence_ids": [
+        "DEMO-SHP-000374-SCAN-016",
+        "DEMO-CMP-1eb011808ce18b2a4221",
+        "DEMO-SHP-000374-SCAN-019",
+        "DEMO-CMP-5e103ddfb2071c8f2bd8"
+       ],
+       "contradicting_evidence_ids": [],
+       "assessment": "Two packages (03 and 04) have calibrated weighings that differ from their declared weights beyond the policy tolerance, while the other two packages are within tolerance."
+      },
+      {
+       "cause": "MANIFEST_CONFLICT",
+       "status": "uncertain",
+       "supporting_evidence_ids": [],
+       "contradicting_evidence_ids": [],
+       "assessment": "No evidence shows the manifest omitted or mis‑listed these parcels; the manifest barcodes all match the scans."
+      }
+     ],
+     "missing_evidence": [
+      "Scale calibration logs for devices DEMO-DEV-SCL-SORT-JED-01-2 and DEMO-DEV-SCL-SORT-JED-01-1 at the time of weighing",
+      "Independent reweigh of the affected parcels"
+     ],
+     "next_evidence_step": "Request a calibrated reweigh of packages 03 and 04 and obtain the recent calibration records of the two scales used.",
+     "recommended_action": "REQUEST_REWEIGH",
+     "requires_physical_check": false,
+     "summary": "The shipment shows weight mismatches for two parcels, but no other evidence explains why. Scale calibration data and a reweigh are needed to determine if the discrepancy is due to scale error or incorrect declared weight.",
+     "investigator": {
+      "degraded": false,
+      "mode": "gpt-oss",
+      "validation_error": null,
+      "validation_errors": []
+     },
+     "citations": [
+      {
+       "id": "DEMO-SHP-000374-SCAN-016",
+       "kind": "ScanEvent",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-CMP-1eb011808ce18b2a4221",
+       "kind": "ComputedResult",
+       "scope": "computed",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-SHP-000374-SCAN-019",
+       "kind": "ScanEvent",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-CMP-5e103ddfb2071c8f2bd8",
+       "kind": "ComputedResult",
+       "scope": "computed",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      }
+     ],
+     "citations_all_valid": true,
+     "fact_checks": [
+      {
+       "check": "cause_consistent_with_evidence_rules",
+       "detail": "evidence rules at this snapshot show WEIGHT_MISMATCH",
+       "passed": true
+      },
+      {
+       "check": "citations_valid",
+       "detail": "every cited id resolves, was retrieved in this investigation and was recorded by the snapshot",
+       "passed": true
+      },
+      {
+       "check": "sensitive_dispute_or_conflict",
+       "detail": "none",
+       "passed": true
+      },
+      {
+       "check": "parcel_held_by_contractor",
+       "detail": "no",
+       "passed": true
+      },
+      {
+       "check": "alternative_explanation_recorded",
+       "detail": "no hypothesis other than the primary cause cites evidence (informational; the reviewer judges it)",
+       "passed": false
+      }
+     ],
+     "review": {
+      "verdict": "reject",
+      "model_verdict": "REVISE",
+      "reason_code": "MODEL_REVISE",
+      "feedback": "The primary cause (weight mismatch) is well‑supported, but the investigation did not test any alternative explanation with evidence (e.g., manifest or barcode errors). Add evidence for at least one alternative hypothesis or explain why alternatives are ruled out.",
+      "unsupported_claims": [],
+      "unaddressed_contradictions": [],
+      "alternatives_tested": "no",
+      "mode": "gpt-oss",
+      "degraded": false,
+      "validation_error": null
+     },
+     "model_calls_used_after_round": 10
+    },
+    {
+     "round": 1,
+     "tool_calls": [],
+     "primary_cause": "WEIGHT_MISMATCH",
+     "confidence": "medium",
+     "hypotheses": [
+      {
+       "cause": "WEIGHT_MISMATCH",
+       "status": "supported",
+       "supporting_evidence_ids": [
+        "DEMO-SHP-000374-SCAN-016",
+        "DEMO-CMP-1eb011808ce18b2a4221",
+        "DEMO-SHP-000374-SCAN-019",
+        "DEMO-CMP-5e103ddfb2071c8f2bd8"
+       ],
+       "contradicting_evidence_ids": [],
+       "assessment": "Packages 03 and 04 have calibrated weighings that differ from their declared weights beyond the policy tolerance, while packages 01 and 02 are within tolerance."
+      },
+      {
+       "cause": "BARCODE_MISMATCH",
+       "status": "refuted",
+       "supporting_evidence_ids": [
+        "DEMO-SHP-000374-SCAN-001",
+        "DEMO-SHP-000374-SCAN-002",
+        "DEMO-SHP-000374-SCAN-003",
+        "DEMO-SHP-000374-SCAN-004"
+       ],
+       "contradicting_evidence_ids": [],
+       "assessment": "All scans for the four packages show confident barcode reads that match the manifest barcodes."
+      }
+     ],
+     "missing_evidence": [],
+     "next_evidence_step": "",
+     "recommended_action": "REQUEST_REWEIGH",
+     "requires_physical_check": false,
+     "summary": "Two parcels in the shipment have weight readings outside the allowed tolerance, confirming a weight mismatch. Barcode consistency across all parcels refutes a barcode mismatch alternative.",
+     "investigator": {
+      "degraded": false,
+      "mode": "gpt-oss",
+      "validation_error": null,
+      "validation_errors": []
+     },
+     "citations": [
+      {
+       "id": "DEMO-SHP-000374-SCAN-016",
+       "kind": "ScanEvent",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-CMP-1eb011808ce18b2a4221",
+       "kind": "ComputedResult",
+       "scope": "computed",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-SHP-000374-SCAN-019",
+       "kind": "ScanEvent",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-CMP-5e103ddfb2071c8f2bd8",
+       "kind": "ComputedResult",
+       "scope": "computed",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-SHP-000374-SCAN-001",
+       "kind": "ScanEvent",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-SHP-000374-SCAN-002",
+       "kind": "ScanEvent",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-SHP-000374-SCAN-003",
+       "kind": "ScanEvent",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-SHP-000374-SCAN-004",
+       "kind": "ScanEvent",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      }
+     ],
+     "citations_all_valid": true,
+     "fact_checks": [
+      {
+       "check": "cause_consistent_with_evidence_rules",
+       "detail": "evidence rules at this snapshot show WEIGHT_MISMATCH",
+       "passed": true
+      },
+      {
+       "check": "citations_valid",
+       "detail": "every cited id resolves, was retrieved in this investigation and was recorded by the snapshot",
+       "passed": true
+      },
+      {
+       "check": "sensitive_dispute_or_conflict",
+       "detail": "none",
+       "passed": true
+      },
+      {
+       "check": "parcel_held_by_contractor",
+       "detail": "no",
+       "passed": true
+      },
+      {
+       "check": "alternative_explanation_recorded",
+       "detail": "a hypothesis other than the primary cause cites evidence",
+       "passed": true
+      }
+     ],
+     "review": {
+      "verdict": "reject",
+      "model_verdict": "REVISE",
+      "reason_code": "MODEL_REVISE",
+      "feedback": "The weight‑mismatch conclusion is well‑supported, but the claim that all barcodes match the manifest is not demonstrated by the cited records; the evidence only shows the scanned barcodes, not the manifest values. Add explicit manifest barcode data or a computed comparison showing no barcode mismatch, or explain why the scans are sufficient to refute that hypothesis.",
+      "unsupported_claims": [
+       "All scans for the four packages show confident barcode reads that match the manifest barcodes."
+      ],
+      "unaddressed_contradictions": [],
+      "alternatives_tested": "yes",
+      "mode": "gpt-oss",
+      "degraded": false,
+      "validation_error": null
+     },
+     "model_calls_used_after_round": 12
+    }
+   ],
+   "primary_cause": "WEIGHT_MISMATCH",
+   "confidence": "medium",
+   "hypotheses": [
+    {
+     "cause": "WEIGHT_MISMATCH",
+     "status": "supported",
+     "supporting_evidence_ids": [
+      "DEMO-SHP-000374-SCAN-016",
+      "DEMO-CMP-1eb011808ce18b2a4221",
+      "DEMO-SHP-000374-SCAN-019",
+      "DEMO-CMP-5e103ddfb2071c8f2bd8"
+     ],
+     "contradicting_evidence_ids": [],
+     "assessment": "Packages 03 and 04 have calibrated weighings that differ from their declared weights beyond the policy tolerance, while packages 01 and 02 are within tolerance."
+    },
+    {
+     "cause": "BARCODE_MISMATCH",
+     "status": "refuted",
+     "supporting_evidence_ids": [
+      "DEMO-SHP-000374-SCAN-001",
+      "DEMO-SHP-000374-SCAN-002",
+      "DEMO-SHP-000374-SCAN-003",
+      "DEMO-SHP-000374-SCAN-004"
+     ],
+     "contradicting_evidence_ids": [],
+     "assessment": "All scans for the four packages show confident barcode reads that match the manifest barcodes."
+    }
+   ],
+   "insufficient_evidence": false,
+   "missing_evidence": [],
+   "next_evidence_step": "",
+   "recommended_action": "REQUEST_REWEIGH",
+   "citations": [
+    {
+     "id": "DEMO-SHP-000374-SCAN-016",
+     "kind": "ScanEvent",
+     "scope": "shipment",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    },
+    {
+     "id": "DEMO-CMP-1eb011808ce18b2a4221",
+     "kind": "ComputedResult",
+     "scope": "computed",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    },
+    {
+     "id": "DEMO-SHP-000374-SCAN-019",
+     "kind": "ScanEvent",
+     "scope": "shipment",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    },
+    {
+     "id": "DEMO-CMP-5e103ddfb2071c8f2bd8",
+     "kind": "ComputedResult",
+     "scope": "computed",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    },
+    {
+     "id": "DEMO-SHP-000374-SCAN-001",
+     "kind": "ScanEvent",
+     "scope": "shipment",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    },
+    {
+     "id": "DEMO-SHP-000374-SCAN-002",
+     "kind": "ScanEvent",
+     "scope": "shipment",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    },
+    {
+     "id": "DEMO-SHP-000374-SCAN-003",
+     "kind": "ScanEvent",
+     "scope": "shipment",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    },
+    {
+     "id": "DEMO-SHP-000374-SCAN-004",
+     "kind": "ScanEvent",
+     "scope": "shipment",
+     "exists": true,
+     "retrieved_in_this_run": true,
+     "recorded_at_or_before_snapshot": true,
+     "valid": true
+    }
+   ],
+   "citations_all_valid": true,
+   "review": {
+    "verdict": "reject",
+    "model_verdict": "REVISE",
+    "reason_code": "MODEL_REVISE",
+    "reasons": "The weight‑mismatch conclusion is well‑supported, but the claim that all barcodes match the manifest is not demonstrated by the cited records; the evidence only shows the scanned barcodes, not the manifest values. Add explicit manifest barcode data or a computed comparison showing no barcode mismatch, or explain why the scans are sufficient to refute that hypothesis.",
+    "unsupported_claims": [
+     "All scans for the four packages show confident barcode reads that match the manifest barcodes."
+    ]
+   },
+   "authority": {
+    "risk_class": "HUMAN_REVIEW",
+    "rule_id": "AUTH-16-review-rejected",
+    "action_type": "REQUEST_REWEIGH",
+    "closure": null,
+    "reason": "Reviewer rejected the proposal after the bounded revision rounds."
+   },
+   "degraded": [],
+   "model_calls_used": 12,
+   "model_call_cap": 12,
+   "model_calls_by_role": {
+    "investigator": 10,
+    "reviewer": 2
+   },
+   "cap_reached": false,
+   "provider_calls": 12,
+   "disabled_tools": [],
+   "wall_seconds": 52.3,
+   "workflow_state_after_investigation": "ESCALATED",
+   "final_workflow_state": "ESCALATED",
+   "diagnosis_served": {
+    "available": false,
+    "reason": "review_not_accepted",
+    "primary_cause": null
+   },
+   "case_detail_returns": {
+    "diagnosis": true,
+    "review": true,
+    "run": true,
+    "investigation_log": true,
+    "error": null
+   },
+   "pilot_case": 10,
+   "first_primary_cause": "WEIGHT_MISMATCH",
+   "first_authority": {
+    "risk_class": "HUMAN_REVIEW",
+    "rule_id": "AUTH-23-physical-check-requested",
+    "action_type": "REQUEST_REWEIGH",
+    "closure": "AUTO",
+    "reason": "The investigation requested a physical check; a person must investigate."
+   },
+   "state_before_rerun": "HUMAN_REVIEW",
+   "score": {
+    "verdict": "correct",
+    "matched": "knowable_cause",
+    "snapshot_as_of": "2026-09-16T06:01:27+00:00",
+    "shipment_healthy": false,
+    "knowable_causes": [
+     "WEIGHT_MISMATCH"
+    ],
+    "acceptable_codes_at_snapshot": [
+     "WEIGHT_MISMATCH"
+    ],
+    "eventual_causes": [
+     "WEIGHT_MISMATCH"
+    ],
+    "identifiable_mechanism_types": [
+     "DECLARED_WEIGHT_WRONG"
+    ],
+    "primary_cause": "WEIGHT_MISMATCH",
+    "primary_is_an_eventual_cause": true,
+    "knowable_causes_named": [
+     "WEIGHT_MISMATCH"
+    ],
+    "knowable_causes_not_named": [],
+    "supported_causes_not_knowable": [],
+    "spec_records_held_at_snapshot": 4,
+    "run_found_in_database": true
+   }
+  },
+  {
+   "case_id": "DEMO-OPS-CASE-98400dbcb556ee25c2765298",
+   "shipment_id": "DEMO-SHP-000174",
+   "opened_at": "2026-09-15T18:01:27+00:00",
+   "opening_symptoms": [
+    "MILESTONE_OVERDUE"
+   ],
+   "processed": true,
+   "run_id": "DEMO-OPS-RUN-25f289dddf673a666e794d4f",
+   "snapshot_as_of": "2026-09-16T06:01:27+00:00",
+   "rounds": [
+    {
+     "round": 0,
+     "tool_calls": [
+      {
+       "tool": "shipment_overview",
+       "args": {},
+       "evidence_ids": [
+        "DEMO-SHP-000174",
+        "DEMO-SHP-000174-PKG-01",
+        "DEMO-SHP-000174-JOURNEY",
+        "DEMO-SHP-000174-STATUS-001",
+        "DEMO-SHP-000174-STATUS-002",
+        "DEMO-SHP-000174-STATUS-003",
+        "DEMO-SHP-000174-STATUS-004",
+        "DEMO-SHP-000174-STATUS-005",
+        "DEMO-SHP-000174-STATUS-006"
+       ],
+       "computed_ids": [],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "journey",
+       "args": {
+        "package_id": "DEMO-SHP-000174-PKG-01"
+       },
+       "evidence_ids": [
+        "DEMO-SHP-000174-EM-01-05",
+        "DEMO-CMP-1f3e49f8e427acf1c602",
+        "DEMO-DEV-APP-DRV-DMM-01-03",
+        "DEMO-CMP-6b0a1d46804c7580f7a2",
+        "DEMO-DEV-APP-DRV-DMM-01-02",
+        "DEMO-CMP-b371d007de5ce939d3ae",
+        "DEMO-SHP-000174-EM-01-01",
+        "DEMO-SHP-000174-CUST-001",
+        "DEMO-SHP-000174-EM-01-02",
+        "DEMO-SHP-000174-CUST-003",
+        "DEMO-SHP-000174-EM-01-03",
+        "DEMO-SHP-000174-CUST-006",
+        "DEMO-SHP-000174-CUST-008",
+        "DEMO-SHP-000174-EM-01-04",
+        "DEMO-SHP-000174-CUST-007",
+        "DEMO-SHP-000174-CUST-009"
+       ],
+       "computed_ids": [
+        "DEMO-CMP-1f3e49f8e427acf1c602",
+        "DEMO-CMP-6b0a1d46804c7580f7a2",
+        "DEMO-CMP-b371d007de5ce939d3ae"
+       ],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "delivery_attempts",
+       "args": {},
+       "evidence_ids": [
+        "DEMO-SHP-000174",
+        "DEMO-SHP-000174-ATT-001",
+        "DEMO-SHP-000174-REPORT-001",
+        "DEMO-SHP-000174-RECON-001"
+       ],
+       "computed_ids": [],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "same_route_run",
+       "args": {
+        "route_run_id": "DEMO-RR-DMM-01-0915-2"
+       },
+       "evidence_ids": [
+        "DEMO-RR-DMM-01-0915-2",
+        "DEMO-CMP-73d9f21dc75ed82a6d1d",
+        "DEMO-DEV-APP-DRV-DMM-01-03",
+        "DEMO-CMP-0d35315e86b2cb573304",
+        "DEMO-SHP-000174-MANIFEST-DMM-01-0915-2-V1",
+        "DEMO-SHP-000174-CUST-007",
+        "DEMO-SHP-000174-ATT-001",
+        "DEMO-SHP-000174-RECON-001",
+        "DEMO-SHP-000082-CUST-019",
+        "DEMO-SHP-000082-ATT-001",
+        "DEMO-SHP-000082-RECON-002",
+        "DEMO-SHP-000082-CUST-021",
+        "DEMO-SHP-000082-ATT-003",
+        "DEMO-SHP-000082-RECON-003",
+        "DEMO-SHP-000082-CUST-020",
+        "DEMO-SHP-000082-ATT-002",
+        "DEMO-SHP-000082-CUST-022",
+        "DEMO-SHP-000082-RECON-001",
+        "DEMO-SHP-000167-CUST-009",
+        "DEMO-SHP-000167-ATT-001",
+        "DEMO-SHP-000167-CUST-010",
+        "DEMO-SHP-000167-RECON-001",
+        "DEMO-SHP-000004-CUST-009",
+        "DEMO-SHP-000004-CUST-010",
+        "DEMO-SHP-000004-ATT-001",
+        "DEMO-SHP-000004-RECON-001",
+        "DEMO-SHP-000197-CUST-041",
+        "DEMO-SHP-000197-CUST-046",
+        "DEMO-SHP-000197-ATT-001",
+        "DEMO-SHP-000197-RECON-001",
+        "DEMO-SHP-000197-CUST-042",
+        "DEMO-SHP-000197-CUST-047",
+        "DEMO-SHP-000197-ATT-002",
+        "DEMO-SHP-000197-RECON-002",
+        "DEMO-SHP-000197-CUST-043",
+        "DEMO-SHP-000197-CUST-048",
+        "DEMO-SHP-000197-ATT-003",
+        "DEMO-SHP-000197-RECON-003"
+       ],
+       "computed_ids": [
+        "DEMO-CMP-73d9f21dc75ed82a6d1d",
+        "DEMO-CMP-0d35315e86b2cb573304"
+       ],
+       "omitted_rows": {
+        "parcels": 7
+       },
+       "failure": null
+      },
+      {
+       "tool": "address_and_instructions",
+       "args": {},
+       "evidence_ids": [
+        "DEMO-SHP-000174-ADDR-01",
+        "DEMO-SHP-000174-PIN-01",
+        "DEMO-SHP-000174-ATT-001"
+       ],
+       "computed_ids": [],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "device_status",
+       "args": {
+        "device_id": "DEMO-DEV-APP-DRV-DMM-01-03"
+       },
+       "evidence_ids": [
+        "DEMO-DEV-APP-DRV-DMM-01-03",
+        "DEMO-DEV-APP-DRV-DMM-01-03-HB-20260915T073500",
+        "DEMO-DEV-APP-DRV-DMM-01-03-HB-20260915T075000",
+        "DEMO-DEV-APP-DRV-DMM-01-03-HB-20260915T080500",
+        "DEMO-DEV-APP-DRV-DMM-01-03-HB-20260915T082000",
+        "DEMO-DEV-APP-DRV-DMM-01-03-HB-20260915T083500",
+        "DEMO-DEV-APP-DRV-DMM-01-03-HB-20260915T083547",
+        "DEMO-CMP-0f9a32fc2dfb3a49dd4b"
+       ],
+       "computed_ids": [
+        "DEMO-CMP-0f9a32fc2dfb3a49dd4b"
+       ],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "same_device_activity",
+       "args": {
+        "device_id": "DEMO-DEV-APP-DRV-DMM-01-03",
+        "end_at": "2026-09-16T06:01:27+00:00",
+        "hours": 12
+       },
+       "evidence_ids": [
+        "DEMO-DEV-APP-DRV-DMM-01-03",
+        "DEMO-CMP-777b961097c0b31828c6",
+        "DEMO-CMP-bb531704e6577b87c483",
+        "DEMO-SHP-000174-SCAN-009"
+       ],
+       "computed_ids": [
+        "DEMO-CMP-777b961097c0b31828c6",
+        "DEMO-CMP-bb531704e6577b87c483"
+       ],
+       "omitted_rows": {},
+       "failure": null
+      },
+      {
+       "tool": "scans",
+       "args": {
+        "package_id": "DEMO-SHP-000174-PKG-01"
+       },
+       "evidence_ids": [
+        "DEMO-SHP-000174-PKG-01",
+        "DEMO-POLICY-W1",
+        "DEMO-SHP-000174-SCAN-001",
+        "DEMO-SHP-000174-SCAN-002",
+        "DEMO-SHP-000174-SCAN-003",
+        "DEMO-SHP-000174-SCAN-004",
+        "DEMO-SHP-000174-SCAN-005",
+        "DEMO-SHP-000174-SCAN-006",
+        "DEMO-SHP-000174-SCAN-007",
+        "DEMO-SHP-000174-SCAN-008",
+        "DEMO-SHP-000174-SCAN-009",
+        "DEMO-SHP-000174-SCAN-010",
+        "DEMO-SHP-000174-SCAN-011"
+       ],
+       "computed_ids": [],
+       "omitted_rows": {},
+       "failure": null
+      }
+     ],
+     "primary_cause": "RECIPIENT_UNAVAILABLE",
+     "confidence": "high",
+     "hypotheses": [
+      {
+       "cause": "RECIPIENT_UNAVAILABLE",
+       "status": "supported",
+       "supporting_evidence_ids": [
+        "DEMO-SHP-000174-ATT-001",
+        "DEMO-SHP-000174-RECON-001",
+        "DEMO-SHP-000174-EM-01-05"
+       ],
+       "contradicting_evidence_ids": [
+        "DEMO-DEV-APP-DRV-DMM-01-03",
+        "DEMO-CMP-bb531704e6577b87c483"
+       ],
+       "assessment": "The delivery attempt was recorded as FAILED with reason NOT_ATTEMPTED_TIME and no proof of delivery; the depot reconciliation shows the parcel was RETURNED, indicating the recipient was not reached."
+      },
+      {
+       "cause": "DELAYED_SYNC",
+       "status": "refuted",
+       "supporting_evidence_ids": [],
+       "contradicting_evidence_ids": [
+        "DEMO-DEV-APP-DRV-DMM-01-03",
+        "DEMO-CMP-bb531704e6577b87c483"
+       ],
+       "assessment": "The driver app device shows no pending uploads and no records made after the attempt window, so a delayed sync cannot explain the missing delivery scan."
+      }
+     ],
+     "missing_evidence": [],
+     "next_evidence_step": "",
+     "recommended_action": "PRIORITIZE_NEXT_SESSION",
+     "requires_physical_check": false,
+     "summary": "The parcel missed its delivery milestone because the delivery attempt failed due to the recipient not being reached, and the parcel was subsequently returned to the depot. No evidence of a delayed device sync contradicts this, so the cause is established.",
+     "investigator": {
+      "degraded": false,
+      "mode": "gpt-oss",
+      "validation_error": null,
+      "validation_errors": []
+     },
+     "citations": [
+      {
+       "id": "DEMO-SHP-000174-ATT-001",
+       "kind": "DeliveryAttempt",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-SHP-000174-RECON-001",
+       "kind": "DepotReconciliation",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-SHP-000174-EM-01-05",
+       "kind": "ExpectedMilestone",
+       "scope": "shipment",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-DEV-APP-DRV-DMM-01-03",
+       "kind": "Device",
+       "scope": "shared",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      },
+      {
+       "id": "DEMO-CMP-bb531704e6577b87c483",
+       "kind": "ComputedResult",
+       "scope": "computed",
+       "exists": true,
+       "retrieved_in_this_run": true,
+       "recorded_at_or_before_snapshot": true,
+       "valid": true
+      }
+     ],
+     "citations_all_valid": true,
+     "fact_checks": [
+      {
+       "check": "cause_consistent_with_evidence_rules",
+       "detail": "evidence rules at this snapshot show MISSED_MILESTONE",
+       "passed": false
+      },
+      {
+       "check": "citations_valid",
+       "detail": "every cited id resolves, was retrieved in this investigation and was recorded by the snapshot",
+       "passed": true
+      },
+      {
+       "check": "sensitive_dispute_or_conflict",
+       "detail": "none",
+       "passed": true
+      },
+      {
+       "check": "parcel_held_by_contractor",
+       "detail": "no",
+       "passed": true
+      },
+      {
+       "check": "alternative_explanation_recorded",
+       "detail": "a hypothesis other than the primary cause cites evidence",
+       "passed": true
+      }
+     ],
+     "review": {
+      "verdict": "reject",
+      "model_verdict": "REVISE",
+      "reason_code": "MODEL_REVISE",
+      "feedback": "The claim that the parcel missed its milestone because the recipient was unavailable is not directly supported by the cited records; the DeliveryAttempt only records a FAILED disposition with reason NOT_ATTEMPTED_TIME, which does not prove recipient unavailability. The investigator should seek evidence of contact attempts, recipient response, or a reason explicitly indicating the recipient was unavailable, and address the possibility that the failure was due to timing or driver error.",
+      "unsupported_claims": [
+       "Primary cause RECIPIENT_UNAVAILABLE"
+      ],
+      "unaddressed_contradictions": [
+       "DEMO-SHP-000174-ATT-001 (failed_reason NOT_ATTEMPTED_TIME suggests a timing issue rather than recipient unavailability)"
+      ],
+      "alternatives_tested": "yes",
+      "mode": "gpt-oss",
+      "degraded": false,
+      "validation_error": null
+     },
+     "model_calls_used_after_round": 10
+    },
+    {
+     "round": 1,
+     "tool_calls": [],
+     "primary_cause": null,
+     "confidence": null,
+     "hypotheses": [],
+     "missing_evidence": null,
+     "next_evidence_step": null,
+     "recommended_action": null,
+     "requires_physical_check": null,
+     "summary": null,
+     "investigator": {
+      "degraded": true,
+      "mode": "model_call_cap",
+      "validation_error": "model-call cap reached before a valid conclusion",
+      "validation_errors": [
+       {
+        "error": "each hypothesis needs a cause code and status supported|refuted|uncertain",
+        "turn": 1
+       }
+      ]
+     },
+     "citations": [],
+     "citations_all_valid": null,
+     "fact_checks": null,
+     "review": {
+      "verdict": "no_proposal",
+      "model_verdict": null,
+      "reason_code": "INVESTIGATOR_UNAVAILABLE",
+      "feedback": "The investigation agent did not reach a valid conclusion; there is no proposal to review and a person must review the case.",
+      "unsupported_claims": [],
+      "unaddressed_contradictions": [],
+      "alternatives_tested": null,
+      "mode": "deterministic_evidence_guard",
+      "degraded": false,
+      "validation_error": null
+     },
+     "model_calls_used_after_round": 11
+    }
+   ],
+   "primary_cause": null,
+   "confidence": null,
+   "hypotheses": [],
+   "insufficient_evidence": false,
+   "missing_evidence": [],
+   "next_evidence_step": "",
+   "recommended_action": null,
+   "citations": [],
+   "citations_all_valid": null,
+   "review": {
+    "verdict": "no_proposal",
+    "model_verdict": null,
+    "reason_code": "INVESTIGATOR_UNAVAILABLE",
+    "reasons": "The investigation agent did not reach a valid conclusion; there is no proposal to review and a person must review the case.",
+    "unsupported_claims": []
+   },
+   "authority": {
+    "risk_class": "HUMAN_REVIEW",
+    "rule_id": "AUTH-02-model-degraded",
+    "action_type": null,
+    "closure": null,
+    "reason": "Model role unavailable (investigator); automatic execution blocked."
+   },
+   "degraded": [
+    {
+     "error": "model-call cap reached before a valid conclusion",
+     "kind": "model_call_cap",
+     "role": "investigator"
+    }
+   ],
+   "model_calls_used": 11,
+   "model_call_cap": 12,
+   "model_calls_by_role": {
+    "investigator": 10,
+    "reviewer": 1
+   },
+   "cap_reached": true,
+   "provider_calls": 11,
+   "disabled_tools": [],
+   "wall_seconds": 45.5,
+   "workflow_state_after_investigation": "HUMAN_REVIEW",
+   "final_workflow_state": "HUMAN_REVIEW",
+   "diagnosis_served": {
+    "available": false,
+    "reason": "investigation_unavailable",
+    "primary_cause": null
+   },
+   "case_detail_returns": {
+    "diagnosis": true,
+    "review": true,
+    "run": true,
+    "investigation_log": true,
+    "error": null
+   },
+   "pilot_case": 11,
+   "first_primary_cause": "CUSTODY_GAP",
+   "first_authority": {
+    "risk_class": "HUMAN_REVIEW",
+    "rule_id": "AUTH-04-contractor-custody",
+    "action_type": "PHYSICAL_CUSTODY_CHECK",
+    "closure": "AUTO",
+    "reason": "The parcel's last corroborated holder is a contractor or independent driver; physical reconciliation needs a person."
+   },
+   "state_before_rerun": "HUMAN_REVIEW",
+   "score": {
+    "verdict": "no valid conclusion",
+    "matched": null,
+    "snapshot_as_of": "2026-09-16T06:01:27+00:00",
+    "shipment_healthy": false,
+    "knowable_causes": [
+     "ROUTE_DELAY",
+     "UNRECONCILED_CUSTODY"
+    ],
+    "acceptable_codes_at_snapshot": [
+     "CUSTODY_GAP",
+     "MISSED_MILESTONE",
+     "ROUTE_DELAY",
+     "UNRECONCILED_CUSTODY"
+    ],
+    "eventual_causes": [
+     "ROUTE_DELAY",
+     "UNRECONCILED_CUSTODY"
+    ],
+    "identifiable_mechanism_types": [
+     "RETURN_SCAN_SKIPPED",
+     "ROUTINE_FAILED_ATTEMPT"
+    ],
+    "primary_cause": null,
+    "primary_is_an_eventual_cause": false,
+    "knowable_causes_named": [],
+    "knowable_causes_not_named": [
+     "ROUTE_DELAY",
+     "UNRECONCILED_CUSTODY"
+    ],
+    "supported_causes_not_knowable": [],
+    "spec_records_held_at_snapshot": 3,
+    "run_found_in_database": true
+   }
+  }
+ ],
+ "cases_not_investigated": [],
+ "score_schema": "world-pilot-score-1",
+ "summary": {
+  "cases": 6,
+  "verdicts": {
+   "correct": 5,
+   "incorrect": 0,
+   "appropriately uncertain": 0,
+   "wrongly uncertain": 0,
+   "no valid conclusion": 1
+  },
+  "identifiable_at_snapshot": 6,
+  "correct_on_identifiable": 5,
+  "not_identifiable_at_snapshot": 0,
+  "confident_wrong_answers": 0,
+  "accuracy_when_answering": 1.0,
+  "incorrect_but_an_eventual_cause": 0,
+  "citations_all_valid": 5,
+  "automatic_actions_authorized": 1,
+  "automatic_actions_on_incorrect_answers": 0,
+  "note": "A pilot of a few cases chosen by opening symptom set: it shows whether real investigations work end to end, not a measured accuracy."
+ },
+ "scoring": {
+  "script": "scripts/world_pilot_score.py",
+  "split": "development",
+  "truth_rows": 528,
+  "truth_schema": "world-truth-3",
+  "database": "shipments-v2-world-1-small"
+ }
+}

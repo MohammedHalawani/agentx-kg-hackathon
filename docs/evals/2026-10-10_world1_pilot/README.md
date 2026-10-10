@@ -33,3 +33,20 @@ Totals: 8 correct, 4 confident wrong answers, 0 stated uncertainty. All citation
 - Calls per case: 6 to 12, median 9.5; one case used all 12 allowed calls; none was cut off.
 
 Files: `pilot.json` (public run records, no truth), `pilot.scored.json` (adds the scoring).
+
+## Re-run of six cases after one prompt fix (907be31)
+
+The fix defined what confidence levels mean and what counts as a physical check. Cases 1, 2, 3, 4, 10 and 11 were
+re-investigated once at fhd 7a2c1e0 or later (`rerun.json`, `rerun.scored.json`): 62 model calls, 687,366 tokens. The snapshot is the
+clock the pilot ended on, later than the first investigations, so more evidence was available.
+
+- 5 of 6 correct against the causes knowable at that later time; 0 confident wrong answers.
+- Case 4 was classified AUTO by policy (custody reconciliation, rule AUTH-10): the physical-check definition works. With no
+  simulator attached the action got no field response and the case went to a person, as designed.
+- Cases 1 and 10 (weight mismatch, correct) were rejected by the reviewer after using all 12 calls.
+- Case 11 ran out of calls before a valid conclusion and went to a person as a degraded run. One of six cut off is
+  above the 5% rule, so the 12-call cap has to be raised in a dated amendment before the investigator is frozen.
+- No case concluded insufficient evidence in the re-run; at the later snapshot every case was identifiable.
+
+Pilot spend in total: 111 + 62 = 173 model calls, 29 more than the 144 planned for the pilot. All 173 count against the
+4,000-call budget.
