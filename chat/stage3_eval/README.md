@@ -12,13 +12,18 @@ hand-specified stand-in labelled FIXTURE, not a world-1 export.
 
 | Step | Process | Reads truth? | Writes |
 |---|---|---|---|
-| `select` | before any run | yes (truth.jsonl, monitor_replay_rows.jsonl) | `selection.json`, `pairs.json`, `strata.json`, each with `.sha256`, written once |
-| `run` | the evaluation | **no**: refuses to start with `SUHAIL_EVAL_TRUTH_ROOT` set; imports nothing truth-side (tested) | `ledger.jsonl`, `cases.jsonl`, `results/`, `captured/`, `run_manifest.json` |
+| `select` | before any run | yes (truth.jsonl, monitor_replay_rows.jsonl) | `selection.json` (run side), `selection_scorer.json`, `extras.json`, `pairs.json`, `strata.json` (scorer side), each with `.sha256`, written once |
+| `run` | the evaluation | **no**: refuses to start with `SUHAIL_EVAL_TRUTH_ROOT`, `SUHAIL_SIM_STATE_ROOT` or any variable naming TRUTH set (before the wiring is built); imports nothing truth-side (tested); invalid if a truth-side module is loaded when it ends | `ledger.jsonl`, `cases.jsonl`, `results/`, `captured/`, `run_manifest.json` |
 | `score` | after the run | yes | `scores.jsonl`, `canary.json` |
 | `report` | after scoring | no | `report.json`, `report.md` |
 
-`selection.json` carries no cause, mechanism, label or canary (checked on write); the run checks it against its
-pre-registered sha256 and the sealed configuration hash before anything runs.
+`selection.json` carries, per case, only its order, key, world, shipment and expected opening: no stratum, main-test
+flag, extras list, cause, mechanism, label or canary (checked on write, and refused by the run on load); the run
+checks it against its pre-registered sha256 and the sealed configuration hash before anything runs. The stratum and
+main-test flag of each case and the allocation are in `selection_scorer.json`; the extras lists are in `extras.json`,
+which the run opens only when `--extras` names it and only after the last main-test case. Shipments listed in
+`docs/evals/2026-10-10_world1_pilot/excluded_shipments.json` are never drawn from a world with that dataset id
+(`exclusions.py`).
 
 ## Design item to module
 
@@ -36,6 +41,9 @@ pre-registered sha256 and the sealed configuration hash before anything runs.
 | Categories, honest uncertainty kept apart from confident wrong | `design.CATEGORIES`, `scoring.categorise` |
 | Citation validity and evidence-grounded accuracy | `scoring._citation_audit` |
 | Canary and truth-vocabulary scan with a planted positive control | `canary.py` |
+| Per-case screen during the run (canary-shaped and mechanism-id-shaped tokens stop the run) | `canary.marker_hits`, `runner.run` |
+| The backend's per-case cap equals the sealed C_cap; the ledger is reconciled with the provider's count after every case | `scripts/stage3_wiring.require_sealed_cap`, `budget.BudgetLedger.reconcile` |
+| Correct answers split into observation level and mechanism level, per arm and stratum | `report.correct_level`, `report._levels` |
 | Pass bars (E1 identifiable ambiguous: agent vs B_rulecode, agent vs B_notools, exact McNemar, alpha 0.05, more wins) | `design.PASS_BARS`, `report.py` |
 | Wilson intervals, exact McNemar, paired difference interval, minimum detectable gain | `stats.py` |
 | Abstention metrics, agreement with B_rulecode, symptom-name dependence, reviewer vs correctness, matched pairs, usage, latency, outcome rates | `report._details` |

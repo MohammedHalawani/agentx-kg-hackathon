@@ -33,8 +33,10 @@ def build(config, *, dry_run=False):
             "stability_rerun": AgentArm(lambda c: investigate_as_of(stores[c.world], c, disabled=()),
                                         config.c_cap, config.r_cap, name="stability_rerun"),
         },
-        "provenance": provenance(),        # scripts/s5_scenarios.py provenance(): commit, dirty flag, model, prompt hashes,
-                                           # and model_calls {"succeeded": {...}, "failed": {...}} from the LiteLLM callbacks
+        "provenance": provenance,          # a dict, or a callable evaluated when the run ends: commit, dirty flag, model,
+                                           # prompt hashes and model_calls {"succeeded": {...}, "failed": {...}} from the
+                                           # LiteLLM callbacks. The model is scripts/s5_scenarios.py at the REPOSITORY ROOT
+                                           # (not chat/scripts), whose provenance(phase, started_at) takes two arguments.
     }
 
 def build_scorer(config):
@@ -48,26 +50,32 @@ The `config` passed in is the one sealed into `selection.json`; the run refuses 
 Drive the real pipeline on the one selected case, then read the result back from the ledger:
 
 ```python
-def run_case(store, case):
-    store.process_one(case.case_id, manual=True)      # tools, investigator, reviewer, authority, on this case only
-    store.execute_step(limit=25)                      # Stage 4: authorised automatic actions
-    case_row = read_one(store, "OpsCase", entity_id=case.case_id)
-    runs = read_all(store, "OpsRun", case_id=case.case_id)
+def run_case(ws, case):
+    ws.store.process_one(case.case_id, manual=True)   # tools, investigator, reviewer, authority, on this case only
+    ws.store.execute_step(limit=25)                   # Stage 4: authorised automatic actions
+    case_row = ws.rows("OpsCase", entity_id=case.case_id)[0]
+    runs = ws.rows("OpsRun", case_id=case.case_id)
     return from_ops_run(case.key, case.shipment_id, case=case_row, runs=runs,
-                        executions=read_all(store, "OpsExecution", case_id=case.case_id),
-                        outcomes=read_all(store, "OpsOutcome", case_id=case.case_id))
+                        executions=ws.rows("OpsExecution", case_id=case.case_id),
+                        outcomes=ws.rows("OpsOutcome", case_id=case.case_id))
 ```
+
+`ws.rows(kind, **where)` is the wiring's own read-only ledger reader (`WorldSession.rows` in
+`chat/scripts/stage3_wiring.py`: the properties of this dataset's `OpsEntity` records of one kind, oldest first). The
+backend has no `read_one` or `read_all` helper, as an earlier version of this page assumed. Do not use
+`scripts/s5_scenarios.py` `case_rows` for this: that function joins the ledger with truth rows and belongs to a scorer.
 
 - Keep the worker paused: the harness, not the FIFO worker, chooses which cases are investigated. Cases the monitor
   opens that are not in the selection are never investigated (they would spend calls outside the plan).
 - The FIRST OpsRun of the case is scored (`from_ops_run` sorts by `recorded_at`); re-investigations are kept but are
   not the headline.
 - **The call count.** Stage 2's per-case counter (investigator turns, reviewer rounds, revisions and retries, one
-  counter, capped at C_cap in code) must be on the run record. `records.FIELDS["calls_used"]` tries
-  `model_calls_used`, `calls_used`, `model_calls` on the analysis and on the OpsRun row; if Stage 2 names it otherwise,
-  add the name there (that tuple is the only place to change). The ledger never counts the agent's calls a second
-  way. A record without the field is settled at its full worst case and flagged. A count above C_cap + R_cap stops
-  the run as a cap violation.
+  counter, capped at C_cap in code) must be on the run record. `records.FIELDS["calls_used"]` reads
+  `investigation_log.model_calls_used`, then the investigator's own budget at
+  `investigation.model_calls.model_calls_used`, then `model_calls_used` and `calls_used` on the analysis and on the
+  OpsRun row, and takes a whole number only, never the counter object (that tuple is the only place to change). The
+  ledger never counts the agent's calls a second way. A record without a readable count is settled at its full worst
+  case and flagged. A count above C_cap + R_cap stops the run as a cap violation.
 - If Stage 2 keeps a separate reviewer cap, put it in `EvalConfig.r_cap` before selecting: the sizing becomes
   `floor(4000 / (C_cap + R_cap + 2))` (addendum, item 1) and each agent case reserves C_cap + R_cap.
 - Also map, if Stage 2 adds them: `tokens`, `cap_hit`, `wall_seconds`, `tool_seconds` (per tool query, seconds) in
@@ -79,7 +87,7 @@ Selection order is world by world, by the monitor's expected opening time (`expe
 because the replay clock only moves forward. For each selected case:
 
 1. Advance that world's replay (`store.tick(seconds=3600, manual=True)` and `monitor_step` until nothing is pending,
-   as `scripts/s5_scenarios.py step_loop` does with `investigate=False`; also `outcome_step` so earlier cases'
+   as `step_loop` in `scripts/s5_scenarios.py` (repository root) does with `investigate=False`; also `outcome_step` so earlier cases'
    verifications keep running) until the monitor has opened a case for the shipment, or until a horizon past
    `expected_opened_at` (return None then; the harness records "case_not_opened_in_run").
 2. Return `CaseRef(key, world, shipment_id, case_id=<OpsCase entity_id>, as_of=<store clock now>,
@@ -108,8 +116,8 @@ replace `NoToolsArm.run` behind the same `Arm` interface.
 They run only if calls remain after the main test, in the fixed order ablation then stability, and each extra case
 is handed a `CaseRef` whose `as_of` is the MAIN agent run's snapshot (the clock has moved on by then). So they must
 investigate **as of** `case.as_of` with the time-correct predicate, e.g. through `operations.graph.investigate(
-shipment_id, as_of, ...)` with the Stage 2 `disabled=` tool set (the cross-shipment tools for the ablation, none for
-stability), and **must not execute or record actions** on the case: they are read-only re-investigations. Return an
+shipment_id, as_of, ...)` with its `disabled_tools=` keyword (the cross-shipment tools for the ablation, an empty
+tuple for stability), and **must not execute or record actions** on the case: they are read-only re-investigations. Return an
 ArmResult (e.g. `records.from_investigation(...)` with `calls_used`).
 
 ## 6. Capture for the canary scan
@@ -127,6 +135,12 @@ under `<run>/captured/<surface>/`. The design's five surfaces are all required, 
 | `logs` | once per run: the run's log output |
 
 ## 7. The scorer seams (scorer process only, after the run)
+
+Neither seam existed in the backend when this page was written: there is no `IngestionLog.ingested` and no
+`EvidenceResolver.recorded_at` outside the wiring. The building blocks were the `recorded_at` query in
+`scripts/s5_scenarios.py` `case_rows` (the `MATCH (n:V2Entity) WHERE n.entity_id IN $ids` read) and the `ingested`
+closure inside `world.validate.monitor_replay`. As wired they are `WorldIngestionLog` and `WorldResolver` in
+`chat/scripts/stage3_wiring.py` (section 11).
 
 - `IngestionLog.ingested(world, t) -> set[str]`: the evidence ids recorded at or before t in that world's database
   after the run, with the same rule as `world.validate.monitor_replay` (an imported record from its own
@@ -146,11 +160,13 @@ From `chat/`, on a clean tree (the run refuses a tree that is dirty or changes d
 # 2. Pre-register (truth readable here only):
 python -m stage3_eval select --world E1=<truth dir of E1>/development --world E2=<truth dir of E2>/development \
     --database E1=shipments-v2-world-<e1 name> --database E2=shipments-v2-world-<e2 name> --freeze-commit <full commit> --c-cap <C_cap> [--r-cap <R_cap>] --out ../docs/evals/<date>_stage3/preregistration
-#    then commit selection.json, pairs.json, strata.json and their .sha256 files BEFORE any run.
+#    then commit selection.json, selection_scorer.json, extras.json, pairs.json, strata.json and their .sha256 files BEFORE any run.
+#    The run reads selection.json only (key, world, shipment and expected opening per case). The other files are
+#    derived from truth; extras.json is opened by the run only when --extras names it, after the last main-test case.
 # 3. Zero-call rehearsal on the real databases (no model call, no case investigated):
-SUHAIL_EVAL_TRUTH_ROOT= python -m stage3_eval run --selection .../selection.json --out <run dir>-dry --wiring scripts.stage3_wiring:build --dry-run
-# 4. The run (truth unreachable):
-SUHAIL_EVAL_TRUTH_ROOT= python -m stage3_eval run --selection .../selection.json --out <run dir> --wiring scripts.stage3_wiring:build
+SUHAIL_EVAL_TRUTH_ROOT= python -m stage3_eval run --selection .../selection.json --extras .../extras.json --out <run dir>-dry --wiring scripts.stage3_wiring:build --dry-run
+# 4. The run (truth unreachable: no variable naming TRUTH and no SUHAIL_SIM_STATE_ROOT may be set):
+SUHAIL_EVAL_TRUTH_ROOT= python -m stage3_eval run --selection .../selection.json --extras .../extras.json --out <run dir> --wiring scripts.stage3_wiring:build
 # 5. Score and report (truth readable again):
 python -m stage3_eval score --selection .../selection.json --run <run dir> --world E1=<truth dir> --world E2=<truth dir> \
     --wiring scripts.stage3_wiring:build_scorer
@@ -163,11 +179,15 @@ own directory and is disclosed (amendment 1, H).
 
 ## 9. What must not happen
 
-- **No truth readable from any arm.** The run process never gets a truth path: `SUHAIL_EVAL_TRUTH_ROOT` unset (the
-  run refuses to start otherwise), no truth or physical-state directory passed to the store, the tools, the reviewer,
+- **No truth readable from any arm.** The run process never gets a truth path: `SUHAIL_EVAL_TRUTH_ROOT`,
+  `SUHAIL_SIM_STATE_ROOT` and every variable whose name contains TRUTH unset (the command refuses before the wiring is
+  built, and the run is invalid if a truth-side module is loaded in its process when it ends), no truth or physical-state directory passed to the store, the tools, the reviewer,
   the API or the capture. Only `select` and `score` read truth, each in its own process. The Stage 4 operational
   simulator may read physical state only (never truth labels), as world/README.md section 5 requires.
 - No `select` after any agent run on that world, and no edit to selection.json (the run checks its sha256).
+- No stratum, main-test flag, extras list or allocation in selection.json (the run refuses such a file), and no
+  selection_scorer.json, pairs.json or strata.json handed to the run.
+- No shipment of `docs/evals/2026-10-10_world1_pilot/excluded_shipments.json` as a case of a world with that dataset id.
 - No second count of the agent's calls; no per-case call counter outside Stage 2's.
 - No database created, replaced or reset by the harness wiring; `world.export apply` remains the only importer.
 - No investigation of non-selected cases during the evaluation run; no FIFO worker running alongside it.
@@ -227,3 +247,21 @@ What the wiring added to or settled about the sections above:
   tools' code. An id in neither does not resolve.
 - **Campaign ledger.** `select` seals `budget = 4000 - spent` from `docs/evals/model_call_ledger.json`; `run` refuses to
   start past the cap, reserves the budget and writes what it used (README, design item table).
+- **Gate fixes (2026-10-11).**
+  - *Cap equality.* `prepare_session` sets the store's `model_call_cap` to the sealed `C_cap`; `require_sealed_cap` reads
+    it back through `investigator.CallBudget` at build and again before every case and extra, and stops the run
+    (`budget.RunStopped`, never an arm error) if it is not exactly `C_cap`.
+  - *Reconciliation.* `build` returns `provider_calls` (the LiteLLM callback count). After each case and each extra the
+    runner writes a `reconcile` entry to `ledger.jsonl` with the ledger's calls and the provider's calls for this
+    process, and stops the run if the provider counted more than the ledger holds.
+  - *Selection files.* The run reads `selection.json` only; strata, main-test flags and the allocation are in
+    `selection_scorer.json`, the extras lists in `extras.json` (`--extras`, opened after the main test). `score` and
+    `report` join them with `selection.scorer_view`.
+  - *Truth guard.* The pilot's guard (any set variable naming TRUTH, plus `SUHAIL_SIM_STATE_ROOT`) is applied by the
+    command before the wiring is built; the manifest's `isolation` block records the variables set and the truth-side
+    modules loaded at the end.
+  - *Per-case screen.* Each case's captured surfaces and arm outputs are screened for canary-shaped and
+    mechanism-id-shaped tokens as the run goes (`canary.marker_hits`); a hit stops the run after the evidence is written.
+    The scorer's scan with the real vocabulary remains the verdict.
+  - *Exclusions.* `refuse_excluded` refuses a selection naming a shipment on the exclusion list of the dataset the
+    database holds, and the case source stops the run rather than hand one to an arm (`stage3_eval/exclusions.py`).
