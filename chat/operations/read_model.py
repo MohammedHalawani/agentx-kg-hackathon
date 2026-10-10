@@ -11,6 +11,7 @@ from dataset_v2.context import CATALOG, CONTEXT, OBSERVATIONS
 from operations.diagnosis import absent_diagnosis
 from operations.pagination import LIMITS, fingerprint, encode_cursor, decode_cursor
 from operations.reasoning import public_evidence, route_layers, triage
+from operations.store import MONITOR_SUMMARY, SYMPTOM_STATUS
 
 CASE_STATES = frozenset(("OPEN", "INVESTIGATING", "NEEDS_EVIDENCE", "RECOMMENDATION_READY", "AWAITING_APPROVAL",
                         "ACTION_INITIATED", "HUMAN_REVIEW", "AWAITING_OUTCOME", "ESCALATED", "REOPENED", "REJECTED", "RESOLVED"))
@@ -30,10 +31,10 @@ WHERE datetime(c.recorded_at) <= $snapshot AND datetime(c.opened_at) <= $snapsho
   AND ($scope IS NULL OR $scope='all'
        OR ($scope='active' AND NOT (coalesce(c.is_terminal,false) OR c.workflow_state='RESOLVED'))
        OR ($scope='resolved' AND (coalesce(c.is_terminal,false) OR c.workflow_state='RESOLVED')))
-  AND ($operational_status IS NULL OR c.operational_status=$operational_status)
+  AND ($operational_status IS NULL OR __CASE_STATUS__=$operational_status)
   AND ($priority IS NULL OR c.priority=$priority)
   AND ($city IS NULL OR c.city=$city)
-  AND ($cause IS NULL OR $cause IN coalesce(c.cause_codes,[]))
+  AND ($cause IS NULL OR $cause IN __CASE_CAUSES__)
   AND ($from_at IS NULL OR datetime(c.opened_at) >= $from_at) AND ($to_at IS NULL OR datetime(c.opened_at) <= $to_at)
   AND ($search IS NULL OR toLower(c.entity_id + ' ' + c.shipment_id) CONTAINS $search)
 WITH c,s,c.opened_at AS sort_time,c.entity_id AS sort_id
@@ -68,7 +69,8 @@ OPTIONAL MATCH (c:OpsCase {dataset_id:$dataset_id,split:'development',shipment_i
 WHERE datetime(c.recorded_at) <= $snapshot AND datetime(c.opened_at) <= $snapshot
 OPTIONAL MATCH (risk:OpsRiskFlag {dataset_id:$dataset_id,shipment_id:s.entity_id,active:true})
 WHERE datetime(risk.recorded_at) <= $snapshot
-WITH s,c,risk,coalesce(c.operational_status,'ON_TIME') AS operational_status,coalesce(c.cause_codes,[]) AS codes,
+WITH s,c,risk,CASE WHEN c IS NULL THEN 'ON_TIME' ELSE __CASE_STATUS__ END AS operational_status,__CASE_CAUSES__ AS codes,
+ coalesce(c.symptom_codes,[]) AS symptoms,
  CASE WHEN datetime(coalesce(c.as_of,s.as_of))>$snapshot THEN $snapshot ELSE datetime(coalesce(c.as_of,s.as_of)) END AS view_cutoff
 WHERE ($city IS NULL OR s.destination_city=$city)
  AND ($cause IS NULL OR $cause IN codes)
@@ -76,9 +78,9 @@ WHERE ($city IS NULL OR s.destination_city=$city)
    OR ($filter='needs_attention' AND c IS NOT NULL AND c.workflow_state <> 'RESOLVED')
    OR ($filter='critical' AND operational_status IN ['CRITICAL','UNRECONCILED_CUSTODY','DELIVERY_DISPUTE'])
    OR ($filter='sla_risk' AND (operational_status='SLA_RISK' OR risk IS NOT NULL))
-   OR ($filter='stalled' AND 'MISSED_MILESTONE' IN codes)
-   OR ($filter='unreconciled' AND 'UNRECONCILED_CUSTODY' IN codes)
-   OR ($filter='delivery_dispute' AND 'DELIVERY_DISPUTE' IN codes)
+   OR ($filter='stalled' AND ('MISSED_MILESTONE' IN codes OR 'MILESTONE_OVERDUE' IN symptoms))
+   OR ($filter='unreconciled' AND ('UNRECONCILED_CUSTODY' IN codes OR 'SESSION_END_UNRECONCILED' IN symptoms))
+   OR ($filter='delivery_dispute' AND ('DELIVERY_DISPUTE' IN codes OR 'RECIPIENT_REPORTED_NOT_RECEIVED' IN symptoms))
    OR ($filter='delivered' AND EXISTS {
      MATCH (s)-[:HAS_STATUS]->(st:V2Entity:StatusEvent)
      WHERE st.shipment_id=s.entity_id AND st.status='DELIVERED'
@@ -93,9 +95,12 @@ KEYSET = """
 WHERE $after_time IS NULL OR datetime(sort_time) > $after_time OR (datetime(sort_time)=$after_time AND sort_id > $after_id)
 """
 QUEUE_PROJECTION = """RETURN sort_time,sort_id,{case_id:c.entity_id,shipment_id:c.shipment_id,
- source_case_id:c.source_case_id,issue_summary:coalesce(c.issue_summary,'Evidence-derived shipment exception'),
- city:c.city,category:head(c.cause_codes),cause_codes:coalesce(c.cause_codes,[]),symptom_codes:coalesce(c.symptom_codes,[]),priority:c.priority,
- workflow_state:c.workflow_state,operational_status:c.operational_status,opened_at:c.opened_at,
+ source_case_id:c.source_case_id,
+ issue_summary:CASE WHEN __DIAGNOSED__ THEN coalesce(c.issue_summary,$monitor_summary) ELSE $monitor_summary END,
+ summary_source:CASE WHEN __DIAGNOSED__ THEN 'agent_diagnosis' ELSE 'monitor' END,diagnosis_available:__DIAGNOSED__,
+ city:c.city,category:CASE WHEN __DIAGNOSED__ THEN head(c.cause_codes) ELSE null END,cause_codes:__CASE_CAUSES__,
+ rule_signal_codes:coalesce(c.rule_signal_codes,[]),symptom_codes:coalesce(c.symptom_codes,[]),priority:c.priority,
+ workflow_state:c.workflow_state,operational_status:__CASE_STATUS__,opened_at:c.opened_at,
  as_of:coalesce(c.as_of,s.as_of),state_version:c.state_version,synthetic:true} AS item"""
 AUDIT_PROJECTION = """RETURN sort_time,sort_id,{id:a.entity_id,timestamp:coalesce(a.wall_recorded_at,a.occurred_at),scenario_time:a.occurred_at,shipment_id:a.shipment_id,
  case_id:a.case_id,event_type:a.event_type,actor:a.actor_id,decision:a.decision,result:a.result,
@@ -115,10 +120,28 @@ RETURN sort_time,sort_id,{shipment_id:s.entity_id,city:s.destination_city,status
  origin_city:s.origin_city,destination_city:s.destination_city,flow_type:s.flow_type,
  origin:CASE WHEN origin.lat IS NOT NULL AND origin.lng IS NOT NULL THEN {lat:origin.lat,lng:origin.lng,entity_id:origin.entity_id,source:'synthetic_facility'} ELSE null END,
  destination:CASE WHEN av.lat IS NOT NULL AND av.lng IS NOT NULL THEN {lat:av.lat,lng:av.lng,entity_id:av.entity_id,accuracy_m:av.accuracy_m,source:'effective_address_version'} ELSE null END,
- operational_status:operational_status,cause_codes:codes,priority:coalesce(c.priority,'low'),case_id:c.entity_id,
+ operational_status:operational_status,cause_codes:codes,diagnosis_available:coalesce(c.diagnosis_available,false),
+ symptom_codes:coalesce(c.symptom_codes,[]),priority:coalesce(c.priority,'low'),case_id:c.entity_id,
  workflow_state:c.workflow_state,as_of:view_cutoff,
  risk_watch:CASE WHEN risk IS NULL THEN null ELSE {latest_estimate_at:risk.latest_estimate_at,promise_at:risk.promise_at,certainty:risk.certainty} END,
  synthetic:true} AS item"""
+
+# What the queue and Explore serve about a case comes from an accepted agent diagnosis only. Without one (rules-only
+# runs, a failed investigator, a review that did not accept it, or a case queued again) the cause codes are empty, the
+# summary is the monitor's neutral text and the status is that of the observed symptoms. Records written before the
+# diagnosis flag existed may hold rule-triage codes, text or status; they are never served.
+DIAGNOSED = "coalesce(c.diagnosis_available,false)"
+CASE_CAUSES = f"(CASE WHEN {DIAGNOSED} THEN coalesce(c.cause_codes,[]) ELSE [] END)"
+CASE_STATUS = ("(CASE WHEN " + DIAGNOSED + " OR c.operational_status='RESOLVED' THEN c.operational_status "
+               + " ".join(f"WHEN '{symptom}' IN coalesce(c.symptom_codes,[]) THEN '{status}'" for symptom, status in SYMPTOM_STATUS)
+               + " ELSE 'NEEDS_ATTENTION' END)")
+
+
+def _expressions(query):
+    return query.replace("__CASE_STATUS__", CASE_STATUS).replace("__CASE_CAUSES__", CASE_CAUSES).replace("__DIAGNOSED__", DIAGNOSED)
+
+
+QUEUE_BASE, QUEUE_PROJECTION, EXPLORE_BASE, EXPLORE_PROJECTION = map(_expressions, (QUEUE_BASE, QUEUE_PROJECTION, EXPLORE_BASE, EXPLORE_PROJECTION))
 
 OWN_NODES = """
 MATCH (s:V2Entity:Shipment {entity_id:$shipment_id,dataset_id:$dataset_id,split:'development'})
@@ -276,7 +299,7 @@ class OperationsReader:
             cleaned["search"] = cleaned["search"].lower()
         return cleaned
 
-    def _page(self, route, base, projection, filters, limit, cursor, metadata=None):
+    def _page(self, route, base, projection, filters, limit, cursor, metadata=None, constants=None):
         if type(limit) is not int or limit not in LIMITS:
             raise ValueError("limit must be 25, 50 or 100")
         binding = fingerprint(route, self.dataset_id, filters, limit)
@@ -291,7 +314,7 @@ class OperationsReader:
             if instant(execution_snapshot)>datetime.now(timezone.utc):raise ValueError('Cursor is ahead of execution time')
         elif decoded and decoded['v']!=1:raise ValueError('Execution cursor is only supported by Audit')
         params = {**filters, "snapshot": snapshot, "after_time": decoded["timestamp"] if decoded else None,
-                  "after_id": decoded["id"] if decoded else None, "fetch_limit": limit + 1}
+                  "after_id": decoded["id"] if decoded else None, "fetch_limit": limit + 1, **(constants or {})}
         if execution_snapshot:params['execution_snapshot']=execution_snapshot
         count = self._run(base + "RETURN count(*) AS total", **params)
         rows = self._run(base + KEYSET + projection + " ORDER BY sort_time ASC,sort_id ASC LIMIT $fetch_limit", **params)
@@ -307,7 +330,10 @@ class OperationsReader:
         if filters["scope"] not in (None, "active", "resolved", "all"):
             raise ValueError("Invalid scope")
         result = self._page("queue", QUEUE_BASE, QUEUE_PROJECTION, filters, limit, cursor,
-                            {"filter_choices": {"workflow_state": sorted(CASE_STATES), "operational_status":sorted(OPERATIONAL_STATUSES), "priority": ["low", "medium", "high", "unknown"], "cause": sorted(CAUSES)}})
+                            {"filter_choices": {"workflow_state": sorted(CASE_STATES), "operational_status":sorted(OPERATIONAL_STATUSES), "priority": ["low", "medium", "high", "unknown"], "cause": sorted(CAUSES)},
+                             # issue_summary, category and cause_codes come from an accepted agent diagnosis only (summary_source).
+                             "summary_sources": ["agent_diagnosis", "monitor"]},
+                            constants={"monitor_summary": MONITOR_SUMMARY})
         snapshot = result["metadata"]["as_of"]
         buckets = self._run(QUEUE_BASE+"RETURN c.workflow_state AS state,count(*) AS count",**filters,snapshot=snapshot)
         result["metadata"]["buckets"] = {row["state"]: row["count"] for row in buckets}
@@ -464,7 +490,7 @@ class OperationsReader:
             # Stored workflow/approvals/outcomes are authoritative. Fresh triage is
             # a proposal and cannot silently replace an existing human decision.
             for key in ("workflow_state","state_version","priority","operational_status","recommendation_id",
-                        "last_run_id","recommendation","review","outcome","decisions","executions","run","diagnosis"):
+                        "last_run_id","recommendation","review","outcome","decisions","executions","run","previous_run","diagnosis"):
                 if key in ledger:
                     detail[key]=ledger[key]
             detail["investigated_at"]=(ledger.get("run") or {}).get("recorded_at")

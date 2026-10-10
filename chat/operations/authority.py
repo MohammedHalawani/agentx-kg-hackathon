@@ -71,6 +71,12 @@ HUMAN_INVESTIGATION_APPROVABLE = EVIDENCE_GATHERING
 # closes a case while any of them is recorded on it or visible now.
 OPEN_DISPUTE_SYMPTOMS = frozenset(("RECIPIENT_REPORTED_NOT_RECEIVED", "CUSTODY_REPORTS_CONFLICT", "MANIFEST_CUSTODY_CONFLICT",
                                    "SESSION_END_UNRECONCILED", "DELIVERY_ATTEMPT_FAILED"))
+# The open disputes a verified action settles by itself (and only while the dispute is no longer visible): a verified
+# custody reconciliation (corroborated custody at a facility for every package) settles an unreconciled session end. A
+# failed delivery attempt is settled only by corroborated delivery evidence, whatever the action (an address confirmation
+# is not a delivery). A recipient report or conflicting custody or manifest reports always need a person. Closure checks
+# every other standing issue on every path, not only the one the action addressed.
+DISPUTES_CLEARED_BY_ACTION = {"INITIATE_CUSTODY_RECONCILIATION": frozenset(("SESSION_END_UNRECONCILED",))}
 
 
 def symptom_floor(risk, reason, action_type, symptoms):
@@ -202,6 +208,7 @@ RULE_IDS = {
     "approval context changed": "AUTH-20-approval-context-stale",
     "requires human investigation: only evidence-gathering": "AUTH-21-human-investigation-required",
     "Rules-only proposal": "AUTH-22-rules-only-proposal",
+    "recommendation was already authorized": "AUTH-24-recommendation-already-executed",
     "The investigation requested a physical check": "AUTH-23-physical-check-requested",
 }
 

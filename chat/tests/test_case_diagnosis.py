@@ -11,13 +11,15 @@ from operations.read_model import OperationsReader
 from tests import test_operations_store as _store
 from tests import test_investigator as ti
 from tests.test_operations_read_model import make_reader
+from tests.test_operations_store import approval_policy
 
 
 class _Store(unittest.TestCase):
     setUpClass = classmethod(lambda cls: setattr(cls, "world", generate(Config(total=90))))
     make = _store.StoreTests.make
 
-    def agent(self, verdicts=("REVISE", "HUMAN_REVIEW")):
+    def agent(self, verdicts=("REVISE", "ACCEPT")):
+        """A revision round, then the independent reviewer accepts: an accepted investigation is a diagnosis."""
         fake = ti.FakeInvestigator(lambda tools: [("shipment_overview", {}), ("policy", {})], list(verdicts))
         fake.cause, fake.action = "BARCODE_MISMATCH", "REQUEST_RESCAN"
         return fake
@@ -27,7 +29,8 @@ class StoreDiagnosisTests(_Store):
     def test_agent_investigation_is_the_diagnosis_with_run_and_as_of(self):
         store, driver = self.make()
         store.agents = self.agent()
-        result = store.process_one(manual=True)
+        with approval_policy():  # In front of a person, so the case is not acted on automatically.
+            result = store.process_one(manual=True)
         detail = store.case_detail(result["case_id"])
         diagnosis = detail["diagnosis"]
         investigation = detail["run"]["result"]["investigation"]
@@ -63,7 +66,8 @@ class StoreDiagnosisTests(_Store):
     def test_a_queued_or_running_reinvestigation_supersedes_the_earlier_diagnosis(self):
         store, driver = self.make()
         store.agents = self.agent()
-        result = store.process_one(manual=True)
+        with approval_policy():
+            result = store.process_one(manual=True)
         detail = store.case_detail(result["case_id"])
         first_run = detail["last_run_id"]
         store.request_reanalysis(result["case_id"], "DEMO-OPERATOR-LOCAL", detail["state_version"], "reanalyze-diagnosis")
@@ -76,7 +80,8 @@ class StoreDiagnosisTests(_Store):
             return original(sid, as_of)
         store.reader.evidence = during
         store.agents = self.agent()
-        store.process_one(case_id=result["case_id"])
+        with approval_policy():
+            store.process_one(case_id=result["case_id"])
         store.reader.evidence = original
         self.assertEqual((seen[0]["available"], seen[0]["reason"]), (False, "investigation_in_progress"))
         self.assertNotEqual(seen[0]["run_id"], first_run)

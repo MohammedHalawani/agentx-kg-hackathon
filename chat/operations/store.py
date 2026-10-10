@@ -12,7 +12,7 @@ from dataset_v2.contracts import Config, canonical, digest, instant, UTC_FIELDS
 from dataset_v2.load import target_guard
 from operations.schema import SCHEMA, FIELDS, COMMON, public_value
 from operations.lifecycle import OperationsConflict, decision_state, require_version, require_actor
-from operations.diagnosis import case_diagnosis
+from operations.diagnosis import case_diagnosis, investigation_status
 from operations.simulator import SPEEDS, EVENT_KINDS
 from operations.worker import analyze
 
@@ -100,6 +100,43 @@ def monitor_finding(assessment):
 
 def symptom_status(symptoms):
     return next((status for symptom, status in SYMPTOM_STATUS if symptom in symptoms), "NEEDS_ATTENTION")
+
+
+# What the case record says about itself before, or without, an accepted agent diagnosis: neutral monitor text, no
+# cause codes and the status of the observed symptoms. Rule triage never fills these fields (it is kept apart as
+# rule_signal_codes), and neither does an investigation the independent reviewer did not accept.
+MONITOR_SUMMARY_PENDING = "Monitor detected an expected-vs-actual divergence in visible evidence; automatic investigation pending."
+MONITOR_SUMMARY = "Monitor detected an expected-vs-actual divergence in visible evidence; no accepted agent diagnosis."
+
+
+def without_diagnosis(case, *, pending):
+    """Reset the case's summary fields to the monitor's view (also when a case goes back for re-investigation)."""
+    case.update(issue_summary=MONITOR_SUMMARY_PENDING if pending else MONITOR_SUMMARY, cause_codes=[], rule_signal_codes=[],
+                diagnosis_available=False, operational_status=symptom_status(case.get("symptom_codes") or []))
+    return case
+
+
+def served_run_result(result):
+    """A stored run's result as served. Review text is derived from each review's reason (records written before reason
+    codes existed may carry a fixed sentence). An agent hypothesis carries the model's own text only: runs recorded
+    before that was fixed stored a rule-definition sentence as its Arabic summary, which is removed here."""
+    from operations.worker import with_review_reason
+    if result.get("review"):
+        result["review"] = with_review_reason(result["review"])
+    for item in result.get("trace") or []:
+        item["review"] = with_review_reason(item.get("review"))
+    agent = result.get("mode") == "gpt_oss_agents"
+    for diagnosis in (result.get("result") or {}).get("diagnoses") or []:
+        if agent or diagnosis.get("certainty") == "model_hypothesis":
+            diagnosis["summary_ar"] = None
+    for event in result.get("pipeline_events") or []:
+        output = event.get("output") or {}
+        if event.get("stage") == "review" and output.get("verdict"):
+            event["output"] = output = with_review_reason(output)
+        for diagnosis in output.get("diagnoses") or []:
+            if diagnosis.get("certainty") == "model_hypothesis":
+                diagnosis["summary_ar"] = None
+    return result
 
 
 def identity(kind, *parts):
@@ -301,7 +338,7 @@ class OperationsStore:
                 case = self._case(tx, c["worker_claim"])
                 if case["workflow_state"] == "INVESTIGATING":
                     case.update(workflow_state="OPEN", state_version=case["state_version"] + 1, claim_id=None, claim_at=None)
-                    self._put(tx, "OpsCase", case, update=True)
+                    self._put(tx, "OpsCase", without_diagnosis(case, pending=True), update=True)
                     self._audit(tx, case, "CLAIM_RELEASED", c["as_of"], actor=actor_id)
                 c.update(worker_claim=None, claim_at=None)
             self._put(tx, "OpsControl", c, update=True)
@@ -429,6 +466,7 @@ class OperationsStore:
             case.update(as_of=when, state_version=case["state_version"]+1)
             if kind == "RecipientReport" and case["workflow_state"] == "RESOLVED":
                 case.update(workflow_state="REOPENED", state_version=case["state_version"]+1, is_terminal=False, closed_at=None, verified_outcome_id=None)
+                without_diagnosis(case, pending=True)
                 self._invalidate_outcomes(tx, case)
                 self._audit(tx, case, "CASE_REOPENED", when, result="A new attributed recipient report reopens investigation.", actor="SUHAIL-INGESTION")
             self._put(tx, "OpsCase", case, update=True)
@@ -471,6 +509,7 @@ class OperationsStore:
                     case=active[0];new=sorted(set(finding["symptoms"])-set(case.get("symptom_codes") or []))
                     if new:
                         case.update(symptom_codes=sorted(set(case.get("symptom_codes") or [])|set(new)),state_version=case["state_version"]+1)
+                        if not case.get("diagnosis_available"):case["operational_status"]=symptom_status(case["symptom_codes"])
                         self._put(tx,"OpsCase",case,update=True)
                         self._audit(tx,case,"SYMPTOMS_UPDATED",as_of,actor="SUHAIL-MONITOR",result="New symptoms: "+", ".join(new))
                     continue
@@ -505,7 +544,7 @@ class OperationsStore:
             "session_id":session_id,"workflow_state":"OPEN","operational_status":status,
             "priority":"high" if status in {"CRITICAL","UNRECONCILED_CUSTODY","DELIVERY_DISPUTE"} else "medium",
             "symptom_codes":symptoms,"cause_codes":[],"city":row["city"] if row else "","opened_at":when,"recorded_at":when,"as_of":when,"state_version":0,
-            "issue_summary":"Monitor detected an expected-vs-actual divergence in visible evidence; automatic investigation pending."})
+            "issue_summary":MONITOR_SUMMARY_PENDING,"diagnosis_available":False,"rule_signal_codes":[]})
         self._link(tx,"OPS_ABOUT",identifier,sid,sid,when)
         self._audit(tx,case,"CASE_OPENED",when,result="Monitor symptoms: "+", ".join(symptoms),actor="SUHAIL-MONITOR")
         return identifier
@@ -543,19 +582,28 @@ class OperationsStore:
             self._reset_audit(actor_id,"REFUSED","missing or stale confirmation")
             raise OperationsConflict("Development reset needs the confirmation for the current session "
                                      "(status: development_reset.confirmation); nothing was deleted.")
-        if self.live:
-            if self.status()["worker"]["active_case_id"]:raise OperationsConflict("Pause auto-triage before starting a new session")
-            self.gateway.reset()
         outcome={}
         def reset_tx(tx):
+            # The control lock is held from here to the commit: no worker can claim a case between the check below and
+            # the deletions, and the live ingestion ledger is reset only after that check, under the same lock.
             c=self._control(tx,lock=True)
-            if c.get("worker_claim"):raise OperationsConflict("Pause auto-triage before starting a new session")
+            if c.get("worker_claim"):
+                entry={"result":"REFUSED","actor_id":actor_id,"wall_recorded_at":datetime.now(timezone.utc).isoformat(),
+                       "reason":"investigation worker active","clock":c["as_of"],"session_id":c.get("session_id"),"active_case_id":c["worker_claim"]}
+                c["reset_audit_json"]=canonical([*json.loads(c.get("reset_audit_json") or "[]"),entry][-RESET_AUDIT_LIMIT:])
+                self._put(tx,"OpsControl",c,update=True)
+                return "worker_active"  # Committed: the refusal is audited and nothing was deleted.
             if self.live:
-                row=tx.run("MATCH (f:ProviderFeedItem {origin:'PROVIDER'}) RETURN min(f.deliver_at) AS start").single()
+                try:self.gateway.reset()
+                except Exception as error:
+                    outcome["gateway_error"]=type(error).__name__
+                    raise
+                start=self.gateway.first_delivery()
             else:
                 row=tx.run("MATCH (e:V2Entity {dataset_id:$dataset,split:'development'}) WHERE e.occurred_at IS NOT NULL "
                            "RETURN min(e.occurred_at) AS start",dataset=self.dataset_id).single()
-            start=public_value(row["start"]) if row and row["start"] else c["initial_as_of"]
+                start=public_value(row["start"]) if row and row["start"] else None
+            start=start or c["initial_as_of"]
             start=start.isoformat() if hasattr(start,"isoformat") else str(start)
             start=(instant(start)-timedelta(seconds=1)).isoformat()
             deleted=tx.run("MATCH (n:OpsEntity {dataset_id:$dataset,split:'development'}) WHERE NOT n:OpsControl DETACH DELETE n "
@@ -572,7 +620,16 @@ class OperationsStore:
                    "reason":"confirmed development reset","session_id":outcome["session_before"],**outcome}
             c["reset_audit_json"]=canonical([*json.loads(c.get("reset_audit_json") or "[]"),entry][-RESET_AUDIT_LIMIT:])
             self._put(tx,"OpsControl",c,update=True)
-        self._execute(reset_tx,write=True)
+        try:
+            refused=self._execute(reset_tx,write=True)
+        except Exception as error:
+            if "gateway_error" not in outcome:raise
+            # The ingestion reset failed under the lock: the operations ledger was not deleted. Audited, then refused.
+            self._reset_audit(actor_id,"FAILED","live ingestion ledger reset failed",error=outcome["gateway_error"])
+            raise OperationsConflict("The live ingestion ledger could not be reset; the operations ledger was not deleted.") from error
+        if refused=="worker_active":
+            log.warning("Development ledger reset REFUSED for %s: investigation worker active",actor_id)
+            raise OperationsConflict("Pause auto-triage before starting a new session; nothing was deleted.")
         log.warning("Development ledger reset PERFORMED by %s: %s records deleted",actor_id,outcome.get("deleted_records"))
         return self.status()
 
@@ -605,7 +662,7 @@ class OperationsStore:
                 deliveries=assessment.get("delivery_assessment") or []
                 delivered=bool(deliveries) and all(d.get("assessment")=="CORROBORATED_DELIVERY" for d in deliveries)
             def record(tx,case=case,execution=execution,verdict=verdict,fresh=fresh,delivered=delivered):
-                from operations.authority import HUMAN_FLOOR_SYMPTOMS, OPEN_DISPUTE_SYMPTOMS, EVIDENCE_GATHERING
+                from operations.authority import HUMAN_FLOOR_SYMPTOMS, OPEN_DISPUTE_SYMPTOMS, DISPUTES_CLEARED_BY_ACTION
                 c=self._control(tx,lock=True);current=self._case(tx,case["entity_id"]);when=c["as_of"]
                 if current["workflow_state"]!="AWAITING_OUTCOME":return None
                 if verdict["status"]=="pending":
@@ -614,11 +671,14 @@ class OperationsStore:
                 recorded=set(current.get("symptom_codes") or [])
                 remaining=set(fresh)&STANDING_SYMPTOMS
                 others=[]
-                if success and execution.get("action_type") in EVIDENCE_GATHERING:
-                    # An evidence request answers a data question. It never closes a case while any custody, delivery or
-                    # recipient dispute is recorded or visible, or while another case of this shipment is still open.
+                if success:
+                    # One corrected issue never closes the shipment. Whatever the action, a success does not close a case
+                    # while a custody, delivery or recipient dispute is recorded or visible that this action does not
+                    # itself settle, or while another case of this shipment is still open.
                     disputes=(recorded|set(fresh))&OPEN_DISPUTE_SYMPTOMS
                     if delivered:disputes-={"DELIVERY_ATTEMPT_FAILED"}  # Corroborated delivery since the failed attempt.
+                    # A dispute the verified action itself settles (and that is no longer visible) does not stand.
+                    disputes-=DISPUTES_CLEARED_BY_ACTION.get(execution.get("action_type"),frozenset())-set(fresh)
                     others=[public_value(r["props"]) for r in tx.run("MATCH(c:OpsCase {shipment_id:$sid,dataset_id:$dataset,split:'development'}) "
                             "RETURN properties(c) AS props",sid=current["shipment_id"],dataset=self.dataset_id)]
                     others=[o for o in others if o["entity_id"]!=current["entity_id"] and not o.get("is_terminal") and o["workflow_state"]!="RESOLVED"]
@@ -626,6 +686,7 @@ class OperationsStore:
                     if others and not remaining:remaining={"OTHER_OPEN_CASE"}
                 remaining=sorted(remaining)
                 self._put(tx,"OpsOutcome",{"entity_id":outcome_id,"shipment_id":current["shipment_id"],"case_id":current["entity_id"],
+                    "run_id":execution.get("run_id") or current.get("last_run_id"),
                     "execution_id":execution["entity_id"],"action_code":execution["action_code"],"action_type":execution["action_type"],"success":success,
                     "outcome_type":verdict["outcome_type"],"evidence_ids":verdict["evidence_ids"],"verification_status":"VERIFIED",
                     "verified_at":when,"verifier_id":"SUHAIL-OUTCOME-VERIFIER","invalidated":False,"observed_at":when,
@@ -675,21 +736,39 @@ class OperationsStore:
             if result:results.append(result)
         return results
 
-    def _authorize_execution(self,tx,case,execution_id,source_id,proposal,action_type,authority,when,*,decision_id,decided_risk,closure="AUTO"):
+    def _authorize_execution(self,tx,case,execution_id,source_id,proposal,action_type,authority,when,*,decision_id,decided_risk,closure="AUTO",
+                             recommendation_id,run_id):
         """Record an authorized action for the execution adapter. Authorization is not execution or success.
-        The authority policy is re-checked here on every path; the caller has already refused what it denies."""
+        The authority policy is re-checked here on every path; the caller has already refused what it denies.
+        The recommendation is marked as authorized: it can never be approved (and so executed) a second time."""
         from operations.authority import execution_permission
         allowed,rule,reason=execution_permission(action_type,authority,decided_risk)
         if not allowed:raise OperationsConflict(f"{rule}: {reason}")
         target=(proposal.get("target") if isinstance(proposal.get("target"),dict) else None) or json.loads(proposal.get("target_json") or "{}")
         self._put(tx,"OpsExecution",{"entity_id":execution_id,"shipment_id":case["shipment_id"],"case_id":case["entity_id"],
-            "decision_id":decision_id,"action_code":proposal.get("action_code"),"action_type":action_type,"authority":authority,
+            "decision_id":decision_id,"recommendation_id":recommendation_id,"run_id":run_id,
+            "action_code":proposal.get("action_code"),"action_type":action_type,"authority":authority,
             "decided_risk":decided_risk,"permission_rule":rule,
             "status":"AUTHORIZED","expected_result":proposal.get("action"),"idempotency_key":execution_id,"closure":closure,
             "target_device":target.get("device_id"),"expected_evidence_json":canonical(target.get("expected_evidence") or []),
             "case_opened_at":case.get("opened_at"),
             "recorded_at":when,"occurred_at":when})
         self._link(tx,"OPS_INITIATES",source_id,execution_id,case["shipment_id"],when)
+        recommendation=self._get(tx,"OpsRecommendation",recommendation_id)
+        if recommendation:
+            recommendation.update(status="AUTHORIZED",execution_id=execution_id)
+            self._put(tx,"OpsRecommendation",recommendation,update=True)
+
+    def _recommendation_executed(self,tx,case,recommendation):
+        """Whether an execution was already authorized for this recommendation: recorded on it, or (for records written
+        before that) an automatic execution of it or an approving decision on it."""
+        rid=recommendation.get("entity_id")
+        if recommendation.get("status")=="AUTHORIZED" or recommendation.get("execution_id"):return True
+        if self._get(tx,"OpsExecution",identity("execution","auto",rid)):return True
+        rows=tx.run("MATCH(n:OpsEntity:OpsDecision {case_id:$case_id,dataset_id:$dataset}) WHERE n.recommendation_id=$rid "
+                    "AND n.decision='approve' RETURN properties(n) AS props ORDER BY n.recorded_at DESC,n.entity_id DESC LIMIT 20",
+                    case_id=case["entity_id"],dataset=self.dataset_id,rid=rid)
+        return any(r["props"].get("recommendation_id")==rid and r["props"].get("decision")=="approve" for r in rows)
 
     def execute_step(self, limit=5):
         """Execution adapter: carry out authorized actions (oldest first), exactly once each."""
@@ -781,6 +860,7 @@ class OperationsStore:
                 case["state_version"]+=1
                 if "RecipientReport" in row["labels"] and case["workflow_state"]=="RESOLVED":
                     case.update(workflow_state="REOPENED",state_version=case["state_version"]+1,is_terminal=False,closed_at=None,verified_outcome_id=None)
+                    without_diagnosis(case,pending=True)
                     self._invalidate_outcomes(tx,case)
                     self._audit(tx,case,"CASE_REOPENED",when,result="A new attributed recipient report reopens investigation.",actor="DEMO-SIMULATOR")
                 self._put(tx,"OpsCase",case,update=True)
@@ -813,6 +893,7 @@ class OperationsStore:
             if stale and (current.get("snapshot_refreshes") or 0)<MAX_SNAPSHOT_REFRESHES:
                 current.update(workflow_state="OPEN",state_version=current["state_version"]+1,claim_id=None,claim_at=None,
                                snapshot_refreshes=(current.get("snapshot_refreshes") or 0)+1)
+                without_diagnosis(current,pending=True)
                 control.update(worker_claim=None,claim_at=None)
                 self._put(tx,"OpsCase",current,update=True);self._put(tx,"OpsControl",control,update=True)
                 self._audit(tx,current,"CLAIM_RELEASED",control["as_of"],result="Evidence snapshot changed during analysis; re-investigating with the new evidence.")
@@ -884,7 +965,7 @@ class OperationsStore:
                 execution_id=identity("execution","auto",recommendation_id)
                 self._authorize_execution(tx,current,execution_id,recommendation_id,analysis["proposal"],authority["action_type"],
                                           "AUTO_POLICY",when,decision_id=None,decided_risk=authority.get("risk_class"),
-                                          closure=authority.get("closure","AUTO"))
+                                          closure=authority.get("closure","AUTO"),recommendation_id=recommendation_id,run_id=run_id)
                 self._audit(tx,current,"ACTION_AUTHORIZED",when,actor="SUHAIL-AUTHORITY-POLICY",old=current["workflow_state"],
                             result=f"AUTO · {authority['action_type']} · {authority['reason']}")
                 current.update(workflow_state="ACTION_INITIATED",state_version=current["state_version"]+1)
@@ -895,12 +976,20 @@ class OperationsStore:
                 self._audit(tx,current,"AUTHORITY_DECISION",when,actor="SUHAIL-AUTHORITY-POLICY",old=old,key=authority.get("rule_id"),
                             result=canonical({k:authority.get(k) for k in ("rule_id","risk_class","action_type","closure","reason","inputs")}))
             current.update(workflow_state=analysis["result"]["workflow_state"],state_version=current["state_version"]+1,
-                last_run_id=run_id,recommendation_id=recommendation_id,claim_id=None,claim_at=None,
-                cause_codes=analysis["result"]["operational_labels"],operational_status=analysis["result"]["operational_status"])
-            investigation=analysis.get("investigation") or {}
-            primary=investigation.get("primary_cause") or investigation.get("primary_hypothesis")
-            diagnosis=next((d for d in analysis["result"]["diagnoses"] if d["code"]==primary),None) or next(iter(analysis["result"]["diagnoses"]),None)
-            if diagnosis:current["issue_summary"]=diagnosis.get("summary_en") or diagnosis["summary"]  # Neutral rule text, not model prose.
+                last_run_id=run_id,recommendation_id=recommendation_id,claim_id=None,claim_at=None)
+            if investigation_status(analysis)[0]:
+                # An agent investigation the independent reviewer accepted: its cause codes, the status they imply and the
+                # primary hypothesis's own text (model prose, English) describe the case in the queue.
+                investigation=analysis["investigation"];primary=investigation.get("primary_cause")
+                diagnosis=next((d for d in analysis["result"]["diagnoses"] if d["code"]==primary),None) or next(iter(analysis["result"]["diagnoses"]),None)
+                current.update(cause_codes=analysis["result"]["operational_labels"],operational_status=analysis["result"]["operational_status"],
+                               diagnosis_available=True,rule_signal_codes=[],
+                               issue_summary=(diagnosis or {}).get("summary_en") or investigation.get("summary") or MONITOR_SUMMARY)
+            else:
+                # No accepted diagnosis (rules only, a failed investigator, or a review that did not accept it): the monitor's
+                # view stands. Rule triage codes are kept apart and labelled as rule signals, never as the cause.
+                without_diagnosis(current,pending=False)
+                if analysis["mode"]!="gpt_oss_agents":current["rule_signal_codes"]=list(analysis["result"].get("operational_labels") or [])
             self._put(tx,"OpsCase",current,update=True)
             if recommendation_id:
                 # The approval context this recommendation rests on: the symptoms and evidence the investigation saw, its
@@ -1007,10 +1096,14 @@ class OperationsStore:
     def pipeline_state(self,case_id):
         def read(tx):
             case=self._case(tx,case_id)
+            if case["workflow_state"] in ("OPEN","REOPENED"):
+                # Queued for a new investigation: the earlier run's stages are not the current pipeline.
+                return {"workflow_state":case["workflow_state"],"state_version":case["state_version"],"run_id":None,
+                        "previous_run_id":case.get("last_run_id"),"status":"QUEUED","events":[]}
             run=self._get(tx,"OpsRun",case.get("last_run_id",""))
             return {"workflow_state":case["workflow_state"],"state_version":case["state_version"],
                     "run_id":case.get("last_run_id"),"status":run["status"] if run else "QUEUED",
-                    "events":json.loads(run["result_json"]).get("pipeline_events",[]) if run else []}
+                    "events":served_run_result(json.loads(run["result_json"])).get("pipeline_events",[]) if run else []}
         return self._execute(read)
 
     def case_graph(self,case_id,evidence_ids):
@@ -1061,7 +1154,7 @@ class OperationsStore:
                 raise OperationsConflict('Re-analysis requires an eligible pending decision or evidence request')
             old=case['workflow_state'];when=control['as_of']
             case.update(workflow_state='OPEN',state_version=case['state_version']+1,recommendation_id=None)
-            self._put(tx,'OpsCase',case,update=True)
+            self._put(tx,'OpsCase',without_diagnosis(case,pending=True),update=True)
             self._audit(tx,case,'REANALYSIS_REQUESTED',when,actor=actor_id,old=old,
                         result='Explicit re-analysis requested; previous investigation remains recorded.')
             result={'case_id':case_id,'workflow_state':'OPEN','state_version':case['state_version'],'idempotent':False}
@@ -1095,6 +1188,7 @@ class OperationsStore:
             when=control["as_of"];old=case["workflow_state"];outcome_id=identity("outcome","human",command)
             resolved=outcome_type!="parcel_not_found"
             self._put(tx,"OpsOutcome",{"entity_id":outcome_id,"shipment_id":case["shipment_id"],"case_id":case_id,"execution_id":None,
+                "run_id":case.get("last_run_id"),
                 "action_code":None,"action_type":"HUMAN_INVESTIGATION","success":resolved,"outcome_type":outcome_type,
                 "evidence_ids":sorted(evidence_ids),"verification_status":"HUMAN_VERIFIED","verified_at":when,"verifier_id":actor_id,"source":source,
                 "invalidated":False,"observed_at":when,"reason":finding.strip(),"rule_id":"VERIFY-human-finding","exception_cleared":resolved,
@@ -1147,15 +1241,21 @@ class OperationsStore:
         if recommendation.get("run_id")!=case.get("last_run_id") and "run_id" not in changed:changed.append("run_id")
         result={"allowed":False,"stale":False,"changed":changed,"risk":None,"closure":None,"human_investigation":None,
                 "current":current,"recorded":recorded}
-        if changed:
-            return {**result,"stale":True,"rule":"AUTH-20-approval-context-stale",
-                    "reason":f"The approval context changed since the recommendation ({', '.join(changed)}); renewed investigation "
-                             "and review are required before any approval or execution."}
-        if recorded.get("investigated_by")!="agent":
+        # Refusals that hold whatever the current context are checked first: they leave the case where it is (a refused
+        # click never pulls a case a person holds back into automatic re-investigation).
+        if self._recommendation_executed(tx,case,recommendation):
+            return {**result,"rule":"AUTH-24-recommendation-already-executed","reason":"This recommendation was already "
+                    "authorized for execution; approving it again would repeat the action. Re-analyse the case for a new "
+                    "recommendation, or record a person's finding."}
+        if recorded and recorded.get("investigated_by")!="agent":
             return {**result,"rule":"AUTH-22-rules-only-proposal","reason":"Rules-only proposal: no agent investigation or "
                     "independent model review produced it, so approval cannot make it executable."}
         allowed,rule,reason=policy.execution_permission(action,"OPERATOR_APPROVAL",recommendation.get("risk_class"))
         if not allowed:return {**result,"rule":rule,"reason":reason}
+        if changed:
+            return {**result,"stale":True,"rule":"AUTH-20-approval-context-stale",
+                    "reason":f"The approval context changed since the recommendation ({', '.join(changed)}); renewed investigation "
+                             "and review are required before any approval or execution."}
         risk,risk_reason,closure=policy.recheck_authority(action,recorded.get("authority_inputs"),current["symptoms"])
         human=(case["workflow_state"]=="HUMAN_REVIEW" or recommendation.get("risk_class")=="HUMAN_REVIEW" or risk=="HUMAN_REVIEW"
                or bool(set(current["symptoms"])&policy.HUMAN_FLOOR_SYMPTOMS))
@@ -1197,6 +1297,7 @@ class OperationsStore:
         # Bounded like snapshot refreshes: when the basis keeps changing, a person reviews instead of another automatic run.
         destination="OPEN" if refreshes<MAX_SNAPSHOT_REFRESHES else "HUMAN_REVIEW"
         case.update(workflow_state=destination,recommendation_id=None,state_version=case["state_version"]+1,snapshot_refreshes=refreshes+1)
+        if destination=="OPEN":without_diagnosis(case,pending=True)  # Superseded until the new investigation is reviewed.
         self._put(tx,"OpsCase",case,update=True)
         self._audit(tx,case,event_type,when,actor=actor,key=key,old=old,
                     result=f"{check['rule']} · changed: {', '.join(check['changed'])} · {check['reason']} "
@@ -1220,12 +1321,15 @@ class OperationsStore:
                 # Authority is recomputed on the current case: evidence, symptoms, run, review and version.
                 check=self._approval_check(tx,case,recommendation,when)
                 if not check["allowed"]:
-                    if check["stale"]:
+                    # Requeued only for the current investigation's own, never-executed recommendation (an executed one was
+                    # refused above with AUTH-24); anything else is refused and the case stays where it is.
+                    requeue=check["stale"] and recommendation.get("run_id")==case.get("last_run_id")
+                    if requeue:
                         self._requeue_stale(tx,case,when,actor_id,"APPROVAL_CONTEXT_STALE",check,key=f"{check['rule']}:{command}")
                     else:
                         self._audit(tx,case,"APPROVAL_REFUSED",when,actor=actor_id,key=f"{check['rule']}:{command}",old=old,
                                     result=f"{action} · {check['rule']} · {check['reason']} The case state is unchanged; nothing was authorized.")
-                    refused={"refused":True,"rule_id":check["rule"],"reason":check["reason"],"requeued":check["stale"]}
+                    refused={"refused":True,"rule_id":check["rule"],"reason":check["reason"],"requeued":requeue}
                     # Saved as the command's result, so a retry with the same key replays the refusal.
                     self._save_command(tx,case,command,request_hash,"decision",idempotency_key,refused,when)
                     return refused
@@ -1240,14 +1344,17 @@ class OperationsStore:
             if decision=="approve":
                 execution_id=identity("execution",decision_id)
                 self._authorize_execution(tx,case,execution_id,decision_id,recommendation,action,"OPERATOR_APPROVAL",when,
-                                          decision_id=decision_id,decided_risk=check["risk"],closure=check["closure"])
+                                          decision_id=decision_id,decided_risk=check["risk"],closure=check["closure"],
+                                          recommendation_id=recommendation["entity_id"],run_id=recommendation.get("run_id"))
             if execution_id:
                 case.update(workflow_state="ACTION_INITIATED",state_version=case["state_version"]+1)
                 self._put(tx,"OpsCase",case,update=True)
                 self._audit(tx,case,"ACTION_INITIATED",when,actor=actor_id,old=old,
                             result="Operator authorized the action; the execution adapter carries it out. Approval is not an outcome.")
             case.update(workflow_state=destination,state_version=case["state_version"]+1)
-            if decision=="reopen":case.update(is_terminal=False,closed_at=None,verified_outcome_id=None)
+            if decision=="reopen":
+                case.update(is_terminal=False,closed_at=None,verified_outcome_id=None)
+                without_diagnosis(case,pending=True)
             self._put(tx,"OpsCase",case,update=True)
             if execution_id:
                 # The context this approval rests on, re-checked immediately before dispatch.
@@ -1312,28 +1419,37 @@ class OperationsStore:
                                 "approval_rule":check["rule"] if awaiting else "LIFECYCLE-not-awaiting-decision",
                                 "approval_reason":check["reason"] if awaiting else f"The case is {case['workflow_state']}, not awaiting a decision.",
                                 "approval_context_stale":check["stale"]}
-            runs=linked("OpsRun");outcomes=linked("OpsOutcome")
+            runs=linked("OpsRun");outcomes=linked("OpsOutcome");executions=linked("OpsExecution")
             # The current investigation is the case's last run (ties on the paused clock must not pick an older one),
             # and its review is that run's final round: an earlier run's pass never stands in for the current one.
             last=public_value(case.get("last_run_id")) if case.get("last_run_id") else None
             current=next((r for r in runs if r.get("entity_id")==last),None) or (None if last else (runs[0] if runs else None))
             from operations.worker import with_review_reason
             # While a newer investigation is queued or running, the earlier run's review is not the current review.
-            superseded=case["workflow_state"] in ("OPEN","REOPENED","INVESTIGATING")
+            queued=case["workflow_state"] in ("OPEN","REOPENED")
+            superseded=queued or case["workflow_state"]=="INVESTIGATING"
             reviews=[with_review_reason(r) for r in linked("OpsReview") if current and not superseded and r.get("run_id")==current.get("entity_id")]
-            if current:
-                current["result"]=json.loads(current.pop("result_json"))
-                for item in current["result"].get("trace") or []:
-                    item["review"]=with_review_reason(item.get("review"))
-                for event in current["result"].get("pipeline_events") or []:
-                    if event.get("stage")=="review" and (event.get("output") or {}).get("verdict"):
-                        event["output"]=with_review_reason(event["output"])
-            if outcomes:outcomes[0]["outcome_id"]=outcomes[0]["entity_id"]
+            if current:current["result"]=served_run_result(json.loads(current.pop("result_json")))
+            diagnosis=case_diagnosis(case,current)
+            previous=None
+            if queued and current:
+                # Queued for a new investigation: the earlier run, its review rounds and stage events are not current. They
+                # are served apart, marked superseded, and the current run is absent until the new one starts.
+                previous,current={**current,"superseded":True},None
+            run_at=(current or previous or {}).get("recorded_at")
+            def in_cycle(record):
+                """Whether an outcome or execution belongs to the current investigation cycle (not an earlier one)."""
+                if queued:return False  # A new cycle is queued; nothing belongs to it yet.
+                if record.get("run_id"):return record["run_id"]==last
+                # Recorded before run ids were stored: only a record made after the current run started counts.
+                return not run_at or instant(str(record.get("recorded_at")))>instant(str(run_at))
+            if outcomes:outcomes[0].update(outcome_id=outcomes[0]["entity_id"],current_cycle=in_cycle(outcomes[0]))
+            for execution in executions:execution["current_cycle"]=in_cycle(execution)
             return {"case_id":case_id,"shipment_id":case["shipment_id"],"workflow_state":case["workflow_state"],
                 "state_version":case["state_version"],"priority":case["priority"],"operational_status":case["operational_status"],
                 "as_of":case["as_of"],"recommendation_id":case.get("recommendation_id"),"last_run_id":case.get("last_run_id"),
                 "recommendation":recommendation,"review":reviews[0] if reviews else None,"outcome":outcomes[0] if outcomes else None,
-                "decisions":linked("OpsDecision"),"executions":linked("OpsExecution"),"run":current,
-                # The current run's agent investigation, or explicitly absent; never rule output.
-                "diagnosis":case_diagnosis(case,current),"synthetic":True}
+                "decisions":linked("OpsDecision"),"executions":executions,"run":current,"previous_run":previous,
+                # The current run's accepted agent investigation, or explicitly absent; never rule output.
+                "diagnosis":diagnosis,"synthetic":True}
         return self._execute(read)
