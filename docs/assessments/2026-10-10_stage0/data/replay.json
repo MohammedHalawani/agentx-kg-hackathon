@@ -1,0 +1,7456 @@
+[
+ {
+  "sid": "000441",
+  "as_of": "2026-09-01T08:00:12.000000000+00:00",
+  "recipe": "wrong_label_applied",
+  "acceptable": [
+   "BARCODE_MISMATCH"
+  ],
+  "primary": "BARCODE_MISMATCH",
+  "ok": true,
+  "symptoms": [
+   "BARCODE_READ_DIFFERS"
+  ],
+  "tools_used": [
+   "scans",
+   "shipment_overview",
+   "scans",
+   "journey",
+   "custody_chain"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "CustodyEvent": 4,
+   "ExpectedMilestone": 18,
+   "DeliveryInstruction": 1,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "Package": 2,
+   "ScanEvent": 6,
+   "Customer": 2,
+   "RouteMilestone": 18,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "DeliverySession": 1,
+   "Customer": 2,
+   "RouteMilestone": 18,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "BARCODE_MISMATCH"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-LHV-JUB-0040": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-APP-DRV-LMV-KHB-0020": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-BRANCH-JUB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-KHB-01": [
+    "REPORTING",
+    17,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-JUB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-KHB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-JUB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-KHB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-BRANCH-JUB-01",
+   "DEMO-DEV-HH-DEPOT-KHB-01",
+   "DEMO-DEV-HH-HUB-JUB-01",
+   "DEMO-DEV-HH-HUB-KHB-01",
+   "DEMO-DEV-HH-SORT-JUB-01",
+   "DEMO-DEV-HH-SORT-KHB-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-LHV-JUB-0040",
+   "DEMO-DEV-APP-DRV-LMV-KHB-0020"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-HH-BRANCH-JUB-01",
+   "DEMO-DEV-HH-SORT-JUB-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {
+   "label": "wrong_label"
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 675,
+   "journey": 6661,
+   "custody_chain:DEMO-SHP-000441-PKG-01": 1247,
+   "custody_chain:DEMO-SHP-000441-PKG-02": 1247,
+   "scans": 2926,
+   "delivery_attempts": 95,
+   "vehicle_and_manifest": 1280,
+   "address_and_instructions": 449,
+   "policy": 356
+  },
+  "n_packages": 2
+ },
+ {
+  "sid": "000431",
+  "as_of": "2026-09-02T02:00:12.000000000+00:00",
+  "recipe": "fulfillment",
+  "acceptable": [
+   "DELAYED_SYNC"
+  ],
+  "primary": "CUSTODY_GAP",
+  "ok": false,
+  "symptoms": [
+   "CUSTODY_TRANSFER_UNCONFIRMED",
+   "MILESTONE_OVERDUE"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "journey",
+   "custody_chain",
+   "device_status",
+   "scans"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "CustodyEvent": 6,
+   "ExpectedMilestone": 9,
+   "GPSObservation": 1,
+   "DeliveryInstruction": 1,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "LocationPin": 1,
+   "Package": 1,
+   "ScanEvent": 7,
+   "Customer": 2,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "DeliverySession": 1,
+   "Customer": 2,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "MISSED_MILESTONE"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-LHV-HOF-0034": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-APP-DRV-LMV-DMM-0011": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-BRANCH-HOF-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-DMM-01": [
+    "SILENT",
+    30,
+    3.5,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-DMM-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-HOF-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-DMM-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-HOF-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-BRANCH-HOF-01",
+   "DEMO-DEV-HH-DEPOT-DMM-01",
+   "DEMO-DEV-HH-HUB-DMM-01",
+   "DEMO-DEV-HH-HUB-HOF-01",
+   "DEMO-DEV-HH-SORT-DMM-01",
+   "DEMO-DEV-HH-SORT-HOF-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-LHV-HOF-0034",
+   "DEMO-DEV-APP-DRV-LMV-DMM-0011"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-APP-DRV-LHV-HOF-0034",
+   "DEMO-DEV-HH-BRANCH-HOF-01",
+   "DEMO-DEV-HH-HUB-DMM-01",
+   "DEMO-DEV-HH-HUB-HOF-01",
+   "DEMO-DEV-HH-SORT-DMM-01",
+   "DEMO-DEV-HH-SORT-HOF-01"
+  ],
+  "key_evidence": [
+   "DEMO-SHP-000431-RAW-CUST-01-07",
+   "DEMO-SHP-000431-CUST-01-07"
+  ],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {
+   "device": "buffered_upload",
+   "device_id": "DEMO-DEV-HH-DEPOT-DMM-01",
+   "offline_from": "2026-09-01T22:47:36+00:00",
+   "natural_reconnect_at": "2026-09-02T19:27:36+00:00",
+   "buffered_event_ids": [
+    "DEMO-SHP-000431-RAW-CUST-01-07",
+    "DEMO-SHP-000431-CUST-01-07"
+   ]
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 557,
+   "journey": 3817,
+   "custody_chain:DEMO-SHP-000431-PKG-01": 3516,
+   "scans": 3319,
+   "delivery_attempts": 95,
+   "vehicle_and_manifest": 1578,
+   "address_and_instructions": 667,
+   "policy": 358
+  },
+  "n_packages": 1
+ },
+ {
+  "sid": "000032",
+  "as_of": "2026-09-02T13:00:12.000000000+00:00",
+  "recipe": "absent_transfer_receipt",
+  "acceptable": [
+   "CUSTODY_GAP",
+   "MISSED_MILESTONE"
+  ],
+  "primary": "CUSTODY_GAP",
+  "ok": true,
+  "symptoms": [
+   "MILESTONE_OVERDUE",
+   "SESSION_END_UNRECONCILED"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "journey",
+   "custody_chain",
+   "scans",
+   "device_status"
+  ],
+  "context_kinds": {
+   "Branch": 1,
+   "City": 1,
+   "DeliveryDepot": 1,
+   "Device": 294,
+   "Driver": 287,
+   "FulfillmentWarehouse": 1,
+   "HandlingRequirement": 1,
+   "Hub": 1,
+   "Organization": 3,
+   "OrganizationWarehouse": 2,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 1,
+   "CustodyEvent": 3,
+   "ExpectedMilestone": 6,
+   "DeliveryInstruction": 1,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "LocationPin": 1,
+   "Package": 1,
+   "ScanEvent": 4,
+   "Customer": 2,
+   "RouteMilestone": 6,
+   "Route": 1,
+   "RouteSegment": 4,
+   "StatusEvent": 1,
+   "SortingCenter": 1,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 1,
+   "City": 1,
+   "DeliveryDepot": 1,
+   "Device": 294,
+   "Driver": 287,
+   "FulfillmentWarehouse": 1,
+   "HandlingRequirement": 1,
+   "Hub": 1,
+   "Organization": 3,
+   "OrganizationWarehouse": 2,
+   "Provider": 3,
+   "Address": 1,
+   "DeliverySession": 1,
+   "Customer": 2,
+   "RouteMilestone": 6,
+   "Route": 1,
+   "RouteSegment": 4,
+   "SortingCenter": 1,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "MISSED_MILESTONE"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-LMV-DMM-0011": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-BRANCH-DMM-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-DMM-01": [
+    "SILENT",
+    30,
+    14.5,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-DMM-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-DMM-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-BRANCH-DMM-01",
+   "DEMO-DEV-HH-DEPOT-DMM-01",
+   "DEMO-DEV-HH-HUB-DMM-01",
+   "DEMO-DEV-HH-SORT-DMM-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-LMV-DMM-0011"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-HH-BRANCH-DMM-01",
+   "DEMO-DEV-HH-HUB-DMM-01",
+   "DEMO-DEV-HH-SORT-DMM-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {
+   "parcel": "received_unscanned"
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 583,
+   "journey": 2487,
+   "custody_chain:DEMO-SHP-000032-PKG-01": 1807,
+   "scans": 1954,
+   "delivery_attempts": 95,
+   "vehicle_and_manifest": 767,
+   "address_and_instructions": 667,
+   "policy": 358
+  },
+  "n_packages": 1
+ },
+ {
+  "sid": "000392",
+  "as_of": "2026-09-02T13:00:12.000000000+00:00",
+  "recipe": "conflicting_manifest",
+  "acceptable": [
+   "DELAYED_SYNC",
+   "MANIFEST_CONFLICT"
+  ],
+  "primary": "CUSTODY_GAP",
+  "ok": false,
+  "symptoms": [
+   "MANIFEST_CUSTODY_CONFLICT",
+   "MILESTONE_OVERDUE"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "journey",
+   "journey",
+   "custody_chain",
+   "scans",
+   "device_status"
+  ],
+  "context_kinds": {
+   "Branch": 1,
+   "City": 1,
+   "DeliveryDepot": 1,
+   "Device": 294,
+   "Driver": 287,
+   "FulfillmentWarehouse": 1,
+   "HandlingRequirement": 1,
+   "Hub": 1,
+   "Organization": 3,
+   "OrganizationWarehouse": 2,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 1,
+   "CustodyEvent": 6,
+   "ExpectedMilestone": 12,
+   "DeliveryInstruction": 1,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "LocationPin": 1,
+   "Package": 2,
+   "ScanEvent": 8,
+   "Customer": 2,
+   "RouteMilestone": 12,
+   "Route": 1,
+   "RouteSegment": 4,
+   "SortingCenter": 1,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 1,
+   "City": 1,
+   "DeliveryDepot": 1,
+   "Device": 294,
+   "Driver": 287,
+   "FulfillmentWarehouse": 1,
+   "HandlingRequirement": 1,
+   "Hub": 1,
+   "Organization": 3,
+   "OrganizationWarehouse": 2,
+   "Provider": 3,
+   "Address": 1,
+   "DeliverySession": 1,
+   "Customer": 2,
+   "RouteMilestone": 12,
+   "Route": 1,
+   "RouteSegment": 4,
+   "SortingCenter": 1,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "MISSED_MILESTONE"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-INDEP-DMM-0022": [
+    "REPORTING",
+    11,
+    0.0,
+    0,
+    1.0
+   ],
+   "DEMO-DEV-HH-BRANCH-DMM-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-DMM-01": [
+    "SILENT",
+    30,
+    14.5,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-DMM-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-DMM-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-BRANCH-DMM-01",
+   "DEMO-DEV-HH-DEPOT-DMM-01",
+   "DEMO-DEV-HH-HUB-DMM-01",
+   "DEMO-DEV-HH-SORT-DMM-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-INDEP-DMM-0022"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-HH-BRANCH-DMM-01",
+   "DEMO-DEV-HH-HUB-DMM-01",
+   "DEMO-DEV-HH-SORT-DMM-01"
+  ],
+  "key_evidence": [
+   "DEMO-SHP-000392-ASSIGN-LAST_MILE-MANIFEST-V1",
+   "DEMO-SHP-000392-ASSIGN-LAST_MILE-MANIFEST-V2",
+   "DEMO-SHP-000392-CUST-01-05"
+  ],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {
+   "parcel": "on_vehicle_manifest_error",
+   "dropped_package_id": "DEMO-SHP-000392-PKG-01"
+  },
+  "secondary": "DELAYED_SYNC",
+  "result_chars": {
+   "shipment_overview": 701,
+   "journey": 4915,
+   "custody_chain:DEMO-SHP-000392-PKG-01": 1807,
+   "custody_chain:DEMO-SHP-000392-PKG-02": 1807,
+   "scans": 3825,
+   "delivery_attempts": 95,
+   "vehicle_and_manifest": 791,
+   "address_and_instructions": 667,
+   "policy": 358
+  },
+  "n_packages": 2
+ },
+ {
+  "sid": "000101",
+  "as_of": "2026-09-02T14:00:12.000000000+00:00",
+  "recipe": "absent_session_receipt",
+  "acceptable": [
+   "UNRECONCILED_CUSTODY"
+  ],
+  "primary": "CUSTODY_GAP",
+  "ok": false,
+  "symptoms": [
+   "MILESTONE_OVERDUE",
+   "SESSION_END_UNRECONCILED"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "journey",
+   "custody_chain",
+   "device_status",
+   "scans"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "Manifest": 1,
+   "CustodyEvent": 8,
+   "ExpectedMilestone": 9,
+   "GPSObservation": 3,
+   "DeliveryInstruction": 1,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "LocationPin": 1,
+   "Package": 1,
+   "ScanEvent": 9,
+   "Customer": 2,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "StatusEvent": 1,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "DeliverySession": 1,
+   "Customer": 2,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "MISSED_MILESTONE",
+   "UNRECONCILED_CUSTODY"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-LHV-JED-0014": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-APP-DRV-LMV-MAK-0009": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-BRANCH-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-MAK-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-MAK-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-MAK-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-BRANCH-JED-01",
+   "DEMO-DEV-HH-DEPOT-MAK-01",
+   "DEMO-DEV-HH-HUB-JED-01",
+   "DEMO-DEV-HH-HUB-MAK-01",
+   "DEMO-DEV-HH-SORT-JED-01",
+   "DEMO-DEV-HH-SORT-MAK-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-LHV-JED-0014",
+   "DEMO-DEV-APP-DRV-LMV-MAK-0009"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-APP-DRV-LHV-JED-0014",
+   "DEMO-DEV-APP-DRV-LMV-MAK-0009",
+   "DEMO-DEV-HH-BRANCH-JED-01",
+   "DEMO-DEV-HH-DEPOT-MAK-01",
+   "DEMO-DEV-HH-HUB-JED-01",
+   "DEMO-DEV-HH-HUB-MAK-01",
+   "DEMO-DEV-HH-SORT-JED-01",
+   "DEMO-DEV-HH-SORT-MAK-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {
+   "parcel": "returned_unscanned"
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 589,
+   "journey": 3997,
+   "custody_chain:DEMO-SHP-000101-PKG-01": 4665,
+   "scans": 4231,
+   "delivery_attempts": 95,
+   "vehicle_and_manifest": 2530,
+   "address_and_instructions": 667,
+   "policy": 358
+  },
+  "n_packages": 1
+ },
+ {
+  "sid": "000532",
+  "as_of": "2026-09-03T04:00:12.000000000+00:00",
+  "recipe": "conflicting_manifest",
+  "acceptable": [
+   "MANIFEST_CONFLICT"
+  ],
+  "primary": "MANIFEST_CONFLICT",
+  "ok": true,
+  "symptoms": [
+   "MANIFEST_CUSTODY_CONFLICT"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "custody_chain",
+   "custody_chain",
+   "scans",
+   "vehicle_and_manifest"
+  ],
+  "context_kinds": {
+   "Branch": 1,
+   "City": 1,
+   "DeliveryDepot": 1,
+   "Device": 294,
+   "Driver": 287,
+   "FulfillmentWarehouse": 1,
+   "HandlingRequirement": 1,
+   "Hub": 1,
+   "Organization": 3,
+   "OrganizationWarehouse": 2,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 1,
+   "Manifest": 2,
+   "CustodyEvent": 10,
+   "ExpectedMilestone": 12,
+   "GPSObservation": 1,
+   "DeliveryInstruction": 1,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "LocationPin": 1,
+   "Package": 2,
+   "ScanEvent": 12,
+   "Customer": 2,
+   "RouteMilestone": 12,
+   "Route": 1,
+   "RouteSegment": 4,
+   "SortingCenter": 1,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 1,
+   "City": 1,
+   "DeliveryDepot": 1,
+   "Device": 294,
+   "Driver": 287,
+   "FulfillmentWarehouse": 1,
+   "HandlingRequirement": 1,
+   "Hub": 1,
+   "Organization": 3,
+   "OrganizationWarehouse": 2,
+   "Provider": 3,
+   "Address": 1,
+   "DeliverySession": 1,
+   "Customer": 2,
+   "RouteMilestone": 12,
+   "Route": 1,
+   "RouteSegment": 4,
+   "SortingCenter": 1,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "MANIFEST_CONFLICT"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-INDEP-RUH-0043": [
+    "REPORTING",
+    2,
+    0.0,
+    0,
+    1.0
+   ],
+   "DEMO-DEV-HH-BRANCH-RUH-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-RUH-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-RUH-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-RUH-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-BRANCH-RUH-01",
+   "DEMO-DEV-HH-DEPOT-RUH-01",
+   "DEMO-DEV-HH-HUB-RUH-01",
+   "DEMO-DEV-HH-SORT-RUH-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-INDEP-RUH-0043"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-APP-DRV-INDEP-RUH-0043",
+   "DEMO-DEV-HH-BRANCH-RUH-01",
+   "DEMO-DEV-HH-DEPOT-RUH-01",
+   "DEMO-DEV-HH-HUB-RUH-01",
+   "DEMO-DEV-HH-SORT-RUH-01"
+  ],
+  "key_evidence": [
+   "DEMO-SHP-000532-ASSIGN-LAST_MILE-MANIFEST-V1",
+   "DEMO-SHP-000532-ASSIGN-LAST_MILE-MANIFEST-V2",
+   "DEMO-SHP-000532-CUST-01-05"
+  ],
+  "key_visible": [
+   "DEMO-SHP-000532-ASSIGN-LAST_MILE-MANIFEST-V1",
+   "DEMO-SHP-000532-ASSIGN-LAST_MILE-MANIFEST-V2",
+   "DEMO-SHP-000532-CUST-01-05"
+  ],
+  "key_reachable": [
+   "DEMO-SHP-000532-ASSIGN-LAST_MILE-MANIFEST-V1",
+   "DEMO-SHP-000532-ASSIGN-LAST_MILE-MANIFEST-V2",
+   "DEMO-SHP-000532-CUST-01-05"
+  ],
+  "physical": {
+   "parcel": "on_vehicle_manifest_error",
+   "dropped_package_id": "DEMO-SHP-000532-PKG-01"
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 680,
+   "journey": 5245,
+   "custody_chain:DEMO-SHP-000532-PKG-01": 2961,
+   "custody_chain:DEMO-SHP-000532-PKG-02": 2961,
+   "scans": 5655,
+   "delivery_attempts": 95,
+   "vehicle_and_manifest": 1911,
+   "address_and_instructions": 667,
+   "policy": 358
+  },
+  "n_packages": 2
+ },
+ {
+  "sid": "000583",
+  "as_of": "2026-09-03T08:00:12.000000000+00:00",
+  "recipe": "different_barcode",
+  "acceptable": [
+   "BARCODE_MISMATCH"
+  ],
+  "primary": "BARCODE_MISMATCH",
+  "ok": true,
+  "symptoms": [
+   "BARCODE_READ_DIFFERS"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "scans",
+   "custody_chain"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "CustodyEvent": 2,
+   "ExpectedMilestone": 9,
+   "DeliveryInstruction": 1,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "Package": 1,
+   "ScanEvent": 3,
+   "Customer": 2,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "DeliverySession": 1,
+   "Customer": 2,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "BARCODE_MISMATCH"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-INDEP-JUB-0044": [
+    "REPORTING",
+    6,
+    0.0,
+    0,
+    1.0
+   ],
+   "DEMO-DEV-APP-DRV-LHV-DHA-0061": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-BRANCH-DHA-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-JUB-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-DHA-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-JUB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-DHA-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-JUB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-BRANCH-DHA-01",
+   "DEMO-DEV-HH-DEPOT-JUB-01",
+   "DEMO-DEV-HH-HUB-DHA-01",
+   "DEMO-DEV-HH-HUB-JUB-01",
+   "DEMO-DEV-HH-SORT-DHA-01",
+   "DEMO-DEV-HH-SORT-JUB-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-INDEP-JUB-0044",
+   "DEMO-DEV-APP-DRV-LHV-DHA-0061"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-HH-BRANCH-DHA-01",
+   "DEMO-DEV-HH-SORT-DHA-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {
+   "label": "misread"
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 531,
+   "journey": 3442,
+   "custody_chain:DEMO-SHP-000583-PKG-01": 1247,
+   "scans": 1508,
+   "delivery_attempts": 95,
+   "vehicle_and_manifest": 1304,
+   "address_and_instructions": 449,
+   "policy": 358
+  },
+  "n_packages": 1
+ },
+ {
+  "sid": "000482",
+  "as_of": "2026-09-03T14:00:12.000000000+00:00",
+  "recipe": "absent_session_receipt",
+  "acceptable": [
+   "UNRECONCILED_CUSTODY"
+  ],
+  "primary": "CUSTODY_GAP",
+  "ok": false,
+  "symptoms": [
+   "MILESTONE_OVERDUE",
+   "SESSION_END_UNRECONCILED"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "journey",
+   "custody_chain",
+   "delivery_attempts",
+   "device_status",
+   "scans"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "Manifest": 1,
+   "CustodyEvent": 8,
+   "ExpectedMilestone": 9,
+   "GPSObservation": 3,
+   "DeliveryInstruction": 1,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "LocationPin": 1,
+   "Package": 1,
+   "ScanEvent": 9,
+   "Customer": 2,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "StatusEvent": 1,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "DeliverySession": 1,
+   "Customer": 2,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "MISSED_MILESTONE",
+   "UNRECONCILED_CUSTODY"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-LHV-DMM-0021": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-APP-DRV-LMV-KHB-0045": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-BRANCH-DMM-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-KHB-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-DMM-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-KHB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-DMM-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-KHB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-BRANCH-DMM-01",
+   "DEMO-DEV-HH-DEPOT-KHB-01",
+   "DEMO-DEV-HH-HUB-DMM-01",
+   "DEMO-DEV-HH-HUB-KHB-01",
+   "DEMO-DEV-HH-SORT-DMM-01",
+   "DEMO-DEV-HH-SORT-KHB-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-LHV-DMM-0021",
+   "DEMO-DEV-APP-DRV-LMV-KHB-0045"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-APP-DRV-LHV-DMM-0021",
+   "DEMO-DEV-APP-DRV-LMV-KHB-0045",
+   "DEMO-DEV-HH-BRANCH-DMM-01",
+   "DEMO-DEV-HH-DEPOT-KHB-01",
+   "DEMO-DEV-HH-HUB-DMM-01",
+   "DEMO-DEV-HH-HUB-KHB-01",
+   "DEMO-DEV-HH-SORT-DMM-01",
+   "DEMO-DEV-HH-SORT-KHB-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {
+   "parcel": "returned_unscanned"
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 589,
+   "journey": 3997,
+   "custody_chain:DEMO-SHP-000482-PKG-01": 4665,
+   "scans": 4229,
+   "delivery_attempts": 95,
+   "vehicle_and_manifest": 2536,
+   "address_and_instructions": 667,
+   "policy": 358
+  },
+  "n_packages": 1
+ },
+ {
+  "sid": "000113",
+  "as_of": "2026-09-04T00:00:12.000000000+00:00",
+  "recipe": "offline_device_sync",
+  "acceptable": [
+   "DELAYED_SYNC"
+  ],
+  "primary": "DELAYED_SYNC",
+  "ok": true,
+  "symptoms": [
+   "MILESTONE_OVERDUE"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "journey",
+   "custody_chain",
+   "device_status"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "CustodyEvent": 6,
+   "ExpectedMilestone": 9,
+   "GPSObservation": 1,
+   "DeliveryInstruction": 1,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "LocationPin": 1,
+   "Package": 1,
+   "ScanEvent": 7,
+   "Customer": 2,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "DeliverySession": 1,
+   "Customer": 2,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "MISSED_MILESTONE"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-LHV-DMM-0012": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-APP-DRV-LMV-DHA-0016": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-BRANCH-DMM-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-DHA-01": [
+    "SILENT",
+    30,
+    3.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-DHA-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-DMM-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-DHA-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-DMM-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-BRANCH-DMM-01",
+   "DEMO-DEV-HH-DEPOT-DHA-01",
+   "DEMO-DEV-HH-HUB-DHA-01",
+   "DEMO-DEV-HH-HUB-DMM-01",
+   "DEMO-DEV-HH-SORT-DHA-01",
+   "DEMO-DEV-HH-SORT-DMM-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-LHV-DMM-0012",
+   "DEMO-DEV-APP-DRV-LMV-DHA-0016"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-APP-DRV-LHV-DMM-0012",
+   "DEMO-DEV-HH-BRANCH-DMM-01",
+   "DEMO-DEV-HH-HUB-DHA-01",
+   "DEMO-DEV-HH-HUB-DMM-01",
+   "DEMO-DEV-HH-SORT-DHA-01",
+   "DEMO-DEV-HH-SORT-DMM-01"
+  ],
+  "key_evidence": [
+   "DEMO-SHP-000113-RAW-CUST-01-07",
+   "DEMO-SHP-000113-CUST-01-07"
+  ],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {
+   "device": "buffered_upload",
+   "device_id": "DEMO-DEV-HH-DEPOT-DHA-01",
+   "offline_from": "2026-09-03T21:20:00+00:00",
+   "natural_reconnect_at": "2026-09-04T18:00:00+00:00",
+   "buffered_event_ids": [
+    "DEMO-SHP-000113-RAW-CUST-01-07",
+    "DEMO-SHP-000113-CUST-01-07"
+   ],
+   "depot_id": "DEMO-DEPOT-DHA-01"
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 528,
+   "journey": 3817,
+   "custody_chain:DEMO-SHP-000113-PKG-01": 3516,
+   "scans": 3321,
+   "delivery_attempts": 95,
+   "vehicle_and_manifest": 1578,
+   "address_and_instructions": 667,
+   "policy": 358
+  },
+  "n_packages": 1
+ },
+ {
+  "sid": "000362",
+  "as_of": "2026-09-04T06:00:12.000000000+00:00",
+  "recipe": "report_with_corroboration",
+  "acceptable": [
+   "DELIVERY_DISPUTE"
+  ],
+  "primary": "DELIVERY_DISPUTE",
+  "ok": true,
+  "symptoms": [
+   "RECIPIENT_REPORTED_NOT_RECEIVED"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "journey",
+   "delivery_attempts",
+   "custody_chain",
+   "scans",
+   "address_and_instructions"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "Manifest": 1,
+   "DeliveryAttempt": 1,
+   "AuthenticationEvidence": 1,
+   "ContactAttempt": 1,
+   "CustodyEvent": 9,
+   "ExpectedMilestone": 9,
+   "GPSObservation": 2,
+   "HandoffEvidence": 1,
+   "DeliveryInstruction": 1,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "PhotoEvidence": 1,
+   "LocationPin": 1,
+   "Package": 1,
+   "DeliveryProof": 1,
+   "ScanEvent": 10,
+   "Customer": 2,
+   "DepotReconciliation": 1,
+   "RecipientReport": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SignatureEvidence": 1,
+   "StatusEvent": 1,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "DeliverySession": 1,
+   "Customer": 2,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "DELIVERY_DISPUTE"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-LHV-JED-0023": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-APP-DRV-LMV-KHB-0028": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-BRANCH-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-KHB-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-KHB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-KHB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-BRANCH-JED-01",
+   "DEMO-DEV-HH-DEPOT-KHB-01",
+   "DEMO-DEV-HH-HUB-JED-01",
+   "DEMO-DEV-HH-HUB-KHB-01",
+   "DEMO-DEV-HH-SORT-JED-01",
+   "DEMO-DEV-HH-SORT-KHB-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-LHV-JED-0023",
+   "DEMO-DEV-APP-DRV-LMV-KHB-0028"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-APP-DRV-LHV-JED-0023",
+   "DEMO-DEV-APP-DRV-LMV-KHB-0028",
+   "DEMO-DEV-HH-BRANCH-JED-01",
+   "DEMO-DEV-HH-DEPOT-KHB-01",
+   "DEMO-DEV-HH-HUB-JED-01",
+   "DEMO-DEV-HH-HUB-KHB-01",
+   "DEMO-DEV-HH-SORT-JED-01",
+   "DEMO-DEV-HH-SORT-KHB-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {},
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 569,
+   "journey": 4072,
+   "custody_chain:DEMO-SHP-000362-PKG-01": 5253,
+   "scans": 4692,
+   "delivery_attempts": 1492,
+   "vehicle_and_manifest": 2242,
+   "address_and_instructions": 667,
+   "policy": 358
+  },
+  "n_packages": 1
+ },
+ {
+  "sid": "000262",
+  "as_of": "2026-09-04T06:00:12.000000000+00:00",
+  "recipe": "report_authorized_alternate",
+  "acceptable": [
+   "DELIVERY_DISPUTE",
+   "PROOF_INSUFFICIENT"
+  ],
+  "primary": null,
+  "ok": false,
+  "symptoms": [
+   "MILESTONE_OVERDUE",
+   "RECIPIENT_REPORTED_NOT_RECEIVED"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "journey",
+   "custody_chain",
+   "delivery_attempts",
+   "address_and_instructions"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "Manifest": 1,
+   "DeliveryAttempt": 1,
+   "AuthenticationEvidence": 1,
+   "ContactAttempt": 1,
+   "CustodyEvent": 9,
+   "ExpectedMilestone": 9,
+   "GPSObservation": 2,
+   "Customer": 3,
+   "HandoffEvidence": 1,
+   "DeliveryInstruction": 1,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "PhotoEvidence": 1,
+   "LocationPin": 1,
+   "Package": 1,
+   "DeliveryProof": 1,
+   "ScanEvent": 10,
+   "DepotReconciliation": 1,
+   "RecipientReport": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SignatureEvidence": 1,
+   "StatusEvent": 1,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "Customer": 3,
+   "DeliverySession": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "DELIVERY_DISPUTE"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-LHV-RUH-0001": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-APP-DRV-LMV-JED-0010": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-BRANCH-RUH-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-JED-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-RUH-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-RUH-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-BRANCH-RUH-01",
+   "DEMO-DEV-HH-DEPOT-JED-01",
+   "DEMO-DEV-HH-HUB-JED-01",
+   "DEMO-DEV-HH-HUB-RUH-01",
+   "DEMO-DEV-HH-SORT-JED-01",
+   "DEMO-DEV-HH-SORT-RUH-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-LHV-RUH-0001",
+   "DEMO-DEV-APP-DRV-LMV-JED-0010"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-APP-DRV-LHV-RUH-0001",
+   "DEMO-DEV-APP-DRV-LMV-JED-0010",
+   "DEMO-DEV-HH-BRANCH-RUH-01",
+   "DEMO-DEV-HH-DEPOT-JED-01",
+   "DEMO-DEV-HH-HUB-JED-01",
+   "DEMO-DEV-HH-HUB-RUH-01",
+   "DEMO-DEV-HH-SORT-JED-01",
+   "DEMO-DEV-HH-SORT-RUH-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {},
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 589,
+   "journey": 3982,
+   "custody_chain:DEMO-SHP-000262-PKG-01": 5254,
+   "scans": 4688,
+   "delivery_attempts": 1492,
+   "vehicle_and_manifest": 2242,
+   "address_and_instructions": 667,
+   "policy": 358
+  },
+  "n_packages": 1
+ },
+ {
+  "sid": "000003",
+  "as_of": "2026-09-04T17:00:12.000000000+00:00",
+  "recipe": "contractor_on_time",
+  "acceptable": [
+   "DELAYED_SYNC"
+  ],
+  "primary": "DELAYED_SYNC",
+  "ok": true,
+  "symptoms": [
+   "MILESTONE_OVERDUE"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "journey",
+   "custody_chain",
+   "scans",
+   "device_status"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "CustodyEvent": 6,
+   "ExpectedMilestone": 9,
+   "GPSObservation": 1,
+   "DeliveryInstruction": 1,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "LocationPin": 1,
+   "Package": 1,
+   "ScanEvent": 7,
+   "Customer": 2,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "DeliverySession": 1,
+   "Customer": 2,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "MISSED_MILESTONE"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-INDEP-DHA-0001": [
+    "SILENT",
+    30,
+    3.5,
+    0,
+    13.5
+   ],
+   "DEMO-DEV-APP-DRV-LHV-MAK-0003": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-BRANCH-MAK-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-DHA-01": [
+    "SILENT",
+    30,
+    20.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-DHA-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-MAK-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-DHA-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-MAK-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-BRANCH-MAK-01",
+   "DEMO-DEV-HH-DEPOT-DHA-01",
+   "DEMO-DEV-HH-HUB-DHA-01",
+   "DEMO-DEV-HH-HUB-MAK-01",
+   "DEMO-DEV-HH-SORT-DHA-01",
+   "DEMO-DEV-HH-SORT-MAK-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-INDEP-DHA-0001",
+   "DEMO-DEV-APP-DRV-LHV-MAK-0003"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-APP-DRV-LHV-MAK-0003",
+   "DEMO-DEV-HH-BRANCH-MAK-01",
+   "DEMO-DEV-HH-HUB-DHA-01",
+   "DEMO-DEV-HH-HUB-MAK-01",
+   "DEMO-DEV-HH-SORT-DHA-01",
+   "DEMO-DEV-HH-SORT-MAK-01"
+  ],
+  "key_evidence": [
+   "DEMO-SHP-000003-RAW-CUST-01-07",
+   "DEMO-SHP-000003-CUST-01-07"
+  ],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {
+   "device": "buffered_upload",
+   "device_id": "DEMO-DEV-HH-DEPOT-DHA-01",
+   "offline_from": "2026-09-03T21:20:00+00:00",
+   "natural_reconnect_at": "2026-09-04T18:00:00+00:00",
+   "buffered_event_ids": [
+    "DEMO-SHP-000003-RAW-CUST-01-07",
+    "DEMO-SHP-000003-CUST-01-07"
+   ]
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 527,
+   "journey": 3817,
+   "custody_chain:DEMO-SHP-000003-PKG-01": 3516,
+   "scans": 3321,
+   "delivery_attempts": 95,
+   "vehicle_and_manifest": 1596,
+   "address_and_instructions": 667,
+   "policy": 356
+  },
+  "n_packages": 1
+ },
+ {
+  "sid": "000324",
+  "as_of": "2026-09-05T04:00:12.000000000+00:00",
+  "recipe": "conflicting_custody_sources",
+  "acceptable": [
+   "CONFLICTING_CUSTODY"
+  ],
+  "primary": "CONFLICTING_CUSTODY",
+  "ok": true,
+  "symptoms": [
+   "CUSTODY_REPORTS_CONFLICT",
+   "MILESTONE_OVERDUE",
+   "SESSION_END_UNRECONCILED"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "custody_chain",
+   "journey",
+   "scans",
+   "delivery_attempts"
+  ],
+  "context_kinds": {
+   "Branch": 1,
+   "City": 1,
+   "DeliveryDepot": 1,
+   "Device": 294,
+   "Driver": 287,
+   "FulfillmentWarehouse": 1,
+   "HandlingRequirement": 1,
+   "Hub": 1,
+   "Organization": 3,
+   "OrganizationWarehouse": 2,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 1,
+   "Manifest": 1,
+   "CustodyEvent": 6,
+   "ExpectedMilestone": 6,
+   "GPSObservation": 1,
+   "DeliveryInstruction": 1,
+   "InventoryRecord": 1,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "LocationPin": 1,
+   "Package": 1,
+   "ScanEvent": 7,
+   "Customer": 1,
+   "RouteMilestone": 6,
+   "Route": 1,
+   "RouteSegment": 4,
+   "StatusEvent": 1,
+   "SortingCenter": 1,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 1,
+   "City": 1,
+   "DeliveryDepot": 1,
+   "Device": 294,
+   "Driver": 287,
+   "FulfillmentWarehouse": 1,
+   "HandlingRequirement": 1,
+   "Hub": 1,
+   "Organization": 3,
+   "OrganizationWarehouse": 2,
+   "Provider": 3,
+   "Address": 1,
+   "InventoryRecord": 1,
+   "DeliverySession": 1,
+   "Customer": 1,
+   "RouteMilestone": 6,
+   "Route": 1,
+   "RouteSegment": 4,
+   "SortingCenter": 1,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "CONFLICTING_CUSTODY",
+   "MISSED_MILESTONE"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-INDEP-JUB-0017": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    13.0
+   ],
+   "DEMO-DEV-APP-DRV-LHV-RUH-0001": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-JUB-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-FULFILL-JUB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-JUB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-JUB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-DEPOT-JUB-01",
+   "DEMO-DEV-HH-FULFILL-JUB-01",
+   "DEMO-DEV-HH-HUB-JUB-01",
+   "DEMO-DEV-HH-SORT-JUB-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-INDEP-JUB-0017"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-APP-DRV-INDEP-JUB-0017",
+   "DEMO-DEV-APP-DRV-LHV-RUH-0001",
+   "DEMO-DEV-HH-DEPOT-JUB-01",
+   "DEMO-DEV-HH-FULFILL-JUB-01",
+   "DEMO-DEV-HH-HUB-JUB-01",
+   "DEMO-DEV-HH-SORT-JUB-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {},
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 616,
+   "journey": 2593,
+   "custody_chain:DEMO-SHP-000324-PKG-01": 3558,
+   "scans": 3327,
+   "delivery_attempts": 95,
+   "vehicle_and_manifest": 1463,
+   "address_and_instructions": 667,
+   "policy": 356
+  },
+  "n_packages": 1
+ },
+ {
+  "sid": "000404",
+  "as_of": "2026-09-05T05:00:12.000000000+00:00",
+  "recipe": "contractor_unconfirmed_pickup",
+  "acceptable": [
+   "CUSTODY_GAP",
+   "UNRECONCILED_CUSTODY"
+  ],
+  "primary": "CUSTODY_GAP",
+  "ok": true,
+  "symptoms": [
+   "CUSTODY_TRANSFER_UNCONFIRMED",
+   "MILESTONE_OVERDUE",
+   "SESSION_END_UNRECONCILED"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "journey",
+   "custody_chain",
+   "device_status",
+   "device_status"
+  ],
+  "context_kinds": {
+   "Branch": 1,
+   "City": 1,
+   "DeliveryDepot": 1,
+   "Device": 294,
+   "Driver": 287,
+   "FulfillmentWarehouse": 1,
+   "HandlingRequirement": 1,
+   "Hub": 1,
+   "Organization": 3,
+   "OrganizationWarehouse": 2,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 1,
+   "Manifest": 1,
+   "CustodyEvent": 5,
+   "ExpectedMilestone": 6,
+   "GPSObservation": 1,
+   "DeliveryInstruction": 1,
+   "InventoryRecord": 1,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "LocationPin": 1,
+   "Package": 1,
+   "ScanEvent": 6,
+   "Customer": 1,
+   "RouteMilestone": 6,
+   "Route": 1,
+   "RouteSegment": 4,
+   "StatusEvent": 1,
+   "SortingCenter": 1,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 1,
+   "City": 1,
+   "DeliveryDepot": 1,
+   "Device": 294,
+   "Driver": 287,
+   "FulfillmentWarehouse": 1,
+   "HandlingRequirement": 1,
+   "Hub": 1,
+   "Organization": 3,
+   "OrganizationWarehouse": 2,
+   "Provider": 3,
+   "Address": 1,
+   "InventoryRecord": 1,
+   "DeliverySession": 1,
+   "Customer": 1,
+   "RouteMilestone": 6,
+   "Route": 1,
+   "RouteSegment": 4,
+   "SortingCenter": 1,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "CUSTODY_GAP",
+   "MISSED_MILESTONE"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-INDEP-HOF-0002": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    13.0
+   ],
+   "DEMO-DEV-HH-DEPOT-HOF-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-HOF-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-ORGWH-HOF-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-HOF-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-DEPOT-HOF-01",
+   "DEMO-DEV-HH-HUB-HOF-01",
+   "DEMO-DEV-HH-ORGWH-HOF-01",
+   "DEMO-DEV-HH-SORT-HOF-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-INDEP-HOF-0002"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-HH-DEPOT-HOF-01",
+   "DEMO-DEV-HH-HUB-HOF-01",
+   "DEMO-DEV-HH-ORGWH-HOF-01",
+   "DEMO-DEV-HH-SORT-HOF-01"
+  ],
+  "key_evidence": [
+   "DEMO-SHP-000404-CUST-01-05",
+   "DEMO-SHP-000404-RAW-CUST-01-05"
+  ],
+  "key_visible": [
+   "DEMO-SHP-000404-CUST-01-05",
+   "DEMO-SHP-000404-RAW-CUST-01-05"
+  ],
+  "key_reachable": [
+   "DEMO-SHP-000404-CUST-01-05",
+   "DEMO-SHP-000404-RAW-CUST-01-05"
+  ],
+  "physical": {
+   "parcel": "left_at_depot",
+   "depot_id": "DEMO-DEPOT-HOF-01",
+   "vehicle_id": "DEMO-VEH-PRIVATE-HOF-0002"
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 619,
+   "journey": 2590,
+   "custody_chain:DEMO-SHP-000404-PKG-01": 2961,
+   "scans": 2859,
+   "delivery_attempts": 95,
+   "vehicle_and_manifest": 1463,
+   "address_and_instructions": 667,
+   "policy": 358
+  },
+  "n_packages": 1
+ },
+ {
+  "sid": "000553",
+  "as_of": "2026-09-05T06:00:12.000000000+00:00",
+  "recipe": "unanswered_contact",
+  "acceptable": [
+   "RECIPIENT_UNAVAILABLE"
+  ],
+  "primary": "RECIPIENT_UNAVAILABLE",
+  "ok": true,
+  "symptoms": [
+   "DELIVERY_ATTEMPT_FAILED",
+   "MILESTONE_OVERDUE"
+  ],
+  "tools_used": [
+   "delivery_attempts",
+   "custody_chain",
+   "address_and_instructions"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "Manifest": 1,
+   "DeliveryAttempt": 4,
+   "ContactAttempt": 4,
+   "CustodyEvent": 16,
+   "ExpectedMilestone": 18,
+   "GPSObservation": 2,
+   "DeliveryInstruction": 1,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "LocationPin": 1,
+   "Package": 2,
+   "ScanEvent": 18,
+   "Customer": 2,
+   "RouteMilestone": 18,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "DeliverySession": 1,
+   "Customer": 2,
+   "RouteMilestone": 18,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "RECIPIENT_UNAVAILABLE"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-LHV-MED-0054": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-APP-DRV-LMV-KHB-0033": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-BRANCH-MED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-KHB-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-KHB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-MED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-KHB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-MED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-BRANCH-MED-01",
+   "DEMO-DEV-HH-DEPOT-KHB-01",
+   "DEMO-DEV-HH-HUB-KHB-01",
+   "DEMO-DEV-HH-HUB-MED-01",
+   "DEMO-DEV-HH-SORT-KHB-01",
+   "DEMO-DEV-HH-SORT-MED-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-LHV-MED-0054",
+   "DEMO-DEV-APP-DRV-LMV-KHB-0033"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-APP-DRV-LHV-MED-0054",
+   "DEMO-DEV-APP-DRV-LMV-KHB-0033",
+   "DEMO-DEV-HH-BRANCH-MED-01",
+   "DEMO-DEV-HH-DEPOT-KHB-01",
+   "DEMO-DEV-HH-HUB-KHB-01",
+   "DEMO-DEV-HH-HUB-MED-01",
+   "DEMO-DEV-HH-SORT-KHB-01",
+   "DEMO-DEV-HH-SORT-MED-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {
+   "recipient": "unreachable"
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 700,
+   "journey": 7021,
+   "custody_chain:DEMO-SHP-000553-PKG-01": 4665,
+   "custody_chain:DEMO-SHP-000553-PKG-02": 4665,
+   "scans": 6635,
+   "delivery_attempts": 2291,
+   "vehicle_and_manifest": 2268,
+   "address_and_instructions": 667,
+   "policy": 358
+  },
+  "n_packages": 2
+ },
+ {
+  "sid": "000215",
+  "as_of": "2026-09-05T08:00:12.000000000+00:00",
+  "recipe": "different_weight",
+  "acceptable": [
+   "WEIGHT_MISMATCH"
+  ],
+  "primary": "WEIGHT_MISMATCH",
+  "ok": true,
+  "symptoms": [
+   "WEIGHT_READ_DIFFERS"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "scans",
+   "device_status",
+   "custody_chain",
+   "policy",
+   "journey"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "CustodyEvent": 2,
+   "ExpectedMilestone": 9,
+   "DeliveryInstruction": 1,
+   "InventoryRecord": 1,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "Package": 1,
+   "ScanEvent": 3,
+   "Customer": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "InventoryRecord": 1,
+   "DeliverySession": 1,
+   "Customer": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "WEIGHT_MISMATCH"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-INDEP-RUH-0005": [
+    "REPORTING",
+    20,
+    0.4,
+    0,
+    20.0
+   ],
+   "DEMO-DEV-APP-DRV-LHV-HOF-0025": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-RUH-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-HOF-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-RUH-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-ORGWH-HOF-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-HOF-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-RUH-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-DEPOT-RUH-01",
+   "DEMO-DEV-HH-HUB-HOF-01",
+   "DEMO-DEV-HH-HUB-RUH-01",
+   "DEMO-DEV-HH-ORGWH-HOF-01",
+   "DEMO-DEV-HH-SORT-HOF-01",
+   "DEMO-DEV-HH-SORT-RUH-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-INDEP-RUH-0005",
+   "DEMO-DEV-APP-DRV-LHV-HOF-0025"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-HH-ORGWH-HOF-01",
+   "DEMO-DEV-HH-SORT-HOF-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {
+   "scale": "miscalibrated"
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 528,
+   "journey": 3455,
+   "custody_chain:DEMO-SHP-000215-PKG-01": 1252,
+   "scans": 1505,
+   "delivery_attempts": 95,
+   "vehicle_and_manifest": 1304,
+   "address_and_instructions": 449,
+   "policy": 358
+  },
+  "n_packages": 1
+ },
+ {
+  "sid": "000305",
+  "as_of": "2026-09-05T08:00:12.000000000+00:00",
+  "recipe": "declared_weight_wrong",
+  "acceptable": [
+   "WEIGHT_MISMATCH"
+  ],
+  "primary": "WEIGHT_MISMATCH",
+  "ok": true,
+  "symptoms": [
+   "WEIGHT_READ_DIFFERS"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "scans",
+   "custody_chain"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "CustodyEvent": 2,
+   "ExpectedMilestone": 9,
+   "DeliveryInstruction": 1,
+   "InventoryRecord": 1,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "Package": 1,
+   "ScanEvent": 3,
+   "Customer": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "InventoryRecord": 1,
+   "DeliverySession": 1,
+   "Customer": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "WEIGHT_MISMATCH"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-LHV-HOF-0034": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-APP-DRV-LMV-KHB-0020": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-KHB-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-HOF-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-KHB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-ORGWH-HOF-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-HOF-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-KHB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-DEPOT-KHB-01",
+   "DEMO-DEV-HH-HUB-HOF-01",
+   "DEMO-DEV-HH-HUB-KHB-01",
+   "DEMO-DEV-HH-ORGWH-HOF-01",
+   "DEMO-DEV-HH-SORT-HOF-01",
+   "DEMO-DEV-HH-SORT-KHB-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-LHV-HOF-0034",
+   "DEMO-DEV-APP-DRV-LMV-KHB-0020"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-HH-ORGWH-HOF-01",
+   "DEMO-DEV-HH-SORT-HOF-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {
+   "scale": "declared_weight_wrong"
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 527,
+   "journey": 3455,
+   "custody_chain:DEMO-SHP-000305-PKG-01": 1252,
+   "scans": 1504,
+   "delivery_attempts": 95,
+   "vehicle_and_manifest": 1280,
+   "address_and_instructions": 449,
+   "policy": 358
+  },
+  "n_packages": 1
+ },
+ {
+  "sid": "000415",
+  "as_of": "2026-09-06T07:00:12.000000000+00:00",
+  "recipe": "different_gate",
+  "acceptable": [
+   "WRONG_GATE"
+  ],
+  "primary": "WRONG_GATE",
+  "ok": true,
+  "symptoms": [
+   "DELIVERY_ATTEMPT_FAILED"
+  ],
+  "tools_used": [
+   "delivery_attempts",
+   "address_and_instructions",
+   "custody_chain"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "Manifest": 1,
+   "DeliveryAttempt": 1,
+   "ContactAttempt": 1,
+   "CustodyEvent": 8,
+   "ExpectedMilestone": 9,
+   "GPSObservation": 2,
+   "DeliveryInstruction": 1,
+   "InventoryRecord": 1,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "LocationPin": 1,
+   "Package": 1,
+   "ScanEvent": 9,
+   "Customer": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "InventoryRecord": 1,
+   "DeliverySession": 1,
+   "Customer": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "WRONG_GATE"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-LHV-RUH-0037": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-APP-DRV-LMV-KHB-0028": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-KHB-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-KHB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-RUH-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-ORGWH-RUH-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-KHB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-RUH-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-DEPOT-KHB-01",
+   "DEMO-DEV-HH-HUB-KHB-01",
+   "DEMO-DEV-HH-HUB-RUH-01",
+   "DEMO-DEV-HH-ORGWH-RUH-01",
+   "DEMO-DEV-HH-SORT-KHB-01",
+   "DEMO-DEV-HH-SORT-RUH-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-LHV-RUH-0037",
+   "DEMO-DEV-APP-DRV-LMV-KHB-0028"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-APP-DRV-LHV-RUH-0037",
+   "DEMO-DEV-APP-DRV-LMV-KHB-0028",
+   "DEMO-DEV-HH-DEPOT-KHB-01",
+   "DEMO-DEV-HH-HUB-KHB-01",
+   "DEMO-DEV-HH-HUB-RUH-01",
+   "DEMO-DEV-HH-ORGWH-RUH-01",
+   "DEMO-DEV-HH-SORT-KHB-01",
+   "DEMO-DEV-HH-SORT-RUH-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {
+   "recipient": "confirms_address"
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 532,
+   "journey": 3995,
+   "custody_chain:DEMO-SHP-000415-PKG-01": 4670,
+   "scans": 4228,
+   "delivery_attempts": 648,
+   "vehicle_and_manifest": 2242,
+   "address_and_instructions": 667,
+   "policy": 358
+  },
+  "n_packages": 1
+ },
+ {
+  "sid": "000415",
+  "as_of": "2026-09-06T14:00:12.000000000+00:00",
+  "recipe": "different_gate",
+  "acceptable": [
+   "WRONG_GATE"
+  ],
+  "primary": "WRONG_GATE",
+  "ok": true,
+  "symptoms": [
+   "DELIVERY_ATTEMPT_FAILED",
+   "MILESTONE_OVERDUE"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "journey",
+   "delivery_attempts",
+   "address_and_instructions"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "Manifest": 1,
+   "DeliveryAttempt": 1,
+   "ContactAttempt": 1,
+   "CustodyEvent": 9,
+   "ExpectedMilestone": 9,
+   "GPSObservation": 3,
+   "DeliveryInstruction": 1,
+   "InventoryRecord": 1,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "LocationPin": 1,
+   "Package": 1,
+   "ScanEvent": 10,
+   "Customer": 1,
+   "DepotReconciliation": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "StatusEvent": 1,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "InventoryRecord": 1,
+   "DeliverySession": 1,
+   "Customer": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "MISSED_MILESTONE",
+   "WRONG_GATE"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-LHV-RUH-0037": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-APP-DRV-LMV-KHB-0028": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-KHB-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-KHB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-RUH-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-ORGWH-RUH-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-KHB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-RUH-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-DEPOT-KHB-01",
+   "DEMO-DEV-HH-HUB-KHB-01",
+   "DEMO-DEV-HH-HUB-RUH-01",
+   "DEMO-DEV-HH-ORGWH-RUH-01",
+   "DEMO-DEV-HH-SORT-KHB-01",
+   "DEMO-DEV-HH-SORT-RUH-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-LHV-RUH-0037",
+   "DEMO-DEV-APP-DRV-LMV-KHB-0028"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-APP-DRV-LHV-RUH-0037",
+   "DEMO-DEV-APP-DRV-LMV-KHB-0028",
+   "DEMO-DEV-HH-DEPOT-KHB-01",
+   "DEMO-DEV-HH-HUB-KHB-01",
+   "DEMO-DEV-HH-HUB-RUH-01",
+   "DEMO-DEV-HH-ORGWH-RUH-01",
+   "DEMO-DEV-HH-SORT-KHB-01",
+   "DEMO-DEV-HH-SORT-RUH-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {
+   "recipient": "confirms_address"
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 589,
+   "journey": 4010,
+   "custody_chain:DEMO-SHP-000415-PKG-01": 5249,
+   "scans": 4682,
+   "delivery_attempts": 941,
+   "vehicle_and_manifest": 2530,
+   "address_and_instructions": 667,
+   "policy": 358
+  },
+  "n_packages": 1
+ },
+ {
+  "sid": "000397",
+  "as_of": "2026-09-07T08:00:12.000000000+00:00",
+  "recipe": "weight_and_obsolete_address",
+  "acceptable": [
+   "ADDRESS_CONFLICT",
+   "WEIGHT_MISMATCH"
+  ],
+  "primary": "WEIGHT_MISMATCH",
+  "ok": true,
+  "symptoms": [
+   "DELIVERY_ATTEMPT_FAILED",
+   "MILESTONE_OVERDUE",
+   "WEIGHT_READ_DIFFERS"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "scans",
+   "custody_chain"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 2,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "CustodyEvent": 2,
+   "ExpectedMilestone": 9,
+   "DeliveryInstruction": 1,
+   "InventoryRecord": 1,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "Package": 1,
+   "ScanEvent": 3,
+   "Customer": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "InventoryRecord": 1,
+   "DeliverySession": 1,
+   "Customer": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "WEIGHT_MISMATCH"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-INDEP-JED-0034": [
+    "REPORTING",
+    18,
+    0.0,
+    0,
+    37.0
+   ],
+   "DEMO-DEV-APP-DRV-LHV-RUH-0037": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-JED-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-RUH-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-ORGWH-RUH-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-RUH-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-DEPOT-JED-01",
+   "DEMO-DEV-HH-HUB-JED-01",
+   "DEMO-DEV-HH-HUB-RUH-01",
+   "DEMO-DEV-HH-ORGWH-RUH-01",
+   "DEMO-DEV-HH-SORT-JED-01",
+   "DEMO-DEV-HH-SORT-RUH-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-INDEP-JED-0034",
+   "DEMO-DEV-APP-DRV-LHV-RUH-0037"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-HH-ORGWH-RUH-01",
+   "DEMO-DEV-HH-SORT-RUH-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {
+   "scale": "declared_weight_wrong",
+   "recipient": "confirms_address"
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 576,
+   "journey": 3455,
+   "custody_chain:DEMO-SHP-000397-PKG-01": 1252,
+   "scans": 1504,
+   "delivery_attempts": 95,
+   "vehicle_and_manifest": 1298,
+   "address_and_instructions": 654,
+   "policy": 358
+  },
+  "n_packages": 1
+ },
+ {
+  "sid": "000567",
+  "as_of": "2026-09-07T08:00:12.000000000+00:00",
+  "recipe": "wrong_label_applied",
+  "acceptable": [
+   "BARCODE_MISMATCH"
+  ],
+  "primary": "INSUFFICIENT_EVIDENCE",
+  "ok": false,
+  "symptoms": [
+   "BARCODE_READ_DIFFERS"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "scans",
+   "custody_chain",
+   "policy",
+   "journey",
+   "device_status",
+   "scans"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "CustodyEvent": 4,
+   "ExpectedMilestone": 18,
+   "DeliveryInstruction": 1,
+   "InventoryRecord": 2,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "Package": 2,
+   "ScanEvent": 6,
+   "Customer": 1,
+   "RouteMilestone": 18,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "InventoryRecord": 2,
+   "DeliverySession": 1,
+   "Customer": 1,
+   "RouteMilestone": 18,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "BARCODE_MISMATCH"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-LHV-JUB-0050": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-APP-DRV-LMV-JED-0027": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-JED-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-FULFILL-JUB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-JUB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-JUB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-DEPOT-JED-01",
+   "DEMO-DEV-HH-FULFILL-JUB-01",
+   "DEMO-DEV-HH-HUB-JED-01",
+   "DEMO-DEV-HH-HUB-JUB-01",
+   "DEMO-DEV-HH-SORT-JED-01",
+   "DEMO-DEV-HH-SORT-JUB-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-LHV-JUB-0050",
+   "DEMO-DEV-APP-DRV-LMV-JED-0027"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-HH-FULFILL-JUB-01",
+   "DEMO-DEV-HH-SORT-JUB-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {
+   "label": "wrong_label"
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 674,
+   "journey": 6661,
+   "custody_chain:DEMO-SHP-000567-PKG-01": 1257,
+   "custody_chain:DEMO-SHP-000567-PKG-02": 1257,
+   "scans": 2927,
+   "delivery_attempts": 95,
+   "vehicle_and_manifest": 1280,
+   "address_and_instructions": 449,
+   "policy": 356
+  },
+  "n_packages": 2
+ },
+ {
+  "sid": "000326",
+  "as_of": "2026-09-08T04:00:12.000000000+00:00",
+  "recipe": "conflicting_manifest",
+  "acceptable": [
+   "MANIFEST_CONFLICT"
+  ],
+  "primary": "MANIFEST_CONFLICT",
+  "ok": true,
+  "symptoms": [
+   "MANIFEST_CUSTODY_CONFLICT"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "custody_chain",
+   "vehicle_and_manifest",
+   "scans",
+   "precedents"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "Manifest": 2,
+   "CustodyEvent": 8,
+   "ExpectedMilestone": 9,
+   "GPSObservation": 2,
+   "DeliveryInstruction": 1,
+   "InventoryRecord": 1,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "LocationPin": 1,
+   "Package": 1,
+   "ScanEvent": 9,
+   "Customer": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "InventoryRecord": 1,
+   "DeliverySession": 1,
+   "Customer": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "MANIFEST_CONFLICT"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-INDEP-DMM-0022": [
+    "REPORTING",
+    26,
+    0.0,
+    0,
+    13.0
+   ],
+   "DEMO-DEV-APP-DRV-LHV-JED-0014": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-DMM-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-DMM-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-ORGWH-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-DMM-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-DEPOT-DMM-01",
+   "DEMO-DEV-HH-HUB-DMM-01",
+   "DEMO-DEV-HH-HUB-JED-01",
+   "DEMO-DEV-HH-ORGWH-JED-01",
+   "DEMO-DEV-HH-SORT-DMM-01",
+   "DEMO-DEV-HH-SORT-JED-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-INDEP-DMM-0022",
+   "DEMO-DEV-APP-DRV-LHV-JED-0014"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-APP-DRV-INDEP-DMM-0022",
+   "DEMO-DEV-APP-DRV-LHV-JED-0014",
+   "DEMO-DEV-HH-DEPOT-DMM-01",
+   "DEMO-DEV-HH-HUB-DMM-01",
+   "DEMO-DEV-HH-HUB-JED-01",
+   "DEMO-DEV-HH-ORGWH-JED-01",
+   "DEMO-DEV-HH-SORT-DMM-01",
+   "DEMO-DEV-HH-SORT-JED-01"
+  ],
+  "key_evidence": [
+   "DEMO-SHP-000326-ASSIGN-LAST_MILE-MANIFEST-V1",
+   "DEMO-SHP-000326-ASSIGN-LAST_MILE-MANIFEST-V2",
+   "DEMO-SHP-000326-CUST-01-08"
+  ],
+  "key_visible": [
+   "DEMO-SHP-000326-ASSIGN-LAST_MILE-MANIFEST-V1",
+   "DEMO-SHP-000326-ASSIGN-LAST_MILE-MANIFEST-V2",
+   "DEMO-SHP-000326-CUST-01-08"
+  ],
+  "key_reachable": [
+   "DEMO-SHP-000326-ASSIGN-LAST_MILE-MANIFEST-V1",
+   "DEMO-SHP-000326-ASSIGN-LAST_MILE-MANIFEST-V2",
+   "DEMO-SHP-000326-CUST-01-08"
+  ],
+  "physical": {
+   "parcel": "on_vehicle_manifest_error",
+   "dropped_package_id": "DEMO-SHP-000326-PKG-01"
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 534,
+   "journey": 3995,
+   "custody_chain:DEMO-SHP-000326-PKG-01": 4676,
+   "scans": 4232,
+   "delivery_attempts": 95,
+   "vehicle_and_manifest": 2668,
+   "address_and_instructions": 667,
+   "policy": 358
+  },
+  "n_packages": 1
+ },
+ {
+  "sid": "000466",
+  "as_of": "2026-09-08T06:00:12.000000000+00:00",
+  "recipe": "obsolete_address",
+  "acceptable": [
+   "ADDRESS_CONFLICT"
+  ],
+  "primary": "ADDRESS_CONFLICT",
+  "ok": true,
+  "symptoms": [
+   "DELIVERY_ATTEMPT_FAILED"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "journey",
+   "delivery_attempts",
+   "address_and_instructions"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 2,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "Manifest": 1,
+   "DeliveryAttempt": 1,
+   "ContactAttempt": 1,
+   "CustodyEvent": 8,
+   "ExpectedMilestone": 9,
+   "GPSObservation": 2,
+   "DeliveryInstruction": 1,
+   "InventoryRecord": 1,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "LocationPin": 1,
+   "Package": 1,
+   "ScanEvent": 9,
+   "Customer": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "InventoryRecord": 1,
+   "DeliverySession": 1,
+   "Customer": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "ADDRESS_CONFLICT"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-LHV-DHA-0017": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-APP-DRV-LMV-JED-0044": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-JED-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-DHA-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-ORGWH-DHA-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-DHA-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-DEPOT-JED-01",
+   "DEMO-DEV-HH-HUB-DHA-01",
+   "DEMO-DEV-HH-HUB-JED-01",
+   "DEMO-DEV-HH-ORGWH-DHA-01",
+   "DEMO-DEV-HH-SORT-DHA-01",
+   "DEMO-DEV-HH-SORT-JED-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-LHV-DHA-0017",
+   "DEMO-DEV-APP-DRV-LMV-JED-0044"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-APP-DRV-LHV-DHA-0017",
+   "DEMO-DEV-APP-DRV-LMV-JED-0044",
+   "DEMO-DEV-HH-DEPOT-JED-01",
+   "DEMO-DEV-HH-HUB-DHA-01",
+   "DEMO-DEV-HH-HUB-JED-01",
+   "DEMO-DEV-HH-ORGWH-DHA-01",
+   "DEMO-DEV-HH-SORT-DHA-01",
+   "DEMO-DEV-HH-SORT-JED-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {
+   "recipient": "confirms_address"
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 534,
+   "journey": 3995,
+   "custody_chain:DEMO-SHP-000466-PKG-01": 4670,
+   "scans": 4232,
+   "delivery_attempts": 648,
+   "vehicle_and_manifest": 2248,
+   "address_and_instructions": 872,
+   "policy": 358
+  },
+  "n_packages": 1
+ },
+ {
+  "sid": "000337",
+  "as_of": "2026-09-08T11:00:12.000000000+00:00",
+  "recipe": "absent_transfer_receipt",
+  "acceptable": [
+   "CUSTODY_GAP",
+   "MISSED_MILESTONE"
+  ],
+  "primary": null,
+  "ok": false,
+  "symptoms": [
+   "MILESTONE_OVERDUE",
+   "SESSION_END_UNRECONCILED"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "journey",
+   "custody_chain",
+   "vehicle_and_manifest",
+   "device_status"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "CustodyEvent": 4,
+   "ExpectedMilestone": 9,
+   "GPSObservation": 1,
+   "DeliveryInstruction": 1,
+   "InventoryRecord": 1,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "LocationPin": 1,
+   "Package": 1,
+   "ScanEvent": 5,
+   "Customer": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "StatusEvent": 1,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "InventoryRecord": 1,
+   "DeliverySession": 1,
+   "Customer": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "MISSED_MILESTONE"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-LHV-MED-0033": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-APP-DRV-LMV-HOF-0037": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-HOF-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-HOF-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-MED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-ORGWH-MED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-HOF-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-MED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-DEPOT-HOF-01",
+   "DEMO-DEV-HH-HUB-HOF-01",
+   "DEMO-DEV-HH-HUB-MED-01",
+   "DEMO-DEV-HH-ORGWH-MED-01",
+   "DEMO-DEV-HH-SORT-HOF-01",
+   "DEMO-DEV-HH-SORT-MED-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-LHV-MED-0033",
+   "DEMO-DEV-APP-DRV-LMV-HOF-0037"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-APP-DRV-LHV-MED-0033",
+   "DEMO-DEV-HH-HUB-MED-01",
+   "DEMO-DEV-HH-ORGWH-MED-01",
+   "DEMO-DEV-HH-SORT-MED-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {
+   "parcel": "received_unscanned"
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 584,
+   "journey": 3650,
+   "custody_chain:DEMO-SHP-000337-PKG-01": 2385,
+   "scans": 2415,
+   "delivery_attempts": 95,
+   "vehicle_and_manifest": 1572,
+   "address_and_instructions": 667,
+   "policy": 358
+  },
+  "n_packages": 1
+ },
+ {
+  "sid": "000067",
+  "as_of": "2026-09-08T12:00:12.000000000+00:00",
+  "recipe": "report_different_location",
+  "acceptable": [
+   "DELIVERY_DISPUTE",
+   "POSSIBLE_MISDELIVERY"
+  ],
+  "primary": "PROOF_INSUFFICIENT",
+  "ok": false,
+  "symptoms": [
+   "CUSTODY_TRANSFER_UNCONFIRMED",
+   "DELIVERY_PROOF_INCOMPLETE",
+   "MILESTONE_OVERDUE",
+   "RECIPIENT_REPORTED_NOT_RECEIVED",
+   "SESSION_END_UNRECONCILED"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "journey",
+   "delivery_attempts",
+   "custody_chain",
+   "address_and_instructions"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "Manifest": 1,
+   "DeliveryAttempt": 1,
+   "AuthenticationEvidence": 1,
+   "ContactAttempt": 1,
+   "CustodyEvent": 9,
+   "ExpectedMilestone": 9,
+   "GPSObservation": 2,
+   "Customer": 2,
+   "HandoffEvidence": 1,
+   "DeliveryInstruction": 1,
+   "InventoryRecord": 1,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "PhotoEvidence": 1,
+   "LocationPin": 1,
+   "Package": 1,
+   "DeliveryProof": 1,
+   "ScanEvent": 10,
+   "DepotReconciliation": 1,
+   "RecipientReport": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SignatureEvidence": 1,
+   "StatusEvent": 1,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "Customer": 2,
+   "InventoryRecord": 1,
+   "DeliverySession": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "CUSTODY_GAP",
+   "DELIVERY_DISPUTE",
+   "PROOF_INSUFFICIENT"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-LHV-MED-0007": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-APP-DRV-LMV-RUH-0007": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-RUH-01": [
+    "SILENT",
+    30,
+    2.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-MED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-RUH-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-ORGWH-MED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-MED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-RUH-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-DEPOT-RUH-01",
+   "DEMO-DEV-HH-HUB-MED-01",
+   "DEMO-DEV-HH-HUB-RUH-01",
+   "DEMO-DEV-HH-ORGWH-MED-01",
+   "DEMO-DEV-HH-SORT-MED-01",
+   "DEMO-DEV-HH-SORT-RUH-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-LHV-MED-0007",
+   "DEMO-DEV-APP-DRV-LMV-RUH-0007"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-APP-DRV-LHV-MED-0007",
+   "DEMO-DEV-APP-DRV-LMV-RUH-0007",
+   "DEMO-DEV-HH-DEPOT-RUH-01",
+   "DEMO-DEV-HH-HUB-MED-01",
+   "DEMO-DEV-HH-HUB-RUH-01",
+   "DEMO-DEV-HH-ORGWH-MED-01",
+   "DEMO-DEV-HH-SORT-MED-01",
+   "DEMO-DEV-HH-SORT-RUH-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {},
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 679,
+   "journey": 3995,
+   "custody_chain:DEMO-SHP-000067-PKG-01": 5260,
+   "scans": 4689,
+   "delivery_attempts": 1621,
+   "vehicle_and_manifest": 2242,
+   "address_and_instructions": 667,
+   "policy": 358
+  },
+  "n_packages": 1
+ },
+ {
+  "sid": "000387",
+  "as_of": "2026-09-08T14:00:12.000000000+00:00",
+  "recipe": "traffic_safe_return",
+  "acceptable": [
+   "ROUTE_DELAY",
+   "TRAFFIC_DELAY"
+  ],
+  "primary": "MISSED_MILESTONE",
+  "ok": false,
+  "symptoms": [
+   "MILESTONE_LATE",
+   "MILESTONE_OVERDUE"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "journey",
+   "delivery_attempts",
+   "custody_chain"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "Manifest": 1,
+   "DeliveryAttempt": 1,
+   "ContactAttempt": 1,
+   "CustodyEvent": 9,
+   "ExpectedMilestone": 9,
+   "GPSObservation": 3,
+   "DeliveryInstruction": 1,
+   "InventoryRecord": 1,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "LocationPin": 1,
+   "Package": 1,
+   "ScanEvent": 10,
+   "Customer": 1,
+   "DepotReconciliation": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "StatusEvent": 1,
+   "TrafficObservation": 1,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "InventoryRecord": 1,
+   "DeliverySession": 1,
+   "Customer": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "TrafficObservation": 1,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "MISSED_MILESTONE",
+   "TRAFFIC_DELAY"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-INDEP-KHB-0009": [
+    "SILENT",
+    16,
+    32.0,
+    0,
+    13.0
+   ],
+   "DEMO-DEV-APP-DRV-LHV-JUB-0040": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-KHB-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-FULFILL-JUB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-JUB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-KHB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-JUB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-KHB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-DEPOT-KHB-01",
+   "DEMO-DEV-HH-FULFILL-JUB-01",
+   "DEMO-DEV-HH-HUB-JUB-01",
+   "DEMO-DEV-HH-HUB-KHB-01",
+   "DEMO-DEV-HH-SORT-JUB-01",
+   "DEMO-DEV-HH-SORT-KHB-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-INDEP-KHB-0009",
+   "DEMO-DEV-APP-DRV-LHV-JUB-0040"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-APP-DRV-INDEP-KHB-0009",
+   "DEMO-DEV-APP-DRV-LHV-JUB-0040",
+   "DEMO-DEV-HH-DEPOT-KHB-01",
+   "DEMO-DEV-HH-FULFILL-JUB-01",
+   "DEMO-DEV-HH-HUB-JUB-01",
+   "DEMO-DEV-HH-HUB-KHB-01",
+   "DEMO-DEV-HH-SORT-JUB-01",
+   "DEMO-DEV-HH-SORT-KHB-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {
+   "recipient": "available_next_session"
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 579,
+   "journey": 4013,
+   "custody_chain:DEMO-SHP-000387-PKG-01": 5264,
+   "scans": 4686,
+   "delivery_attempts": 947,
+   "vehicle_and_manifest": 2568,
+   "address_and_instructions": 667,
+   "policy": 356
+  },
+  "n_packages": 1
+ },
+ {
+  "sid": "000466",
+  "as_of": "2026-09-08T14:00:12.000000000+00:00",
+  "recipe": "obsolete_address",
+  "acceptable": [
+   "ADDRESS_CONFLICT"
+  ],
+  "primary": "ADDRESS_CONFLICT",
+  "ok": true,
+  "symptoms": [
+   "DELIVERY_ATTEMPT_FAILED",
+   "MILESTONE_OVERDUE"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "journey",
+   "delivery_attempts",
+   "address_and_instructions"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 2,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "Manifest": 1,
+   "DeliveryAttempt": 1,
+   "ContactAttempt": 1,
+   "CustodyEvent": 9,
+   "ExpectedMilestone": 9,
+   "GPSObservation": 3,
+   "DeliveryInstruction": 1,
+   "InventoryRecord": 1,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "LocationPin": 1,
+   "Package": 1,
+   "ScanEvent": 10,
+   "Customer": 1,
+   "DepotReconciliation": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "StatusEvent": 1,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "InventoryRecord": 1,
+   "DeliverySession": 1,
+   "Customer": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "ADDRESS_CONFLICT",
+   "MISSED_MILESTONE"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-LHV-DHA-0017": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-APP-DRV-LMV-JED-0044": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-JED-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-DHA-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-ORGWH-DHA-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-DHA-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-DEPOT-JED-01",
+   "DEMO-DEV-HH-HUB-DHA-01",
+   "DEMO-DEV-HH-HUB-JED-01",
+   "DEMO-DEV-HH-ORGWH-DHA-01",
+   "DEMO-DEV-HH-SORT-DHA-01",
+   "DEMO-DEV-HH-SORT-JED-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-LHV-DHA-0017",
+   "DEMO-DEV-APP-DRV-LMV-JED-0044"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-APP-DRV-LHV-DHA-0017",
+   "DEMO-DEV-APP-DRV-LMV-JED-0044",
+   "DEMO-DEV-HH-DEPOT-JED-01",
+   "DEMO-DEV-HH-HUB-DHA-01",
+   "DEMO-DEV-HH-HUB-JED-01",
+   "DEMO-DEV-HH-ORGWH-DHA-01",
+   "DEMO-DEV-HH-SORT-DHA-01",
+   "DEMO-DEV-HH-SORT-JED-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {
+   "recipient": "confirms_address"
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 591,
+   "journey": 4010,
+   "custody_chain:DEMO-SHP-000466-PKG-01": 5249,
+   "scans": 4686,
+   "delivery_attempts": 941,
+   "vehicle_and_manifest": 2536,
+   "address_and_instructions": 872,
+   "policy": 358
+  },
+  "n_packages": 1
+ },
+ {
+  "sid": "000017",
+  "as_of": "2026-09-09T04:00:12.000000000+00:00",
+  "recipe": "next_day",
+  "acceptable": [
+   "DELAYED_SYNC"
+  ],
+  "primary": "CUSTODY_GAP",
+  "ok": false,
+  "symptoms": [
+   "CUSTODY_TRANSFER_UNCONFIRMED",
+   "MILESTONE_OVERDUE"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "journey",
+   "custody_chain",
+   "scans",
+   "device_status"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "Manifest": 1,
+   "CustodyEvent": 7,
+   "ExpectedMilestone": 9,
+   "GPSObservation": 2,
+   "DeliveryInstruction": 1,
+   "InventoryRecord": 1,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "LocationPin": 1,
+   "Package": 1,
+   "ScanEvent": 8,
+   "Customer": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "InventoryRecord": 1,
+   "DeliverySession": 1,
+   "Customer": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "CUSTODY_GAP",
+   "MISSED_MILESTONE"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-LHV-HOF-0008": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-APP-DRV-LMV-RUH-0007": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-RUH-01": [
+    "SILENT",
+    30,
+    18.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-HOF-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-RUH-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-ORGWH-HOF-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-HOF-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-RUH-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-DEPOT-RUH-01",
+   "DEMO-DEV-HH-HUB-HOF-01",
+   "DEMO-DEV-HH-HUB-RUH-01",
+   "DEMO-DEV-HH-ORGWH-HOF-01",
+   "DEMO-DEV-HH-SORT-HOF-01",
+   "DEMO-DEV-HH-SORT-RUH-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-LHV-HOF-0008",
+   "DEMO-DEV-APP-DRV-LMV-RUH-0007"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-APP-DRV-LHV-HOF-0008",
+   "DEMO-DEV-APP-DRV-LMV-RUH-0007",
+   "DEMO-DEV-HH-HUB-HOF-01",
+   "DEMO-DEV-HH-HUB-RUH-01",
+   "DEMO-DEV-HH-ORGWH-HOF-01",
+   "DEMO-DEV-HH-SORT-HOF-01",
+   "DEMO-DEV-HH-SORT-RUH-01"
+  ],
+  "key_evidence": [
+   "DEMO-SHP-000017-RAW-CUST-01-07",
+   "DEMO-SHP-000017-CUST-01-07"
+  ],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {
+   "device": "buffered_upload",
+   "device_id": "DEMO-DEV-HH-DEPOT-RUH-01",
+   "offline_from": "2026-09-08T10:20:00+00:00",
+   "natural_reconnect_at": "2026-09-09T07:00:00+00:00",
+   "buffered_event_ids": [
+    "DEMO-SHP-000017-RAW-CUST-01-07",
+    "DEMO-SHP-000017-CUST-01-07"
+   ]
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 558,
+   "journey": 3920,
+   "custody_chain:DEMO-SHP-000017-PKG-01": 4096,
+   "scans": 3778,
+   "delivery_attempts": 95,
+   "vehicle_and_manifest": 2248,
+   "address_and_instructions": 667,
+   "policy": 358
+  },
+  "n_packages": 1
+ },
+ {
+  "sid": "000187",
+  "as_of": "2026-09-09T06:00:12.000000000+00:00",
+  "recipe": "contractor_unreturned",
+  "acceptable": [
+   "UNRECONCILED_CUSTODY"
+  ],
+  "primary": "RECIPIENT_UNAVAILABLE",
+  "ok": false,
+  "symptoms": [
+   "DELIVERY_ATTEMPT_FAILED",
+   "MILESTONE_OVERDUE",
+   "SESSION_END_UNRECONCILED"
+  ],
+  "tools_used": [
+   "delivery_attempts",
+   "custody_chain",
+   "address_and_instructions"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "Manifest": 1,
+   "DeliveryAttempt": 2,
+   "ContactAttempt": 2,
+   "CustodyEvent": 8,
+   "ExpectedMilestone": 9,
+   "GPSObservation": 2,
+   "DeliveryInstruction": 1,
+   "InventoryRecord": 1,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "LocationPin": 1,
+   "Package": 1,
+   "ScanEvent": 9,
+   "Customer": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "InventoryRecord": 1,
+   "DeliverySession": 1,
+   "Customer": 1,
+   "RouteMilestone": 9,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "RECIPIENT_UNAVAILABLE"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-INDEP-MED-0016": [
+    "REPORTING",
+    23,
+    0.0,
+    0,
+    37.3
+   ],
+   "DEMO-DEV-APP-DRV-LHV-DHA-0017": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-MED-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-DHA-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-MED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-ORGWH-DHA-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-DHA-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-MED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-DEPOT-MED-01",
+   "DEMO-DEV-HH-HUB-DHA-01",
+   "DEMO-DEV-HH-HUB-MED-01",
+   "DEMO-DEV-HH-ORGWH-DHA-01",
+   "DEMO-DEV-HH-SORT-DHA-01",
+   "DEMO-DEV-HH-SORT-MED-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-INDEP-MED-0016",
+   "DEMO-DEV-APP-DRV-LHV-DHA-0017"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-APP-DRV-INDEP-MED-0016",
+   "DEMO-DEV-APP-DRV-LHV-DHA-0017",
+   "DEMO-DEV-HH-DEPOT-MED-01",
+   "DEMO-DEV-HH-HUB-DHA-01",
+   "DEMO-DEV-HH-HUB-MED-01",
+   "DEMO-DEV-HH-ORGWH-DHA-01",
+   "DEMO-DEV-HH-SORT-DHA-01",
+   "DEMO-DEV-HH-SORT-MED-01"
+  ],
+  "key_evidence": [
+   "DEMO-SHP-000187-CUST-01-08",
+   "DEMO-SHP-000187-ATT-01-1",
+   "DEMO-SHP-000187-ATT-01-2"
+  ],
+  "key_visible": [
+   "DEMO-SHP-000187-CUST-01-08",
+   "DEMO-SHP-000187-ATT-01-1",
+   "DEMO-SHP-000187-ATT-01-2"
+  ],
+  "key_reachable": [
+   "DEMO-SHP-000187-CUST-01-08",
+   "DEMO-SHP-000187-ATT-01-1",
+   "DEMO-SHP-000187-ATT-01-2"
+  ],
+  "physical": {
+   "parcel": "retained_by_contractor",
+   "contractor": "unresponsive",
+   "vehicle_id": "DEMO-VEH-PRIVATE-MED-0016",
+   "driver_id": "DEMO-DRV-INDEP-MED-0016",
+   "last_activity_at": "2026-09-09T06:00:00+00:00"
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 584,
+   "journey": 3995,
+   "custody_chain:DEMO-SHP-000187-PKG-01": 4676,
+   "scans": 4234,
+   "delivery_attempts": 1191,
+   "vehicle_and_manifest": 2276,
+   "address_and_instructions": 667,
+   "policy": 358
+  },
+  "n_packages": 1
+ },
+ {
+  "sid": "000299",
+  "as_of": "2026-09-09T08:00:12.000000000+00:00",
+  "recipe": "different_weight",
+  "acceptable": [
+   "WEIGHT_MISMATCH"
+  ],
+  "primary": "WEIGHT_MISMATCH",
+  "ok": true,
+  "symptoms": [
+   "WEIGHT_READ_DIFFERS"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "scans",
+   "custody_chain",
+   "policy",
+   "scans",
+   "scans",
+   "scans",
+   "device_status"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "CustodyEvent": 8,
+   "ExpectedMilestone": 36,
+   "DeliveryInstruction": 1,
+   "InventoryRecord": 4,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "Package": 4,
+   "ScanEvent": 12,
+   "RouteMilestone": 36,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "InventoryRecord": 4,
+   "DeliverySession": 1,
+   "RouteMilestone": 36,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "WEIGHT_MISMATCH"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-LHV-JED-0032": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-APP-DRV-LMV-DMM-0018": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-DMM-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-DMM-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-ORGWH-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-DMM-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-DEPOT-DMM-01",
+   "DEMO-DEV-HH-HUB-DMM-01",
+   "DEMO-DEV-HH-HUB-JED-01",
+   "DEMO-DEV-HH-ORGWH-JED-01",
+   "DEMO-DEV-HH-SORT-DMM-01",
+   "DEMO-DEV-HH-SORT-JED-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-LHV-JED-0032",
+   "DEMO-DEV-APP-DRV-LMV-DMM-0018"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-HH-ORGWH-JED-01",
+   "DEMO-DEV-HH-SORT-JED-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {
+   "scale": "miscalibrated"
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 966,
+   "journey": 7285,
+   "custody_chain:DEMO-SHP-000299-PKG-01": 1252,
+   "custody_chain:DEMO-SHP-000299-PKG-02": 1252,
+   "custody_chain:DEMO-SHP-000299-PKG-03": 1252,
+   "custody_chain:DEMO-SHP-000299-PKG-04": 1252,
+   "scans": 5757,
+   "delivery_attempts": 95,
+   "vehicle_and_manifest": 1274,
+   "address_and_instructions": 449,
+   "policy": 358
+  },
+  "n_packages": 4
+ },
+ {
+  "sid": "000239",
+  "as_of": "2026-09-10T06:00:12.000000000+00:00",
+  "recipe": "contractor_unreturned",
+  "acceptable": [
+   "UNRECONCILED_CUSTODY"
+  ],
+  "primary": "RECIPIENT_UNAVAILABLE",
+  "ok": false,
+  "symptoms": [
+   "DELIVERY_ATTEMPT_FAILED",
+   "MILESTONE_OVERDUE",
+   "SESSION_END_UNRECONCILED"
+  ],
+  "tools_used": [
+   "delivery_attempts",
+   "custody_chain",
+   "address_and_instructions",
+   "scans"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "Manifest": 1,
+   "DeliveryAttempt": 8,
+   "ContactAttempt": 8,
+   "CustodyEvent": 32,
+   "ExpectedMilestone": 36,
+   "GPSObservation": 2,
+   "DeliveryInstruction": 1,
+   "InventoryRecord": 4,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "LocationPin": 1,
+   "Package": 4,
+   "ScanEvent": 36,
+   "RouteMilestone": 36,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "InventoryRecord": 4,
+   "DeliverySession": 1,
+   "RouteMilestone": 36,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "RECIPIENT_UNAVAILABLE"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-INDEP-HOF-0020": [
+    "REPORTING",
+    16,
+    0.0,
+    0,
+    13.0
+   ],
+   "DEMO-DEV-APP-DRV-LHV-DMM-0021": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-HOF-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-DMM-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-HOF-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-ORGWH-DMM-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-DMM-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-HOF-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-DEPOT-HOF-01",
+   "DEMO-DEV-HH-HUB-DMM-01",
+   "DEMO-DEV-HH-HUB-HOF-01",
+   "DEMO-DEV-HH-ORGWH-DMM-01",
+   "DEMO-DEV-HH-SORT-DMM-01",
+   "DEMO-DEV-HH-SORT-HOF-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-INDEP-HOF-0020",
+   "DEMO-DEV-APP-DRV-LHV-DMM-0021"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-APP-DRV-INDEP-HOF-0020",
+   "DEMO-DEV-APP-DRV-LHV-DMM-0021",
+   "DEMO-DEV-HH-DEPOT-HOF-01",
+   "DEMO-DEV-HH-HUB-DMM-01",
+   "DEMO-DEV-HH-HUB-HOF-01",
+   "DEMO-DEV-HH-ORGWH-DMM-01",
+   "DEMO-DEV-HH-SORT-DMM-01",
+   "DEMO-DEV-HH-SORT-HOF-01"
+  ],
+  "key_evidence": [
+   "DEMO-SHP-000239-CUST-01-08",
+   "DEMO-SHP-000239-ATT-01-1",
+   "DEMO-SHP-000239-ATT-02-1",
+   "DEMO-SHP-000239-ATT-03-1",
+   "DEMO-SHP-000239-ATT-04-1",
+   "DEMO-SHP-000239-ATT-01-2",
+   "DEMO-SHP-000239-ATT-02-2",
+   "DEMO-SHP-000239-ATT-03-2",
+   "DEMO-SHP-000239-ATT-04-2"
+  ],
+  "key_visible": [
+   "DEMO-SHP-000239-CUST-01-08",
+   "DEMO-SHP-000239-ATT-01-1",
+   "DEMO-SHP-000239-ATT-02-1",
+   "DEMO-SHP-000239-ATT-03-1",
+   "DEMO-SHP-000239-ATT-04-1",
+   "DEMO-SHP-000239-ATT-01-2",
+   "DEMO-SHP-000239-ATT-02-2",
+   "DEMO-SHP-000239-ATT-03-2",
+   "DEMO-SHP-000239-ATT-04-2"
+  ],
+  "key_reachable": [
+   "DEMO-SHP-000239-CUST-01-08",
+   "DEMO-SHP-000239-ATT-01-1",
+   "DEMO-SHP-000239-ATT-02-1",
+   "DEMO-SHP-000239-ATT-03-1",
+   "DEMO-SHP-000239-ATT-04-1",
+   "DEMO-SHP-000239-ATT-01-2",
+   "DEMO-SHP-000239-ATT-02-2",
+   "DEMO-SHP-000239-ATT-03-2",
+   "DEMO-SHP-000239-ATT-04-2"
+  ],
+  "physical": {
+   "parcel": "retained_by_contractor",
+   "contractor": "unresponsive",
+   "vehicle_id": "DEMO-VEH-PRIVATE-HOF-0020",
+   "driver_id": "DEMO-DRV-INDEP-HOF-0020",
+   "last_activity_at": "2026-09-10T06:00:00+00:00"
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 1020,
+   "journey": 8005,
+   "custody_chain:DEMO-SHP-000239-PKG-01": 4676,
+   "custody_chain:DEMO-SHP-000239-PKG-02": 4676,
+   "custody_chain:DEMO-SHP-000239-PKG-03": 4676,
+   "custody_chain:DEMO-SHP-000239-PKG-04": 4676,
+   "scans": 7233,
+   "delivery_attempts": 4491,
+   "vehicle_and_manifest": 2354,
+   "address_and_instructions": 667,
+   "policy": 358
+  },
+  "n_packages": 4
+ },
+ {
+  "sid": "000530",
+  "as_of": "2026-09-10T08:00:12.000000000+00:00",
+  "recipe": "declared_weight_wrong",
+  "acceptable": [
+   "WEIGHT_MISMATCH"
+  ],
+  "primary": "WEIGHT_MISMATCH",
+  "ok": true,
+  "symptoms": [
+   "WEIGHT_READ_DIFFERS"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "scans",
+   "policy",
+   "custody_chain"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "CustodyEvent": 6,
+   "ExpectedMilestone": 27,
+   "DeliveryInstruction": 1,
+   "InventoryRecord": 3,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "Package": 3,
+   "ScanEvent": 9,
+   "RouteMilestone": 27,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "InventoryRecord": 3,
+   "DeliverySession": 1,
+   "RouteMilestone": 27,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "WEIGHT_MISMATCH"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-LARGE-MED-0025": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-APP-DRV-TRUCK-HOF-0025": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-MED-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-HOF-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-MED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-ORGWH-HOF-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-HOF-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-MED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-DEPOT-MED-01",
+   "DEMO-DEV-HH-HUB-HOF-01",
+   "DEMO-DEV-HH-HUB-MED-01",
+   "DEMO-DEV-HH-ORGWH-HOF-01",
+   "DEMO-DEV-HH-SORT-HOF-01",
+   "DEMO-DEV-HH-SORT-MED-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-LARGE-MED-0025",
+   "DEMO-DEV-APP-DRV-TRUCK-HOF-0025"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-HH-ORGWH-HOF-01",
+   "DEMO-DEV-HH-SORT-HOF-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {
+   "scale": "declared_weight_wrong"
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 819,
+   "journey": 6973,
+   "custody_chain:DEMO-SHP-000530-PKG-01": 1252,
+   "custody_chain:DEMO-SHP-000530-PKG-02": 1252,
+   "custody_chain:DEMO-SHP-000530-PKG-03": 1252,
+   "scans": 4351,
+   "delivery_attempts": 95,
+   "vehicle_and_manifest": 1294,
+   "address_and_instructions": 449,
+   "policy": 365
+  },
+  "n_packages": 3
+ },
+ {
+  "sid": "000100",
+  "as_of": "2026-09-10T08:00:12.000000000+00:00",
+  "recipe": "different_barcode",
+  "acceptable": [
+   "BARCODE_MISMATCH"
+  ],
+  "primary": "BARCODE_MISMATCH",
+  "ok": true,
+  "symptoms": [
+   "BARCODE_READ_DIFFERS"
+  ],
+  "tools_used": [
+   "scans",
+   "scans",
+   "custody_chain"
+  ],
+  "context_kinds": {
+   "Branch": 1,
+   "City": 1,
+   "DeliveryDepot": 1,
+   "Device": 294,
+   "Driver": 287,
+   "FulfillmentWarehouse": 1,
+   "HandlingRequirement": 1,
+   "Hub": 1,
+   "Organization": 3,
+   "OrganizationWarehouse": 2,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 1,
+   "CustodyEvent": 6,
+   "ExpectedMilestone": 18,
+   "DeliveryInstruction": 1,
+   "InventoryRecord": 3,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "Package": 3,
+   "ScanEvent": 9,
+   "RouteMilestone": 18,
+   "Route": 1,
+   "RouteSegment": 4,
+   "SortingCenter": 1,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 1,
+   "City": 1,
+   "DeliveryDepot": 1,
+   "Device": 294,
+   "Driver": 287,
+   "FulfillmentWarehouse": 1,
+   "HandlingRequirement": 1,
+   "Hub": 1,
+   "Organization": 3,
+   "OrganizationWarehouse": 2,
+   "Provider": 3,
+   "Address": 1,
+   "InventoryRecord": 3,
+   "DeliverySession": 1,
+   "RouteMilestone": 18,
+   "Route": 1,
+   "RouteSegment": 4,
+   "SortingCenter": 1,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "BARCODE_MISMATCH"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-LARGE-RUH-0007": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-RUH-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-RUH-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-ORGWH-RUH-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-RUH-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-DEPOT-RUH-01",
+   "DEMO-DEV-HH-HUB-RUH-01",
+   "DEMO-DEV-HH-ORGWH-RUH-01",
+   "DEMO-DEV-HH-SORT-RUH-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-LARGE-RUH-0007"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-HH-ORGWH-RUH-01",
+   "DEMO-DEV-HH-SORT-RUH-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {
+   "label": "misread"
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 821,
+   "journey": 6721,
+   "custody_chain:DEMO-SHP-000100-PKG-01": 1252,
+   "custody_chain:DEMO-SHP-000100-PKG-02": 1252,
+   "custody_chain:DEMO-SHP-000100-PKG-03": 1252,
+   "scans": 4356,
+   "delivery_attempts": 95,
+   "vehicle_and_manifest": 773,
+   "address_and_instructions": 449,
+   "policy": 365
+  },
+  "n_packages": 3
+ },
+ {
+  "sid": "000120",
+  "as_of": "2026-09-10T15:00:12.000000000+00:00",
+  "recipe": "offline_device_sync",
+  "acceptable": [
+   "DELAYED_SYNC"
+  ],
+  "primary": "DELAYED_SYNC",
+  "ok": true,
+  "symptoms": [
+   "MILESTONE_OVERDUE"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "journey",
+   "journey",
+   "custody_chain",
+   "journey",
+   "device_status",
+   "scans"
+  ],
+  "context_kinds": {
+   "Branch": 1,
+   "City": 1,
+   "DeliveryDepot": 1,
+   "Device": 294,
+   "Driver": 287,
+   "FulfillmentWarehouse": 1,
+   "HandlingRequirement": 1,
+   "Hub": 1,
+   "Organization": 3,
+   "OrganizationWarehouse": 2,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 1,
+   "CustodyEvent": 9,
+   "ExpectedMilestone": 18,
+   "DeliveryInstruction": 1,
+   "InventoryRecord": 3,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "LocationPin": 1,
+   "Package": 3,
+   "ScanEvent": 12,
+   "RouteMilestone": 18,
+   "Route": 1,
+   "RouteSegment": 4,
+   "SortingCenter": 1,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 1,
+   "City": 1,
+   "DeliveryDepot": 1,
+   "Device": 294,
+   "Driver": 287,
+   "FulfillmentWarehouse": 1,
+   "HandlingRequirement": 1,
+   "Hub": 1,
+   "Organization": 3,
+   "OrganizationWarehouse": 2,
+   "Provider": 3,
+   "Address": 1,
+   "InventoryRecord": 3,
+   "DeliverySession": 1,
+   "RouteMilestone": 18,
+   "Route": 1,
+   "RouteSegment": 4,
+   "SortingCenter": 1,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "MISSED_MILESTONE"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-LARGE-MAK-0012": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-MAK-01": [
+    "SILENT",
+    30,
+    5.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-FULFILL-MAK-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-MAK-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-MAK-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-DEPOT-MAK-01",
+   "DEMO-DEV-HH-FULFILL-MAK-01",
+   "DEMO-DEV-HH-HUB-MAK-01",
+   "DEMO-DEV-HH-SORT-MAK-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-LARGE-MAK-0012"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-HH-FULFILL-MAK-01",
+   "DEMO-DEV-HH-HUB-MAK-01",
+   "DEMO-DEV-HH-SORT-MAK-01"
+  ],
+  "key_evidence": [
+   "DEMO-SHP-000120-RAW-CUST-01-04",
+   "DEMO-SHP-000120-CUST-01-04",
+   "DEMO-SHP-000120-RAW-CUST-02-04",
+   "DEMO-SHP-000120-CUST-02-04",
+   "DEMO-SHP-000120-RAW-CUST-03-04",
+   "DEMO-SHP-000120-CUST-03-04"
+  ],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {
+   "device": "buffered_upload",
+   "device_id": "DEMO-DEV-HH-DEPOT-MAK-01",
+   "offline_from": "2026-09-10T10:20:00+00:00",
+   "natural_reconnect_at": "2026-09-11T07:00:00+00:00",
+   "buffered_event_ids": [
+    "DEMO-SHP-000120-RAW-CUST-01-04",
+    "DEMO-SHP-000120-CUST-01-04",
+    "DEMO-SHP-000120-RAW-CUST-02-04",
+    "DEMO-SHP-000120-CUST-02-04",
+    "DEMO-SHP-000120-RAW-CUST-03-04",
+    "DEMO-SHP-000120-CUST-03-04"
+   ],
+   "depot_id": "DEMO-DEPOT-MAK-01"
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 818,
+   "journey": 6811,
+   "custody_chain:DEMO-SHP-000120-PKG-01": 1817,
+   "custody_chain:DEMO-SHP-000120-PKG-02": 1817,
+   "custody_chain:DEMO-SHP-000120-PKG-03": 1817,
+   "scans": 5716,
+   "delivery_attempts": 95,
+   "vehicle_and_manifest": 773,
+   "address_and_instructions": 667,
+   "policy": 365
+  },
+  "n_packages": 3
+ },
+ {
+  "sid": "000400",
+  "as_of": "2026-09-10T15:00:12.000000000+00:00",
+  "recipe": "later_hub_departure",
+  "acceptable": [
+   "HUB_DELAY",
+   "JOURNEY_DELAY",
+   "MISSED_MILESTONE"
+  ],
+  "primary": "CUSTODY_GAP",
+  "ok": false,
+  "symptoms": [
+   "MILESTONE_LATE",
+   "MILESTONE_OVERDUE"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "journey",
+   "journey",
+   "custody_chain",
+   "scans",
+   "device_status",
+   "custody_chain"
+  ],
+  "context_kinds": {
+   "Branch": 1,
+   "City": 1,
+   "DeliveryDepot": 1,
+   "Device": 294,
+   "Driver": 287,
+   "FulfillmentWarehouse": 1,
+   "HandlingRequirement": 1,
+   "Hub": 1,
+   "Organization": 3,
+   "OrganizationWarehouse": 2,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 1,
+   "CustodyEvent": 9,
+   "ExpectedMilestone": 18,
+   "DeliveryInstruction": 1,
+   "InventoryRecord": 3,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "LocationPin": 1,
+   "Package": 3,
+   "ScanEvent": 12,
+   "RouteMilestone": 18,
+   "Route": 1,
+   "RouteSegment": 4,
+   "StatusEvent": 1,
+   "SortingCenter": 1,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 1,
+   "City": 1,
+   "DeliveryDepot": 1,
+   "Device": 294,
+   "Driver": 287,
+   "FulfillmentWarehouse": 1,
+   "HandlingRequirement": 1,
+   "Hub": 1,
+   "Organization": 3,
+   "OrganizationWarehouse": 2,
+   "Provider": 3,
+   "Address": 1,
+   "InventoryRecord": 3,
+   "DeliverySession": 1,
+   "RouteMilestone": 18,
+   "Route": 1,
+   "RouteSegment": 4,
+   "SortingCenter": 1,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "MISSED_MILESTONE"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-LARGE-MED-0030": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-MED-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-MED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-ORGWH-MED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-MED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-DEPOT-MED-01",
+   "DEMO-DEV-HH-HUB-MED-01",
+   "DEMO-DEV-HH-ORGWH-MED-01",
+   "DEMO-DEV-HH-SORT-MED-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-LARGE-MED-0030"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-HH-HUB-MED-01",
+   "DEMO-DEV-HH-ORGWH-MED-01",
+   "DEMO-DEV-HH-SORT-MED-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {
+   "parcel": "at_origin_hub_delayed"
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 866,
+   "journey": 6811,
+   "custody_chain:DEMO-SHP-000400-PKG-01": 1812,
+   "custody_chain:DEMO-SHP-000400-PKG-02": 1812,
+   "custody_chain:DEMO-SHP-000400-PKG-03": 1812,
+   "scans": 5707,
+   "delivery_attempts": 95,
+   "vehicle_and_manifest": 773,
+   "address_and_instructions": 667,
+   "policy": 365
+  },
+  "n_packages": 3
+ },
+ {
+  "sid": "000459",
+  "as_of": "2026-09-10T17:00:12.000000000+00:00",
+  "recipe": "contractor_unconfirmed_pickup",
+  "acceptable": [
+   "CUSTODY_GAP",
+   "DELAYED_SYNC",
+   "UNRECONCILED_CUSTODY"
+  ],
+  "primary": "CUSTODY_GAP",
+  "ok": true,
+  "symptoms": [
+   "CUSTODY_TRANSFER_UNCONFIRMED",
+   "MILESTONE_OVERDUE",
+   "SESSION_END_UNRECONCILED"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "journey",
+   "journey",
+   "custody_chain",
+   "custody_chain",
+   "custody_chain",
+   "scans",
+   "device_status"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "CustodyEvent": 24,
+   "ExpectedMilestone": 36,
+   "GPSObservation": 1,
+   "DeliveryInstruction": 1,
+   "InventoryRecord": 4,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "LocationPin": 1,
+   "Package": 4,
+   "ScanEvent": 28,
+   "RouteMilestone": 36,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "InventoryRecord": 4,
+   "DeliverySession": 1,
+   "RouteMilestone": 36,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "MISSED_MILESTONE"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-INDEP-MAK-0031": [
+    "SILENT",
+    24,
+    27.0,
+    0,
+    13.0
+   ],
+   "DEMO-DEV-APP-DRV-LHV-JUB-0050": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-MAK-01": [
+    "SILENT",
+    30,
+    7.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-FULFILL-JUB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-JUB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-MAK-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-JUB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-MAK-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-DEPOT-MAK-01",
+   "DEMO-DEV-HH-FULFILL-JUB-01",
+   "DEMO-DEV-HH-HUB-JUB-01",
+   "DEMO-DEV-HH-HUB-MAK-01",
+   "DEMO-DEV-HH-SORT-JUB-01",
+   "DEMO-DEV-HH-SORT-MAK-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-INDEP-MAK-0031",
+   "DEMO-DEV-APP-DRV-LHV-JUB-0050"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-APP-DRV-LHV-JUB-0050",
+   "DEMO-DEV-HH-FULFILL-JUB-01",
+   "DEMO-DEV-HH-HUB-JUB-01",
+   "DEMO-DEV-HH-HUB-MAK-01",
+   "DEMO-DEV-HH-SORT-JUB-01",
+   "DEMO-DEV-HH-SORT-MAK-01"
+  ],
+  "key_evidence": [
+   "DEMO-SHP-000459-CUST-01-08",
+   "DEMO-SHP-000459-RAW-CUST-01-08",
+   "DEMO-SHP-000459-CUST-02-08",
+   "DEMO-SHP-000459-RAW-CUST-02-08",
+   "DEMO-SHP-000459-CUST-03-08",
+   "DEMO-SHP-000459-RAW-CUST-03-08",
+   "DEMO-SHP-000459-CUST-04-08",
+   "DEMO-SHP-000459-RAW-CUST-04-08"
+  ],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {
+   "parcel": "left_at_depot",
+   "depot_id": "DEMO-DEPOT-MAK-01",
+   "vehicle_id": "DEMO-VEH-PRIVATE-MAK-0031"
+  },
+  "secondary": "DELAYED_SYNC",
+  "result_chars": {
+   "shipment_overview": 1022,
+   "journey": 7765,
+   "custody_chain:DEMO-SHP-000459-PKG-01": 3526,
+   "custody_chain:DEMO-SHP-000459-PKG-02": 3526,
+   "custody_chain:DEMO-SHP-000459-PKG-03": 3526,
+   "custody_chain:DEMO-SHP-000459-PKG-04": 3526,
+   "scans": 6961,
+   "delivery_attempts": 95,
+   "vehicle_and_manifest": 1602,
+   "address_and_instructions": 667,
+   "policy": 356
+  },
+  "n_packages": 4
+ },
+ {
+  "sid": "000060",
+  "as_of": "2026-09-11T04:00:12.000000000+00:00",
+  "recipe": "conflicting_custody_sources",
+  "acceptable": [
+   "CONFLICTING_CUSTODY"
+  ],
+  "primary": "CONFLICTING_CUSTODY",
+  "ok": true,
+  "symptoms": [
+   "CUSTODY_REPORTS_CONFLICT",
+   "MILESTONE_OVERDUE",
+   "SESSION_END_UNRECONCILED"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "custody_chain",
+   "custody_chain",
+   "custody_chain",
+   "scans",
+   "vehicle_and_manifest",
+   "device_status"
+  ],
+  "context_kinds": {
+   "Branch": 1,
+   "City": 1,
+   "DeliveryDepot": 1,
+   "Device": 294,
+   "Driver": 287,
+   "FulfillmentWarehouse": 1,
+   "HandlingRequirement": 1,
+   "Hub": 1,
+   "Organization": 3,
+   "OrganizationWarehouse": 2,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 1,
+   "Manifest": 1,
+   "CustodyEvent": 16,
+   "ExpectedMilestone": 18,
+   "GPSObservation": 1,
+   "DeliveryInstruction": 1,
+   "InventoryRecord": 3,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "LocationPin": 1,
+   "Package": 3,
+   "ScanEvent": 19,
+   "RouteMilestone": 18,
+   "Route": 1,
+   "RouteSegment": 4,
+   "StatusEvent": 1,
+   "SortingCenter": 1,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 1,
+   "City": 1,
+   "DeliveryDepot": 1,
+   "Device": 294,
+   "Driver": 287,
+   "FulfillmentWarehouse": 1,
+   "HandlingRequirement": 1,
+   "Hub": 1,
+   "Organization": 3,
+   "OrganizationWarehouse": 2,
+   "Provider": 3,
+   "Address": 1,
+   "InventoryRecord": 3,
+   "DeliverySession": 1,
+   "RouteMilestone": 18,
+   "Route": 1,
+   "RouteSegment": 4,
+   "SortingCenter": 1,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "CONFLICTING_CUSTODY"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-LARGE-KHB-0006": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-APP-DRV-LHV-RUH-0001": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-KHB-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-FULFILL-KHB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-KHB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-KHB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-DEPOT-KHB-01",
+   "DEMO-DEV-HH-FULFILL-KHB-01",
+   "DEMO-DEV-HH-HUB-KHB-01",
+   "DEMO-DEV-HH-SORT-KHB-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-LARGE-KHB-0006"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-APP-DRV-LARGE-KHB-0006",
+   "DEMO-DEV-APP-DRV-LHV-RUH-0001",
+   "DEMO-DEV-HH-DEPOT-KHB-01",
+   "DEMO-DEV-HH-FULFILL-KHB-01",
+   "DEMO-DEV-HH-HUB-KHB-01",
+   "DEMO-DEV-HH-SORT-KHB-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {},
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 909,
+   "journey": 6961,
+   "custody_chain:DEMO-SHP-000060-PKG-01": 3556,
+   "custody_chain:DEMO-SHP-000060-PKG-02": 2969,
+   "custody_chain:DEMO-SHP-000060-PKG-03": 2969,
+   "scans": 6662,
+   "delivery_attempts": 95,
+   "vehicle_and_manifest": 1495,
+   "address_and_instructions": 667,
+   "policy": 365
+  },
+  "n_packages": 3
+ },
+ {
+  "sid": "000389",
+  "as_of": "2026-09-11T06:00:12.000000000+00:00",
+  "recipe": "report_after_prior_outcome",
+  "acceptable": [
+   "DELIVERY_DISPUTE"
+  ],
+  "primary": "DELIVERY_DISPUTE",
+  "ok": true,
+  "symptoms": [
+   "RECIPIENT_REPORTED_NOT_RECEIVED"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "journey",
+   "delivery_attempts",
+   "custody_chain",
+   "address_and_instructions",
+   "scans"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "Manifest": 1,
+   "DeliveryAttempt": 4,
+   "AuthenticationEvidence": 4,
+   "ContactAttempt": 4,
+   "CustodyEvent": 36,
+   "ExpectedMilestone": 36,
+   "GPSObservation": 2,
+   "HandoffEvidence": 4,
+   "DeliveryInstruction": 1,
+   "InventoryRecord": 4,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "PhotoEvidence": 4,
+   "LocationPin": 1,
+   "Package": 4,
+   "DeliveryProof": 4,
+   "ScanEvent": 40,
+   "DepotReconciliation": 4,
+   "RecipientReport": 4,
+   "RouteMilestone": 36,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SignatureEvidence": 4,
+   "StatusEvent": 1,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "InventoryRecord": 4,
+   "DeliverySession": 1,
+   "RouteMilestone": 36,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "DELIVERY_DISPUTE"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-LHV-JED-0041": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-APP-DRV-LMV-RUH-0017": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-RUH-01": [
+    "SILENT",
+    30,
+    4.5,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-RUH-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-ORGWH-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-RUH-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-DEPOT-RUH-01",
+   "DEMO-DEV-HH-HUB-JED-01",
+   "DEMO-DEV-HH-HUB-RUH-01",
+   "DEMO-DEV-HH-ORGWH-JED-01",
+   "DEMO-DEV-HH-SORT-JED-01",
+   "DEMO-DEV-HH-SORT-RUH-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-LHV-JED-0041",
+   "DEMO-DEV-APP-DRV-LMV-RUH-0017"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-APP-DRV-LHV-JED-0041",
+   "DEMO-DEV-APP-DRV-LMV-RUH-0017",
+   "DEMO-DEV-HH-DEPOT-RUH-01",
+   "DEMO-DEV-HH-HUB-JED-01",
+   "DEMO-DEV-HH-HUB-RUH-01",
+   "DEMO-DEV-HH-ORGWH-JED-01",
+   "DEMO-DEV-HH-SORT-JED-01",
+   "DEMO-DEV-HH-SORT-RUH-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {},
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 1006,
+   "journey": 8125,
+   "custody_chain:DEMO-SHP-000389-PKG-01": 5252,
+   "custody_chain:DEMO-SHP-000389-PKG-02": 5252,
+   "custody_chain:DEMO-SHP-000389-PKG-03": 5252,
+   "custody_chain:DEMO-SHP-000389-PKG-04": 5252,
+   "scans": 7369,
+   "delivery_attempts": 5707,
+   "vehicle_and_manifest": 2320,
+   "address_and_instructions": 667,
+   "policy": 358
+  },
+  "n_packages": 4
+ },
+ {
+  "sid": "000249",
+  "as_of": "2026-09-11T06:00:12.000000000+00:00",
+  "recipe": "report_photo_only",
+  "acceptable": [
+   "DELIVERY_DISPUTE",
+   "PROOF_INSUFFICIENT"
+  ],
+  "primary": "PROOF_INSUFFICIENT",
+  "ok": true,
+  "symptoms": [
+   "CUSTODY_TRANSFER_UNCONFIRMED",
+   "DELIVERY_PROOF_INCOMPLETE",
+   "MILESTONE_OVERDUE",
+   "RECIPIENT_REPORTED_NOT_RECEIVED",
+   "SESSION_END_UNRECONCILED"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "journey",
+   "journey",
+   "custody_chain",
+   "delivery_attempts"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "Manifest": 1,
+   "DeliveryAttempt": 4,
+   "ContactAttempt": 4,
+   "CustodyEvent": 36,
+   "ExpectedMilestone": 36,
+   "GPSObservation": 2,
+   "HandoffEvidence": 4,
+   "DeliveryInstruction": 1,
+   "InventoryRecord": 4,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "PhotoEvidence": 4,
+   "LocationPin": 1,
+   "Package": 4,
+   "DeliveryProof": 4,
+   "ScanEvent": 40,
+   "DepotReconciliation": 4,
+   "RecipientReport": 4,
+   "RouteMilestone": 36,
+   "Route": 1,
+   "RouteSegment": 6,
+   "StatusEvent": 1,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "InventoryRecord": 4,
+   "DeliverySession": 1,
+   "RouteMilestone": 36,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "CUSTODY_GAP",
+   "DELIVERY_DISPUTE",
+   "PROOF_INSUFFICIENT"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-LHV-KHB-0027": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-APP-DRV-LMV-JED-0010": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-JED-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-FULFILL-KHB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-KHB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-KHB-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-DEPOT-JED-01",
+   "DEMO-DEV-HH-FULFILL-KHB-01",
+   "DEMO-DEV-HH-HUB-JED-01",
+   "DEMO-DEV-HH-HUB-KHB-01",
+   "DEMO-DEV-HH-SORT-JED-01",
+   "DEMO-DEV-HH-SORT-KHB-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-LHV-KHB-0027",
+   "DEMO-DEV-APP-DRV-LMV-JED-0010"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-APP-DRV-LHV-KHB-0027",
+   "DEMO-DEV-APP-DRV-LMV-JED-0010",
+   "DEMO-DEV-HH-DEPOT-JED-01",
+   "DEMO-DEV-HH-FULFILL-KHB-01",
+   "DEMO-DEV-HH-HUB-JED-01",
+   "DEMO-DEV-HH-HUB-KHB-01",
+   "DEMO-DEV-HH-SORT-JED-01",
+   "DEMO-DEV-HH-SORT-KHB-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {},
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 1116,
+   "journey": 8005,
+   "custody_chain:DEMO-SHP-000249-PKG-01": 5260,
+   "custody_chain:DEMO-SHP-000249-PKG-02": 5260,
+   "custody_chain:DEMO-SHP-000249-PKG-03": 5260,
+   "custody_chain:DEMO-SHP-000249-PKG-04": 5260,
+   "scans": 7369,
+   "delivery_attempts": 5803,
+   "vehicle_and_manifest": 2326,
+   "address_and_instructions": 667,
+   "policy": 356
+  },
+  "n_packages": 4
+ },
+ {
+  "sid": "000030",
+  "as_of": "2026-09-11T13:00:12.000000000+00:00",
+  "recipe": "report_failed_authentication",
+  "acceptable": [
+   "DELAYED_SYNC",
+   "DELIVERY_DISPUTE",
+   "PROOF_INSUFFICIENT"
+  ],
+  "primary": "CUSTODY_GAP",
+  "ok": false,
+  "symptoms": [
+   "CUSTODY_TRANSFER_UNCONFIRMED",
+   "DELIVERY_PROOF_INCOMPLETE",
+   "MILESTONE_OVERDUE",
+   "RECIPIENT_REPORTED_NOT_RECEIVED",
+   "SESSION_END_UNRECONCILED"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "journey",
+   "journey",
+   "custody_chain",
+   "device_status",
+   "scans",
+   "vehicle_and_manifest"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "CustodyEvent": 18,
+   "ExpectedMilestone": 27,
+   "GPSObservation": 1,
+   "DeliveryInstruction": 1,
+   "InventoryRecord": 3,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "LocationPin": 1,
+   "Package": 3,
+   "ScanEvent": 21,
+   "RouteMilestone": 27,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "InventoryRecord": 3,
+   "DeliverySession": 1,
+   "RouteMilestone": 27,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "MISSED_MILESTONE"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-LARGE-RUH-0007": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-APP-DRV-TRUCK-MAK-0004": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-RUH-01": [
+    "SILENT",
+    30,
+    11.5,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-FULFILL-MAK-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-MAK-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-RUH-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-MAK-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-RUH-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-DEPOT-RUH-01",
+   "DEMO-DEV-HH-FULFILL-MAK-01",
+   "DEMO-DEV-HH-HUB-MAK-01",
+   "DEMO-DEV-HH-HUB-RUH-01",
+   "DEMO-DEV-HH-SORT-MAK-01",
+   "DEMO-DEV-HH-SORT-RUH-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-LARGE-RUH-0007",
+   "DEMO-DEV-APP-DRV-TRUCK-MAK-0004"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-APP-DRV-TRUCK-MAK-0004",
+   "DEMO-DEV-HH-FULFILL-MAK-01",
+   "DEMO-DEV-HH-HUB-MAK-01",
+   "DEMO-DEV-HH-HUB-RUH-01",
+   "DEMO-DEV-HH-SORT-MAK-01",
+   "DEMO-DEV-HH-SORT-RUH-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {},
+  "secondary": "DELAYED_SYNC",
+  "result_chars": {
+   "shipment_overview": 942,
+   "journey": 7333,
+   "custody_chain:DEMO-SHP-000030-PKG-01": 3532,
+   "custody_chain:DEMO-SHP-000030-PKG-02": 3532,
+   "custody_chain:DEMO-SHP-000030-PKG-03": 3532,
+   "scans": 6730,
+   "delivery_attempts": 95,
+   "vehicle_and_manifest": 1588,
+   "address_and_instructions": 667,
+   "policy": 365
+  },
+  "n_packages": 3
+ },
+ {
+  "sid": "000029",
+  "as_of": "2026-09-11T14:00:12.000000000+00:00",
+  "recipe": "partial_packages",
+  "acceptable": [
+   "CUSTODY_GAP",
+   "UNRECONCILED_CUSTODY"
+  ],
+  "primary": "DELAYED_SYNC",
+  "ok": false,
+  "symptoms": [
+   "MILESTONE_OVERDUE",
+   "SESSION_END_UNRECONCILED"
+  ],
+  "tools_used": [
+   "shipment_overview",
+   "journey",
+   "journey",
+   "delivery_attempts",
+   "custody_chain",
+   "journey",
+   "device_status",
+   "scans"
+  ],
+  "context_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Policy": 1,
+   "Provider": 3,
+   "ServiceLevel": 1,
+   "Shipment": 1,
+   "AddressVersion": 1,
+   "Address": 1,
+   "VehicleAssignment": 2,
+   "Manifest": 1,
+   "DeliveryAttempt": 3,
+   "AuthenticationEvidence": 3,
+   "ContactAttempt": 3,
+   "CustodyEvent": 35,
+   "ExpectedMilestone": 36,
+   "GPSObservation": 3,
+   "HandoffEvidence": 3,
+   "DeliveryInstruction": 1,
+   "InventoryRecord": 4,
+   "JourneyPlan": 1,
+   "DeliverySession": 2,
+   "PhotoEvidence": 3,
+   "LocationPin": 1,
+   "Package": 4,
+   "DeliveryProof": 3,
+   "ScanEvent": 39,
+   "DepotReconciliation": 3,
+   "RouteMilestone": 36,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SignatureEvidence": 3,
+   "StatusEvent": 1,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "unreachable_kinds": {
+   "Branch": 2,
+   "City": 2,
+   "DeliveryDepot": 2,
+   "Device": 301,
+   "Driver": 287,
+   "FulfillmentWarehouse": 2,
+   "HandlingRequirement": 1,
+   "Hub": 2,
+   "Organization": 6,
+   "OrganizationWarehouse": 4,
+   "Provider": 3,
+   "Address": 1,
+   "InventoryRecord": 4,
+   "DeliverySession": 1,
+   "RouteMilestone": 36,
+   "Route": 1,
+   "RouteSegment": 6,
+   "SortingCenter": 2,
+   "ShipmentType": 1,
+   "Vehicle": 287,
+   "VehicleType": 5
+  },
+  "rule_codes": [
+   "MISSED_MILESTONE",
+   "UNRECONCILED_CUSTODY"
+  ],
+  "devices": {
+   "DEMO-DEV-APP-DRV-LHV-JED-0002": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-APP-DRV-LMV-DMM-0001": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-DEPOT-DMM-01": [
+    "REPORTING",
+    30,
+    0.0,
+    0,
+    0.5
+   ],
+   "DEMO-DEV-HH-HUB-DMM-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-HUB-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-ORGWH-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-DMM-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ],
+   "DEMO-DEV-HH-SORT-JED-01": [
+    "NO_TELEMETRY",
+    0,
+    null,
+    null,
+    null
+   ]
+  },
+  "facility_handhelds": [
+   "DEMO-DEV-HH-DEPOT-DMM-01",
+   "DEMO-DEV-HH-HUB-DMM-01",
+   "DEMO-DEV-HH-HUB-JED-01",
+   "DEMO-DEV-HH-ORGWH-JED-01",
+   "DEMO-DEV-HH-SORT-DMM-01",
+   "DEMO-DEV-HH-SORT-JED-01"
+  ],
+  "driver_apps": [
+   "DEMO-DEV-APP-DRV-LHV-JED-0002",
+   "DEMO-DEV-APP-DRV-LMV-DMM-0001"
+  ],
+  "custody_devices": [
+   "DEMO-DEV-APP-DRV-LHV-JED-0002",
+   "DEMO-DEV-APP-DRV-LMV-DMM-0001",
+   "DEMO-DEV-HH-DEPOT-DMM-01",
+   "DEMO-DEV-HH-HUB-DMM-01",
+   "DEMO-DEV-HH-HUB-JED-01",
+   "DEMO-DEV-HH-ORGWH-JED-01",
+   "DEMO-DEV-HH-SORT-DMM-01",
+   "DEMO-DEV-HH-SORT-JED-01"
+  ],
+  "key_evidence": [],
+  "key_visible": [],
+  "key_reachable": [],
+  "physical": {
+   "parcel": "returned_unscanned"
+  },
+  "secondary": null,
+  "result_chars": {
+   "shipment_overview": 1028,
+   "journey": 8095,
+   "custody_chain:DEMO-SHP-000029-PKG-01": 5252,
+   "custody_chain:DEMO-SHP-000029-PKG-02": 5252,
+   "custody_chain:DEMO-SHP-000029-PKG-03": 5252,
+   "custody_chain:DEMO-SHP-000029-PKG-04": 4670,
+   "scans": 7335,
+   "delivery_attempts": 3233,
+   "vehicle_and_manifest": 2608,
+   "address_and_instructions": 667,
+   "policy": 358
+  },
+  "n_packages": 4
+ }
+]

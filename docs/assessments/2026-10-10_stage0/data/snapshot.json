@@ -1,0 +1,4623 @@
+{
+ "DEMO-OPS-CASE-f8d32f033fedf3decfe20aa3": {
+  "recipe": "contractor_on_time",
+  "acceptable": [
+   "DELAYED_SYNC"
+  ],
+  "agent": "DELAYED_SYNC",
+  "snapshot": "2026-09-04T17:00:12+00:00",
+  "rule_codes_monitor": [
+   "MISSED_MILESTONE"
+  ],
+  "rule_codes_factcheck": [
+   "MISSED_MILESTONE"
+  ],
+  "first_time_acceptable_rule_code": null,
+  "hours_until_acceptable_rule_code": null,
+  "visible_kinds": {
+   "ScanEvent": 7,
+   "CustodyEvent": 6,
+   "GPSObservation": 1
+  },
+  "outage_device": "DEMO-DEV-HH-DEPOT-DHA-01",
+  "offline_from": "2026-09-03T21:20:00+00:00",
+  "reconnect": "2026-09-04T18:00:00+00:00",
+  "device_hours_since_last_beat_at_snapshot": 20.0,
+  "device_silent_at_snapshot(>=1.5h)": true,
+  "snapshot_before_reconnect": true,
+  "last_mile_vehicle": {
+   "ownership": "PRIVATE",
+   "class": "PRIVATE_CAR"
+  },
+  "attempts_visible": [],
+  "contacts_visible": [],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "Branch",
+    "CORROBORATED",
+    "09-03T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-03T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-03T09:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-03T17:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-04T11:38"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-04T13:38"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000003-SESSION",
+    "09-05T13:00",
+    3600
+   ],
+   [
+    "-000003-NEXT-SESSION",
+    "09-06T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-c0e5e27f2ffcb99c849d3f5a": {
+  "recipe": "next_day",
+  "acceptable": [
+   "DELAYED_SYNC"
+  ],
+  "agent": "CUSTODY_GAP",
+  "snapshot": "2026-09-09T04:00:12+00:00",
+  "rule_codes_monitor": [
+   "CUSTODY_GAP",
+   "MISSED_MILESTONE"
+  ],
+  "rule_codes_factcheck": [
+   "CUSTODY_GAP",
+   "MISSED_MILESTONE"
+  ],
+  "first_time_acceptable_rule_code": null,
+  "hours_until_acceptable_rule_code": null,
+  "visible_kinds": {
+   "ScanEvent": 8,
+   "CustodyEvent": 7,
+   "GPSObservation": 2,
+   "Manifest": 1
+  },
+  "outage_device": "DEMO-DEV-HH-DEPOT-RUH-01",
+  "offline_from": "2026-09-08T10:20:00+00:00",
+  "reconnect": "2026-09-09T07:00:00+00:00",
+  "device_hours_since_last_beat_at_snapshot": 18.0,
+  "device_silent_at_snapshot(>=1.5h)": true,
+  "snapshot_before_reconnect": true,
+  "last_mile_vehicle": {
+   "ownership": "COMPANY",
+   "class": "VAN"
+  },
+  "attempts_visible": [],
+  "contacts_visible": [],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-07T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-07T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-07T09:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-07T17:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-07T22:10"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-08T00:10"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-09T03:10"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000017-SESSION",
+    "09-09T13:00",
+    3600
+   ],
+   [
+    "-000017-NEXT-SESSION",
+    "09-10T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-922feb9a63c82629361eec04": {
+  "recipe": "partial_packages",
+  "acceptable": [
+   "CUSTODY_GAP",
+   "UNRECONCILED_CUSTODY"
+  ],
+  "agent": "DELAYED_SYNC",
+  "snapshot": "2026-09-11T14:00:12+00:00",
+  "rule_codes_monitor": [
+   "MISSED_MILESTONE"
+  ],
+  "rule_codes_factcheck": [
+   "MISSED_MILESTONE",
+   "UNRECONCILED_CUSTODY"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-11T15:00:12+00:00",
+  "hours_until_acceptable_rule_code": 1.0,
+  "visible_kinds": {
+   "ScanEvent": 39,
+   "CustodyEvent": 35,
+   "DeliveryAttempt": 3,
+   "ContactAttempt": 3,
+   "HandoffEvidence": 3,
+   "PhotoEvidence": 3,
+   "AuthenticationEvidence": 3,
+   "DeliveryProof": 3,
+   "DepotReconciliation": 3,
+   "GPSObservation": 3,
+   "StatusEvent": 1,
+   "Manifest": 1
+  },
+  "last_mile_vehicle": {
+   "ownership": "COMPANY",
+   "class": "VAN"
+  },
+  "attempts_visible": [
+   [
+    "DELIVERED",
+    null
+   ],
+   [
+    "DELIVERED",
+    null
+   ],
+   [
+    "DELIVERED",
+    null
+   ]
+  ],
+  "contacts_visible": [
+   "CONTACTED",
+   "CONTACTED",
+   "CONTACTED"
+  ],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-09T05:00"
+   ],
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-09T05:00"
+   ],
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-09T05:00"
+   ],
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-09T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-09T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-09T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-09T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-09T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-09T09:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-09T09:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-09T09:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-09T09:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-09T17:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-09T17:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-09T17:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-09T17:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-10T12:30"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-10T12:30"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-10T12:30"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-10T12:30"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T14:30"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T14:30"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T14:30"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T14:30"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-10T16:30"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-10T16:30"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-10T16:30"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-10T16:30"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-11T03:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-11T03:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-11T03:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-11T03:00"
+   ],
+   [
+    "DELIVERED",
+    "Organization",
+    "CORROBORATED",
+    "09-11T05:00"
+   ],
+   [
+    "DELIVERED",
+    "Organization",
+    "CORROBORATED",
+    "09-11T05:00"
+   ],
+   [
+    "DELIVERED",
+    "Organization",
+    "CORROBORATED",
+    "09-11T05:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000029-SESSION",
+    "09-11T13:00",
+    3600
+   ],
+   [
+    "-000029-NEXT-SESSION",
+    "09-12T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-b44b5fbbbdf2e57e400a7d4c": {
+  "recipe": "report_failed_authentication",
+  "acceptable": [
+   "DELAYED_SYNC",
+   "DELIVERY_DISPUTE",
+   "PROOF_INSUFFICIENT"
+  ],
+  "agent": "CUSTODY_GAP",
+  "snapshot": "2026-09-11T13:00:12+00:00",
+  "rule_codes_monitor": [
+   "MISSED_MILESTONE"
+  ],
+  "rule_codes_factcheck": [
+   "MISSED_MILESTONE"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-12T06:00:12+00:00",
+  "hours_until_acceptable_rule_code": 17.0,
+  "visible_kinds": {
+   "ScanEvent": 21,
+   "CustodyEvent": 18,
+   "GPSObservation": 1
+  },
+  "last_mile_vehicle": {
+   "ownership": "COMPANY",
+   "class": "VAN"
+  },
+  "attempts_visible": [],
+  "contacts_visible": [],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "FulfillmentWarehouse",
+    "CORROBORATED",
+    "09-10T05:00"
+   ],
+   [
+    "RECEIVED",
+    "FulfillmentWarehouse",
+    "CORROBORATED",
+    "09-10T05:00"
+   ],
+   [
+    "RECEIVED",
+    "FulfillmentWarehouse",
+    "CORROBORATED",
+    "09-10T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-10T09:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-10T09:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-10T09:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-10T17:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-10T17:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-10T17:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-11T05:39"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-11T05:39"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-11T05:39"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-11T07:39"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-11T07:39"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-11T07:39"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000030-SESSION",
+    "09-12T13:00",
+    3600
+   ],
+   [
+    "-000030-NEXT-SESSION",
+    "09-13T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-209166e8abad5b96f636751a": {
+  "recipe": "absent_transfer_receipt",
+  "acceptable": [
+   "CUSTODY_GAP",
+   "MISSED_MILESTONE"
+  ],
+  "agent": "CUSTODY_GAP",
+  "snapshot": "2026-09-02T13:00:12+00:00",
+  "rule_codes_monitor": [
+   "MISSED_MILESTONE"
+  ],
+  "rule_codes_factcheck": [
+   "MISSED_MILESTONE"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-02T13:00:12+00:00",
+  "hours_until_acceptable_rule_code": 0.0,
+  "visible_kinds": {
+   "ScanEvent": 4,
+   "CustodyEvent": 3,
+   "StatusEvent": 1
+  },
+  "last_mile_vehicle": {
+   "ownership": "COMPANY",
+   "class": "VAN"
+  },
+  "attempts_visible": [],
+  "contacts_visible": [],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "Branch",
+    "CORROBORATED",
+    "09-02T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-02T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-02T09:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000032-SESSION",
+    "09-03T13:00",
+    3600
+   ],
+   [
+    "-000032-NEXT-SESSION",
+    "09-04T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-dd9ad9af15177fa59d44f8c9": {
+  "recipe": "conflicting_custody_sources",
+  "acceptable": [
+   "CONFLICTING_CUSTODY"
+  ],
+  "agent": "CONFLICTING_CUSTODY",
+  "snapshot": "2026-09-11T04:00:12+00:00",
+  "rule_codes_monitor": [
+   "CONFLICTING_CUSTODY"
+  ],
+  "rule_codes_factcheck": [
+   "CONFLICTING_CUSTODY"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-11T04:00:12+00:00",
+  "hours_until_acceptable_rule_code": 0.0,
+  "visible_kinds": {
+   "ScanEvent": 19,
+   "CustodyEvent": 16,
+   "GPSObservation": 1,
+   "StatusEvent": 1,
+   "Manifest": 1
+  },
+  "last_mile_vehicle": {
+   "ownership": "COMPANY",
+   "class": "VAN"
+  },
+  "attempts_visible": [],
+  "contacts_visible": [],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "FulfillmentWarehouse",
+    "CORROBORATED",
+    "09-10T05:00"
+   ],
+   [
+    "RECEIVED",
+    "FulfillmentWarehouse",
+    "CORROBORATED",
+    "09-10T05:00"
+   ],
+   [
+    "RECEIVED",
+    "FulfillmentWarehouse",
+    "CORROBORATED",
+    "09-10T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-10T09:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-10T09:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-10T09:00"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-10T11:00"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-10T11:00"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-10T11:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "ATTRIBUTED_REPORT",
+    "09-11T03:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "ATTRIBUTED_REPORT",
+    "09-11T03:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-11T03:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-11T03:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000060-SESSION",
+    "09-11T13:00",
+    3600
+   ],
+   [
+    "-000060-NEXT-SESSION",
+    "09-12T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-6099b57719b9041d5f236091": {
+  "recipe": "report_different_location",
+  "acceptable": [
+   "DELIVERY_DISPUTE",
+   "POSSIBLE_MISDELIVERY"
+  ],
+  "agent": "PROOF_INSUFFICIENT",
+  "snapshot": "2026-09-08T12:00:12+00:00",
+  "rule_codes_monitor": [
+   "DELIVERY_DISPUTE"
+  ],
+  "rule_codes_factcheck": [
+   "CUSTODY_GAP",
+   "DELIVERY_DISPUTE",
+   "PROOF_INSUFFICIENT"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-08T12:00:12+00:00",
+  "hours_until_acceptable_rule_code": 0.0,
+  "visible_kinds": {
+   "ScanEvent": 10,
+   "CustodyEvent": 9,
+   "DeliveryAttempt": 1,
+   "ContactAttempt": 1,
+   "HandoffEvidence": 1,
+   "PhotoEvidence": 1,
+   "AuthenticationEvidence": 1,
+   "DeliveryProof": 1,
+   "DepotReconciliation": 1,
+   "RecipientReport": 1,
+   "GPSObservation": 2,
+   "StatusEvent": 1,
+   "Manifest": 1
+  },
+  "last_mile_vehicle": {
+   "ownership": "COMPANY",
+   "class": "VAN"
+  },
+  "attempts_visible": [
+   [
+    "DELIVERED",
+    null
+   ]
+  ],
+  "contacts_visible": [
+   "CONTACTED"
+  ],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-07T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-07T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-07T09:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-07T17:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-08T04:29"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-08T06:29"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-08T08:29"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-08T09:29"
+   ],
+   [
+    "DELIVERED",
+    "Customer",
+    "CORROBORATED",
+    "09-08T11:29"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000067-SESSION",
+    "09-08T13:00",
+    3600
+   ],
+   [
+    "-000067-NEXT-SESSION",
+    "09-09T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-2dde921b484071c6b1470fc1": {
+  "recipe": "different_barcode",
+  "acceptable": [
+   "BARCODE_MISMATCH"
+  ],
+  "agent": "BARCODE_MISMATCH",
+  "snapshot": "2026-09-10T08:00:12+00:00",
+  "rule_codes_monitor": [
+   "BARCODE_MISMATCH"
+  ],
+  "rule_codes_factcheck": [
+   "BARCODE_MISMATCH"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-10T08:00:12+00:00",
+  "hours_until_acceptable_rule_code": 0.0,
+  "visible_kinds": {
+   "ScanEvent": 9,
+   "CustodyEvent": 6
+  },
+  "last_mile_vehicle": {
+   "ownership": "COMPANY",
+   "class": "VAN"
+  },
+  "attempts_visible": [],
+  "contacts_visible": [],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-10T05:00"
+   ],
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-10T05:00"
+   ],
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-10T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T07:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000100-SESSION",
+    "09-11T13:00",
+    3600
+   ],
+   [
+    "-000100-NEXT-SESSION",
+    "09-12T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-6b9081c6aaaf5f5fae4a2b3c": {
+  "recipe": "absent_session_receipt",
+  "acceptable": [
+   "UNRECONCILED_CUSTODY"
+  ],
+  "agent": "CUSTODY_GAP",
+  "snapshot": "2026-09-02T14:00:12+00:00",
+  "rule_codes_monitor": [
+   "MISSED_MILESTONE"
+  ],
+  "rule_codes_factcheck": [
+   "MISSED_MILESTONE",
+   "UNRECONCILED_CUSTODY"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-02T15:00:12+00:00",
+  "hours_until_acceptable_rule_code": 1.0,
+  "visible_kinds": {
+   "ScanEvent": 9,
+   "CustodyEvent": 8,
+   "GPSObservation": 3,
+   "StatusEvent": 1,
+   "Manifest": 1
+  },
+  "last_mile_vehicle": {
+   "ownership": "COMPANY",
+   "class": "VAN"
+  },
+  "attempts_visible": [],
+  "contacts_visible": [],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "Branch",
+    "CORROBORATED",
+    "09-01T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-01T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-01T09:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-01T17:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-01T18:34"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-01T20:34"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-01T22:34"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-02T03:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000101-SESSION",
+    "09-02T13:00",
+    3600
+   ],
+   [
+    "-000101-NEXT-SESSION",
+    "09-03T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-3387f73da5d0e3e2cdb92eb1": {
+  "recipe": "offline_device_sync",
+  "acceptable": [
+   "DELAYED_SYNC"
+  ],
+  "agent": "DELAYED_SYNC",
+  "snapshot": "2026-09-04T00:00:12+00:00",
+  "rule_codes_monitor": [
+   "MISSED_MILESTONE"
+  ],
+  "rule_codes_factcheck": [
+   "MISSED_MILESTONE"
+  ],
+  "first_time_acceptable_rule_code": null,
+  "hours_until_acceptable_rule_code": null,
+  "visible_kinds": {
+   "ScanEvent": 7,
+   "CustodyEvent": 6,
+   "GPSObservation": 1
+  },
+  "outage_device": "DEMO-DEV-HH-DEPOT-DHA-01",
+  "offline_from": "2026-09-03T21:20:00+00:00",
+  "reconnect": "2026-09-04T18:00:00+00:00",
+  "device_hours_since_last_beat_at_snapshot": 3.0,
+  "device_silent_at_snapshot(>=1.5h)": true,
+  "snapshot_before_reconnect": true,
+  "last_mile_vehicle": {
+   "ownership": "COMPANY",
+   "class": "VAN"
+  },
+  "attempts_visible": [],
+  "contacts_visible": [],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "Branch",
+    "CORROBORATED",
+    "09-03T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-03T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-03T09:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-03T17:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-03T18:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-03T20:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000113-SESSION",
+    "09-04T13:00",
+    3600
+   ],
+   [
+    "-000113-NEXT-SESSION",
+    "09-05T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-8221f978d95ae46ed8fc720d": {
+  "recipe": "offline_device_sync",
+  "acceptable": [
+   "DELAYED_SYNC"
+  ],
+  "agent": "DELAYED_SYNC",
+  "snapshot": "2026-09-10T15:00:12+00:00",
+  "rule_codes_monitor": [
+   "MISSED_MILESTONE"
+  ],
+  "rule_codes_factcheck": [
+   "MISSED_MILESTONE"
+  ],
+  "first_time_acceptable_rule_code": null,
+  "hours_until_acceptable_rule_code": null,
+  "visible_kinds": {
+   "ScanEvent": 12,
+   "CustodyEvent": 9
+  },
+  "outage_device": "DEMO-DEV-HH-DEPOT-MAK-01",
+  "offline_from": "2026-09-10T10:20:00+00:00",
+  "reconnect": "2026-09-11T07:00:00+00:00",
+  "device_hours_since_last_beat_at_snapshot": 5.0,
+  "device_silent_at_snapshot(>=1.5h)": true,
+  "snapshot_before_reconnect": true,
+  "last_mile_vehicle": {
+   "ownership": "COMPANY",
+   "class": "VAN"
+  },
+  "attempts_visible": [],
+  "contacts_visible": [],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "FulfillmentWarehouse",
+    "CORROBORATED",
+    "09-10T05:00"
+   ],
+   [
+    "RECEIVED",
+    "FulfillmentWarehouse",
+    "CORROBORATED",
+    "09-10T05:00"
+   ],
+   [
+    "RECEIVED",
+    "FulfillmentWarehouse",
+    "CORROBORATED",
+    "09-10T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-10T09:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-10T09:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-10T09:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000120-SESSION",
+    "09-11T13:00",
+    3600
+   ],
+   [
+    "-000120-NEXT-SESSION",
+    "09-12T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-17390ea3640527245c64550b": {
+  "recipe": "contractor_unreturned",
+  "acceptable": [
+   "UNRECONCILED_CUSTODY"
+  ],
+  "agent": "RECIPIENT_UNAVAILABLE",
+  "snapshot": "2026-09-09T06:00:12+00:00",
+  "rule_codes_monitor": [
+   "RECIPIENT_UNAVAILABLE"
+  ],
+  "rule_codes_factcheck": [
+   "RECIPIENT_UNAVAILABLE"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-09T15:00:12+00:00",
+  "hours_until_acceptable_rule_code": 9.0,
+  "visible_kinds": {
+   "ScanEvent": 9,
+   "CustodyEvent": 8,
+   "DeliveryAttempt": 2,
+   "ContactAttempt": 2,
+   "GPSObservation": 2,
+   "Manifest": 1
+  },
+  "last_mile_vehicle": {
+   "ownership": "PRIVATE",
+   "class": "PRIVATE_CAR"
+  },
+  "attempts_visible": [
+   [
+    "FAILED",
+    "RECIPIENT_NOT_REACHED"
+   ],
+   [
+    "FAILED",
+    "RECIPIENT_NOT_REACHED"
+   ]
+  ],
+  "contacts_visible": [
+   "NO_RESPONSE",
+   "NO_RESPONSE"
+  ],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-07T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-07T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-07T09:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-07T17:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-08T10:03"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-08T12:03"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-08T14:03"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-09T03:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000187-SESSION",
+    "09-09T13:00",
+    3600
+   ],
+   [
+    "-000187-NEXT-SESSION",
+    "09-10T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-a367fab59c698c52afddf484": {
+  "recipe": "different_weight",
+  "acceptable": [
+   "WEIGHT_MISMATCH"
+  ],
+  "agent": "WEIGHT_MISMATCH",
+  "snapshot": "2026-09-05T08:00:12+00:00",
+  "rule_codes_monitor": [
+   "WEIGHT_MISMATCH"
+  ],
+  "rule_codes_factcheck": [
+   "WEIGHT_MISMATCH"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-05T08:00:12+00:00",
+  "hours_until_acceptable_rule_code": 0.0,
+  "visible_kinds": {
+   "ScanEvent": 3,
+   "CustodyEvent": 2
+  },
+  "last_mile_vehicle": {
+   "ownership": "PRIVATE",
+   "class": "PRIVATE_CAR"
+  },
+  "attempts_visible": [],
+  "contacts_visible": [],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-05T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-05T07:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000215-SESSION",
+    "09-06T13:00",
+    3600
+   ],
+   [
+    "-000215-NEXT-SESSION",
+    "09-07T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-ca6c6b44c831434180a380e8": {
+  "recipe": "contractor_unreturned",
+  "acceptable": [
+   "UNRECONCILED_CUSTODY"
+  ],
+  "agent": "RECIPIENT_UNAVAILABLE",
+  "snapshot": "2026-09-10T06:00:12+00:00",
+  "rule_codes_monitor": [
+   "RECIPIENT_UNAVAILABLE"
+  ],
+  "rule_codes_factcheck": [
+   "RECIPIENT_UNAVAILABLE"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-10T15:00:12+00:00",
+  "hours_until_acceptable_rule_code": 9.0,
+  "visible_kinds": {
+   "ScanEvent": 36,
+   "CustodyEvent": 32,
+   "DeliveryAttempt": 4,
+   "ContactAttempt": 8,
+   "GPSObservation": 2,
+   "Manifest": 1
+  },
+  "last_mile_vehicle": {
+   "ownership": "PRIVATE",
+   "class": "PRIVATE_CAR"
+  },
+  "attempts_visible": [
+   [
+    "FAILED",
+    "RECIPIENT_NOT_REACHED"
+   ],
+   [
+    "FAILED",
+    "RECIPIENT_NOT_REACHED"
+   ],
+   [
+    "FAILED",
+    "RECIPIENT_NOT_REACHED"
+   ],
+   [
+    "FAILED",
+    "RECIPIENT_NOT_REACHED"
+   ]
+  ],
+  "contacts_visible": [
+   "NO_RESPONSE",
+   "NO_RESPONSE",
+   "NO_RESPONSE",
+   "NO_RESPONSE",
+   "NO_RESPONSE",
+   "NO_RESPONSE",
+   "NO_RESPONSE",
+   "NO_RESPONSE"
+  ],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-09T05:00"
+   ],
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-09T05:00"
+   ],
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-09T05:00"
+   ],
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-09T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-09T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-09T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-09T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-09T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-09T09:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-09T09:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-09T09:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-09T09:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-09T17:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-09T17:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-09T17:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-09T17:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-09T19:27"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-09T19:27"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-09T19:27"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-09T19:27"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-09T21:27"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-09T21:27"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-09T21:27"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-09T21:27"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-09T23:27"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-09T23:27"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-09T23:27"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-09T23:27"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-10T03:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-10T03:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-10T03:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-10T03:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000239-SESSION",
+    "09-10T13:00",
+    3600
+   ],
+   [
+    "-000239-NEXT-SESSION",
+    "09-11T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-40bc0246d52ef1a52b1af19d": {
+  "recipe": "report_photo_only",
+  "acceptable": [
+   "DELIVERY_DISPUTE",
+   "PROOF_INSUFFICIENT"
+  ],
+  "agent": "PROOF_INSUFFICIENT",
+  "snapshot": "2026-09-11T06:00:12+00:00",
+  "rule_codes_monitor": [
+   "DELIVERY_DISPUTE"
+  ],
+  "rule_codes_factcheck": [
+   "CUSTODY_GAP",
+   "DELIVERY_DISPUTE",
+   "PROOF_INSUFFICIENT"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-11T06:00:12+00:00",
+  "hours_until_acceptable_rule_code": 0.0,
+  "visible_kinds": {
+   "ScanEvent": 40,
+   "CustodyEvent": 36,
+   "DeliveryAttempt": 4,
+   "ContactAttempt": 4,
+   "HandoffEvidence": 4,
+   "PhotoEvidence": 4,
+   "DeliveryProof": 4,
+   "DepotReconciliation": 4,
+   "RecipientReport": 4,
+   "GPSObservation": 2,
+   "StatusEvent": 1,
+   "Manifest": 1
+  },
+  "last_mile_vehicle": {
+   "ownership": "COMPANY",
+   "class": "VAN"
+  },
+  "attempts_visible": [
+   [
+    "DELIVERED",
+    null
+   ],
+   [
+    "DELIVERED",
+    null
+   ],
+   [
+    "DELIVERED",
+    null
+   ],
+   [
+    "DELIVERED",
+    null
+   ]
+  ],
+  "contacts_visible": [
+   "CONTACTED",
+   "CONTACTED",
+   "CONTACTED",
+   "CONTACTED"
+  ],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "FulfillmentWarehouse",
+    "CORROBORATED",
+    "09-09T05:00"
+   ],
+   [
+    "RECEIVED",
+    "FulfillmentWarehouse",
+    "CORROBORATED",
+    "09-09T05:00"
+   ],
+   [
+    "RECEIVED",
+    "FulfillmentWarehouse",
+    "CORROBORATED",
+    "09-09T05:00"
+   ],
+   [
+    "RECEIVED",
+    "FulfillmentWarehouse",
+    "CORROBORATED",
+    "09-09T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-09T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-09T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-09T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-09T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-09T09:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-09T09:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-09T09:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-09T09:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-09T17:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-09T17:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-09T17:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-09T17:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-10T12:30"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-10T12:30"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-10T12:30"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-10T12:30"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T14:30"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T14:30"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T14:30"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T14:30"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-10T16:30"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-10T16:30"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-10T16:30"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-10T16:30"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-11T03:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-11T03:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-11T03:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-11T03:00"
+   ],
+   [
+    "DELIVERED",
+    "Organization",
+    "INCOMPLETE_ACK",
+    "09-11T05:00"
+   ],
+   [
+    "DELIVERED",
+    "Organization",
+    "INCOMPLETE_ACK",
+    "09-11T05:00"
+   ],
+   [
+    "DELIVERED",
+    "Organization",
+    "INCOMPLETE_ACK",
+    "09-11T05:00"
+   ],
+   [
+    "DELIVERED",
+    "Organization",
+    "INCOMPLETE_ACK",
+    "09-11T05:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000249-SESSION",
+    "09-11T13:00",
+    3600
+   ],
+   [
+    "-000249-NEXT-SESSION",
+    "09-12T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-75c8c391965f27edb3e3548e": {
+  "recipe": "report_authorized_alternate",
+  "acceptable": [
+   "DELIVERY_DISPUTE",
+   "PROOF_INSUFFICIENT"
+  ],
+  "agent": null,
+  "snapshot": "2026-09-04T06:00:12+00:00",
+  "rule_codes_monitor": [
+   "DELIVERY_DISPUTE"
+  ],
+  "rule_codes_factcheck": [
+   "DELIVERY_DISPUTE"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-04T06:00:12+00:00",
+  "hours_until_acceptable_rule_code": 0.0,
+  "visible_kinds": {
+   "ScanEvent": 10,
+   "CustodyEvent": 9,
+   "DeliveryAttempt": 1,
+   "ContactAttempt": 1,
+   "HandoffEvidence": 1,
+   "PhotoEvidence": 1,
+   "AuthenticationEvidence": 1,
+   "DeliveryProof": 1,
+   "DepotReconciliation": 1,
+   "RecipientReport": 1,
+   "GPSObservation": 2,
+   "StatusEvent": 1,
+   "Manifest": 1
+  },
+  "last_mile_vehicle": {
+   "ownership": "COMPANY",
+   "class": "VAN"
+  },
+  "attempts_visible": [
+   [
+    "DELIVERED",
+    null
+   ]
+  ],
+  "contacts_visible": [
+   "CONTACTED"
+  ],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "Branch",
+    "CORROBORATED",
+    "09-02T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-02T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-02T09:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-02T17:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-03T06:28"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-03T08:28"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-03T10:28"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-04T03:00"
+   ],
+   [
+    "DELIVERED",
+    "Customer",
+    "CORROBORATED",
+    "09-04T05:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000262-SESSION",
+    "09-04T13:00",
+    3600
+   ],
+   [
+    "-000262-NEXT-SESSION",
+    "09-05T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-db5a9bc455d64f03dd49dfbb": {
+  "recipe": "different_weight",
+  "acceptable": [
+   "WEIGHT_MISMATCH"
+  ],
+  "agent": "WEIGHT_MISMATCH",
+  "snapshot": "2026-09-09T08:00:12+00:00",
+  "rule_codes_monitor": [
+   "WEIGHT_MISMATCH"
+  ],
+  "rule_codes_factcheck": [
+   "WEIGHT_MISMATCH"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-09T08:00:12+00:00",
+  "hours_until_acceptable_rule_code": 0.0,
+  "visible_kinds": {
+   "ScanEvent": 12,
+   "CustodyEvent": 8
+  },
+  "last_mile_vehicle": {
+   "ownership": "COMPANY",
+   "class": "VAN"
+  },
+  "attempts_visible": [],
+  "contacts_visible": [],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-09T05:00"
+   ],
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-09T05:00"
+   ],
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-09T05:00"
+   ],
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-09T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-09T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-09T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-09T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-09T07:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000299-SESSION",
+    "09-11T13:00",
+    3600
+   ],
+   [
+    "-000299-NEXT-SESSION",
+    "09-12T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-69dd3c9c356591c860384739": {
+  "recipe": "declared_weight_wrong",
+  "acceptable": [
+   "WEIGHT_MISMATCH"
+  ],
+  "agent": "WEIGHT_MISMATCH",
+  "snapshot": "2026-09-05T08:00:12+00:00",
+  "rule_codes_monitor": [
+   "WEIGHT_MISMATCH"
+  ],
+  "rule_codes_factcheck": [
+   "WEIGHT_MISMATCH"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-05T08:00:12+00:00",
+  "hours_until_acceptable_rule_code": 0.0,
+  "visible_kinds": {
+   "ScanEvent": 3,
+   "CustodyEvent": 2
+  },
+  "last_mile_vehicle": {
+   "ownership": "COMPANY",
+   "class": "VAN"
+  },
+  "attempts_visible": [],
+  "contacts_visible": [],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-05T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-05T07:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000305-SESSION",
+    "09-06T13:00",
+    3600
+   ],
+   [
+    "-000305-NEXT-SESSION",
+    "09-07T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-929c9c9ee6a98ab49adcf2f9": {
+  "recipe": "conflicting_custody_sources",
+  "acceptable": [
+   "CONFLICTING_CUSTODY"
+  ],
+  "agent": "CONFLICTING_CUSTODY",
+  "snapshot": "2026-09-05T04:00:12+00:00",
+  "rule_codes_monitor": [
+   "CONFLICTING_CUSTODY",
+   "MISSED_MILESTONE"
+  ],
+  "rule_codes_factcheck": [
+   "CONFLICTING_CUSTODY",
+   "MISSED_MILESTONE"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-05T04:00:12+00:00",
+  "hours_until_acceptable_rule_code": 0.0,
+  "visible_kinds": {
+   "ScanEvent": 7,
+   "CustodyEvent": 6,
+   "GPSObservation": 1,
+   "StatusEvent": 1,
+   "Manifest": 1
+  },
+  "last_mile_vehicle": {
+   "ownership": "PRIVATE",
+   "class": "PRIVATE_CAR"
+  },
+  "attempts_visible": [],
+  "contacts_visible": [],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "FulfillmentWarehouse",
+    "CORROBORATED",
+    "09-04T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-04T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-04T09:00"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-04T11:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "ATTRIBUTED_REPORT",
+    "09-05T03:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "ATTRIBUTED_REPORT",
+    "09-05T03:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000324-SESSION",
+    "09-05T13:00",
+    3600
+   ],
+   [
+    "-000324-NEXT-SESSION",
+    "09-06T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-65ad753d99b6a8f0e7571438": {
+  "recipe": "conflicting_manifest",
+  "acceptable": [
+   "MANIFEST_CONFLICT"
+  ],
+  "agent": "MANIFEST_CONFLICT",
+  "snapshot": "2026-09-08T04:00:12+00:00",
+  "rule_codes_monitor": [
+   "MANIFEST_CONFLICT"
+  ],
+  "rule_codes_factcheck": [
+   "MANIFEST_CONFLICT"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-08T04:00:12+00:00",
+  "hours_until_acceptable_rule_code": 0.0,
+  "visible_kinds": {
+   "ScanEvent": 9,
+   "CustodyEvent": 8,
+   "GPSObservation": 2,
+   "Manifest": 2
+  },
+  "last_mile_vehicle": {
+   "ownership": "PRIVATE",
+   "class": "PRIVATE_CAR"
+  },
+  "attempts_visible": [],
+  "contacts_visible": [],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-06T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-06T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-06T09:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-06T17:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-07T12:30"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-07T14:30"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-07T16:30"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-08T03:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000326-SESSION",
+    "09-08T13:00",
+    3600
+   ],
+   [
+    "-000326-NEXT-SESSION",
+    "09-09T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-862d774e57fb36225c4ee158": {
+  "recipe": "absent_transfer_receipt",
+  "acceptable": [
+   "CUSTODY_GAP",
+   "MISSED_MILESTONE"
+  ],
+  "agent": null,
+  "snapshot": "2026-09-08T11:00:12+00:00",
+  "rule_codes_monitor": [
+   "MISSED_MILESTONE"
+  ],
+  "rule_codes_factcheck": [
+   "MISSED_MILESTONE"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-08T11:00:12+00:00",
+  "hours_until_acceptable_rule_code": 0.0,
+  "visible_kinds": {
+   "ScanEvent": 5,
+   "CustodyEvent": 4,
+   "GPSObservation": 1,
+   "StatusEvent": 1
+  },
+  "last_mile_vehicle": {
+   "ownership": "COMPANY",
+   "class": "VAN"
+  },
+  "attempts_visible": [],
+  "contacts_visible": [],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-07T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-07T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-07T09:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-07T17:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000337-SESSION",
+    "09-09T13:00",
+    3600
+   ],
+   [
+    "-000337-NEXT-SESSION",
+    "09-10T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-d217f89a7896883c8913f000": {
+  "recipe": "report_with_corroboration",
+  "acceptable": [
+   "DELIVERY_DISPUTE"
+  ],
+  "agent": "DELIVERY_DISPUTE",
+  "snapshot": "2026-09-04T06:00:12+00:00",
+  "rule_codes_monitor": [
+   "DELIVERY_DISPUTE"
+  ],
+  "rule_codes_factcheck": [
+   "DELIVERY_DISPUTE"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-04T06:00:12+00:00",
+  "hours_until_acceptable_rule_code": 0.0,
+  "visible_kinds": {
+   "ScanEvent": 10,
+   "CustodyEvent": 9,
+   "DeliveryAttempt": 1,
+   "ContactAttempt": 1,
+   "HandoffEvidence": 1,
+   "PhotoEvidence": 1,
+   "AuthenticationEvidence": 1,
+   "DeliveryProof": 1,
+   "DepotReconciliation": 1,
+   "RecipientReport": 1,
+   "GPSObservation": 2,
+   "StatusEvent": 1,
+   "Manifest": 1
+  },
+  "last_mile_vehicle": {
+   "ownership": "COMPANY",
+   "class": "VAN"
+  },
+  "attempts_visible": [
+   [
+    "DELIVERED",
+    null
+   ]
+  ],
+  "contacts_visible": [
+   "CONTACTED"
+  ],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "Branch",
+    "CORROBORATED",
+    "09-02T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-02T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-02T09:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-02T17:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-03T12:30"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-03T14:30"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-03T16:30"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-04T03:00"
+   ],
+   [
+    "DELIVERED",
+    "Customer",
+    "CORROBORATED",
+    "09-04T05:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000362-SESSION",
+    "09-04T13:00",
+    3600
+   ],
+   [
+    "-000362-NEXT-SESSION",
+    "09-05T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-1143b3ba8c16e684aba11559": {
+  "recipe": "traffic_safe_return",
+  "acceptable": [
+   "ROUTE_DELAY",
+   "TRAFFIC_DELAY"
+  ],
+  "agent": "MISSED_MILESTONE",
+  "snapshot": "2026-09-08T14:00:12+00:00",
+  "rule_codes_monitor": [
+   "MISSED_MILESTONE",
+   "TRAFFIC_DELAY"
+  ],
+  "rule_codes_factcheck": [
+   "MISSED_MILESTONE",
+   "TRAFFIC_DELAY"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-08T14:00:12+00:00",
+  "hours_until_acceptable_rule_code": 0.0,
+  "visible_kinds": {
+   "ScanEvent": 10,
+   "CustodyEvent": 9,
+   "DeliveryAttempt": 1,
+   "ContactAttempt": 1,
+   "DepotReconciliation": 1,
+   "GPSObservation": 3,
+   "TrafficObservation": 1,
+   "StatusEvent": 1,
+   "Manifest": 1
+  },
+  "last_mile_vehicle": {
+   "ownership": "PRIVATE",
+   "class": "PRIVATE_CAR"
+  },
+  "attempts_visible": [
+   [
+    "FAILED",
+    "SESSION_CAPACITY_EXHAUSTED"
+   ]
+  ],
+  "contacts_visible": [
+   "AGREED_NEXT_SESSION"
+  ],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "FulfillmentWarehouse",
+    "CORROBORATED",
+    "09-07T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-07T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-07T09:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-07T17:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-07T19:04"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-07T21:04"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-07T23:04"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-08T03:00"
+   ],
+   [
+    "RETURNED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-08T13:15"
+   ]
+  ],
+  "traffic_visible": [
+   [
+    32400,
+    0.95
+   ]
+  ],
+  "sessions": [
+   [
+    "O-SHP-000387-SESSION",
+    "09-08T13:00",
+    3600
+   ],
+   [
+    "-000387-NEXT-SESSION",
+    "09-09T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-5cb1ba90f4cd67ed48c272bb": {
+  "recipe": "report_after_prior_outcome",
+  "acceptable": [
+   "DELIVERY_DISPUTE"
+  ],
+  "agent": "DELIVERY_DISPUTE",
+  "snapshot": "2026-09-11T06:00:12+00:00",
+  "rule_codes_monitor": [
+   "DELIVERY_DISPUTE"
+  ],
+  "rule_codes_factcheck": [
+   "DELIVERY_DISPUTE"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-11T06:00:12+00:00",
+  "hours_until_acceptable_rule_code": 0.0,
+  "visible_kinds": {
+   "ScanEvent": 40,
+   "CustodyEvent": 36,
+   "DeliveryAttempt": 4,
+   "ContactAttempt": 4,
+   "HandoffEvidence": 4,
+   "PhotoEvidence": 4,
+   "AuthenticationEvidence": 4,
+   "DeliveryProof": 4,
+   "DepotReconciliation": 4,
+   "RecipientReport": 4,
+   "GPSObservation": 2,
+   "StatusEvent": 1,
+   "Manifest": 1
+  },
+  "last_mile_vehicle": {
+   "ownership": "COMPANY",
+   "class": "VAN"
+  },
+  "attempts_visible": [
+   [
+    "DELIVERED",
+    null
+   ],
+   [
+    "DELIVERED",
+    null
+   ],
+   [
+    "DELIVERED",
+    null
+   ],
+   [
+    "DELIVERED",
+    null
+   ]
+  ],
+  "contacts_visible": [
+   "CONTACTED",
+   "CONTACTED",
+   "CONTACTED",
+   "CONTACTED"
+  ],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-09T05:00"
+   ],
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-09T05:00"
+   ],
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-09T05:00"
+   ],
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-09T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-09T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-09T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-09T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-09T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-09T09:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-09T09:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-09T09:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-09T09:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-09T17:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-09T17:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-09T17:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-09T17:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-10T06:28"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-10T06:28"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-10T06:28"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-10T06:28"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T08:28"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T08:28"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T08:28"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T08:28"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-10T10:28"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-10T10:28"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-10T10:28"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-10T10:28"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-11T03:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-11T03:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-11T03:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-11T03:00"
+   ],
+   [
+    "DELIVERED",
+    "Organization",
+    "CORROBORATED",
+    "09-11T05:00"
+   ],
+   [
+    "DELIVERED",
+    "Organization",
+    "CORROBORATED",
+    "09-11T05:00"
+   ],
+   [
+    "DELIVERED",
+    "Organization",
+    "CORROBORATED",
+    "09-11T05:00"
+   ],
+   [
+    "DELIVERED",
+    "Organization",
+    "CORROBORATED",
+    "09-11T05:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000389-SESSION",
+    "09-11T13:00",
+    3600
+   ],
+   [
+    "-000389-NEXT-SESSION",
+    "09-12T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-fb06ec173df7ded818211e7f": {
+  "recipe": "conflicting_manifest",
+  "acceptable": [
+   "DELAYED_SYNC",
+   "MANIFEST_CONFLICT"
+  ],
+  "agent": "CUSTODY_GAP",
+  "snapshot": "2026-09-02T13:00:12+00:00",
+  "rule_codes_monitor": [
+   "MISSED_MILESTONE"
+  ],
+  "rule_codes_factcheck": [
+   "MISSED_MILESTONE"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-03T04:00:12+00:00",
+  "hours_until_acceptable_rule_code": 15.0,
+  "visible_kinds": {
+   "ScanEvent": 8,
+   "CustodyEvent": 6
+  },
+  "last_mile_vehicle": {
+   "ownership": "PRIVATE",
+   "class": "PRIVATE_CAR"
+  },
+  "attempts_visible": [],
+  "contacts_visible": [],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "Branch",
+    "CORROBORATED",
+    "09-02T05:00"
+   ],
+   [
+    "RECEIVED",
+    "Branch",
+    "CORROBORATED",
+    "09-02T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-02T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-02T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-02T09:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-02T09:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000392-SESSION",
+    "09-03T13:00",
+    3600
+   ],
+   [
+    "-000392-NEXT-SESSION",
+    "09-04T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-b05015a4cc432f5050349c76": {
+  "recipe": "weight_and_obsolete_address",
+  "acceptable": [
+   "ADDRESS_CONFLICT",
+   "WEIGHT_MISMATCH"
+  ],
+  "agent": "WEIGHT_MISMATCH",
+  "snapshot": "2026-09-07T08:00:12+00:00",
+  "rule_codes_monitor": [
+   "WEIGHT_MISMATCH"
+  ],
+  "rule_codes_factcheck": [
+   "WEIGHT_MISMATCH"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-07T08:00:12+00:00",
+  "hours_until_acceptable_rule_code": 0.0,
+  "visible_kinds": {
+   "ScanEvent": 3,
+   "CustodyEvent": 2
+  },
+  "last_mile_vehicle": {
+   "ownership": "PRIVATE",
+   "class": "PRIVATE_CAR"
+  },
+  "attempts_visible": [],
+  "contacts_visible": [],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-07T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-07T07:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000397-SESSION",
+    "09-09T13:00",
+    3600
+   ],
+   [
+    "-000397-NEXT-SESSION",
+    "09-10T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-c237bcc3c48609f5f3083418": {
+  "recipe": "later_hub_departure",
+  "acceptable": [
+   "HUB_DELAY",
+   "JOURNEY_DELAY",
+   "MISSED_MILESTONE"
+  ],
+  "agent": "CUSTODY_GAP",
+  "snapshot": "2026-09-10T15:00:12+00:00",
+  "rule_codes_monitor": [
+   "MISSED_MILESTONE"
+  ],
+  "rule_codes_factcheck": [
+   "MISSED_MILESTONE"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-10T15:00:12+00:00",
+  "hours_until_acceptable_rule_code": 0.0,
+  "visible_kinds": {
+   "ScanEvent": 12,
+   "CustodyEvent": 9,
+   "StatusEvent": 1
+  },
+  "last_mile_vehicle": {
+   "ownership": "COMPANY",
+   "class": "VAN"
+  },
+  "attempts_visible": [],
+  "contacts_visible": [],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-10T05:00"
+   ],
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-10T05:00"
+   ],
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-10T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-10T09:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-10T09:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-10T09:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000400-SESSION",
+    "09-11T13:00",
+    3600
+   ],
+   [
+    "-000400-NEXT-SESSION",
+    "09-12T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-b7fd15c6f10198140bac0834": {
+  "recipe": "contractor_unconfirmed_pickup",
+  "acceptable": [
+   "CUSTODY_GAP",
+   "UNRECONCILED_CUSTODY"
+  ],
+  "agent": "CUSTODY_GAP",
+  "snapshot": "2026-09-05T05:00:12+00:00",
+  "rule_codes_monitor": [
+   "CUSTODY_GAP",
+   "MISSED_MILESTONE"
+  ],
+  "rule_codes_factcheck": [
+   "CUSTODY_GAP",
+   "MISSED_MILESTONE"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-05T05:00:12+00:00",
+  "hours_until_acceptable_rule_code": 0.0,
+  "visible_kinds": {
+   "ScanEvent": 6,
+   "CustodyEvent": 5,
+   "GPSObservation": 1,
+   "StatusEvent": 1,
+   "Manifest": 1
+  },
+  "last_mile_vehicle": {
+   "ownership": "PRIVATE",
+   "class": "PRIVATE_CAR"
+  },
+  "attempts_visible": [],
+  "contacts_visible": [],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-04T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-04T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-04T09:00"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-04T11:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "INCOMPLETE_ACK",
+    "09-05T03:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000404-SESSION",
+    "09-05T13:00",
+    3600
+   ],
+   [
+    "-000404-NEXT-SESSION",
+    "09-06T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-a35fd772d8dd03dfcb83fcb5": {
+  "recipe": "different_gate",
+  "acceptable": [
+   "WRONG_GATE"
+  ],
+  "agent": "WRONG_GATE",
+  "snapshot": "2026-09-06T07:00:12+00:00",
+  "rule_codes_monitor": [
+   "WRONG_GATE"
+  ],
+  "rule_codes_factcheck": [
+   "WRONG_GATE"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-06T07:00:12+00:00",
+  "hours_until_acceptable_rule_code": 0.0,
+  "visible_kinds": {
+   "ScanEvent": 9,
+   "CustodyEvent": 8,
+   "DeliveryAttempt": 1,
+   "ContactAttempt": 1,
+   "GPSObservation": 2,
+   "Manifest": 1
+  },
+  "last_mile_vehicle": {
+   "ownership": "COMPANY",
+   "class": "VAN"
+  },
+  "attempts_visible": [
+   [
+    "FAILED",
+    "ACCESS_NOT_COMPLETED"
+   ]
+  ],
+  "contacts_visible": [
+   "AGREED_NEXT_SESSION"
+  ],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-05T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-05T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-05T09:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-05T17:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-05T23:31"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-06T01:31"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-06T03:31"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-06T04:31"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000415-SESSION",
+    "09-06T13:00",
+    3600
+   ],
+   [
+    "-000415-NEXT-SESSION",
+    "09-07T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-8d4aeed798e3f40c8bb05eb8": {
+  "recipe": "different_gate",
+  "acceptable": [
+   "WRONG_GATE"
+  ],
+  "agent": "WRONG_GATE",
+  "snapshot": "2026-09-06T14:00:12+00:00",
+  "rule_codes_monitor": [
+   "MISSED_MILESTONE",
+   "WRONG_GATE"
+  ],
+  "rule_codes_factcheck": [
+   "MISSED_MILESTONE",
+   "WRONG_GATE"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-06T07:00:12+00:00",
+  "hours_until_acceptable_rule_code": -7.0,
+  "visible_kinds": {
+   "ScanEvent": 10,
+   "CustodyEvent": 9,
+   "DeliveryAttempt": 1,
+   "ContactAttempt": 1,
+   "DepotReconciliation": 1,
+   "GPSObservation": 3,
+   "StatusEvent": 1,
+   "Manifest": 1
+  },
+  "last_mile_vehicle": {
+   "ownership": "COMPANY",
+   "class": "VAN"
+  },
+  "attempts_visible": [
+   [
+    "FAILED",
+    "ACCESS_NOT_COMPLETED"
+   ]
+  ],
+  "contacts_visible": [
+   "AGREED_NEXT_SESSION"
+  ],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-05T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-05T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-05T09:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-05T17:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-05T23:31"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-06T01:31"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-06T03:31"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-06T04:31"
+   ],
+   [
+    "RETURNED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-06T13:15"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000415-SESSION",
+    "09-06T13:00",
+    3600
+   ],
+   [
+    "-000415-NEXT-SESSION",
+    "09-07T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-f8295725822e30934884a6a0": {
+  "recipe": "fulfillment",
+  "acceptable": [
+   "DELAYED_SYNC"
+  ],
+  "agent": "CUSTODY_GAP",
+  "snapshot": "2026-09-02T02:00:12+00:00",
+  "rule_codes_monitor": [
+   "MISSED_MILESTONE"
+  ],
+  "rule_codes_factcheck": [
+   "MISSED_MILESTONE"
+  ],
+  "first_time_acceptable_rule_code": null,
+  "hours_until_acceptable_rule_code": null,
+  "visible_kinds": {
+   "ScanEvent": 7,
+   "CustodyEvent": 6,
+   "GPSObservation": 1
+  },
+  "outage_device": "DEMO-DEV-HH-DEPOT-DMM-01",
+  "offline_from": "2026-09-01T22:47:36+00:00",
+  "reconnect": "2026-09-02T19:27:36+00:00",
+  "device_hours_since_last_beat_at_snapshot": 3.5,
+  "device_silent_at_snapshot(>=1.5h)": true,
+  "snapshot_before_reconnect": true,
+  "last_mile_vehicle": {
+   "ownership": "COMPANY",
+   "class": "VAN"
+  },
+  "attempts_visible": [],
+  "contacts_visible": [],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "Branch",
+    "CORROBORATED",
+    "09-01T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-01T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-01T09:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-01T17:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-01T19:27"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-01T21:27"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000431-SESSION",
+    "09-02T13:00",
+    3600
+   ],
+   [
+    "-000431-NEXT-SESSION",
+    "09-03T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-4f904d309686110ca5083f56": {
+  "recipe": "wrong_label_applied",
+  "acceptable": [
+   "BARCODE_MISMATCH"
+  ],
+  "agent": "BARCODE_MISMATCH",
+  "snapshot": "2026-09-01T08:00:12+00:00",
+  "rule_codes_monitor": [
+   "BARCODE_MISMATCH"
+  ],
+  "rule_codes_factcheck": [
+   "BARCODE_MISMATCH"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-01T08:00:12+00:00",
+  "hours_until_acceptable_rule_code": 0.0,
+  "visible_kinds": {
+   "ScanEvent": 6,
+   "CustodyEvent": 4
+  },
+  "last_mile_vehicle": {
+   "ownership": "COMPANY",
+   "class": "VAN"
+  },
+  "attempts_visible": [],
+  "contacts_visible": [],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "Branch",
+    "CORROBORATED",
+    "09-01T05:00"
+   ],
+   [
+    "RECEIVED",
+    "Branch",
+    "CORROBORATED",
+    "09-01T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-01T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-01T07:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000441-SESSION",
+    "09-02T13:00",
+    3600
+   ],
+   [
+    "-000441-NEXT-SESSION",
+    "09-03T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-51a935c40b45501a4944725e": {
+  "recipe": "contractor_unconfirmed_pickup",
+  "acceptable": [
+   "CUSTODY_GAP",
+   "DELAYED_SYNC",
+   "UNRECONCILED_CUSTODY"
+  ],
+  "agent": "CUSTODY_GAP",
+  "snapshot": "2026-09-10T17:00:12+00:00",
+  "rule_codes_monitor": [
+   "MISSED_MILESTONE"
+  ],
+  "rule_codes_factcheck": [
+   "MISSED_MILESTONE"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-11T08:00:12+00:00",
+  "hours_until_acceptable_rule_code": 15.0,
+  "visible_kinds": {
+   "ScanEvent": 28,
+   "CustodyEvent": 24,
+   "GPSObservation": 1
+  },
+  "last_mile_vehicle": {
+   "ownership": "PRIVATE",
+   "class": "PRIVATE_CAR"
+  },
+  "attempts_visible": [],
+  "contacts_visible": [],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "FulfillmentWarehouse",
+    "CORROBORATED",
+    "09-09T05:00"
+   ],
+   [
+    "RECEIVED",
+    "FulfillmentWarehouse",
+    "CORROBORATED",
+    "09-09T05:00"
+   ],
+   [
+    "RECEIVED",
+    "FulfillmentWarehouse",
+    "CORROBORATED",
+    "09-09T05:00"
+   ],
+   [
+    "RECEIVED",
+    "FulfillmentWarehouse",
+    "CORROBORATED",
+    "09-09T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-09T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-09T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-09T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-09T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-09T09:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-09T09:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-09T09:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-09T09:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-09T17:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-09T17:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-09T17:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-09T17:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-10T11:33"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-10T11:33"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-10T11:33"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-10T11:33"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T13:33"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T13:33"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T13:33"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T13:33"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000459-SESSION",
+    "09-11T13:00",
+    3600
+   ],
+   [
+    "-000459-NEXT-SESSION",
+    "09-12T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-82b74eb66bd948240a28c800": {
+  "recipe": "obsolete_address",
+  "acceptable": [
+   "ADDRESS_CONFLICT"
+  ],
+  "agent": "ADDRESS_CONFLICT",
+  "snapshot": "2026-09-08T06:00:12+00:00",
+  "rule_codes_monitor": [
+   "ADDRESS_CONFLICT"
+  ],
+  "rule_codes_factcheck": [
+   "ADDRESS_CONFLICT"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-08T06:00:12+00:00",
+  "hours_until_acceptable_rule_code": 0.0,
+  "visible_kinds": {
+   "ScanEvent": 9,
+   "CustodyEvent": 8,
+   "DeliveryAttempt": 1,
+   "ContactAttempt": 1,
+   "GPSObservation": 2,
+   "Manifest": 1
+  },
+  "last_mile_vehicle": {
+   "ownership": "COMPANY",
+   "class": "VAN"
+  },
+  "attempts_visible": [
+   [
+    "FAILED",
+    "ACCESS_NOT_COMPLETED"
+   ]
+  ],
+  "contacts_visible": [
+   "AGREED_NEXT_SESSION"
+  ],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-06T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-06T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-06T09:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-06T17:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-07T12:28"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-07T14:28"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-07T16:28"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-08T03:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000466-SESSION",
+    "09-08T13:00",
+    3600
+   ],
+   [
+    "-000466-NEXT-SESSION",
+    "09-09T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-6f775c2405d3e4f09baafdf8": {
+  "recipe": "obsolete_address",
+  "acceptable": [
+   "ADDRESS_CONFLICT"
+  ],
+  "agent": "ADDRESS_CONFLICT",
+  "snapshot": "2026-09-08T14:00:12+00:00",
+  "rule_codes_monitor": [
+   "ADDRESS_CONFLICT",
+   "MISSED_MILESTONE"
+  ],
+  "rule_codes_factcheck": [
+   "ADDRESS_CONFLICT",
+   "MISSED_MILESTONE"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-08T06:00:12+00:00",
+  "hours_until_acceptable_rule_code": -8.0,
+  "visible_kinds": {
+   "ScanEvent": 10,
+   "CustodyEvent": 9,
+   "DeliveryAttempt": 1,
+   "ContactAttempt": 1,
+   "DepotReconciliation": 1,
+   "GPSObservation": 3,
+   "StatusEvent": 1,
+   "Manifest": 1
+  },
+  "last_mile_vehicle": {
+   "ownership": "COMPANY",
+   "class": "VAN"
+  },
+  "attempts_visible": [
+   [
+    "FAILED",
+    "ACCESS_NOT_COMPLETED"
+   ]
+  ],
+  "contacts_visible": [
+   "AGREED_NEXT_SESSION"
+  ],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-06T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-06T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-06T09:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-06T17:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-07T12:28"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-07T14:28"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-07T16:28"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-08T03:00"
+   ],
+   [
+    "RETURNED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-08T13:15"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000466-SESSION",
+    "09-08T13:00",
+    3600
+   ],
+   [
+    "-000466-NEXT-SESSION",
+    "09-09T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-d9763c84e7549f2baac4e6ed": {
+  "recipe": "absent_session_receipt",
+  "acceptable": [
+   "UNRECONCILED_CUSTODY"
+  ],
+  "agent": "CUSTODY_GAP",
+  "snapshot": "2026-09-03T14:00:12+00:00",
+  "rule_codes_monitor": [
+   "MISSED_MILESTONE"
+  ],
+  "rule_codes_factcheck": [
+   "MISSED_MILESTONE",
+   "UNRECONCILED_CUSTODY"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-03T15:00:12+00:00",
+  "hours_until_acceptable_rule_code": 1.0,
+  "visible_kinds": {
+   "ScanEvent": 9,
+   "CustodyEvent": 8,
+   "GPSObservation": 3,
+   "StatusEvent": 1,
+   "Manifest": 1
+  },
+  "last_mile_vehicle": {
+   "ownership": "COMPANY",
+   "class": "VAN"
+  },
+  "attempts_visible": [],
+  "contacts_visible": [],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "Branch",
+    "CORROBORATED",
+    "09-02T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-02T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-02T09:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-02T17:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-02T18:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-02T20:00"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-02T22:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-03T03:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000482-SESSION",
+    "09-03T13:00",
+    3600
+   ],
+   [
+    "-000482-NEXT-SESSION",
+    "09-04T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-e6c12823e16d2e8c08e7d3ed": {
+  "recipe": "declared_weight_wrong",
+  "acceptable": [
+   "WEIGHT_MISMATCH"
+  ],
+  "agent": "WEIGHT_MISMATCH",
+  "snapshot": "2026-09-10T08:00:12+00:00",
+  "rule_codes_monitor": [
+   "WEIGHT_MISMATCH"
+  ],
+  "rule_codes_factcheck": [
+   "WEIGHT_MISMATCH"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-10T08:00:12+00:00",
+  "hours_until_acceptable_rule_code": 0.0,
+  "visible_kinds": {
+   "ScanEvent": 9,
+   "CustodyEvent": 6
+  },
+  "last_mile_vehicle": {
+   "ownership": "COMPANY",
+   "class": "VAN"
+  },
+  "attempts_visible": [],
+  "contacts_visible": [],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-10T05:00"
+   ],
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-10T05:00"
+   ],
+   [
+    "RECEIVED",
+    "OrganizationWarehouse",
+    "CORROBORATED",
+    "09-10T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-10T07:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000530-SESSION",
+    "09-12T13:00",
+    3600
+   ],
+   [
+    "-000530-NEXT-SESSION",
+    "09-13T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-622ca2f9919e71d4160e8bb0": {
+  "recipe": "conflicting_manifest",
+  "acceptable": [
+   "MANIFEST_CONFLICT"
+  ],
+  "agent": "MANIFEST_CONFLICT",
+  "snapshot": "2026-09-03T04:00:12+00:00",
+  "rule_codes_monitor": [
+   "MANIFEST_CONFLICT"
+  ],
+  "rule_codes_factcheck": [
+   "MANIFEST_CONFLICT"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-03T04:00:12+00:00",
+  "hours_until_acceptable_rule_code": 0.0,
+  "visible_kinds": {
+   "ScanEvent": 12,
+   "CustodyEvent": 10,
+   "GPSObservation": 1,
+   "Manifest": 2
+  },
+  "last_mile_vehicle": {
+   "ownership": "PRIVATE",
+   "class": "PRIVATE_CAR"
+  },
+  "attempts_visible": [],
+  "contacts_visible": [],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "Branch",
+    "CORROBORATED",
+    "09-02T05:00"
+   ],
+   [
+    "RECEIVED",
+    "Branch",
+    "CORROBORATED",
+    "09-02T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-02T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-02T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-02T09:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-02T09:00"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-02T11:00"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-02T11:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-03T03:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-03T03:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000532-SESSION",
+    "09-03T13:00",
+    3600
+   ],
+   [
+    "-000532-NEXT-SESSION",
+    "09-04T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-f52ccc9a872f6db65d0abc92": {
+  "recipe": "unanswered_contact",
+  "acceptable": [
+   "RECIPIENT_UNAVAILABLE"
+  ],
+  "agent": "RECIPIENT_UNAVAILABLE",
+  "snapshot": "2026-09-05T06:00:12+00:00",
+  "rule_codes_monitor": [
+   "RECIPIENT_UNAVAILABLE"
+  ],
+  "rule_codes_factcheck": [
+   "RECIPIENT_UNAVAILABLE"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-05T06:00:12+00:00",
+  "hours_until_acceptable_rule_code": 0.0,
+  "visible_kinds": {
+   "ScanEvent": 18,
+   "CustodyEvent": 16,
+   "DeliveryAttempt": 2,
+   "ContactAttempt": 4,
+   "GPSObservation": 2,
+   "Manifest": 1
+  },
+  "last_mile_vehicle": {
+   "ownership": "COMPANY",
+   "class": "VAN"
+  },
+  "attempts_visible": [
+   [
+    "FAILED",
+    "RECIPIENT_NOT_REACHED"
+   ],
+   [
+    "FAILED",
+    "RECIPIENT_NOT_REACHED"
+   ]
+  ],
+  "contacts_visible": [
+   "NO_RESPONSE",
+   "NO_RESPONSE",
+   "NO_RESPONSE",
+   "NO_RESPONSE"
+  ],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "Branch",
+    "CORROBORATED",
+    "09-03T05:00"
+   ],
+   [
+    "RECEIVED",
+    "Branch",
+    "CORROBORATED",
+    "09-03T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-03T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-03T07:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-03T09:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-03T09:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-03T17:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-03T17:00"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-04T10:08"
+   ],
+   [
+    "RECEIVED",
+    "Hub",
+    "CORROBORATED",
+    "09-04T10:08"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-04T12:08"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-04T12:08"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-04T14:08"
+   ],
+   [
+    "RECEIVED",
+    "DeliveryDepot",
+    "CORROBORATED",
+    "09-04T14:08"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-05T03:00"
+   ],
+   [
+    "LOADED",
+    "Vehicle",
+    "CORROBORATED",
+    "09-05T03:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000553-SESSION",
+    "09-05T13:00",
+    3600
+   ],
+   [
+    "-000553-NEXT-SESSION",
+    "09-06T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-a11f873718d08527c9969261": {
+  "recipe": "wrong_label_applied",
+  "acceptable": [
+   "BARCODE_MISMATCH"
+  ],
+  "agent": "INSUFFICIENT_EVIDENCE",
+  "snapshot": "2026-09-07T08:00:12+00:00",
+  "rule_codes_monitor": [
+   "BARCODE_MISMATCH"
+  ],
+  "rule_codes_factcheck": [
+   "BARCODE_MISMATCH"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-07T08:00:12+00:00",
+  "hours_until_acceptable_rule_code": 0.0,
+  "visible_kinds": {
+   "ScanEvent": 6,
+   "CustodyEvent": 4
+  },
+  "last_mile_vehicle": {
+   "ownership": "COMPANY",
+   "class": "VAN"
+  },
+  "attempts_visible": [],
+  "contacts_visible": [],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "FulfillmentWarehouse",
+    "CORROBORATED",
+    "09-07T05:00"
+   ],
+   [
+    "RECEIVED",
+    "FulfillmentWarehouse",
+    "CORROBORATED",
+    "09-07T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-07T07:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-07T07:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000567-SESSION",
+    "09-09T13:00",
+    3600
+   ],
+   [
+    "-000567-NEXT-SESSION",
+    "09-10T13:00",
+    3600
+   ]
+  ]
+ },
+ "DEMO-OPS-CASE-59ce4febd6c78454ad1a8e0c": {
+  "recipe": "different_barcode",
+  "acceptable": [
+   "BARCODE_MISMATCH"
+  ],
+  "agent": "BARCODE_MISMATCH",
+  "snapshot": "2026-09-03T08:00:12+00:00",
+  "rule_codes_monitor": [
+   "BARCODE_MISMATCH"
+  ],
+  "rule_codes_factcheck": [
+   "BARCODE_MISMATCH"
+  ],
+  "first_time_acceptable_rule_code": "2026-09-03T08:00:12+00:00",
+  "hours_until_acceptable_rule_code": 0.0,
+  "visible_kinds": {
+   "ScanEvent": 3,
+   "CustodyEvent": 2
+  },
+  "last_mile_vehicle": {
+   "ownership": "PRIVATE",
+   "class": "PRIVATE_CAR"
+  },
+  "attempts_visible": [],
+  "contacts_visible": [],
+  "custody_visible": [
+   [
+    "RECEIVED",
+    "Branch",
+    "CORROBORATED",
+    "09-03T05:00"
+   ],
+   [
+    "RECEIVED",
+    "SortingCenter",
+    "CORROBORATED",
+    "09-03T07:00"
+   ]
+  ],
+  "traffic_visible": [],
+  "sessions": [
+   [
+    "O-SHP-000583-SESSION",
+    "09-04T13:00",
+    3600
+   ],
+   [
+    "-000583-NEXT-SESSION",
+    "09-05T13:00",
+    3600
+   ]
+  ]
+ }
+}

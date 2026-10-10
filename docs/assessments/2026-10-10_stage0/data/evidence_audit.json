@@ -1,0 +1,1595 @@
+[
+ {
+  "case": "a5083f56",
+  "shipment": "000441",
+  "recipe": "wrong_label_applied",
+  "acceptable": [
+   "BARCODE_MISMATCH"
+  ],
+  "physical": {
+   "label": "wrong_label"
+  },
+  "secondary": null,
+  "opening": [
+   "BARCODE_READ_DIFFERS"
+  ],
+  "diagnosis": "BARCODE_MISMATCH",
+  "correct": true,
+  "tools_called": [
+   "scans",
+   "shipment_overview",
+   "scans",
+   "journey",
+   "custody_chain"
+  ],
+  "final_state": "ESCALATED",
+  "review": "REVISE",
+  "authority": "Reviewer rejected the proposal after the bounded revision ro",
+  "missing_milestones": [],
+  "expected_handhelds": [],
+  "device_status_at_snapshot": {},
+  "called_device_status": false,
+  "other_shipments_held_back_on_same_handheld": {}
+ },
+ {
+  "case": "4884a6a0",
+  "shipment": "000431",
+  "recipe": "fulfillment",
+  "acceptable": [
+   "DELAYED_SYNC"
+  ],
+  "physical": {
+   "device": "buffered_upload"
+  },
+  "secondary": null,
+  "opening": [
+   "MILESTONE_OVERDUE"
+  ],
+  "diagnosis": "CUSTODY_GAP",
+  "correct": false,
+  "tools_called": [
+   "shipment_overview",
+   "journey",
+   "custody_chain",
+   "device_status",
+   "scans"
+  ],
+  "final_state": "HUMAN_REVIEW",
+  "review": "ACCEPT",
+  "authority": "Deterministic evidence rules flagged a conflict requiring hu",
+  "missing_milestones": [
+   [
+    "RECEIVED",
+    "O-DEPOT-DMM-01"
+   ]
+  ],
+  "expected_handhelds": [
+   "DEMO-DEV-HH-DEPOT-DMM-01"
+  ],
+  "device_status_at_snapshot": {
+   "DEMO-DEV-HH-DEPOT-DMM-01": {
+    "reporting_state": "SILENT",
+    "last_seen_at": "2026-09-01T22:30:00+00:00",
+    "expected_beats_missed_since_last_seen": 7,
+    "last_pending_uploads": 0
+   }
+  },
+  "called_device_status": true,
+  "other_shipments_held_back_on_same_handheld": {
+   "DEMO-DEV-HH-DEPOT-DMM-01": 1
+  }
+ },
+ {
+  "case": "f636751a",
+  "shipment": "000032",
+  "recipe": "absent_transfer_receipt",
+  "acceptable": [
+   "CUSTODY_GAP",
+   "MISSED_MILESTONE"
+  ],
+  "physical": {
+   "parcel": "received_unscanned"
+  },
+  "secondary": null,
+  "opening": [
+   "MILESTONE_OVERDUE"
+  ],
+  "diagnosis": "CUSTODY_GAP",
+  "correct": true,
+  "tools_called": [
+   "shipment_overview",
+   "journey",
+   "custody_chain",
+   "scans",
+   "device_status"
+  ],
+  "final_state": "HUMAN_REVIEW",
+  "review": "ACCEPT",
+  "authority": "Deterministic evidence rules flagged a conflict requiring hu",
+  "missing_milestones": [
+   [
+    "RECEIVED",
+    "O-DEPOT-DMM-01"
+   ]
+  ],
+  "expected_handhelds": [
+   "DEMO-DEV-HH-DEPOT-DMM-01"
+  ],
+  "device_status_at_snapshot": {
+   "DEMO-DEV-HH-DEPOT-DMM-01": {
+    "reporting_state": "SILENT",
+    "last_seen_at": "2026-09-01T22:30:00+00:00",
+    "expected_beats_missed_since_last_seen": 29,
+    "last_pending_uploads": 0
+   }
+  },
+  "called_device_status": true,
+  "other_shipments_held_back_on_same_handheld": {
+   "DEMO-DEV-HH-DEPOT-DMM-01": 5
+  }
+ },
+ {
+  "case": "18211e7f",
+  "shipment": "000392",
+  "recipe": "conflicting_manifest",
+  "acceptable": [
+   "DELAYED_SYNC",
+   "MANIFEST_CONFLICT"
+  ],
+  "physical": {
+   "parcel": "on_vehicle_manifest_error"
+  },
+  "secondary": "DELAYED_SYNC",
+  "opening": [
+   "MILESTONE_OVERDUE"
+  ],
+  "diagnosis": "CUSTODY_GAP",
+  "correct": false,
+  "tools_called": [
+   "shipment_overview",
+   "journey",
+   "journey",
+   "custody_chain",
+   "scans",
+   "device_status"
+  ],
+  "final_state": "AWAITING_APPROVAL",
+  "review": "ACCEPT",
+  "authority": "Proposed action does not address a supported diagnosis.",
+  "missing_milestones": [
+   [
+    "RECEIVED",
+    "O-DEPOT-DMM-01"
+   ],
+   [
+    "RECEIVED",
+    "O-DEPOT-DMM-01"
+   ]
+  ],
+  "expected_handhelds": [
+   "DEMO-DEV-HH-DEPOT-DMM-01"
+  ],
+  "device_status_at_snapshot": {
+   "DEMO-DEV-HH-DEPOT-DMM-01": {
+    "reporting_state": "SILENT",
+    "last_seen_at": "2026-09-01T22:30:00+00:00",
+    "expected_beats_missed_since_last_seen": 29,
+    "last_pending_uploads": 0
+   }
+  },
+  "called_device_status": true,
+  "other_shipments_held_back_on_same_handheld": {
+   "DEMO-DEV-HH-DEPOT-DMM-01": 4
+  }
+ },
+ {
+  "case": "ae4a2b3c",
+  "shipment": "000101",
+  "recipe": "absent_session_receipt",
+  "acceptable": [
+   "UNRECONCILED_CUSTODY"
+  ],
+  "physical": {
+   "parcel": "returned_unscanned"
+  },
+  "secondary": null,
+  "opening": [
+   "MILESTONE_OVERDUE"
+  ],
+  "diagnosis": "CUSTODY_GAP",
+  "correct": false,
+  "tools_called": [
+   "shipment_overview",
+   "journey",
+   "custody_chain",
+   "device_status",
+   "scans"
+  ],
+  "final_state": "ESCALATED",
+  "review": "REVISE",
+  "authority": "Reviewer rejected the proposal after the bounded revision ro",
+  "missing_milestones": [
+   [
+    "DELIVERED",
+    "0101-RECIPIENT"
+   ]
+  ],
+  "expected_handhelds": [],
+  "device_status_at_snapshot": {},
+  "called_device_status": true,
+  "other_shipments_held_back_on_same_handheld": {}
+ },
+ {
+  "case": "160e8bb0",
+  "shipment": "000532",
+  "recipe": "conflicting_manifest",
+  "acceptable": [
+   "MANIFEST_CONFLICT"
+  ],
+  "physical": {
+   "parcel": "on_vehicle_manifest_error"
+  },
+  "secondary": null,
+  "opening": [
+   "MANIFEST_CUSTODY_CONFLICT"
+  ],
+  "diagnosis": "MANIFEST_CONFLICT",
+  "correct": true,
+  "tools_called": [
+   "shipment_overview",
+   "custody_chain",
+   "custody_chain",
+   "scans",
+   "vehicle_and_manifest"
+  ],
+  "final_state": "ESCALATED",
+  "review": "REVISE",
+  "authority": "Reviewer rejected the proposal after the bounded revision ro",
+  "missing_milestones": [],
+  "expected_handhelds": [],
+  "device_status_at_snapshot": {},
+  "called_device_status": false,
+  "other_shipments_held_back_on_same_handheld": {}
+ },
+ {
+  "case": "ad1a8e0c",
+  "shipment": "000583",
+  "recipe": "different_barcode",
+  "acceptable": [
+   "BARCODE_MISMATCH"
+  ],
+  "physical": {
+   "label": "misread"
+  },
+  "secondary": null,
+  "opening": [
+   "BARCODE_READ_DIFFERS"
+  ],
+  "diagnosis": "BARCODE_MISMATCH",
+  "correct": true,
+  "tools_called": [
+   "shipment_overview",
+   "scans",
+   "custody_chain"
+  ],
+  "final_state": "ESCALATED",
+  "review": "REVISE",
+  "authority": "Reviewer rejected the proposal after the bounded revision ro",
+  "missing_milestones": [],
+  "expected_handhelds": [],
+  "device_status_at_snapshot": {},
+  "called_device_status": false,
+  "other_shipments_held_back_on_same_handheld": {}
+ },
+ {
+  "case": "aac4e6ed",
+  "shipment": "000482",
+  "recipe": "absent_session_receipt",
+  "acceptable": [
+   "UNRECONCILED_CUSTODY"
+  ],
+  "physical": {
+   "parcel": "returned_unscanned"
+  },
+  "secondary": null,
+  "opening": [
+   "MILESTONE_OVERDUE"
+  ],
+  "diagnosis": "CUSTODY_GAP",
+  "correct": false,
+  "tools_called": [
+   "shipment_overview",
+   "journey",
+   "custody_chain",
+   "delivery_attempts",
+   "device_status",
+   "scans"
+  ],
+  "final_state": "HUMAN_REVIEW",
+  "review": "ACCEPT",
+  "authority": "Deterministic evidence rules flagged a conflict requiring hu",
+  "missing_milestones": [
+   [
+    "DELIVERED",
+    "0482-RECIPIENT"
+   ]
+  ],
+  "expected_handhelds": [],
+  "device_status_at_snapshot": {},
+  "called_device_status": true,
+  "other_shipments_held_back_on_same_handheld": {}
+ },
+ {
+  "case": "cdb92eb1",
+  "shipment": "000113",
+  "recipe": "offline_device_sync",
+  "acceptable": [
+   "DELAYED_SYNC"
+  ],
+  "physical": {
+   "device": "buffered_upload"
+  },
+  "secondary": null,
+  "opening": [
+   "MILESTONE_OVERDUE"
+  ],
+  "diagnosis": "DELAYED_SYNC",
+  "correct": true,
+  "tools_called": [
+   "shipment_overview",
+   "journey",
+   "custody_chain",
+   "device_status"
+  ],
+  "final_state": "RESOLVED",
+  "review": "ACCEPT",
+  "authority": "Low-risk, reversible, evidence-bound action within the synth",
+  "missing_milestones": [
+   [
+    "RECEIVED",
+    "O-DEPOT-DHA-01"
+   ]
+  ],
+  "expected_handhelds": [
+   "DEMO-DEV-HH-DEPOT-DHA-01"
+  ],
+  "device_status_at_snapshot": {
+   "DEMO-DEV-HH-DEPOT-DHA-01": {
+    "reporting_state": "SILENT",
+    "last_seen_at": "2026-09-03T21:00:00+00:00",
+    "expected_beats_missed_since_last_seen": 6,
+    "last_pending_uploads": 0
+   }
+  },
+  "called_device_status": true,
+  "other_shipments_held_back_on_same_handheld": {
+   "DEMO-DEV-HH-DEPOT-DHA-01": 2
+  }
+ },
+ {
+  "case": "8913f000",
+  "shipment": "000362",
+  "recipe": "report_with_corroboration",
+  "acceptable": [
+   "DELIVERY_DISPUTE"
+  ],
+  "physical": {},
+  "secondary": null,
+  "opening": [
+   "RECIPIENT_REPORTED_NOT_RECEIVED"
+  ],
+  "diagnosis": "DELIVERY_DISPUTE",
+  "correct": true,
+  "tools_called": [
+   "shipment_overview",
+   "journey",
+   "delivery_attempts",
+   "custody_chain",
+   "scans",
+   "address_and_instructions"
+  ],
+  "final_state": "HUMAN_REVIEW",
+  "review": "ACCEPT",
+  "authority": "Sensitive or rights-impacting evidence (dispute, misdelivery",
+  "missing_milestones": [],
+  "expected_handhelds": [],
+  "device_status_at_snapshot": {},
+  "called_device_status": false,
+  "other_shipments_held_back_on_same_handheld": {}
+ },
+ {
+  "case": "b3e3548e",
+  "shipment": "000262",
+  "recipe": "report_authorized_alternate",
+  "acceptable": [
+   "DELIVERY_DISPUTE",
+   "PROOF_INSUFFICIENT"
+  ],
+  "physical": {},
+  "secondary": null,
+  "opening": [
+   "RECIPIENT_REPORTED_NOT_RECEIVED"
+  ],
+  "diagnosis": null,
+  "correct": false,
+  "tools_called": [
+   "shipment_overview",
+   "journey",
+   "custody_chain",
+   "delivery_attempts",
+   "address_and_instructions"
+  ],
+  "final_state": "HUMAN_REVIEW",
+  "review": null,
+  "authority": "Model role unavailable (investigator); automatic execution b",
+  "missing_milestones": [],
+  "expected_handhelds": [],
+  "device_status_at_snapshot": {},
+  "called_device_status": false,
+  "other_shipments_held_back_on_same_handheld": {}
+ },
+ {
+  "case": "cfe20aa3",
+  "shipment": "000003",
+  "recipe": "contractor_on_time",
+  "acceptable": [
+   "DELAYED_SYNC"
+  ],
+  "physical": {
+   "device": "buffered_upload"
+  },
+  "secondary": null,
+  "opening": [
+   "MILESTONE_OVERDUE"
+  ],
+  "diagnosis": "DELAYED_SYNC",
+  "correct": true,
+  "tools_called": [
+   "shipment_overview",
+   "journey",
+   "custody_chain",
+   "scans",
+   "device_status"
+  ],
+  "final_state": "RESOLVED",
+  "review": "ACCEPT",
+  "authority": "Low-risk, reversible, evidence-bound action within the synth",
+  "missing_milestones": [
+   [
+    "RECEIVED",
+    "O-DEPOT-DHA-01"
+   ]
+  ],
+  "expected_handhelds": [
+   "DEMO-DEV-HH-DEPOT-DHA-01"
+  ],
+  "device_status_at_snapshot": {
+   "DEMO-DEV-HH-DEPOT-DHA-01": {
+    "reporting_state": "SILENT",
+    "last_seen_at": "2026-09-03T21:00:00+00:00",
+    "expected_beats_missed_since_last_seen": 40,
+    "last_pending_uploads": 0
+   }
+  },
+  "called_device_status": true,
+  "other_shipments_held_back_on_same_handheld": {
+   "DEMO-DEV-HH-DEPOT-DHA-01": 8
+  }
+ },
+ {
+  "case": "9adcf2f9",
+  "shipment": "000324",
+  "recipe": "conflicting_custody_sources",
+  "acceptable": [
+   "CONFLICTING_CUSTODY"
+  ],
+  "physical": {},
+  "secondary": null,
+  "opening": [
+   "CUSTODY_REPORTS_CONFLICT",
+   "MILESTONE_OVERDUE"
+  ],
+  "diagnosis": "CONFLICTING_CUSTODY",
+  "correct": true,
+  "tools_called": [
+   "shipment_overview",
+   "custody_chain",
+   "journey",
+   "scans",
+   "delivery_attempts"
+  ],
+  "final_state": "HUMAN_REVIEW",
+  "review": "ACCEPT",
+  "authority": "Sensitive or rights-impacting evidence (dispute, misdelivery",
+  "missing_milestones": [
+   [
+    "LOADED",
+    "O-DEPOT-JUB-01"
+   ]
+  ],
+  "expected_handhelds": [
+   "DEMO-DEV-HH-DEPOT-JUB-01"
+  ],
+  "device_status_at_snapshot": {
+   "DEMO-DEV-HH-DEPOT-JUB-01": {
+    "reporting_state": "REPORTING",
+    "last_seen_at": "2026-09-05T03:30:00+00:00",
+    "expected_beats_missed_since_last_seen": 1,
+    "last_pending_uploads": 0
+   }
+  },
+  "called_device_status": false,
+  "other_shipments_held_back_on_same_handheld": {
+   "DEMO-DEV-HH-DEPOT-JUB-01": 0
+  }
+ },
+ {
+  "case": "0bac0834",
+  "shipment": "000404",
+  "recipe": "contractor_unconfirmed_pickup",
+  "acceptable": [
+   "CUSTODY_GAP",
+   "UNRECONCILED_CUSTODY"
+  ],
+  "physical": {
+   "parcel": "left_at_depot"
+  },
+  "secondary": null,
+  "opening": [
+   "CUSTODY_TRANSFER_UNCONFIRMED",
+   "MILESTONE_OVERDUE"
+  ],
+  "diagnosis": "CUSTODY_GAP",
+  "correct": true,
+  "tools_called": [
+   "shipment_overview",
+   "journey",
+   "custody_chain",
+   "device_status",
+   "device_status"
+  ],
+  "final_state": "HUMAN_REVIEW",
+  "review": "ACCEPT",
+  "authority": "Deterministic evidence rules flagged a conflict requiring hu",
+  "missing_milestones": [
+   [
+    "LOADED",
+    "O-DEPOT-HOF-01"
+   ]
+  ],
+  "expected_handhelds": [
+   "DEMO-DEV-HH-DEPOT-HOF-01"
+  ],
+  "device_status_at_snapshot": {
+   "DEMO-DEV-HH-DEPOT-HOF-01": {
+    "reporting_state": "REPORTING",
+    "last_seen_at": "2026-09-05T04:30:00+00:00",
+    "expected_beats_missed_since_last_seen": 1,
+    "last_pending_uploads": 0
+   }
+  },
+  "called_device_status": true,
+  "other_shipments_held_back_on_same_handheld": {
+   "DEMO-DEV-HH-DEPOT-HOF-01": 0
+  }
+ },
+ {
+  "case": "5d0abc92",
+  "shipment": "000553",
+  "recipe": "unanswered_contact",
+  "acceptable": [
+   "RECIPIENT_UNAVAILABLE"
+  ],
+  "physical": {
+   "recipient": "unreachable"
+  },
+  "secondary": null,
+  "opening": [
+   "DELIVERY_ATTEMPT_FAILED"
+  ],
+  "diagnosis": "RECIPIENT_UNAVAILABLE",
+  "correct": true,
+  "tools_called": [
+   "delivery_attempts",
+   "custody_chain",
+   "address_and_instructions"
+  ],
+  "final_state": "HUMAN_REVIEW",
+  "review": "ACCEPT",
+  "authority": "Low-risk, reversible, evidence-bound action within the synth",
+  "missing_milestones": [],
+  "expected_handhelds": [],
+  "device_status_at_snapshot": {},
+  "called_device_status": false,
+  "other_shipments_held_back_on_same_handheld": {}
+ },
+ {
+  "case": "afddf484",
+  "shipment": "000215",
+  "recipe": "different_weight",
+  "acceptable": [
+   "WEIGHT_MISMATCH"
+  ],
+  "physical": {
+   "scale": "miscalibrated"
+  },
+  "secondary": null,
+  "opening": [
+   "WEIGHT_READ_DIFFERS"
+  ],
+  "diagnosis": "WEIGHT_MISMATCH",
+  "correct": true,
+  "tools_called": [
+   "shipment_overview",
+   "scans",
+   "device_status",
+   "custody_chain",
+   "policy",
+   "journey"
+  ],
+  "final_state": "ESCALATED",
+  "review": "REVISE",
+  "authority": "Reviewer rejected the proposal after the bounded revision ro",
+  "missing_milestones": [],
+  "expected_handhelds": [],
+  "device_status_at_snapshot": {},
+  "called_device_status": true,
+  "other_shipments_held_back_on_same_handheld": {}
+ },
+ {
+  "case": "60384739",
+  "shipment": "000305",
+  "recipe": "declared_weight_wrong",
+  "acceptable": [
+   "WEIGHT_MISMATCH"
+  ],
+  "physical": {
+   "scale": "declared_weight_wrong"
+  },
+  "secondary": null,
+  "opening": [
+   "WEIGHT_READ_DIFFERS"
+  ],
+  "diagnosis": "WEIGHT_MISMATCH",
+  "correct": true,
+  "tools_called": [
+   "shipment_overview",
+   "scans",
+   "custody_chain"
+  ],
+  "final_state": "ESCALATED",
+  "review": "REVISE",
+  "authority": "Reviewer rejected the proposal after the bounded revision ro",
+  "missing_milestones": [],
+  "expected_handhelds": [],
+  "device_status_at_snapshot": {},
+  "called_device_status": false,
+  "other_shipments_held_back_on_same_handheld": {}
+ },
+ {
+  "case": "cb83fcb5",
+  "shipment": "000415",
+  "recipe": "different_gate",
+  "acceptable": [
+   "WRONG_GATE"
+  ],
+  "physical": {
+   "recipient": "confirms_address"
+  },
+  "secondary": null,
+  "opening": [
+   "DELIVERY_ATTEMPT_FAILED"
+  ],
+  "diagnosis": "WRONG_GATE",
+  "correct": true,
+  "tools_called": [
+   "delivery_attempts",
+   "address_and_instructions",
+   "custody_chain"
+  ],
+  "final_state": "RESOLVED",
+  "review": "ACCEPT",
+  "authority": "Low-risk, reversible, evidence-bound action within the synth",
+  "missing_milestones": [],
+  "expected_handhelds": [],
+  "device_status_at_snapshot": {},
+  "called_device_status": false,
+  "other_shipments_held_back_on_same_handheld": {}
+ },
+ {
+  "case": "8bb05eb8",
+  "shipment": "000415",
+  "recipe": "different_gate",
+  "acceptable": [
+   "WRONG_GATE"
+  ],
+  "physical": {
+   "recipient": "confirms_address"
+  },
+  "secondary": null,
+  "opening": [
+   "DELIVERY_ATTEMPT_FAILED",
+   "MILESTONE_OVERDUE"
+  ],
+  "diagnosis": "WRONG_GATE",
+  "correct": true,
+  "tools_called": [
+   "shipment_overview",
+   "journey",
+   "delivery_attempts",
+   "address_and_instructions"
+  ],
+  "final_state": "HUMAN_REVIEW",
+  "review": "ACCEPT",
+  "authority": "Low-risk, reversible, evidence-bound action within the synth",
+  "missing_milestones": [
+   [
+    "DELIVERED",
+    "0415-RECIPIENT"
+   ]
+  ],
+  "expected_handhelds": [],
+  "device_status_at_snapshot": {},
+  "called_device_status": false,
+  "other_shipments_held_back_on_same_handheld": {}
+ },
+ {
+  "case": "50349c76",
+  "shipment": "000397",
+  "recipe": "weight_and_obsolete_address",
+  "acceptable": [
+   "ADDRESS_CONFLICT",
+   "WEIGHT_MISMATCH"
+  ],
+  "physical": {
+   "scale": "declared_weight_wrong",
+   "recipient": "confirms_address"
+  },
+  "secondary": null,
+  "opening": [
+   "WEIGHT_READ_DIFFERS"
+  ],
+  "diagnosis": "WEIGHT_MISMATCH",
+  "correct": true,
+  "tools_called": [
+   "shipment_overview",
+   "scans",
+   "custody_chain"
+  ],
+  "final_state": "ESCALATED",
+  "review": "REVISE",
+  "authority": "Reviewer rejected the proposal after the bounded revision ro",
+  "missing_milestones": [],
+  "expected_handhelds": [],
+  "device_status_at_snapshot": {},
+  "called_device_status": false,
+  "other_shipments_held_back_on_same_handheld": {}
+ },
+ {
+  "case": "c9969261",
+  "shipment": "000567",
+  "recipe": "wrong_label_applied",
+  "acceptable": [
+   "BARCODE_MISMATCH"
+  ],
+  "physical": {
+   "label": "wrong_label"
+  },
+  "secondary": null,
+  "opening": [
+   "BARCODE_READ_DIFFERS"
+  ],
+  "diagnosis": "INSUFFICIENT_EVIDENCE",
+  "correct": false,
+  "tools_called": [
+   "shipment_overview",
+   "scans",
+   "custody_chain",
+   "policy",
+   "journey",
+   "device_status",
+   "scans"
+  ],
+  "final_state": "AWAITING_APPROVAL",
+  "review": "ACCEPT",
+  "authority": "Proposed action does not address a supported diagnosis.",
+  "missing_milestones": [],
+  "expected_handhelds": [],
+  "device_status_at_snapshot": {},
+  "called_device_status": true,
+  "other_shipments_held_back_on_same_handheld": {}
+ },
+ {
+  "case": "e7571438",
+  "shipment": "000326",
+  "recipe": "conflicting_manifest",
+  "acceptable": [
+   "MANIFEST_CONFLICT"
+  ],
+  "physical": {
+   "parcel": "on_vehicle_manifest_error"
+  },
+  "secondary": null,
+  "opening": [
+   "MANIFEST_CUSTODY_CONFLICT"
+  ],
+  "diagnosis": "MANIFEST_CONFLICT",
+  "correct": true,
+  "tools_called": [
+   "shipment_overview",
+   "custody_chain",
+   "vehicle_and_manifest",
+   "scans",
+   "precedents"
+  ],
+  "final_state": "HUMAN_REVIEW",
+  "review": "ACCEPT",
+  "authority": "The parcel's last corroborated holder is a contractor or ind",
+  "missing_milestones": [],
+  "expected_handhelds": [],
+  "device_status_at_snapshot": {},
+  "called_device_status": false,
+  "other_shipments_held_back_on_same_handheld": {}
+ },
+ {
+  "case": "0a28c800",
+  "shipment": "000466",
+  "recipe": "obsolete_address",
+  "acceptable": [
+   "ADDRESS_CONFLICT"
+  ],
+  "physical": {
+   "recipient": "confirms_address"
+  },
+  "secondary": null,
+  "opening": [
+   "DELIVERY_ATTEMPT_FAILED"
+  ],
+  "diagnosis": "ADDRESS_CONFLICT",
+  "correct": true,
+  "tools_called": [
+   "shipment_overview",
+   "journey",
+   "delivery_attempts",
+   "address_and_instructions"
+  ],
+  "final_state": "RESOLVED",
+  "review": "ACCEPT",
+  "authority": "Low-risk, reversible, evidence-bound action within the synth",
+  "missing_milestones": [],
+  "expected_handhelds": [],
+  "device_status_at_snapshot": {},
+  "called_device_status": false,
+  "other_shipments_held_back_on_same_handheld": {}
+ },
+ {
+  "case": "5c4ee158",
+  "shipment": "000337",
+  "recipe": "absent_transfer_receipt",
+  "acceptable": [
+   "CUSTODY_GAP",
+   "MISSED_MILESTONE"
+  ],
+  "physical": {
+   "parcel": "received_unscanned"
+  },
+  "secondary": null,
+  "opening": [
+   "MILESTONE_OVERDUE"
+  ],
+  "diagnosis": null,
+  "correct": false,
+  "tools_called": [
+   "shipment_overview",
+   "journey",
+   "custody_chain",
+   "vehicle_and_manifest",
+   "device_status"
+  ],
+  "final_state": "HUMAN_REVIEW",
+  "review": null,
+  "authority": "Model role unavailable (investigator); automatic execution b",
+  "missing_milestones": [
+   [
+    "RECEIVED",
+    "EMO-HUB-HOF-01"
+   ]
+  ],
+  "expected_handhelds": [
+   "DEMO-DEV-HH-HUB-HOF-01"
+  ],
+  "device_status_at_snapshot": {
+   "DEMO-DEV-HH-HUB-HOF-01": {
+    "reporting_state": "NO_TELEMETRY",
+    "last_seen_at": null,
+    "expected_beats_missed_since_last_seen": null,
+    "last_pending_uploads": null
+   }
+  },
+  "called_device_status": true,
+  "other_shipments_held_back_on_same_handheld": {
+   "DEMO-DEV-HH-HUB-HOF-01": 0
+  }
+ },
+ {
+  "case": "5f236091",
+  "shipment": "000067",
+  "recipe": "report_different_location",
+  "acceptable": [
+   "DELIVERY_DISPUTE",
+   "POSSIBLE_MISDELIVERY"
+  ],
+  "physical": {},
+  "secondary": null,
+  "opening": [
+   "RECIPIENT_REPORTED_NOT_RECEIVED"
+  ],
+  "diagnosis": "PROOF_INSUFFICIENT",
+  "correct": false,
+  "tools_called": [
+   "shipment_overview",
+   "journey",
+   "delivery_attempts",
+   "custody_chain",
+   "address_and_instructions"
+  ],
+  "final_state": "HUMAN_REVIEW",
+  "review": "ACCEPT",
+  "authority": "Deterministic evidence rules flagged a conflict requiring hu",
+  "missing_milestones": [],
+  "expected_handhelds": [],
+  "device_status_at_snapshot": {},
+  "called_device_status": false,
+  "other_shipments_held_back_on_same_handheld": {}
+ },
+ {
+  "case": "aba11559",
+  "shipment": "000387",
+  "recipe": "traffic_safe_return",
+  "acceptable": [
+   "ROUTE_DELAY",
+   "TRAFFIC_DELAY"
+  ],
+  "physical": {
+   "recipient": "available_next_session"
+  },
+  "secondary": null,
+  "opening": [
+   "MILESTONE_LATE",
+   "MILESTONE_OVERDUE"
+  ],
+  "diagnosis": "MISSED_MILESTONE",
+  "correct": false,
+  "tools_called": [
+   "shipment_overview",
+   "journey",
+   "delivery_attempts",
+   "custody_chain"
+  ],
+  "final_state": "AWAITING_APPROVAL",
+  "review": "ACCEPT",
+  "authority": "Proposed action does not address a supported diagnosis.",
+  "missing_milestones": [
+   [
+    "DELIVERED",
+    "0387-RECIPIENT"
+   ]
+  ],
+  "expected_handhelds": [],
+  "device_status_at_snapshot": {},
+  "called_device_status": false,
+  "other_shipments_held_back_on_same_handheld": {}
+ },
+ {
+  "case": "9baafdf8",
+  "shipment": "000466",
+  "recipe": "obsolete_address",
+  "acceptable": [
+   "ADDRESS_CONFLICT"
+  ],
+  "physical": {
+   "recipient": "confirms_address"
+  },
+  "secondary": null,
+  "opening": [
+   "DELIVERY_ATTEMPT_FAILED",
+   "MILESTONE_OVERDUE"
+  ],
+  "diagnosis": "ADDRESS_CONFLICT",
+  "correct": true,
+  "tools_called": [
+   "shipment_overview",
+   "journey",
+   "delivery_attempts",
+   "address_and_instructions"
+  ],
+  "final_state": "HUMAN_REVIEW",
+  "review": "ACCEPT",
+  "authority": "Low-risk, reversible, evidence-bound action within the synth",
+  "missing_milestones": [
+   [
+    "DELIVERED",
+    "0466-RECIPIENT"
+   ]
+  ],
+  "expected_handhelds": [],
+  "device_status_at_snapshot": {},
+  "called_device_status": false,
+  "other_shipments_held_back_on_same_handheld": {}
+ },
+ {
+  "case": "849d3f5a",
+  "shipment": "000017",
+  "recipe": "next_day",
+  "acceptable": [
+   "DELAYED_SYNC"
+  ],
+  "physical": {
+   "device": "buffered_upload"
+  },
+  "secondary": null,
+  "opening": [
+   "CUSTODY_TRANSFER_UNCONFIRMED",
+   "MILESTONE_OVERDUE"
+  ],
+  "diagnosis": "CUSTODY_GAP",
+  "correct": false,
+  "tools_called": [
+   "shipment_overview",
+   "journey",
+   "custody_chain",
+   "scans",
+   "device_status"
+  ],
+  "final_state": "HUMAN_REVIEW",
+  "review": "ACCEPT",
+  "authority": "Deterministic evidence rules flagged a conflict requiring hu",
+  "missing_milestones": [
+   [
+    "RECEIVED",
+    "O-DEPOT-RUH-01"
+   ]
+  ],
+  "expected_handhelds": [
+   "DEMO-DEV-HH-DEPOT-RUH-01"
+  ],
+  "device_status_at_snapshot": {
+   "DEMO-DEV-HH-DEPOT-RUH-01": {
+    "reporting_state": "SILENT",
+    "last_seen_at": "2026-09-08T10:00:00+00:00",
+    "expected_beats_missed_since_last_seen": 36,
+    "last_pending_uploads": 0
+   }
+  },
+  "called_device_status": true,
+  "other_shipments_held_back_on_same_handheld": {
+   "DEMO-DEV-HH-DEPOT-RUH-01": 7
+  }
+ },
+ {
+  "case": "5c64550b",
+  "shipment": "000187",
+  "recipe": "contractor_unreturned",
+  "acceptable": [
+   "UNRECONCILED_CUSTODY"
+  ],
+  "physical": {
+   "parcel": "retained_by_contractor",
+   "contractor": "unresponsive"
+  },
+  "secondary": null,
+  "opening": [
+   "DELIVERY_ATTEMPT_FAILED"
+  ],
+  "diagnosis": "RECIPIENT_UNAVAILABLE",
+  "correct": false,
+  "tools_called": [
+   "delivery_attempts",
+   "custody_chain",
+   "address_and_instructions"
+  ],
+  "final_state": "HUMAN_REVIEW",
+  "review": "ACCEPT",
+  "authority": "The parcel's last corroborated holder is a contractor or ind",
+  "missing_milestones": [],
+  "expected_handhelds": [],
+  "device_status_at_snapshot": {},
+  "called_device_status": false,
+  "other_shipments_held_back_on_same_handheld": {}
+ },
+ {
+  "case": "dd49dfbb",
+  "shipment": "000299",
+  "recipe": "different_weight",
+  "acceptable": [
+   "WEIGHT_MISMATCH"
+  ],
+  "physical": {
+   "scale": "miscalibrated"
+  },
+  "secondary": null,
+  "opening": [
+   "WEIGHT_READ_DIFFERS"
+  ],
+  "diagnosis": "WEIGHT_MISMATCH",
+  "correct": true,
+  "tools_called": [
+   "shipment_overview",
+   "scans",
+   "custody_chain",
+   "policy",
+   "scans",
+   "scans",
+   "scans",
+   "device_status"
+  ],
+  "final_state": "HUMAN_REVIEW",
+  "review": "ACCEPT",
+  "authority": "Deterministic evidence rules flagged a conflict requiring hu",
+  "missing_milestones": [],
+  "expected_handhelds": [],
+  "device_status_at_snapshot": {},
+  "called_device_status": true,
+  "other_shipments_held_back_on_same_handheld": {}
+ },
+ {
+  "case": "80a380e8",
+  "shipment": "000239",
+  "recipe": "contractor_unreturned",
+  "acceptable": [
+   "UNRECONCILED_CUSTODY"
+  ],
+  "physical": {
+   "parcel": "retained_by_contractor",
+   "contractor": "unresponsive"
+  },
+  "secondary": null,
+  "opening": [
+   "DELIVERY_ATTEMPT_FAILED"
+  ],
+  "diagnosis": "RECIPIENT_UNAVAILABLE",
+  "correct": false,
+  "tools_called": [
+   "delivery_attempts",
+   "custody_chain",
+   "address_and_instructions",
+   "scans"
+  ],
+  "final_state": "HUMAN_REVIEW",
+  "review": "ACCEPT",
+  "authority": "The parcel's last corroborated holder is a contractor or ind",
+  "missing_milestones": [],
+  "expected_handhelds": [],
+  "device_status_at_snapshot": {},
+  "called_device_status": false,
+  "other_shipments_held_back_on_same_handheld": {}
+ },
+ {
+  "case": "08e7d3ed",
+  "shipment": "000530",
+  "recipe": "declared_weight_wrong",
+  "acceptable": [
+   "WEIGHT_MISMATCH"
+  ],
+  "physical": {
+   "scale": "declared_weight_wrong"
+  },
+  "secondary": null,
+  "opening": [
+   "WEIGHT_READ_DIFFERS"
+  ],
+  "diagnosis": "WEIGHT_MISMATCH",
+  "correct": true,
+  "tools_called": [
+   "shipment_overview",
+   "scans",
+   "policy",
+   "custody_chain"
+  ],
+  "final_state": "ESCALATED",
+  "review": "REVISE",
+  "authority": "Reviewer rejected the proposal after the bounded revision ro",
+  "missing_milestones": [],
+  "expected_handhelds": [],
+  "device_status_at_snapshot": {},
+  "called_device_status": false,
+  "other_shipments_held_back_on_same_handheld": {}
+ },
+ {
+  "case": "b1470fc1",
+  "shipment": "000100",
+  "recipe": "different_barcode",
+  "acceptable": [
+   "BARCODE_MISMATCH"
+  ],
+  "physical": {
+   "label": "misread"
+  },
+  "secondary": null,
+  "opening": [
+   "BARCODE_READ_DIFFERS"
+  ],
+  "diagnosis": "BARCODE_MISMATCH",
+  "correct": true,
+  "tools_called": [
+   "scans",
+   "scans",
+   "custody_chain"
+  ],
+  "final_state": "RESOLVED",
+  "review": "ACCEPT",
+  "authority": "Low-risk, reversible, evidence-bound action within the synth",
+  "missing_milestones": [],
+  "expected_handhelds": [],
+  "device_status_at_snapshot": {},
+  "called_device_status": false,
+  "other_shipments_held_back_on_same_handheld": {}
+ },
+ {
+  "case": "d8fc720d",
+  "shipment": "000120",
+  "recipe": "offline_device_sync",
+  "acceptable": [
+   "DELAYED_SYNC"
+  ],
+  "physical": {
+   "device": "buffered_upload"
+  },
+  "secondary": null,
+  "opening": [
+   "MILESTONE_OVERDUE"
+  ],
+  "diagnosis": "DELAYED_SYNC",
+  "correct": true,
+  "tools_called": [
+   "shipment_overview",
+   "journey",
+   "journey",
+   "custody_chain",
+   "journey",
+   "device_status",
+   "scans"
+  ],
+  "final_state": "RESOLVED",
+  "review": "ACCEPT",
+  "authority": "Low-risk, reversible, evidence-bound action within the synth",
+  "missing_milestones": [
+   [
+    "RECEIVED",
+    "O-DEPOT-MAK-01"
+   ],
+   [
+    "RECEIVED",
+    "O-DEPOT-MAK-01"
+   ],
+   [
+    "RECEIVED",
+    "O-DEPOT-MAK-01"
+   ]
+  ],
+  "expected_handhelds": [
+   "DEMO-DEV-HH-DEPOT-MAK-01"
+  ],
+  "device_status_at_snapshot": {
+   "DEMO-DEV-HH-DEPOT-MAK-01": {
+    "reporting_state": "SILENT",
+    "last_seen_at": "2026-09-10T10:00:00+00:00",
+    "expected_beats_missed_since_last_seen": 10,
+    "last_pending_uploads": 0
+   }
+  },
+  "called_device_status": true,
+  "other_shipments_held_back_on_same_handheld": {
+   "DEMO-DEV-HH-DEPOT-MAK-01": 2
+  }
+ },
+ {
+  "case": "f3083418",
+  "shipment": "000400",
+  "recipe": "later_hub_departure",
+  "acceptable": [
+   "HUB_DELAY",
+   "JOURNEY_DELAY",
+   "MISSED_MILESTONE"
+  ],
+  "physical": {
+   "parcel": "at_origin_hub_delayed"
+  },
+  "secondary": null,
+  "opening": [
+   "MILESTONE_OVERDUE"
+  ],
+  "diagnosis": "CUSTODY_GAP",
+  "correct": false,
+  "tools_called": [
+   "shipment_overview",
+   "journey",
+   "journey",
+   "custody_chain",
+   "scans",
+   "device_status",
+   "custody_chain"
+  ],
+  "final_state": "HUMAN_REVIEW",
+  "review": "ACCEPT",
+  "authority": "Deterministic evidence rules flagged a conflict requiring hu",
+  "missing_milestones": [
+   [
+    "RECEIVED",
+    "O-DEPOT-MED-01"
+   ],
+   [
+    "RECEIVED",
+    "O-DEPOT-MED-01"
+   ],
+   [
+    "RECEIVED",
+    "O-DEPOT-MED-01"
+   ]
+  ],
+  "expected_handhelds": [
+   "DEMO-DEV-HH-DEPOT-MED-01"
+  ],
+  "device_status_at_snapshot": {
+   "DEMO-DEV-HH-DEPOT-MED-01": {
+    "reporting_state": "REPORTING",
+    "last_seen_at": "2026-09-10T14:30:00+00:00",
+    "expected_beats_missed_since_last_seen": 1,
+    "last_pending_uploads": 0
+   }
+  },
+  "called_device_status": true,
+  "other_shipments_held_back_on_same_handheld": {
+   "DEMO-DEV-HH-DEPOT-MED-01": 0
+  }
+ },
+ {
+  "case": "4944725e",
+  "shipment": "000459",
+  "recipe": "contractor_unconfirmed_pickup",
+  "acceptable": [
+   "CUSTODY_GAP",
+   "DELAYED_SYNC",
+   "UNRECONCILED_CUSTODY"
+  ],
+  "physical": {
+   "parcel": "left_at_depot"
+  },
+  "secondary": "DELAYED_SYNC",
+  "opening": [
+   "MILESTONE_OVERDUE"
+  ],
+  "diagnosis": "CUSTODY_GAP",
+  "correct": true,
+  "tools_called": [
+   "shipment_overview",
+   "journey",
+   "journey",
+   "custody_chain",
+   "custody_chain",
+   "custody_chain",
+   "scans",
+   "device_status"
+  ],
+  "final_state": "HUMAN_REVIEW",
+  "review": "ACCEPT",
+  "authority": "Deterministic evidence rules flagged a conflict requiring hu",
+  "missing_milestones": [
+   [
+    "RECEIVED",
+    "O-DEPOT-MAK-01"
+   ],
+   [
+    "RECEIVED",
+    "O-DEPOT-MAK-01"
+   ],
+   [
+    "RECEIVED",
+    "O-DEPOT-MAK-01"
+   ]
+  ],
+  "expected_handhelds": [
+   "DEMO-DEV-HH-DEPOT-MAK-01"
+  ],
+  "device_status_at_snapshot": {
+   "DEMO-DEV-HH-DEPOT-MAK-01": {
+    "reporting_state": "SILENT",
+    "last_seen_at": "2026-09-10T10:00:00+00:00",
+    "expected_beats_missed_since_last_seen": 14,
+    "last_pending_uploads": 0
+   }
+  },
+  "called_device_status": true,
+  "other_shipments_held_back_on_same_handheld": {
+   "DEMO-DEV-HH-DEPOT-MAK-01": 7
+  }
+ },
+ {
+  "case": "9d44f8c9",
+  "shipment": "000060",
+  "recipe": "conflicting_custody_sources",
+  "acceptable": [
+   "CONFLICTING_CUSTODY"
+  ],
+  "physical": {},
+  "secondary": null,
+  "opening": [
+   "CUSTODY_REPORTS_CONFLICT"
+  ],
+  "diagnosis": "CONFLICTING_CUSTODY",
+  "correct": true,
+  "tools_called": [
+   "shipment_overview",
+   "custody_chain",
+   "custody_chain",
+   "custody_chain",
+   "scans",
+   "vehicle_and_manifest",
+   "device_status"
+  ],
+  "final_state": "HUMAN_REVIEW",
+  "review": "ACCEPT",
+  "authority": "Sensitive or rights-impacting evidence (dispute, misdelivery",
+  "missing_milestones": [],
+  "expected_handhelds": [],
+  "device_status_at_snapshot": {},
+  "called_device_status": true,
+  "other_shipments_held_back_on_same_handheld": {}
+ },
+ {
+  "case": "48c272bb",
+  "shipment": "000389",
+  "recipe": "report_after_prior_outcome",
+  "acceptable": [
+   "DELIVERY_DISPUTE"
+  ],
+  "physical": {},
+  "secondary": null,
+  "opening": [
+   "RECIPIENT_REPORTED_NOT_RECEIVED"
+  ],
+  "diagnosis": "DELIVERY_DISPUTE",
+  "correct": true,
+  "tools_called": [
+   "shipment_overview",
+   "journey",
+   "delivery_attempts",
+   "custody_chain",
+   "address_and_instructions",
+   "scans"
+  ],
+  "final_state": "HUMAN_REVIEW",
+  "review": "ACCEPT",
+  "authority": "Sensitive or rights-impacting evidence (dispute, misdelivery",
+  "missing_milestones": [],
+  "expected_handhelds": [],
+  "device_status_at_snapshot": {},
+  "called_device_status": false,
+  "other_shipments_held_back_on_same_handheld": {}
+ },
+ {
+  "case": "2b1af19d",
+  "shipment": "000249",
+  "recipe": "report_photo_only",
+  "acceptable": [
+   "DELIVERY_DISPUTE",
+   "PROOF_INSUFFICIENT"
+  ],
+  "physical": {},
+  "secondary": null,
+  "opening": [
+   "RECIPIENT_REPORTED_NOT_RECEIVED"
+  ],
+  "diagnosis": "PROOF_INSUFFICIENT",
+  "correct": true,
+  "tools_called": [
+   "shipment_overview",
+   "journey",
+   "journey",
+   "custody_chain",
+   "delivery_attempts"
+  ],
+  "final_state": "ESCALATED",
+  "review": "REVISE",
+  "authority": "Reviewer rejected the proposal after the bounded revision ro",
+  "missing_milestones": [],
+  "expected_handhelds": [],
+  "device_status_at_snapshot": {},
+  "called_device_status": false,
+  "other_shipments_held_back_on_same_handheld": {}
+ },
+ {
+  "case": "400a7d4c",
+  "shipment": "000030",
+  "recipe": "report_failed_authentication",
+  "acceptable": [
+   "DELAYED_SYNC",
+   "DELIVERY_DISPUTE",
+   "PROOF_INSUFFICIENT"
+  ],
+  "physical": {},
+  "secondary": "DELAYED_SYNC",
+  "opening": [
+   "MILESTONE_OVERDUE"
+  ],
+  "diagnosis": "CUSTODY_GAP",
+  "correct": false,
+  "tools_called": [
+   "shipment_overview",
+   "journey",
+   "journey",
+   "custody_chain",
+   "device_status",
+   "scans",
+   "vehicle_and_manifest"
+  ],
+  "final_state": "HUMAN_REVIEW",
+  "review": "ACCEPT",
+  "authority": "Deterministic evidence rules flagged a conflict requiring hu",
+  "missing_milestones": [
+   [
+    "RECEIVED",
+    "O-DEPOT-RUH-01"
+   ],
+   [
+    "RECEIVED",
+    "O-DEPOT-RUH-01"
+   ],
+   [
+    "RECEIVED",
+    "O-DEPOT-RUH-01"
+   ]
+  ],
+  "expected_handhelds": [
+   "DEMO-DEV-HH-DEPOT-RUH-01"
+  ],
+  "device_status_at_snapshot": {
+   "DEMO-DEV-HH-DEPOT-RUH-01": {
+    "reporting_state": "SILENT",
+    "last_seen_at": "2026-09-11T01:30:00+00:00",
+    "expected_beats_missed_since_last_seen": 23,
+    "last_pending_uploads": 0
+   }
+  },
+  "called_device_status": true,
+  "other_shipments_held_back_on_same_handheld": {
+   "DEMO-DEV-HH-DEPOT-RUH-01": 4
+  }
+ },
+ {
+  "case": "361eec04",
+  "shipment": "000029",
+  "recipe": "partial_packages",
+  "acceptable": [
+   "CUSTODY_GAP",
+   "UNRECONCILED_CUSTODY"
+  ],
+  "physical": {
+   "parcel": "returned_unscanned"
+  },
+  "secondary": null,
+  "opening": [
+   "MILESTONE_OVERDUE"
+  ],
+  "diagnosis": "DELAYED_SYNC",
+  "correct": false,
+  "tools_called": [
+   "shipment_overview",
+   "journey",
+   "journey",
+   "delivery_attempts",
+   "custody_chain",
+   "journey",
+   "device_status",
+   "scans"
+  ],
+  "final_state": "HUMAN_REVIEW",
+  "review": "ACCEPT",
+  "authority": "Low-risk, reversible, evidence-bound action within the synth",
+  "missing_milestones": [],
+  "expected_handhelds": [],
+  "device_status_at_snapshot": {},
+  "called_device_status": true,
+  "other_shipments_held_back_on_same_handheld": {}
+ }
+]

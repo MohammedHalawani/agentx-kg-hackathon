@@ -1,0 +1,9223 @@
+{
+"start": "2026-09-01T00:00:12+00:00",
+"shipments": {
+"DEMO-SHP-000003": {
+"recipe": "contractor_on_time",
+"split": "development",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-04T17:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-04T19:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000010": {
+"recipe": "absent_session_receipt",
+"split": "history",
+"root_cause": "UNRECONCILED_CUSTODY",
+"acceptable": [
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-12T14:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-12T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-13T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_LATE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000017": {
+"recipe": "next_day",
+"split": "development",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-09T04:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-09T08:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000028": {
+"recipe": "contractor_second_attempt",
+"split": "held_out",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-08T13:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-09T04:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-09T08:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000029": {
+"recipe": "partial_packages",
+"split": "development",
+"root_cause": "UNRECONCILED_CUSTODY",
+"acceptable": [
+"CUSTODY_GAP",
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-11T14:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000030": {
+"recipe": "report_failed_authentication",
+"split": "development",
+"root_cause": "PROOF_INSUFFICIENT",
+"acceptable": [
+"DELAYED_SYNC",
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+"secondary": "DELAYED_SYNC",
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-11T13:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T23:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-12T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-12T07:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-12T14:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-12T15:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000032": {
+"recipe": "absent_transfer_receipt",
+"split": "development",
+"root_cause": "CUSTODY_GAP",
+"acceptable": [
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-02T13:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-03T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000035": {
+"recipe": "conflicting_manifest",
+"split": "history",
+"root_cause": "MANIFEST_CONFLICT",
+"acceptable": [
+"MANIFEST_CONFLICT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-07T04:00:12+00:00",
+[
+"MANIFEST_CONFLICT"
+],
+[
+"MANIFEST_CUSTODY_CONFLICT"
+]
+]
+]
+},
+"DEMO-SHP-000038": {
+"recipe": "absent_session_receipt",
+"split": "history",
+"root_cause": "UNRECONCILED_CUSTODY",
+"acceptable": [
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-10T14:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-10T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-11T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_LATE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000039": {
+"recipe": "contractor_unconfirmed_pickup",
+"split": "history",
+"root_cause": "CUSTODY_GAP",
+"acceptable": [
+"CUSTODY_GAP",
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-11T04:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T05:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T15:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-12T03:00:12+00:00",
+[
+"CUSTODY_GAP",
+"JOURNEY_DELAY",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-12T06:00:12+00:00",
+[
+"CUSTODY_GAP",
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_LATE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000041": {
+"recipe": "wrong_label_applied",
+"split": "history",
+"root_cause": "BARCODE_MISMATCH",
+"acceptable": [
+"BARCODE_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-01T08:00:12+00:00",
+[
+"BARCODE_MISMATCH"
+],
+[
+"BARCODE_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000053": {
+"recipe": "fulfillment",
+"split": "history",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-04T02:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-04T04:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-04T18:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000057": {
+"recipe": "different_barcode",
+"split": "history",
+"root_cause": "BARCODE_MISMATCH",
+"acceptable": [
+"BARCODE_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-07T08:00:12+00:00",
+[
+"BARCODE_MISMATCH"
+],
+[
+"BARCODE_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000060": {
+"recipe": "conflicting_custody_sources",
+"split": "development",
+"root_cause": "CONFLICTING_CUSTODY",
+"acceptable": [
+"CONFLICTING_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-11T04:00:12+00:00",
+[
+"CONFLICTING_CUSTODY"
+],
+[
+"CUSTODY_REPORTS_CONFLICT"
+]
+],
+[
+"2026-09-11T07:00:12+00:00",
+[
+"CONFLICTING_CUSTODY",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_REPORTS_CONFLICT",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T15:00:12+00:00",
+[
+"CONFLICTING_CUSTODY",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_REPORTS_CONFLICT",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000067": {
+"recipe": "report_different_location",
+"split": "development",
+"root_cause": "POSSIBLE_MISDELIVERY",
+"acceptable": [
+"DELIVERY_DISPUTE",
+"POSSIBLE_MISDELIVERY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-08T12:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-08T13:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-08T14:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-08T15:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000069": {
+"recipe": "absent_transfer_receipt",
+"split": "history",
+"root_cause": "CUSTODY_GAP",
+"acceptable": [
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-10T13:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-11T16:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000071": {
+"recipe": "offline_device_sync",
+"split": "history",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-02T02:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-02T04:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-02T20:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000072": {
+"recipe": "later_hub_departure",
+"split": "history",
+"root_cause": "HUB_DELAY",
+"acceptable": [
+"HUB_DELAY",
+"JOURNEY_DELAY",
+"MISSED_MILESTONE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-02T12:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-03T00:00:12+00:00",
+[
+"JOURNEY_DELAY"
+],
+[
+"MILESTONE_LATE"
+]
+]
+]
+},
+"DEMO-SHP-000073": {
+"recipe": "partial_packages",
+"split": "held_out",
+"root_cause": "UNRECONCILED_CUSTODY",
+"acceptable": [
+"CUSTODY_GAP",
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-04T14:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-04T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000081": {
+"recipe": "different_gate",
+"split": "history",
+"root_cause": "WRONG_GATE",
+"acceptable": [
+"WRONG_GATE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-03T06:00:12+00:00",
+[
+"WRONG_GATE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-03T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"WRONG_GATE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-04T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"WRONG_GATE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_LATE"
+]
+]
+]
+},
+"DEMO-SHP-000083": {
+"recipe": "report_after_prior_outcome",
+"split": "history",
+"root_cause": "DELIVERY_DISPUTE",
+"acceptable": [
+"DELAYED_SYNC",
+"DELIVERY_DISPUTE"
+],
+"secondary": "DELAYED_SYNC",
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-05T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+]
+]
+},
+"DEMO-SHP-000084": {
+"recipe": "conflicting_manifest",
+"split": "held_out",
+"root_cause": "MANIFEST_CONFLICT",
+"acceptable": [
+"MANIFEST_CONFLICT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-05T04:00:12+00:00",
+[
+"MANIFEST_CONFLICT"
+],
+[
+"MANIFEST_CUSTODY_CONFLICT"
+]
+]
+]
+},
+"DEMO-SHP-000087": {
+"recipe": "absent_transfer_receipt",
+"split": "history",
+"root_cause": "CUSTODY_GAP",
+"acceptable": [
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-08T14:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-09T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-09T16:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000088": {
+"recipe": "partial_packages",
+"split": "history",
+"root_cause": "UNRECONCILED_CUSTODY",
+"acceptable": [
+"CUSTODY_GAP",
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-09T14:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-09T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-10T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_LATE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000091": {
+"recipe": "partial_packages",
+"split": "history",
+"root_cause": "UNRECONCILED_CUSTODY",
+"acceptable": [
+"CUSTODY_GAP",
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-02T14:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-02T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-03T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_LATE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000092": {
+"recipe": "weight_and_obsolete_address",
+"split": "history",
+"root_cause": "ADDRESS_CONFLICT",
+"acceptable": [
+"ADDRESS_CONFLICT",
+"WEIGHT_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-02T08:00:12+00:00",
+[
+"WEIGHT_MISMATCH"
+],
+[
+"WEIGHT_READ_DIFFERS"
+]
+],
+[
+"2026-09-03T05:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"WEIGHT_MISMATCH"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"WEIGHT_READ_DIFFERS"
+]
+],
+[
+"2026-09-03T14:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"MISSED_MILESTONE",
+"WEIGHT_MISMATCH"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE",
+"WEIGHT_READ_DIFFERS"
+]
+],
+[
+"2026-09-04T06:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"JOURNEY_DELAY",
+"WEIGHT_MISMATCH"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_LATE",
+"WEIGHT_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000095": {
+"recipe": "absent_transfer_receipt",
+"split": "held_out",
+"root_cause": "CUSTODY_GAP",
+"acceptable": [
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-06T12:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-07T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000097": {
+"recipe": "duplicate_provider_events",
+"split": "history",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-08T18:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-09T04:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-09T12:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000098": {
+"recipe": "absent_session_receipt",
+"split": "held_out",
+"root_cause": "UNRECONCILED_CUSTODY",
+"acceptable": [
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-10T14:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-10T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000100": {
+"recipe": "different_barcode",
+"split": "development",
+"root_cause": "BARCODE_MISMATCH",
+"acceptable": [
+"BARCODE_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-10T08:00:12+00:00",
+[
+"BARCODE_MISMATCH"
+],
+[
+"BARCODE_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000101": {
+"recipe": "absent_session_receipt",
+"split": "development",
+"root_cause": "UNRECONCILED_CUSTODY",
+"acceptable": [
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-02T14:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-02T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000103": {
+"recipe": "traffic_safe_return",
+"split": "history",
+"root_cause": "TRAFFIC_DELAY",
+"acceptable": [
+"DELAYED_SYNC",
+"ROUTE_DELAY",
+"TRAFFIC_DELAY"
+],
+"secondary": "DELAYED_SYNC",
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-04T16:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-04T19:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-05T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"TRAFFIC_DELAY"
+],
+[
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-05T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"TRAFFIC_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-05T16:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE",
+"TRAFFIC_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-05T19:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"TRAFFIC_DELAY"
+],
+[
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-06T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"TRAFFIC_DELAY"
+],
+[
+"MILESTONE_LATE"
+]
+]
+]
+},
+"DEMO-SHP-000105": {
+"recipe": "different_weight",
+"split": "history",
+"root_cause": "WEIGHT_MISMATCH",
+"acceptable": [
+"WEIGHT_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-05T08:00:12+00:00",
+[
+"WEIGHT_MISMATCH"
+],
+[
+"WEIGHT_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000108": {
+"recipe": "unanswered_contact",
+"split": "history",
+"root_cause": "RECIPIENT_UNAVAILABLE",
+"acceptable": [
+"RECIPIENT_UNAVAILABLE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-09T06:00:12+00:00",
+[
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-09T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-10T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_LATE"
+]
+]
+]
+},
+"DEMO-SHP-000110": {
+"recipe": "on_time",
+"split": "history",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-11T02:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T04:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T08:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000113": {
+"recipe": "offline_device_sync",
+"split": "development",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-04T00:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-04T04:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-04T18:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000118": {
+"recipe": "report_different_location",
+"split": "history",
+"root_cause": "POSSIBLE_MISDELIVERY",
+"acceptable": [
+"DELIVERY_DISPUTE",
+"POSSIBLE_MISDELIVERY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-09T08:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-09T14:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-09T15:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-10T06:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_LATE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000119": {
+"recipe": "contractor_unconfirmed_pickup",
+"split": "history",
+"root_cause": "CUSTODY_GAP",
+"acceptable": [
+"CUSTODY_GAP",
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-11T04:00:12+00:00",
+[
+"CUSTODY_GAP"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED"
+]
+],
+[
+"2026-09-11T05:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T15:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-12T04:00:12+00:00",
+[
+"CUSTODY_GAP",
+"JOURNEY_DELAY",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-12T06:00:12+00:00",
+[
+"CUSTODY_GAP",
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_LATE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000120": {
+"recipe": "offline_device_sync",
+"split": "development",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-10T15:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T04:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T08:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000124": {
+"recipe": "contractor_on_time",
+"split": "history",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-04T13:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-04T19:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000125": {
+"recipe": "conflicting_manifest",
+"split": "history",
+"root_cause": "MANIFEST_CONFLICT",
+"acceptable": [
+"MANIFEST_CONFLICT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-07T04:00:12+00:00",
+[
+"MANIFEST_CONFLICT"
+],
+[
+"MANIFEST_CUSTODY_CONFLICT"
+]
+]
+]
+},
+"DEMO-SHP-000126": {
+"recipe": "contractor_unreturned",
+"split": "held_out",
+"root_cause": "UNRECONCILED_CUSTODY",
+"acceptable": [
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-07T06:00:12+00:00",
+[
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-07T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-07T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"RECIPIENT_UNAVAILABLE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000131": {
+"recipe": "conflicting_custody_sources",
+"split": "history",
+"root_cause": "CONFLICTING_CUSTODY",
+"acceptable": [
+"CONFLICTING_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-02T04:00:12+00:00",
+[
+"CONFLICTING_CUSTODY"
+],
+[
+"CUSTODY_REPORTS_CONFLICT"
+]
+],
+[
+"2026-09-02T05:00:12+00:00",
+[
+"CONFLICTING_CUSTODY",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_REPORTS_CONFLICT",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-02T15:00:12+00:00",
+[
+"CONFLICTING_CUSTODY",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_REPORTS_CONFLICT",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-03T03:00:12+00:00",
+[
+"CONFLICTING_CUSTODY",
+"JOURNEY_DELAY",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_REPORTS_CONFLICT",
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-03T06:00:12+00:00",
+[
+"CONFLICTING_CUSTODY",
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_REPORTS_CONFLICT",
+"MILESTONE_LATE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000132": {
+"recipe": "unanswered_contact",
+"split": "history",
+"root_cause": "RECIPIENT_UNAVAILABLE",
+"acceptable": [
+"RECIPIENT_UNAVAILABLE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-03T06:00:12+00:00",
+[
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-03T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-04T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_LATE"
+]
+]
+]
+},
+"DEMO-SHP-000137": {
+"recipe": "report_photo_only",
+"split": "held_out",
+"root_cause": "PROOF_INSUFFICIENT",
+"acceptable": [
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-09T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-09T07:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-09T14:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-09T15:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000139": {
+"recipe": "report_different_location",
+"split": "history",
+"root_cause": "POSSIBLE_MISDELIVERY",
+"acceptable": [
+"DELIVERY_DISPUTE",
+"POSSIBLE_MISDELIVERY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-11T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-11T07:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-11T14:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-11T15:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-12T06:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_LATE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000143": {
+"recipe": "absent_transfer_receipt",
+"split": "held_out",
+"root_cause": "CUSTODY_GAP",
+"acceptable": [
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-03T23:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-04T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000144": {
+"recipe": "different_gate",
+"split": "history",
+"root_cause": "WRONG_GATE",
+"acceptable": [
+"WRONG_GATE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-05T06:00:12+00:00",
+[
+"WRONG_GATE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-05T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"WRONG_GATE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-06T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"WRONG_GATE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_LATE"
+]
+]
+]
+},
+"DEMO-SHP-000148": {
+"recipe": "different_weight",
+"split": "held_out",
+"root_cause": "WEIGHT_MISMATCH",
+"acceptable": [
+"WEIGHT_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-08T08:00:12+00:00",
+[
+"WEIGHT_MISMATCH"
+],
+[
+"WEIGHT_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000161": {
+"recipe": "report_failed_authentication",
+"split": "held_out",
+"root_cause": "PROOF_INSUFFICIENT",
+"acceptable": [
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-02T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-02T07:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-02T14:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-02T15:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000166": {
+"recipe": "wrong_label_applied",
+"split": "history",
+"root_cause": "BARCODE_MISMATCH",
+"acceptable": [
+"BARCODE_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-06T08:00:12+00:00",
+[
+"BARCODE_MISMATCH"
+],
+[
+"BARCODE_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000170": {
+"recipe": "accounted_return",
+"split": "history",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-11T04:00:12+00:00",
+[
+"CUSTODY_GAP"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED"
+]
+],
+[
+"2026-09-11T06:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T15:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-11T23:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000172": {
+"recipe": "unanswered_contact",
+"split": "history",
+"root_cause": "RECIPIENT_UNAVAILABLE",
+"acceptable": [
+"RECIPIENT_UNAVAILABLE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-03T06:00:12+00:00",
+[
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-03T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-04T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_LATE"
+]
+]
+]
+},
+"DEMO-SHP-000174": {
+"recipe": "weight_and_obsolete_address",
+"split": "held_out",
+"root_cause": "ADDRESS_CONFLICT",
+"acceptable": [
+"ADDRESS_CONFLICT",
+"DELAYED_SYNC",
+"WEIGHT_MISMATCH"
+],
+"secondary": "DELAYED_SYNC",
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-04T08:00:12+00:00",
+[
+"WEIGHT_MISMATCH"
+],
+[
+"WEIGHT_READ_DIFFERS"
+]
+],
+[
+"2026-09-05T17:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"WEIGHT_MISMATCH"
+],
+[
+"MILESTONE_OVERDUE",
+"WEIGHT_READ_DIFFERS"
+]
+],
+[
+"2026-09-05T19:00:12+00:00",
+[
+"WEIGHT_MISMATCH"
+],
+[
+"WEIGHT_READ_DIFFERS"
+]
+],
+[
+"2026-09-06T06:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"WEIGHT_MISMATCH"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"WEIGHT_READ_DIFFERS"
+]
+],
+[
+"2026-09-06T14:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"MISSED_MILESTONE",
+"WEIGHT_MISMATCH"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE",
+"WEIGHT_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000175": {
+"recipe": "traffic_safe_return",
+"split": "held_out",
+"root_cause": "TRAFFIC_DELAY",
+"acceptable": [
+"ROUTE_DELAY",
+"TRAFFIC_DELAY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-07T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"TRAFFIC_DELAY"
+],
+[
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE"
+]
+]
+]
+},
+"DEMO-SHP-000178": {
+"recipe": "partial_packages",
+"split": "history",
+"root_cause": "UNRECONCILED_CUSTODY",
+"acceptable": [
+"CUSTODY_GAP",
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-10T14:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-10T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-11T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_LATE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000180": {
+"recipe": "contractor_unreturned",
+"split": "history",
+"root_cause": "UNRECONCILED_CUSTODY",
+"acceptable": [
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-11T05:00:12+00:00",
+[
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-11T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"RECIPIENT_UNAVAILABLE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-12T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"RECIPIENT_UNAVAILABLE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_LATE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000182": {
+"recipe": "report_failed_authentication",
+"split": "history",
+"root_cause": "PROOF_INSUFFICIENT",
+"acceptable": [
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-04T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-04T07:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-04T14:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-04T15:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-05T06:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_LATE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000187": {
+"recipe": "contractor_unreturned",
+"split": "development",
+"root_cause": "UNRECONCILED_CUSTODY",
+"acceptable": [
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-09T06:00:12+00:00",
+[
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-09T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-09T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"RECIPIENT_UNAVAILABLE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000193": {
+"recipe": "report_with_corroboration",
+"split": "history",
+"root_cause": "DELIVERY_DISPUTE",
+"acceptable": [
+"DELIVERY_DISPUTE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-05T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+]
+]
+},
+"DEMO-SHP-000196": {
+"recipe": "report_different_location",
+"split": "history",
+"root_cause": "POSSIBLE_MISDELIVERY",
+"acceptable": [
+"DELIVERY_DISPUTE",
+"POSSIBLE_MISDELIVERY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-07T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-07T07:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-07T14:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-07T15:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-08T05:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"JOURNEY_DELAY",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-08T06:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_LATE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000197": {
+"recipe": "different_barcode",
+"split": "history",
+"root_cause": "BARCODE_MISMATCH",
+"acceptable": [
+"BARCODE_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-07T08:00:12+00:00",
+[
+"BARCODE_MISMATCH"
+],
+[
+"BARCODE_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000199": {
+"recipe": "different_weight",
+"split": "history",
+"root_cause": "WEIGHT_MISMATCH",
+"acceptable": [
+"WEIGHT_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000201": {
+"recipe": "conflicting_manifest",
+"split": "held_out",
+"root_cause": "MANIFEST_CONFLICT",
+"acceptable": [
+"MANIFEST_CONFLICT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-03T04:00:12+00:00",
+[
+"MANIFEST_CONFLICT"
+],
+[
+"MANIFEST_CUSTODY_CONFLICT"
+]
+]
+]
+},
+"DEMO-SHP-000204": {
+"recipe": "different_weight",
+"split": "history",
+"root_cause": "WEIGHT_MISMATCH",
+"acceptable": [
+"WEIGHT_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-04T08:00:12+00:00",
+[
+"WEIGHT_MISMATCH"
+],
+[
+"WEIGHT_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000208": {
+"recipe": "fulfillment",
+"split": "history",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-08T13:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-09T04:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-09T08:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000211": {
+"recipe": "report_different_location",
+"split": "history",
+"root_cause": "POSSIBLE_MISDELIVERY",
+"acceptable": [
+"DELIVERY_DISPUTE",
+"POSSIBLE_MISDELIVERY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-03T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-03T07:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-03T14:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-03T15:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-04T06:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_LATE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000212": {
+"recipe": "report_photo_only",
+"split": "history",
+"root_cause": "PROOF_INSUFFICIENT",
+"acceptable": [
+"DELAYED_SYNC",
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+"secondary": "DELAYED_SYNC",
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-02T13:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-02T20:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-03T06:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-03T07:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-03T14:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-03T15:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-04T06:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_LATE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000214": {
+"recipe": "weight_and_obsolete_address",
+"split": "history",
+"root_cause": "ADDRESS_CONFLICT",
+"acceptable": [
+"ADDRESS_CONFLICT",
+"WEIGHT_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-04T08:00:12+00:00",
+[
+"WEIGHT_MISMATCH"
+],
+[
+"WEIGHT_READ_DIFFERS"
+]
+],
+[
+"2026-09-06T06:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"WEIGHT_MISMATCH"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"WEIGHT_READ_DIFFERS"
+]
+],
+[
+"2026-09-06T14:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"MISSED_MILESTONE",
+"WEIGHT_MISMATCH"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE",
+"WEIGHT_READ_DIFFERS"
+]
+],
+[
+"2026-09-07T06:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"JOURNEY_DELAY",
+"WEIGHT_MISMATCH"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_LATE",
+"WEIGHT_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000215": {
+"recipe": "different_weight",
+"split": "development",
+"root_cause": "WEIGHT_MISMATCH",
+"acceptable": [
+"WEIGHT_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-05T08:00:12+00:00",
+[
+"WEIGHT_MISMATCH"
+],
+[
+"WEIGHT_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000224": {
+"recipe": "declared_weight_wrong",
+"split": "held_out",
+"root_cause": "WEIGHT_MISMATCH",
+"acceptable": [
+"WEIGHT_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-04T08:00:12+00:00",
+[
+"WEIGHT_MISMATCH"
+],
+[
+"WEIGHT_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000231": {
+"recipe": "conflicting_custody_sources",
+"split": "held_out",
+"root_cause": "CONFLICTING_CUSTODY",
+"acceptable": [
+"CONFLICTING_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-02T05:00:12+00:00",
+[
+"CONFLICTING_CUSTODY"
+],
+[
+"CUSTODY_REPORTS_CONFLICT"
+]
+],
+[
+"2026-09-02T06:00:12+00:00",
+[
+"CONFLICTING_CUSTODY",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_REPORTS_CONFLICT",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-02T15:00:12+00:00",
+[
+"CONFLICTING_CUSTODY",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_REPORTS_CONFLICT",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000235": {
+"recipe": "absent_transfer_receipt",
+"split": "history",
+"root_cause": "CUSTODY_GAP",
+"acceptable": [
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-06T07:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-06T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-06T16:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000239": {
+"recipe": "contractor_unreturned",
+"split": "development",
+"root_cause": "UNRECONCILED_CUSTODY",
+"acceptable": [
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-10T06:00:12+00:00",
+[
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-10T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-10T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"RECIPIENT_UNAVAILABLE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000241": {
+"recipe": "wrong_label_applied",
+"split": "history",
+"root_cause": "BARCODE_MISMATCH",
+"acceptable": [
+"BARCODE_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-01T08:00:12+00:00",
+[
+"BARCODE_MISMATCH"
+],
+[
+"BARCODE_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000243": {
+"recipe": "contractor_unconfirmed_pickup",
+"split": "history",
+"root_cause": "CUSTODY_GAP",
+"acceptable": [
+"CUSTODY_GAP",
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-04T04:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-04T05:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-04T15:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-05T04:00:12+00:00",
+[
+"CUSTODY_GAP",
+"JOURNEY_DELAY",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-05T06:00:12+00:00",
+[
+"CUSTODY_GAP",
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_LATE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000244": {
+"recipe": "partial_packages",
+"split": "history",
+"root_cause": "UNRECONCILED_CUSTODY",
+"acceptable": [
+"CUSTODY_GAP",
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-05T14:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-05T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-06T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_LATE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000246": {
+"recipe": "declared_weight_wrong",
+"split": "history",
+"root_cause": "WEIGHT_MISMATCH",
+"acceptable": [
+"WEIGHT_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-06T08:00:12+00:00",
+[
+"WEIGHT_MISMATCH"
+],
+[
+"WEIGHT_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000247": {
+"recipe": "report_authorized_alternate",
+"split": "held_out",
+"root_cause": "DELIVERY_DISPUTE",
+"acceptable": [
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-09T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-09T14:00:12+00:00",
+[
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+]
+]
+},
+"DEMO-SHP-000248": {
+"recipe": "obsolete_address",
+"split": "held_out",
+"root_cause": "ADDRESS_CONFLICT",
+"acceptable": [
+"ADDRESS_CONFLICT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-09T06:00:12+00:00",
+[
+"ADDRESS_CONFLICT"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-09T14:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"MISSED_MILESTONE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+]
+]
+},
+"DEMO-SHP-000249": {
+"recipe": "report_photo_only",
+"split": "development",
+"root_cause": "PROOF_INSUFFICIENT",
+"acceptable": [
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-11T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-11T07:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-11T14:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-11T15:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000252": {
+"recipe": "obsolete_address",
+"split": "history",
+"root_cause": "ADDRESS_CONFLICT",
+"acceptable": [
+"ADDRESS_CONFLICT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-03T06:00:12+00:00",
+[
+"ADDRESS_CONFLICT"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-03T14:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"MISSED_MILESTONE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-04T06:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"JOURNEY_DELAY"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_LATE"
+]
+]
+]
+},
+"DEMO-SHP-000254": {
+"recipe": "accounted_return",
+"split": "history",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000257": {
+"recipe": "obsolete_address",
+"split": "history",
+"root_cause": "ADDRESS_CONFLICT",
+"acceptable": [
+"ADDRESS_CONFLICT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-09T06:00:12+00:00",
+[
+"ADDRESS_CONFLICT"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-09T14:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"MISSED_MILESTONE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-10T06:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"JOURNEY_DELAY"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_LATE"
+]
+]
+]
+},
+"DEMO-SHP-000259": {
+"recipe": "contractor_on_time",
+"split": "held_out",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-10T18:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T04:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T08:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000260": {
+"recipe": "report_with_corroboration",
+"split": "history",
+"root_cause": "DELIVERY_DISPUTE",
+"acceptable": [
+"DELIVERY_DISPUTE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-11T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+]
+]
+},
+"DEMO-SHP-000262": {
+"recipe": "report_authorized_alternate",
+"split": "development",
+"root_cause": "DELIVERY_DISPUTE",
+"acceptable": [
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-04T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-04T14:00:12+00:00",
+[
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+]
+]
+},
+"DEMO-SHP-000277": {
+"recipe": "offline_device_sync",
+"split": "history",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-08T18:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-09T04:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-09T12:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000278": {
+"recipe": "obsolete_address",
+"split": "history",
+"root_cause": "ADDRESS_CONFLICT",
+"acceptable": [
+"ADDRESS_CONFLICT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-10T06:00:12+00:00",
+[
+"ADDRESS_CONFLICT"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-10T14:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"MISSED_MILESTONE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T06:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"JOURNEY_DELAY"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_LATE"
+]
+]
+]
+},
+"DEMO-SHP-000283": {
+"recipe": "declared_weight_wrong",
+"split": "history",
+"root_cause": "WEIGHT_MISMATCH",
+"acceptable": [
+"WEIGHT_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-03T08:00:12+00:00",
+[
+"WEIGHT_MISMATCH"
+],
+[
+"WEIGHT_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000284": {
+"recipe": "report_failed_authentication",
+"split": "history",
+"root_cause": "PROOF_INSUFFICIENT",
+"acceptable": [
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-05T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-05T07:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-05T14:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-05T15:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-06T06:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_LATE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000288": {
+"recipe": "report_photo_only",
+"split": "history",
+"root_cause": "PROOF_INSUFFICIENT",
+"acceptable": [
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-09T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-09T07:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-09T14:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-09T15:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-10T06:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_LATE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000290": {
+"recipe": "later_hub_departure",
+"split": "held_out",
+"root_cause": "HUB_DELAY",
+"acceptable": [
+"HUB_DELAY",
+"JOURNEY_DELAY",
+"MISSED_MILESTONE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-10T21:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-12T06:00:12+00:00",
+[
+"JOURNEY_DELAY"
+],
+[
+"MILESTONE_LATE"
+]
+]
+]
+},
+"DEMO-SHP-000293": {
+"recipe": "contractor_unreturned",
+"split": "held_out",
+"root_cause": "UNRECONCILED_CUSTODY",
+"acceptable": [
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-04T06:00:12+00:00",
+[
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-04T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-04T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"RECIPIENT_UNAVAILABLE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000297": {
+"recipe": "absent_session_receipt",
+"split": "history",
+"root_cause": "UNRECONCILED_CUSTODY",
+"acceptable": [
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-08T14:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-08T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-09T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_LATE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000299": {
+"recipe": "different_weight",
+"split": "development",
+"root_cause": "WEIGHT_MISMATCH",
+"acceptable": [
+"WEIGHT_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-09T08:00:12+00:00",
+[
+"WEIGHT_MISMATCH"
+],
+[
+"WEIGHT_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000300": {
+"recipe": "absent_session_receipt",
+"split": "held_out",
+"root_cause": "UNRECONCILED_CUSTODY",
+"acceptable": [
+"DELAYED_SYNC",
+"UNRECONCILED_CUSTODY"
+],
+"secondary": "DELAYED_SYNC",
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-10T15:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T04:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T08:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-11T14:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000301": {
+"recipe": "traffic_safe_return",
+"split": "history",
+"root_cause": "TRAFFIC_DELAY",
+"acceptable": [
+"DELAYED_SYNC",
+"ROUTE_DELAY",
+"TRAFFIC_DELAY"
+],
+"secondary": "DELAYED_SYNC",
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-02T16:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-02T20:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-03T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"TRAFFIC_DELAY"
+],
+[
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-04T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"TRAFFIC_DELAY"
+],
+[
+"MILESTONE_LATE"
+]
+]
+]
+},
+"DEMO-SHP-000304": {
+"recipe": "duplicate_provider_events",
+"split": "held_out",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-04T13:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-04T19:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000305": {
+"recipe": "declared_weight_wrong",
+"split": "development",
+"root_cause": "WEIGHT_MISMATCH",
+"acceptable": [
+"WEIGHT_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-05T08:00:12+00:00",
+[
+"WEIGHT_MISMATCH"
+],
+[
+"WEIGHT_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000308": {
+"recipe": "report_with_corroboration",
+"split": "history",
+"root_cause": "DELIVERY_DISPUTE",
+"acceptable": [
+"DELIVERY_DISPUTE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-09T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+]
+]
+},
+"DEMO-SHP-000314": {
+"recipe": "report_with_corroboration",
+"split": "held_out",
+"root_cause": "DELIVERY_DISPUTE",
+"acceptable": [
+"DELIVERY_DISPUTE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-05T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+]
+]
+},
+"DEMO-SHP-000315": {
+"recipe": "wrong_label_applied",
+"split": "history",
+"root_cause": "BARCODE_MISMATCH",
+"acceptable": [
+"BARCODE_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-05T08:00:12+00:00",
+[
+"BARCODE_MISMATCH"
+],
+[
+"BARCODE_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000318": {
+"recipe": "contractor_unconfirmed_pickup",
+"split": "history",
+"root_cause": "CUSTODY_GAP",
+"acceptable": [
+"CUSTODY_GAP",
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-10T04:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-10T05:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-10T15:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-11T04:00:12+00:00",
+[
+"CUSTODY_GAP",
+"JOURNEY_DELAY",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-11T06:00:12+00:00",
+[
+"CUSTODY_GAP",
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_LATE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000319": {
+"recipe": "different_gate",
+"split": "held_out",
+"root_cause": "WRONG_GATE",
+"acceptable": [
+"WRONG_GATE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-11T06:00:12+00:00",
+[
+"WRONG_GATE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-11T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"WRONG_GATE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+]
+]
+},
+"DEMO-SHP-000320": {
+"recipe": "different_barcode",
+"split": "held_out",
+"root_cause": "BARCODE_MISMATCH",
+"acceptable": [
+"BARCODE_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-10T08:00:12+00:00",
+[
+"BARCODE_MISMATCH"
+],
+[
+"BARCODE_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000323": {
+"recipe": "late_upload_within_tolerance",
+"split": "held_out",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-04T02:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-04T04:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-04T19:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000324": {
+"recipe": "conflicting_custody_sources",
+"split": "development",
+"root_cause": "CONFLICTING_CUSTODY",
+"acceptable": [
+"CONFLICTING_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-05T04:00:12+00:00",
+[
+"CONFLICTING_CUSTODY",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_REPORTS_CONFLICT",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-05T15:00:12+00:00",
+[
+"CONFLICTING_CUSTODY",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_REPORTS_CONFLICT",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000326": {
+"recipe": "conflicting_manifest",
+"split": "development",
+"root_cause": "MANIFEST_CONFLICT",
+"acceptable": [
+"MANIFEST_CONFLICT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-08T04:00:12+00:00",
+[
+"MANIFEST_CONFLICT"
+],
+[
+"MANIFEST_CUSTODY_CONFLICT"
+]
+]
+]
+},
+"DEMO-SHP-000327": {
+"recipe": "report_different_location",
+"split": "held_out",
+"root_cause": "POSSIBLE_MISDELIVERY",
+"acceptable": [
+"DELIVERY_DISPUTE",
+"POSSIBLE_MISDELIVERY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-09T06:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-09T07:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-09T14:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-09T15:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000333": {
+"recipe": "report_photo_only",
+"split": "history",
+"root_cause": "PROOF_INSUFFICIENT",
+"acceptable": [
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-04T08:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-04T14:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-04T15:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-05T06:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_LATE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000337": {
+"recipe": "absent_transfer_receipt",
+"split": "development",
+"root_cause": "CUSTODY_GAP",
+"acceptable": [
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-08T11:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-09T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000338": {
+"recipe": "conflicting_custody_sources",
+"split": "history",
+"root_cause": "CONFLICTING_CUSTODY",
+"acceptable": [
+"CONFLICTING_CUSTODY",
+"DELAYED_SYNC"
+],
+"secondary": "DELAYED_SYNC",
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-09T05:00:12+00:00",
+[
+"CONFLICTING_CUSTODY"
+],
+[
+"CUSTODY_REPORTS_CONFLICT"
+]
+],
+[
+"2026-09-09T06:00:12+00:00",
+[
+"CONFLICTING_CUSTODY",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_REPORTS_CONFLICT",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-09T15:00:12+00:00",
+[
+"CONFLICTING_CUSTODY",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_REPORTS_CONFLICT",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-10T04:00:12+00:00",
+[
+"CONFLICTING_CUSTODY",
+"JOURNEY_DELAY",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_REPORTS_CONFLICT",
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-10T06:00:12+00:00",
+[
+"CONFLICTING_CUSTODY",
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_REPORTS_CONFLICT",
+"MILESTONE_LATE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000339": {
+"recipe": "different_gate",
+"split": "held_out",
+"root_cause": "WRONG_GATE",
+"acceptable": [
+"DELAYED_SYNC",
+"WRONG_GATE"
+],
+"secondary": "DELAYED_SYNC",
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-10T17:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T04:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T05:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE",
+"WRONG_GATE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T08:00:12+00:00",
+[
+"WRONG_GATE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-11T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"WRONG_GATE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+]
+]
+},
+"DEMO-SHP-000342": {
+"recipe": "absent_transfer_receipt",
+"split": "history",
+"root_cause": "CUSTODY_GAP",
+"acceptable": [
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-02T22:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-03T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-03T16:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000345": {
+"recipe": "different_gate",
+"split": "history",
+"root_cause": "WRONG_GATE",
+"acceptable": [
+"WRONG_GATE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-07T06:00:12+00:00",
+[
+"WRONG_GATE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-07T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"WRONG_GATE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-08T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"WRONG_GATE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_LATE"
+]
+]
+]
+},
+"DEMO-SHP-000346": {
+"recipe": "traffic_safe_return",
+"split": "history",
+"root_cause": "TRAFFIC_DELAY",
+"acceptable": [
+"ROUTE_DELAY",
+"TRAFFIC_DELAY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-08T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"TRAFFIC_DELAY"
+],
+[
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-09T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"TRAFFIC_DELAY"
+],
+[
+"MILESTONE_LATE"
+]
+]
+]
+},
+"DEMO-SHP-000350": {
+"recipe": "offline_device_sync",
+"split": "history",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-11T04:00:12+00:00",
+[
+"CUSTODY_GAP"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED"
+]
+],
+[
+"2026-09-11T06:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T23:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000362": {
+"recipe": "report_with_corroboration",
+"split": "development",
+"root_cause": "DELIVERY_DISPUTE",
+"acceptable": [
+"DELIVERY_DISPUTE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-04T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+]
+]
+},
+"DEMO-SHP-000370": {
+"recipe": "later_hub_departure",
+"split": "history",
+"root_cause": "HUB_DELAY",
+"acceptable": [
+"HUB_DELAY",
+"JOURNEY_DELAY",
+"MISSED_MILESTONE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-10T21:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-12T06:00:12+00:00",
+[
+"JOURNEY_DELAY"
+],
+[
+"MILESTONE_LATE"
+]
+]
+]
+},
+"DEMO-SHP-000376": {
+"recipe": "declared_weight_wrong",
+"split": "history",
+"root_cause": "WEIGHT_MISMATCH",
+"acceptable": [
+"WEIGHT_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-06T08:00:12+00:00",
+[
+"WEIGHT_MISMATCH"
+],
+[
+"WEIGHT_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000378": {
+"recipe": "later_hub_departure",
+"split": "held_out",
+"root_cause": "HUB_DELAY",
+"acceptable": [
+"HUB_DELAY",
+"JOURNEY_DELAY",
+"MISSED_MILESTONE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-08T18:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-09T06:00:12+00:00",
+[
+"JOURNEY_DELAY"
+],
+[
+"MILESTONE_LATE"
+]
+],
+[
+"2026-09-09T11:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-10T02:00:12+00:00",
+[
+"JOURNEY_DELAY"
+],
+[
+"MILESTONE_LATE"
+]
+]
+]
+},
+"DEMO-SHP-000384": {
+"recipe": "report_with_corroboration",
+"split": "history",
+"root_cause": "DELIVERY_DISPUTE",
+"acceptable": [
+"DELIVERY_DISPUTE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-05T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+]
+]
+},
+"DEMO-SHP-000385": {
+"recipe": "different_barcode",
+"split": "history",
+"root_cause": "BARCODE_MISMATCH",
+"acceptable": [
+"BARCODE_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-05T08:00:12+00:00",
+[
+"BARCODE_MISMATCH"
+],
+[
+"BARCODE_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000386": {
+"recipe": "later_hub_departure",
+"split": "history",
+"root_cause": "HUB_DELAY",
+"acceptable": [
+"HUB_DELAY",
+"JOURNEY_DELAY",
+"MISSED_MILESTONE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-06T19:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-07T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-08T06:00:12+00:00",
+[
+"JOURNEY_DELAY"
+],
+[
+"MILESTONE_LATE"
+]
+]
+]
+},
+"DEMO-SHP-000387": {
+"recipe": "traffic_safe_return",
+"split": "development",
+"root_cause": "TRAFFIC_DELAY",
+"acceptable": [
+"ROUTE_DELAY",
+"TRAFFIC_DELAY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-08T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"TRAFFIC_DELAY"
+],
+[
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE"
+]
+]
+]
+},
+"DEMO-SHP-000388": {
+"recipe": "offline_device_sync",
+"split": "held_out",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-08T13:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-09T04:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-09T08:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000389": {
+"recipe": "report_after_prior_outcome",
+"split": "development",
+"root_cause": "DELIVERY_DISPUTE",
+"acceptable": [
+"DELIVERY_DISPUTE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-11T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+]
+]
+},
+"DEMO-SHP-000390": {
+"recipe": "traffic_safe_return",
+"split": "history",
+"root_cause": "TRAFFIC_DELAY",
+"acceptable": [
+"ROUTE_DELAY",
+"TRAFFIC_DELAY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-11T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"TRAFFIC_DELAY"
+],
+[
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-12T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"TRAFFIC_DELAY"
+],
+[
+"MILESTONE_LATE"
+]
+]
+]
+},
+"DEMO-SHP-000392": {
+"recipe": "conflicting_manifest",
+"split": "development",
+"root_cause": "MANIFEST_CONFLICT",
+"acceptable": [
+"DELAYED_SYNC",
+"MANIFEST_CONFLICT"
+],
+"secondary": "DELAYED_SYNC",
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-02T13:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-02T20:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-03T04:00:12+00:00",
+[
+"MANIFEST_CONFLICT"
+],
+[
+"MANIFEST_CUSTODY_CONFLICT"
+]
+]
+]
+},
+"DEMO-SHP-000394": {
+"recipe": "wrong_label_applied",
+"split": "held_out",
+"root_cause": "BARCODE_MISMATCH",
+"acceptable": [
+"BARCODE_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-04T08:00:12+00:00",
+[
+"BARCODE_MISMATCH"
+],
+[
+"BARCODE_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000395": {
+"recipe": "declared_weight_wrong",
+"split": "history",
+"root_cause": "WEIGHT_MISMATCH",
+"acceptable": [
+"WEIGHT_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-05T08:00:12+00:00",
+[
+"WEIGHT_MISMATCH"
+],
+[
+"WEIGHT_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000396": {
+"recipe": "different_barcode",
+"split": "history",
+"root_cause": "BARCODE_MISMATCH",
+"acceptable": [
+"BARCODE_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-06T08:00:12+00:00",
+[
+"BARCODE_MISMATCH"
+],
+[
+"BARCODE_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000397": {
+"recipe": "weight_and_obsolete_address",
+"split": "development",
+"root_cause": "ADDRESS_CONFLICT",
+"acceptable": [
+"ADDRESS_CONFLICT",
+"WEIGHT_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-07T08:00:12+00:00",
+[
+"WEIGHT_MISMATCH"
+],
+[
+"WEIGHT_READ_DIFFERS"
+]
+],
+[
+"2026-09-09T06:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"WEIGHT_MISMATCH"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"WEIGHT_READ_DIFFERS"
+]
+],
+[
+"2026-09-09T14:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"MISSED_MILESTONE",
+"WEIGHT_MISMATCH"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE",
+"WEIGHT_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000400": {
+"recipe": "later_hub_departure",
+"split": "development",
+"root_cause": "HUB_DELAY",
+"acceptable": [
+"HUB_DELAY",
+"JOURNEY_DELAY",
+"MISSED_MILESTONE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-10T15:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T00:00:12+00:00",
+[
+"JOURNEY_DELAY"
+],
+[
+"MILESTONE_LATE"
+]
+]
+]
+},
+"DEMO-SHP-000403": {
+"recipe": "obsolete_address",
+"split": "history",
+"root_cause": "ADDRESS_CONFLICT",
+"acceptable": [
+"ADDRESS_CONFLICT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-04T06:00:12+00:00",
+[
+"ADDRESS_CONFLICT"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-04T14:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"MISSED_MILESTONE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-05T06:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"JOURNEY_DELAY"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_LATE"
+]
+]
+]
+},
+"DEMO-SHP-000404": {
+"recipe": "contractor_unconfirmed_pickup",
+"split": "development",
+"root_cause": "CUSTODY_GAP",
+"acceptable": [
+"CUSTODY_GAP",
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-05T05:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-05T15:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000407": {
+"recipe": "obsolete_address",
+"split": "held_out",
+"root_cause": "ADDRESS_CONFLICT",
+"acceptable": [
+"ADDRESS_CONFLICT",
+"DELAYED_SYNC"
+],
+"secondary": "DELAYED_SYNC",
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-08T13:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-09T04:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-09T06:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-09T08:00:12+00:00",
+[
+"ADDRESS_CONFLICT"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-09T14:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"MISSED_MILESTONE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+]
+]
+},
+"DEMO-SHP-000410": {
+"recipe": "contractor_second_attempt",
+"split": "history",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-11T05:00:12+00:00",
+[
+"CUSTODY_GAP"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED"
+]
+],
+[
+"2026-09-11T07:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T23:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000411": {
+"recipe": "contractor_unconfirmed_pickup",
+"split": "held_out",
+"root_cause": "CUSTODY_GAP",
+"acceptable": [
+"CUSTODY_GAP",
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-03T04:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-03T05:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-03T15:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000414": {
+"recipe": "different_weight",
+"split": "history",
+"root_cause": "WEIGHT_MISMATCH",
+"acceptable": [
+"WEIGHT_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000415": {
+"recipe": "different_gate",
+"split": "development",
+"root_cause": "WRONG_GATE",
+"acceptable": [
+"WRONG_GATE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-06T07:00:12+00:00",
+[
+"WRONG_GATE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-06T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"WRONG_GATE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+]
+]
+},
+"DEMO-SHP-000421": {
+"recipe": "report_after_prior_outcome",
+"split": "held_out",
+"root_cause": "DELIVERY_DISPUTE",
+"acceptable": [
+"DELIVERY_DISPUTE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-02T08:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+]
+]
+},
+"DEMO-SHP-000422": {
+"recipe": "conflicting_custody_sources",
+"split": "history",
+"root_cause": "CONFLICTING_CUSTODY",
+"acceptable": [
+"CONFLICTING_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-04T04:00:12+00:00",
+[
+"CONFLICTING_CUSTODY"
+],
+[
+"CUSTODY_REPORTS_CONFLICT"
+]
+],
+[
+"2026-09-04T05:00:12+00:00",
+[
+"CONFLICTING_CUSTODY",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_REPORTS_CONFLICT",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-04T15:00:12+00:00",
+[
+"CONFLICTING_CUSTODY",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_REPORTS_CONFLICT",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-05T04:00:12+00:00",
+[
+"CONFLICTING_CUSTODY",
+"JOURNEY_DELAY",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_REPORTS_CONFLICT",
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-05T06:00:12+00:00",
+[
+"CONFLICTING_CUSTODY",
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_REPORTS_CONFLICT",
+"MILESTONE_LATE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000427": {
+"recipe": "absent_session_receipt",
+"split": "history",
+"root_cause": "UNRECONCILED_CUSTODY",
+"acceptable": [
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-09T14:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-09T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-10T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_LATE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000430": {
+"recipe": "conflicting_custody_sources",
+"split": "history",
+"root_cause": "CONFLICTING_CUSTODY",
+"acceptable": [
+"CONFLICTING_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-11T04:00:12+00:00",
+[
+"CONFLICTING_CUSTODY"
+],
+[
+"CUSTODY_REPORTS_CONFLICT"
+]
+],
+[
+"2026-09-11T07:00:12+00:00",
+[
+"CONFLICTING_CUSTODY",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_REPORTS_CONFLICT",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T15:00:12+00:00",
+[
+"CONFLICTING_CUSTODY",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_REPORTS_CONFLICT",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-12T04:00:12+00:00",
+[
+"CONFLICTING_CUSTODY",
+"JOURNEY_DELAY",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_REPORTS_CONFLICT",
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-12T06:00:12+00:00",
+[
+"CONFLICTING_CUSTODY",
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_REPORTS_CONFLICT",
+"MILESTONE_LATE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000431": {
+"recipe": "fulfillment",
+"split": "development",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-02T02:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-02T04:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-02T20:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000436": {
+"recipe": "report_after_prior_outcome",
+"split": "history",
+"root_cause": "DELIVERY_DISPUTE",
+"acceptable": [
+"DELIVERY_DISPUTE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-07T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+]
+]
+},
+"DEMO-SHP-000438": {
+"recipe": "absent_session_receipt",
+"split": "history",
+"root_cause": "UNRECONCILED_CUSTODY",
+"acceptable": [
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-10T14:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-10T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-11T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_LATE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000439": {
+"recipe": "weight_and_obsolete_address",
+"split": "history",
+"root_cause": "ADDRESS_CONFLICT",
+"acceptable": [
+"ADDRESS_CONFLICT",
+"WEIGHT_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-09T08:00:12+00:00",
+[
+"WEIGHT_MISMATCH"
+],
+[
+"WEIGHT_READ_DIFFERS"
+]
+],
+[
+"2026-09-10T06:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"WEIGHT_MISMATCH"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"WEIGHT_READ_DIFFERS"
+]
+],
+[
+"2026-09-10T14:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"MISSED_MILESTONE",
+"WEIGHT_MISMATCH"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE",
+"WEIGHT_READ_DIFFERS"
+]
+],
+[
+"2026-09-11T06:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"JOURNEY_DELAY",
+"WEIGHT_MISMATCH"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_LATE",
+"WEIGHT_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000440": {
+"recipe": "different_gate",
+"split": "history",
+"root_cause": "WRONG_GATE",
+"acceptable": [
+"WRONG_GATE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-11T06:00:12+00:00",
+[
+"WRONG_GATE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-11T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"WRONG_GATE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-12T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"WRONG_GATE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_LATE"
+]
+]
+]
+},
+"DEMO-SHP-000441": {
+"recipe": "wrong_label_applied",
+"split": "development",
+"root_cause": "BARCODE_MISMATCH",
+"acceptable": [
+"BARCODE_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-01T08:00:12+00:00",
+[
+"BARCODE_MISMATCH"
+],
+[
+"BARCODE_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000443": {
+"recipe": "report_authorized_alternate",
+"split": "history",
+"root_cause": "DELIVERY_DISPUTE",
+"acceptable": [
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-04T07:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-04T14:00:12+00:00",
+[
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-05T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE",
+"JOURNEY_DELAY"
+],
+[
+"MILESTONE_LATE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+]
+]
+},
+"DEMO-SHP-000452": {
+"recipe": "different_barcode",
+"split": "history",
+"root_cause": "BARCODE_MISMATCH",
+"acceptable": [
+"BARCODE_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-02T08:00:12+00:00",
+[
+"BARCODE_MISMATCH"
+],
+[
+"BARCODE_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000453": {
+"recipe": "absent_transfer_receipt",
+"split": "history",
+"root_cause": "CUSTODY_GAP",
+"acceptable": [
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-04T13:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-05T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-05T16:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000457": {
+"recipe": "duplicate_provider_events",
+"split": "history",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-08T18:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-09T04:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-09T12:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000458": {
+"recipe": "fulfillment",
+"split": "history",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-09T04:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-09T08:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000459": {
+"recipe": "contractor_unconfirmed_pickup",
+"split": "development",
+"root_cause": "CUSTODY_GAP",
+"acceptable": [
+"CUSTODY_GAP",
+"DELAYED_SYNC",
+"UNRECONCILED_CUSTODY"
+],
+"secondary": "DELAYED_SYNC",
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-10T17:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T08:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T15:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000466": {
+"recipe": "obsolete_address",
+"split": "development",
+"root_cause": "ADDRESS_CONFLICT",
+"acceptable": [
+"ADDRESS_CONFLICT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-08T06:00:12+00:00",
+[
+"ADDRESS_CONFLICT"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-08T14:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"MISSED_MILESTONE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+]
+]
+},
+"DEMO-SHP-000467": {
+"recipe": "report_after_prior_outcome",
+"split": "history",
+"root_cause": "DELIVERY_DISPUTE",
+"acceptable": [
+"DELIVERY_DISPUTE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-08T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+]
+]
+},
+"DEMO-SHP-000469": {
+"recipe": "different_weight",
+"split": "history",
+"root_cause": "WEIGHT_MISMATCH",
+"acceptable": [
+"WEIGHT_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-09T08:00:12+00:00",
+[
+"WEIGHT_MISMATCH"
+],
+[
+"WEIGHT_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000474": {
+"recipe": "offline_device_sync",
+"split": "history",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-04T23:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-05T03:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-05T19:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000477": {
+"recipe": "conflicting_manifest",
+"split": "history",
+"root_cause": "MANIFEST_CONFLICT",
+"acceptable": [
+"MANIFEST_CONFLICT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-08T06:00:12+00:00",
+[
+"MANIFEST_CONFLICT"
+],
+[
+"MANIFEST_CUSTODY_CONFLICT"
+]
+]
+]
+},
+"DEMO-SHP-000478": {
+"recipe": "conflicting_manifest",
+"split": "history",
+"root_cause": "MANIFEST_CONFLICT",
+"acceptable": [
+"MANIFEST_CONFLICT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-10T04:00:12+00:00",
+[
+"MANIFEST_CONFLICT"
+],
+[
+"MANIFEST_CUSTODY_CONFLICT"
+]
+]
+]
+},
+"DEMO-SHP-000480": {
+"recipe": "fulfillment",
+"split": "history",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-10T15:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T04:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T08:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000481": {
+"recipe": "contractor_on_time",
+"split": "held_out",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-02T16:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-02T20:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000482": {
+"recipe": "absent_session_receipt",
+"split": "development",
+"root_cause": "UNRECONCILED_CUSTODY",
+"acceptable": [
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-03T14:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-03T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000484": {
+"recipe": "fulfillment",
+"split": "held_out",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-04T13:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-04T19:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000487": {
+"recipe": "report_authorized_alternate",
+"split": "history",
+"root_cause": "DELIVERY_DISPUTE",
+"acceptable": [
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-08T12:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-08T14:00:12+00:00",
+[
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-09T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE",
+"JOURNEY_DELAY"
+],
+[
+"MILESTONE_LATE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+]
+]
+},
+"DEMO-SHP-000490": {
+"recipe": "duplicate_provider_events",
+"split": "history",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-11T04:00:12+00:00",
+[
+"CUSTODY_GAP"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED"
+]
+],
+[
+"2026-09-11T06:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T08:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000494": {
+"recipe": "bulky_normal",
+"split": "history",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-05T03:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-05T04:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-05T19:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000499": {
+"recipe": "later_hub_departure",
+"split": "history",
+"root_cause": "HUB_DELAY",
+"acceptable": [
+"HUB_DELAY",
+"JOURNEY_DELAY",
+"MISSED_MILESTONE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-09T19:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-10T06:00:12+00:00",
+[
+"JOURNEY_DELAY"
+],
+[
+"MILESTONE_LATE"
+]
+],
+[
+"2026-09-10T11:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T02:00:12+00:00",
+[
+"JOURNEY_DELAY"
+],
+[
+"MILESTONE_LATE"
+]
+]
+]
+},
+"DEMO-SHP-000501": {
+"recipe": "report_after_prior_outcome",
+"split": "history",
+"root_cause": "DELIVERY_DISPUTE",
+"acceptable": [
+"DELIVERY_DISPUTE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-02T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+]
+]
+},
+"DEMO-SHP-000505": {
+"recipe": "contractor_unreturned",
+"split": "history",
+"root_cause": "UNRECONCILED_CUSTODY",
+"acceptable": [
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-07T06:00:12+00:00",
+[
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-07T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-07T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"RECIPIENT_UNAVAILABLE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-08T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"RECIPIENT_UNAVAILABLE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_LATE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000516": {
+"recipe": "report_photo_only",
+"split": "history",
+"root_cause": "PROOF_INSUFFICIENT",
+"acceptable": [
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-07T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-07T07:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-07T14:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-07T15:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-08T06:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_LATE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000519": {
+"recipe": "fulfillment",
+"split": "held_out",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-10T17:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T04:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T08:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000522": {
+"recipe": "declared_weight_wrong",
+"split": "history",
+"root_cause": "WEIGHT_MISMATCH",
+"acceptable": [
+"WEIGHT_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-02T08:00:12+00:00",
+[
+"WEIGHT_MISMATCH"
+],
+[
+"WEIGHT_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000523": {
+"recipe": "contractor_unreturned",
+"split": "history",
+"root_cause": "UNRECONCILED_CUSTODY",
+"acceptable": [
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-04T06:00:12+00:00",
+[
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-04T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-04T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"RECIPIENT_UNAVAILABLE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-05T05:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"RECIPIENT_UNAVAILABLE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_LATE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000524": {
+"recipe": "contractor_unreturned",
+"split": "history",
+"root_cause": "UNRECONCILED_CUSTODY",
+"acceptable": [
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-05T06:00:12+00:00",
+[
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-05T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-05T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"RECIPIENT_UNAVAILABLE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-06T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"RECIPIENT_UNAVAILABLE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_LATE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000528": {
+"recipe": "unanswered_contact",
+"split": "held_out",
+"root_cause": "RECIPIENT_UNAVAILABLE",
+"acceptable": [
+"RECIPIENT_UNAVAILABLE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-09T06:00:12+00:00",
+[
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-09T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+]
+]
+},
+"DEMO-SHP-000529": {
+"recipe": "obsolete_address",
+"split": "history",
+"root_cause": "ADDRESS_CONFLICT",
+"acceptable": [
+"ADDRESS_CONFLICT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-10T06:00:12+00:00",
+[
+"ADDRESS_CONFLICT"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-10T14:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"MISSED_MILESTONE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T06:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"JOURNEY_DELAY"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_LATE"
+]
+]
+]
+},
+"DEMO-SHP-000530": {
+"recipe": "declared_weight_wrong",
+"split": "development",
+"root_cause": "WEIGHT_MISMATCH",
+"acceptable": [
+"WEIGHT_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-10T08:00:12+00:00",
+[
+"WEIGHT_MISMATCH"
+],
+[
+"WEIGHT_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000532": {
+"recipe": "conflicting_manifest",
+"split": "development",
+"root_cause": "MANIFEST_CONFLICT",
+"acceptable": [
+"MANIFEST_CONFLICT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-03T04:00:12+00:00",
+[
+"MANIFEST_CONFLICT"
+],
+[
+"MANIFEST_CUSTODY_CONFLICT"
+]
+]
+]
+},
+"DEMO-SHP-000534": {
+"recipe": "report_authorized_alternate",
+"split": "history",
+"root_cause": "DELIVERY_DISPUTE",
+"acceptable": [
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-05T07:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-05T14:00:12+00:00",
+[
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-06T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE",
+"JOURNEY_DELAY"
+],
+[
+"MILESTONE_LATE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+]
+]
+},
+"DEMO-SHP-000541": {
+"recipe": "conflicting_custody_sources",
+"split": "held_out",
+"root_cause": "CONFLICTING_CUSTODY",
+"acceptable": [
+"CONFLICTING_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-02T10:00:12+00:00",
+[
+"CONFLICTING_CUSTODY"
+],
+[
+"CUSTODY_REPORTS_CONFLICT"
+]
+],
+[
+"2026-09-02T12:00:12+00:00",
+[
+"CONFLICTING_CUSTODY",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_REPORTS_CONFLICT",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-02T15:00:12+00:00",
+[
+"CONFLICTING_CUSTODY",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_REPORTS_CONFLICT",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000547": {
+"recipe": "contractor_unconfirmed_pickup",
+"split": "held_out",
+"root_cause": "CUSTODY_GAP",
+"acceptable": [
+"CUSTODY_GAP",
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-09T05:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-09T15:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000548": {
+"recipe": "declared_weight_wrong",
+"split": "held_out",
+"root_cause": "WEIGHT_MISMATCH",
+"acceptable": [
+"WEIGHT_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-08T08:00:12+00:00",
+[
+"WEIGHT_MISMATCH"
+],
+[
+"WEIGHT_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000549": {
+"recipe": "late_upload_within_tolerance",
+"split": "history",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-10T17:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T04:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T08:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000553": {
+"recipe": "unanswered_contact",
+"split": "development",
+"root_cause": "RECIPIENT_UNAVAILABLE",
+"acceptable": [
+"RECIPIENT_UNAVAILABLE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-05T06:00:12+00:00",
+[
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-05T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+]
+]
+},
+"DEMO-SHP-000555": {
+"recipe": "conflicting_manifest",
+"split": "history",
+"root_cause": "MANIFEST_CONFLICT",
+"acceptable": [
+"MANIFEST_CONFLICT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-07T04:00:12+00:00",
+[
+"MANIFEST_CONFLICT"
+],
+[
+"MANIFEST_CUSTODY_CONFLICT"
+]
+]
+]
+},
+"DEMO-SHP-000559": {
+"recipe": "contractor_unreturned",
+"split": "history",
+"root_cause": "UNRECONCILED_CUSTODY",
+"acceptable": [
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-10T12:00:12+00:00",
+[
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-10T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-10T15:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"RECIPIENT_UNAVAILABLE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-11T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"RECIPIENT_UNAVAILABLE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_LATE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000561": {
+"recipe": "later_hub_departure",
+"split": "history",
+"root_cause": "HUB_DELAY",
+"acceptable": [
+"HUB_DELAY",
+"JOURNEY_DELAY",
+"MISSED_MILESTONE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-01T18:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-02T06:00:12+00:00",
+[
+"JOURNEY_DELAY"
+],
+[
+"MILESTONE_LATE"
+]
+],
+[
+"2026-09-02T07:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-02T22:00:12+00:00",
+[
+"JOURNEY_DELAY"
+],
+[
+"MILESTONE_LATE"
+]
+]
+]
+},
+"DEMO-SHP-000567": {
+"recipe": "wrong_label_applied",
+"split": "development",
+"root_cause": "BARCODE_MISMATCH",
+"acceptable": [
+"BARCODE_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-07T08:00:12+00:00",
+[
+"BARCODE_MISMATCH"
+],
+[
+"BARCODE_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000568": {
+"recipe": "late_upload_within_tolerance",
+"split": "held_out",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-08T13:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-09T04:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-09T08:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000572": {
+"recipe": "on_time",
+"split": "history",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-02T13:00:12+00:00",
+[
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-02T20:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000574": {
+"recipe": "weight_and_obsolete_address",
+"split": "history",
+"root_cause": "ADDRESS_CONFLICT",
+"acceptable": [
+"ADDRESS_CONFLICT",
+"WEIGHT_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-04T08:00:12+00:00",
+[
+"WEIGHT_MISMATCH"
+],
+[
+"WEIGHT_READ_DIFFERS"
+]
+],
+[
+"2026-09-06T06:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"WEIGHT_MISMATCH"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"WEIGHT_READ_DIFFERS"
+]
+],
+[
+"2026-09-06T14:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"MISSED_MILESTONE",
+"WEIGHT_MISMATCH"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE",
+"WEIGHT_READ_DIFFERS"
+]
+],
+[
+"2026-09-07T06:00:12+00:00",
+[
+"ADDRESS_CONFLICT",
+"JOURNEY_DELAY",
+"WEIGHT_MISMATCH"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_LATE",
+"WEIGHT_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000576": {
+"recipe": "conflicting_custody_sources",
+"split": "history",
+"root_cause": "CONFLICTING_CUSTODY",
+"acceptable": [
+"CONFLICTING_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-07T04:00:12+00:00",
+[
+"CONFLICTING_CUSTODY",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_REPORTS_CONFLICT",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-07T15:00:12+00:00",
+[
+"CONFLICTING_CUSTODY",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_REPORTS_CONFLICT",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-08T04:00:12+00:00",
+[
+"CONFLICTING_CUSTODY",
+"JOURNEY_DELAY",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_REPORTS_CONFLICT",
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-08T06:00:12+00:00",
+[
+"CONFLICTING_CUSTODY",
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_REPORTS_CONFLICT",
+"MILESTONE_LATE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000577": {
+"recipe": "different_barcode",
+"split": "held_out",
+"root_cause": "BARCODE_MISMATCH",
+"acceptable": [
+"BARCODE_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-07T08:00:12+00:00",
+[
+"BARCODE_MISMATCH"
+],
+[
+"BARCODE_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000578": {
+"recipe": "report_failed_authentication",
+"split": "history",
+"root_cause": "PROOF_INSUFFICIENT",
+"acceptable": [
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-10T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-10T07:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-10T14:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-10T15:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-11T05:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-11T06:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_LATE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000579": {
+"recipe": "report_failed_authentication",
+"split": "history",
+"root_cause": "PROOF_INSUFFICIENT",
+"acceptable": [
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-10T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-10T07:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-10T14:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-10T15:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE",
+"PROOF_INSUFFICIENT",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"DELIVERY_PROOF_INCOMPLETE",
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-11T06:00:12+00:00",
+[
+"CUSTODY_GAP",
+"DELIVERY_DISPUTE",
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_LATE",
+"RECIPIENT_REPORTED_NOT_RECEIVED",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000580": {
+"recipe": "unanswered_contact",
+"split": "history",
+"root_cause": "RECIPIENT_UNAVAILABLE",
+"acceptable": [
+"RECIPIENT_UNAVAILABLE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-11T06:00:12+00:00",
+[
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-11T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-12T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"RECIPIENT_UNAVAILABLE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_LATE"
+]
+]
+]
+},
+"DEMO-SHP-000581": {
+"recipe": "contractor_unconfirmed_pickup",
+"split": "history",
+"root_cause": "CUSTODY_GAP",
+"acceptable": [
+"CUSTODY_GAP",
+"UNRECONCILED_CUSTODY"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-03T05:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-03T15:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-04T04:00:12+00:00",
+[
+"CUSTODY_GAP",
+"JOURNEY_DELAY",
+"MISSED_MILESTONE",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_LATE",
+"MILESTONE_OVERDUE",
+"SESSION_END_UNRECONCILED"
+]
+],
+[
+"2026-09-04T06:00:12+00:00",
+[
+"CUSTODY_GAP",
+"JOURNEY_DELAY",
+"UNRECONCILED_CUSTODY"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_LATE",
+"SESSION_END_UNRECONCILED"
+]
+]
+]
+},
+"DEMO-SHP-000583": {
+"recipe": "different_barcode",
+"split": "development",
+"root_cause": "BARCODE_MISMATCH",
+"acceptable": [
+"BARCODE_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-03T08:00:12+00:00",
+[
+"BARCODE_MISMATCH"
+],
+[
+"BARCODE_READ_DIFFERS"
+]
+]
+]
+},
+"DEMO-SHP-000587": {
+"recipe": "different_gate",
+"split": "history",
+"root_cause": "WRONG_GATE",
+"acceptable": [
+"WRONG_GATE"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-09T06:00:12+00:00",
+[
+"WRONG_GATE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED"
+]
+],
+[
+"2026-09-09T14:00:12+00:00",
+[
+"MISSED_MILESTONE",
+"WRONG_GATE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-10T06:00:12+00:00",
+[
+"JOURNEY_DELAY",
+"WRONG_GATE"
+],
+[
+"DELIVERY_ATTEMPT_FAILED",
+"MILESTONE_LATE"
+]
+]
+]
+},
+"DEMO-SHP-000589": {
+"recipe": "report_authorized_alternate",
+"split": "history",
+"root_cause": "DELIVERY_DISPUTE",
+"acceptable": [
+"DELIVERY_DISPUTE",
+"PROOF_INSUFFICIENT"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-11T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE"
+],
+[
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-11T14:00:12+00:00",
+[
+"DELIVERY_DISPUTE",
+"MISSED_MILESTONE"
+],
+[
+"MILESTONE_OVERDUE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+],
+[
+"2026-09-12T06:00:12+00:00",
+[
+"DELIVERY_DISPUTE",
+"JOURNEY_DELAY"
+],
+[
+"MILESTONE_LATE",
+"RECIPIENT_REPORTED_NOT_RECEIVED"
+]
+]
+]
+},
+"DEMO-SHP-000590": {
+"recipe": "fulfillment",
+"split": "history",
+"root_cause": "DELAYED_SYNC",
+"acceptable": [
+"DELAYED_SYNC"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-11T05:00:12+00:00",
+[
+"CUSTODY_GAP"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED"
+]
+],
+[
+"2026-09-11T07:00:12+00:00",
+[
+"CUSTODY_GAP",
+"MISSED_MILESTONE"
+],
+[
+"CUSTODY_TRANSFER_UNCONFIRMED",
+"MILESTONE_OVERDUE"
+]
+],
+[
+"2026-09-11T23:00:12+00:00",
+[],
+[]
+]
+]
+},
+"DEMO-SHP-000591": {
+"recipe": "different_weight",
+"split": "held_out",
+"root_cause": "WEIGHT_MISMATCH",
+"acceptable": [
+"WEIGHT_MISMATCH"
+],
+"secondary": null,
+"timeline": [
+[
+"2026-09-01T00:00:12+00:00",
+[],
+[]
+],
+[
+"2026-09-01T08:00:12+00:00",
+[
+"WEIGHT_MISMATCH"
+],
+[
+"WEIGHT_READ_DIFFERS"
+]
+]
+]
+}
+}
+}
