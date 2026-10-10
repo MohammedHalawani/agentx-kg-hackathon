@@ -34,10 +34,10 @@ Files: `pilot.json` (public run records, no truth), `pilot.scored.json` (adds th
 ## Re-run of six cases after one prompt fix (907be31)
 
 The fix defined what confidence levels mean and what counts as a physical check. Cases 1, 2, 3, 4, 10 and 11 were
-re-investigated once at fhd 7a2c1e0 or later (`rerun.json`, `rerun.scored.json`): 62 model calls, 687,366 tokens. The snapshot is the
+re-investigated once at fhd cce4198 (`rerun.json`, `rerun.scored.json`): 62 model calls, 687,366 tokens. The snapshot is the
 clock the pilot ended on, later than the first investigations, so more evidence was available.
 
-- 5 of 6 correct against the causes knowable at that later time; 0 confident wrong answers.
+- 5 of 6 correct against the causes knowable at that later time and 1 wrong (case 11, a degraded run counts as wrong); 0 confident wrong answers. In `rerun.json` the provenance script name and the settings block were copied from the pilot (the re-run's own cap was 72 calls) and `executions_dispatched` was not recorded.
 - Case 4 was classified AUTO by policy (custody reconciliation, rule AUTH-10): the physical-check definition works. With no
   simulator attached the action got no field response and the case went to a person, as designed.
 - Cases 1 and 10 (weight mismatch, correct) were rejected by the reviewer after using all 12 calls.
