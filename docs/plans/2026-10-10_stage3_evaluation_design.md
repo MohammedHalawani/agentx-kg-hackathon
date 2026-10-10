@@ -208,3 +208,66 @@ per tool query.
   and about 45 million tokens at S5's rate (about 4,600 tokens per call). Hard cap: 12,000 calls.
 - No result-dependent stopping. If this exceeds what Fahad's Ollama Cloud plan allows, that is reported as a blocker for
   his decision, and the evaluation is not silently shrunk.
+
+---
+
+## Amendment 2 (2026-10-10, before any evaluation world or evaluation case exists)
+
+Reason: Fahad set a hard cap of 4,000 model calls for the blind evaluation (his answer to the budget question, relayed by
+the coordinator on 2026-10-10). Amendment 1 planned about 9,500. This amendment re-plans the evaluation inside the cap. It
+replaces amendment 1's sections D (repetitions, sizes, determined-stratum bar), J (ablation) and L (budget) where they
+differ. Everything else in amendment 1 stands.
+
+### What the 4,000 calls cover
+Every model call made for the blind evaluation on worlds E1 and E2: the agent's investigator and reviewer calls, B_notools,
+and any optional extra below, including retries. The cap is enforced in code: a call that would exceed it is refused. It does
+not cover development runs, the case-family A to H demonstrations or the reviewer-failure safety run, which happen on the
+development world at roughly S5 scale and are reported separately. Every gate report states cumulative model calls and tokens
+across all runs.
+
+### Arms
+- Agent: one run per case (investigator plus reviewer), capped at C_cap calls per investigation.
+- B_notools: one run per case on the same cases, at most 2 calls (one retry on invalid output).
+- B_rulecode and B_symptom: scored on the same cases at no model cost.
+- One result per case. Cap hits, degraded and invalid runs count as wrong.
+
+### Dropped
+- The three repetitions (amendment 1, D) and the stability subset as a required item.
+- The full ablation on every identifiable ambiguous case (amendment 1, J). The agent vs B_notools comparison is the
+  evidence that retrieval helps.
+
+### Sizing rule (fixed now; the numbers are set once C_cap is fixed)
+- C_cap is set from development runs on the development world, as the 95th percentile of model calls used by correct
+  development investigations (raised in a dated amendment if it truncates more than 5% of development investigations),
+  before the investigator is frozen. Planning value: 12.
+- The main test is sized by worst-case cost so it always completes inside the cap:
+  N_main = floor(4000 / (C_cap + 2)). With C_cap = 12, N_main = 285.
+- Allocation of N_main (C_cap = 12), cases drawn by a seeded procedure from each stratum:
+
+| World and stratum | Cases | Role |
+|---|---|---|
+| E1, identifiable ambiguous | 160 | Main test (headline) |
+| E2, identifiable ambiguous (unseen providers and pairings) | 60 | Held-out, reported separately |
+| E1 and E2, determined | 40 (30 + 10) | Descriptive |
+| E1 and E2, unidentifiable at t | 25 (20 + 5) | Abstention and escalation, descriptive |
+| Total | 285 | |
+
+- If C_cap ends above 12, N_main shrinks and cases are removed in this order: unidentifiable down to 15, determined down to
+  30, then E2 down to 40, then E1. E1 keeps at least 150 cases if N_main allows it.
+
+### Power (stated now, and stated plainly in the final report)
+- E1 main test, 160 identifiable ambiguous cases: the minimum detectable gain at 80% power (exact McNemar, two-sided, alpha
+  0.05) is about 13 to 14 points for discordance between 35% and 45%. Smaller real gains may go undetected.
+- E2, 60 cases: about 22 points; reported descriptively with Wilson intervals, no pass bar.
+- Determined stratum, 40 cases: too small for the minus-5-point non-inferiority bound to be informative (the paired
+  interval is wider than 5 points), so that bar becomes a descriptive report with Wilson intervals.
+- Pass bars that remain: on E1 identifiable ambiguous cases, agent vs B_rulecode and agent vs B_notools, each an exact
+  two-sided McNemar test at alpha 0.05 with more agent wins than losses.
+
+### Expected spend and optional extras
+- Expected main-test spend at S5's measured cost (about 10 calls per case for agent plus reviewer, about 1.1 for
+  B_notools): about 3,200 calls. Worst case: 4,000.
+- Only if calls remain after the main test is complete, the harness runs, automatically and in this fixed order, without
+  anyone looking at results: (1) a targeted ablation on E1 identifiable ambiguous cases whose mechanism's discriminating
+  evidence is cross-shipment, seeded order, each case sized by worst-case cost; (2) a stability subset of up to 20 seeded E1
+  cases run once more. Whatever completes inside the cap is reported; nothing else is run.
