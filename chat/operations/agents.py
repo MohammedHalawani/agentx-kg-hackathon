@@ -19,7 +19,17 @@ CAUSES = ("BARCODE_MISMATCH", "WEIGHT_MISMATCH", "CUSTODY_GAP", "CONFLICTING_CUS
           "UNRECONCILED_CUSTODY", "INSUFFICIENT_EVIDENCE", "SLA_RISK", "HUB_DELAY", "ROUTE_DELAY", "POSSIBLE_MISDELIVERY",
           "DELAYED_SYNC", "MANIFEST_CONFLICT")
 VERDICTS = ("ACCEPT", "REVISE", "HUMAN_REVIEW", "ESCALATE")
-BLAME = re.compile(r"\b(driver|courier|employee|customer|recipient)\s+(lost|stole|lied|is lying|was negligent|is responsible|is to blame)\b|\b(theft|stolen|fraud|fraudulent)\b", re.I)
+# A person as the subject of an accusatory act or judgement ("the driver kept the parcel", "the courier probably
+# took it", "the neighbour deliberately ..."), or a wrongdoing noun. Neutral custody facts stay allowed: "the parcel
+# remains with the driver", "last corroborated custody is the driver", "the driver's device stopped syncing".
+_PERSON = r"(?:driver|courier|employee|customer|recipient|neighbou?r|contractor|staff|agent|sender|operator)s?"
+_HEDGE = r"(?:\s+(?:apparently|probably|likely|possibly|may|might|must|could|have|has|had|then|also|simply))*"
+# Verbs that are only accusatory with the parcel as their object ("took a photo", "kept calling" stay allowed).
+_TAKING = (r"(?:kept|took|hid|withheld|pocketed|misappropriated|abandoned|dumped|discarded)\s+"
+           r"(?:(?:the|a|this|that|these|those|their|his|her)\s+)?(?:parcels?|packages?|shipments?|items?|goods|it|them)")
+_ACCUSATION = (rf"(?:{_TAKING}|lost|stole|faked|falsified|fabricated|lied|is lying|was lying|was negligent|is negligent|"
+               r"is responsible|was responsible|is at fault|was at fault|is to blame|deliberately|intentionally|knowingly)")
+BLAME = re.compile(rf"\b{_PERSON}{_HEDGE}\s+{_ACCUSATION}\b|\b(theft|stolen|fraud|fraudulent|on purpose)\b", re.I)
 GPS_DELIVERY = re.compile(r"\bgps\b[^.]{0,80}\b(proves?|confirms?|establish(es)?|shows?)\b[^.]{0,40}\b(deliver|parcel|package)", re.I)
 OBSERVATION_KINDS = ("ScanEvent", "CustodyEvent", "DeliveryAttempt", "ContactAttempt", "GPSObservation", "TrafficObservation",
                      "DeliveryProof", "RecipientReport", "DepotReconciliation", "AddressVersion", "VehicleAssignment", "HandoffEvidence")

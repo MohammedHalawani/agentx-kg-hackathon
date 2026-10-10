@@ -56,6 +56,11 @@ or, when the evidence supports a conclusion (or you must stop):
 """
 
 
+def failure_mode(error):
+    """How a model role failed: the provider call itself, or output that never passed validation."""
+    return "model_unavailable" if str(error or "").startswith("model call failed") else "invalid_model_output"
+
+
 def _sanitize(text, limit=400):
     return str(text or "")[:limit]
 
@@ -170,7 +175,9 @@ def investigate(tools, *, turn=None, on_step=None, feedback=None):
         conclusion = _clean_conclusion(out)
         return {"mode": "gpt-oss", "degraded": False, "steps": steps, "retrieved_evidence_ids": sorted(tools.retrieved),
                 "validation_error": None, **conclusion}
-    return {"mode": "model_unavailable", "degraded": True, "steps": steps, "retrieved_evidence_ids": sorted(tools.retrieved),
+    # A provider failure is "model_unavailable"; a model that answered but never produced a valid conclusion (schema,
+    # citation, blame or GPS violations that survived the corrective retry, or the turn budget) is "invalid_model_output".
+    return {"mode": failure_mode(error), "degraded": True, "steps": steps, "retrieved_evidence_ids": sorted(tools.retrieved),
             "validation_error": error or "turn budget exhausted without a valid conclusion", "hypotheses": [],
             "primary_cause": None, "confidence": None, "missing_evidence": [], "recommended_action": None,
             "requires_physical_check": True, "summary": "Investigation could not reach a valid conclusion; no AI diagnosis was produced."}
@@ -210,8 +217,9 @@ def review(conclusion, records, checks, symptoms, *, ask=None):
         return None
     out, mode, error = _ask(REVIEWER_SYSTEM, packet, {}, default, validate, ask)
     if out is None:
+        # Still UNAVAILABLE for authority (fail closed); the mode says whether the call failed or its output was invalid.
         return {"verdict": "UNAVAILABLE", "feedback": "Independent model review could not be completed.", "unsupported_claims": [],
-                "mode": mode, "degraded": True, "validation_error": error}
+                "mode": failure_mode(error), "degraded": True, "validation_error": error}
     return {"verdict": out["verdict"], "feedback": _sanitize(out["feedback"], 500),
             "unsupported_claims": [_sanitize(x, 200) for x in out.get("unsupported_claims") or []][:6],
             "mode": mode, "degraded": False, "validation_error": None}

@@ -23,7 +23,7 @@ Phases:
 Every results file carries a provenance block (commit and dirty flag at start, and whether the tree
 changed during the run; bundle hashes, model, prompt hashes, model calls by the model name the provider
 reported). Phases that run product code (pipeline, heldout, reviewer, concurrency, human) refuse to run on
-uncommitted tracked changes; checks and accounting only read, and record the flag.
+uncommitted changes, untracked files included; checks and accounting only read, and record the flag.
 
 Truth is read only to score after each phase (and by the simulator, which plays the field).
 Usage (from chat/): uv run python ../scripts/s5_scenarios.py --phase pipeline --out ../docs/evals/2026-10-09_s5
@@ -69,9 +69,11 @@ def record_model_calls():
     litellm.failure_callback = [*litellm.failure_callback, failed]
 
 
-def git_state():
-    commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
-    dirty = bool(subprocess.check_output(["git", "status", "--porcelain", "--untracked-files=no"], cwd=ROOT, text=True).strip())
+def git_state(root=ROOT):
+    """HEAD and whether the tree differs from it. Untracked files count: an uncommitted new module can change what
+    a phase runs as much as an edited one."""
+    commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+    dirty = bool(subprocess.check_output(["git", "status", "--porcelain", "--untracked-files=all"], cwd=root, text=True).strip())
     return commit, dirty
 
 
@@ -689,11 +691,12 @@ def phase_human(out, _total, started_at):
 
     The harness plays the depot supervisor. Like the simulator, it reads the simulated field state to
     choose what a physical check would find, then records it through the same store call the dashboard
-    uses (HUMAN_VERIFIED, kept apart from evidence-verified outcomes). It also tries to approve a
-    person-only action (must be refused) and approves an action waiting for approval (must execute)."""
+    uses (HUMAN_VERIFIED, kept apart from evidence-verified outcomes), under its own actor id with source
+    "harness", never as an operator. It also tries to approve a person-only action (must be refused) and
+    approves an action waiting for approval (executes only if the approval recheck passes)."""
     from core.query_runner import get_driver
     from dataset_v2.contracts import Config
-    from operations.lifecycle import OperationsConflict
+    from operations.lifecycle import HARNESS_ACTOR, OperationsConflict
     from operations.read_model import OperationsReader
     from operations.store import OperationsStore
     driver = get_driver()
@@ -726,13 +729,14 @@ def phase_human(out, _total, started_at):
         nodes = reader.evidence(case["shipment_id"], clock)["nodes"]
         custody = sorted((n for n in nodes if n["kind"] == "CustodyEvent"), key=lambda n: str(n["properties"].get("occurred_at")))
         evidence = [n["id"] for n in custody[-2:]] + [n["id"] for n in nodes if n["kind"] == "DeliverySession"][:1]
-        recorded = store.record_human_outcome(case["entity_id"], "DEMO-OPERATOR-LOCAL", outcome_type,
+        recorded = store.record_human_outcome(case["entity_id"], HARNESS_ACTOR, outcome_type,
                                               text + " (S5 harness acting as the depot supervisor.)", evidence, case["state_version"],
-                                              "s5-human-" + case["entity_id"][-16:])
+                                              "s5-human-" + case["entity_id"][-16:], source="harness")
         outcome = next(o for o in ledger(driver, "OpsOutcome") if o.get("entity_id") == recorded["outcome_id"])
         findings.append({"case_id": case["entity_id"], "truth_recipe": truth[case["shipment_id"]]["recipe"], "state_before": case["workflow_state"],
                          "outcome_type": outcome_type, "evidence_ids": evidence, "state_after": recorded["workflow_state"],
                          "verification_status": outcome["verification_status"], "verifier_id": outcome["verifier_id"],
+                         "source": outcome.get("source"),
                          "exception_cleared": outcome.get("exception_cleared"), "rule_id": outcome.get("rule_id")})
     from operations.authority import ACTIONS
     refusals, approvals = [], []
@@ -748,7 +752,8 @@ def phase_human(out, _total, started_at):
         if base == "HUMAN_REVIEW" and len(refusals) < 2:
             before = executions_of(case["entity_id"])
             try:
-                store.decide(case["entity_id"], "approve", "DEMO-OPERATOR-LOCAL", case["state_version"], "s5-refuse-" + case["entity_id"][-16:])
+                store.decide(case["entity_id"], "approve", HARNESS_ACTOR, case["state_version"], "s5-refuse-" + case["entity_id"][-16:],
+                             source="harness")
                 refusals.append({"case_id": case["entity_id"], "action_type": recommendation.get("action_type"), "refused": False})
             except OperationsConflict as error:
                 rule = str(error).split(":", 1)[0]
@@ -757,7 +762,13 @@ def phase_human(out, _total, started_at):
                                  "executions_before": before, "executions_after": executions_of(case["entity_id"]),
                                  "state_after": next(c for c in ledger(driver, "OpsCase") if c["entity_id"] == case["entity_id"])["workflow_state"]})
         elif case["workflow_state"] == "AWAITING_APPROVAL" and base in ("AUTO", "APPROVAL_REQUIRED") and not approvals:
-            decided = store.decide(case["entity_id"], "approve", "DEMO-OPERATOR-LOCAL", case["state_version"], "s5-approve-" + case["entity_id"][-16:])
+            try:
+                decided = store.decide(case["entity_id"], "approve", HARNESS_ACTOR, case["state_version"], "s5-approve-" + case["entity_id"][-16:],
+                                       source="harness")
+            except OperationsConflict as error:  # The approval recheck refused it (changed context, human investigation...).
+                approvals.append({"case_id": case["entity_id"], "action_type": recommendation.get("action_type"), "refused": True,
+                                  "rule": str(error).split(":", 1)[0], "reason": str(error)})
+                continue
             store.execute_step(limit=5)
             execution = next(e for e in ledger(driver, "OpsExecution") if e["entity_id"] == decided["execution_id"])
             approvals.append({"case_id": case["entity_id"], "action_type": recommendation.get("action_type"), "risk_class": recommendation.get("risk_class"),

@@ -191,7 +191,8 @@ class FakeInvestigator:
         def conclude(messages):
             ids = sorted(tools.retrieved)[:3]
             return {"action": "conclude", "primary_cause": self.cause, "confidence": "medium", "missing_evidence": [],
-                    "recommended_action": self.action, "requires_physical_check": False, "summary": "Supported by retrieved evidence.",
+                    "recommended_action": self.action, "requires_physical_check": getattr(self, "physical", False),
+                    "summary": "Supported by retrieved evidence.",
                     "hypotheses": [{"cause": self.cause, "status": "supported", "supporting_evidence_ids": ids,
                                     "contradicting_evidence_ids": [], "assessment": "Consistent with the records."}]}
         return investigator.investigate(tools, turn=scripted(*replies, conclude), on_step=on_step)

@@ -38,10 +38,17 @@ class LocalOperationsAuthority:
                     or origin_port!=request_port or parsed.username or parsed.password or parsed.path not in ("","/")):
                 raise HTTPException(403,"Operations controls require the same origin")
 
+    @staticmethod
+    def operator_id():
+        """The configured local operator (SUHAIL_OPERATOR_IDS, first entry; default DEMO-OPERATOR-LOCAL)."""
+        from operations.lifecycle import operator_ids
+        return operator_ids()[0]
+
     def session(self,request: Request):
         self._fence(request)
+        actor=self.operator_id()
         return {"token":self._token,"mode":"synthetic_local_operations","synthetic":True,
-                "actor_id":"SYN-OPERATOR-LOCAL","role":"operator",
+                "actor_id":"SYN-"+actor.removeprefix("DEMO-"),"role":"operator",
                 "scope":["triage_control","simulation_control","operator_decision","outcome_verification"],
                 "production_authority":False}
 
@@ -50,5 +57,5 @@ class LocalOperationsAuthority:
         token=request.headers.get(TOKEN_HEADER,"")
         if len(token)>128 or not secrets.compare_digest(token,self._token):
             raise HTTPException(403,"A local operations session is required")
-        return {"actor_id":"DEMO-OPERATOR-LOCAL","role":"operator",
+        return {"actor_id":self.operator_id(),"role":"operator",
                 "authority":"LOCAL_DEMO_OPERATOR","synthetic":True}

@@ -868,8 +868,9 @@ class OperationsStore:
                     self._audit(tx,current,"SNAPSHOT_SUPERSEDED",when,actor="SUHAIL-INVESTIGATION-WORKER",key="snapshot",
                                 result="New evidence arrived during each investigation attempt; routed to a person, no automatic action.")
                     continue
+                failure=("returned output that failed validation" if item.get("kind")=="invalid_model_output" else "unavailable")
                 self._audit(tx,current,"MODEL_DEGRADED",when,actor="SUHAIL-"+item["role"].upper(),key=item["role"],
-                            result=f"{item['role']} unavailable ({item.get('error') or 'no valid output'}); automatic execution blocked.")
+                            result=f"{item['role']} {failure} ({item.get('error') or 'no valid output'}); automatic execution blocked.")
             from operations.authority import execution_permission
             auto=(recommendation_id and analysis["review"]["verdict"]=="accept" and authority.get("risk_class")=="AUTO"
                   and not analysis.get("degraded"))
@@ -911,8 +912,11 @@ class OperationsStore:
                          "investigated_by":"agent" if agent else "rules","risk_class":authority.get("risk_class"),
                          "authority_inputs":{"diagnosis_codes":assessment["supported_codes"] or [proposal["action_code"]],
                                              "review_verdict":analysis["review"].get("model_verdict"),
-                                             "evidence_conflict":bool(assessment.get("requires_human_review") or checks.get("unsupported")
-                                                                      or checks.get("sensitive")),
+                                             # As the routing decided it: a rules-only flag is a rule conflict; the
+                                             # investigator's own request for a physical check is separate.
+                                             "evidence_conflict":bool((not analysis.get("investigation") and assessment.get("requires_human_review"))
+                                                                      or checks.get("unsupported") or checks.get("sensitive")),
+                                             "physical_check":bool((analysis.get("investigation") or {}).get("requires_physical_check")),
                                              "contractor_custody":bool(checks.get("contractor_custody")),
                                              "degraded":bool(analysis.get("degraded"))}}
                 for kind,identifier in (("OpsRecommendation",recommendation_id),*([("OpsExecution",execution_id)] if auto else [])):
@@ -1067,13 +1071,14 @@ class OperationsStore:
 
     HUMAN_OUTCOMES = ("parcel_located", "delivered_confirmed_by_person", "returned_to_depot", "parcel_not_found", "data_corrected")
 
-    def record_human_outcome(self,case_id,actor_id,outcome_type,finding,evidence_ids,expected_version,idempotency_key):
+    def record_human_outcome(self,case_id,actor_id,outcome_type,finding,evidence_ids,expected_version,idempotency_key,*,source="operator"):
         """Close a human-investigation case after a person's physical or administrative check.
 
         The operator attaches visible evidence ids and a finding. The outcome is HUMAN_VERIFIED, kept
         distinct from evidence-verified (VERIFIED) outcomes: it never counts as an automatic success
-        and precedent retrieval labels it as human-verified."""
-        require_actor(actor_id)
+        and precedent retrieval labels it as human-verified. `source` is "operator", or "harness" when the evaluation
+        harness records a finding under its own actor id (never an operator's)."""
+        source=require_actor(actor_id,source=source)
         if outcome_type not in self.HUMAN_OUTCOMES:raise OperationsConflict("Unknown human outcome type")
         if not isinstance(finding,str) or not 10<=len(finding.strip())<=1000:raise OperationsConflict("A written finding of 10 to 1000 characters is required")
         detail=self.case_detail(case_id)
@@ -1081,7 +1086,7 @@ class OperationsStore:
         if not evidence_ids or not set(evidence_ids)<=visible:raise OperationsConflict("Attach visible evidence ids for this shipment")
         def record(tx):
             control=self._control(tx,lock=True);case=self._case(tx,case_id)
-            payload={"actor_id":actor_id,"outcome_type":outcome_type,"finding":finding,"evidence_ids":sorted(evidence_ids),"expected_version":expected_version}
+            payload={"actor_id":actor_id,"source":source,"outcome_type":outcome_type,"finding":finding,"evidence_ids":sorted(evidence_ids),"expected_version":expected_version}
             command,request_hash,replay=self._command(tx,case,"human_outcome",idempotency_key,payload)
             if replay:return replay
             require_version(case,expected_version)
@@ -1091,7 +1096,7 @@ class OperationsStore:
             resolved=outcome_type!="parcel_not_found"
             self._put(tx,"OpsOutcome",{"entity_id":outcome_id,"shipment_id":case["shipment_id"],"case_id":case_id,"execution_id":None,
                 "action_code":None,"action_type":"HUMAN_INVESTIGATION","success":resolved,"outcome_type":outcome_type,
-                "evidence_ids":sorted(evidence_ids),"verification_status":"HUMAN_VERIFIED","verified_at":when,"verifier_id":actor_id,
+                "evidence_ids":sorted(evidence_ids),"verification_status":"HUMAN_VERIFIED","verified_at":when,"verifier_id":actor_id,"source":source,
                 "invalidated":False,"observed_at":when,"reason":finding.strip(),"rule_id":"VERIFY-human-finding","exception_cleared":resolved,
                 "recorded_at":when,"occurred_at":when})
             self._link(tx,"OPS_HAS_OUTCOME",case_id,outcome_id,case["shipment_id"],when)
@@ -1102,7 +1107,7 @@ class OperationsStore:
                 case.update(workflow_state="ESCALATED",state_version=case["state_version"]+1)
             self._put(tx,"OpsCase",case,update=True)
             self._audit(tx,case,"HUMAN_OUTCOME_RECORDED",when,actor=actor_id,old=old,
-                        result=f"{outcome_type} · human-verified with {len(evidence_ids)} evidence records · {finding.strip()[:300]}")
+                        result=f"{outcome_type} · human-verified ({source}) with {len(evidence_ids)} evidence records · {finding.strip()[:300]}")
             result={"case_id":case_id,"workflow_state":case["workflow_state"],"state_version":case["state_version"],
                     "outcome_id":outcome_id,"verification_status":"HUMAN_VERIFIED","idempotent":False}
             self._save_command(tx,case,command,request_hash,"human_outcome",idempotency_key,result,when)
@@ -1198,11 +1203,12 @@ class OperationsStore:
                            +("The case was requeued for re-investigation and renewed review" if destination=="OPEN" else
                              "The basis kept changing; the case went to a person for review")+"; nothing was authorized or dispatched.")
 
-    def decide(self,case_id,decision,actor_id,expected_version,idempotency_key):
-        require_actor(actor_id)
+    def decide(self,case_id,decision,actor_id,expected_version,idempotency_key,*,source="operator"):
+        source=require_actor(actor_id,source=source)
         def decision_tx(tx):
             control=self._control(tx,lock=True);case=self._case(tx,case_id)
-            payload={"decision":decision,"actor_id":actor_id,"expected_version":expected_version}
+            payload={"decision":decision,"actor_id":actor_id,"expected_version":expected_version,
+                     **({"source":source} if source!="operator" else {})}
             command,request_hash,replay=self._command(tx,case,"decision",idempotency_key,payload)
             if replay:return replay
             require_version(case,expected_version);old=case["workflow_state"];destination=decision_state(old,decision)
@@ -1229,7 +1235,7 @@ class OperationsStore:
                                               "context":{k:check["current"].get(k) for k in CONTEXT_KEYS}}))
             self._put(tx,"OpsDecision",{"entity_id":decision_id,"shipment_id":case["shipment_id"],"case_id":case_id,
                 "recommendation_id":case.get("recommendation_id"),"decision":decision,"actor_id":actor_id,
-                "expected_version":expected_version,"idempotency_key":idempotency_key,"recorded_at":when,"occurred_at":when})
+                "expected_version":expected_version,"idempotency_key":idempotency_key,"source":source,"recorded_at":when,"occurred_at":when})
             self._link(tx,"OPS_HAS_DECISION",case_id,decision_id,case["shipment_id"],when)
             if decision=="approve":
                 execution_id=identity("execution",decision_id)
@@ -1312,7 +1318,9 @@ class OperationsStore:
             last=public_value(case.get("last_run_id")) if case.get("last_run_id") else None
             current=next((r for r in runs if r.get("entity_id")==last),None) or (None if last else (runs[0] if runs else None))
             from operations.worker import with_review_reason
-            reviews=[with_review_reason(r) for r in linked("OpsReview") if current and r.get("run_id")==current.get("entity_id")]
+            # While a newer investigation is queued or running, the earlier run's review is not the current review.
+            superseded=case["workflow_state"] in ("OPEN","REOPENED","INVESTIGATING")
+            reviews=[with_review_reason(r) for r in linked("OpsReview") if current and not superseded and r.get("run_id")==current.get("entity_id")]
             if current:
                 current["result"]=json.loads(current.pop("result_json"))
                 for item in current["result"].get("trace") or []:

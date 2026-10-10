@@ -14,18 +14,49 @@ from tests.test_operations_store import Reader
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 AGENT_REACHABLE = ["chat/operations/tools.py", "chat/operations/investigator.py", "chat/operations/checks.py",
                    "chat/operations/graph.py", "chat/operations/read_model.py", "chat/operations/reasoning.py",
-                   "chat/operations/agents.py", "chat/operations/worker.py", "backend/operations_api.py", "backend/main.py"]
+                   "chat/operations/agents.py", "chat/operations/worker.py", "chat/operations/store.py",
+                   "chat/operations/diagnosis.py", "chat/operations/outcome_engine.py", "chat/operations/workers.py",
+                   "backend/operations_api.py", "backend/main.py"]
+# The only modules that hold or read the simulator's private truth: the operational simulator itself (it plays the
+# field) and the live-bundle reader of truth.jsonl. Only the API's attach_simulator may reach them.
+TRUTH_HOLDERS = {"chat/operations/simulation.py", "chat/dataset_v2/live_bundle.py"}
+SIMULATOR_OWNERS = {"backend/operations_api.py", "backend/main.py"}  # main.py includes the operations_api router.
+PACKAGES = {"operations": "chat/operations", "dataset_v2": "chat/dataset_v2", "backend": "backend", "llm": "chat/llm", "core": "chat/core"}
 
 
 def imported_names(path):
     tree = ast.parse((ROOT / path).read_text(encoding="utf-8"))
     names = set()
-    for node in ast.walk(tree):
+    for node in ast.walk(tree):  # Every import, including those inside functions.
         if isinstance(node, ast.Import):
             names |= {a.name for a in node.names}
         elif isinstance(node, ast.ImportFrom):
             names |= {f"{node.module}.{a.name}" for a in node.names} | {node.module or ""}
     return names
+
+
+def module_file(name):
+    """The project file an imported name resolves to (a module or a package), or None outside the project."""
+    parts = name.split(".")
+    if parts[0] not in PACKAGES:
+        return None
+    for n in range(len(parts), 1, -1):
+        for candidate in ("/".join([PACKAGES[parts[0]], *parts[1:n]]) + ".py", "/".join([PACKAGES[parts[0]], *parts[1:n], "__init__.py"])):
+            if (ROOT / candidate).exists():
+                return candidate
+    return None
+
+
+def import_closure(path):
+    """Every project module `path` can load, following imports transitively (lazy imports included)."""
+    seen, stack = set(), [path]
+    while stack:
+        current = stack.pop()
+        if current in seen:
+            continue
+        seen.add(current)
+        stack.extend(f for f in map(module_file, imported_names(current)) if f)
+    return seen
 
 
 class TruthIsolationTests(unittest.TestCase):
@@ -36,6 +67,23 @@ class TruthIsolationTests(unittest.TestCase):
             self.assertFalse(any("simulation" in n for n in names if path != "backend/operations_api.py"), path)
             self.assertNotIn("truth.jsonl", source, path)
             self.assertFalse(any(n.endswith("read_truth") for n in names if path != "backend/operations_api.py"), path)
+
+    def test_truth_is_not_reachable_transitively_except_through_the_simulator_constructor(self):
+        for path in AGENT_REACHABLE:
+            closure = import_closure(path)
+            self.assertIn(path, closure)
+            if path in SIMULATOR_OWNERS:
+                continue
+            self.assertFalse(closure & TRUTH_HOLDERS, (path, sorted(closure & TRUTH_HOLDERS)))
+            for module in closure:
+                self.assertNotIn("truth.jsonl", (ROOT / module).read_text(encoding="utf-8"), (path, module))
+
+    def test_the_isolation_check_detects_a_module_that_does_reach_truth(self):
+        """Positive control: the same closure finds the truth holders from the one module allowed to reach them, so
+        the checks above pass because store.py and the agent modules really do not reach them."""
+        self.assertTrue(TRUTH_HOLDERS <= import_closure("backend/operations_api.py"))
+        self.assertIn("chat/operations/simulation.py", import_closure("backend/main.py"))
+        self.assertIn("chat/operations/ingestion.py", import_closure("chat/operations/store.py"))  # Lazy imports are followed.
 
     def test_api_reads_truth_only_to_construct_the_simulator(self):
         source = (ROOT / "backend/operations_api.py").read_text(encoding="utf-8")

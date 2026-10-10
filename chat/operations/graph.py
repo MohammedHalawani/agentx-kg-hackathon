@@ -165,7 +165,8 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
         investigation = agents.investigate(tools, on_step=on_step, feedback=s.get("feedback") if s.get("iteration") else None)
         update = {"investigation": investigation, "mode": "gpt_oss_agents", "result": agent_result(investigation, s["context"])}
         if investigation.get("degraded"):
-            update["degraded"] = [*s.get("degraded", []), {"role": "investigator", "error": investigation["validation_error"]}]
+            update["degraded"] = [*s.get("degraded", []), {"role": "investigator", "error": investigation["validation_error"],
+                                                            "kind": investigation["mode"]}]
         cited = sorted({i for h in investigation.get("hypotheses") or [] for i in h.get("supporting_evidence_ids", []) + h.get("contradicting_evidence_ids", [])})
         return update, {"diagnoses": update["result"]["diagnoses"], "evidence_ids": cited or investigation.get("retrieved_evidence_ids", []),
                         "agent": investigation["mode"], "tool_calls": len(investigation.get("steps") or []),
@@ -231,7 +232,7 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
                 model_review = agents.review(inv, cited_records(inv, tools), checks["checks"], s.get("symptoms") or [])
                 if model_review["verdict"] == "UNAVAILABLE":
                     # Failure, timeout or invalid output: recorded as an unavailable review, never as a pass.
-                    degraded.append({"role": "reviewer", "error": model_review["validation_error"]})
+                    degraded.append({"role": "reviewer", "error": model_review["validation_error"], "kind": model_review.get("mode")})
                     verdict = {"verdict": "review_unavailable", "guard_verdict": verdict["verdict"], "model_verdict": "UNAVAILABLE",
                                "degraded": True, "reason_code": "REVIEWER_UNAVAILABLE",
                                "feedback": "Independent model review could not be completed; automatic execution is blocked and a person must review."}
@@ -275,10 +276,14 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
         elif s["proposal"] and s["proposal"].get("action_type"):
             # The deterministic authority policy, never the model, decides who may act.
             codes = s["result"]["assessment"]["supported_codes"] or [s["proposal"]["action_code"]]
-            conflict = (s["result"]["assessment"]["requires_human_review"] or checks.get("unsupported") or checks.get("sensitive"))
+            inv = s.get("investigation")
+            # The investigator asking for a physical check is its own reason (AUTH-23), not a rule-detected conflict.
+            physical = bool(inv and inv.get("requires_physical_check"))
+            conflict = ((not inv and s["result"]["assessment"]["requires_human_review"]) or checks.get("unsupported") or checks.get("sensitive"))
             risk, reason = authorize(s["proposal"]["action_type"], codes, review_verdict=s["review"].get("model_verdict"),
                                      evidence_conflict=bool(conflict), synthetic=True, live_session=live_session,
-                                     degraded=bool(s.get("degraded")), contractor_custody=bool(checks.get("contractor_custody")))
+                                     degraded=bool(s.get("degraded")), contractor_custody=bool(checks.get("contractor_custody")),
+                                     physical_check=physical)
             risk, reason, closure = symptom_floor(risk, reason, s["proposal"]["action_type"], s.get("symptoms"))
             authority = {"risk_class": risk, "reason": reason, "action_type": s["proposal"]["action_type"], "closure": closure,
                          "policy": "deterministic_action_authority"}
@@ -289,7 +294,8 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
                 "action_type": (s.get("proposal") or {}).get("action_type"), "diagnosis_codes": s["result"]["assessment"]["supported_codes"],
                 "review_verdict": s["review"].get("model_verdict") or s["review"].get("verdict"), "symptoms": list(s.get("symptoms") or []),
                 "degraded": [d["role"] for d in s.get("degraded") or []], "fact_checks": {k: checks.get(k) for k in ("unsupported", "sensitive", "contractor_custody")},
-                "requires_physical_check": s["result"]["assessment"]["requires_human_review"]}}
+                "requires_physical_check": bool((s.get("investigation") or {}).get("requires_physical_check")),
+                "rule_conflict": bool(not s.get("investigation") and s["result"]["assessment"]["requires_human_review"])}}
         receipt = commit(analysis(state, events)) if commit else None
         return {"result": state["result"], "disposition": receipt, "authority": state.get("authority")}, {
             "authority": state.get("authority"), "agent": "authority_policy",

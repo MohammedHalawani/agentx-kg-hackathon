@@ -89,9 +89,11 @@ STATE = {"AUTO": "AWAITING_OUTCOME", "APPROVAL_REQUIRED": "AWAITING_APPROVAL", "
 
 
 def authorize(action_type, diagnosis_codes, *, review_verdict, evidence_conflict, synthetic, live_session, degraded=False,
-              contractor_custody=False):
+              contractor_custody=False, physical_check=False):
     """Return the risk class and the reason. Never AUTO outside a synthetic live session, and
-    never AUTO without an explicit ACCEPT from the independent model reviewer (fail closed)."""
+    never AUTO without an explicit ACCEPT from the independent model reviewer (fail closed).
+    evidence_conflict: the deterministic rules or fact checks found a conflict. physical_check: the
+    investigation itself asked for a physical check (a different reason, with its own rule)."""
     entry = ACTIONS.get(action_type)
     codes = set(diagnosis_codes)
     if entry is None:
@@ -108,6 +110,8 @@ def authorize(action_type, diagnosis_codes, *, review_verdict, evidence_conflict
         return "HUMAN_REVIEW", "The parcel's last corroborated holder is a contractor or independent driver; physical reconciliation needs a person."
     if codes & SENSITIVE_CODES:
         return "HUMAN_REVIEW", "Sensitive or rights-impacting evidence (dispute, misdelivery or conflicting custody)."
+    if physical_check:
+        return "HUMAN_REVIEW", "The investigation requested a physical check; a person must investigate."
     if evidence_conflict:
         return "HUMAN_REVIEW", "Deterministic evidence rules flagged a conflict requiring human judgment."
     if risk == "AUTO" and not (addresses & codes):
@@ -163,7 +167,8 @@ def recheck_authority(action_type, inputs, symptoms, *, live_session=True):
     inputs = inputs or {}
     risk, reason = authorize(action_type, inputs.get("diagnosis_codes") or [], review_verdict=inputs.get("review_verdict"),
                              evidence_conflict=bool(inputs.get("evidence_conflict")), synthetic=True, live_session=live_session,
-                             degraded=bool(inputs.get("degraded")), contractor_custody=bool(inputs.get("contractor_custody")))
+                             degraded=bool(inputs.get("degraded")), contractor_custody=bool(inputs.get("contractor_custody")),
+                             physical_check=bool(inputs.get("physical_check")))
     return symptom_floor(risk, reason, action_type, symptoms)
 
 
@@ -197,6 +202,7 @@ RULE_IDS = {
     "approval context changed": "AUTH-20-approval-context-stale",
     "requires human investigation: only evidence-gathering": "AUTH-21-human-investigation-required",
     "Rules-only proposal": "AUTH-22-rules-only-proposal",
+    "The investigation requested a physical check": "AUTH-23-physical-check-requested",
 }
 
 
