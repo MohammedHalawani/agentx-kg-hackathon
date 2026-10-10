@@ -106,6 +106,21 @@ class PilotGuardTests(unittest.TestCase):
         for forbidden in ("import world.truth", "from world.truth", "from world import truth", "suhail-eval-truth", "suhail-sim-state",
                           "read_truth", "labels_at(", "state_directory", "truth_directory"):
             self.assertNotIn(forbidden, source)
+        # The module the pilot borrows its traversals from also defines the truth and state directory readers: they are
+        # sealed while the pilot runs (and put back afterwards), and the traversals themselves are untouched.
+        import world.export as export
+        before = {name: getattr(export, name) for name in ("read_truth_labels", "write_truth", "truth_directory", "state_directory",
+                                                           "private_physical", "traversals", "_stable")}
+        with world_pilot.sealed_private_readers() as sealed:
+            self.assertTrue({"read_truth_labels", "write_truth", "truth_directory", "state_directory", "private_physical"} <= set(sealed))
+            for name in ("read_truth_labels", "truth_directory", "state_directory"):
+                with self.assertRaisesRegex(RuntimeError, "sealed in the pilot process"):
+                    getattr(export, name)(r"C:\somewhere", "DEMO-X")
+            self.assertIs(export.traversals, before["traversals"])
+            self.assertIs(export._stable, before["_stable"])
+            self.assertNotIn("traversals", sealed)
+        self.assertEqual({name: getattr(export, name) for name in before}, before)
+        self.assertIn("with driver, sealed_private_readers() as sealed:", source)
         self.assertNotIn("ask_json", source)             # No model call of its own: only store.process_one makes them.
         self.assertNotIn("model_turn", source)
 

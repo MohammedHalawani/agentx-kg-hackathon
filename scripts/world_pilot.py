@@ -71,6 +71,36 @@ def truth_module_loaded():
     return any(name == "world.truth" or name.startswith("world.truth.") for name in sys.modules)
 
 
+PRIVATE_WORDS = ("truth", "state", "private")
+
+
+class sealed_private_readers:
+    """The pilot takes its cross-shipment traversals from world.export, a module that also defines the readers and
+    writers of the truth-label and physical-state directories. While this context is open every function that module
+    defines whose name mentions truth, state or private raises instead of running, so nothing in the pilot process can
+    reach those directories through it, whatever path it is given. The functions are put back on exit."""
+
+    def __enter__(self):
+        import world.export as export
+        self.module, self.saved = export, {}
+        for name, value in list(vars(export).items()):
+            if callable(value) and getattr(value, "__module__", None) == export.__name__ and any(word in name.lower() for word in PRIVATE_WORDS):
+                self.saved[name] = value
+                setattr(export, name, self._refusal(name))
+        return sorted(self.saved)
+
+    def __exit__(self, *exc):
+        for name, value in self.saved.items():
+            setattr(self.module, name, value)
+        return False
+
+    @staticmethod
+    def _refusal(name):
+        def refused(*args, **kwargs):
+            raise RuntimeError(f"world.export.{name} is sealed in the pilot process: the pilot never reads truth or private state")
+        return refused
+
+
 def record_model_calls():
     import litellm
 
@@ -566,10 +596,11 @@ def main(argv=None):
     from neo4j import GraphDatabase
     driver = GraphDatabase.driver(config.NEO4J_URI, auth=(config.NEO4J_USERNAME, config.NEO4J_PASSWORD))
     started = time.perf_counter()
-    with driver:
+    with driver, sealed_private_readers() as sealed:
         result = run_pilot(driver, args.database, per_alert=args.per_alert, max_cases=args.max_cases, max_calls=args.max_calls,
                            call_cap=args.call_cap, check_after_hours=args.check_after_hours, max_hours=args.max_hours,
                            disabled_tools=tuple(t for t in args.disable_tools.replace(" ", "").split(",") if t))
+    result["replay"]["world_export_functions_sealed_during_the_run"] = sealed
     for _ in range(50):   # LiteLLM reports a finished call from a worker thread: let the last ones arrive.
         if provider_calls() >= result["replay"]["model_calls_by_case_counters"]:
             break
