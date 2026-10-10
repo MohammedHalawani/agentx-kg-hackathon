@@ -1,0 +1,4 @@
+Total messages: 3 (Errors: 1, Warnings: 0)
+Returning 1 messages for level "error"
+
+The requested module '/node_modules/.vite/deps/@tanstack_react-table.js?v=53d12606' does not provide an export named 'getCoreRowModel'
