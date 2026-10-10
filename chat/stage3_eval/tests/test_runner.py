@@ -207,10 +207,13 @@ def test_crash_then_resume_never_spends_twice(tmp_path, selected, worlds):
 def test_run_refuses_truth_env_tampered_selection_and_changed_config(tmp_path, selected, worlds, monkeypatch):
     config, sel_dir, _ = selected
     arms = build_arms(config, FakeAgent({w: worlds[w][0] for w in worlds}), notools_turn_factory()[0])
-    monkeypatch.setenv("SUHAIL_EVAL_TRUTH_ROOT", "/somewhere")
-    with pytest.raises(RuntimeError, match="must not be able to find truth"):
-        run(sel_dir / "selection.json", tmp_path / "a", arms=arms, case_source=FixtureCaseSource(), config=config)
-    monkeypatch.delenv("SUHAIL_EVAL_TRUTH_ROOT")
+    # The pilot's guard: the two known names and any variable naming TRUTH.
+    for name in ("SUHAIL_EVAL_TRUTH_ROOT", "SUHAIL_SIM_STATE_ROOT", "MY_TRUTH_DIR"):
+        monkeypatch.setenv(name, "/somewhere")
+        with pytest.raises(RuntimeError, match="must not be able to find truth"):
+            run(sel_dir / "selection.json", tmp_path / "a", arms=arms, case_source=FixtureCaseSource(), config=config)
+        assert not (tmp_path / "a").exists()
+        monkeypatch.delenv(name)
     with pytest.raises(ValueError, match="sealed"):
         run(sel_dir / "selection.json", tmp_path / "b", arms=arms, case_source=FixtureCaseSource(), config=make_config(c_cap=13))
     path = sel_dir / "selection.json"
@@ -247,6 +250,86 @@ def test_extras_run_only_when_their_file_is_named_and_only_after_the_main_test(t
     path.write_text(path.read_text().replace("E1:", "E2:", 1))
     with pytest.raises(ValueError, match="pre-registered sha256"):
         runner_mod.load_extras(path, "x")
+
+
+def test_the_command_line_refuses_a_truth_variable_before_the_wiring_is_built(tmp_path, selected, monkeypatch):
+    from stage3_eval.__main__ import main
+    from stage3_eval.tests import test_campaign
+    _config, sel_dir, _ = selected
+    test_campaign.WIRED.clear()
+    for name in ("SUHAIL_SIM_STATE_ROOT", "SOME_TRUTH_PATH"):
+        monkeypatch.setenv(name, "/somewhere")
+        with pytest.raises(SystemExit, match=f"Refusing to run: {name} set"):
+            main(["run", "--selection", str(sel_dir / "selection.json"), "--out", str(tmp_path / "run"),
+                  "--wiring", "stage3_eval.tests.test_campaign:fake_wiring"])
+        monkeypatch.delenv(name)
+    assert not test_campaign.WIRED and not (tmp_path / "run").exists()      # the wiring function was never called
+
+
+def test_a_truth_side_module_in_the_run_process_makes_the_run_invalid(tmp_path, selected, worlds):
+    """This test process has the scorer side loaded (it scores), which is exactly what a run process must not have:
+    with the command line's flag the run is invalid; a fresh process running the command has none loaded."""
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+    from .conftest import write_campaign_ledger
+    config, sel_dir, _ = selected
+    arms = build_arms(config, FakeAgent({w: worlds[w][0] for w in worlds}), notools_turn_factory()[0])
+    plain = run(sel_dir / "selection.json", tmp_path / "plain", arms=arms, case_source=FixtureCaseSource(), config=config, dry_run=True)
+    assert plain["status"] == "completed" and "world.truth" in plain["isolation"]["truth_modules_loaded"]
+    flagged = run(sel_dir / "selection.json", tmp_path / "flagged", arms=arms, case_source=FixtureCaseSource(), config=config, dry_run=True,
+                  enforce_isolation=True)
+    assert flagged["status"].startswith("invalid: truth was within reach of the run process") and "world.truth" in flagged["status"]
+    ledger = write_campaign_ledger(tmp_path / "campaign.json", spent=0)
+    chat = Path(__file__).resolve().parents[2]
+    env = {k: v for k, v in os.environ.items() if "TRUTH" not in k.upper() and k != "SUHAIL_SIM_STATE_ROOT"}
+    done = subprocess.run([sys.executable, "-m", "stage3_eval", "run", "--selection", str(sel_dir / "selection.json"), "--out", str(tmp_path / "cli"),
+                           "--wiring", "stage3_eval.fixtures.fakes:dry_wiring", "--dry-run", "--ledger", str(ledger)],
+                          cwd=chat, env=env, capture_output=True, text=True)
+    assert done.returncode == 0, done.stderr
+    manifest = json.loads((tmp_path / "cli" / "run_manifest.json").read_text())
+    assert manifest["status"] == "completed" and manifest["isolation"] == {
+        "truth_environment_set": [], "truth_modules_loaded": [], "enforced": True, "cases_screened_for_truth_markers": 0, "run_level_marker_hits": 0}
+
+
+def test_a_truth_marker_in_a_cases_captured_surfaces_stops_the_run(tmp_path, selected, worlds):
+    """Each case's captured surfaces and arm outputs are screened as the run goes, by shape (no vocabulary is present
+    in a run): a canary-shaped or mechanism-id-shaped token stops the run at that case, after it is written."""
+    from stage3_eval.canary import marker_hits
+    config, sel_dir, _ = selected
+    truth = {w: worlds[w][0] for w in worlds}
+    assert marker_hits({"a": "CNRY" + "0A" * 12, "b": ["W1M-00042"]}) == 2 and marker_hits("DEMO-SHP-000001 WRONG_GATE CNRY-not-one") == 0
+
+    class Leaky(FixtureCapture):
+        seen = 0
+
+        def capture_case(self, case, results):
+            out = super().capture_case(case, results)
+            Leaky.seen += 1
+            if Leaky.seen == 3:
+                out["tools"].append({"tool": "shipment_overview", "output": {"note": "mechanism W1M-12345"}})
+            return out
+    agent = FakeAgent(truth)
+    manifest = run(sel_dir / "selection.json", tmp_path / "leak", arms=build_arms(config, agent, notools_turn_factory()[0]),
+                   case_source=FixtureCaseSource(), config=config, capture=Leaky())
+    assert manifest["status"].startswith("stopped: truth marker in the captured surfaces of ") and "{'tools': 1}" in manifest["status"]
+    assert len(agent.seen) == 3 and manifest["isolation"]["cases_screened_for_truth_markers"] == 3
+    assert "W1M-12345" in (tmp_path / "leak" / "captured" / "tools" / f"{agent.seen[2].replace(':', '_')}.jsonl").read_text()   # kept as evidence
+
+    class Telling(FakeAgent):                      # the arm's own output carries a canary-shaped token
+        def __call__(self, case):
+            result = super().__call__(case)
+            if len(self.seen) == 2:
+                result.texts.append("see CNRY" + "AB" * 12)
+            return result
+    agent = Telling(truth)
+    manifest = run(sel_dir / "selection.json", tmp_path / "told", arms=build_arms(config, agent, notools_turn_factory()[0]),
+                   case_source=FixtureCaseSource(), config=config)
+    assert "{'arm_outputs': 1}" in manifest["status"] and len(agent.seen) == 2
+    clean = run(sel_dir / "selection.json", tmp_path / "clean", arms=build_arms(config, FakeAgent(truth), notools_turn_factory()[0]),
+                case_source=FixtureCaseSource(), config=config, capture=FixtureCapture())
+    assert clean["status"] == "completed" and clean["isolation"]["cases_screened_for_truth_markers"] == 70
 
 
 def test_missing_arm_and_unopened_cases(tmp_path, selected, worlds):

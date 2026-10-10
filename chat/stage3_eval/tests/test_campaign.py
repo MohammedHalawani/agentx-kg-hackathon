@@ -137,6 +137,8 @@ def test_cli_run_goes_through_the_ledger(tmp_path, capsys, campaign_ledger_file,
     assert used == 70 * 9 + 70 and printed["campaign_ledger"]["spent"] == 173 + used and WIRED["closed"]
     manifest = json.loads((tmp_path / "run" / "run_manifest.json").read_text())
     assert manifest["provenance"]["evaluated_at_the_end"] and manifest["campaign_ledger"]["calls"] == used
+    # The command line enforces isolation, and this test process has the scorer side loaded: flagged, as it must be.
+    assert manifest["isolation"]["enforced"] and manifest["status"].startswith("invalid: truth was within reach of the run process")
     # The selection was sealed with 3,827; the campaign now has less than that left, so a second run cannot start.
     WIRED.clear()
     with pytest.raises(SystemExit, match="Refusing to run: refused"):

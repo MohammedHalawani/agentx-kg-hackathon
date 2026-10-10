@@ -10,6 +10,11 @@ The required surfaces are the design's list: the graph, tool outputs, API respon
 A run that captured fewer is reported "incomplete", never "clean". The arms' own outputs are scanned too.
 
 This module holds no truth: the scorer passes the vocabulary in (truth_io.truth_vocabulary).
+
+During the run, where no vocabulary may be present, each case's captured surfaces are screened by SHAPE instead
+(marker_hits): anything shaped like a world canary (CNRY + 24 hex characters) or a mechanism id (W1M- + 5 digits)
+stops the run at that case. The shapes are public formats, not truth. Mechanism names cannot be screened this way;
+the scorer's full scan above remains the verdict.
 """
 import json
 from pathlib import Path
@@ -17,6 +22,13 @@ import re
 
 REQUIRED_SURFACES = ("graph", "tools", "api", "receipts", "logs")
 ALSO_SCANNED = ("arm_outputs",)
+MARKER_SHAPES = re.compile(r"CNRY[0-9A-Fa-f]{24}|W1M-\d{5}")
+
+
+def marker_hits(value):
+    """How many canary-shaped or mechanism-id-shaped tokens a captured item holds (run side: shapes only, no truth)."""
+    text = value if isinstance(value, str) else json.dumps(value, sort_keys=True, ensure_ascii=False, default=str)
+    return len(MARKER_SHAPES.findall(text))
 
 
 class TruthScanner:

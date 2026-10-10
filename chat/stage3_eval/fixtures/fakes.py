@@ -56,3 +56,15 @@ class FixtureCapture:
 
 def refuse(*_args, **_kwargs):
     raise AssertionError("a dry run must not call the model or the backend case runner")
+
+
+def dry_wiring(config, *, dry_run=False):
+    """A wiring over the fixture's runtime files for a zero-call rehearsal from the command line (no truth is read):
+    python -m stage3_eval run --selection DIR/selection.json --out RUN --wiring stage3_eval.fixtures.fakes:dry_wiring --dry-run"""
+    from stage3_eval.arms import AgentArm, NoToolsArm, RuleCodeArm, SymptomArm
+    if not dry_run:
+        raise SystemExit("the fixture wiring has no investigator: use it with --dry-run")
+    return {"arms": {"agent": AgentArm(refuse, config.c_cap, config.r_cap), "notools": NoToolsArm(turn=refuse), "rulecode": RuleCodeArm(),
+                     "symptom": SymptomArm()},
+            "case_source": FixtureCaseSource(), "capture": FixtureCapture(), "extras_arms": {},
+            "provenance": {"note": "dry run over the committed fixture"}}

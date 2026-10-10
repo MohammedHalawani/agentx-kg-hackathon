@@ -11,7 +11,8 @@
   python -m stage3_eval run --selection DIR/selection.json --out RUN_DIR --wiring MODULE:FUNCTION [--extras DIR/extras.json]
       [--dry-run] [--resume]
       FUNCTION(config, dry_run=...) returns {"arms", "case_source", "capture", "extras_arms", "provenance"} (WIRING.md).
-      Run with SUHAIL_EVAL_TRUTH_ROOT unset. The run reads selection.json only (key, world, shipment and expected
+      Run with SUHAIL_EVAL_TRUTH_ROOT, SUHAIL_SIM_STATE_ROOT and every variable naming TRUTH unset (refused before
+      the wiring is built). The run reads selection.json only (key, world, shipment and expected
       opening per case). --extras names the exploratory extras' case lists, which are derived from truth: the file is
       opened only after the last main-test case has run, and without it no extra runs.
 
@@ -180,7 +181,11 @@ def main(argv=None):
         print(json.dumps({"campaign_ledger": campaign, "budget": config.budget, **{k: v for k, v in summary.items() if k != "census"}},
                          indent=1, default=str))
     elif args.cmd == "run":
-        from stage3_eval.runner import run
+        from stage3_eval.runner import refuse_truth_environment, run
+        try:
+            refuse_truth_environment()        # BEFORE the wiring opens a database or anything else is read
+        except RuntimeError as refusal:
+            raise SystemExit(f"Refusing to run: {refusal}") from None
         from operations.call_ledger import LedgerError, LedgerRefused
         config, selection = _config(args.selection)
         campaign = _campaign(args.ledger)
@@ -193,7 +198,7 @@ def main(argv=None):
             manifest = run(args.selection, args.out, arms=wired["arms"], case_source=wired["case_source"], config=config,
                            capture=wired.get("capture"), extras_arms=wired.get("extras_arms"), dry_run=args.dry_run, resume=args.resume,
                            provenance=wired.get("provenance"), campaign=campaign, campaign_commit=_head_commit(),
-                           provider_calls=wired.get("provider_calls"), extras_path=args.extras)
+                           provider_calls=wired.get("provider_calls"), extras_path=args.extras, enforce_isolation=True)
         except (LedgerRefused, LedgerError) as refusal:
             raise SystemExit(f"Refusing to run: {refusal}") from None
         finally:

@@ -12,8 +12,12 @@ After the main test, and only with calls left and extras.json named, the explora
 ablation, then stability reruns), each case only if its worst case still fits; whatever completes is reported,
 never pooled.
 
-The run step refuses to start while SUHAIL_EVAL_TRUTH_ROOT is set in its environment, and imports nothing from the
-scorer side (truth_io, strata, selection, scoring; tested). A dry run reserves nothing, calls no model and no
+The run step refuses to start while any variable that points at truth or at the simulator's private state is set
+(any set variable whose name contains TRUTH, plus SUHAIL_SIM_STATE_ROOT: the pilot's guard; the command line checks
+it before the wiring opens a database), and imports nothing from the scorer side (truth_io, strata, selection,
+scoring; tested). When the run ends its manifest records whether such a variable is set and whether a truth-side
+module is loaded in the process; from the command line either makes the run invalid. After each case its captured
+surfaces and its arms' outputs are screened for canary-shaped and mechanism-id-shaped tokens, and a hit stops the run. A dry run reserves nothing, calls no model and no
 backend case runner, and still writes the ledger plan, the case list and the free baselines.
 """
 from dataclasses import replace
@@ -23,14 +27,36 @@ import json
 import os
 from pathlib import Path
 import re
+import sys
 
 from stage3_eval.arms import CaseRef
 from stage3_eval.budget import BudgetExceeded, BudgetLedger, CapViolation, RunStopped
+from stage3_eval.canary import marker_hits
 from stage3_eval.design import EXTRAS_ORDER, EvalConfig, canonical_bytes, runtime_selection_problem, sealed_hash
 from stage3_eval.records import ArmResult
 
 TRUTH_ENV = "SUHAIL_EVAL_TRUTH_ROOT"
+TRUTH_ENVIRONMENT = (TRUTH_ENV, "SUHAIL_SIM_STATE_ROOT")
+# Modules that read or hold truth: the world's label module and this package's scorer side.
+TRUTH_MODULES = ("world.truth", "stage3_eval.truth_io", "stage3_eval.strata", "stage3_eval.selection", "stage3_eval.scoring")
 MAIN_ARM_ORDER = ("agent", "notools", "rulecode", "symptom")
+
+
+def truth_environment():
+    """Names of set environment variables that point at truth labels or the simulator's private state (the pilot's
+    rule: the two known names, and any name containing TRUTH)."""
+    return sorted(name for name, value in os.environ.items() if value and (name in TRUTH_ENVIRONMENT or "TRUTH" in name.upper()))
+
+
+def refuse_truth_environment():
+    names = truth_environment()
+    if names:
+        raise RuntimeError(f"{', '.join(names)} set: the run step must not be able to find truth labels or the simulator's private "
+                           "state; unset for the run")
+
+
+def truth_modules_loaded():
+    return sorted(name for name in sys.modules if any(name == m or name.startswith(m + ".") for m in TRUTH_MODULES))
 
 
 def load_selection(path):
@@ -91,8 +117,12 @@ class RunWriter:
         self.append(f"captured/arm_outputs/{phase}_{result.arm}.jsonl", result.to_dict())
 
     def capture(self, surface, label, items):
+        """Write the items of one surface and return how many canary-shaped or mechanism-id-shaped tokens they hold."""
+        hits = 0
         for item in items or []:
             self.append(f"captured/{_safe(surface)}/{_safe(label)}.jsonl", item if isinstance(item, (dict, list)) else {"text": str(item)})
+            hits += marker_hits(item)
+        return hits
 
 
 def _not_run(case_ref, key, world, sid, arm, reason):
@@ -112,7 +142,8 @@ def _previous_results(out_dir, phase):
 
 
 def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, capture=None, extras_arms=None, dry_run=False,
-        resume=False, provenance=None, campaign=None, campaign_commit=None, provider_calls=None, extras_path=None):
+        resume=False, provenance=None, campaign=None, campaign_commit=None, provider_calls=None, extras_path=None,
+        enforce_isolation=False):
     """Run every arm over the selection. arms: {"agent": AgentArm, "notools": NoToolsArm, "rulecode": ..., "symptom": ...};
     extras_arms: {"cross_shipment_ablation": AgentArm (cross-shipment tools disabled), "stability_rerun": AgentArm}.
     provenance: a dict, or a callable returning one, called when the run has finished (so it can report the model calls
@@ -127,9 +158,11 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
     provider_calls: a callable returning the model calls the provider's own callbacks have counted in this process
     (completed and failed). After every case, and after every extra, that count and the ledger's are written to the
     ledger, and the run stops if the provider counted more than the ledger holds.
+    enforce_isolation: the command line sets it. The manifest always records the truth variables set and the truth-side
+    modules loaded when the run ends; with this flag a loaded truth-side module makes the run invalid (a test process
+    has them loaded for its own scoring, so the flag is off by default). A truth variable set at the end always does.
     Returns the run manifest (also written to <out_dir>/run_manifest.json)."""
-    if os.environ.get(TRUTH_ENV):
-        raise RuntimeError(f"{TRUTH_ENV} is set: the run step must not be able to find truth labels; unset it for the run")
+    refuse_truth_environment()
     selection, selection_sha = load_selection(selection_path)
     if selection["sealed_config_hash"] != sealed_hash(config):
         raise ValueError("the configuration differs from the one the selection was sealed with (amendment 1, H)")
@@ -155,6 +188,7 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
     if resume and (out / "cases.jsonl").exists():
         written_cases = {json.loads(line)["key"] for line in (out / "cases.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()}
     status, counts = "completed", {"cases": 0, "not_opened": 0, "budget_refused": 0, "arm_errors": 0}
+    screened = {"cases_screened_for_truth_markers": 0, "run_level_marker_hits": 0}
     refs, agent_t = {}, {}
     # The provider's count starts at this process; so does the ledger's side of the comparison (a resumed ledger already
     # holds the earlier attempt's calls, crash recoveries included).
@@ -198,9 +232,16 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
                 writer.result(result)
             if results.get("agent") is not None and results["agent"].as_of:
                 agent_t[key] = results["agent"].as_of
-            if ref is not None and capture is not None and not dry_run:
-                for surface, items in (capture.capture_case(ref, results) or {}).items():
-                    writer.capture(surface, key, items)
+            if ref is not None and not dry_run:
+                # Screened as the run goes (shapes only; the scorer's scan with the vocabulary is the verdict): a canary
+                # or a mechanism id in anything this case was shown or produced stops the run here, after it is written.
+                found = {"arm_outputs": sum(marker_hits(r.to_dict()) for r in results.values())}
+                for surface, items in ((capture.capture_case(ref, results) or {}) if capture is not None else {}).items():
+                    found[surface] = found.get(surface, 0) + writer.capture(surface, key, items)
+                screened["cases_screened_for_truth_markers"] += 1
+                found = {surface: n for surface, n in sorted(found.items()) if n}
+                if found:
+                    raise RunStopped(f"truth marker in the captured surfaces of {key} (hits by surface: {found})")
             if reconcile is not None:
                 reconcile(key)
         # Only now: every main-test arm has answered, so nothing in the extras lists can reach the main test.
@@ -208,17 +249,24 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
         extras = _run_extras(extras_plan, refs, agent_t, extras_arms or {}, ledger, writer, dry_run, counts, reconcile)
         if capture is not None and not dry_run:
             for surface, items in (capture.capture_run() or {}).items():
-                writer.capture(surface, "run", items)
+                screened["run_level_marker_hits"] += writer.capture(surface, "run", items)
+            if screened["run_level_marker_hits"]:
+                status = f"invalid: {screened['run_level_marker_hits']} truth markers in the run-level captured surfaces"
     except CapViolation as exc:
         status, extras = f"stopped: per-case cap violated ({exc})", {}
     except RunStopped as exc:
         status, extras = f"stopped: {exc}", {}
+    isolation = {"truth_environment_set": truth_environment(), "truth_modules_loaded": truth_modules_loaded(),
+                 "enforced": bool(enforce_isolation), **screened}
+    if isolation["truth_environment_set"] or (enforce_isolation and isolation["truth_modules_loaded"]):
+        status = (f"invalid: truth was within reach of the run process (variables {isolation['truth_environment_set']}, "
+                  f"modules {isolation['truth_modules_loaded']}); was: {status}")
     ledger.close(status)
     manifest = {"schema": "stage3-run-1", "status": status, "dry_run": dry_run, "started_at": started,
                 "finished_at": datetime.now(timezone.utc).isoformat(), "selection_sha256": selection_sha,
                 "sealed_config_hash": selection["sealed_config_hash"], "config": config.as_dict(),
                 "arms": {k: {"worst_case": v.worst_case(), "uses_model": v.uses_model} for k, v in arms.items()},
-                "counts": counts, "extras": extras, "ledger": ledger.summary(),
+                "counts": counts, "extras": extras, "ledger": ledger.summary(), "isolation": isolation,
                 "provenance": (provenance() if callable(provenance) else provenance) or {}}
     if campaign is not None and not dry_run:
         # Committed, not only settled: a reservation still open here (there is none on a clean finish) counts in full.
