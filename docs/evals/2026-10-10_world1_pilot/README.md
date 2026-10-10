@@ -30,6 +30,6 @@ Totals: 8 correct, 4 confident wrong answers, 0 stated uncertainty. All citation
 
 - The investigator never answered insufficient evidence, including the one case where that was right.
 - Rescan, reweigh and hub-check proposals all went to a person under AUTH-23 because the investigator marked a physical check as required every time, so nothing was eligible for automatic execution. Stage 4 has to look at that.
-- Calls per case: 6 to 12, median 9.5; one case reached the cap of 12.
+- Calls per case: 6 to 12, median 9.5; one case used all 12 allowed calls; none was cut off.
 
 Files: `pilot.json` (public run records, no truth), `pilot.scored.json` (adds the scoring).
