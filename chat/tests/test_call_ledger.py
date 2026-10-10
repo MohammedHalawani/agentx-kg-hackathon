@@ -243,6 +243,34 @@ class PilotThroughTheLedgerTests(unittest.TestCase):
         self.assertLess(source.index("pilot.reserve_calls("), source.index("store.process_one("))
         self.assertLess(source.index("store.process_one("), source.index("ledger.settle("))
 
+    def test_the_rerun_records_itself_and_not_the_pilot(self):
+        """The record slips of the first re-run: its file named the pilot's script and carried the pilot's settings
+        (max_calls 144, not 72), had no executions_dispatched and no end-of-run truth record."""
+        import inspect
+        first = {"schema": world_pilot.RESULT_SCHEMA, "synthetic": True, "database": "shipments-v2-world-x", "dataset_id": "DEMO-X",
+                 "manifest_hash": "0" * 64, "session_id": "DEMO-SESSION-1",
+                 "settings": {"per_alert": 2, "max_cases": 12, "max_calls": 144, "per_case_model_call_cap": 12, "execution_adapter": "none",
+                              "disabled_tools": []}}
+        document = world_pilot_rerun.rerun_document(
+            first, [{"pilot_case": 4, "executions_dispatched": 1}], results="pilot.json", numbers=[4, 5], max_calls=72, per_case_cap=12,
+            provenance={"script": world_pilot_rerun.SCRIPT}, isolation={"truth_environment_set": [], "world_truth_imported": False})
+        self.assertEqual(document["settings"], {"script": "scripts/world_pilot_rerun.py", "max_calls": 72, "per_case_model_call_cap": 12,
+                                                "pilot_cases": [4, 5], "execution_adapter": "none", "disabled_tools": []})
+        self.assertEqual(document["pilot_settings"]["max_calls"], 144)            # kept, and named as the pilot's
+        self.assertEqual(document["isolation"], {"truth_environment_set": [], "world_truth_imported": False})
+        self.assertEqual((document["session_id"], document["rerun_of"], document["cases"][0]["executions_dispatched"]),
+                         ("DEMO-SESSION-1", "pilot.json", 1))
+        # The provenance names the script that ran: the pilot's function takes it, and the re-run passes its own.
+        self.assertEqual(inspect.signature(world_pilot.provenance).parameters["script"].default, "scripts/world_pilot.py")
+        source = Path(world_pilot_rerun.__file__).read_text(encoding="utf-8")
+        self.assertIn("script=SCRIPT", source)
+        self.assertIn("executed = store.execute_step(limit=5)", source)
+        self.assertIn("executions_dispatched=len(executed) if isinstance(executed, list) else None", source)
+        # The truth record is taken after the last investigation and before anything is written.
+        self.assertLess(source.index("store.process_one("), source.index("pilot.truth_module_loaded()"))
+        self.assertLess(source.index("pilot.truth_module_loaded()"), source.index("write_text("))
+        self.assertIn("no results were written", source)
+
     def test_the_dirty_tree_check_leaves_the_ledger_file_out(self):
         calls = []
 

@@ -517,13 +517,14 @@ def run_pilot(driver, database, *, agents=None, per_alert=2, max_cases=12, max_c
                                        for case_id in opened_order if case_id in skipped]}
 
 
-def provenance(started_at, code_state, manifest_hash, database):
+def provenance(started_at, code_state, manifest_hash, database, script="scripts/world_pilot.py"):
+    """`script` is the command that produced the results (the re-run passes its own name)."""
     import config
     from dataset_v2.contracts import digest
     from operations import investigator
     commit, dirty = code_state
     now = git_state()
-    return {"script": "scripts/world_pilot.py", "commit": commit, "dirty_tree": dirty, "tree_changed_during_run": now != (commit, dirty),
+    return {"script": script, "commit": commit, "dirty_tree": dirty, "tree_changed_during_run": now != (commit, dirty),
             "started_at": started_at, "finished_at": datetime.now(timezone.utc).isoformat(), "database": database, "manifest_hash": manifest_hash,
             "configured_model": config.LLM_MODEL, "model_api_base": config.LLM_API_BASE,
             "investigator_prompt_sha256": digest(investigator.SYSTEM), "reviewer_prompt_sha256": digest(investigator.REVIEWER_SYSTEM),

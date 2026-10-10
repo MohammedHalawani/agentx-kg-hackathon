@@ -6,7 +6,10 @@
 Each named case (by its number in the pilot file) is put back in the queue through the product's own explicit
 re-analysis and investigated once with process_one. The clock stays where the pilot left it, so the snapshot is later
 than the first investigation's and may hold more evidence; the results say so. No truth is read here (same refusals as
-world_pilot.py); scoring stays a separate process. A hard model-call budget applies, and the run goes through the
+world_pilot.py, at the start and again when the run ends: the results record truth_environment_set and
+world_truth_imported, and nothing is written if either is set); scoring stays a separate process. The results name
+this script, carry the re-run's own settings (the pilot's are kept apart as pilot_settings) and, per case, how many
+executions the step dispatched. A hard model-call budget applies, and the run goes through the
 campaign's model-call ledger exactly as world_pilot.py does (refused if spent + --max-calls would exceed the cap,
 --max-calls reserved before the first call, the calls actually made written at the end).
 """
@@ -22,6 +25,21 @@ sys.path.insert(0, str(ROOT / "chat"))
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import world_pilot as pilot  # noqa: E402
+
+SCRIPT = "scripts/world_pilot_rerun.py"
+
+
+def rerun_document(first, rows, *, results, numbers, max_calls, per_case_cap, provenance, isolation):
+    """The re-run's results file. Identity (database, dataset, session) is the pilot's; the settings are the re-run's
+    own, with the pilot's kept apart so a reader cannot take the pilot's budget for this run's."""
+    return {**{k: first[k] for k in ("schema", "synthetic", "database", "dataset_id", "manifest_hash", "session_id")},
+            "settings": {"script": SCRIPT, "max_calls": max_calls, "per_case_model_call_cap": per_case_cap, "pilot_cases": list(numbers),
+                         "execution_adapter": (first.get("settings") or {}).get("execution_adapter"),
+                         "disabled_tools": (first.get("settings") or {}).get("disabled_tools", [])},
+            "pilot_settings": first.get("settings"),
+            "rerun_of": str(results), "note": "Same cases re-investigated after a fix; the snapshot is the clock the pilot ended on, "
+            "later than the first investigation's.", "provenance": provenance, "isolation": isolation,
+            "cases": rows, "cases_not_investigated": []}
 
 
 def main(argv=None):
@@ -72,21 +90,24 @@ def main(argv=None):
         before, begun = spent(), time.time()
         result = store.process_one(case_id, manual=True)
         state_after = reader.case_detail(case_id)["workflow_state"]
-        store.execute_step(limit=5)
+        executed = store.execute_step(limit=5)
         record = pilot.case_record(store, reader, case_id, {"opened_at": row["opened_at"], "symptoms": row["opening_symptoms"],
                                                              "shipment_id": row["shipment_id"]},
                                    result, round(time.time() - begun, 1), before, spent(), state_after)
         record.update(pilot_case=number, first_primary_cause=row["primary_cause"], first_authority=row["authority"],
-                      state_before_rerun=state)
+                      state_before_rerun=state, executions_dispatched=len(executed) if isinstance(executed, list) else None)
         in_code["calls"] += record["model_calls_used"] if isinstance(record.get("model_calls_used"), int) else cap
         rows.append(record)
         print(f"rerun: pilot case {number} {row['primary_cause']} -> {record.get('primary_cause')} "
               f"authority {(record.get('authority') or {}).get('risk_class')} calls {record.get('model_calls_used')}", flush=True)
-    out = {**{k: first[k] for k in ("schema", "synthetic", "database", "dataset_id", "manifest_hash", "session_id", "settings")},
-           "rerun_of": str(args.results), "note": "Same cases re-investigated after a fix; the snapshot is the clock the pilot ended on, "
-           "later than the first investigation's.", "provenance": pilot.provenance(started_at, code_state, manifest_hash, first["database"]),
-           "cases": rows, "cases_not_investigated": []}
     ledger.settle(run_name, spent(), tokens=pilot.MODEL_CALLS["total_tokens"])
+    # As the pilot does at its end: the guard at the start cannot see a variable set, or a module loaded, during the run.
+    isolation = {"truth_environment_set": pilot.truth_environment(), "world_truth_imported": pilot.truth_module_loaded()}
+    if isolation["world_truth_imported"] or isolation["truth_environment_set"]:
+        raise SystemExit("world.truth or a truth path reached the re-run process; no results were written")
+    out = rerun_document(first, rows, results=args.results, numbers=numbers, max_calls=args.max_calls, per_case_cap=cap,
+                         provenance=pilot.provenance(started_at, code_state, manifest_hash, first["database"], script=SCRIPT),
+                         isolation=isolation)
     Path(args.out).write_text(json.dumps(out, indent=1, default=str), encoding="utf-8")
     print(json.dumps({"out": args.out, "cases": len(rows), "model_calls": spent()}))
 
