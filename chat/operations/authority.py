@@ -63,6 +63,14 @@ HUMAN_FLOOR_SYMPTOMS = frozenset(("SESSION_END_UNRECONCILED", "CUSTODY_REPORTS_C
                                   "RECIPIENT_REPORTED_NOT_RECEIVED"))
 EVIDENCE_GATHERING = frozenset(("REQUEST_RESCAN", "REQUEST_REWEIGH", "REQUEST_DEVICE_SYNC", "REQUEST_ADDITIONAL_EVIDENCE",
                                 "REQUEST_HUB_CHECK"))
+# On a case that requires human investigation, a person's approval may authorize only these safe,
+# evidence-gathering requests. Approval never stands in for the investigation itself: rerouting, returning,
+# reconciling custody or any other consequential action waits for a person's recorded finding.
+HUMAN_INVESTIGATION_APPROVABLE = EVIDENCE_GATHERING
+# Symptoms that describe an open custody, delivery or recipient dispute. A successful evidence request never
+# closes a case while any of them is recorded on it or visible now.
+OPEN_DISPUTE_SYMPTOMS = frozenset(("RECIPIENT_REPORTED_NOT_RECEIVED", "CUSTODY_REPORTS_CONFLICT", "MANIFEST_CUSTODY_CONFLICT",
+                                   "SESSION_END_UNRECONCILED", "DELIVERY_ATTEMPT_FAILED"))
 
 
 def symptom_floor(risk, reason, action_type, symptoms):
@@ -122,9 +130,10 @@ def execution_permission(action_type, path, decided_risk):
     dispatched, on every path. Returns (allowed, rule_id, reason).
 
     AUTO_POLICY: the automatic switch may run only an AUTO-class action the policy decided AUTO.
-    OPERATOR_APPROVAL: a person may authorize AUTO or APPROVAL_REQUIRED actions, including on a case the
-    policy sent to human review (the person is that review). HUMAN_REVIEW-class actions are carried out by
-    a person, never by the system, and PROHIBITED actions never execute, whoever approves."""
+    OPERATOR_APPROVAL: a person may authorize AUTO or APPROVAL_REQUIRED actions. On a case the policy
+    decided needs human investigation, only the evidence-gathering allowlist: approval never replaces the
+    investigation. HUMAN_REVIEW-class actions are carried out by a person, never by the system, and
+    PROHIBITED actions never execute, whoever approves."""
     entry = ACTIONS.get(action_type)
     if entry is None:
         return False, "AUTH-01-unknown-action", "Unknown action type; nothing executes."
@@ -139,8 +148,23 @@ def execution_permission(action_type, path, decided_risk):
             return True, "AUTH-10-auto-allowlist", "AUTO-class action decided AUTO by the authority policy."
         return False, "AUTH-18-auto-not-decided", "Automatic execution needs an AUTO-class action decided AUTO by the authority policy."
     if path == "OPERATOR_APPROVAL":
+        if decided_risk == "HUMAN_REVIEW" and action_type not in HUMAN_INVESTIGATION_APPROVABLE:
+            return False, "AUTH-21-human-investigation-required", (
+                "This case requires human investigation: only evidence-gathering requests may be approved until a "
+                "person records their finding.")
         return True, "AUTH-19-operator-approved", "A person approved an action the policy allows a person to authorize."
     return False, "AUTH-00-unclassified", "Unknown execution path; nothing executes."
+
+
+def recheck_authority(action_type, inputs, symptoms, *, live_session=True):
+    """Recompute the authority decision for an action at approval or dispatch time, from the inputs the
+    investigation's authority decision recorded (diagnosis codes, review verdict, conflicts, custody,
+    degraded roles) and the case's CURRENT symptoms. Returns (risk, reason, closure)."""
+    inputs = inputs or {}
+    risk, reason = authorize(action_type, inputs.get("diagnosis_codes") or [], review_verdict=inputs.get("review_verdict"),
+                             evidence_conflict=bool(inputs.get("evidence_conflict")), synthetic=True, live_session=live_session,
+                             degraded=bool(inputs.get("degraded")), contractor_custody=bool(inputs.get("contractor_custody")))
+    return symptom_floor(risk, reason, action_type, symptoms)
 
 
 def default_action(code):
@@ -170,6 +194,9 @@ RULE_IDS = {
     "Model role unavailable": "AUTH-02-model-degraded",
     "Reviewer rejected": "AUTH-16-review-rejected",
     "No grounded proposal": "AUTH-17-no-proposal",
+    "approval context changed": "AUTH-20-approval-context-stale",
+    "requires human investigation: only evidence-gathering": "AUTH-21-human-investigation-required",
+    "Rules-only proposal": "AUTH-22-rules-only-proposal",
 }
 
 

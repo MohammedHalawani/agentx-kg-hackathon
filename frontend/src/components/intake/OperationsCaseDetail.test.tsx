@@ -79,6 +79,22 @@ describe('Case lifecycle authority', () => {
     expect(screen.getByRole('button', { name: 'Approve action' }).hasAttribute('disabled')).toBe(true)
     expect(screen.getByTestId('approval-blocked').textContent).toContain('A person carries out this action')
   })
+  it('explains each approval refusal the backend recheck returns', () => {
+    mock.data.recommendation_id = 'REC-1'
+    for (const [state, rule, text] of [
+      ['AWAITING_APPROVAL', 'AUTH-20-approval-context-stale', /changed after this recommendation/],
+      ['HUMAN_REVIEW', 'AUTH-21-human-investigation-required', /only evidence-gathering requests can be approved/],
+      ['AWAITING_APPROVAL', 'AUTH-22-rules-only-proposal', /rule checks alone/],
+      ['AWAITING_APPROVAL', 'AUTH-13-prohibited', /never executed by the system/],
+    ] as const) {
+      mock.data.workflow_state = state
+      mock.data.recommendation = { action_en: 'Request a rescan', action_type: 'REQUEST_RESCAN', approvable: false, approval_rule: rule }
+      const { unmount } = render(<LanguageProvider><OperationsCaseDetail caseId="CASE-1" shipmentId="SYN-1" onBack={() => undefined} /></LanguageProvider>)
+      expect(screen.getByRole('button', { name: 'Approve action' }).hasAttribute('disabled')).toBe(true)
+      expect(screen.getByTestId('approval-blocked').textContent).toMatch(text)
+      unmount()
+    }
+  })
   it('says a refused or unacknowledged execution was not dispatched or not accepted, never authorized', () => {
     mock.data.workflow_state = 'HUMAN_REVIEW'
     mock.data.outcome = null

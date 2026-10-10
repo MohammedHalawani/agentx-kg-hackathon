@@ -50,3 +50,15 @@ open cases and back the post-investigation fact checks; they are signals, not a 
 
 A screen may show rule signals, labelled as rule checks at `as_of`. It must not present them as the
 cause, and must not fall back to them when `diagnosis.available` is `false`.
+
+## `recommendation` approval fields
+
+`approvable` is the result of the same recheck an approval runs, on the current case: the recorded
+approval context (symptoms, visible evidence count and latest ingestion time, run, final review,
+case version) must be unchanged, the proposal must come from an agent investigation, and the
+authority policy is recomputed. `approval_rule` names the deciding rule and `approval_reason` explains
+it: `AUTH-20-approval-context-stale` (the basis changed; the case is re-investigated and reviewed
+before anything is approved), `AUTH-21-human-investigation-required` (only evidence-gathering requests
+may be approved on a human-investigation case), `AUTH-22-rules-only-proposal`, `AUTH-12`/`AUTH-13`
+(person-only or prohibited actions), or `LIFECYCLE-not-awaiting-decision`. `approval_context_stale` is
+true when the basis changed. The same checks run again immediately before dispatch.

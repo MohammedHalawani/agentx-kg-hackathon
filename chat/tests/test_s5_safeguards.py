@@ -159,11 +159,12 @@ class _Store(unittest.TestCase):
     setUpClass = classmethod(lambda cls: setattr(cls, "world", generate(Config(total=90))))
     make = _store.StoreTests.make
     processed = _store.StoreTests.processed
+    approvable = _store.StoreTests.approvable
 
 
 class ExecutionRecoveryTests(_Store):
     def test_claimed_but_unacknowledged_execution_is_redispatched_exactly_once(self):
-        store, driver, result = self.processed()
+        store, driver, result = self.approvable()
         case = store.case_detail(result["case_id"])
         store.decide(case["case_id"], "approve", "DEMO-OPERATOR-LOCAL", case["state_version"], "approve-crash")
         calls = []
@@ -251,13 +252,19 @@ class AuthorityPolicyTests(unittest.TestCase):
                                 self.assertEqual(risk, "PROHIBITED")
 
     def test_execution_permission_for_every_action_path_and_decision(self):
-        from operations.authority import ACTIONS, execution_permission
+        from operations.authority import ACTIONS, HUMAN_INVESTIGATION_APPROVABLE, execution_permission
         for action, (base, *_rest) in ACTIONS.items():
             for decided in ("AUTO", "APPROVAL_REQUIRED", "HUMAN_REVIEW", "PROHIBITED", None):
                 auto, _, _ = execution_permission(action, "AUTO_POLICY", decided)
-                approved, _, _ = execution_permission(action, "OPERATOR_APPROVAL", decided)
+                approved, rule, _ = execution_permission(action, "OPERATOR_APPROVAL", decided)
                 self.assertEqual(auto, base == "AUTO" and decided == "AUTO", (action, decided))
-                self.assertEqual(approved, base in ("AUTO", "APPROVAL_REQUIRED") and decided != "PROHIBITED", (action, decided))
+                # On a human-investigation decision a person may approve only the evidence-gathering allowlist.
+                self.assertEqual(approved, base in ("AUTO", "APPROVAL_REQUIRED") and decided != "PROHIBITED"
+                                 and (decided != "HUMAN_REVIEW" or action in HUMAN_INVESTIGATION_APPROVABLE), (action, decided))
+                if base in ("AUTO", "APPROVAL_REQUIRED") and decided == "HUMAN_REVIEW" and not approved:
+                    self.assertEqual(rule, "AUTH-21-human-investigation-required")
+        self.assertEqual(HUMAN_INVESTIGATION_APPROVABLE, frozenset(("REQUEST_RESCAN", "REQUEST_REWEIGH", "REQUEST_DEVICE_SYNC",
+                                                                    "REQUEST_ADDITIONAL_EVIDENCE", "REQUEST_HUB_CHECK")))
         self.assertFalse(execution_permission("NOT_AN_ACTION", "OPERATOR_APPROVAL", "AUTO")[0])
         self.assertFalse(execution_permission("REQUEST_RESCAN", "SOMETHING_ELSE", "AUTO")[0])
 
@@ -265,13 +272,20 @@ class AuthorityPolicyTests(unittest.TestCase):
 class AuthorityAtExecutionTests(_Store):
     """The policy is re-checked on every path: operator approval, the automatic switch and dispatch."""
     def case_with(self, action, risk, state):
-        store, driver, result = self.processed()
+        """An agent-investigated case, then set to the action, decided risk and state under test, with clean authority
+        inputs (no conflict, contractor custody or floor symptom) so only the action and decision matter."""
+        store, driver, result = self.approvable()
         case_id = result["case_id"]
         def tamper(tx):
             case = tx.ledger[case_id][1]
             case["workflow_state"] = state
+            case["symptom_codes"] = ["MILESTONE_OVERDUE"]
             recommendation = tx.ledger[case["recommendation_id"]][1]
             recommendation.update(action_type=action, risk_class=risk)
+            context = json.loads(recommendation["approval_context_json"])
+            context.update(symptoms=["MILESTONE_OVERDUE"], authority_inputs={"diagnosis_codes": ["MISSED_MILESTONE"], "review_verdict": "ACCEPT",
+                           "evidence_conflict": False, "contractor_custody": False, "degraded": False})
+            recommendation["approval_context_json"] = json.dumps(context)
         driver.execute_write(tamper)
         return store, driver, store.case_detail(case_id)
 
@@ -379,6 +393,35 @@ class AuthorityAtExecutionTests(_Store):
             self.assertIsNotNone(recommendation["risk_class"])
             self.assertNotEqual(recommendation["risk_class"], "AUTO")  # No independent model review: never automatic.
 
+    def test_a_rules_only_proposal_is_never_executable_by_approval(self):
+        store, driver, result = self.processed()  # Rules only: no agent investigated, no model reviewed.
+        case = store.case_detail(result["case_id"])
+        self.assertIsNotNone(case["recommendation"])
+        self.assertFalse(case["recommendation"]["approvable"])
+        self.assertEqual(case["workflow_state"], "AWAITING_APPROVAL")  # The fixture's rules-only case waits for a person.
+        self.assertEqual(case["recommendation"]["approval_rule"], "AUTH-22-rules-only-proposal")
+        with self.assertRaises(OperationsConflict) as refused:
+            store.decide(case["case_id"], "approve", "DEMO-OPERATOR-LOCAL", case["state_version"], "approve-rules-only")
+        self.assertIn("AUTH-22-rules-only-proposal", str(refused.exception))
+        self.assertIn("APPROVAL_REFUSED", self.audit(driver))
+        self.assertEqual(self.executions(driver), [])
+        def plant(tx):  # Even an execution written for it is refused at dispatch.
+            recommendation = tx.ledger[case["recommendation_id"]][1]
+            tx.ledger["DEMO-OPS-EXECUTION-RULES"] = ("OpsExecution", {
+                "entity_id": "DEMO-OPS-EXECUTION-RULES", "case_id": case["case_id"], "shipment_id": case["shipment_id"],
+                "action_type": "REQUEST_RESCAN", "authority": "OPERATOR_APPROVAL", "decided_risk": "APPROVAL_REQUIRED", "status": "AUTHORIZED",
+                "dataset_id": self.world.config.dataset_id, "split": "development", "synthetic": True, "recorded_at": recommendation["recorded_at"],
+                "expected_evidence_json": "[]", "approval_context_json": recommendation["approval_context_json"]})
+            tx.ledger[case["case_id"]][1]["workflow_state"] = "AWAITING_OUTCOME"
+        driver.execute_write(plant)
+        calls = []
+        class Adapter:
+            def respond(self, execution, now): calls.append(execution["entity_id"]); return {"acknowledged": True, "behaviour": "test"}
+        store.adapter = Adapter()
+        store.execute_step()
+        self.assertEqual(calls, [])
+        self.assertEqual(driver.ledger["DEMO-OPS-EXECUTION-RULES"][1]["status"], "REFUSED")
+
     def test_a_superseded_snapshot_never_makes_a_rejected_proposal_approvable(self):
         from tests import test_investigator as ti
         from operations.store import MAX_SNAPSHOT_REFRESHES
@@ -423,7 +466,7 @@ class CurrentRunTests(_Store):
         self.assertEqual([t["review"]["verdict"] for t in detail["run"]["result"]["trace"]], ["review_unavailable"])
 
     def test_a_receipt_nobody_acknowledged_is_not_awaiting_an_outcome(self):
-        store, driver, result = self.processed()
+        store, driver, result = self.approvable()
         case = store.case_detail(result["case_id"])
         store.decide(case["case_id"], "approve", "DEMO-OPERATOR-LOCAL", case["state_version"], "approve-unack")
         class Silent:
@@ -440,12 +483,16 @@ class ExceptionClearanceTests(_Store):
     """A verified action resolves the case only when the exception itself is gone."""
     def verify_with(self, exceptions):
         from unittest import mock
-        store, driver, result = self.processed()
+        store, driver, result = self.approvable()
         case = store.case_detail(result["case_id"])
         store.decide(case["case_id"], "approve", "DEMO-OPERATOR-LOCAL", case["state_version"], "approve-clear")
         def no_human_closure(tx):
             for kind, e in tx.ledger.values():
-                if kind == "OpsExecution": e["closure"] = "AUTO"
+                if kind == "OpsExecution":
+                    e["closure"] = "AUTO"
+                    # The same symptoms in the recorded approval context, so the pre-dispatch recheck sees no change.
+                    e["approval_context_json"] = json.dumps({**json.loads(e["approval_context_json"]), "symptoms": ["MILESTONE_OVERDUE"],
+                                                             "human_investigation": False})
                 if kind == "OpsCase": e["symptom_codes"] = ["MILESTONE_OVERDUE"]
         driver.execute_write(no_human_closure)
         store.adapter = _store.Acknowledging()

@@ -139,6 +139,25 @@ def development_reset(store, actor="DEMO-OPERATOR-LOCAL"):
         return store.reset_session(actor, confirmation=store.reset_confirmation())
 
 
+def approval_policy(decided=("APPROVAL_REQUIRED","Action changes destination or service; operator authorization required.")):
+    """While an investigation runs: the authority decision forced to `decided` and no symptom floor, so a test can put
+    an agent-investigated case in front of a person. Approval and dispatch recompute authority with the real policy."""
+    from contextlib import ExitStack
+    from unittest import mock
+    stack=ExitStack()
+    stack.enter_context(mock.patch("operations.authority.authorize",return_value=decided))
+    stack.enter_context(mock.patch("operations.authority.symptom_floor",side_effect=lambda risk,reason,action_type,symptoms:(risk,reason,"AUTO")))
+    return stack
+
+
+def agent_investigator(verdicts=("ACCEPT",),cause="BARCODE_MISMATCH",action="REQUEST_RESCAN"):
+    """A scripted GPT-OSS investigator and reviewer over the real tools (no provider)."""
+    from tests import test_investigator as ti
+    fake=ti.FakeInvestigator(lambda tools:[("shipment_overview",{})],list(verdicts))
+    fake.cause,fake.action=cause,action
+    return fake
+
+
 class Acknowledging:
     """A field system that accepts every request and reports nothing back."""
     def respond(self,execution,now):return {"acknowledged":True,"behaviour":"Request accepted."}
@@ -157,8 +176,15 @@ class StoreTests(unittest.TestCase):
             if any(kind=="OpsCase" for kind,_ in d.ledger.values()):break
         return s,d
     def processed(self):
+        """Rules only (no investigator): its proposal is informational and never executable by approval."""
         store,driver=self.make();result=store.process_one(manual=True)
         self.assertTrue(result["processed"]);return store,driver,result
+    def approvable(self,**agent):
+        """An agent-investigated, reviewed case awaiting a person's approval of an evidence request."""
+        store,driver=self.make();store.agents=agent_investigator(**agent)
+        with approval_policy():result=store.process_one(manual=True)
+        self.assertTrue(result["processed"]);self.assertEqual(result["workflow_state"],"AWAITING_APPROVAL")
+        return store,driver,result
     def test_manifest_fence_and_development_only_no_base_writes(self):
         store,driver=self.make();before=canonical(self.world.manifest())
         driver.marker["state"]="LOADING"
@@ -203,12 +229,12 @@ class StoreTests(unittest.TestCase):
         self.assertFalse(store._subscribers)
 
     def test_pending_reanalysis_is_explicit_versioned_and_distinct_from_reopening(self):
-        store,driver,result=self.processed()
+        store,driver,result=self.approvable()
         case=store.case_detail(result['case_id'])
         requested=store.request_reanalysis(case['case_id'],'DEMO-OPERATOR-LOCAL',case['state_version'],'reanalyze_01')
         self.assertEqual(requested['workflow_state'],'OPEN')
         self.assertTrue(store.request_reanalysis(case['case_id'],'DEMO-OPERATOR-LOCAL',case['state_version'],'reanalyze_01')['idempotent'])
-        self.assertTrue(store.process_one(case_id=case['case_id'])['processed'])
+        with approval_policy():self.assertTrue(store.process_one(case_id=case['case_id'])['processed'])
         self.assertEqual(sum(k=='OpsRun' for k,_ in driver.ledger.values()),2)
         latest=store.case_detail(case['case_id'])
         with self.assertRaises(OperationsConflict):store.decide(case['case_id'],'reopen','DEMO-OPERATOR-LOCAL',latest['state_version'],'reopen_active')
@@ -253,7 +279,7 @@ class StoreTests(unittest.TestCase):
         store.reader.evidence=original
         self.assertTrue(store.process_one(case_id=result["case_id"])["processed"])
     def test_decision_idempotence_stale_version_and_approval_unresolved(self):
-        store,driver,result=self.processed();case=store.case_detail(result["case_id"])
+        store,driver,result=self.approvable();case=store.case_detail(result["case_id"])
         approved=store.decide(case["case_id"],"approve","DEMO-OPERATOR-LOCAL",case["state_version"],"approve-one")
         self.assertEqual(approved["workflow_state"],"AWAITING_OUTCOME");self.assertIsNone(approved["outcome"])
         replay=store.decide(case["case_id"],"approve","DEMO-OPERATOR-LOCAL",case["state_version"],"approve-one")
@@ -274,7 +300,7 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(store.case_detail(case["case_id"])["workflow_state"],"HUMAN_REVIEW")
         self.assertEqual(store.execute_step(),[])  # Exactly once.
     def test_operator_cannot_declare_success_only_the_verifier_decides(self):
-        store,driver,result=self.processed();case=store.case_detail(result["case_id"])
+        store,driver,result=self.approvable();case=store.case_detail(result["case_id"])
         approved=store.decide(case["case_id"],"approve","DEMO-OPERATOR-LOCAL",case["state_version"],"approve")
         store.adapter=Acknowledging()
         store.execute_step()

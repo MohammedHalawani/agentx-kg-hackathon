@@ -196,11 +196,15 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
                 proposal = {"code": code, "action_code": code, "action_type": action, "action": text, "action_en": text,
                             "action_ar": ACTION_SUMMARY_AR[action],
                             "evidence_ids": basis, "requires_approval": True, "resolves": False, "target": action_target(tools_for(s)),
+                            "investigated_by": "agent",
                             "planner": {"mode": inv["mode"], "action_type": action, "evidence_basis": basis}}
         elif s["result"]["recommendations"]:
             from operations.authority import default_action
             r = s["result"]["recommendations"][0]
-            proposal = {**r, "action_code": r["code"], "action_type": default_action(r["code"]), "resolves": False}
+            # Rules-only: shown to a person for information. No agent investigated and no model reviewed it, so the
+            # store never lets an approval make it executable (AUTH-22).
+            proposal = {**r, "action_code": r["code"], "action_type": default_action(r["code"]), "resolves": False,
+                        "investigated_by": "rules"}
         return {"proposal": proposal}, {"proposal": proposal, "evidence_ids": (proposal or {}).get("evidence_ids", []),
             "feedback_received": s.get("feedback"), "verified_precedents": len(s.get("precedents", [])),
             "agent": "authority_catalog" if agents else "evidence_rules"}
