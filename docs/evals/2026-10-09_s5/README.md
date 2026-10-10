@@ -14,9 +14,14 @@ Every number below recomputes from the results files in [`final/`](final):
 python scripts/s5_report_numbers.py docs/evals/2026-10-09_s5/final
 ```
 
-Each results file carries a provenance block: commit, dirty flag at start, whether the tree changed during
-the run, database, dataset id, manifest/feed/truth hashes, configured model, prompt hashes and the model
-calls LiteLLM completed, by the model name the provider reported.
+Seven of the ten results files carry a provenance block: commit, dirty flag at start, whether the tree
+changed during the run, database, manifest hash, configured model, prompt hashes and the model calls
+LiteLLM completed, by the model name the provider reported. Of those seven, `accounting.json`,
+`human.json` and `checks.json` record the manifest hash but not the dataset id, feed hash or truth hash,
+because they read the pipeline's database (manifest d8707c05). The other three files have no provenance
+block: `case_api_smoke.json` and `dashboard_smoke.json` are read-only checks whose method is described in
+the file, and `neo4j_tests.txt` is plain test output. (Precision fix after the second independent review;
+no rerun.)
 
 ## 1. Latest `fhd` commit
 
@@ -95,6 +100,12 @@ every shipment with its detection result.
 - Approvals: two attempts to approve person-only actions (delivery-dispute review, conflicting-custody
   review) were refused by `AUTH-12-human-review-action` with 0 executions before and after; one
   approval-required device sync was approved and executed with rule `AUTH-19-operator-approved`.
+  That approval was on 000392, one of the 15 wrong diagnoses: the investigator said CUSTODY_GAP (truth:
+  manifest conflict plus a delayed sync), it proposed a device sync, and authority required approval
+  because the action did not address the diagnosis it supported. The harness, acting as the operator
+  (`DEMO-OPERATOR-LOCAL`), approved it; approval did not recompute authority on the current evidence
+  (finding M2). The sync was acknowledged and the case was left awaiting its outcome when the phase
+  ended, so after the human phase one wrong-diagnosis case had an operator-approved execution.
 
 ## 6. Independent verification
 
@@ -153,14 +164,21 @@ Product limitations:
 | C. Private-car contractor missing return, human intervention | Shown, with a wrong diagnosis | 000187 and 000239 routed to a person by `AUTH-04-contractor-custody`; diagnosis wrong; person's finding recorded as HUMAN_VERIFIED and escalated (`human.json`) |
 | D. Reviewer failure blocks automatic action | Shown | `reviewer_failure.json` |
 | E. Executed action fails verification, stays unresolved | Shown | 000553 (delivery failed again), 000029 (no confirming evidence) |
-| F. Slow investigation while ingestion and monitoring continue | Shown | `concurrency.json`: investigation paused 210 s with 2 cases waiting: 782 events ingested, 85 monitor checks, 0 investigations; then 37 s, 21 s and 12 s investigations with 144, 130 and 40 events ingested meanwhile |
+| F. Slow investigation while ingestion and monitoring continue | Shown | `concurrency.json`: investigation paused 210 s with 2 cases waiting: 782 events ingested, 85 monitor checks, 0 investigations; then 37 s, 21 s and 12 s investigations with 144, 130 and 40 events ingested meanwhile. Same commit and code, but run on its own database (`shipments-v2-demo-test2`) built from a different generation (manifest 2a755dd1, feed fb6f758a, truth 4c0fd081) than the pipeline run (d8707c05, 650656eb, 07755972), so its cases are not the pipeline's cases |
 
 ## 9. Does S5 meet its acceptance criteria? (my assessment)
 
 Met: the reviewer fails closed and is shown as unavailable; nothing from the answer key reaches records,
 the API or the UI; the four authority levels hold at execution on every path; no resolution on a wrong
-cause or with the exception still present; failed actions stay unresolved; scenarios A to F are shown on
-committed, clean code with provenance; detection has no false positives on live or held-out data.
+cause, and none with a standing symptom still recorded at closure; failed actions stay unresolved;
+scenarios A to F are shown on committed, clean code with provenance; detection has no false positives on
+live or held-out data.
+
+Not met, as section 4 says: 2 of the 6 automatic resolutions (000415, 000466) were premature. They closed
+when the recipient confirmed the address, before the redelivery that would remove the exception had
+happened, and the monitor reopened them hours later. "Resolved only when the exception is gone" therefore
+does not hold for those two. (The earlier wording here said there was no resolution with the exception
+still present; that contradicted section 4 and is corrected without a rerun.)
 
 Not yet met to a credible standard: autonomy (6 automatic resolutions, 4 of 20 eligible shipments, 63%
 diagnosis accuracy) and the evidence for scenario B, which rests on a simulator with the four fidelity
