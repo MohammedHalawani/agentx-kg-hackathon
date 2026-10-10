@@ -21,7 +21,8 @@ def build(config, *, dry_run=False):
     return {
         "arms": {
             "agent": AgentArm(lambda case: run_case(stores[case.world], case), config.c_cap, config.r_cap),
-            "notools": NoToolsArm(),            # default turn = operations.investigator.model_turn (same model and settings)
+            "notools": NoToolsArm(c_cap=config.c_cap),   # default turn = operations.investigator.model_turn (same model and
+                                                         # settings); its packet states the sealed per-case cap
             "rulecode": RuleCodeArm(),
             "symptom": SymptomArm(),
         },
@@ -77,8 +78,8 @@ backend has no `read_one` or `read_all` helper, as an earlier version of this pa
   ledger never counts the agent's calls a second way. A record without a readable count is settled at its full worst
   case and flagged. A count above C_cap + R_cap stops the run as a cap violation.
 - If Stage 2 keeps a separate reviewer cap, put it in `EvalConfig.r_cap` before selecting: the sizing becomes
-  `floor(budget / (C_cap + R_cap + 2))` (addendum to amendment 2, item 1; the budget is the one `select` seals from
-  the campaign ledger, not 4,000) and each agent case reserves C_cap + R_cap.
+  no longer a function of a budget (lifted 2026-10-11: the selection takes the design's targets, capped by the
+  world), and each agent case reserves C_cap + R_cap.
 - Also map, if Stage 2 adds them: `tokens`, `cap_hit`, `wall_seconds`, `tool_seconds` (per tool query, seconds) in
   `records.FIELDS`. They feed the usage and latency sections; nothing is scored on them.
 
@@ -118,7 +119,8 @@ replace `NoToolsArm.run` behind the same `Arm` interface.
 
 ## 5. The extras (exploratory)
 
-They run only if calls remain after the main test, in the fixed order ablation then stability, and each extra case
+They run after the main test, in the fixed order ablation then stability (their worst case is part of the sealed
+budget: the ablation on every eligible E1 identifiable ambiguous case, stability on 40 seeded ones), and each extra case
 is handed a `CaseRef` whose `as_of` is the MAIN agent run's snapshot (the clock has moved on by then). So they must
 investigate **as of** `case.as_of` with the time-correct predicate, e.g. through `operations.graph.investigate(
 shipment_id, as_of, ...)` with its `disabled_tools=` keyword (the cross-shipment tools for the ablation, an empty
@@ -170,8 +172,12 @@ python -m stage3_eval select --world E1=<truth dir of E1>/development --world E2
 #    derived from truth; extras.json is opened by the run only when --extras names it, after the last main-test case.
 # 3. Zero-call rehearsal on the real databases (no model call, no case investigated):
 SUHAIL_EVAL_TRUTH_ROOT= python -m stage3_eval run --selection .../selection.json --extras .../extras.json --out <run dir>-dry --wiring scripts.stage3_wiring:build --dry-run
-# 4. The run (truth unreachable: no variable naming TRUTH and no SUHAIL_SIM_STATE_ROOT may be set):
-SUHAIL_EVAL_TRUTH_ROOT= python -m stage3_eval run --selection .../selection.json --extras .../extras.json --out <run dir> --wiring scripts.stage3_wiring:build
+# 4. The run (truth unreachable: no variable naming TRUTH and no SUHAIL_SIM_STATE_ROOT may be set), in three steps:
+#    the first 40 cases, the recorded automatic checkpoint (no truth; exit code 0 on pass, 3 on fail), then the rest.
+SUHAIL_EVAL_TRUTH_ROOT= python -m stage3_eval run --selection .../selection.json --extras .../extras.json --out <run dir> --wiring scripts.stage3_wiring:build --max-cases 40
+SUHAIL_EVAL_TRUTH_ROOT= python -m stage3_eval checkpoint --selection .../selection.json --run <run dir> --wiring scripts.stage3_wiring:build_checkpoint
+#    only if the checkpoint passed (<run dir>/checkpoint.json, "pass": true):
+SUHAIL_EVAL_TRUTH_ROOT= python -m stage3_eval run --selection .../selection.json --extras .../extras.json --out <run dir> --wiring scripts.stage3_wiring:build --resume
 # 5. Score and report (truth readable again):
 python -m stage3_eval score --selection .../selection.json --run <run dir> --world E1=<truth dir> --world E2=<truth dir> \
     --wiring scripts.stage3_wiring:build_scorer
@@ -186,7 +192,8 @@ own directory and is disclosed (amendment 1, H).
 cases of the directory count; N is the only thing the stop reads), with status `paused`, no extras, and the campaign
 ledger holding the calls committed so far. Continue with `--resume --max-cases M` (M > N) or `--resume` alone, in the
 same directory and on the same live session (the wiring's `--resume` rule; do not reset the session or start another
-run in between: the pause frees the unspent budget and the resume must be able to reserve it again). Step 5 works on
+run in between: the pause frees the unspent budget and the resume must be able to reserve it again). `checkpoint`
+reads a paused run directory and the run's database read-only, and changes neither. Step 5 works on
 a paused run and labels its report an interim look over the first N of the total cases (README, "Taking the run in
 parts"). The wiring needs no change: a resumed run asks `case_ref` for the settled cases again (the clock does not
 move for them) and calls `capture_case` only for cases it settles itself; `capture_run` is also called at a pause.
@@ -259,11 +266,14 @@ What the wiring added to or settled about the sections above:
 - **Resolver (section 7).** A cited id resolves from the database's `V2Entity` records first; an id that is not one
   (a tool-computed `DEMO-CMP-` result, a precedent, a device) resolves from `captured/tool_index/`, written by the
   tools' code. An id in neither does not resolve.
-- **Campaign ledger.** `select` seals `budget = min(4000 - spent, 3600 - spent)` from `docs/evals/model_call_ledger.json`
-  (3,600 is `design.STAGE3_STOP_AT`, where Stage 3 stops; addendum to amendment 3); `run` refuses to start past the cap
-  or past that line, reserves the budget and writes what it used (README, design item table). `select --reserve N`
-  seals `budget = min(4000 - spent - N, 3600 - spent)` and the reserve itself; `run` then also refuses if spent + budget
-  would exceed 4000 - N.
+- **Campaign ledger.** The cap of `docs/evals/model_call_ledger.json` (20,000) is a runaway guard, not a budget (lifted
+  2026-10-11). `select` sizes from the design's targets and seals the worst case of the selection as the budget;
+  `run` refuses to start only if spent + budget would cross the guard, reserves the budget and writes what it used
+  (README, "Sizing and the ledger guard"). `select --reserve N` and `--stop-at N` are off by default; with a reserve
+  sealed, `run` also refuses if spent + budget would exceed the cap less N.
+- **Checkpoint.** `build_checkpoint(config, run_dir)` returns `{"resolver", "close"}`: the scorer's evidence resolver
+  (database `V2Entity` records, then `captured/tool_index/`), read-only, with no truth and no ingestion log. It is
+  refused while a truth variable is set and, like the scorer, refuses a database whose live session is not the run's.
 - **Gate fixes (2026-10-11).**
   - *Cap equality.* `prepare_session` sets the store's `model_call_cap` to the sealed `C_cap`; `require_sealed_cap` reads
     it back through `investigator.CallBudget` at build and again before every case and extra, and stops the run
