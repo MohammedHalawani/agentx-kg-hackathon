@@ -14,7 +14,8 @@ from dataset_v2.contracts import instant, iso
 
 TEST_DATABASE = os.environ.get("SUHAIL_TEST_DATABASE", "shipments-v2-demo-test")
 # Scratch databases only: each run recreates the one it uses.
-assert TEST_DATABASE in ("shipments-v2-demo-test", "shipments-v2-demo-test2", "shipments-v2-demo-ci-test")
+assert TEST_DATABASE in ("shipments-v2-demo-test", "shipments-v2-demo-test2", "shipments-v2-demo-ci-test",
+                         "shipments-v2-demo-ui")  # -ui: UI integration branch scratch database only
 
 
 @unittest.skipUnless(os.environ.get("SUHAIL_NEO4J_TESTS") == "1", "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j")

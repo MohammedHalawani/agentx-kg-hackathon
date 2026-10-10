@@ -17,7 +17,8 @@ import os as _os
 # A second isolated twin lets two evaluation phases run side by side.
 TEST_DATABASE = _os.environ.get("SUHAIL_TEST_DATABASE", "shipments-v2-demo-test")
 # Scratch databases only: each run recreates the one it uses.
-assert TEST_DATABASE in ("shipments-v2-demo-test", "shipments-v2-demo-test2", "shipments-v2-demo-ci-test")
+assert TEST_DATABASE in ("shipments-v2-demo-test", "shipments-v2-demo-test2", "shipments-v2-demo-ci-test",
+                         "shipments-v2-demo-ui")  # -ui: UI integration branch scratch database only
 
 
 def build_test_database(total=150, live_split="development"):
