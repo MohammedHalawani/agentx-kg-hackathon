@@ -5,7 +5,7 @@
       runner never called) and write the report skeleton.
 
   python -m stage3_eval select --world E1=TRUTH_DIR [--world E2=TRUTH_DIR] --database E1=DB [--database E2=DB] \
-      --freeze-commit FULL_HASH --c-cap N [--r-cap N] --out DIR
+      --freeze-commit FULL_HASH --c-cap N [--r-cap N] [--reserve N] --out DIR
       TRUTH_DIR holds truth.jsonl and monitor_replay_rows.jsonl (world.export's <truth-root>/.../<live split>/).
 
   python -m stage3_eval run --selection DIR/selection.json --out RUN_DIR --wiring MODULE:FUNCTION [--extras DIR/extras.json]
@@ -31,6 +31,9 @@ every real model call made so far against the 4,000 cap. `select` sizes the eval
 (N_main = floor(remaining / (C_cap + R_cap + 2))) and seals that budget; `run` refuses to start if the calls spent
 plus the sealed budget would exceed the cap, reserves the budget before the first case and writes what it used at
 the end (a run that dies stays counted at its whole budget). The fixture dry run touches no ledger.
+`select --reserve N` keeps N calls of the campaign out of the evaluation: the sealed budget is cap - spent - N (so
+N_main = floor((cap - spent - N) / (C_cap + R_cap + 2))), N is sealed in the configuration, and `run` refuses to start
+if the calls spent plus the sealed budget would exceed cap - N.
 """
 import argparse
 import importlib
@@ -148,6 +151,8 @@ def main(argv=None):
     s.add_argument("--database", action="append", help="WORLD=database name the run wiring opens (sealed into the config)")
     s.add_argument("--out", required=True)
     s.add_argument("--ledger", help="campaign model-call ledger (default docs/evals/model_call_ledger.json)")
+    s.add_argument("--reserve", type=int, default=0, metavar="N",
+                   help="campaign calls kept out of this evaluation: the sealed budget is cap - spent - N (default 0)")
     r = sub.add_parser("run")
     r.add_argument("--selection", required=True)
     r.add_argument("--out", required=True)
@@ -176,18 +181,22 @@ def main(argv=None):
     elif args.cmd == "select":
         from stage3_eval.selection import select
         campaign = _campaign(args.ledger).summary()
-        if campaign["remaining"] < 1:
-            raise SystemExit(f"no model calls remain in the campaign ledger ({campaign['spent']} of {campaign['cap']} spent or reserved)")
+        if args.reserve < 0:
+            raise SystemExit("--reserve must be zero or more")
+        if campaign["remaining"] - args.reserve < 1:
+            raise SystemExit(f"no model calls remain in the campaign ledger ({campaign['spent']} of {campaign['cap']} spent or reserved"
+                             + (f", {args.reserve} set aside by --reserve)" if args.reserve else ")"))
         # The evaluation's budget is what the campaign has left (pilot and development calls already count), not 4,000.
         config = EvalConfig(freeze_commit=args.freeze_commit, c_cap=args.c_cap, r_cap=args.r_cap, sampling=args.sampling,
-                            budget=campaign["remaining"],
+                            budget=campaign["remaining"] - args.reserve, reserve=args.reserve,
                             worlds={item.partition("=")[0]: {"database": dict(d.partition("=")[::2] for d in args.database or []).get(item.partition("=")[0])}
                                     for item in args.world})
         summary = select(_worlds(args.world), config, args.out)
-        print(json.dumps({"campaign_ledger": campaign, "budget": config.budget, **{k: v for k, v in summary.items() if k != "census"}},
+        print(json.dumps({"campaign_ledger": campaign, "budget": config.budget, "reserve": config.reserve,
+                          **{k: v for k, v in summary.items() if k != "census"}},
                          indent=1, default=str))
     elif args.cmd == "run":
-        from stage3_eval.runner import refuse_truth_environment, run
+        from stage3_eval.runner import refuse_into_reserve, refuse_truth_environment, run
         try:
             refuse_truth_environment()        # BEFORE the wiring opens a database or anything else is read
         except RuntimeError as refusal:
@@ -199,6 +208,8 @@ def main(argv=None):
         campaign = _campaign(args.ledger)
         try:
             campaign.check(0 if args.resume else config.budget)   # before any database is opened; a resume re-holds its own entry
+            if not args.resume:
+                refuse_into_reserve(campaign, config)             # the calls the selection set aside (select --reserve)
         except (LedgerRefused, LedgerError) as refusal:
             raise SystemExit(f"Refusing to run: {refusal}") from None
         wired = _call_wiring(_wiring(args.wiring), config, dry_run=args.dry_run, resume=args.resume, selection=selection)

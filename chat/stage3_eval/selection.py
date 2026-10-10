@@ -212,6 +212,7 @@ def select(worlds, config: EvalConfig, out_dir, *, vocabulary_of=None, exclusion
               "strata": _write_once(out_dir / "strata.json", strata_list)}
     return {"hashes": hashes, "allocation": {**allocation, "cells": {f"{w}/{st}": v for (w, st), v in sorted(allocation["cells"].items())}},
             "shortfalls": shortfalls, "selected": len(selected), "exclusions": exclusion_record,
+            "budget": config.budget, "reserve": config.reserve,
             "by_cell": {f"{w}/{s}": sum(1 for c in selected if (c["world"], c["stratum"]) == (w, s)) for w in WORLDS for s in STRATA},
             "pairs": len(pairs["pairs"]), "census": census}
 

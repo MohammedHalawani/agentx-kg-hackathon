@@ -145,3 +145,54 @@ def test_cli_run_goes_through_the_ledger(tmp_path, capsys, campaign_ledger_file,
         main(["run", "--selection", str(selection), "--out", str(tmp_path / "again"), "--wiring", wiring])
     assert not WIRED and not (tmp_path / "again").exists()            # refused before the wiring opened anything
     assert CallLedger(campaign_ledger_file).spent == 173 + used
+
+
+def test_select_reserve_keeps_calls_out_of_the_budget_and_the_run_respects_it(tmp_path, capsys, campaign_ledger_file, monkeypatch):
+    """select --reserve N: budget = cap - spent - N, sealed with the reserve; run refuses to go into the reserve."""
+    monkeypatch.delenv("SUHAIL_EVAL_TRUTH_ROOT", raising=False)
+    for w in ("E1", "E2"):
+        shutil.copytree(world_dir(w) / "truth", tmp_path / f"truth_{w}")
+    args = ["select", "--freeze-commit", "d" * 40, "--c-cap", "16", "--reserve", "400", "--out", str(tmp_path / "pre")]
+    for w in ("E1", "E2"):
+        args += ["--world", f"{w}={tmp_path / f'truth_{w}'}"]
+    assert main(args) == 0
+    printed = json.loads(capsys.readouterr().out)
+    selection_path = tmp_path / "pre" / "selection.json"
+    sealed = json.loads(selection_path.read_text())
+    assert (printed["campaign_ledger"]["spent"], printed["budget"], printed["reserve"]) == (173, 3427, 400)   # 4,000 - 173 - 400
+    assert (sealed["config"]["budget"], sealed["config"]["reserve"], sealed["config"]["c_cap"]) == (3427, 400, 16)
+    assert sealed["n_main"] == 3427 // (16 + 2) == 190 and printed["allocation"]["n_main"] == 190
+    assert CallLedger(campaign_ledger_file).spent == 173                # selecting writes nothing to the ledger
+    # The reserve is part of what is sealed; a zero reserve is not written, so earlier selections keep their hash.
+    config = design.EvalConfig(**sealed["config"])
+    assert design.sealed_hash(config) == sealed["sealed_config_hash"] != design.sealed_hash(design.EvalConfig(**{**sealed["config"], "reserve": 0}))
+    assert "reserve" not in make_config().as_dict() and make_config(reserve=5).as_dict()["reserve"] == 5
+    for bad in ("-1", "3827"):                                          # nothing would be left
+        with pytest.raises(SystemExit):
+            main(["select", "--freeze-commit", "d" * 40, "--c-cap", "16", "--reserve", bad, "--out", str(tmp_path / "pre2"),
+                  "--world", f"E1={tmp_path / 'truth_E1'}"])
+    # The run: 173 + 3,427 is exactly cap - reserve, so it may start; one more call spent and it may not.
+    wiring = "stage3_eval.tests.test_campaign:fake_wiring"
+    assert main(["run", "--selection", str(selection_path), "--out", str(tmp_path / "dry"), "--wiring", wiring, "--dry-run"]) == 0
+    capsys.readouterr()
+    write_campaign_ledger(campaign_ledger_file, spent=174)              # still inside the cap (174 + 3,427 = 3,601), but in the reserve
+    WIRED.clear()
+    with pytest.raises(SystemExit, match="Refusing to run: refused.*400 are set aside by the selection"):
+        main(["run", "--selection", str(selection_path), "--out", str(tmp_path / "run"), "--wiring", wiring])
+    assert not WIRED and not (tmp_path / "run").exists() and CallLedger(campaign_ledger_file).spent == 174
+    # The same refusal from the run function itself (dry or not), before anything is written.
+    arms = build_arms(config, FakeAgent({w: rows for w, (rows, _r) in fixture_worlds().items()}), notools_turn_factory()[0])
+    for dry in (False, True):
+        with pytest.raises(LedgerRefused, match="would go into that reserve"):
+            run(selection_path, tmp_path / "direct", arms=arms, case_source=FixtureCaseSource(), config=config,
+                campaign=CallLedger(campaign_ledger_file), dry_run=dry)
+    assert not (tmp_path / "direct").exists()
+    # A paused run of this selection resumes inside the reserve's limit: its own entry is not counted against it.
+    write_campaign_ledger(campaign_ledger_file, spent=173)
+    campaign = CallLedger(campaign_ledger_file)
+    first = run(selection_path, tmp_path / "parts", arms=arms, case_source=FixtureCaseSource(), config=config, campaign=campaign, max_cases=2)
+    assert first["status"] == "paused" and campaign.spent == 173 + 20
+    arms = build_arms(config, FakeAgent({w: rows for w, (rows, _r) in fixture_worlds().items()}), notools_turn_factory()[0])
+    again = run(selection_path, tmp_path / "parts", arms=arms, case_source=FixtureCaseSource(), config=config, campaign=campaign,
+                max_cases=4, resume=True)
+    assert again["status"] == "paused" and campaign.spent == 173 + 40

@@ -49,7 +49,7 @@ hand its output to a later part of the run.
 | Design item | Where |
 |---|---|
 | Budget: 4,000 calls, C_cap (+ R_cap) per agent case, 2 for B_notools, N_main = floor(4000 / (C_cap + R_cap + 2)) | `design.py`, `budget.py` |
-| One campaign ledger for every real model call (`docs/evals/model_call_ledger.json`, cap 4,000): `select` seals budget = cap - spent, so N_main = floor(remaining / (C_cap + R_cap + 2)); `run` refuses to start past the cap, reserves its budget and writes what it used | `operations/call_ledger.py`, `__main__.py`, `runner.run(campaign=...)` |
+| One campaign ledger for every real model call (`docs/evals/model_call_ledger.json`, cap 4,000): `select` seals budget = cap - spent, so N_main = floor(remaining / (C_cap + R_cap + 2)); `run` refuses to start past the cap, reserves its budget and writes what it used. `select --reserve N` keeps N calls out: budget = cap - spent - N, N sealed in the configuration, and `run` refuses if spent + budget would exceed cap - N | `operations/call_ledger.py`, `__main__.py`, `runner.run(campaign=...)` |
 | Allocation (160 / 60 / 30+10 / 20+5 at C_cap 12) and the shrink order | `design.py`, `selection.allocate` |
 | Strata: identifiable ambiguous, determined (census of >= 5, else the generator map), unidentifiable | `strata.py` |
 | Reproduces the Stage 0 S5 split (19 determined, 22 ambiguous) | `tests/test_strata_selection.py` |

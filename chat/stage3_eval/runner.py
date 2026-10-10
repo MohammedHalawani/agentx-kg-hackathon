@@ -65,6 +65,21 @@ def truth_modules_loaded():
     return sorted(name for name in sys.modules if any(name == m or name.startswith(m + ".") for m in TRUTH_MODULES))
 
 
+def refuse_into_reserve(campaign, config, *, run_name=None):
+    """Refuse (LedgerRefused, nothing written) a run whose sealed budget would take the campaign past cap - reserve,
+    the reserve being the calls the selection set aside (select --reserve N). run_name: this run's own entry, left out
+    of the calls already spent when it is being resumed."""
+    from operations.call_ledger import LedgerRefused
+    if not config.reserve:
+        return
+    document = campaign.load()
+    others = sum(entry["calls"] for entry in document["entries"] if entry["run"] != run_name)
+    if others + config.budget > document["cap"] - config.reserve:
+        raise LedgerRefused(f"refused: {others} of {document['cap']} campaign model calls are spent or reserved and {config.reserve} are "
+                            f"set aside by the selection; a run of up to {config.budget} calls would go into that reserve "
+                            f"({document['cap'] - config.reserve - others} remain outside it)")
+
+
 def load_selection(path):
     """selection.json, refused unless it matches the sha256 written beside it at pre-registration and carries only
     what the run step may read: a file with a stratum, a main-test flag, an extras list or any other truth-derived
@@ -156,7 +171,7 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
     the provider counted and whether the code tree changed during the run).
     campaign: the campaign's persistent model-call ledger (operations.call_ledger.CallLedger). The run's own maximum
     is config.budget: the run refuses to start if the calls already spent in the campaign plus that maximum would
-    exceed the campaign cap, reserves the maximum before the first case and writes the calls it actually committed
+    exceed the campaign cap (less config.reserve, the calls the selection set aside), reserves the maximum before the first case and writes the calls it actually committed
     at the end. A run that dies leaves its reservation counted at the maximum. A dry run checks and writes nothing.
     extras_path: extras.json of the pre-registration. The lists in it are derived from truth (which cases are in the
     main test, which have a cross-shipment mechanism), so the file is opened only after the last main-test case has
@@ -195,6 +210,7 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
     settled_keys = {row["key"] for row in settled_before}
     campaign_run = f"stage3 run {out.name} selection {selection_sha[:12]}"
     if campaign is not None:
+        refuse_into_reserve(campaign, config, run_name=campaign_run if resume else None)
         if dry_run:
             campaign.check(config.budget)        # LedgerRefused if it would not fit; nothing is written
         else:

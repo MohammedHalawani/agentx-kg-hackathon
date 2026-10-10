@@ -170,9 +170,16 @@ class EvalConfig:
     worlds: dict = field(default_factory=dict)      # {"E1": {"dataset_id", "export", "database"}, "E2": {...}}
     sampling: str = "round_robin_by_mechanism"      # within a stratum: seeded, balanced over explaining mechanisms
     notes: str = ""
+    # Campaign calls kept out of this evaluation at selection (select --reserve N): budget = cap - spent - reserve, and
+    # the run refuses to start if the calls spent plus the budget would go past cap - reserve.
+    reserve: int = 0
 
     def as_dict(self):
-        return asdict(self)
+        """The sealed form. A zero reserve is left out, so a selection sealed before the reserve existed keeps its hash."""
+        out = asdict(self)
+        if not out["reserve"]:
+            del out["reserve"]
+        return out
 
 
 def canonical_bytes(data: bytes) -> bytes:
