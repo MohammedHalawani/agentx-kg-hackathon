@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "chat"))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from fastapi import FastAPI, HTTPException, Query, Request
-from fastapi.responses import JSONResponse, RedirectResponse, Response, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from neo4j.exceptions import ServiceUnavailable
 from pydantic import BaseModel, Field
@@ -328,6 +328,43 @@ def thread_delete(thread_id: str) -> dict:
 # the graph is never involved. Mounted read-only, before the SPA catch-all.
 if config.PHOTOS_DIR and Path(config.PHOTOS_DIR).is_dir():
     app.mount("/photos", StaticFiles(directory=config.PHOTOS_DIR), name="photos")
+
+# The redesigned operator interface (frontend-next) is served under /app/ from this same origin, so
+# its page routes (/app/audit, /app/explore, /app/cases/...) never collide with the API routes of the
+# same names. The existing frontend below stays where it is, unchanged, as the rollback.
+_NEXT = Path(__file__).resolve().parent.parent / "frontend-next" / "dist"
+
+
+def next_app_file(path: str) -> Path | None:
+    """The built file for an /app/ request, the app shell for a page route, or None (404)."""
+    root = _NEXT.resolve()
+    index = root / "index.html"
+    if not index.is_file():
+        return None  # Not built: say so with a 404 rather than serving anything else.
+    if path:
+        candidate = (root / path).resolve()
+        if root in candidate.parents and candidate.is_file():
+            return candidate
+        # A missing asset or file is a 404; only page routes fall back to the app shell.
+        if path.startswith("assets/") or Path(path).suffix:
+            return None
+    return index
+
+
+@app.get("/app", include_in_schema=False)
+def next_app_root() -> Response:
+    return RedirectResponse("/app/")
+
+
+@app.get("/app/{path:path}", include_in_schema=False)
+def next_app(path: str = "") -> Response:
+    target = next_app_file(path)
+    if target is None:
+        raise HTTPException(404, "Not found in the Suhail interface build (frontend-next/dist)")
+    # The shell must be revalidated so a rebuilt app is picked up; hashed assets may be cached.
+    headers = {"Cache-Control": "no-cache"} if target.name == "index.html" else None
+    return FileResponse(target, headers=headers)
+
 
 # Production is the only mode: the backend serves the built frontend from the SAME origin.
 _DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
