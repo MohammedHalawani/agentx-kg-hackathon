@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
+import {
+  Link,
+  Navigate,
+  useLocation,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import { useGroupRef } from "react-resizable-panels";
 import {
   ArrowLeft,
@@ -100,9 +106,14 @@ export function InvestigationPage() {
     requestedStage >= 0 &&
     requestedStage <= 7;
   // Backend: hold the case open so its evidence loads and its recorded stages stream in.
+  // A link may carry a shipment id; cases are addressed by case id, so it is redirected.
+  const alias = backend
+    ? cases.find((item) => item.id !== caseId && item.shipment.id === caseId)
+    : undefined;
+  const watchId = alias ? null : caseId;
   useEffect(
-    () => (caseId ? service.watchCase?.(caseId) : undefined),
-    [caseId, service],
+    () => (watchId ? service.watchCase?.(watchId) : undefined),
+    [watchId, service],
   );
   const labStageEvidence = [
     "origin",
@@ -156,6 +167,7 @@ export function InvestigationPage() {
     requestedSection,
     navigationKey,
   ]);
+  if (alias) return <Navigate to={`/cases/${alias.id}`} replace />;
   const missing = c?.backend && !c.backend.detailLoaded && c.backend.detailError;
   if (c?.backend && !c.backend.detailLoaded && !missing && !c.shipment.id)
     return (
@@ -351,7 +363,12 @@ export function InvestigationPage() {
                         "Escalated · manual follow-up",
                         "تم التصعيد · متابعة بشرية",
                       )
-                    : c.run
+                    : c.backend?.supersededRunId && c.status === "queued"
+                      ? t(
+                          "Queued for re-investigation · the earlier run is superseded",
+                          "في انتظار إعادة التحقيق · التحقيق السابق لم يعد سارياً",
+                        )
+                      : c.run
                       ? backend
                         ? c.status === "investigating"
                           ? t("Investigation in progress", "التحقيق جارٍ")

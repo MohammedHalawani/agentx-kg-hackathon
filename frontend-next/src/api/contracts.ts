@@ -261,6 +261,8 @@ export interface ApiCaseDetail {
     mode?: string;
     status?: string;
   } | null;
+  /** While a re-investigation is queued: the earlier run, superseded. Never the current run. */
+  previous_run?: { entity_id?: string; recorded_at?: string; superseded?: boolean } | null;
   evidence: { nodes: ApiEvidenceNode[]; edges: ApiEvidenceEdge[] };
   ledger_graph?: { nodes: ApiEvidenceNode[]; edges: ApiEvidenceEdge[] };
   diagnosis?: ApiDiagnosis;

@@ -164,6 +164,8 @@ export interface BackendCaseState {
   /** Evidence ids the recorded stage cited, by UI stage index. */
   stageEvidence: Record<number, string[]>;
   pipelineStatus: string;
+  /** Set while a re-investigation is queued: the earlier run, which is no longer current. */
+  supersededRunId?: string | null;
   investigationAsOf: string | null;
   evidenceAfterInvestigation: number;
   /** Counts before the graph was bounded for display. */

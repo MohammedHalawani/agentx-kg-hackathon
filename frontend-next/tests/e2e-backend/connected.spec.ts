@@ -162,6 +162,15 @@ test("Investigation shows recorded evidence, keeps GPS apart from custody, and r
   ).toHaveCount(1);
 });
 
+test("A link that carries a shipment id opens that shipment's case", async ({
+  page,
+}) => {
+  await stubBackend(page);
+  await page.goto(`/app/cases/${SHIP_A}`);
+  await expect(page).toHaveURL(new RegExp(`/app/cases/${CASE_A}$`));
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(SHIP_A);
+});
+
 test("A case the backend does not have is reported, not rendered", async ({
   page,
 }) => {

@@ -239,6 +239,56 @@ describe("backend case detail", () => {
     expect(refused.summary).not.toMatch(/wrong person/);
   });
 
+  it("keeps real citations inside the graph bound even when collection stages list everything", () => {
+    const all = detailA().evidence.nodes.map((node) => node.id);
+    const crowded = applyDetail(
+      base,
+      detailA({
+        pipeline: {
+          ...detailA().pipeline!,
+          events: [
+            // As the real backend records them: extract and retrieve list every record read.
+            { sequence: 1, stage: "extract", status: "COMPLETED", output: { evidence_ids: all } },
+            { sequence: 2, stage: "retrieve", status: "COMPLETED", output: { evidence_ids: all, nodes: all.length } },
+            { sequence: 3, stage: "classify", status: "COMPLETED", output: { evidence_ids: [`${SHIP_A}-SCAN-77`] } },
+          ],
+        },
+        rule_signals: {
+          kind: "rule_signals",
+          is_diagnosis: false,
+          as_of: "2026-09-03T14:00:00+00:00",
+          signals: [{ code: "MISSED_MILESTONE", evidence_ids: [`${SHIP_A}-SCAN-78`] }],
+        },
+      }),
+    );
+    const ids = new Set(crowded.nodes.map((n) => n.id));
+    expect(ids.size).toBe(GRAPH_LIMIT);
+    for (const id of [`${SHIP_A}-SCAN-77`, `${SHIP_A}-SCAN-78`, `${SHIP_A}-CUST-02-01`])
+      expect(ids.has(id), id).toBe(true);
+  });
+
+  it("marks a queued re-investigation and never shows the superseded run as current", () => {
+    const requeued = applyDetail(
+      base,
+      detailA({
+        workflow_state: "REOPENED",
+        run: null,
+        previous_run: { entity_id: "SYN-RUN-1", superseded: true },
+        pipeline: { events: [], status: "QUEUED" },
+        recommendation: null,
+        review: null,
+        diagnosis: { ...detailA().diagnosis!, available: false, reason: "reinvestigation_pending", summary: null, primary_cause: null, hypotheses: [] },
+      }),
+    );
+    expect(requeued.status).toBe("queued");
+    expect(requeued.run).toBeUndefined();
+    expect(requeued.backend?.supersededRunId).toBe("SYN-RUN-1");
+    expect(requeued.backend?.stageDetail).toEqual({});
+    expect(requeued.diagnosis).toMatch(/earlier run is superseded/);
+    expect(requeued.recommendation.available).toBe(false);
+    expect(controls(requeued).investigate).toBe(true);
+  });
+
   it("shows an absent diagnosis as absent, with the backend's reason", () => {
     const pending = applyDetail(
       base,

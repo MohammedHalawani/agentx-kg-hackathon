@@ -622,8 +622,16 @@ export function applyDetail(
 
   // Graph: real nodes and relationships, bounded for display. Cited evidence is always kept.
   const pipeline = pipelineView(detail.pipeline?.events ?? []);
+  // Citations that must survive the bound: what the diagnosis, recommendation, review and
+  // outcome point at. The collection stages (extract, retrieve) list everything they read,
+  // so they are not citations.
   const cited = new Set<string>([
-    ...Object.values(pipeline.stageEvidence).flat(),
+    ...Object.entries(pipeline.stageEvidence)
+      .filter(([stage]) => Number(stage) >= 2)
+      .flatMap(([, ids]) => ids),
+    ...(detail.rule_signals?.signals ?? []).flatMap(
+      (signal) => signal.evidence_ids ?? [],
+    ),
     ...(detail.recommendation?.evidence_ids ?? []),
     ...(detail.outcome?.evidence_ids ?? []),
     ...[
@@ -804,6 +812,7 @@ export function applyDetail(
       stageDetail: pipeline.stageDetail,
       stageEvidence: pipeline.stageEvidence,
       pipelineStatus: detail.pipeline?.status ?? "UNKNOWN",
+      supersededRunId: detail.previous_run?.entity_id ?? null,
       investigationAsOf: detail.pipeline?.investigation_as_of ?? null,
       evidenceAfterInvestigation:
         detail.pipeline?.evidence_after_investigation ?? 0,
@@ -864,6 +873,7 @@ export function applyPipeline(
       ...base.backend,
       workflowState: state.workflow_state,
       pipelineStatus: state.status,
+      supersededRunId: queued ? (state.previous_run_id ?? null) : null,
       stageDetail: queued ? {} : { ...base.backend.stageDetail, ...view.stageDetail },
       stageEvidence: queued
         ? {}
