@@ -203,6 +203,14 @@ export function InvestigationRecord({ c }: { c: OperationalCase }) {
                 ` · ${t("closure", "الإغلاق")}: ${readable(authority.closure)}`}
             </p>
             <p className="finding-meta">{authority.reason}</p>
+            {authority.ruleId.startsWith("AUTH-27") && (
+              <p className="finding-caution" data-testid="reviewer-doubt-action">
+                {t(
+                  "The reviewer did not accept this investigation and its objections stay on record. Only a safe, reversible evidence-gathering action proceeds under this rule; it does not mean the finding was accepted. After the new evidence arrives the investigator and reviewer reassess.",
+                  "لم يقبل المراجع هذا التحقيق واعتراضاته تبقى مسجلة. يُنفذ بموجب هذه القاعدة إجراء جمع أدلة آمن وقابل للتراجع فقط، ولا يعني ذلك قبول الاستنتاج. بعد وصول الأدلة الجديدة يعيد المحقق والمراجع التقييم.",
+                )}
+              </p>
+            )}
             {authority.riskClass === "HUMAN_REVIEW" && (
               <p className="finding-meta" data-testid="policy-routing">
                 {t(

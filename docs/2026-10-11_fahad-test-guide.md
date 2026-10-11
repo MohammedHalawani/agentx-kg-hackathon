@@ -120,8 +120,15 @@ What you can do depends on what the backend allows for that case:
 3. **Decisions** in the sidebar lists cases waiting on a person; **Decision history** lists what
    was decided and by whom.
 
-Check: automatic actions are only the safe, reversible ones (a rescan, a device sync, an evidence
-request). Rerouting or returning a shipment always needs approval.
+Check: automatic actions are only the safe, reversible ones (a rescan, a reweigh, a device sync, an
+evidence request, a hub check). Rerouting or returning a shipment always needs approval.
+
+When the reviewer asks for a revision or more evidence (rule AUTH-27): only those safe
+evidence-gathering actions may proceed, and only if every other rule allows them. The reviewer's
+doubt stays on the case, shown under **Reviewer, round by round** and **Authority policy**. After
+the new evidence arrives the investigator and reviewer reassess. A case resolves only when the
+latest review accepts and the independent verifier confirms the problem is corrected; otherwise it
+stays open or goes to a person.
 
 ## 9. Verification
 

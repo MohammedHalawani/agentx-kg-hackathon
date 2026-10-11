@@ -677,6 +677,15 @@ export function InvestigationPage() {
       <div className="case-workspace">
         <aside className="case-context">
           <div className="context-section">
+            {c.backend?.authority?.ruleId.startsWith("AUTH-27") &&
+              !c.backend.diagnosisAvailable && (
+                <small data-testid="context-doubt">
+                  {t(
+                    "REVIEWER DID NOT ACCEPT THE FINDING · EVIDENCE-GATHERING ACTION ONLY",
+                    "لم يقبل المراجع الاستنتاج · إجراء جمع أدلة فقط",
+                  )}
+                </small>
+              )}
             <small data-testid="context-source">
               {!c.backend
                 ? t("WHAT HAPPENED", "ما الذي حدث")
