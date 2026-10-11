@@ -442,6 +442,8 @@ export interface BackendConnection {
     processedCount: number;
     lastCaseId: string | null;
   };
+  /** The backend's simulated clock: whether it is advancing, and how fast. */
+  clock?: { running: boolean; speed: number };
   /** Shipments in a curated session, when the monitor is limited to a listed set. */
   curatedShipments?: number | null;
   queue?: { total: number; loaded: number; truncated: boolean };
@@ -499,6 +501,8 @@ export interface OperationsService {
   ): Promise<void>;
   /** Backend only: load a case's evidence and follow its live pipeline stream. */
   watchCase?(caseId: string): () => void;
+  /** Backend only: start or pause the simulated clock (cases arrive only while it runs). */
+  setClock?(running: boolean): Promise<void>;
   /** Backend only: one question about one case. Read-only; nothing is stored. */
   askCanopus?(
     caseId: string,

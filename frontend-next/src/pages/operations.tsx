@@ -6,6 +6,8 @@ import {
   ChevronRight,
   Clock3,
   PanelRightClose,
+  Pause,
+  Play,
   RefreshCw,
   Search,
   SlidersHorizontal,
@@ -50,7 +52,14 @@ import { useCanopusScreen } from "@/state/canopus";
 const LAB_BUILD = import.meta.env.VITE_SUHAIL_DATA === "lab";
 
 export function OperationsPage() {
-  const { cases, automatic, service, catalog, backend: fromBackend, connection } = useOperations();
+  const {
+    cases,
+    automatic,
+    service,
+    catalog,
+    backend: fromBackend,
+    connection,
+  } = useOperations();
   // Connected build: always the backend, so lab-only branches are removed at build time.
   const backend = !LAB_BUILD || fromBackend;
   const { t } = usePreferences();
@@ -403,6 +412,37 @@ export function OperationsPage() {
                 },
               ]}
             />
+            {backend && connection?.clock && service.setClock && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="clock-control"
+                data-testid="clock-control"
+                aria-pressed={connection.clock.running}
+                disabled={connection.controls === "unavailable"}
+                title={t(
+                  "The simulated clock. New exceptions arrive and requests are answered only while it runs.",
+                  "الساعة المحاكاة. تصل الاستثناءات الجديدة وتُجاب الطلبات فقط أثناء تشغيلها.",
+                )}
+                onClick={() =>
+                  void service.setClock!(!connection.clock!.running).catch(
+                    (e: Error) => toast.error(e.message),
+                  )
+                }
+              >
+                {connection.clock.running ? (
+                  <Pause size={12} />
+                ) : (
+                  <Play size={12} />
+                )}
+                {connection.clock.running
+                  ? t(
+                      `Clock running ×${connection.clock.speed} · Pause`,
+                      `الساعة تعمل ×${connection.clock.speed} · إيقاف`,
+                    )
+                  : t("Clock paused · Start", "الساعة متوقفة · تشغيل")}
+              </Button>
+            )}
             <label className="inline-automation">
               <span>{t("Auto", "تلقائي")}</span>
               <Switch
@@ -423,7 +463,10 @@ export function OperationsPage() {
               aria-label="Refresh queue"
               title={
                 backend
-                  ? t("Read the queue from the backend", "قراءة القائمة من الخادم")
+                  ? t(
+                      "Read the queue from the backend",
+                      "قراءة القائمة من الخادم",
+                    )
                   : t("Refresh local queue", "تحديث القائمة المحلية")
               }
               variant="ghost"
@@ -480,17 +523,29 @@ export function OperationsPage() {
             onPaginationChange={setPagination}
             emptyTitle={
               backend && connection?.state === "connecting"
-                ? t("Reading the queue from the backend…", "جارٍ قراءة القائمة من الخادم…")
+                ? t(
+                    "Reading the queue from the backend…",
+                    "جارٍ قراءة القائمة من الخادم…",
+                  )
                 : backend && connection?.state === "offline"
-                  ? t("The Suhail backend is not reachable", "تعذر الوصول إلى خادم سهيل")
+                  ? t(
+                      "The Suhail backend is not reachable",
+                      "تعذر الوصول إلى خادم سهيل",
+                    )
                   : t("No matching exceptions", "لا توجد استثناءات مطابقة")
             }
             emptyDescription={
               backend && connection?.state === "offline"
                 ? (connection.error ??
-                  t("No cases are shown until it answers.", "لا تُعرض حالات حتى يستجيب."))
+                  t(
+                    "No cases are shown until it answers.",
+                    "لا تُعرض حالات حتى يستجيب.",
+                  ))
                 : backend && connection?.state === "connecting"
-                  ? t("No cases are shown until it answers.", "لا تُعرض حالات حتى يستجيب.")
+                  ? t(
+                      "No cases are shown until it answers.",
+                      "لا تُعرض حالات حتى يستجيب.",
+                    )
                   : t(
                       "Try another search or clear the filters.",
                       "جرّب بحثاً آخر أو امسح عوامل التصفية.",

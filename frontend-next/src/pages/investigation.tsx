@@ -625,11 +625,26 @@ export function InvestigationPage() {
             const state = stageState(i);
             // What this step did or is doing, from the case's records where they exist.
             const explanation = explainStage(c, i, state);
+            // The stored narration speaks for a step that has run in the current run; a step
+            // still queued (a superseded run's narration included) shows nothing.
+            const narration =
+              state === "queued" ? [] : (c.backend?.narration?.events ?? []);
+            const told =
+              (state === "running"
+                ? narration.filter((event) => event.stage === i).at(-1)
+                : undefined) ??
+              narration
+                .filter(
+                  (event) =>
+                    event.stage === i &&
+                    !/^Investigator checks:/i.test(event.title),
+                )
+                .at(-1);
             return (
               <Button
                 variant="ghost"
                 key={s.label}
-                className={`pipeline-step state-${state} ${stage === i ? "selected" : ""} ${explanation ? "explained" : ""}`}
+                className={`pipeline-step state-${state} ${stage === i ? "selected" : ""} ${explanation || told ? "explained" : ""}`}
                 aria-pressed={stage === i}
                 aria-label={`${i === 6 && c.backend ? "Disposition" : s.label} · ${state}`}
                 title={explanation?.text || s.detail || undefined}
@@ -674,43 +689,25 @@ export function InvestigationPage() {
                       c.backend?.timing?.stageSeconds[i] !== undefined &&
                       ` · ${secondsLabel(c.backend.timing.stageSeconds[i])}`}
                   </small>
-                  {(() => {
-                    // The stored narration speaks for the step when the run has one; else
-                    // the recorded fields do.
-                    const told = (c.backend?.narration?.events ?? [])
-                      .filter(
-                        (event) =>
-                          event.stage === i &&
-                          !/^Investigator checks:/i.test(event.title),
-                      )
-                      .at(-1);
-                    const live =
-                      state === "running"
-                        ? (c.backend?.narration?.events ?? [])
-                            .filter((event) => event.stage === i)
-                            .at(-1)
-                        : undefined;
-                    const shown = live ?? told;
-                    return shown ? (
-                      <em
-                        className={`stage-explain narrated narrated-${shown.kind}`}
-                        data-source="narration"
-                        data-testid={`stage-explain-${i}`}
-                      >
-                        {(preferences.language === "ar" && shown.titleAr) ||
-                          shown.title ||
-                          shown.text}
-                      </em>
-                    ) : explanation ? (
-                      <em
-                        className="stage-explain"
-                        data-source={explanation.source}
-                        data-testid={`stage-explain-${i}`}
-                      >
-                        {explanation.text}
-                      </em>
-                    ) : null;
-                  })()}
+                  {told ? (
+                    <em
+                      className={`stage-explain narrated narrated-${told.kind}`}
+                      data-source="narration"
+                      data-testid={`stage-explain-${i}`}
+                    >
+                      {(preferences.language === "ar" && told.titleAr) ||
+                        told.title ||
+                        told.text}
+                    </em>
+                  ) : explanation ? (
+                    <em
+                      className="stage-explain"
+                      data-source={explanation.source}
+                      data-testid={`stage-explain-${i}`}
+                    >
+                      {explanation.text}
+                    </em>
+                  ) : null}
                 </span>
               </Button>
             );

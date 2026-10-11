@@ -16,7 +16,7 @@ test.skip(
   "never on the main backend: this walk starts investigations and approves",
 );
 const LIMIT = Number(process.env.SUHAIL_MANUAL_CASES ?? 3);
-test.setTimeout(40 * 60 * 1000);
+test.setTimeout(55 * 60 * 1000);
 const shot = (name: string) => `screenshots/graph/manual-${name}.png`;
 
 interface Detail {
@@ -63,13 +63,22 @@ test("An operator selects a waiting case, investigates it, approves where asked,
   await expect(page.getByRole("switch", { name: "Automatic investigation" })).not.toBeChecked();
   await page.waitForTimeout(2500);
   await page.screenshot({ path: shot("1-operations") });
+  const begun = Date.now();
+  const arrivalsUntil = begun + Number(process.env.SUHAIL_MANUAL_MINUTES ?? 0) * 60 * 1000 + 15000;
   const walked: string[] = [];
   let approved: string | null = null;
   for (let round = 0; round < LIMIT; round++) {
-    const waiting = (await queue(request)).filter(
-      (row) => row.workflow_state === "OPEN" && !walked.includes(row.case_id),
-    );
+    // Cases may still be arriving: wait for the next one to open, within the time allowed.
+    let waiting: Awaited<ReturnType<typeof queue>> = [];
+    while (Date.now() < arrivalsUntil) {
+      waiting = (await queue(request)).filter(
+        (row) => row.workflow_state === "OPEN" && !walked.includes(row.case_id),
+      );
+      if (waiting.length) break;
+      await page.waitForTimeout(8000);
+    }
     if (!waiting.length) break;
+    console.log(`+${Math.round((Date.now() - begun) / 1000)}s selecting ${waiting[0].shipment_id}`);
     const row = waiting[0];
     walked.push(row.case_id);
     // 2. Select it.

@@ -994,3 +994,15 @@
 .canopus-compose-area[hidden] {
   display: none;
 }
+
+/* The simulated clock's Start / Pause control beside Auto. */
+.clock-control {
+  height: 32px;
+  font-size: 11px;
+  gap: 5px;
+  white-space: nowrap;
+}
+.clock-control[aria-pressed="true"] {
+  color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+}

@@ -197,6 +197,8 @@ export function NarrationStrip({
               `${here.length} من ${events.length} رسالة مسجلة`,
             )}
             {status === "narrating" && ` · ${t("live", "مباشر")}`}
+            {c.status === "queued" &&
+              ` · ${t("of the earlier run, now superseded", "للتحقيق السابق الذي لم يعد سارياً")}`}
             {replay !== null &&
               ` · ${t(`replaying ${Math.min(replay + 1, events.length)} of ${events.length}`, `إعادة ${Math.min(replay + 1, events.length)} من ${events.length}`)}`}
           </span>

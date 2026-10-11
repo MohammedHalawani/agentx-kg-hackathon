@@ -24,6 +24,7 @@ export interface Stub {
     queue: ApiQueueCase[];
     detailA: ApiCaseDetail;
     worker: string;
+    clock: string;
   };
 }
 
@@ -39,6 +40,7 @@ export async function stubBackend(page: Page): Promise<Stub> {
       queue: structuredClone(queueRows),
       detailA: detailA(),
       worker: "paused",
+      clock: "paused",
     },
   };
   const json = (route: Route, body: unknown, status = 200) =>
@@ -165,6 +167,10 @@ export async function stubBackend(page: Page): Promise<Stub> {
             state_version: 9,
           });
         }
+        if (path === "/simulation/start" || path === "/simulation/pause") {
+          stub.state.clock = path.endsWith("start") ? "running" : "paused";
+          return json(route, {});
+        }
         if (path === "/worker/start" || path === "/worker/pause") {
           stub.state.worker = path.endsWith("start") ? "running" : "paused";
           return json(route, {});
@@ -176,6 +182,7 @@ export async function stubBackend(page: Page): Promise<Stub> {
         return json(route, {
           ...workerStatus,
           worker: { ...workerStatus.worker, state: stub.state.worker },
+          simulator: { state: stub.state.clock, speed: 60 },
         });
       if (path === "/cases/queue") return json(route, pageOf(stub.state.queue));
       if (path === "/explore") return json(route, pageOf(exploreItems));

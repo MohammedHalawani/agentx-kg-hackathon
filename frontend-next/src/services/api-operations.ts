@@ -104,7 +104,12 @@ export class ApiOperationsService implements OperationsService {
   private cities: string[] = [];
   private watchers = new Map<
     string,
-    { count: number; stream?: EventStream; retry?: ReturnType<typeof setTimeout>; attempt: number }
+    {
+      count: number;
+      stream?: EventStream;
+      retry?: ReturnType<typeof setTimeout>;
+      attempt: number;
+    }
   >();
   private details = new Map<string, Promise<void>>();
   private timer: ReturnType<typeof setInterval> | null = null;
@@ -365,6 +370,12 @@ export class ApiOperationsService implements OperationsService {
           processedCount: status.worker.processed_count ?? 0,
           lastCaseId: status.worker.last_case_id ?? null,
         },
+        clock: status.simulator
+          ? {
+              running: status.simulator.state === "running",
+              speed: status.simulator.speed,
+            }
+          : undefined,
         curatedShipments: status.session?.demo_shipments?.enabled
           ? (status.session.demo_shipments.count ?? 0)
           : null,
@@ -386,7 +397,9 @@ export class ApiOperationsService implements OperationsService {
       const active = status.worker.active_case_id;
       await Promise.all([
         ...[...wanted]
-          .filter((id) => id !== active && !this.cases.get(id)?.backend?.detailLoaded)
+          .filter(
+            (id) => id !== active && !this.cases.get(id)?.backend?.detailLoaded,
+          )
           .map((id) => this.loadDetail(id).catch(() => undefined)),
         ...(active && this.cases.has(active)
           ? [this.loadDetail(active, true).catch(() => undefined)]
@@ -544,10 +557,14 @@ export class ApiOperationsService implements OperationsService {
 
   private caseFor(id: string) {
     const c = this.cases.get(id);
-    if (!c?.backend) throw new Error("This case is not loaded from the backend.");
+    if (!c?.backend)
+      throw new Error("This case is not loaded from the backend.");
     return c;
   }
-  private async command<T>(id: string, run: (c: OperationalCase) => Promise<T>) {
+  private async command<T>(
+    id: string,
+    run: (c: OperationalCase) => Promise<T>,
+  ) {
     if (!this.cases.get(id)?.backend?.detailLoaded) await this.loadDetail(id);
     const c = this.caseFor(id);
     try {
@@ -567,6 +584,24 @@ export class ApiOperationsService implements OperationsService {
     }
   }
 
+  /**
+   * Starts or pauses the backend's simulated clock. Starting keeps the speed the backend
+   * reports (a hands-on session runs at 60: one simulated hour per minute).
+   */
+  setClock = async (running: boolean) => {
+    const speed = this.connection.clock?.speed;
+    await this.client.post(
+      running ? "/simulation/start" : "/simulation/pause",
+      running
+        ? {
+            speed:
+              speed && [1, 10, 60, 300, 600, 3600].includes(speed) ? speed : 60,
+            replay_mode: "timeline",
+          }
+        : undefined,
+    );
+    await this.refreshAfterChange();
+  };
   async setAutomatic(enabled: boolean) {
     await this.client.post(enabled ? "/worker/start" : "/worker/pause");
     await this.refreshAfterChange();
@@ -649,7 +684,10 @@ export class ApiOperationsService implements OperationsService {
         ),
       );
     } catch (error) {
-      if (error instanceof ApiError && (error.status === 409 || error.status === 404))
+      if (
+        error instanceof ApiError &&
+        (error.status === 409 || error.status === 404)
+      )
         throw new Error("Canopus questions are not enabled on this backend.");
       throw error;
     }
@@ -670,11 +708,7 @@ export class ApiOperationsService implements OperationsService {
     await this.loadDetail(id, true).catch(() => undefined);
     void this.refresh();
   };
-  async decide(
-    id: string,
-    verdict: AuthorityDecision["verdict"],
-    reason = "",
-  ) {
+  async decide(id: string, verdict: AuthorityDecision["verdict"], reason = "") {
     // The backend's decision contract has no reason field yet and rejects extra fields, so a
     // reason is never sent, and it is not kept in the browser as if it had been audited.
     void reason;
@@ -726,13 +760,16 @@ export class ApiOperationsService implements OperationsService {
         throw new Error(
           "The backend accepts a person's finding only for a case that is waiting for a person.",
         );
-      return this.client.post(`/cases/${encodeURIComponent(id)}/human-outcome`, {
-        outcome_type: finding.outcomeType,
-        finding: finding.finding,
-        evidence_ids: finding.evidenceIds,
-        expected_version: c.backend!.stateVersion,
-        idempotency_key: idempotencyKey("human"),
-      });
+      return this.client.post(
+        `/cases/${encodeURIComponent(id)}/human-outcome`,
+        {
+          outcome_type: finding.outcomeType,
+          finding: finding.finding,
+          evidence_ids: finding.evidenceIds,
+          expected_version: c.backend!.stateVersion,
+          idempotency_key: idempotencyKey("human"),
+        },
+      );
     });
   }
 
@@ -774,7 +811,10 @@ export class ApiOperationsService implements OperationsService {
             `${decision.caseId}|${decision.timestamp}|${decision.verdict}`,
             decision,
           );
-        if (row.scenario_time && (!this.auditSince || row.scenario_time > this.auditSince))
+        if (
+          row.scenario_time &&
+          (!this.auditSince || row.scenario_time > this.auditSince)
+        )
           this.auditSince = row.scenario_time;
       }
       const first = !this.connection.audit?.total;
@@ -784,7 +824,9 @@ export class ApiOperationsService implements OperationsService {
             ? result.first.filtered_total
             : Math.max(this.connection.audit?.total ?? 0, this.audit.size),
           loaded: this.audit.size,
-          truncated: first ? result.truncated : (this.connection.audit?.truncated ?? false),
+          truncated: first
+            ? result.truncated
+            : (this.connection.audit?.truncated ?? false),
           loading: false,
         },
       });
@@ -825,7 +867,10 @@ export class ApiOperationsService implements OperationsService {
     const located: Record<string, [number, number]> = {};
     for (const item of this.explore.values())
       if (item.destination_city && item.destination)
-        located[item.destination_city] = [item.destination.lat, item.destination.lng];
+        located[item.destination_city] = [
+          item.destination.lat,
+          item.destination.lng,
+        ];
     const cities = [
       ...new Set([
         ...this.cities,
@@ -852,7 +897,9 @@ export class ApiOperationsService implements OperationsService {
   // The lab's local simulation has no counterpart here: nothing in the browser advances a case.
   tick() {}
   addCase(): string {
-    throw new Error("Cases are opened by the backend monitor, not by this page.");
+    throw new Error(
+      "Cases are opened by the backend monitor, not by this page.",
+    );
   }
   reset() {
     throw new Error("The operations ledger cannot be reset from this page.");

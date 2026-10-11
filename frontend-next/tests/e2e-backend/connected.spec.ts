@@ -309,6 +309,27 @@ test("Decisions, Audit, Explore and Settings read the backend", async ({ page })
   await expect(page.locator("body")).not.toContainText("Reset lab");
 });
 
+test("The clock control starts and pauses the backend's simulated clock, apart from Auto", async ({
+  page,
+}) => {
+  const stub = await stubBackend(page);
+  await page.goto("/app/operations");
+  const clock = page.getByTestId("clock-control");
+  await expect(clock).toHaveText("Clock paused · Start");
+  await clock.click();
+  await expect(clock).toHaveText("Clock running ×60 · Pause");
+  expect(stub.posts.at(-1)).toMatchObject({
+    path: "/simulation/start",
+    body: { speed: 60, replay_mode: "timeline" },
+  });
+  expect(stub.posts.at(-1)!.token).toBeTruthy();
+  // Starting the clock does not start automatic investigation.
+  await expect(page.getByRole("switch", { name: "Automatic investigation" })).not.toBeChecked();
+  await clock.click();
+  await expect(clock).toHaveText("Clock paused · Start");
+  expect(stub.posts.map((post) => post.path)).toEqual(["/simulation/start", "/simulation/pause"]);
+});
+
 test("The Auto switch reflects the backend worker, and Arabic and dark mode still apply", async ({
   page,
 }) => {
