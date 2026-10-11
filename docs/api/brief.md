@@ -48,3 +48,21 @@ the highest iteration (`brief.policy`, `brief.actions`).
   the operator asks why something cannot be done.
 - `quotes[]`: returned only when the question asks for an agent's original message or words.
 - `technical`: `{workflow_state, rule_id, review_verdict, evidence_ids}`. `evidence_ids` and `graph_node_ids` are unchanged.
+
+## Skip to the next event (`POST /simulation/skip`)
+
+Operator token. Optional body `{"max_hours": 1..168}` (default 72). Runs the simulated clock forward as fast as the machine
+allows, in steps of thirty simulated minutes, until a case that was awaiting evidence gets its verified outcome (the
+evidence arrived, or its deadline passed) or the monitor opens a new case; then restores the clock to what it was (running
+or paused, same speed). 409 while an investigation is running.
+
+Response: `{reason: outcome_decided / case_opened / limit_reached / end_of_timeline, from, to, simulated_minutes,
+cases[{case_id, workflow_state}], still_awaiting_evidence, status}`.
+
+It is the same clock, feed, monitor, execution and verification as at any speed: an outcome is whatever the verifier
+decides from the records, successful or not, and nothing about a future event is returned before it has happened. The
+request returns only when the skip has stopped, which can take from a few seconds to a couple of minutes.
+
+What it costs: the whole world ages by the skipped time. Cases waiting to be investigated get older (their parcels move
+on, so an action requested later may find less), and a skip can pass the moment a waiting case would have been fresh. It
+stops at the first event, so several cases awaiting evidence need one skip each.

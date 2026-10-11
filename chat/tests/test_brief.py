@@ -42,7 +42,9 @@ class BriefTests(unittest.TestCase):
     def test_a_cause_is_a_hypothesis_until_the_review_accepts_it_and_a_challenge_is_always_stated(self):
         challenged = self.build()
         self.assertEqual((challenged["suspected_cause"]["status"], challenged["review"]["status"]), ("hypothesis_not_accepted", "challenged"))
-        self.assertIn("This is a hypothesis", lines(challenged)["finding"])
+        # The challenge is stated once, in the Review line; the Finding line does not repeat it. The structured field keeps both.
+        self.assertEqual(lines(challenged)["finding"], "The investigation suggests a barcode-reading problem.")
+        self.assertIn("This is a hypothesis", challenged["suspected_cause"]["text_en"])
         self.assertIn("did not accept", lines(challenged)["review"])
         self.assertEqual(challenged["review"]["reason_original"], "A transient read error was not ruled out.")
         accepted = self.build(accepted=True, verdict="ACCEPT")
@@ -52,6 +54,15 @@ class BriefTests(unittest.TestCase):
             b = self.build(verdict=verdict)
             self.assertEqual(b["review"]["status"], status)
             self.assertIn("review", lines(b), verdict)
+
+    def test_a_stored_plain_summary_of_the_review_reason_is_folded_into_the_review_line(self):
+        case = detail()
+        case["narration"]["events"].append({"id": "N9", "kind": "canopus_summary", "phase": "review",
+                                            "text_en": "The reviewer found that a one-off read error was not ruled out.", "text_ar": "وجد المراجع أن خطأ القراءة العابر لم يُستبعد."})
+        folded = lines(brief.build(case))["review"]
+        self.assertEqual(folded, "The independent review did not accept this conclusion: the reviewer found that a one-off read error was not ruled out.")
+        case["narration"]["events"][-1]["text_en"] = "The reviewer cited DEMO-SHP-000001-SCAN-009 under AUTH-16."
+        self.assertEqual(lines(brief.build(case))["review"], "The independent review did not accept this conclusion and asked for it to be revised.")
 
     def test_a_sent_request_says_who_what_is_awaited_the_deadline_and_that_it_is_simulated(self):
         b = self.build("AWAITING_OUTCOME", accepted=True, verdict="ACCEPT", executions=[EXECUTION])

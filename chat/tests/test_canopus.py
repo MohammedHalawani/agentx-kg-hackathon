@@ -101,7 +101,7 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual((out["kind"], out["model"], out["grounded"], out["fallback"]), ("record_answer", None, None, True), reply)
             text = out["answer_en"]
             self.assertIn("A barcode read does not match the shipment's manifest", text)
-            self.assertIn("This is a hypothesis", text)
+            self.assertIn("The investigation suggests a barcode-reading problem.", text)
             self.assertIn("did not accept this conclusion", text)               # The reviewer's challenge is never smoothed over.
             self.assertLess(text.index("barcode read does not match"), text.index("did not accept"))
             self.assertNotIn("resolved", text.lower().replace("not resolved", ""))

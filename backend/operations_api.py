@@ -353,6 +353,19 @@ def start_simulation(request: Request,body: SimulationStart):
                   actor_id=actor["actor_id"])
 
 
+class SkipBody(StrictBody):
+    max_hours: int=Field(default=72,ge=1,le=168)
+
+
+@router.post("/simulation/skip")
+def skip_simulation(request: Request,body: SkipBody|None=None):
+    """Run the simulated clock forward until a case awaiting evidence gets its verified outcome or a new case opens, then
+    restore the clock's state and speed. The same clock and the same steps as at any speed; nothing about a future
+    event is returned. 409 while an investigation is running."""
+    actor=authority.authorize(request)
+    return invoke(get_runtime().store.skip_to_next_event,actor_id=actor["actor_id"],max_hours=(body.max_hours if body else 72))
+
+
 @router.post("/simulation/pause")
 def pause_simulation(request: Request):
     actor=authority.authorize(request)

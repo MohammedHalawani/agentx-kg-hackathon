@@ -564,6 +564,65 @@ class OperationsStore:
             else: self.tick(step=True)
         return self.status()
 
+    SKIP_STEP_MINUTES = 30      # The clock moves in steps of thirty simulated minutes while skipping (it can stop up to that late).
+    SKIP_MAX_HOURS = 168
+
+    def _case_states(self):
+        def read(tx):
+            return {row["id"]: row["state"] for row in tx.run(
+                "MATCH(w:OpsEntity:OpsCase {dataset_id:$dataset,split:'development'}) RETURN w.entity_id AS id,w.workflow_state AS state",
+                dataset=self.dataset_id)}
+        return self._execute(read)
+
+    def skip_to_next_event(self, actor_id="DEMO-OPERATOR-LOCAL", max_hours=72):
+        """Run the simulated clock forward, as fast as the machine allows, until something an operator is waiting for
+        happens: a case that was awaiting evidence gets its verified outcome (the evidence arrived, or its deadline
+        passed), or the monitor opens a new case. Then put the clock back as it was (running or paused, same speed).
+
+        It is the same clock, the same feed and the same monitor, execution and verification steps as at any speed:
+        nothing is scheduled or looked up ahead, and nothing about a future event is returned, only what happened by
+        the time it stopped. Everything else in the world ages by the same time. Refused while an investigation runs."""
+        require_actor(actor_id)
+        if type(max_hours) is not int or not 1 <= max_hours <= self.SKIP_MAX_HOURS:
+            raise OperationsConflict(f"A skip is limited to between 1 and {self.SKIP_MAX_HOURS} simulated hours")
+        status = self.status()
+        if status["worker"].get("active_case_id"):
+            raise OperationsConflict("An investigation is running; wait for it to finish before skipping time")
+        was_running, speed = status["simulator"]["state"] == "running", status["simulator"]["speed"]
+        started = instant(status["as_of"])
+        end = instant(status["simulator"]["end_at"]) if status["simulator"].get("end_at") else None
+        limit = started + timedelta(hours=max_hours)
+        before = self._case_states()
+        waiting = {case for case, state in before.items() if state == "AWAITING_OUTCOME"}
+        self.control("simulator", "pause", actor_id=actor_id)      # The ingestion worker must not advance the clock at the same time.
+        reason, changed, now = "limit_reached", [], started
+        try:
+            while now < limit:
+                if end is not None and now >= end:
+                    reason = "end_of_timeline"
+                    break
+                step = min(self.SKIP_STEP_MINUTES * 60, (limit - now).total_seconds())
+                now = instant(self.tick(seconds=step / 60, manual=True, speed=60)["as_of"])
+                while self.status()["session"]["monitor_pending"]:
+                    if not self.monitor_step(limit=10)["checked"]:
+                        break
+                self.execute_step(limit=10)
+                self.outcome_step(limit=10)
+                after = self._case_states()
+                decided = sorted(case for case in waiting if after.get(case) != "AWAITING_OUTCOME")
+                opened = sorted(case for case in after if case not in before)
+                if decided or opened:
+                    reason, changed = ("outcome_decided" if decided else "case_opened"), decided + opened
+                    break
+        finally:
+            self.control("simulator", "start" if was_running else "pause", speed=speed, actor_id=actor_id)
+        final = self.status()
+        states = self._case_states()
+        return {"reason": reason, "from": started.isoformat(), "to": final["as_of"],
+                "simulated_minutes": round((instant(final["as_of"]) - started).total_seconds() / 60),
+                "cases": [{"case_id": case, "workflow_state": states.get(case)} for case in changed],
+                "still_awaiting_evidence": sum(1 for state in states.values() if state == "AWAITING_OUTCOME"), "status": final}
+
     def tick(self, seconds=1, *, step=False, manual=False, speed=None, replay_mode=None):
         if type(seconds) not in (int, float) or not math.isfinite(seconds) or not 0 < seconds <= 86400:
             raise OperationsConflict("Invalid bounded simulation advance")

@@ -87,6 +87,12 @@ KIND_LABELS = {"ScanEvent": "Scan", "CustodyEvent": "Custody record", "StatusEve
                "Vehicle": "Vehicle", "RouteRun": "Route run", "ComputedResult": "Computed comparison"}
 
 
+def _plain(text):
+    """True when stored model text can stand in an operator sentence: no internal codes and no record ids."""
+    from operations.canopus import code_free
+    return code_free(text)
+
+
 def waiting_kind(state):
     """What the case is waiting for. An unknown state is with a person, never automatic."""
     return STATE_WAITING.get(state, "awaiting_operator_decision")
@@ -373,7 +379,17 @@ def build(detail):
               "text_ar": ("، ".join(s["label_ar"] or s["code"] for s in symptoms) + ".") if symptoms else happened_ar},
              {"key": "finding", "label_en": "Finding", "label_ar": "ما توصل إليه التحقيق", "text_en": cause_text, "text_ar": cause_text_ar}]
     if review_status in ("challenged", "asked_for_person", "unavailable"):
-        lines.append({"key": "review", "label_en": "Review", "label_ar": "المراجعة", "text_en": review_en, "text_ar": review_ar})
+        # The Review line states the challenge, so the Finding line does not repeat it. Where a stored summary of the
+        # reason exists and reads as plain language, it is the reason given; otherwise the fixed sentence stands.
+        if cause:
+            lines[1].update(text_en=f"The investigation suggests {cause_en}.", text_ar=f"يرجّح التحقيق {cause_ar or cause}.")
+        line_en, line_ar = review_en, review_ar
+        summary = reason_summary.get("text_en")
+        if review_status == "challenged" and summary and _plain(summary):
+            line_en = "The independent review did not accept this conclusion: " + summary[0].lower() + summary[1:]
+            if reason_summary.get("text_ar") and _plain(reason_summary["text_ar"]):
+                line_ar = "لم تقبل المراجعة المستقلة هذه النتيجة: " + reason_summary["text_ar"]
+        lines.append({"key": "review", "label_en": "Review", "label_ar": "المراجعة", "text_en": line_en, "text_ar": line_ar})
     if latest:
         action_en, action_ar = latest["text_en"], latest["text_ar"]
     elif action and decision == "needs_approval":
