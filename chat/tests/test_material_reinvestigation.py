@@ -4,7 +4,10 @@ Routine new records for the shipment (during a run or after it) leave the invest
 A changed symptom set, or a record that replaces or contradicts what the conclusion rests on (a late upload from
 before the snapshot, a new version of a cited record), requeues the case. After a run a quiet interval on the
 simulation clock holds back the next automatic investigation, and a case awaiting an executed action's outcome is left
-to the outcome verifier. The approval and dispatch rechecks (AUTH-20) are untouched: tests/test_approval_recheck.py.
+to the outcome verifier. The approval and dispatch rechecks (AUTH-20) decide "the context changed" with the same
+module: a routine record no longer refuses an approved or automatic action, and every material change, a changed
+symptom set, a changed reviewer decision, a new run and a case version that ingestion does not account for still do
+(ApprovalAndDispatchMaterialityTests; the recheck's other rules are in tests/test_approval_recheck.py).
 
 In-memory ledger, scripted investigator and reviewer: no database, no model.
 """
@@ -211,19 +214,6 @@ class AfterARunTests(_Base):
         self.assertFalse(store.process_one()["processed"])                       # Nothing was queued.
         store.control("worker", "pause")
 
-    def test_the_approval_recheck_still_refuses_after_a_routine_record(self):
-        """The safety net is unchanged: any evidence after the recommendation makes its approval context stale."""
-        store, driver, result = self.approvable()
-        self.ingest(store, driver, self.stored(driver, result["case_id"]))
-        self.monitor(store, driver, self.stored(driver, result["case_id"]))
-        current = store.case_detail(result["case_id"])
-        self.assertEqual(current["workflow_state"], "AWAITING_APPROVAL")
-        with self.assertRaises(OperationsConflict) as refused:
-            store.decide(result["case_id"], "approve", "DEMO-OPERATOR-LOCAL", current["state_version"], "approve-after-routine")
-        self.assertIn("AUTH-20-approval-context-stale", str(refused.exception))
-        self.assertEqual(self.kind(driver, "OpsExecution"), [])
-        self.assertEqual(len(self.audit(driver, "APPROVAL_CONTEXT_STALE")), 1)
-
     def test_a_new_standing_symptom_after_a_run_requeues_it(self):
         store, driver, result = self.approvable()
         self.monitor(store, driver, self.stored(driver, result["case_id"]), "DELIVERY_PROOF_INCOMPLETE")
@@ -300,6 +290,263 @@ class AfterARunTests(_Base):
         self.assertFalse(store.process_one()["processed"])
         store.control("worker", "pause")
         self.assertEqual(len([e for e in self.kind(driver, "OpsExecution") if e["status"] == "ACKNOWLEDGED"]), 1)
+
+
+class ApprovalAndDispatchMaterialityTests(_Base):
+    """AUTH-20 at approval and immediately before dispatch: the recheck and the authority recomputation are as they
+    were; what counts as "the context changed" is decided by operations.materiality."""
+
+    STALE = "AUTH-20-approval-context-stale"
+
+    def awaiting(self):
+        store, driver, result = self.approvable()
+        return store, driver, result["case_id"]
+
+    def approved(self):
+        """Approved by a person and waiting for the execution adapter."""
+        store, driver, case_id = self.awaiting()
+        case = store.case_detail(case_id)
+        store.decide(case_id, "approve", "DEMO-OPERATOR-LOCAL", case["state_version"], "approve-first")
+        store.adapter = Recording()
+        return store, driver, case_id
+
+    def approve(self, store, case_id, key="approve-now"):
+        current = store.case_detail(case_id)          # the operator reloads: the version check passes
+        return store.decide(case_id, "approve", "DEMO-OPERATOR-LOCAL", current["state_version"], key)
+
+    def cited(self, driver):
+        """(id, kind) of a record the run's conclusion cites, as the world holds it."""
+        import json
+        [run] = self.kind(driver, "OpsRun")
+        ids = materiality.cited_evidence_ids(json.loads(run["result_json"]))
+        return next((key, self.world.nodes[key].kind) for key in sorted(ids) if key in self.world.nodes)
+
+    def changes(self):
+        """Every change that must still block: name -> (apply(store, driver, case_id), what the refusal names)."""
+        def symptom(store, driver, case_id):
+            self.monitor(store, driver, self.stored(driver, case_id), "WEIGHT_READ_DIFFERS")      # recorded, not requeued
+
+        def late_upload(store, driver, case_id):
+            self.ingest(store, driver, self.stored(driver, case_id), occurred_before=7200)
+
+        def superseded(store, driver, case_id):
+            key, kind = self.cited(driver)
+            self.ingest(store, driver, self.stored(driver, case_id), kind=kind, supersedes_id=key, version=2)
+
+        def new_version(store, driver, case_id):
+            _key, kind = self.cited(driver)
+            self.ingest(store, driver, self.stored(driver, case_id), kind=kind, version=2)
+
+        def finding(store, driver, case_id):
+            new = self.ingest(store, driver, self.stored(driver, case_id))
+            codes = lambda context, config, at, allowance: {"MANIFEST_CONFLICT"} if any(n["id"] == new for n in context["nodes"]) else set()
+            patcher = mock.patch.object(materiality, "finding_codes", codes)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+        def reviewer(store, driver, case_id):
+            def edit(tx):
+                review = next(v for k, v in tx.ledger.values() if k == "OpsReview")
+                review.update(verdict="human_review", model_verdict="HUMAN_REVIEW")
+            driver.execute_write(edit)
+
+        def version(store, driver, case_id):
+            def edit(tx):
+                tx.ledger[case_id][1]["state_version"] += 1          # the case moved, and no record was ingested
+            driver.execute_write(edit)
+        return {"a symptom change": (symptom, "symptoms"),
+                "a late upload": (late_upload, "late_upload"),
+                "a record that supersedes cited evidence": (superseded, "cited_record_superseded"),
+                "a new version of a cited record": (new_version, "cited_record_new_version"),
+                "a new finding": (finding, "finding_added (MANIFEST_CONFLICT)"),
+                "a changed reviewer decision": (reviewer, "review_verdict"),
+                "a case version ingestion does not account for": (version, "state_version")}
+
+    # ---------------------------------------------------------------- a routine record alone
+    def test_a_routine_record_alone_no_longer_refuses_an_approval(self):
+        store, driver, case_id = self.awaiting()
+        for _ in range(2):
+            self.ingest(store, driver, self.stored(driver, case_id))
+        served = store.case_detail(case_id)["recommendation"]
+        self.assertEqual((served["approvable"], served["approval_context_stale"]), (True, False))
+        approved = self.approve(store, case_id)
+        self.assertEqual(approved["workflow_state"], "AWAITING_OUTCOME")
+        self.assertEqual(self.audit(driver, "APPROVAL_CONTEXT_STALE"), [])
+        self.assertEqual(self.audit(driver, "APPROVAL_REFUSED"), [])
+        # The recheck ran, on the current evidence, and says what it passed over.
+        import json
+        [checked] = self.audit(driver, "APPROVAL_CONTEXT_CHECKED")
+        detail = json.loads(checked["result"])
+        self.assertEqual(detail["routine_new_records"], 2)
+        [execution] = self.kind(driver, "OpsExecution")
+        context = json.loads(execution["approval_context_json"])
+        self.assertEqual(context["evidence_count"], detail["context"]["evidence_count"])      # the evidence visible at approval
+        [recommendation] = self.kind(driver, "OpsRecommendation")
+        self.assertEqual(context["evidence_count"], json.loads(recommendation["approval_context_json"])["evidence_count"] + 2)
+        self.assertEqual(self.stored(driver, case_id).get("snapshot_refreshes") or 0, 0)        # not sent back, not counted
+
+    def test_a_routine_record_alone_no_longer_refuses_the_dispatch_of_an_approved_action(self):
+        store, driver, case_id = self.approved()
+        self.ingest(store, driver, self.stored(driver, case_id))
+        store.execute_step()
+        self.assertEqual(len(store.adapter.calls), 1)
+        [execution] = self.kind(driver, "OpsExecution")
+        self.assertEqual(execution["status"], "ACKNOWLEDGED")
+        self.assertEqual(self.audit(driver, "EXECUTION_CONTEXT_STALE"), [])
+        import json
+        [checked] = self.audit(driver, "EXECUTION_CONTEXT_CHECKED")
+        self.assertEqual(json.loads(checked["result"])["routine_new_records"], 1)
+        self.assertEqual(self.stored(driver, case_id)["workflow_state"], "AWAITING_OUTCOME")
+
+    def test_a_routine_record_alone_no_longer_refuses_an_automatic_action(self):
+        store, driver = self.make()
+        store.agents = Scripted(lambda: self.ingest(store, driver, self.investigating(driver)))     # one during the run (kept)
+        with approval_policy(("AUTO", "An evidence request within policy; automatic.")):
+            result = store.process_one(manual=True)                                                 # the automatic path
+        [execution] = self.kind(driver, "OpsExecution")
+        self.assertEqual((execution["authority"], execution["status"]), ("AUTO_POLICY", "AUTHORIZED"))
+        self.ingest(store, driver, self.stored(driver, result["case_id"]))                           # and one after it
+        store.adapter = Recording()
+        # The scripted case is decided AUTO by the same stand-in at dispatch (the real policy would not decide this
+        # scripted conclusion AUTO, and refuses it with AUTH-18 whatever arrived): what is under test is AUTH-20.
+        with approval_policy(("AUTO", "An evidence request within policy; automatic.")):
+            store.execute_step()
+        self.assertEqual(len(store.adapter.calls), 1)
+        self.assertEqual(self.kind(driver, "OpsExecution")[0]["status"], "ACKNOWLEDGED")
+        self.assertEqual(self.audit(driver, "EXECUTION_CONTEXT_STALE"), [])
+        import json
+        [checked] = self.audit(driver, "EXECUTION_CONTEXT_CHECKED")
+        self.assertEqual(json.loads(checked["result"])["routine_new_records"], 2)                   # the one during the run and the one after
+        self.assertEqual(self.runs(driver), 1)                                                       # no re-investigation
+
+    def runs(self, driver):
+        return len(self.kind(driver, "OpsRun"))
+
+    # ---------------------------------------------------------------- what still blocks, exactly as before
+    def test_each_material_change_still_refuses_the_approval_and_requeues_the_case(self):
+        for name, (apply, named) in self.changes().items():
+            with self.subTest(name):
+                self.setUp()
+                store, driver, case_id = self.awaiting()
+                self.ingest(store, driver, self.stored(driver, case_id))          # a routine record beside it changes nothing
+                apply(store, driver, case_id)
+                served = store.case_detail(case_id)["recommendation"]
+                self.assertEqual((served["approvable"], served["approval_rule"], served["approval_context_stale"]), (False, self.STALE, True))
+                with self.assertRaises(OperationsConflict) as refused:
+                    self.approve(store, case_id)
+                self.assertIn(self.STALE, str(refused.exception))
+                self.assertIn(named, str(refused.exception))
+                case = self.stored(driver, case_id)
+                self.assertEqual((case["workflow_state"], case.get("recommendation_id"), case["snapshot_refreshes"]), ("OPEN", None, 1))
+                self.assertEqual(self.kind(driver, "OpsExecution"), [])
+                [stale] = self.audit(driver, "APPROVAL_CONTEXT_STALE")
+                self.assertIn(named, stale["result"])
+                self.assertIn("requeued for re-investigation", stale["result"])
+                self.assertEqual(self.audit(driver, "APPROVAL_CONTEXT_CHECKED"), [])
+                self.doCleanups()
+
+    def test_each_material_change_still_refuses_the_dispatch_and_requeues_the_case(self):
+        for name, (apply, named) in self.changes().items():
+            with self.subTest(name):
+                self.setUp()
+                store, driver, case_id = self.approved()
+                self.ingest(store, driver, self.stored(driver, case_id))
+                apply(store, driver, case_id)
+                store.execute_step()
+                self.assertEqual(store.adapter.calls, [])                          # nothing dispatched
+                [execution] = self.kind(driver, "OpsExecution")
+                self.assertEqual((execution["status"], execution["permission_rule"]), ("REFUSED", self.STALE))
+                case = self.stored(driver, case_id)
+                self.assertEqual((case["workflow_state"], case.get("recommendation_id")), ("OPEN", None))
+                [stale] = self.audit(driver, "EXECUTION_CONTEXT_STALE")
+                self.assertIn(named, stale["result"])
+                self.assertEqual(self.audit(driver, "EXECUTION_CONTEXT_CHECKED"), [])
+                store.execute_step()
+                self.assertEqual(store.adapter.calls, [])
+                self.doCleanups()
+
+    def test_a_new_investigation_run_still_blocks_both(self):
+        def newer_run(driver, case_id):
+            def edit(tx):
+                tx.ledger[case_id][1]["last_run_id"] = "DEMO-OPS-RUN-NEWER"
+            driver.execute_write(edit)
+        # Approval: the recommendation is no longer the current investigation's. Refused, and (as before) not requeued:
+        # the case stays where the newer investigation left it.
+        store, driver, case_id = self.awaiting()
+        newer_run(driver, case_id)
+        with self.assertRaises(OperationsConflict) as refused:
+            self.approve(store, case_id)
+        self.assertIn(self.STALE, str(refused.exception))
+        self.assertIn("run_id", str(refused.exception))
+        self.assertEqual(self.stored(driver, case_id)["workflow_state"], "AWAITING_APPROVAL")
+        self.assertEqual((len(self.audit(driver, "APPROVAL_REFUSED")), self.audit(driver, "APPROVAL_CONTEXT_STALE")), (1, []))
+        self.assertEqual(self.kind(driver, "OpsExecution"), [])
+        # Dispatch: refused and requeued.
+        self.setUp()
+        store, driver, case_id = self.approved()
+        newer_run(driver, case_id)
+        store.execute_step()
+        self.assertEqual(store.adapter.calls, [])
+        [stale] = self.audit(driver, "EXECUTION_CONTEXT_STALE")
+        self.assertIn("run_id", stale["result"])
+        self.assertEqual(self.kind(driver, "OpsExecution")[0]["status"], "REFUSED")
+
+    def test_the_other_rules_of_the_recheck_are_as_they_were(self):
+        """A routine record does not open anything else: an executed recommendation cannot be approved again (AUTH-24),
+        and a human-floor symptom still reserves the action for the allowlist and closure for a person."""
+        store, driver, case_id = self.approved()
+        self.ingest(store, driver, self.stored(driver, case_id))
+        store.execute_step()
+        self.assertEqual(len(store.adapter.calls), 1)
+        [recommendation] = self.kind(driver, "OpsRecommendation")
+        check = driver.execute_write(lambda tx: store._approval_check(tx, self.stored(driver, case_id), public_value(copy.deepcopy(recommendation)),
+                                                                      self.clock(driver)))
+        self.assertEqual((check["allowed"], check["rule"]), (False, "AUTH-24-recommendation-already-executed"))
+
+    def test_the_decision_itself(self):
+        """context_changes: what is compared, and how the evidence and the version are judged."""
+        from operations.store import CONTEXT_KEYS, context_changes
+        recorded = {"symptoms": ["A"], "evidence_count": 10, "latest_evidence_recorded_at": "t1", "run_id": "R1", "review_id": "V1",
+                    "review_verdict": "accept", "model_verdict": "ACCEPT", "state_version": 7, "evidence_events": 3}
+        routine = {**recorded, "evidence_count": 12, "latest_evidence_recorded_at": "t2", "state_version": 9, "evidence_events": 5}
+        self.assertEqual(context_changes(recorded, dict(recorded), material=[]), [])
+        self.assertEqual(context_changes(recorded, routine, material=[]), [])                       # two routine records
+        self.assertEqual(context_changes(recorded, routine, material=[{"reason": "late_upload"}]), ["evidence_count", "latest_evidence_recorded_at"])
+        self.assertEqual(context_changes(recorded, {**routine, "state_version": 10}, material=[]), ["state_version"])
+        # Not assessed (None): any difference counts, as it did before materiality was used.
+        self.assertEqual(context_changes(recorded, routine), ["evidence_count", "latest_evidence_recorded_at", "state_version"])
+        self.assertEqual(context_changes({k: v for k, v in recorded.items() if k != "evidence_events"}, routine, material=[]), ["state_version"])
+        for key, value in (("symptoms", ["A", "B"]), ("run_id", "R2"), ("review_id", "V2"), ("review_verdict", "human_review"), ("model_verdict", "REVISE")):
+            self.assertEqual(context_changes(recorded, {**recorded, key: value}, material=[]), [key])
+        self.assertEqual(context_changes(None, recorded, material=[]), ["approval_context_missing"])
+        self.assertEqual(set(CONTEXT_KEYS), set(recorded) - {"evidence_events"})
+
+    def test_a_context_recorded_without_its_evidence_time_is_judged_as_before(self):
+        """A recommendation recorded before this change carries no evidence time to compare from: any new record refuses."""
+        import json
+        store, driver, case_id = self.awaiting()
+        def strip(tx):
+            recommendation = next(v for k, v in tx.ledger.values() if k == "OpsRecommendation")
+            context = json.loads(recommendation["approval_context_json"])
+            for key in ("evidence_at", "snapshot_at", "evidence_events"):
+                context.pop(key, None)
+            recommendation["approval_context_json"] = json.dumps(context)
+        driver.execute_write(strip)
+        self.ingest(store, driver, self.stored(driver, case_id))
+        with self.assertRaises(OperationsConflict) as refused:
+            self.approve(store, case_id)
+        self.assertIn("evidence_count", str(refused.exception))
+
+
+class Recording:
+    """A field system that accepts every request, and remembers which."""
+
+    def __init__(self):
+        self.calls = []
+
+    def respond(self, execution, now):
+        self.calls.append(execution["entity_id"])
+        return {"acknowledged": True, "behaviour": "Request accepted."}
 
 
 class QuietIntervalTests(_Base):

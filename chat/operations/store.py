@@ -30,16 +30,39 @@ def development_reset_enabled():
 
 
 # The approval context recorded with every recommendation and every authorized execution. Approval and
-# dispatch recompute it on the current case; any difference means the recommendation's basis changed.
+# dispatch recompute it on the current case and compare (context_changes).
 CONTEXT_KEYS = ("symptoms", "evidence_count", "latest_evidence_recorded_at", "run_id", "review_id", "review_verdict",
                 "model_verdict", "state_version")
+# What the recommendation was decided on: the symptoms, the investigation run and its final review. Any difference in
+# one of these means its basis changed.
+DECISION_KEYS = ("symptoms", "run_id", "review_id", "review_verdict", "model_verdict")
+# How much evidence is visible. A difference here is a change only when a new record is material (operations.materiality).
+EVIDENCE_KEYS = ("evidence_count", "latest_evidence_recorded_at")
 
 
-def context_changes(recorded, current):
-    """Which parts of the approval context changed (all of them when nothing was recorded)."""
+def context_changes(recorded, current, *, material=None):
+    """Which parts of the approval context changed (all of them when nothing was recorded).
+
+    A different symptom set, investigation run, review or reviewer verdict is always a change.
+    material: the material changes among the records that became visible since the context was recorded, as
+    operations.materiality decides them (the module the monitor and the worker use): a record that supersedes or
+    re-versions cited evidence, a late upload from before the investigation's snapshot, a monitor finding added or
+    cleared. With a list, the evidence keys count as changed only when it is not empty, and a case version that moved
+    by exactly the number of records ingested since is not a change (each ingested record advances the version); any
+    other move of the version is. With None (not assessed: a context recorded without what the assessment needs), any
+    difference in the evidence or the version is a change, as it always was."""
     if not recorded:
         return ["approval_context_missing"]
-    return [key for key in CONTEXT_KEYS if recorded.get(key) != current.get(key)]
+    changed = {key for key in DECISION_KEYS if recorded.get(key) != current.get(key)}
+    if material is None or material:
+        changed |= {key for key in EVIDENCE_KEYS if recorded.get(key) != current.get(key)}
+    if recorded.get("state_version") != current.get("state_version"):
+        accounted = None
+        if material is not None and all(isinstance(c.get(k), int) for c in (recorded, current) for k in ("state_version", "evidence_events")):
+            accounted = current["evidence_events"] - recorded["evidence_events"]
+        if accounted is None or current["state_version"] - recorded["state_version"] != accounted:
+            changed.add("state_version")
+    return [key for key in CONTEXT_KEYS if key in changed]
 
 
 def reset_token(control):
@@ -940,7 +963,8 @@ class OperationsStore:
                 if check["allowed"]:
                     self._audit(tx,case,"EXECUTION_CONTEXT_CHECKED",when,actor="SUHAIL-AUTHORITY-POLICY",key=current["entity_id"],
                                 result=canonical({"rule_id":check["rule"],"decided_risk":check["risk"],"execution_id":current["entity_id"],
-                                                  "context":{k:check["current"].get(k) for k in CONTEXT_KEYS}}))
+                                                  "context":{k:check["current"].get(k) for k in CONTEXT_KEYS},
+                                                  "routine_new_records":check["routine_new_records"]}))
                     return True
                 current.update(status="REFUSED",permission_rule=check["rule"]);self._put(tx,"OpsExecution",current,update=True)
                 if check["requeue"]:
@@ -1184,10 +1208,12 @@ class OperationsStore:
             if recommendation_id:
                 # The approval context this recommendation rests on: the symptoms and evidence the investigation saw, its
                 # run, final review and the resulting case version, plus the inputs of its authority decision. Approval
-                # and dispatch recompute it on the current case and refuse on any change.
+                # and dispatch recompute it on the current case and refuse when it changed (context_changes): other
+                # symptoms, run, review or verdict, a case version not accounted for by ingestion, or MATERIAL new evidence.
                 checks=analysis.get("checks") or {};assessment=analysis["result"]["assessment"];proposal=analysis["proposal"]
                 agent=proposal.get("investigated_by")=="agent" and analysis["mode"]=="gpt_oss_agents" and bool(analysis.get("investigation"))
                 context={**self._approval_context(tx,current,case["as_of"],symptoms=case.get("symptom_codes") or []),
+                         "snapshot_at":case["as_of"],  # The investigation's snapshot: what "late" is measured against.
                          "investigated_by":"agent" if agent else "rules","risk_class":authority.get("risk_class"),
                          "authority_inputs":{"diagnosis_codes":assessment["supported_codes"] or [proposal["action_code"]],
                                              "review_verdict":analysis["review"].get("model_verdict"),
@@ -1448,7 +1474,33 @@ class OperationsStore:
         return {"symptoms":sorted(case.get("symptom_codes") or [] if symptoms is None else symptoms),
                 **self._evidence_marker(case["shipment_id"],evidence_at),"run_id":run_id,"review_id":review.get("entity_id"),
                 "review_verdict":review.get("verdict"),"model_verdict":review.get("model_verdict"),"state_version":case["state_version"],
-                "evidence_at":evidence_at}
+                # The records ingested for the case so far: each advances the case version by one, so a later version
+                # is accounted for by ingestion when both moved by the same number.
+                "evidence_events":case.get("evidence_events") or 0,"evidence_at":evidence_at}
+
+    def _context_material(self,tx,case,recorded,current,when):
+        """(material changes, new records) among the shipment evidence that became visible since the approval context
+        was recorded, decided by operations.materiality exactly as the monitor decides them after a finished run: against
+        the conclusion of the run the context names (what it cites) and that run's snapshot. ([], n): n routine records,
+        none material. (None, 0): it cannot be assessed (the context was recorded without its evidence time, or its
+        run is gone), and the caller then treats any difference as a change."""
+        if not recorded or not recorded.get("evidence_at") or not recorded.get("run_id"):return None,0
+        if all(recorded.get(key)==current.get(key) for key in EVIDENCE_KEYS):return [],0
+        run=self._get(tx,"OpsRun",recorded["run_id"])
+        if not run:return None,0
+        reader=self._reader();before=reader.evidence(case["shipment_id"],recorded["evidence_at"]);after=reader.evidence(case["shipment_id"],when)
+        new=materiality.new_records(before,after)
+        if not new:
+            # The count or the latest time differs and no record was added: something other than new evidence changed.
+            return [{"reason":"evidence_changed"}],0
+        material=materiality.material_evidence(before,after,config=self.config,allowance=DETECTION_ALLOWANCE_SECONDS,
+                                               snapshot_at=recorded.get("snapshot_at") or case.get("investigated_as_of") or recorded["evidence_at"],
+                                               cited=materiality.cited_evidence_ids(json.loads(run.get("result_json") or "{}")))
+        return material,len(new)
+
+    @staticmethod
+    def _changed_text(changed,material):
+        return ", ".join(changed)+(f"; material new evidence: {materiality.describe(material)}" if material else "")
 
     def _approval_check(self,tx,case,recommendation,when):
         """Recompute, on the current case, whether a person's approval may authorize this recommendation."""
@@ -1456,10 +1508,11 @@ class OperationsStore:
         action=recommendation.get("action_type")  # None (a legacy record): unknown action, refused.
         recorded=json.loads(recommendation.get("approval_context_json") or "null")
         current=self._approval_context(tx,case,when)
-        changed=context_changes(recorded,current)
+        material,arrived=self._context_material(tx,case,recorded,current,when)
+        changed=context_changes(recorded,current,material=material)
         if recommendation.get("run_id")!=case.get("last_run_id") and "run_id" not in changed:changed.append("run_id")
         result={"allowed":False,"stale":False,"changed":changed,"risk":None,"closure":None,"human_investigation":None,
-                "current":current,"recorded":recorded}
+                "current":current,"recorded":recorded,"material":material or [],"routine_new_records":0 if material else arrived}
         # Refusals that hold whatever the current context are checked first: they leave the case where it is (a refused
         # click never pulls a case a person holds back into automatic re-investigation).
         if self._recommendation_executed(tx,case,recommendation):
@@ -1473,8 +1526,8 @@ class OperationsStore:
         if not allowed:return {**result,"rule":rule,"reason":reason}
         if changed:
             return {**result,"stale":True,"rule":"AUTH-20-approval-context-stale",
-                    "reason":f"The approval context changed since the recommendation ({', '.join(changed)}); renewed investigation "
-                             "and review are required before any approval or execution."}
+                    "reason":f"The approval context changed since the recommendation ({self._changed_text(changed,material)}); renewed "
+                             "investigation and review are required before any approval or execution."}
         risk,risk_reason,closure=policy.recheck_authority(action,recorded.get("authority_inputs"),current["symptoms"])
         human=(case["workflow_state"]=="HUMAN_REVIEW" or recommendation.get("risk_class")=="HUMAN_REVIEW" or risk=="HUMAN_REVIEW"
                or bool(set(current["symptoms"])&policy.HUMAN_FLOOR_SYMPTOMS))
@@ -1492,11 +1545,13 @@ class OperationsStore:
             return {**result,"stale":True,"changed":["workflow_state"],"rule":"AUTH-20-approval-context-stale",
                     "reason":f"The case is no longer awaiting this action ({case['workflow_state']}); nothing was dispatched."}
         current=self._approval_context(tx,case,when)
-        changed=context_changes(recorded,current)
+        material,arrived=self._context_material(tx,case,recorded,current,when)
+        changed=context_changes(recorded,current,material=material)
+        result={**result,"material":material or [],"routine_new_records":0 if material else arrived}
         if changed:
             return {**result,"stale":True,"requeue":True,"changed":changed,"rule":"AUTH-20-approval-context-stale",
-                    "reason":f"The approval context changed after authorization ({', '.join(changed)}); renewed investigation "
-                             "and review are required before execution."}
+                    "reason":f"The approval context changed after authorization ({self._changed_text(changed,material)}); renewed "
+                             "investigation and review are required before execution."}
         if recorded.get("investigated_by")!="agent":
             return {**result,"rule":"AUTH-22-rules-only-proposal","reason":"Rules-only proposal: nothing derived from rule checks "
                     "alone is executed."}
@@ -1555,7 +1610,8 @@ class OperationsStore:
                 self._audit(tx,case,"APPROVAL_CONTEXT_CHECKED",when,actor=actor_id,key=command,old=old,
                             result=canonical({"rule_id":check["rule"],"decided_risk":check["risk"],"closure":check["closure"],
                                               "human_investigation":check["human_investigation"],
-                                              "context":{k:check["current"].get(k) for k in CONTEXT_KEYS}}))
+                                              "context":{k:check["current"].get(k) for k in CONTEXT_KEYS},
+                                              "routine_new_records":check["routine_new_records"]}))
             self._put(tx,"OpsDecision",{"entity_id":decision_id,"shipment_id":case["shipment_id"],"case_id":case_id,
                 "recommendation_id":case.get("recommendation_id"),"decision":decision,"actor_id":actor_id,
                 "expected_version":expected_version,"idempotency_key":idempotency_key,"source":source,"recorded_at":when,"occurred_at":when})

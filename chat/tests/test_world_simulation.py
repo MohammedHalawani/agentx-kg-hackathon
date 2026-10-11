@@ -492,16 +492,36 @@ class ApprovalTests(unittest.TestCase):
         self.assertIn("EXECUTION_CONTEXT_CHECKED", s.audits(case_id))   # Rechecked again immediately before dispatch.
         self.assertEqual(s.case(case_id)["workflow_state"], "AWAITING_OUTCOME")   # Approval and receipt are not an outcome.
 
-    def test_an_approval_is_refused_when_the_evidence_changed_since_the_recommendation(self):
+    def test_routine_records_since_the_recommendation_do_not_refuse_an_approval_and_a_material_one_does(self):
+        import json
+        from unittest import mock
+        from operations import materiality
         s, case_id = self.setup()
-        advance(s.store, s.live, 30)     # The parcel's next day: new records of this shipment arrive.
+        advance(s.store, s.live, 30)     # The parcel's next day: new records of this shipment arrive, none of them material.
         detail = s.case(case_id)
-        self.assertFalse(detail["recommendation"]["approvable"])
-        with self.assertRaises(OperationsConflict) as refused:
-            s.store.decide(case_id, "approve", OPERATOR, detail["state_version"], "approve-late")
+        self.assertTrue(detail["recommendation"]["approvable"])
+        self.assertFalse(detail["recommendation"]["approval_context_stale"])
+        # The same records with one of them material (as operations.materiality reports a late upload): refused, AUTH-20.
+        late = [{"reason": "late_upload", "entity_id": "DEMO-LATE-SCAN", "kind": "ScanEvent"}]
+        with mock.patch.object(materiality, "material_evidence", return_value=late):
+            self.assertFalse(s.case(case_id)["recommendation"]["approvable"])
+            with self.assertRaises(OperationsConflict) as refused:
+                s.store.decide(case_id, "approve", OPERATOR, detail["state_version"], "approve-late")
         self.assertIn("AUTH-20", str(refused.exception))
+        self.assertIn("late_upload (DEMO-LATE-SCAN)", str(refused.exception))
         self.assertEqual(s.kind("OpsExecution"), [])
         self.assertEqual(s.answers(), [])
+
+    def test_an_approval_after_routine_records_is_rechecked_and_authorized(self):
+        import json
+        s, case_id = self.setup()
+        advance(s.store, s.live, 30)
+        detail = s.case(case_id)
+        result = s.store.decide(case_id, "approve", OPERATOR, detail["state_version"], "approve-after-routine")
+        self.assertEqual(result["workflow_state"], "AWAITING_OUTCOME")
+        checked = [a for a in s.kind("OpsAudit") if a["event_type"] == "APPROVAL_CONTEXT_CHECKED"]
+        self.assertEqual(len(checked), 1)
+        self.assertGreater(json.loads(checked[0]["result"])["routine_new_records"], 0)     # the recheck ran over the new records
 
 
 class HumanOutcomeTests(unittest.TestCase):

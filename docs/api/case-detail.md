@@ -72,8 +72,8 @@ cause, and must not fall back to them when `diagnosis.available` is `false`.
 ## `recommendation` approval fields
 
 `approvable` is the result of the same recheck an approval runs, on the current case: the recorded
-approval context (symptoms, visible evidence count and latest ingestion time, run, final review,
-case version) must be unchanged, the proposal must come from an agent investigation, and the
+approval context (symptoms, visible evidence, run, final review, case version) must be unchanged, where routine new
+records are not a change and a material one is (`docs/api/investigation-run.md`), the proposal must come from an agent investigation, and the
 authority policy is recomputed. `approval_rule` names the deciding rule and `approval_reason` explains
 it: `AUTH-20-approval-context-stale` (the basis changed; the case is re-investigated and reviewed
 before anything is approved), `AUTH-21-human-investigation-required` (only evidence-gathering requests

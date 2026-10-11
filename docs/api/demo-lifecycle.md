@@ -21,6 +21,7 @@ Recommended for the live demo (all are read by the backend process; unset, each 
 | `SUHAIL_PREFETCH_OVERVIEW` | `1` | the shipment overview is fetched before the first model turn: one model call fewer |
 | `SUHAIL_INVALID_OUTPUT_REPAIR` | `1` | one repair attempt when a model reply is invalid twice, shown as a `RETRYING` event (`output.kind: "invalid_output_repair"`, "model reply invalid, retrying"); if it fails the case goes to a person as before |
 | `SUHAIL_MODEL_CALL_CAP` | `12` | the per-case model-call cap. The demo environment now uses 12 (the default and the evaluated value; it was 20): a case that cannot conclude costs at most 12 calls and reaches a person sooner |
+| `SUHAIL_MODEL_CALL_TIMEOUT_SECONDS` | `60` | the wall-clock limit of one model call (an investigator turn, a reviewer call), 5 to 1800. A call that has not returned by then is abandoned and counted as a provider failure: one retry, then the role fails closed (`model_unavailable`), as for any provider error. `LLM_TIMEOUT_SECONDS` (120) is only the HTTP client's wait for bytes and does not bound a call: one was held for 210 s under it. Measured: median under 6 s per call, a slow provider about 30 s |
 | `SUHAIL_FORCED_CONCLUSION` | `1` | when an investigation round uses its whole turn budget without a valid conclusion, the investigator gets **one** final turn (if the call cap still has room) that says only: no more tool calls are possible; conclude from the evidence already retrieved, or conclude `INSUFFICIENT_EVIDENCE` naming what is missing and the next step. See "Forced final turn" below |
 
 These are demo settings: the frozen evaluation ran with none of them. Details and the `latency` block
@@ -178,11 +179,12 @@ server's environment to change it (`0` disables it). A named case, a manual work
 request are not delayed, and the interval does not apply while the simulation is paused, so the worker still catches
 up after the pre-roll of `scripts/world_demo_session.py`.
 
-Still as before: approving a recommendation, and dispatching an authorized action, are refused with
-`AUTH-20-approval-context-stale` when any record was ingested after the recommendation's snapshot, and the case is
-investigated again. At speed 600 that includes records that arrived while the investigation ran, so an automatic
-action or an approval that follows such a run is refused and the case investigated again, at most twice before it
-goes to a person (`--live-speed 300` halves the simulated time a run spans).
+Approving a recommendation, and dispatching an authorized action, are rechecked on the current case as before, and
+refused with `AUTH-20-approval-context-stale` (the case is investigated again, at most twice before it goes to a
+person) when the context changed. Routine records ingested after the recommendation's snapshot, including those that
+arrived while the investigation ran at speed 600, are no longer such a change: only a changed symptom set, run, review
+or reviewer verdict, a material record (it supersedes or re-versions cited evidence, is a late upload, or adds or
+clears a finding) or a case version that ingestion does not account for is (`docs/api/investigation-run.md`).
 
 Never set a truth-label root for the server. `GET /worker/status` → `execution.adapter` says which adapter is attached:
 `world_operational_simulator`, or `none`.
@@ -248,7 +250,7 @@ back to polling `GET /cases/{case_id}`. Manual investigation of one case: `POST 
 `decision`: `approve`, `reject`, `request_evidence`, `escalate`, `reopen`. `idempotency_key`: 8 to 128 characters of
 `A-Z a-z 0-9 _ -`; the same key replays the same result. Show the approve button only when
 `recommendation.approvable` is true, and show `approval_reason` otherwise. An approval is rechecked on the current
-case (evidence, symptoms, run, review, version): a refusal is HTTP 409 with the rule id (`AUTH-20-approval-context-stale`
+case (material evidence, symptoms, run, review, version): a refusal is HTTP 409 with the rule id (`AUTH-20-approval-context-stale`
 requeues the case for a new investigation; `AUTH-21`, `AUTH-22`, `AUTH-24` leave it where it is). Approval authorizes
 the action; it is not an outcome. Re-investigation on request: `POST /cases/{case_id}/reanalyze` with
 `{"expected_version": 7, "idempotency_key": "ui-reanalyze-07"}`.

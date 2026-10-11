@@ -93,11 +93,29 @@ Not delayed: `process_one(case_id=...)`, `process_one(manual=True)` (the worker 
 re-analysis request, which clears `quiet_until`, and any case while the simulation is paused (the interval is simulated
 time and could not pass; nothing new can arrive either).
 
-Unchanged: the approval recheck and the dispatch recheck (`AUTH-20-approval-context-stale`). Their context still
-includes the evidence count, the latest evidence time and the case version, so any record ingested after a
-recommendation's snapshot, routine or not, makes its approval or its dispatch stale and sends the case back for
-re-investigation (bounded as before). A run kept with routine records that arrived during it therefore still cannot
-be approved or dispatched without a renewed investigation.
+The approval recheck and the dispatch recheck (`AUTH-20-approval-context-stale`) use the same rule. Both still run,
+on the current case, at approval and again immediately before dispatch, and both still recompute authority. A routine
+record ingested after a recommendation's snapshot (during the run or after it) no longer makes its approval or its
+dispatch stale; a material change does, and sends the case back for re-investigation (bounded as before).
+
+What counts as "the context changed" (`operations.store.context_changes`, with `operations/materiality.py`, the module
+the monitor and the worker use):
+
+| Change since the context was recorded | Approval / dispatch |
+| --- | --- |
+| the symptom set | refused, `AUTH-20` |
+| the investigation run, its final review, or the reviewer's verdict | refused, `AUTH-20` |
+| a new record that supersedes a cited record, or is a new version of a cited kind of record | refused, `AUTH-20` (`cited_record_superseded`, `cited_record_new_version`) |
+| a late upload: an observation from more than the normal upload allowance before the investigation's snapshot | refused, `AUTH-20` (`late_upload`) |
+| new records that add or clear a monitor finding | refused, `AUTH-20` (`finding_added`, `finding_cleared`) |
+| the case version moved by more than the records ingested since | refused, `AUTH-20` (`state_version`) |
+| the evidence differs and no new record accounts for it, or the context was recorded without its evidence time or its run is gone | refused, `AUTH-20` (as before this change) |
+| routine new records only (none of the above) | **not a change**: the recheck goes on to the authority recomputation, and its audit entry (`APPROVAL_CONTEXT_CHECKED`, `EXECUTION_CONTEXT_CHECKED`) carries `routine_new_records` |
+
+The refusal's reason and the `APPROVAL_CONTEXT_STALE` / `EXECUTION_CONTEXT_STALE` audit entry name the changed keys
+and the material reasons. Everything after that decision is as it was: authority is recomputed against the latest
+evidence, symptoms, run, review and case state; `AUTH-21`, `AUTH-22`, `AUTH-24`, the human-review allowlist and the
+closure checks are untouched (`tests/test_material_reinvestigation.py`, `tests/test_approval_recheck.py`).
 
 | `run.result` field | Meaning |
 | --- | --- |
