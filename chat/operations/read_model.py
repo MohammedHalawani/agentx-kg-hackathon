@@ -543,4 +543,7 @@ class OperationsReader:
         # What the case needs next and why it is not resolved, restated by code from the fields above (nothing stored).
         from operations.next_step import next_step
         detail["next_step"]=next_step(detail)
+        # Canopus narration of the current run, as stored (append-only; nothing here is generated on read).
+        if self.store is not None and hasattr(self.store,"narration"):
+            detail["narration"]=self.store.narration(case_id)
         return detail
