@@ -44,6 +44,22 @@ for (const id of CASES)
     await expect(page.locator(".case-heading")).toContainText(LABEL[detail.workflow_state]);
 
     const context = page.locator(".case-context");
+    // An accepted finding is the agent's, unverified; without one, only what the monitor saw.
+    await expect(page.getByTestId("context-source")).toContainText(
+      detail.diagnosis.available ? /agent's finding.*not verified/i : /monitor observed/i,
+    );
+    // Routing to a person is the policy's, named by its rule.
+    const rule = result.authority?.rule_id;
+    if (
+      detail.workflow_state === "HUMAN_REVIEW" &&
+      rule &&
+      !(result.degraded ?? []).length &&
+      !execution &&
+      !outcome
+    )
+      await expect(page.locator(".pipeline-meta")).toContainText(
+        `Routed to a person by policy rule ${rule}`,
+      );
     if (detail.diagnosis.available)
       await expect(context).toContainText(detail.diagnosis.summary.slice(0, 40));
     else

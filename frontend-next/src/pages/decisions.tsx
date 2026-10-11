@@ -421,7 +421,16 @@ export function DecisionsPage() {
                     <PriorityLabel priority={details.priority} />
                   </div>
                   <section className="detail-section">
-                    <h3>{t("What happened", "ما الذي حدث")}</h3>
+                    <h3>
+                      {!details.backend
+                        ? t("What happened", "ما الذي حدث")
+                        : details.backend.diagnosisAvailable
+                          ? t(
+                              "Agent's finding · reviewer accepted · not verified",
+                              "استنتاج الوكيل · قبله المراجع · غير متحقق منه",
+                            )
+                          : t("What the monitor observed", "ما رصدته المراقبة")}
+                    </h3>
                     <div>{details.summary}</div>
                   </section>
                   <section className="detail-section">

@@ -443,10 +443,15 @@ export function InvestigationPage() {
                         "تعذر تسليم الطلب · لم يُنفذ شيء · لدى شخص",
                       )
                   : c.backend?.workflowState === "HUMAN_REVIEW"
-                  ? t(
-                      "Waiting for a person to investigate",
-                      "بانتظار تحقيق بشري",
-                    )
+                  ? c.backend.authority?.ruleId
+                    ? t(
+                        `Routed to a person by policy rule ${c.backend.authority.ruleId} · the agent's finding is not verified`,
+                        `أُحيلت إلى شخص بقاعدة السياسة ${c.backend.authority.ruleId} · استنتاج الوكيل غير متحقق منه`,
+                      )
+                    : t(
+                        "Waiting for a person to investigate",
+                        "بانتظار تحقيق بشري",
+                      )
                   : c.status === "human_review"
                     ? t(
                         "Waiting for operator authority",
@@ -672,9 +677,26 @@ export function InvestigationPage() {
       <div className="case-workspace">
         <aside className="case-context">
           <div className="context-section">
-            <small>{t("WHAT HAPPENED", "ما الذي حدث")}</small>
+            <small data-testid="context-source">
+              {!c.backend
+                ? t("WHAT HAPPENED", "ما الذي حدث")
+                : c.backend.diagnosisAvailable
+                  ? t(
+                      "AGENT'S FINDING · REVIEWER ACCEPTED · NOT VERIFIED",
+                      "استنتاج الوكيل · قبله المراجع · غير متحقق منه",
+                    )
+                  : t("WHAT THE MONITOR OBSERVED", "ما رصدته المراقبة")}
+            </small>
             <h3>{c.issue}</h3>
-            <p>{c.summary}</p>
+            <p>
+              {c.summary ||
+                (c.backend && !c.backend.diagnosisAvailable
+                  ? t(
+                      "No accepted agent diagnosis is recorded for this case.",
+                      "لا يوجد تشخيص مقبول من الوكيل لهذه الحالة.",
+                    )
+                  : "")}
+            </p>
           </div>
           <div className="context-section">
             <small>{t("LAST CONFIRMED CUSTODY", "آخر حيازة مؤكدة")}</small>

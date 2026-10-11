@@ -351,6 +351,17 @@ function Navigation() {
                 "افتح الشحنة لعرض الخريطة والرسم المعرفي معاً، واختر دليلاً لإبرازه في العرضين.",
               )}
             </Guide>
+            {backend && (
+              <Guide
+                icon={<ShieldCheck />}
+                title={t("What the agent does, and does not", "ما يفعله الوكيل وما لا يفعله")}
+              >
+                {t(
+                  "The agent retrieves evidence and proposes a finding with citations. An independent reviewer and a deterministic policy judge that proposal. The finding can be wrong, and the confidence shown is the model's own statement. No case closes without independent verification or a person.",
+                  "يسترجع الوكيل الأدلة ويقترح استنتاجاً مع استشهادات. يحكم على الاقتراح مراجع مستقل وسياسة حتمية. قد يكون الاستنتاج خاطئاً، والثقة المعروضة هي ما صرّح به النموذج. لا تُغلق حالة دون تحقق مستقل أو شخص.",
+                )}
+              </Guide>
+            )}
             <Guide
               icon={<ListChecks />}
               title={t("Make explicit decisions", "اتخاذ قرارات واضحة")}

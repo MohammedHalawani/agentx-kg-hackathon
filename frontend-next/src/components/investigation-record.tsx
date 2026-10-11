@@ -203,6 +203,14 @@ export function InvestigationRecord({ c }: { c: OperationalCase }) {
                 ` · ${t("closure", "الإغلاق")}: ${readable(authority.closure)}`}
             </p>
             <p className="finding-meta">{authority.reason}</p>
+            {authority.riskClass === "HUMAN_REVIEW" && (
+              <p className="finding-meta" data-testid="policy-routing">
+                {t(
+                  "This case goes to a person because of the rule above. It does not mean the agent judged itself uncertain, and the agent's finding remains unverified.",
+                  "أُحيلت هذه الحالة إلى شخص بسبب القاعدة أعلاه. لا يعني ذلك أن الوكيل قدّر عدم يقينه، ويبقى استنتاجه غير متحقق منه.",
+                )}
+              </p>
+            )}
             <p className="finding-meta">
               {t(
                 "Decided by deterministic policy on the backend, not by the model and not by this page.",

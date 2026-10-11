@@ -59,11 +59,17 @@ export function InvestigatorFindings({
             )}
           </p>
         )}
+        <p className="finding-meta" data-testid="finding-standing">
+          {t(
+            "A proposal built from retrieved, cited evidence. It is not verified and its stated confidence is not a guarantee: the reviewer and the authority policy judge it, and only verification or a person closes the case.",
+            "اقتراح مبني على أدلة مسترجعة ومستشهد بها. ليس متحققاً منه، والثقة المصرّح بها ليست ضماناً: يحكم عليه المراجع وسياسة الصلاحيات، ولا تُغلق الحالة إلا بتحقق أو بشخص.",
+          )}
+        </p>
         <p className="finding-meta">
-          {t("Primary cause", "السبب الرئيسي")}:{" "}
+          {t("Proposed cause", "السبب المقترح")}:{" "}
           <b>{readable(found.primaryCause)}</b>
           {found.confidence &&
-            ` · ${t("confidence", "الثقة")}: ${found.confidence}`}
+            ` · ${t("the model's own stated confidence", "الثقة التي صرّح بها النموذج")}: ${found.confidence}`}
           {` · ${found.toolCalls} ${t("evidence queries", "استعلامات أدلة")}`}
         </p>
         {found.hypotheses.map((h, index) => (
