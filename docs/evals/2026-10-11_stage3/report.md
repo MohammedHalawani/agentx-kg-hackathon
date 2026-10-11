@@ -75,8 +75,9 @@ The pattern in the wrong answers: the agent moves away from the alert's cause to
   symptoms, both right in 19 of 31.
 - Cost: 1,632 model calls, 15.5 million tokens, median 9 calls per case (p90 13, max 19, no cap hits), median 40.9 s
   per investigation (p90 66.9 s, p99 116.7 s). Tool queries: median under 1 ms, p95 0.24 s.
-- Leakage: the capture of everything the runtime served (966 MB) holds no canary and no mechanism id. The slower scan
-  for mechanism names was still running when this was written; its verdict will be added in section 8.
+- Leakage: the capture of everything the runtime served (966 MB) holds no canary and no mechanism id. The full
+  scan, including mechanism names, finished clean for both worlds on all seven captured surfaces, with its
+  positive control passed.
 
 ## 6. The no-tools baseline is defective and is not reported
 
@@ -106,4 +107,4 @@ unidentifiable cases; re-run E1's 119 under an amendment to measure the change.
 - E2: 52 cases and the 72 extras need a re-run under an amendment once the provider is available (tool prepared:
   `stage3_eval rerun-failed`, union scoring labelled post hoc). Decision pending.
 - Campaign calls to date: 173 (pilot and its re-run) + 2,595 (this run) = 2,768; 17.8 million agent tokens in this run.
-- Full leak-scan verdict: pending (see section 5).
+- Full leak-scan verdict: clean (see section 5).
