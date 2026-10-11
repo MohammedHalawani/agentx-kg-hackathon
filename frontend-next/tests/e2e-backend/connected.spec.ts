@@ -23,10 +23,15 @@ test("Operations shows the backend queue with real identities and honest labels"
   await expect(reviewed).toContainText("Dammam");
   await expect(reviewed).toContainText("Awaiting approval");
   await expect(reviewed).toContainText("Unreconciled custody");
-  await expect(page.locator(".environment-badge")).toHaveText("Synthetic data");
+  await expect(page.locator(".environment-badge")).toHaveText("Connected");
   await expect(page.locator(".sidebar-system")).toContainText("Backend connected");
   await expect(page.locator(".operator-button")).toContainText("SYN-OPERATOR-LOCAL");
-  await expect(page.locator(".workspace-selector")).toContainText("Suhail Operations");
+  // Demo-facing cleanup: no workspace card, no visible dataset wording, the logo alone.
+  await expect(page.locator(".workspace-selector")).toHaveCount(0);
+  await expect(page.locator(".brand-logo img")).toBeVisible();
+  await expect(page.locator(".brand-header")).toHaveText("");
+  await expect(page.locator("body")).not.toContainText(/synthetic/i);
+  await expect(page.locator(".environment-badge")).toHaveAttribute("data-dataset", "synthetic");
   await expect(page.locator("body")).not.toContainText(LAB_ONLY);
   // Only the independently verified case is in Resolved.
   await page.getByRole("button", { name: "Expand resolved panel" }).click();
@@ -235,7 +240,7 @@ test("Decisions, Audit, Explore and Settings read the backend", async ({ page })
   await expect(page.locator("body")).not.toContainText("SIMULATED");
   await events.first().getByRole("button", { name: "Outcome verified" }).click();
   await expect(page.getByRole("dialog")).toContainText(
-    "Suhail backend audit ledger · OUTCOME_VERIFIED · synthetic dataset",
+    "Suhail backend audit ledger · OUTCOME_VERIFIED",
   );
   await page.keyboard.press("Escape");
 
@@ -270,7 +275,7 @@ test("The Auto switch reflects the backend worker, and Arabic and dark mode stil
   expect(stub.posts.map((post) => post.path)).toEqual(["/worker/start"]);
   await page.getByRole("button", { name: "Switch to Arabic" }).click();
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
-  await expect(page.locator(".environment-badge")).toHaveText("بيانات اصطناعية");
+  await expect(page.locator(".environment-badge")).toHaveText("متصل");
   await page.getByRole("button", { name: "تبديل المظهر" }).click();
   await expect(page.locator("html")).toHaveClass(/dark/);
 });

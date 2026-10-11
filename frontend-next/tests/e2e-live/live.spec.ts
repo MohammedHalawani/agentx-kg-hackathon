@@ -43,7 +43,7 @@ test("The app served under /app/ shows exactly what the backend's API returns", 
   const active = body.items.filter(
     (row: { workflow_state: string }) => row.workflow_state !== "RESOLVED",
   );
-  await expect(page.locator(".environment-badge")).toHaveText("Synthetic data");
+  await expect(page.locator(".environment-badge")).toHaveText("Connected");
   await expect(page.locator(".inline-count")).toContainText(`${active.length} open`);
   if (active.length) {
     const first = active[0] as { case_id: string; shipment_id: string };

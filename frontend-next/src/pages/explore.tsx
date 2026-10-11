@@ -582,7 +582,7 @@ export function ExplorePage() {
         <span>
           <ShieldCheck size={12} />
           {backend
-            ? t("Backend evidence · synthetic dataset", "أدلة الخادم · بيانات اصطناعية")
+            ? t("Backend evidence", "أدلة الخادم")
             : t("Simulated evidence", "أدلة محاكاة")}
         </span>
       </div>

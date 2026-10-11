@@ -46,7 +46,7 @@ test("Operations shows the backend's queue and the worker state", async ({
   await expect(page.locator(".inline-count")).toContainText(
     `${active.length} open`,
   );
-  await expect(page.locator(".environment-badge")).toHaveText("Synthetic data");
+  await expect(page.locator(".environment-badge")).toHaveText("Connected");
   await expect(page.locator("body")).not.toContainText(/SHP-10482|UI lab|SPL Operations/);
   // Page size 50 shows every case; each row's shipment and state are the backend's.
   await page.getByRole("combobox", { name: "Rows per page" }).click();

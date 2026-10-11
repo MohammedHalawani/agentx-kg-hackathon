@@ -141,7 +141,7 @@ for (const id of CASES)
       outcome?.success === true &&
       outcome?.exception_cleared !== false;
     await page.goto("/app/operations");
-    await expect(page.locator(".environment-badge")).toHaveText("Synthetic data", {
+    await expect(page.locator(".environment-badge")).toHaveText("Connected", {
       timeout: 60000,
     });
     await page.getByRole("button", { name: "Expand resolved panel" }).click();

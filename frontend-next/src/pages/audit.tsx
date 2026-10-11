@@ -399,8 +399,8 @@ export function AuditPage() {
           <ShieldCheck size={13} />
           {backend
             ? t(
-                "Backend audit ledger · synthetic data",
-                "سجل تدقيق الخادم · بيانات اصطناعية",
+                "Backend audit ledger",
+                "سجل تدقيق الخادم",
               )
             : t("Traceable · simulated", "قابل للتتبع · محاكاة")}
         </span>
@@ -877,7 +877,7 @@ export function AuditPage() {
               "الأعداد من سجلات التدقيق المحمّلة والمُصفاة للحالات في القائمة. وقت التسجيل هو وقت كتابة الخادم للحدث، ووقت الدليل هو ساعة البيانات. الأوقات بتوقيت الرياض.",
             )
           : t(
-              "Counts reflect the filtered records. Each synthetic shipment has one case. Times use Asia/Riyadh.",
+              "Counts reflect the filtered records. Each shipment has one case. Times use Asia/Riyadh.",
               "الأعداد من السجلات المُصفاة. لكل شحنة محاكاة حالة واحدة. الأوقات بتوقيت الرياض.",
             )}
       </div>
@@ -955,8 +955,8 @@ export function AuditPage() {
                           "محاكاة محلية",
                         )
                       : t(
-                          `Suhail backend audit ledger · ${selected.eventType ?? "event"} · synthetic dataset`,
-                          `سجل تدقيق خادم سهيل · ${selected.eventType ?? "حدث"} · بيانات اصطناعية`,
+                          `Suhail backend audit ledger · ${selected.eventType ?? "event"} `,
+                          `سجل تدقيق خادم سهيل · ${selected.eventType ?? "حدث"}`,
                         )}
                   </dd>
                 </dl>

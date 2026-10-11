@@ -821,8 +821,8 @@ export function InvestigationPage() {
             <span className="live-dot" />
             {backend
               ? t(
-                  "Backend evidence · synthetic dataset",
-                  "أدلة الخادم · بيانات اصطناعية",
+                  "Backend evidence",
+                  "أدلة الخادم",
                 )
               : t("Synthetic evidence", "أدلة محاكاة")}
           </span>
@@ -962,8 +962,8 @@ export function InvestigationPage() {
             <SheetDescription>
               {backend
                 ? t(
-                    `Case ${c.id}. Evidence, review and outcomes as recorded by the backend (synthetic dataset).`,
-                    `الحالة ${c.id}. الأدلة والمراجعة والنتائج كما سجلها الخادم (بيانات اصطناعية).`,
+                    `Case ${c.id}. Evidence, review and outcomes as recorded by the backend.`,
+                    `الحالة ${c.id}. الأدلة والمراجعة والنتائج كما سجلها الخادم.`,
                   )
                 : t(
                     "Synthetic evidence, recommendation, and recorded outcomes.",

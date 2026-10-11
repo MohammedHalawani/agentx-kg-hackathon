@@ -119,7 +119,7 @@ test("Every stage of a completed lifecycle is displayed as the backend recorded 
     detail.workflow_state === "RESOLVED" ? "Resolved" : "Human investigation",
   );
   await page.goto("/app/operations");
-  await expect(page.locator(".environment-badge")).toHaveText("Synthetic data", {
+  await expect(page.locator(".environment-badge")).toHaveText("Connected", {
     timeout: 30000,
   });
   await page.getByRole("textbox", { name: "Search exception queue" }).fill(detail.shipment_id);

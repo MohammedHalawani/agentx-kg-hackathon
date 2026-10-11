@@ -144,7 +144,7 @@ test("Only independently verified resolutions appear in Resolved", async ({
   });
   await page.goto("/app/operations");
   // A backend that has just started can take several seconds over its first queue read.
-  await expect(page.locator(".environment-badge")).toHaveText("Synthetic data", {
+  await expect(page.locator(".environment-badge")).toHaveText("Connected", {
     timeout: 30000,
   });
   await page.getByRole("button", { name: "Expand resolved panel" }).click();

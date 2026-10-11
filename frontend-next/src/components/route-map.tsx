@@ -393,7 +393,7 @@ export function RouteMap({
             effectiveBasemap === "schematic"
               ? "Offline schematic · evidence available"
               : backend
-                ? "Street map · backend evidence (synthetic)"
+                ? "Street map · backend evidence"
                 : "Live map · synthetic evidence",
             effectiveBasemap === "schematic"
               ? "مخطط دون اتصال · الأدلة متاحة"

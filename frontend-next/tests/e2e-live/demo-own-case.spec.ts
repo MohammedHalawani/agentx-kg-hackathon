@@ -120,7 +120,7 @@ test("A queued case goes from investigation to a verified outcome through the in
   }
   await page.keyboard.press("Escape");
   await page.goto("/app/operations");
-  await expect(page.locator(".environment-badge")).toHaveText("Synthetic data", { timeout: 60000 });
+  await expect(page.locator(".environment-badge")).toHaveText("Connected", { timeout: 60000 });
   await page.getByRole("button", { name: "Expand resolved panel" }).click();
   const rail = page.getByLabel("Verified resolutions");
   if (resolved) await expect(rail).toContainText(detail.shipment_id, { timeout: 30000 });

@@ -184,6 +184,28 @@
   min-height: 0;
 }
 
+/* The connected product's logo: the mark alone, proportions kept, legible on both themes. */
+.brand-logo {
+  display: block;
+}
+.brand.brand-logo img {
+  width: 148px;
+  height: auto;
+  max-width: 100%;
+  display: block;
+}
+.dark .brand.brand-logo img {
+  /* The asset is black ink on transparency; inverted it reads as white ink, with no box. */
+  filter: invert(1);
+}
+[data-state="collapsed"] .brand.brand-logo img {
+  width: 34px;
+  height: auto;
+}
+.workspace-selector[hidden] {
+  display: none;
+}
+
 /* Long identifiers and query arguments must wrap inside the assessment sheet, never widen it. */
 .detail-section,
 .detail-section > div,

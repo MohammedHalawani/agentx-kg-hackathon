@@ -38,7 +38,7 @@ test("Live arrivals appear in order and each investigation shows its running tim
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/app/operations");
-  await expect(page.locator(".environment-badge")).toHaveText("Synthetic data", {
+  await expect(page.locator(".environment-badge")).toHaveText("Connected", {
     timeout: 60000,
   });
   const casePage = await context.newPage();

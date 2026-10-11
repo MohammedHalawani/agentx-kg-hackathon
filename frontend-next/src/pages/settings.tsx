@@ -209,7 +209,7 @@ export function SettingsPage() {
                   </p>
                 </div>
                 <span className="micro-tag">
-                  {t("SYNTHETIC DATA", "بيانات اصطناعية")}
+                  {t("DEMONSTRATION DATA", "بيانات تجريبية")}
                 </span>
               </div>
               <div className="setting-row">
@@ -238,8 +238,8 @@ export function SettingsPage() {
                   <b>{t("Dataset", "مجموعة البيانات")}</b>
                   <p>
                     {t(
-                      "A synthetic logistics dataset. It is not SPL operational data.",
-                      "مجموعة بيانات لوجستية اصطناعية. ليست بيانات تشغيلية لسبل.",
+                      "A demonstration logistics dataset served by the Suhail backend. It is not SPL operational data.",
+                      "مجموعة بيانات لوجستية تجريبية يقدمها خادم سهيل. ليست بيانات تشغيلية لسبل.",
                     )}
                   </p>
                 </div>

@@ -137,35 +137,51 @@ function Navigation() {
         className="suhail-sidebar"
       >
         <SidebarHeader className="brand-header">
-          <Link to="/operations" className="brand" onClick={closeMobile}>
-            <img src={asset("suhail.svg")} alt="" />
-            <span>
-              suhail<span className="brand-arabic">سهيل</span>
-            </span>
-          </Link>
-          <span className="brand-caption">
-            {t("LOGISTICS INTELLIGENCE", "الذكاء اللوجستي")}
-          </span>
+          {backend ? (
+            // The connected product carries the logo alone: no wordmark or caption beside it.
+            <Link
+              to="/operations"
+              className="brand brand-logo"
+              onClick={closeMobile}
+              aria-label="Suhail"
+            >
+              <img src={asset("suhail-logo.png")} alt="Suhail" />
+            </Link>
+          ) : (
+            <>
+              <Link to="/operations" className="brand" onClick={closeMobile}>
+                <img src={asset("suhail.svg")} alt="" />
+                <span>
+                  suhail<span className="brand-arabic">سهيل</span>
+                </span>
+              </Link>
+              <span className="brand-caption">
+                {t("LOGISTICS INTELLIGENCE", "الذكاء اللوجستي")}
+              </span>
+            </>
+          )}
         </SidebarHeader>
         <SidebarContent>
-          <div className="workspace-selector">
-            <Button
-              variant="outline"
-              onClick={() => setWorkspace(true)}
-              aria-label="Workspace details"
-            >
-              <span className="workspace-icon">S</span>
-              <span className="workspace-text">
-                <b>{backend ? "Suhail Operations" : "SPL Operations"}</b>
-                <small>
-                  {backend
-                    ? t("Synthetic network", "شبكة اصطناعية")
-                    : t("Saudi network", "شبكة المملكة")}
-                </small>
-              </span>
-              <ChevronsUpDown size={13} />
-            </Button>
-          </div>
+          {!backend && (
+            <div className="workspace-selector">
+              <Button
+                variant="outline"
+                onClick={() => setWorkspace(true)}
+                aria-label="Workspace details"
+              >
+                <span className="workspace-icon">S</span>
+                <span className="workspace-text">
+                  <b>{backend ? "Suhail Operations" : "SPL Operations"}</b>
+                  <small>
+                    {backend
+                      ? t("Synthetic network", "شبكة اصطناعية")
+                      : t("Saudi network", "شبكة المملكة")}
+                  </small>
+                </span>
+                <ChevronsUpDown size={13} />
+              </Button>
+            </div>
+          )}
           <SidebarGroup>
             <SidebarGroupLabel>
               {t("WORKSPACE", "مساحة العمل")}
@@ -228,11 +244,9 @@ function Navigation() {
                     ? t("Connecting to backend", "جارٍ الاتصال بالخادم")
                     : t("Backend unreachable", "تعذر الوصول إلى الخادم")
                 : t("Local simulation", "محاكاة محلية")}
-              <small>
-                {backend
-                  ? t("Synthetic dataset", "بيانات اصطناعية")
-                  : t("Isolated UI lab", "مختبر واجهة مستقل")}
-              </small>
+              {!backend && (
+                <small>{t("Isolated UI lab", "مختبر واجهة مستقل")}</small>
+              )}
             </span>
             <ShieldCheck size={14} />
           </div>
@@ -296,9 +310,9 @@ function Navigation() {
                     "مساحة عمليات سهيل، متصلة بخادم سهيل.",
                   )
                 : t(
-                "A standalone Suhail frontend lab for the Saudi logistics network.",
-                "مختبر واجهة سهيل المستقل للشبكة اللوجستية السعودية.",
-              )}
+                    "A standalone Suhail frontend lab for the Saudi logistics network.",
+                    "مختبر واجهة سهيل المستقل للشبكة اللوجستية السعودية.",
+                  )}
             </DialogDescription>
           </DialogHeader>
           <div className="info-box">
@@ -310,9 +324,9 @@ function Navigation() {
                     "الشحنات والأدلة من مجموعة بيانات لوجستية اصطناعية يقدمها خادم سهيل. ليست بيانات تشغيلية لسبل. يسجل الخادم التحقيقات والقرارات والنتائج، لا هذا المتصفح.",
                   )
                 : t(
-                "All shipments, evidence, decisions, and outcomes are synthetic. State is saved in this browser. The lab has no connection to the operational database.",
-                "جميع الشحنات والأدلة والقرارات والنتائج محاكاة. تُحفظ الحالة في هذا المتصفح، ولا يوجد اتصال بقاعدة البيانات التشغيلية.",
-              )}
+                    "All shipments, evidence, decisions, and outcomes are synthetic. State is saved in this browser. The lab has no connection to the operational database.",
+                    "جميع الشحنات والأدلة والقرارات والنتائج محاكاة. تُحفظ الحالة في هذا المتصفح، ولا يوجد اتصال بقاعدة البيانات التشغيلية.",
+                  )}
             </p>
           </div>
         </DialogContent>
@@ -328,7 +342,9 @@ function Navigation() {
                 backend
                   ? "A quick guide to the Suhail workspace."
                   : "A quick guide to the Suhail UI lab.",
-                backend ? "دليل سريع لمساحة عمل سهيل." : "دليل سريع لمختبر واجهة سهيل.",
+                backend
+                  ? "دليل سريع لمساحة عمل سهيل."
+                  : "دليل سريع لمختبر واجهة سهيل.",
               )}
             </SheetDescription>
           </SheetHeader>
@@ -354,7 +370,10 @@ function Navigation() {
             {backend && (
               <Guide
                 icon={<ShieldCheck />}
-                title={t("What the agent does, and does not", "ما يفعله الوكيل وما لا يفعله")}
+                title={t(
+                  "What the agent does, and does not",
+                  "ما يفعله الوكيل وما لا يفعله",
+                )}
               >
                 {t(
                   "The agent retrieves evidence and proposes a finding with citations. An independent reviewer and a deterministic policy judge that proposal. The finding can be wrong, and the confidence shown is the model's own statement. No case closes without independent verification or a person.",
@@ -404,7 +423,13 @@ function Guide({
 }
 function TopBar() {
   const { t, preferences, update } = usePreferences();
-  const { cases, events, backend: fromBackend, connection, service } = useOperations();
+  const {
+    cases,
+    events,
+    backend: fromBackend,
+    connection,
+    service,
+  } = useOperations();
   // Connected build: always the backend, so lab-only branches are removed at build time.
   const backend = !LAB_BUILD || fromBackend;
   const location = useLocation();
@@ -456,6 +481,10 @@ function TopBar() {
           </Button>
           <span
             className="environment-badge"
+            // Engineering marker only: the dataset's kind stays recorded without visible wording.
+            data-dataset={
+              backend && connection?.synthetic ? "synthetic" : undefined
+            }
             title={backend ? (connection?.error ?? undefined) : undefined}
           >
             <span
@@ -467,7 +496,7 @@ function TopBar() {
             />
             {backend
               ? connection?.state === "online"
-                ? t("Synthetic data", "بيانات اصطناعية")
+                ? t("Connected", "متصل")
                 : connection?.state === "connecting"
                   ? t("Connecting…", "جارٍ الاتصال…")
                   : t("Backend offline", "الخادم غير متصل")
@@ -732,10 +761,7 @@ export function AppShell() {
           </span>
           <span>
             {backend
-              ? t(
-                  "Synthetic data · Suhail backend",
-                  "بيانات اصطناعية · خادم سهيل",
-                )
+              ? t("Suhail backend", "خادم سهيل")
               : t(
                   "Synthetic data · local simulation",
                   "بيانات اصطناعية · محاكاة محلية",

@@ -424,7 +424,7 @@ export function NetworkMap({
           {t(
             effectiveBasemap === "street"
               ? backend
-                ? "Street map · backend records (synthetic)"
+                ? "Street map · backend records"
                 : "Interactive map · synthetic observations"
               : "Offline schematic · synthetic observations",
             "خريطة تفاعلية · ملاحظات محاكاة",
