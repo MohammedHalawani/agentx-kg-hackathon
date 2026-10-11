@@ -262,8 +262,8 @@ export function OperationsPage() {
         const what =
           result.reason === "outcome_decided"
             ? t(
-                `a result was verified${names ? ` for ${names}` : ""}`,
-                `تم التحقق من نتيجة${names ? ` لـ ${names}` : ""}`,
+                `the verifier decided a waiting case${names ? ` for ${names}` : ""}`,
+                `حسم المتحقق حالة منتظرة${names ? ` لـ ${names}` : ""}`,
               )
             : result.reason === "case_opened"
               ? t(

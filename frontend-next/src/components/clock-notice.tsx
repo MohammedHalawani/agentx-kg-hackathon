@@ -27,7 +27,7 @@ export function ClockNotice({ c }: { c: OperationalCase }) {
             const hours = Math.round((result.simulatedMinutes / 60) * 10) / 10;
             toast.info(
               result.reason === "outcome_decided"
-                ? t(`Skipped ${hours} hours: a result was verified.`, `تم تخطي ${hours} ساعة: تم التحقق من نتيجة.`)
+                ? t(`Skipped ${hours} hours: the verifier decided a waiting case.`, `تم تخطي ${hours} ساعة: حسم المتحقق حالة منتظرة.`)
                 : result.reason === "case_opened"
                   ? t(`Skipped ${hours} hours: a new case opened.`, `تم تخطي ${hours} ساعة: فُتحت حالة جديدة.`)
                   : t(`Skipped ${hours} hours: nothing arrived yet.`, `تم تخطي ${hours} ساعة: لم يصل شيء بعد.`),
