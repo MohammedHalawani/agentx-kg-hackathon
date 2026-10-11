@@ -3,12 +3,21 @@
   cd chat
   uv run python ../scripts/world_demo_session.py --live-from 2026-09-15T13:30:00+00:00
         [--origin http://127.0.0.1:8020] [--preroll-speed 600] [--live-speed 600|300] [--no-live]
+        [--archive-dir artifacts/demo/sessions] [--no-archive]
+  uv run python ../scripts/world_demo_session.py --export-only [--archive-dir DIR]
 
 What it does, in order (every step is an ordinary call of the operations API, as the UI would make it):
 1. GET  /operations/session            the local operator token (sent as X-Operations-Token on every POST).
-2. GET  /simulation/status, then POST /simulation/reset with status.development_reset.confirmation. The backend must
-   have been started with SUHAIL_DEV_RESET=1; otherwise the script stops here and says so. The reset deletes that
-   backend's operations ledger (cases, runs, decisions) and puts the clock back to the start of the world.
+2. GET  /simulation/status, then the EXPORT of the current session, then POST /simulation/reset with
+   status.development_reset.confirmation. The backend must have been started with SUHAIL_DEV_RESET=1; otherwise the
+   script stops here and says so. The reset deletes that backend's operations ledger (cases, runs, decisions) and
+   puts the clock back to the start of the world, so before it the current session's cases are written to a file:
+   the queue (GET /cases/queue?scope=all, every page), and for each case GET /cases/{id} and its audit trail
+   (GET /audit?case_id=..., every page). The file is <archive dir>/session_<session id>_<UTC time>.json, the archive
+   directory being --archive-dir (default artifacts/demo/sessions under the repository root). If the export fails
+   for any reason the session is NOT reset and the script stops. --no-archive skips the export, and must be given
+   explicitly. --export-only writes the export and does nothing else (no reset, nothing started; --live-from is
+   not needed).
 3. POST /worker/start                  automatic investigation of the open cases, oldest first.
 4. Pre-roll: POST /simulation/start at --preroll-speed (default 600, never above 600), then GET /simulation/status is
    polled until the clock (as_of) reaches --live-from, then POST /simulation/pause. The clock is advanced by the
@@ -27,6 +36,9 @@ Exit status: 0 done; 2 a refused or failed step (the message says which and why)
 """
 import argparse
 import json
+import os
+import pathlib
+import re
 import sys
 import time
 import urllib.error
@@ -41,6 +53,8 @@ PREROLL_SPEEDS = (1, 10, 60, 300, 600)
 LIVE_SPEEDS = (300, 600)
 PENDING_STATES = ("OPEN", "REOPENED", "INVESTIGATING")   # waiting for, or in, an investigation
 PAGE = 100
+ARCHIVE_SCHEMA = "demo-session-export-1"
+DEFAULT_ARCHIVE_DIR = pathlib.Path(__file__).resolve().parents[1] / "artifacts" / "demo" / "sessions"
 
 
 class Failed(Exception):
@@ -115,7 +129,83 @@ def open_session(api):
     return session
 
 
-def reset(api, live_from, say):
+def queue(api):
+    """Every case of GET /cases/queue?scope=all, all pages."""
+    items, cursor = [], None
+    while True:
+        params = {"scope": "all", "limit": PAGE, **({"cursor": cursor} if cursor else {})}
+        page = step(api, "get", "/cases/queue", "reading the queue", params=params)
+        items.extend(page.get("items") or [])
+        cursor = page.get("next_cursor")
+        if not cursor:
+            return items
+
+
+def audit_trail(api, case_id):
+    """Every audit entry of one case (GET /audit?case_id=...), all pages."""
+    items, cursor = [], None
+    while True:
+        params = {"case_id": case_id, "limit": PAGE, **({"cursor": cursor} if cursor else {})}
+        page = step(api, "get", "/audit", f"reading the audit trail of {case_id}", params=params)
+        items.extend(page.get("items") or [])
+        cursor = page.get("next_cursor")
+        if not cursor:
+            return items
+
+
+def archive_name(session_id, at):
+    """session_<session id>_<UTC time>.json: the session id as the backend gives it (unsafe characters replaced)."""
+    safe = re.sub(r"[^A-Za-z0-9._-]+", "_", str(session_id or "")).strip("._") or "no-session"
+    return f"session_{safe}_{at.astimezone(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}.json"
+
+
+def export_session(api, archive_dir, say, *, status=None, wall=lambda: datetime.now(timezone.utc)):
+    """Write the current session's cases to a file and return its path: the status, the queue, and for each case its
+    detail (GET /cases/{id}) and its audit trail. Reads only. Any failure (a refused or failed call, a case that
+    cannot be read, a file that cannot be written or does not read back whole) is a Failed: no partial file is left
+    under the final name, and the caller must not reset."""
+    try:
+        status = status or step(api, "get", "/simulation/status", "reading the status")
+        session_id = (status.get("session") or {}).get("session_id")
+        listed = queue(api)
+        cases = []
+        for row in listed:
+            case_id = row.get("case_id")
+            if not case_id:
+                raise Failed("a queue row has no case_id")
+            detail = step(api, "get", "/cases/" + urllib.parse.quote(str(case_id), safe=""), f"reading case {case_id}")
+            cases.append({"case_id": case_id, "detail": detail, "audit": audit_trail(api, case_id)})
+        at = wall()
+        document = {"schema": ARCHIVE_SCHEMA, "exported_at": at.astimezone(timezone.utc).isoformat(timespec="seconds"),
+                    "origin": getattr(api, "origin", None), "session_id": session_id, "status": status,
+                    "case_count": len(cases), "queue": listed, "cases": cases}
+        directory = pathlib.Path(archive_dir)
+        directory.mkdir(parents=True, exist_ok=True)
+        path = directory / archive_name(session_id, at)
+        number = 1
+        while path.exists():                      # never over an earlier export
+            number += 1
+            path = directory / archive_name(session_id, at).replace(".json", f"_{number}.json")
+        temporary = path.with_name(path.name + ".tmp")
+        with open(temporary, "w", encoding="utf-8", newline="\n") as handle:
+            handle.write(json.dumps(document, indent=1, ensure_ascii=False, sort_keys=True) + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        written = json.loads(temporary.read_text(encoding="utf-8"))
+        if written.get("case_count") != len(cases) or len(written.get("cases") or []) != len(cases):
+            raise Failed("the export did not read back whole")
+        os.replace(temporary, path)
+    except Failed as error:
+        raise Failed(f"the export of the current session failed: {error}") from None
+    except (OSError, ValueError, TypeError, AttributeError) as error:
+        raise Failed(f"the export of the current session failed ({type(error).__name__}: {error})") from None
+    say(f"session {session_id or '(none)'} exported: {len(cases)} case(s) to {path}")
+    return path
+
+
+def reset(api, live_from, say, *, archive=None):
+    """archive(status): called after every refusal that changes nothing and immediately before the reset is posted;
+    if it raises, nothing is reset."""
     status = step(api, "get", "/simulation/status", "reading the status")
     development = status.get("development_reset") or {}
     if not development.get("enabled") or not development.get("confirmation"):
@@ -124,6 +214,12 @@ def reset(api, live_from, say):
     end_at = (status.get("simulator") or {}).get("end_at")
     if end_at and live_from > instant(end_at):
         raise Failed(f"--live-from {live_from.isoformat()} is after the end of this world ({end_at}); nothing was changed.")
+    if archive is not None:
+        try:
+            archive(status)
+        except Failed as error:
+            raise Failed(f"{error}. The session was NOT reset and nothing was changed. Fix the cause and run this again, or pass "
+                         "--no-archive to reset without an export (the session's cases are then lost).") from None
     try:
         api.post("/simulation/reset", body={"confirmation": development["confirmation"]})
     except ApiError as error:
@@ -170,18 +266,6 @@ def preroll(api, live_from, speed, say, *, sleep=time.sleep, poll=1.0, stall=180
     status = step(api, "get", "/simulation/status", "reading the status")
     say(f"pre-roll paused; clock at {status['as_of']}")
     return status
-
-
-def queue(api):
-    """Every case of GET /cases/queue?scope=all, all pages."""
-    items, cursor = [], None
-    while True:
-        params = {"scope": "all", "limit": PAGE, **({"cursor": cursor} if cursor else {})}
-        page = step(api, "get", "/cases/queue", "reading the queue", params=params)
-        items.extend(page.get("items") or [])
-        cursor = page.get("next_cursor")
-        if not cursor:
-            return items
 
 
 def wait_for_worker(api, say, *, sleep=time.sleep, poll=2.0, timeout=3600.0, clock=time.monotonic):
@@ -231,7 +315,15 @@ def run(api, args, say=print, **timing):
     """The whole sequence. `timing` (sleep, clock) is for tests."""
     live_from = args.live_from
     open_session(api)
-    reset(api, live_from, say)
+    if args.export_only:
+        return {"cases": None, "live_started_at": None, "archive": export_session(api, args.archive_dir, say)}
+    exported = {}
+    if args.no_archive:
+        say("--no-archive: the current session is reset without an export")
+        archive = None
+    else:
+        archive = lambda status: exported.update(path=export_session(api, args.archive_dir, say, status=status))
+    reset(api, live_from, say, archive=archive)
     step(api, "post", "/worker/start", "starting the investigation worker")
     say("investigation worker started")
     preroll(api, live_from, args.preroll_speed, say, poll=args.poll_seconds, **timing)
@@ -240,8 +332,8 @@ def run(api, args, say=print, **timing):
         say(line)
     if args.no_live:
         say("--no-live: stopped after the pre-roll; the simulation is paused and the worker is running")
-        return {"cases": cases, "live_started_at": None}
-    return {"cases": cases, "live_started_at": go_live(api, args.live_speed, say)}
+        return {"cases": cases, "live_started_at": None, "archive": exported.get("path")}
+    return {"cases": cases, "live_started_at": go_live(api, args.live_speed, say), "archive": exported.get("path")}
 
 
 def parse(argv=None):
@@ -264,15 +356,26 @@ def parse(argv=None):
 
     parser = argparse.ArgumentParser(description="Seed a live demo session on a running backend, over HTTP only.")
     parser.add_argument("--origin", default=DEFAULT_ORIGIN, help=f"the running backend (default {DEFAULT_ORIGIN})")
-    parser.add_argument("--live-from", required=True, type=live_from, metavar="ISO_TIME",
-                        help="simulation time at which the live phase starts, e.g. 2026-09-15T13:30:00+00:00")
+    parser.add_argument("--live-from", type=live_from, metavar="ISO_TIME",
+                        help="simulation time at which the live phase starts, e.g. 2026-09-15T13:30:00+00:00 (required unless --export-only)")
+    parser.add_argument("--archive-dir", default=str(DEFAULT_ARCHIVE_DIR), metavar="DIR",
+                        help="where the current session's cases are exported before the reset (default artifacts/demo/sessions "
+                             "under the repository root)")
+    parser.add_argument("--no-archive", action="store_true",
+                        help="reset WITHOUT exporting the current session's cases first (they are lost)")
+    parser.add_argument("--export-only", action="store_true", help="export the current session's cases and do nothing else (no reset)")
     parser.add_argument("--preroll-speed", type=preroll_speed, default=600, help="speed of the pre-roll (default 600; never above 600)")
     parser.add_argument("--live-speed", type=int, choices=LIVE_SPEEDS, default=600, help="speed of the live phase (default 600)")
     parser.add_argument("--no-live", action="store_true", help="stop after the pre-roll (the simulation stays paused)")
     parser.add_argument("--poll-seconds", type=float, default=1.0, help="seconds between status polls (default 1)")
     parser.add_argument("--catchup-timeout", type=float, default=3600.0,
                         help="how long to wait for the worker to finish the pre-roll's cases, in seconds (default 3600)")
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    if args.export_only and args.no_archive:
+        parser.error("--export-only and --no-archive contradict each other")
+    if not args.export_only and args.live_from is None:
+        parser.error("--live-from is required (unless --export-only)")
+    return args
 
 
 def main(argv=None, api=None):

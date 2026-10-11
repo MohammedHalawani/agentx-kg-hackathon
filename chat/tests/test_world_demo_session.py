@@ -6,7 +6,9 @@ simulator, worker, cases) so the polling loops behave as against a real one.
 import contextlib
 import importlib.util
 import io
+import json
 import pathlib
+import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 
@@ -30,7 +32,7 @@ demo = module()
 class FakeBackend:
     """The operations API as the script uses it. Each status poll while running advances the clock by `stride` polls."""
 
-    def __init__(self, *, reset_enabled=True, cases=(), investigations=2, stride_seconds=1.0, pages=100):
+    def __init__(self, *, reset_enabled=True, cases=(), investigations=2, stride_seconds=1.0, pages=100, audit_pages=100):
         self.token, self.calls = None, []
         self.reset_enabled, self.confirmation = reset_enabled, "RESET-SESSION-1"
         self.clock = START + timedelta(days=3)          # a used session: the reset puts it back to START
@@ -40,6 +42,7 @@ class FakeBackend:
         self.monitor_pending = 0
         self.refuse = {}                                # (method, path) -> ApiError
         self.frozen = False
+        self.session_id, self.audit_pages, self.origin = "DEMO-SESSION-0007", audit_pages, "http://fake.test"
 
     # The same two methods as the script's Http.
     def get(self, path, params=None):
@@ -52,7 +55,24 @@ class FakeBackend:
         self.calls.append((method, path, body if method == "POST" else params, self.token if method == "POST" else None))
         if (method, path) in self.refuse:
             raise self.refuse[(method, path)]
+        if method == "GET" and path.startswith("/cases/") and path != "/cases/queue":
+            return self.case_detail(path[len("/cases/"):])
         return getattr(self, method.lower() + path.replace("/", "_"))(body if method == "POST" else params)
+
+    def case_detail(self, case_id):
+        found = next((c for c in self.cases if c["case_id"] == case_id), None)
+        if found is None:
+            raise demo.ApiError(404, "Case not found")
+        return {"case_id": case_id, "shipment_id": found["shipment_id"], "workflow_state": found["workflow_state"],
+                "diagnosis": {"summary": f"What was found for {found['shipment_id']}."}, "session_id": self.session_id}
+
+    def get_audit(self, params):
+        assert params["limit"] == 100 and params["case_id"]
+        events = [{"event_type": kind, "case_id": params["case_id"], "sequence": i}
+                  for i, kind in enumerate(("CASE_OPENED", "CASE_CLAIMED", "RECOMMENDATION_READY", "AUTHORITY_DECISION"))]
+        start = int(params.get("cursor") or 0)
+        end = start + self.audit_pages
+        return {"items": events[start:end], "next_cursor": str(end) if end < len(events) else None}
 
     def get_operations_session(self, _):
         return {"token": "TOKEN-1", "actor_id": "SYN-OPERATOR-LOCAL", "role": "operator", "scope": ["simulation_control"]}
@@ -60,7 +80,7 @@ class FakeBackend:
     def status(self):
         return {"as_of": self.clock.isoformat(),
                 "worker": {"state": self.worker, "active_case_id": next((c["case_id"] for c in self.cases if c["workflow_state"] == "INVESTIGATING"), None)},
-                "session": {"monitor_pending": self.monitor_pending},
+                "session": {"monitor_pending": self.monitor_pending, "session_id": self.session_id},
                 "simulator": {"state": self.simulator, "speed": self.speed, "end_at": END.isoformat()},
                 "development_reset": {"enabled": self.reset_enabled, "confirmation": self.confirmation if self.reset_enabled else None}}
 
@@ -88,7 +108,7 @@ class FakeBackend:
         if body != {"confirmation": self.confirmation}:
             raise demo.ApiError(409, "Development reset needs the confirmation for the current session")
         self.clock, self.simulator, self.worker, self.cases = START, "paused", "paused", []
-        self.confirmation = "RESET-SESSION-2"
+        self.confirmation, self.session_id = "RESET-SESSION-2", "DEMO-SESSION-0008"
         return {"reset": True}
 
     def post_worker_start(self, body):
@@ -130,7 +150,12 @@ class Run:
     def __init__(self, backend, *argv):
         self.backend, self.lines, self.slept = backend, [], []
         self.ticks = 0
-        self.args = demo.parse(["--live-from", LIVE_FROM, *argv])
+        self.directory = tempfile.TemporaryDirectory()          # every test run exports here, never into the repository
+        self.archive = pathlib.Path(self.directory.name) / "sessions"
+        self.args = demo.parse(["--live-from", LIVE_FROM, "--archive-dir", str(self.archive), *argv])
+
+    def exports(self):
+        return sorted(self.archive.glob("*.json")) if self.archive.exists() else []
 
     def clock(self):
         self.ticks += 1
@@ -158,7 +183,11 @@ class SequenceTests(unittest.TestCase):
         self.assertEqual(backend.calls[0][:2], ("GET", "/operations/session"))
         self.assertEqual({token for method, _, _, token in backend.calls if method == "POST"}, {"TOKEN-1"})
         # The reset is confirmed with the confirmation read from the status just before it.
-        self.assertEqual([c[:2] for c in backend.calls[1:3]], [("GET", "/simulation/status"), ("POST", "/simulation/reset")])
+        # (Between the two, only the reads of the export of the session about to be reset.)
+        reset_at = [c[:2] for c in backend.calls].index(("POST", "/simulation/reset"))
+        self.assertEqual(backend.calls[1][:2], ("GET", "/simulation/status"))
+        self.assertEqual({c[:2] for c in backend.calls[2:reset_at]}, {("GET", "/cases/queue")})
+        self.assertEqual(len(run.exports()), 1)
         # The pre-roll paused at or just after --live-from; the live phase started from there.
         paused = next(line for line in run.lines if line.startswith("pre-roll paused"))
         at = datetime.fromisoformat(paused.split("clock at ")[1])
@@ -286,6 +315,140 @@ class RefusalTests(unittest.TestCase):
                                   "A local operations session is required")
 
 
+def used_session(*, states=("AWAITING_APPROVAL", "HUMAN_REVIEW", "RESOLVED"), **options):
+    """A backend whose current session already holds investigated cases (what a reset would delete)."""
+    backend = FakeBackend(**options)
+    backend.cases = [{**case(200 + i, "2026-09-14T06:00:00+00:00"), "workflow_state": state} for i, state in enumerate(states)]
+    return backend
+
+
+class ArchiveTests(unittest.TestCase):
+    """Before any reset the current session's cases are exported; a failed export means no reset."""
+
+    def test_the_session_is_exported_before_the_reset_with_every_case_its_detail_and_its_audit(self):
+        backend = used_session(cases=CASES, audit_pages=3)
+        run = Run(backend)
+        result = run.go()
+        (path,) = run.exports()
+        self.assertEqual(result["archive"], path)
+        # The name carries the session id and a UTC timestamp; the session is the one that was reset, not the new one.
+        self.assertRegex(path.name, r"^session_DEMO-SESSION-0007_\d{8}T\d{6}Z\.json$")
+        document = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual((document["schema"], document["session_id"], document["case_count"], document["origin"]),
+                         ("demo-session-export-1", "DEMO-SESSION-0007", 3, "http://fake.test"))
+        self.assertEqual(document["status"]["session"]["session_id"], "DEMO-SESSION-0007")
+        self.assertEqual([row["case_id"] for row in document["queue"]], ["SYN-CASE-000200", "SYN-CASE-000201", "SYN-CASE-000202"])
+        self.assertEqual([row["workflow_state"] for row in document["queue"]], ["AWAITING_APPROVAL", "HUMAN_REVIEW", "RESOLVED"])
+        for row, exported in zip(document["queue"], document["cases"]):
+            self.assertEqual(exported["case_id"], row["case_id"])
+            self.assertEqual(exported["detail"]["diagnosis"]["summary"], f"What was found for {row['shipment_id']}.")
+            self.assertEqual([e["event_type"] for e in exported["audit"]],                       # both audit pages
+                             ["CASE_OPENED", "CASE_CLAIMED", "RECOMMENDATION_READY", "AUTHORITY_DECISION"])
+            self.assertEqual({e["case_id"] for e in exported["audit"]}, {row["case_id"]})
+        # Every read of the export came before the reset, and the export only reads.
+        calls = [(method, path) for method, path, _, _ in backend.calls]
+        reset_at = calls.index(("POST", "/simulation/reset"))
+        before = calls[:reset_at]
+        self.assertEqual([c for c in before if c[0] == "POST"], [])
+        for expected in (("GET", "/cases/queue"), ("GET", "/cases/SYN-CASE-000200"), ("GET", "/cases/SYN-CASE-000202"), ("GET", "/audit")):
+            self.assertIn(expected, before)
+        self.assertEqual(sum(1 for c in before if c == ("GET", "/audit")), 6)                # three cases, two pages each
+        said = [i for i, line in enumerate(run.lines) if line.startswith(("session DEMO-SESSION-0007 exported: 3 case(s) to", "session reset"))]
+        self.assertEqual(len(said), 2)
+        self.assertLess(said[0], said[1])
+        self.assertEqual(backend.session_id, "DEMO-SESSION-0008")                             # and then the reset did happen
+        self.assertFalse(list(run.archive.glob("*.tmp")))
+
+    def test_a_failed_export_refuses_the_reset(self):
+        for what, arrange in (
+                ("a case cannot be read", lambda b, r: b.refuse.update({("GET", "/cases/SYN-CASE-000201"): demo.ApiError(500, "read model failed")})),
+                ("the audit cannot be read", lambda b, r: b.refuse.update({("GET", "/audit"): demo.ApiError(503, "unavailable")})),
+                ("the queue cannot be read", lambda b, r: b.refuse.update({("GET", "/cases/queue"): demo.ApiError(500, "boom")})),
+                ("the directory cannot be written", lambda b, r: (r.archive.parent.mkdir(exist_ok=True), r.archive.write_text("a file, not a directory"))),
+        ):
+            with self.subTest(what):
+                backend = used_session()
+                run = Run(backend)
+                arrange(backend, run)
+                with self.assertRaises(demo.Failed) as raised:
+                    run.go()
+                message = str(raised.exception)
+                self.assertIn("the export of the current session failed", message)
+                self.assertIn("The session was NOT reset", message)
+                self.assertIn("--no-archive", message)
+                self.assertEqual(run.posts(), [])                                         # no reset, nothing started
+                self.assertEqual((backend.session_id, len(backend.cases)), ("DEMO-SESSION-0007", 3))
+                self.assertEqual(run.exports() if run.archive.is_dir() else [], [])      # no partial file under an export's name
+
+    def test_a_file_that_does_not_read_back_refuses_the_reset(self):
+        from unittest import mock
+        backend = used_session()
+        run = Run(backend)
+        with mock.patch.object(demo.os, "replace", side_effect=PermissionError("locked")):
+            with self.assertRaises(demo.Failed) as raised:
+                run.go()
+        self.assertIn("the export of the current session failed (PermissionError", str(raised.exception))
+        self.assertEqual(run.posts(), [])
+        self.assertEqual(run.exports(), [])
+
+    def test_no_archive_must_be_given_explicitly_and_then_resets_without_an_export(self):
+        self.assertFalse(demo.parse(["--live-from", LIVE_FROM]).no_archive)
+        self.assertTrue(str(demo.parse(["--live-from", LIVE_FROM]).archive_dir).replace("\\", "/").endswith("artifacts/demo/sessions"))
+        self.assertEqual(pathlib.Path(demo.parse(["--live-from", LIVE_FROM]).archive_dir), ROOT / "artifacts" / "demo" / "sessions")
+        backend = used_session()
+        backend.refuse[("GET", "/audit")] = demo.ApiError(503, "unavailable")       # an export would fail; none is attempted
+        run = Run(backend, "--no-archive", "--no-live")
+        result = run.go()
+        self.assertEqual(run.posts()[0], ("/simulation/reset", {"confirmation": "RESET-SESSION-1"}))
+        self.assertEqual((run.exports(), result["archive"]), ([], None))
+        self.assertIn("--no-archive: the current session is reset without an export", run.lines)
+        self.assertFalse([c for c in backend.calls if c[1].startswith("/cases/SYN") or c[1] == "/audit"])
+
+    def test_a_refusal_that_changes_nothing_writes_no_export_either(self):
+        backend = used_session(reset_enabled=False)
+        run = Run(backend)
+        with self.assertRaises(demo.Failed):
+            run.go()
+        self.assertEqual((run.posts(), run.exports()), ([], []))
+
+    def test_an_empty_session_is_exported_too_and_an_earlier_export_is_never_overwritten(self):
+        from datetime import datetime as real
+        backend = FakeBackend()
+        lines = []
+        at = real(2026, 10, 11, 12, 0, 0, tzinfo=timezone.utc)
+        with tempfile.TemporaryDirectory() as directory:
+            first = demo.export_session(backend, directory, lines.append, wall=lambda: at)
+            second = demo.export_session(backend, directory, lines.append, wall=lambda: at)
+            self.assertEqual((first.name, second.name), ("session_DEMO-SESSION-0007_20261011T120000Z.json", "session_DEMO-SESSION-0007_20261011T120000Z_2.json"))
+            self.assertEqual(json.loads(first.read_text(encoding="utf-8"))["cases"], [])
+            backend.session_id = None
+            self.assertEqual(demo.export_session(backend, directory, lines.append, wall=lambda: at).name, "session_no-session_20261011T120000Z.json")
+        self.assertEqual(demo.archive_name("a/b\\c:..", at), "session_a_b_c_20261011T120000Z.json")
+
+    def test_export_only_writes_the_export_and_resets_nothing(self):
+        backend = used_session()
+        with tempfile.TemporaryDirectory() as directory:
+            stdout, stderr = io.StringIO(), io.StringIO()
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                code = demo.main(["--export-only", "--archive-dir", directory], api=backend)      # no --live-from needed
+            self.assertEqual((code, stderr.getvalue()), (0, ""))
+            (path,) = sorted(pathlib.Path(directory).glob("*.json"))
+            self.assertRegex(path.name, r"^session_DEMO-SESSION-0007_\d{8}T\d{6}Z\.json$")
+            self.assertEqual(json.loads(path.read_text(encoding="utf-8"))["case_count"], 3)
+            self.assertIn("exported: 3 case(s)", stdout.getvalue())
+        self.assertEqual([c for c in backend.calls if c[0] == "POST"], [])                   # nothing reset, nothing started
+        self.assertEqual((backend.session_id, len(backend.cases), backend.simulator, backend.worker), ("DEMO-SESSION-0007", 3, "paused", "paused"))
+        self.assertEqual(backend.calls[0][:2], ("GET", "/operations/session"))
+        # A failed export-only run says so and exits 2.
+        backend.refuse[("GET", "/cases/queue")] = demo.ApiError(500, "boom")
+        with tempfile.TemporaryDirectory() as directory:
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr), contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(demo.main(["--export-only", "--archive-dir", directory], api=backend), 2)
+            self.assertIn("FAILED: the export of the current session failed", stderr.getvalue())
+            self.assertEqual(list(pathlib.Path(directory).iterdir()), [])
+
+
 class CommandLineTests(unittest.TestCase):
     def parse_error(self, *argv):
         stderr = io.StringIO()
@@ -302,7 +465,8 @@ class CommandLineTests(unittest.TestCase):
         self.assertEqual(demo.parse(["--live-from", "2026-09-15T13:30:00Z"]).live_from, args.live_from)
 
     def test_refused_arguments(self):
-        self.assertIn("--live-from", self.parse_error())
+        self.assertIn("--live-from is required (unless --export-only)", self.parse_error())
+        self.assertIn("contradict", self.parse_error("--export-only", "--no-archive"))
         self.assertIn("a pre-roll above 600 is not allowed", self.parse_error("--live-from", LIVE_FROM, "--preroll-speed", "3600"))
         self.assertIn("the backend accepts", self.parse_error("--live-from", LIVE_FROM, "--preroll-speed", "120"))
         self.assertIn("invalid choice", self.parse_error("--live-from", LIVE_FROM, "--live-speed", "60"))
@@ -321,7 +485,7 @@ class BoundaryTests(unittest.TestCase):
     def test_the_script_is_http_only(self):
         source = SCRIPT.read_text(encoding="utf-8")
         imports = [line.split()[1].split(".")[0] for line in source.splitlines() if line.startswith(("import ", "from "))]
-        self.assertEqual(sorted(set(imports)), ["argparse", "datetime", "json", "sys", "time", "urllib"])
+        self.assertEqual(sorted(set(imports)), ["argparse", "datetime", "json", "os", "pathlib", "re", "sys", "time", "urllib"])
         for forbidden in ("neo4j", "operations.", "sys.path", "bolt://", "OperationsStore", "truth"):
             self.assertNotIn(forbidden, source)
 

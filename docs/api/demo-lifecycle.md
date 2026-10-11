@@ -63,9 +63,15 @@ project module, opens no database and makes no model call itself; the backend's 
 cases it investigates during the pre-roll. In order:
 
 1. `GET /operations/session` for the token.
-2. `GET /simulation/status`, then `POST /simulation/reset` with `development_reset.confirmation`. Needs
-   `SUHAIL_DEV_RESET=1` on the backend; without it the script stops with a clear message and changes nothing. The
-   reset deletes the operations ledger of that backend's database and puts the clock back to the start.
+2. `GET /simulation/status`, then the **export of the current session**, then `POST /simulation/reset` with
+   `development_reset.confirmation`. Needs `SUHAIL_DEV_RESET=1` on the backend; without it the script stops with a
+   clear message and changes nothing. The reset deletes the operations ledger of that backend's database and puts the
+   clock back to the start, so first the session's cases are written to
+   `<archive dir>/session_<session id>_<UTC time>.json` (schema `demo-session-export-1`): the status, the queue
+   (`GET /cases/queue?scope=all`, every page) and, for each case, `GET /cases/{id}` and its audit trail
+   (`GET /audit?case_id=...`, every page). The export only reads. **If it fails for any reason (a call refused, a
+   case or its audit unreadable, the file not written whole) the session is not reset and the script stops**; an
+   earlier export is never overwritten. `--no-archive` resets without an export and must be given explicitly.
 3. `POST /worker/start`.
 4. Pre-roll: `POST /simulation/start` at `--preroll-speed` (default 600; anything above 600 is refused), polling
    `GET /simulation/status` until `as_of` reaches `--live-from`, then `POST /simulation/pause`. The ingestion worker
@@ -78,7 +84,10 @@ cases it investigates during the pre-roll. In order:
 
 | Option | Default | |
 | --- | --- | --- |
-| `--live-from` | required | simulation time at which the live phase starts, ISO with an offset. For the curated session: `2026-09-15T13:30:00+00:00` |
+| `--archive-dir` | `artifacts/demo/sessions` (under the repository root; `artifacts/` is not committed) | where the session is exported before the reset |
+| `--no-archive` | off | reset without exporting the current session's cases (they are lost) |
+| `--export-only` | off | write the export and do nothing else: no reset, nothing started; `--live-from` is not needed |
+| `--live-from` | required (not with `--export-only`) | simulation time at which the live phase starts, ISO with an offset. For the curated session: `2026-09-15T13:30:00+00:00` |
 | `--origin` | `http://127.0.0.1:8020` | the running backend |
 | `--preroll-speed` | `600` | 1, 10, 60, 300 or 600; above 600 is refused |
 | `--live-speed` | `600` | `300` or `600` |
