@@ -93,9 +93,32 @@ def agent_result(investigation, context):
                             "Vehicle GPS does not prove parcel location. Recommendations do not verify outcomes."]}
 
 
-def action_target(tools):
+def cited_device(tools, evidence_ids):
+    """The device a recommendation's own evidence names, read by code from the cited records: a cited device, heartbeat
+    or device-telemetry computation first, then the device that made a cited scan. None when the evidence names none."""
+    direct, by_scan = [], []
+    for ref in evidence_ids or []:
+        node = tools.nodes.get(ref)
+        if node is not None:
+            if node.kind == "Device":
+                direct.append(ref)
+            elif node.kind == "DeviceHeartbeat":
+                direct.append(node.properties.get("device_id"))
+            elif node.kind == "ScanEvent":
+                by_scan.append(node.properties.get("device_ref"))
+            continue
+        record = tools.external.get(ref) or {}
+        if record.get("kind") == "Device":
+            direct.append(record.get("device_id") or ref)
+        elif record.get("kind") == "DeviceHeartbeat" or record.get("computation") == "DEVICE_TELEMETRY":
+            direct.append(record.get("device_id"))
+    return next((d for d in direct + by_scan if isinstance(d, str) and d), None)
+
+
+def action_target(tools, evidence_ids=None):
     """What an executed action must later be checked against, computed by code from this snapshot:
-    the expected observations that are missing now and the silent device that should have made them."""
+    the expected observations that are missing now and the silent device that should have made them. When the
+    snapshot names no such device, the target is the device the recommendation cites as evidence (cited_device)."""
     rows = [r for r in tools._journey()["milestones"] if r["state"] == "missing_after_deadline"]
     silent = [d for d, report in tools.device_reports.items() if report.get("reporting_state") == "SILENT"]
     expected = []
@@ -107,6 +130,7 @@ def action_target(tools):
     expected = list(dict.fromkeys(expected))
     # The device that should have made the missing observation, when it is silent; else any silent device.
     device = next((d for d in expected if d in silent), None) or (silent[0] if silent else (expected[0] if expected else None))
+    device = device or cited_device(tools, evidence_ids)
     return {"device_id": device, "expected_evidence": [{"package_id": r["package_id"], "predicate": r["predicate"],
                                                         "location_id": r["location_id"]} for r in rows]}
 
@@ -253,7 +277,7 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
                 text = ACTIONS[action][3]
                 proposal = {"code": code, "action_code": code, "action_type": action, "action": text, "action_en": text,
                             "action_ar": ACTION_SUMMARY_AR[action],
-                            "evidence_ids": basis, "requires_approval": True, "resolves": False, "target": action_target(tools_for(s)),
+                            "evidence_ids": basis, "requires_approval": True, "resolves": False, "target": action_target(tools_for(s), basis),
                             "investigated_by": "agent",
                             "planner": {"mode": inv["mode"], "action_type": action, "evidence_basis": basis}}
         elif s["result"]["recommendations"]:
