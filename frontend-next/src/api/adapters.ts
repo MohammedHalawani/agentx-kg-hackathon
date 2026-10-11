@@ -813,7 +813,9 @@ export function applyDetail(
               ? "confirmed"
               : outcome.success === true
                 ? "exception_remains"
-                : "failed",
+                : outcome.outcome_type === "no_confirming_evidence"
+                  ? "unanswered"
+                  : "failed",
         status: outcome.verification_status ?? "",
         byPerson: /HUMAN/.test(outcome.verification_status ?? ""),
         reason: outcome.reason ?? "",
@@ -893,7 +895,7 @@ export function applyDetail(
             execution.recorded_at ??
             "",
           successful: !/FAIL|REFUS|TIMEOUT|ERROR|NOT_ACK/i.test(execution.status ?? ""),
-          detail: `${/NOT_ACK/i.test(execution.status ?? "") ? "The action was authorized but no execution adapter acknowledged it, so nothing was carried out and there is nothing to verify. " : ""}Execution ${humanize(execution.status) || "recorded"}${execution.authority ? ` under ${humanize(execution.authority)}` : ""}${execution.receipt_ref ? ` · receipt ${execution.receipt_ref}` : ""}. A receipt is not an outcome.`,
+          detail: `${/NOT_ACK/i.test(execution.status ?? "") ? "The request could not be delivered, so nothing was carried out and there is nothing to verify. " : ""}Execution ${humanize(execution.status) || "recorded"}${execution.authority ? ` under ${humanize(execution.authority)}` : ""}${execution.receipt_ref ? ` · receipt ${execution.receipt_ref}` : ""}. A receipt is not an outcome.`,
         }
       : undefined,
     outcome:
@@ -977,6 +979,7 @@ export function applyDetail(
       outcomeStatus: detail.outcome?.verification_status ?? null,
       verification,
       verificationDeadline: execution?.deadline_at ?? null,
+      expectedResponseAt: execution?.expected_response_at ?? null,
       asOf: detail.as_of,
     },
   };

@@ -229,6 +229,8 @@ export interface ApiExecution {
   /** When the request was delivered, and until when the verifier waits for evidence. */
   executed_at?: string;
   deadline_at?: string;
+  /** When the simulator has scheduled an answer (never what the answer is). May be absent. */
+  expected_response_at?: string | null;
   expected_result?: string;
   status?: string;
   authority?: string;

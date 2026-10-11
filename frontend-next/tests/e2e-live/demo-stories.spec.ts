@@ -55,7 +55,12 @@ for (const id of CASES)
       );
     if (execution?.status === "NOT_ACKNOWLEDGED" && !degraded.length)
       await expect(page.locator(".pipeline-meta")).toContainText(
-        "The action was not carried out",
+        "The request could not be delivered",
+      );
+    // Delivered and waiting: when an answer is due, never what the answer will be.
+    if (detail.workflow_state === "AWAITING_OUTCOME" && execution?.deadline_at)
+      await expect(page.locator(".pipeline-meta")).toContainText(
+        execution.expected_response_at ? "an answer is scheduled for" : "answer expected by",
       );
     await page.waitForTimeout(1500);
     const name = `${detail.shipment_id.slice(-3)}-${String(detail.workflow_state).toLowerCase()}`;

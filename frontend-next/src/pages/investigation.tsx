@@ -393,9 +393,14 @@ export function InvestigationPage() {
                     c.backend.verification.result !== "confirmed"
                   ? c.backend.verification.result === "failed"
                     ? t(
-                        "Action executed · verification did not confirm it · with a person",
-                        "نُفذ الإجراء · لم يؤكده التحقق · لدى شخص",
+                        "Request delivered and answered · not confirmed · with a person",
+                        "سُلّم الطلب وأُجيب · لم يتأكد · لدى شخص",
                       )
+                    : c.backend.verification.result === "unanswered"
+                      ? t(
+                          "Request delivered · no answer by the deadline · with a person",
+                          "سُلّم الطلب · لا إجابة حتى الموعد النهائي · لدى شخص",
+                        )
                     : c.backend.verification.result === "exception_remains"
                       ? t(
                           "Action verified · the exception remains · with a person",
@@ -412,8 +417,8 @@ export function InvestigationPage() {
                       )
                   : c.execution && !c.execution.successful
                     ? t(
-                        "The action was not carried out · with a person",
-                        "لم يُنفذ الإجراء · لدى شخص",
+                        "The request could not be delivered · nothing carried out · with a person",
+                        "تعذر تسليم الطلب · لم يُنفذ شيء · لدى شخص",
                       )
                   : c.backend?.workflowState === "HUMAN_REVIEW"
                   ? t(
@@ -445,10 +450,20 @@ export function InvestigationPage() {
                               ? c.status === "investigating"
                                 ? t("Investigation in progress", "التحقيق جارٍ")
                                 : c.status === "verifying"
-                                  ? t(
-                                      "Executed · awaiting independent verification",
-                                      "نُفذ · بانتظار التحقق المستقل",
-                                    )
+                                  ? c.backend?.expectedResponseAt
+                                    ? t(
+                                        `Request delivered · an answer is scheduled for ${dateTimeLabel(c.backend.expectedResponseAt)}`,
+                                        `سُلّم الطلب · إجابة مجدولة عند ${dateTimeLabel(c.backend.expectedResponseAt)}`,
+                                      )
+                                    : c.backend?.verificationDeadline
+                                      ? t(
+                                          `Request delivered · answer expected by ${dateTimeLabel(c.backend.verificationDeadline)}`,
+                                          `سُلّم الطلب · الإجابة متوقعة قبل ${dateTimeLabel(c.backend.verificationDeadline)}`,
+                                        )
+                                      : t(
+                                          "Executed · awaiting independent verification",
+                                          "نُفذ · بانتظار التحقق المستقل",
+                                        )
                                   : t("Recorded run", "تحقيق مسجل")
                               : t(
                                   "Simulated run in progress",
@@ -1008,18 +1023,20 @@ export function InvestigationPage() {
                   <div className="finding" data-testid="verification-result">
                     <Badge
                       variant="secondary"
-                      className={`finding-status finding-${c.backend.verification.result === "confirmed" ? "supported" : c.backend.verification.result === "failed" ? "refuted" : "uncertain"}`}
+                      className={`finding-status finding-${c.backend.verification.result === "confirmed" ? "supported" : ["failed", "unanswered"].includes(c.backend.verification.result) ? "refuted" : "uncertain"}`}
                     >
                       {t(
                         {
-                          confirmed: "Verified · exception cleared",
-                          failed: "Checked · not confirmed",
+                          confirmed: "Answered · verified · exception cleared",
+                          failed: "Answered · not confirmed",
+                          unanswered: "Delivered · no answer by the deadline",
                           exception_remains: "Verified · exception remains",
                           finding: "Finding on record · not resolved",
                         }[c.backend.verification.result],
                         {
                           confirmed: "تم التحقق · زال الاستثناء",
-                          failed: "تم الفحص · لم يتأكد",
+                          failed: "أُجيب · لم يتأكد",
+                          unanswered: "سُلّم · لا إجابة حتى الموعد النهائي",
                           exception_remains: "تم التحقق · الاستثناء باقٍ",
                           finding: "نتيجة مسجلة · لم تُحل",
                         }[c.backend.verification.result],
@@ -1045,7 +1062,7 @@ export function InvestigationPage() {
                 ) : c.backend?.verificationDeadline && c.status === "verifying" ? (
                   <p className="mt-3">
                     {t(
-                      `Waiting for evidence of the outcome. The verifier waits until ${dateTimeLabel(c.backend.verificationDeadline)} (dataset clock), then the case goes to a person.`,
+                      `Waiting for evidence of the outcome.${c.backend.expectedResponseAt ? ` An answer is scheduled for ${dateTimeLabel(c.backend.expectedResponseAt)}.` : ""} The verifier waits until ${dateTimeLabel(c.backend.verificationDeadline)} (dataset clock); with no confirming evidence by then it records a failed outcome and the case goes to a person.`,
                       `بانتظار دليل على النتيجة. ينتظر المتحقق حتى ${dateTimeLabel(c.backend.verificationDeadline)} (ساعة البيانات)، ثم تُحال الحالة إلى شخص.`,
                     )}
                   </p>

@@ -66,3 +66,19 @@ the three I was allowed was used; the first attempt made no model calls (see bel
 TypeScript and lint clean; 53 unit tests; 9 connected browser tests (scripted stand-in); 8 story
 cases and the first-case walkthrough on the demo backend (read-only); the 20 original lab browser
 tests.
+
+## Update: when an answer is expected, and three distinct end states
+
+While a delivered request waits, the case page says "Request delivered · answer expected by
+<time>" from the execution's `deadline_at`, or "an answer is scheduled for <time>" when the backend
+serves `expected_response_at`. It never says what the answer will be.
+
+| Backend record | In the interface |
+| --- | --- |
+| Acknowledged, outcome recorded from evidence | "Answered · verified · exception cleared", or "Answered · not confirmed" with the verifier's reason |
+| Acknowledged, outcome `no_confirming_evidence` at the deadline | "Delivered · no answer by the deadline", with a person |
+| `NOT_ACKNOWLEDGED` | "The request could not be delivered · nothing carried out", with a person; no outcome shown |
+
+The unanswered state has a unit test; no case on the demo backend has reached it yet, so it has
+not been seen in a browser against real data. Wording quoted in the table further up is the
+earlier wording.

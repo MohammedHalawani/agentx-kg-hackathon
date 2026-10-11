@@ -238,6 +238,12 @@ describe("backend case detail", () => {
     );
     expect(sent.execution?.successful).toBe(false);
     expect(sent.execution?.detail).toMatch(/nothing was carried out/);
+    // The three end states of an authorized action stay distinct.
+    const answered = applyDetail(base, detailA({ workflow_state: "HUMAN_REVIEW", outcome: { verification_status: "VERIFIED", success: false, outcome_type: "parcel_not_found", exception_cleared: false, reason: "The facility did not find the parcel.", evidence_ids: ["x"], current_cycle: true } }));
+    expect(answered.backend?.verification?.result).toBe("failed");
+    const silent = applyDetail(base, detailA({ workflow_state: "HUMAN_REVIEW", outcome: { verification_status: "VERIFIED", success: false, outcome_type: "no_confirming_evidence", exception_cleared: false, reason: "No causally relevant confirming evidence arrived before the action deadline.", evidence_ids: [], current_cycle: true } }));
+    expect(silent.backend?.verification?.result).toBe("unanswered");
+    expect(sent.backend?.verification).toBeUndefined();
     expect(sent.outcome).toBeUndefined();
     expect(controls(sent).humanOutcome).toBe(true);
   });

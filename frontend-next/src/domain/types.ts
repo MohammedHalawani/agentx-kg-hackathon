@@ -255,7 +255,13 @@ export interface BackendCaseState {
    * exception is still there. "finding": a person's finding on record that did not resolve.
    */
   verification?: {
-    result: "confirmed" | "failed" | "exception_remains" | "finding";
+    result:
+      | "confirmed"
+      | "failed"
+      | "exception_remains"
+      | "finding"
+      /** The request was delivered but no confirming evidence arrived by the deadline. */
+      | "unanswered";
     status: string;
     byPerson: boolean;
     reason: string;
@@ -264,6 +270,8 @@ export interface BackendCaseState {
   };
   /** Until when the verifier waits for evidence of the executed action. */
   verificationDeadline?: string | null;
+  /** When an answer to the executed action is scheduled, if the backend says so. */
+  expectedResponseAt?: string | null;
   asOf?: string;
 }
 export type AuditKind =

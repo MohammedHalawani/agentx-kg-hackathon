@@ -101,7 +101,13 @@ test("Every stage of a completed lifecycle is displayed as the backend recorded 
   await verification.scrollIntoViewIfNeeded();
   await expect(verification).toContainText(outcome.reason);
   await expect(verification).toContainText(
-    cleared ? "Verified · exception cleared" : outcome.success ? "Verified · exception remains" : "Checked · not confirmed",
+    cleared
+      ? "Answered · verified · exception cleared"
+      : outcome.success
+        ? "Verified · exception remains"
+        : outcome.outcome_type === "no_confirming_evidence"
+          ? "Delivered · no answer by the deadline"
+          : "Answered · not confirmed",
   );
   await expect(sheet).toContainText("A receipt is not an outcome");
   expect(execution.status).toBe("ACKNOWLEDGED");
