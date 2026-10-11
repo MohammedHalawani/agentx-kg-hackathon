@@ -116,6 +116,11 @@ class FakeBackend:
         self.worker = "running"
         return self.status()
 
+    def post_worker_pause(self, body):
+        assert body is None
+        self.worker = "paused"
+        return self.status()
+
     def post_simulation_start(self, body):
         assert set(body) == {"speed", "replay_mode"} and body["replay_mode"] == "timeline"
         if body["speed"] not in (1, 10, 60, 300, 600, 3600):
@@ -208,6 +213,20 @@ class SequenceTests(unittest.TestCase):
         self.assertIsNotNone(result["live_started_at"].tzinfo)
         self.assertIn("UTC)", run.lines[-1])
         self.assertEqual((backend.simulator, backend.speed, backend.worker), ("running", 600, "running"))
+
+    def test_manual_never_starts_the_worker_and_leaves_the_cases_waiting(self):
+        backend = FakeBackend(cases=CASES)
+        run = Run(backend, "--manual")
+        result = run.go()
+        paths = [path for path, _ in run.posts()]
+        self.assertNotIn("/worker/start", paths)
+        self.assertEqual(paths, ["/simulation/reset", "/worker/pause", "/simulation/start", "/simulation/pause", "/simulation/start"])
+        self.assertEqual(backend.worker, "paused")
+        self.assertEqual(backend.simulator, "running")                # The world goes live; nothing is investigated by itself.
+        self.assertIsNotNone(result["live_started_at"])
+        self.assertTrue(any(line.startswith("--manual") for line in run.lines))
+        self.assertFalse(any(line.startswith("worker has caught up") for line in run.lines))
+        self.assertEqual(len(run.exports()), 1)                       # The session before it is still archived first.
 
     def test_no_live_stops_after_the_pre_roll(self):
         backend = FakeBackend(cases=CASES)

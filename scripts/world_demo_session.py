@@ -324,14 +324,22 @@ def run(api, args, say=print, **timing):
     else:
         archive = lambda status: exported.update(path=export_session(api, args.archive_dir, say, status=status))
     reset(api, live_from, say, archive=archive)
-    step(api, "post", "/worker/start", "starting the investigation worker")
-    say("investigation worker started")
-    preroll(api, live_from, args.preroll_speed, say, poll=args.poll_seconds, **timing)
-    cases = wait_for_worker(api, say, poll=max(args.poll_seconds, 0), timeout=args.catchup_timeout, **timing)
+    if args.manual:
+        # Auto stays OFF: the worker is never started, so every case the monitor opens waits as OPEN until an operator
+        # starts its investigation (POST /cases/{case_id}/investigate, the interface's own button).
+        step(api, "post", "/worker/pause", "keeping the investigation worker paused")
+        say("--manual: the investigation worker stays paused; cases wait for an operator to start each investigation")
+        preroll(api, live_from, args.preroll_speed, say, poll=args.poll_seconds, **timing)
+        cases = queue(api)
+    else:
+        step(api, "post", "/worker/start", "starting the investigation worker")
+        say("investigation worker started")
+        preroll(api, live_from, args.preroll_speed, say, poll=args.poll_seconds, **timing)
+        cases = wait_for_worker(api, say, poll=max(args.poll_seconds, 0), timeout=args.catchup_timeout, **timing)
     for line in queue_lines(cases):
         say(line)
     if args.no_live:
-        say("--no-live: stopped after the pre-roll; the simulation is paused and the worker is running")
+        say("--no-live: stopped after the pre-roll; the simulation is paused and the worker is " + ("paused" if args.manual else "running"))
         return {"cases": cases, "live_started_at": None, "archive": exported.get("path")}
     return {"cases": cases, "live_started_at": go_live(api, args.live_speed, say), "archive": exported.get("path")}
 
@@ -367,6 +375,8 @@ def parse(argv=None):
     parser.add_argument("--preroll-speed", type=preroll_speed, default=600, help="speed of the pre-roll (default 600; never above 600)")
     parser.add_argument("--live-speed", type=int, choices=LIVE_SPEEDS, default=600, help="speed of the live phase (default 600)")
     parser.add_argument("--no-live", action="store_true", help="stop after the pre-roll (the simulation stays paused)")
+    parser.add_argument("--manual", action="store_true",
+                        help="leave automatic investigation OFF: the worker is never started and every case waits for an operator to start it")
     parser.add_argument("--poll-seconds", type=float, default=1.0, help="seconds between status polls (default 1)")
     parser.add_argument("--catchup-timeout", type=float, default=3600.0,
                         help="how long to wait for the worker to finish the pre-roll's cases, in seconds (default 3600)")
