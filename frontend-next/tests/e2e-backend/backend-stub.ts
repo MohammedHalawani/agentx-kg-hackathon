@@ -167,6 +167,13 @@ export async function stubBackend(page: Page): Promise<Stub> {
             state_version: 9,
           });
         }
+        if (path === "/simulation/skip")
+          return json(route, {
+            reason: "case_opened",
+            simulated_minutes: 540,
+            cases: [{ case_id: CASE_A, workflow_state: "OPEN" }],
+            still_awaiting_evidence: 1,
+          });
         if (path === "/simulation/start" || path === "/simulation/pause") {
           stub.state.clock = path.endsWith("start") ? "running" : "paused";
           return json(route, {});

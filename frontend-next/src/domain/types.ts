@@ -510,6 +510,16 @@ export interface OperationsService {
   watchCase?(caseId: string): () => void;
   /** Backend only: start or pause the simulated clock (cases arrive only while it runs). */
   setClock?(running: boolean): Promise<void>;
+  /**
+   * Backend only: run the clock fast until an awaited result arrives or a new case opens,
+   * then return to the current speed. Every other shipment ages by the skipped time.
+   */
+  skipClock?(): Promise<{
+    reason: string;
+    simulatedMinutes: number;
+    caseIds: string[];
+    stillAwaiting: number;
+  }>;
   /** Backend only: one question about one case. Read-only; nothing is stored. */
   askCanopus?(
     caseId: string,

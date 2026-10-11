@@ -445,6 +445,12 @@ test("The clock control starts and pauses the backend's simulated clock, apart f
   await clock.click();
   await expect(clock).toHaveText("Clock paused · Start");
   expect(stub.posts.map((post) => post.path)).toEqual(["/simulation/start", "/simulation/pause"]);
+  // Skip to the next event: one call, then one plain line of what the backend reports.
+  await page.getByTestId("clock-skip").click();
+  await expect(page.locator("[data-sonner-toast]")).toContainText(
+    `Skipped 9 hours: a new case opened, ${SHIP_A}.`,
+  );
+  expect(stub.posts.at(-1)!.path).toBe("/simulation/skip");
 });
 
 test("The Auto switch reflects the backend worker, and Arabic and dark mode still apply", async ({

@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Clock3,
   PanelRightClose,
+  FastForward,
   Pause,
   Play,
   RefreshCw,
@@ -245,6 +246,55 @@ export function OperationsPage() {
       toast.info(t("Local queue is up to date.", "القائمة المحلية محدّثة."));
     }, 450);
   }
+  const [skipping, setSkipping] = useState(false);
+  function skipToNext() {
+    if (skipping || !service.skipClock) return;
+    setSkipping(true);
+    void service
+      .skipClock()
+      .then((result) => {
+        // One plain line of what the backend reports happened.
+        const hours = Math.round((result.simulatedMinutes / 60) * 10) / 10;
+        const names = result.caseIds
+          .map((id) => cases.find((item) => item.id === id)?.shipment.id ?? "")
+          .filter(Boolean)
+          .join(", ");
+        const what =
+          result.reason === "outcome_decided"
+            ? t(
+                `a result was verified${names ? ` for ${names}` : ""}`,
+                `تم التحقق من نتيجة${names ? ` لـ ${names}` : ""}`,
+              )
+            : result.reason === "case_opened"
+              ? t(
+                  `a new case opened${names ? `, ${names}` : ""}`,
+                  `فُتحت حالة جديدة${names ? `، ${names}` : ""}`,
+                )
+              : result.reason === "end_of_timeline"
+                ? t(
+                    "the end of the timeline was reached",
+                    "بلغت نهاية الخط الزمني",
+                  )
+                : t("nothing arrived yet", "لم يصل شيء بعد");
+        toast.info(
+          t(
+            `Skipped ${hours} hours: ${what}.`,
+            `تم تخطي ${hours} ساعة: ${what}.`,
+          ),
+        );
+      })
+      .catch((error: Error) =>
+        toast.error(
+          /409/.test(error.message)
+            ? t(
+                "An investigation is running; skip again when it has finished.",
+                "هناك تحقيق جارٍ؛ أعد التخطي بعد انتهائه.",
+              )
+            : error.message,
+        ),
+      )
+      .finally(() => setSkipping(false));
+  }
   function setAutomatic(enabled: boolean) {
     // The switch reflects the backend worker; it changes only when the backend confirms.
     void Promise.resolve()
@@ -419,7 +469,7 @@ export function OperationsPage() {
                 className="clock-control"
                 data-testid="clock-control"
                 aria-pressed={connection.clock.running}
-                disabled={connection.controls === "unavailable"}
+                disabled={skipping || connection.controls === "unavailable"}
                 title={t(
                   "The simulated clock. New exceptions arrive and requests are answered only while it runs.",
                   "الساعة المحاكاة. تصل الاستثناءات الجديدة وتُجاب الطلبات فقط أثناء تشغيلها.",
@@ -441,6 +491,25 @@ export function OperationsPage() {
                       `الساعة تعمل ×${connection.clock.speed} · إيقاف`,
                     )
                   : t("Clock paused · Start", "الساعة متوقفة · تشغيل")}
+              </Button>
+            )}
+            {backend && connection?.clock && service.skipClock && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="clock-control"
+                data-testid="clock-skip"
+                disabled={skipping || connection.controls === "unavailable"}
+                title={t(
+                  "Runs the clock fast until an awaited result arrives or a new case opens, then returns to the current speed. Every other shipment ages by the skipped time.",
+                  "يشغّل الساعة بسرعة حتى تصل نتيجة منتظرة أو تُفتح حالة جديدة، ثم يعود إلى السرعة الحالية. تتقدم كل الشحنات الأخرى بالزمن المتخطى.",
+                )}
+                onClick={skipToNext}
+              >
+                <FastForward size={12} />
+                {skipping
+                  ? t("Skipping…", "جارٍ التخطي…")
+                  : t("Skip to next event", "تخطَّ إلى الحدث التالي")}
               </Button>
             )}
             <label className="inline-automation">

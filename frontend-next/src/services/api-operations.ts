@@ -602,6 +602,27 @@ export class ApiOperationsService implements OperationsService {
     );
     await this.refreshAfterChange();
   };
+  /** Skips simulated time to the next event; returns when the backend has stopped. */
+  skipClock = async () => {
+    const result = await this.client.post<{
+      reason?: string;
+      simulated_minutes?: number;
+      cases?: { case_id: string }[];
+      still_awaiting_evidence?: number | unknown[];
+    }>("/simulation/skip", {}, 300000);
+    await this.refreshAfterChange();
+    for (const item of result.cases ?? [])
+      void this.loadDetail(item.case_id, true).catch(() => undefined);
+    const awaiting = result.still_awaiting_evidence;
+    return {
+      reason: result.reason ?? "",
+      simulatedMinutes: result.simulated_minutes ?? 0,
+      caseIds: (result.cases ?? []).map((item) => item.case_id),
+      stillAwaiting: Array.isArray(awaiting)
+        ? awaiting.length
+        : Number(awaiting ?? 0),
+    };
+  };
   async setAutomatic(enabled: boolean) {
     await this.client.post(enabled ? "/worker/start" : "/worker/pause");
     await this.refreshAfterChange();
