@@ -187,7 +187,8 @@ export function CanopusAskThread({ c }: { c: OperationalCase }) {
                       .replaceAll("_", " ")
                       .toLowerCase()}
                   </span>
-                  {turn.answer.evidenceIds.length > 0 && (
+                  {(turn.answer.evidenceIds.length > 0 ||
+                    turn.answer.graphNodeIds.length > 0) && (
                     <button
                       type="button"
                       disabled={!turn.answer.graphNodeIds.length}

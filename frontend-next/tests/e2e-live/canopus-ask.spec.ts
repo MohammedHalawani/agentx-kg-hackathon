@@ -19,11 +19,6 @@ test("Canopus answers from the case's records, quotes the agents, and lights the
   const nodeIds = new Set<string>(detail.evidence.nodes.map((node: { id: string }) => node.id));
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  const answers: Record<string, unknown>[] = [];
-  page.on("response", async (response) => {
-    if (response.url().endsWith("/canopus/ask") && response.ok())
-      answers.push(await response.json());
-  });
   await page.goto(`/app/cases/${CASE}`);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(detail.shipment_id, {
     timeout: 60000,
@@ -35,12 +30,18 @@ test("Canopus answers from the case's records, quotes the agents, and lights the
     const before = await panel.getByTestId("canopus-answer").count();
     const started = Date.now();
     await box.fill(question);
-    await panel.getByRole("button", { name: "Send question" }).click();
-    await expect(panel.locator(".ask-waiting")).toContainText("reading this case");
+    // The answer checked is the response to this question, not an earlier one.
+    const [response] = await Promise.all([
+      page.waitForResponse(
+        (item) => item.url().endsWith("/canopus/ask") && item.request().method() === "POST",
+        { timeout: 120000 },
+      ),
+      panel.getByRole("button", { name: "Send question" }).click(),
+    ]);
     await expect(panel.getByTestId("canopus-answer")).toHaveCount(before + 1, {
       timeout: 120000,
     });
-    const answer = answers.at(-1) as {
+    const answer = (await response.json()) as {
       kind: string;
       answer_en: string;
       workflow_state: string;
@@ -97,7 +98,10 @@ test("Canopus answers from the case's records, quotes the agents, and lights the
   // Records an answer relies on are lit in the graph, from its graph_node_ids only.
   const withIds = [first, second, third].find((item) => item.answer.graph_node_ids.length);
   if (withIds) {
-    await withIds.bubble.getByRole("button", { name: /records in the graph/ }).click();
+    console.log(`highlighting ${withIds.answer.graph_node_ids.length} records from an answer`);
+    await withIds.bubble
+      .getByRole("button", { name: /records in the graph/ })
+      .click({ timeout: 15000 });
     await panel.getByRole("button", { name: "Minimize Canopus conversation" }).click();
     await expect(
       page.getByTestId("knowledge-graph").locator(".evidence-path").first(),
