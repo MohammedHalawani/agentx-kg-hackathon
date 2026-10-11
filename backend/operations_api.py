@@ -297,11 +297,11 @@ def _simulation_speed(value):
 
 
 class SimulationStart(StrictBody):
-    speed: Annotated[Literal[1,10,60,600,3600],BeforeValidator(_simulation_speed)]=10
+    speed: Annotated[Literal[1,10,60,300,600,3600],BeforeValidator(_simulation_speed)]=10
     replay_mode: Literal["timeline","compressed"]="timeline"
 class TickBody(StrictBody):
     seconds: float=Field(default=60,gt=0,le=86400,allow_inf_nan=False)
-    speed: Annotated[Literal[1,10,60,600,3600],BeforeValidator(_simulation_speed)]|None=None
+    speed: Annotated[Literal[1,10,60,300,600,3600],BeforeValidator(_simulation_speed)]|None=None
     replay_mode: Literal["timeline","compressed"]|None=None
 
 

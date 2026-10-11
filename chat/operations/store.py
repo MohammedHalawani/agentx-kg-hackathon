@@ -367,7 +367,7 @@ class OperationsStore:
         if component not in {"worker", "simulator"} or action not in {"start", "pause", "step"}:
             raise OperationsConflict("Invalid operations control")
         if speed is not None and (type(speed) is not int or speed not in SPEEDS):
-            raise OperationsConflict("Simulation speed must be 1, 10, 60, 600 or 3600")
+            raise OperationsConflict("Simulation speed must be 1, 10, 60, 300, 600 or 3600")
         if replay_mode is not None and (component!="simulator" or replay_mode not in {"timeline","compressed"}):
             raise OperationsConflict("Replay mode must be timeline or compressed")
         def control_tx(tx):
