@@ -26,7 +26,7 @@ def main():
     settled = rows(run / "settled.jsonl")
     cases = rows(run / "cases.jsonl")
     ledger = rows(run / "ledger.jsonl")
-    manifest = json.loads((run / "manifest.json").read_text(encoding="utf-8")) if (run / "manifest.json").exists() else {}
+    manifest = json.loads((run / "run_manifest.json").read_text(encoding="utf-8")) if (run / "run_manifest.json").exists() else {}
     calls = sum(int(e.get("calls") or 0) for e in ledger if e.get("event") in ("settle", "settled"))
     newest = max((p.stat().st_mtime for p in run.glob("*.jsonl")), default=None)
     out = {"run": str(run), "written_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),

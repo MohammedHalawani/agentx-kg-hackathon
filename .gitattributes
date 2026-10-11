@@ -7,3 +7,4 @@ docs/evals/**/preregistration/** -text
 chat/stage3_eval/fixtures/world_*/** -text
 # The campaign's model-call ledger.
 docs/evals/model_call_ledger.json -text
+scripts/stage3_drive.sh text eol=lf
