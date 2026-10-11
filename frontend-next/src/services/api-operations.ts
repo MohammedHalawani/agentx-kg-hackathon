@@ -602,14 +602,24 @@ export class ApiOperationsService implements OperationsService {
     );
     await this.refreshAfterChange();
   };
+  /** How long a refused skip waits before its one retry. */
+  skipRetryMs = 2000;
   /** Skips simulated time to the next event; returns when the backend has stopped. */
   skipClock = async () => {
-    const result = await this.client.post<{
-      reason?: string;
-      simulated_minutes?: number;
-      cases?: { case_id: string }[];
-      still_awaiting_evidence?: number | unknown[];
-    }>("/simulation/skip", {}, 300000);
+    const call = () =>
+      this.client.post<{
+        reason?: string;
+        simulated_minutes?: number;
+        cases?: { case_id: string }[];
+        still_awaiting_evidence?: number | unknown[];
+      }>("/simulation/skip", {}, 300000);
+    // A skip the backend could not start (its graph was busy) leaves the state as it was;
+    // it is tried once more before the error is shown.
+    const result = await call().catch(async (error: unknown) => {
+      if (!(error instanceof ApiError) || error.status !== 503) throw error;
+      await new Promise((resolve) => setTimeout(resolve, this.skipRetryMs));
+      return call();
+    });
     await this.refreshAfterChange();
     for (const item of result.cases ?? [])
       void this.loadDetail(item.case_id, true).catch(() => undefined);

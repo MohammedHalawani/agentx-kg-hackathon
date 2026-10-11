@@ -317,6 +317,20 @@ describe("ApiOperationsService operator requests", () => {
     });
     await world.service.refresh();
     await world.service.setAutomatic(true);
+    // A skip refused once with 503 is retried once; a second refusal is reported.
+    let refusals = 1;
+    const skipping = backend({
+      "POST /simulation/skip": () => {
+        if (refusals-- > 0) throw new HttpError(503, "The V2 graph is unavailable");
+        return { reason: "case_opened", simulated_minutes: 600, cases: [{ case_id: CASE_A }], still_awaiting_evidence: 1 };
+      },
+    });
+    await skipping.service.refresh();
+    skipping.service.skipRetryMs = 1;
+    await expect(skipping.service.skipClock()).resolves.toMatchObject({ reason: "case_opened", simulatedMinutes: 600, caseIds: [CASE_A], stillAwaiting: 1 });
+    expect(skipping.calls.filter((call) => call.path === "/simulation/skip")).toHaveLength(2);
+    refusals = 2;
+    await expect(skipping.service.skipClock()).rejects.toThrow(/unavailable/);
     expect(world.posts()[0].path).toBe("/worker/start");
     // The backend still reports "paused" here, so the switch stays off.
     expect(world.service.getSnapshot().automatic).toBe(false);
