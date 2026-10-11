@@ -242,6 +242,28 @@ class LivePathTests(Short):
         self.assertEqual((len(self.forced(events)), len(ask.seen)), (1, 0))
 
 
+class RejectionReasonTests(Case):
+    """Why a model call's reply was unusable is in the run record: run.result.latency.model.turns[].invalid_kind (a kind,
+    never the reply text) and, with the reason sent back to the model, in the round's validation_errors."""
+
+    def test_the_run_record_says_why_each_reply_was_rejected(self):
+        belt = self.belt()
+        turn, ask = scripted(self.call(belt), None, {"action": "wander"}, cite_scan), asker(ACCEPT)
+        with mock.patch.object(investigator, "model_turn", turn), mock.patch.object(investigator, "_review_call", ask):
+            result, _ = run_graph(self.sid, self.context["as_of"], self.world.config, lambda *_: self.context, lambda *_: [],
+                                  agents=investigator, live_session=True, symptoms=("BARCODE_READ_DIFFERS",),
+                                  heartbeats=heartbeats_from(self.world))
+        turns = result["latency"]["model"]["turns"]
+        self.assertEqual([(t["role"], t["outcome"], t.get("invalid_kind")) for t in turns], [
+            ("investigator", "call", None), ("investigator", "invalid", "not_an_object"), ("investigator", "invalid", "action:wander"),
+            ("investigator", "conclude", None), ("reviewer", "review", None)])
+        self.assertTrue(all("invalid_kind" not in t for t in turns if t["outcome"] != "invalid"))
+        errors = result["investigation_log"]["rounds"][0]["investigator"]["validation_errors"]
+        self.assertEqual(errors, [{"turn": 2, "error": "reply must be one JSON object with action call or conclude"},
+                                  {"turn": 3, "error": "reply must be one JSON object with action call or conclude"}])
+        self.assertEqual(result["investigation"]["validation_errors"], errors)
+
+
 class DiagnosisTests(unittest.TestCase):
     """case detail's diagnosis says when the investigation used the forced final turn; otherwise the field is absent."""
 

@@ -172,7 +172,7 @@ when the graph starts, after the worker claimed the case; queue time before that
 | `first_conclusion_seconds` | When round 0's conclusion (hypotheses, or a degraded investigator) was available. |
 | `first_review_seconds`, `final_seconds` | The first independent review's verdict; the authority decision written back. |
 | `stages` | Seconds per pipeline stage, summed over rounds. |
-| `model` | `calls`, `seconds`, `by_role`, `input_tokens`/`output_tokens` when the provider reports them, and `turns[]` (`role`, `round`, `seconds`, `outcome`, `prompt_chars`, tokens) for every model call. |
+| `model` | `calls`, `seconds`, `by_role`, `input_tokens`/`output_tokens` when the provider reports them, and `turns[]` (`role`, `round`, `seconds`, `outcome`, `prompt_chars`, tokens) for every model call. An investigator turn whose reply was neither a call nor a conclusion has `outcome: "invalid"` and `invalid_kind`: why, as a kind only, never the reply text (`empty`, `no_json_object`, `json_error`, `not_an_object`, `no_action`, `action:<value>`). Replies rejected for another reason (unknown tool, tool budget, an invalid conclusion) are listed with their turn number and reason in `investigation.validation_errors[]` and `investigation_log.rounds[].investigator.validation_errors[]`. |
 | `tools` | `calls`, `seconds`, `duplicate_calls` (same tool and arguments again), `queries`, `query_seconds`, `cached_queries`. |
 | `event_writes` | `count` and `seconds` spent persisting and publishing pipeline events (`on_event`). |
 | `other_seconds` | The rest: evidence loading, precedents, checks, the graph itself. |

@@ -254,16 +254,23 @@ def tool_batch():
 
 
 def system_prompt(batch=1):
-    """The investigator's instructions. With batch 1 this is SYSTEM, unchanged."""
+    """The investigator's instructions. With batch 1 this is SYSTEM, unchanged.
+
+    With batch > 1 the call shape is a list, and the instructions say when to fill it. Offering the list as a second,
+    optional shape after the single call was not enough: on eight demo cases (2026-10-11) GPT-OSS kept to one tool
+    per reply. The single shape is still accepted."""
     if batch <= 1:
         return SYSTEM
     one = "Work iteratively: call one tool at a time, read its result, and decide what to examine next."
     shape = '{"action":"call","tool":"<tool name>","args":{...},"purpose":"<one short sentence>"}\n'
     assert one in SYSTEM and shape in SYSTEM
-    return SYSTEM.replace(one, f"Work iteratively: in one reply you may call up to {batch} tools whose arguments you already know and whose "
-                               "results do not depend on each other; read their results, then decide what to examine next.").replace(
-        shape, shape + 'or, for several independent tools in one reply:\n'
-                       '{"action":"call","calls":[{"tool":"<tool name>","args":{...},"purpose":"<one short sentence>"}, ...]}\n')
+    return SYSTEM.replace(one, (
+        f"Work in rounds of evidence. Every reply costs several seconds, so in one reply ask for every tool (up to {batch}) "
+        "whose arguments you already know and whose result you will want whatever the others show; then read the results "
+        "together and decide what to examine next. Ask for a tool on its own only when its arguments, or whether you need it "
+        "at all, depend on a result you have not yet seen. For example, once shipment_overview has named the packages, devices "
+        "and route runs, the tools you want about them can usually be asked for together.")).replace(
+        shape, f'{{"action":"call","calls":[{{"tool":"<tool name>","args":{{...}},"purpose":"<one short sentence>"}}, ...]}}  (1 to {batch} calls)\n')
 
 
 def model_call_cap():
@@ -410,7 +417,10 @@ def model_turn(messages):
         (AIMessage if m["role"] == "assistant" else HumanMessage)(m["content"]) for m in messages[1:]]
     response = _llm.model().invoke(wire)
     latency.note_usage(response)
-    return _llm.parse_json(_llm.message_text(getattr(response, "content", None)))
+    text = _llm.message_text(getattr(response, "content", None))
+    parsed = _llm.parse_json(text)
+    latency.note_reply(text, parsed)
+    return parsed
 
 
 def case_packet(tools, session, feedback=None):
@@ -480,7 +490,10 @@ def investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, 
         session.steps.append(step)
         if on_step:
             on_step(step)
-        messages.append({"role": "assistant", "content": json.dumps({"action": "call", "tool": PREFETCH_TOOL, "args": {}, "purpose": PREFETCH_PURPOSE}, ensure_ascii=False)})
+        # Written in the call shape the instructions ask for, so the model's first turn of its own does not copy another.
+        prefetched = {"tool": PREFETCH_TOOL, "args": {}, "purpose": PREFETCH_PURPOSE}
+        messages.append({"role": "assistant", "content": json.dumps({"action": "call", **prefetched} if batch <= 1 else
+                                                                    {"action": "call", "calls": [prefetched]}, ensure_ascii=False)})
         messages.append({"role": "user", "content": f"TOOL RESULT {PREFETCH_TOOL}: {result['result']}"})
 
     def reject(text):
@@ -520,6 +533,7 @@ def investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, 
                          "conclude INSUFFICIENT_EVIDENCE and name what is missing and the next step.")
         sent = messages + [{"role": "user", "content": " ".join(notes)}] if notes else messages
         latency.take_usage()
+        latency.take_reply()
         started = latency.now()
         try:
             out = turn(sent)
@@ -532,9 +546,12 @@ def investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, 
                 error = problem
                 break
             continue
+        valid = isinstance(out, dict) and out.get("action") in ("call", "conclude")
         session.turns.append(latency.turn_record("investigator", round_number, latency.now() - started,
-                                                 out.get("action") if isinstance(out, dict) and out.get("action") in ("call", "conclude") else "invalid",
-                                                 latency.take_usage(), prompt_chars=sum(len(m["content"]) for m in sent)))
+                                                 out["action"] if valid else "invalid", latency.take_usage(),
+                                                 prompt_chars=sum(len(m["content"]) for m in sent),
+                                                 invalid=None if valid else latency.invalid_kind(out)))
+        latency.take_reply()
         provider_failures = 0
         # A rejected reply on a tool-call turn is corrected on the next turn; it never ends the investigation by itself.
         if not isinstance(out, dict) or out.get("action") not in ("call", "conclude"):

@@ -36,8 +36,32 @@ def take_usage():
     return usage
 
 
-def turn_record(role, round_number, seconds, outcome, usage=None, prompt_chars=None):
+def note_reply(text, parsed):
+    """Why a provider reply did not parse, as a kind only (never the text): empty, no_json_object, json_error."""
+    _last.reply = (None if isinstance(parsed, dict) else "empty" if not (text or "").strip()
+                   else "no_json_object" if "{" not in text else "json_error")
+
+
+def take_reply():
+    kind, _last.reply = getattr(_last, "reply", None), None
+    return kind
+
+
+def invalid_kind(out):
+    """Why a reply was not a call or a conclusion: the parse failure noted by the provider call, else the shape."""
+    noted = take_reply()
+    if noted:
+        return noted
+    if not isinstance(out, dict):
+        return "not_an_object"
+    action = "".join(ch for ch in str(out.get("action"))[:24] if ch.isalnum() or ch == "_")
+    return f"action:{action}" if "action" in out else "no_action"
+
+
+def turn_record(role, round_number, seconds, outcome, usage=None, prompt_chars=None, invalid=None):
     record = {"role": role, "round": round_number, "seconds": round(seconds, 3), "outcome": outcome}
+    if invalid:
+        record["invalid_kind"] = invalid
     if prompt_chars is not None:
         record["prompt_chars"] = prompt_chars
     for key in ("input_tokens", "output_tokens"):

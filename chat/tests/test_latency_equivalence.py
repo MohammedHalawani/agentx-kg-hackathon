@@ -202,7 +202,13 @@ class Equivalence(unittest.TestCase):
                 self.assertEqual([t["review"]["verdict"] for t in a["trace"]], [t["review"]["verdict"] for t in c["trace"]])
                 self.assertEqual(strip(a["authority"]), strip(c["authority"]))
                 self.assertLess(c["latency"]["model"]["calls"], a["latency"]["model"]["calls"])
-                self.assertIn("up to 3 tools", seen_c[0][0]["content"])
+                system = seen_c[0][0]["content"]
+                self.assertIn("ask for every tool (up to 3)", system)
+                # The list is the only call shape offered, and the prefetched call is written in it, so the model's own
+                # first reply has no single-call example to copy (on eight demo cases it kept to one tool per reply).
+                self.assertIn('{"action":"call","calls":[', system)
+                self.assertNotIn('{"action":"call","tool":', system)
+                self.assertEqual(json.loads(seen_c[0][2]["content"])["calls"][0]["tool"], "shipment_overview")
 
     def test_with_the_options_off_the_instructions_and_packet_are_the_evaluated_ones(self):
         self.assertEqual(investigator.system_prompt(1), investigator.SYSTEM)
@@ -210,6 +216,22 @@ class Equivalence(unittest.TestCase):
         self.assertEqual(seen[0][0]["content"], investigator.SYSTEM)
         self.assertNotIn("max_tool_calls_per_reply", seen[0][1]["content"])
         self.assertFalse(any(m["content"].startswith("TOOL RESULT") for m in seen[0]))   # nothing fetched before the first turn
+
+    def test_an_unusable_reply_records_why_without_its_text(self):
+        from tests.test_investigator import scripted
+        from operations.tools import InvestigationTools
+        sid = self.shipments[0]
+        context = self.fixture.reader.evidence(sid, self.end)
+        tools = InvestigationTools(context, self.fixture.world.config, symptoms=["MILESTONE_OVERDUE"], port=self.fixture.reader.fetch)
+        session = investigator.Session(6)
+        investigator.investigate(tools, session=session, turn=scripted(None, {"action": "calls"}, {"hypotheses": []},
+                                                                       {"action": "call", "tool": "journey", "args": {}}, None, None))
+        kinds = [t.get("invalid_kind") for t in session.turns if t["outcome"] == "invalid"]
+        self.assertEqual(kinds[:3], ["not_an_object", "action:calls", "no_action"])
+        from operations import latency
+        for text, kind in (("", "empty"), ("I will check the scans.", "no_json_object"), ('{"action": "conclude", "hypotheses": [}', "json_error")):
+            latency.note_reply(text, None)
+            self.assertEqual(latency.take_reply(), kind)
 
 
 class LatencyRecord(unittest.TestCase):
