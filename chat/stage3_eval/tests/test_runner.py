@@ -5,7 +5,7 @@ import json
 import pytest
 
 from stage3_eval.__main__ import dry_run_fixture
-from stage3_eval.arms import AgentArm, NoToolsArm, RuleCodeArm, SymptomArm
+from stage3_eval.arms import NOTOOLS_SEPARATOR, AgentArm, NoToolsArm, RuleCodeArm, SymptomArm
 from stage3_eval.budget import read_ledger
 from stage3_eval.canary import TruthScanner
 from stage3_eval.fixtures.fakes import FixtureCaseSource, FixtureCapture, FixtureDatabase
@@ -35,14 +35,14 @@ def test_dry_run_over_the_fixture_spends_zero_calls(tmp_path):
     assert manifest["extras"]["stability_rerun"]["listed"] == 34            # planned from extras.json, after the main cases (the whole cell: 34 <= 40)
     # The fixture's budget is sealed by `select`: the worst case of what it selected, extras included, and the plan fits it.
     sizing = summary["sizing"]
-    assert manifest["config"]["budget"] == summary["budget"] == sizing["worst_case_calls"]["total"] == 70 * 14 + (sizing["extras"]["cross_shipment_ablation"] + 34) * 12
-    assert manifest["ledger"]["planned_calls"] == 70 * 14 and manifest["ledger"]["refused"] == 0
+    assert manifest["config"]["budget"] == summary["budget"] == sizing["worst_case_calls"]["total"] == 70 * 15 + (sizing["extras"]["cross_shipment_ablation"] + 34) * 12
+    assert manifest["ledger"]["planned_calls"] == 70 * 15 and manifest["ledger"]["refused"] == 0
     assert all(e["would_fit_by_worst_case"] == e["listed"] for e in manifest["extras"].values() if e["available"] and e["listed"])
     ledger = read_ledger(out / "run" / "ledger.jsonl")
     assert manifest["ledger"]["settled_calls"] == 0 and manifest["ledger"]["committed_calls"] == 0
     assert not [e for e in ledger if e["event"] in ("reserve", "settle")]
     plans = [e for e in ledger if e["event"] == "plan"]
-    assert sum(e["calls"] for e in plans) == manifest["ledger"]["planned_calls"] == 70 * (12 + 2)
+    assert sum(e["calls"] for e in plans) == manifest["ledger"]["planned_calls"] == 70 * (12 + 3)
     results = read_jsonl(out / "run" / "results" / "main" / "agent.jsonl")
     assert len(results) == 70 and all(r["not_run"] == "dry_run" for r in results)
     assert all(r["not_run"] is None for r in read_jsonl(out / "run" / "results" / "main" / "rulecode.jsonl"))
@@ -397,6 +397,33 @@ def test_the_run_binds_the_notools_arm_to_the_sealed_cap(tmp_path, selected, wor
     arms = build_arms(config, FakeAgent({w: worlds[w][0] for w in worlds}), turn)
     assert arms["notools"].c_cap is None
     run(sel_dir / "selection.json", tmp_path / "run", arms=arms, case_source=FixtureCaseSource(), config=config, max_cases=1)
-    packet = json.loads(calls[0][1]["content"])
+    packet = json.loads(calls[0][1]["content"].split(NOTOOLS_SEPARATOR, 1)[0])
     assert arms["notools"].c_cap == config.c_cap and packet["limits"]["model_turns_available"] == config.c_cap - 1
     assert packet["tools"] == [] and "cause_catalogue" in packet and "cause_codes" not in packet
+
+
+def test_a_selection_sealed_before_the_no_tools_correction_still_verifies_but_refuses_the_corrected_arm(tmp_path, selected, worlds):
+    """Such a selection holds 2 calls per case for the no-tools arm: its hash is recognised, and the 3-call arm is
+    refused on it before anything is written or called."""
+    import hashlib
+    from stage3_eval import design
+    config, sel_dir, _ = selected
+    path = sel_dir / "selection.json"
+    document = json.loads(path.read_text(encoding="utf-8"))
+    document["sealed_config_hash"] = design.sealed_hash(config, design.NOTOOLS_MAX_CALLS_BEFORE_CORRECTION)
+    data = (json.dumps(document, indent=2, sort_keys=True) + "\n").encode()
+    path.write_bytes(data)
+    (sel_dir / "selection.json.sha256").write_text(hashlib.sha256(design.canonical_bytes(data)).hexdigest() + "\n", encoding="utf-8")
+    truth = {w: worlds[w][0] for w in worlds}
+    agent = FakeAgent(truth)
+    turn, calls = notools_turn_factory()
+    with pytest.raises(ValueError, match="sealed for a no-tools arm of at most 2 calls per case and this arm takes 3"):
+        run(path, tmp_path / "run", arms=build_arms(config, agent, turn), case_source=FixtureCaseSource(), config=config)
+    assert not agent.seen and not calls and not (tmp_path / "run").exists()
+
+    class TwoCallArm(NoToolsArm):                       # the arm that selection was sealed for
+        def worst_case(self):
+            return 2
+    arms = {**build_arms(config, agent, turn), "notools": TwoCallArm(turn=turn)}
+    manifest = run(path, tmp_path / "run", arms=arms, case_source=FixtureCaseSource(), config=config, max_cases=2)
+    assert manifest["status"] == "paused" and manifest["arms"]["notools"]["worst_case"] == 2

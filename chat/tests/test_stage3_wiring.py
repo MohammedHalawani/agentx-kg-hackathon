@@ -499,7 +499,7 @@ class SessionTests(unittest.TestCase):
         with mock.patch.dict(os.environ, clean, clear=True):
             wired = wiring.build(EvalConfig(freeze_commit="a" * 40, c_cap=16, budget=100, worlds={}), dry_run=True, agents=object(), driver=object())
         self.addCleanup(wired["close"])
-        self.assertEqual((wired["arms"]["notools"].c_cap, wired["arms"]["notools"].worst_case()), (16, 2))
+        self.assertEqual((wired["arms"]["notools"].c_cap, wired["arms"]["notools"].worst_case()), (16, 3))
         self.assertEqual((wired["arms"]["agent"].worst_case(), wired["extras_arms"]["stability_rerun"].worst_case()), (16, 16))
 
     def test_the_run_side_refuses_a_truth_path_and_reads_no_truth(self):
@@ -581,7 +581,7 @@ class HarnessOverAFakeWorldTests(unittest.TestCase):
         self.assertEqual([s.store.processed for s in sessions.values()], [[], []])
         self.assertTrue(all(s.store.ticks for s in sessions.values()))
         self.assertEqual((manifest["ledger"]["settled_calls"], manifest["counts"]["not_opened"]), (0, 0))
-        self.assertEqual(manifest["ledger"]["planned_calls"], selected * (self.config.c_cap + 2))
+        self.assertEqual(manifest["ledger"]["planned_calls"], selected * (self.config.c_cap + 3))
         # The run.
         sessions, wired = self.wired()
         manifest = run(self.root / "pre" / "selection.json", self.root / "run", config=self.config,

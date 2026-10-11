@@ -49,7 +49,7 @@ def _worst_case(selection_path, c_cap):
     """The fixture selection's worst case: 70 cases, the ablation on the eligible main-test cases, stability on all 34."""
     extras = scorer_view(selection_path)["extras"]
     assert len(extras["stability_rerun"]) == 34
-    return 70 * (c_cap + 2) + (len(extras["cross_shipment_ablation"]) + 34) * c_cap
+    return 70 * (c_cap + 3) + (len(extras["cross_shipment_ablation"]) + 34) * c_cap
 
 
 def test_select_sizes_the_evaluation_from_the_design_targets_not_from_the_ledger(tmp_path, capsys, campaign_ledger_file):
@@ -78,7 +78,7 @@ def test_the_ledger_sizes_nothing_and_its_cap_need_not_be_the_designs(tmp_path, 
         printed = json.loads(capsys.readouterr().out)
         files[name] = (selection_path.read_bytes(), printed["budget"], printed["a_run_would_start_at_this_ledger"])
     assert files["roomy"][0] == files["other_cap"][0] == files["full"][0]
-    assert files["roomy"][1:] == (1568, True) and files["other_cap"][1:] == (1568, True) and files["full"][1:] == (1568, False)
+    assert files["roomy"][1:] == (1638, True) and files["other_cap"][1:] == (1638, True) and files["full"][1:] == (1638, False)
     WIRED.clear()
     with pytest.raises(SystemExit, match="Refusing to run: refused: 4000 of 4000"):
         main(["run", "--selection", str(tmp_path / "full" / "selection.json"), "--out", str(tmp_path / "run"), "--wiring", WIRING,
@@ -162,7 +162,7 @@ def test_cli_run_goes_through_the_ledger(tmp_path, capsys, campaign_ledger_file,
     printed = json.loads(capsys.readouterr().out)
     used = printed["ledger"]["committed_calls"]
     assert used == 70 * 9 + 70 and printed["campaign_ledger"]["spent"] == 173 + used and WIRED["closed"]
-    assert printed["ledger"]["budget"] == 1568                          # the run's own ledger holds the selection's sealed worst case
+    assert printed["ledger"]["budget"] == 1638                          # the run's own ledger holds the selection's sealed worst case
     manifest = json.loads((tmp_path / "run" / "run_manifest.json").read_text())
     assert manifest["provenance"]["evaluated_at_the_end"] and manifest["campaign_ledger"]["calls"] == used
     # The command line enforces isolation, and this test process has the scorer side loaded: flagged, as it must be.

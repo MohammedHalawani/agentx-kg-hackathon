@@ -102,19 +102,23 @@ agent's run record), so both model arms answer at the same t.
 
 ## 4. The no-tools arm
 
-`NoToolsArm()` with no argument uses `operations.investigator.model_turn`, i.e. the agent's model and settings, its
-`SYSTEM` prompt and output schema, given the agent's own opening packet with an empty tool list. The packet is built
+`NoToolsArm()` with no argument uses `arms.notools_model_turn`: the agent's model, settings and wire format
+(`operations.investigator.model_turn`'s, returning the reply's text so the arm can record it), its
+`SYSTEM` prompt and output schema, given the agent's own opening packet with an empty tool list and, in the same user
+message, `arms.NOTOOLS_NOTE` (no tools on this case; conclude now). This is the corrected arm, not used in any run yet
+(README, "The no-tools arm"). The packet is built
 by the agent's function, `operations.investigator.case_packet` (`arms.notools_packet`): the case, the cause catalogue
 with its definitions and guidance, the action names with authority and summary, the limits, and no map from actions
 to causes; every entry but `tools` equals the agent's (`tests/test_arms.py`). The limits state the agent's per-case
 cap: the run step binds the arm to the sealed `C_cap` before the first case (`NoToolsArm.bind_config`), or pass
-`NoToolsArm(c_cap=config.c_cap)`. At most 2 calls (one retry on invalid output, the agent's own retry
-message); invalid after that counts as degraded, as for the agent.
+`NoToolsArm(c_cap=config.c_cap)`. Two attempts at a conclusion (the agent's: one call and its corrective retry, sent as the
+conversation continued: the rejected reply, then the agent's own retry message), one corrected reply that is not a
+conclusion, at most 3 calls; invalid after that counts as degraded, as for the agent.
 
 One deliberate difference, which needs a line in the next dated design amendment: `investigate()`'s validator
 requires a supported primary cause to cite retrieved evidence, so with no tools it would reject every specific
 answer. The no-tools validator (`arms._notools_problem`) keeps every other rule and instead forbids any citation.
-If Stage 2 adds a native no-tools mode to `investigate()` with the same two-call bound and the same rule, it can
+If Stage 2 adds a native no-tools mode to `investigate()` with the same bound and the same rule, it can
 replace `NoToolsArm.run` behind the same `Arm` interface.
 
 ## 5. The extras (exploratory)

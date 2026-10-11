@@ -1,6 +1,6 @@
 """The hard call-budget guard and its usage ledger (amendment 2 and its addendum).
 
-Every model arm case first RESERVES its worst case (C_cap + R_cap for the agent arm, 2 for B_notools); a reservation
+Every model arm case first RESERVES its worst case (C_cap + R_cap for the agent arm, 3 for B_notools); a reservation
 that would take committed calls past the budget is refused before anything is called. After the case the
 reservation is SETTLED with the calls the run record reports (the agent arm's one per-case counter; this ledger never
 counts the agent's calls a second way). A settle above the reservation means the per-case cap was broken: the ledger

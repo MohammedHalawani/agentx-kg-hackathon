@@ -5,10 +5,17 @@ snapshot time, symptoms and rule codes), and this module imports nothing from th
             backend track supplies (WIRING.md). Worst case C_cap + R_cap calls, from the run record's own counter.
 - notools:  the agent's model and system prompt on the agent's own opening packet, built by the agent's function
             (operations.investigator.case_packet: the case, the cause catalogue with its definitions and guidance,
-            the action names with authority and summary, the limits, and no map from actions to causes), with one
-            difference: the tool list is empty. INSUFFICIENT_EVIDENCE (or UNKNOWN) allowed under the agent's own
-            abstention rules; at most 2 calls (one retry on invalid output, as the agent gets). Invalid after the
-            retry counts as degraded, exactly like the agent.
+            the action names with authority and summary, the limits, and no map from actions to causes), with an
+            empty tool list and, in the same opening user message, NOTOOLS_NOTE: no tools are available on this
+            case and a conclusion is required now (it names no cause). INSUFFICIENT_EVIDENCE (or UNKNOWN) allowed
+            under the agent's own abstention rules. The arm gets the agent's attempts at a conclusion (2: one call
+            and its corrective retry, operations.investigator.ATTEMPTS_PER_TURN); a reply that is not a conclusion
+            (a tool call, no JSON object) is corrected once without using one, as the agent's are; at most 3 calls
+            (design.NOTOOLS_MAX_CALLS). A retry continues the conversation: the rejected reply as the assistant's
+            message, then the rejection. Still invalid after that counts as degraded, exactly like the agent. Every
+            attempt's reply text (bounded) and validation error is kept on the result (ArmResult.attempts).
+            CORRECTED 2026-10-11 and not used in any run yet: the arm of the first evaluation run sent no such
+            note, retried without the rejected reply, had 2 calls and kept no reply text (README).
 - rulecode: the monitor's rule codes at opening, first in the frozen order (no model call).
 - symptom:  the opening symptom names through the frozen table (no model call).
 
@@ -23,7 +30,7 @@ from dataclasses import dataclass, field
 import json
 import time
 
-from stage3_eval.design import NOTOOLS_MAX_CALLS, RULECODE_ORDER, SYMPTOM_CAUSE, SYMPTOM_ORDER
+from stage3_eval.design import NOTOOLS_CONCLUSION_ATTEMPTS, NOTOOLS_MAX_CALLS, RULECODE_ORDER, SYMPTOM_CAUSE, SYMPTOM_ORDER
 from stage3_eval.records import ArmResult, from_investigation
 
 
@@ -153,11 +160,55 @@ def notools_packet(case: CaseRef, c_cap=None):
     return case_packet(_NoTools(case), Session(c_cap))
 
 
+# The one addition to the agent's opening packet, in the same user message. It says what the empty tool list means and
+# what is asked for, in the words the agent itself is told when its tool calls are over (investigator.FORCED_MESSAGE);
+# it names no cause code (tested), only the abstention the instructions already describe.
+NOTOOLS_NOTE = ("No tools are available on this case: the tool list above is empty, so no evidence can be retrieved and a reply with "
+                "action call cannot be carried out. Reply with action conclude now, from the case data above. Either name the cause "
+                "you judge most likely from the cause_catalogue as primary_cause, with a hypothesis of that cause whose status is "
+                "supported, or conclude INSUFFICIENT_EVIDENCE and name what is missing and the next step. Either is a valid answer. "
+                "No evidence id can be cited, because none was retrieved: leave supporting_evidence_ids and "
+                "contradicting_evidence_ids empty.")
+NOTOOLS_SEPARATOR = "\n\n"          # Between the packet (one line of JSON) and the note.
+REPLY_TEXT_LIMIT = 4000             # Characters of a reply kept on the result and sent back in a retry.
+PROVIDER_ATTEMPTS = 2               # operations.investigator.ATTEMPTS_PER_TURN: a provider failure gets one retry (tested equal).
+
+
 def notools_messages(case: CaseRef, c_cap=None):
-    """The agent's opening messages (operations.investigator.investigate's) with an empty tool list."""
+    """The arm's opening messages: the agent's SYSTEM prompt, and one user message holding the agent's own packet with
+    an empty tool list (one line of JSON), a blank line and NOTOOLS_NOTE."""
     from operations.investigator import SYSTEM
     return [{"role": "system", "content": SYSTEM},
-            {"role": "user", "content": json.dumps(notools_packet(case, c_cap), ensure_ascii=False)}]
+            {"role": "user", "content": json.dumps(notools_packet(case, c_cap), ensure_ascii=False) + NOTOOLS_SEPARATOR + NOTOOLS_NOTE}]
+
+
+def retry_message(problem):
+    """The agent's own corrective retry line (operations.investigator.investigate), word for word (tested)."""
+    return f"Your previous reply was rejected: {problem}. Reply with one corrected JSON object."
+
+
+def notools_model_turn(messages):
+    """One provider call with the agent's model, settings and wire format (operations.investigator.model_turn), returning
+    the reply's TEXT so the arm can keep it; the arm parses it with the agent's parser."""
+    from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+    from llm.pipeline import _llm
+    from operations import latency
+    wire = [SystemMessage(messages[0]["content"])] + [
+        (AIMessage if m["role"] == "assistant" else HumanMessage)(m["content"]) for m in messages[1:]]
+    response = _llm.model().invoke(wire)
+    latency.note_usage(response)
+    return _llm.message_text(getattr(response, "content", None)) or ""
+
+
+def _reply(raw):
+    """(text, parsed) of what a turn returned: a model's text is parsed with the agent's parser; a scripted turn's
+    object (tests) is its own parse and its JSON is the text."""
+    if isinstance(raw, str):
+        from llm.pipeline._llm import parse_json
+        return raw, parse_json(raw)
+    if raw is None:
+        return "", None
+    return json.dumps(raw, ensure_ascii=False, default=str), raw
 
 
 class NoToolsArm(Arm):
@@ -177,22 +228,32 @@ class NoToolsArm(Arm):
         return NOTOOLS_MAX_CALLS
 
     def run(self, case):
-        from operations.investigator import model_turn
-        counter = CountingTurn(self.turn or model_turn)
-        messages = notools_messages(case, self.c_cap)
+        counter = CountingTurn(self.turn or notools_model_turn)
+        messages = notools_messages(case, self.c_cap)        # the conversation: it grows with each rejected reply
         started = time.perf_counter()
-        out, problem, provider_failures = None, None, 0
-        for _attempt in range(NOTOOLS_MAX_CALLS):
-            extra = [{"role": "user", "content": f"Your previous reply was rejected: {problem}. Reply with one corrected JSON object."}] if problem else []
+        out, problem, attempts = None, None, []
+        conclusions = failures = failures_in_a_row = 0
+        while counter.calls < NOTOOLS_MAX_CALLS and conclusions < NOTOOLS_CONCLUSION_ATTEMPTS and failures_in_a_row < PROVIDER_ATTEMPTS:
             try:
-                out = counter(messages + extra)
-            except Exception as exc:   # provider failure: type only, as the investigator records it
-                problem, out, provider_failures = f"model call failed ({type(exc).__name__})", None, provider_failures + 1
+                text, parsed = _reply(counter(list(messages)))
+            except Exception as exc:   # provider failure: type only, as the investigator records it. Nothing was replied,
+                problem = f"model call failed ({type(exc).__name__})"     # so the same conversation is sent again.
+                failures, failures_in_a_row = failures + 1, failures_in_a_row + 1
+                attempts.append({"attempt": counter.calls, "kind": "provider_failure", "reply": "", "reply_chars": 0, "validation_error": problem})
                 continue
-            problem = _notools_problem(out)
+            failures_in_a_row = 0
+            problem = _notools_problem(parsed)
+            concluded = isinstance(parsed, dict) and parsed.get("action") == "conclude"
+            conclusions += concluded
+            attempts.append({"attempt": counter.calls, "kind": "conclusion" if concluded else "not_a_conclusion",
+                             "reply": text[:REPLY_TEXT_LIMIT], "reply_chars": len(text), "validation_error": problem})
             if problem is None:
+                out = parsed
                 break
-            out = None
+            # The retry is the same conversation continued: the rejected reply, then why it was rejected.
+            if text.strip():
+                messages.append({"role": "assistant", "content": text[:REPLY_TEXT_LIMIT]})
+            messages.append({"role": "user", "content": retry_message(problem)})
         wall = round(time.perf_counter() - started, 3)
         if out is None:
             inv = {"degraded": True, "mode": "model_unavailable" if str(problem).startswith("model call failed") else "invalid_model_output",
@@ -200,6 +261,6 @@ class NoToolsArm(Arm):
         else:
             inv = {**out, "degraded": False, "retrieved_evidence_ids": [], "steps": []}
         result = from_investigation(case.key, self.name, case.shipment_id, inv, case_id=case.case_id, as_of=case.as_of,
-                                    calls_used=counter.calls, wall_seconds=wall, provider_failures=provider_failures)
+                                    calls_used=counter.calls, wall_seconds=wall, provider_failures=failures, attempts=attempts)
         result.rule_codes = list(case.symptoms)
         return result

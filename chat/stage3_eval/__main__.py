@@ -40,7 +40,7 @@
 The campaign's model-call ledger (docs/evals/model_call_ledger.json, or --ledger FILE, or SUHAIL_CALL_LEDGER) holds
 every real model call made so far. Its cap is a runaway guard, not a budget (the 4,000 cap, the 3,600 stop line and
 the 400 reserve were lifted on 2026-10-11), and nothing is sized from it. `select` seals the worst case of what it
-selected as the run's own maximum: n_cases * (C_cap + R_cap + 2), plus C_cap + R_cap for every listed extra. `run`
+selected as the run's own maximum: n_cases * (C_cap + R_cap + 3), plus C_cap + R_cap for every listed extra. `run`
 reserves that in the ledger before the first case, refuses to start only if it would cross the guard, and writes what
 it used at the end (a run that dies stays counted at its whole maximum). The fixture dry run touches no ledger.
 `select --reserve N` and `select --stop-at N` are optional and off by default; each is sealed in the configuration,

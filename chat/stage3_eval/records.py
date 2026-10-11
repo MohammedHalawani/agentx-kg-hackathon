@@ -96,6 +96,10 @@ class ArmResult:
     rule_codes: list = field(default_factory=list)   # baselines: the codes or symptoms they read
     cause_set_override: list | None = None           # B_rulecode: all its codes
     not_run: str | None = None                       # dry run, budget refusal, or an arm error
+    # B_notools: every attempt at its answer, in order: {attempt, kind, reply (the reply's text, bounded), reply_chars,
+    # validation_error}. Kept apart from `texts`, which holds only the accepted conclusion's wording: a rejected reply is
+    # recorded, never scored. Written with the result, so it is in captured/arm_outputs and under the marker screen.
+    attempts: list = field(default_factory=list)
 
     @property
     def abstained(self):

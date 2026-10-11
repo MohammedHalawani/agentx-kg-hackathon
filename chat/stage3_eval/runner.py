@@ -38,7 +38,7 @@ import sys
 from stage3_eval.arms import CaseRef
 from stage3_eval.budget import BudgetExceeded, BudgetLedger, CapViolation, RunStopped
 from stage3_eval.canary import marker_hits
-from stage3_eval.design import EXTRAS_ORDER, EvalConfig, canonical_bytes, runtime_selection_problem, sealed_hash
+from stage3_eval.design import EXTRAS_ORDER, EvalConfig, canonical_bytes, runtime_selection_problem, sealed_notools_max_calls
 from stage3_eval.records import ArmResult
 
 TRUTH_ENV = "SUHAIL_EVAL_TRUTH_ROOT"
@@ -208,7 +208,8 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
     Returns the run manifest (also written to <out_dir>/run_manifest.json)."""
     refuse_truth_environment()
     selection, selection_sha = load_selection(selection_path)
-    if selection["sealed_config_hash"] != sealed_hash(config):
+    sealed_notools = sealed_notools_max_calls(selection["sealed_config_hash"], config)
+    if sealed_notools is None:
         raise ValueError("the configuration differs from the one the selection was sealed with (amendment 1, H)")
     if config.budget is None:
         raise ValueError("the configuration has no sealed budget; run with the configuration `select` sealed (selection.json)")
@@ -217,6 +218,11 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
     missing = [a for a in MAIN_ARM_ORDER if a not in arms]
     if missing:
         raise ValueError(f"every arm runs on the same cases; missing: {missing}")
+    if arms["notools"].uses_model and arms["notools"].worst_case() > sealed_notools:
+        # A selection sealed before the no-tools arm's correction holds 2 calls per case for it, and its budget is sized
+        # from that: the corrected arm (3 calls) is not the arm that selection was sealed for.
+        raise ValueError(f"the selection was sealed for a no-tools arm of at most {sealed_notools} calls per case and this arm takes "
+                         f"{arms['notools'].worst_case()}; select again for a run with this arm")
     for arm in [*arms.values(), *(extras_arms or {}).values()]:
         if callable(getattr(arm, "bind_config", None)):
             arm.bind_config(config)       # the no-tools arm's packet states the sealed per-case cap, as the agent's does
