@@ -10,15 +10,15 @@ no field holds truth, gold or scenario data, and no chain-of-thought is requeste
 | --- | --- | --- |
 | `OperationsStore.process_one(case_id=None, *, manual=False)` | returns `{processed, case_id, workflow_state, state_version, run_id, mode, afl, outcome}` or `{processed: False, ...}` | Claims one `OPEN`/`REOPENED` case, runs the graph at the store's clock (the evidence snapshot) and writes the run. `{processed: False, reason: "snapshot_changed"}` means new evidence arrived during the run and the case was requeued (at most twice). |
 | `graph.investigate(shipment_id, as_of, config, retrieve, precedents, *, commit=None, on_event=None, agents=None, live_session=False, symptoms=(), heartbeats=None, port=None, disabled_tools=(), call_cap=None)` | returns `(analysis, disposition)` | `port` is `OperationsReader.fetch` (the fixed cross-shipment queries) or `None`; `disabled_tools` and `call_cap` are the evaluation switches below. |
-| `investigator.investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, review=None)` | returns the investigation dict (section 3) | One round of the tool loop. `session` (an `investigator.Session`) carries the conversation and the model-call budget across rounds; without it the call is a self-contained investigation with its own budget. `review` is the previous review in a revision round. |
-| `investigator.review(conclusion, records, checks, symptoms, *, ask=None, context=None, session=None)` | returns `{verdict, feedback, unsupported_claims, unaddressed_contradictions, alternatives_tested, mode, degraded, validation_error}` | `verdict` is `ACCEPT`, `REVISE`, `INSUFFICIENT_EVIDENCE`, `HUMAN_REVIEW`, `ESCALATE`, or `UNAVAILABLE` when the reviewer failed (fail closed). `context` is built by `checks.review_context`. |
+| `investigator.investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, review=None, prefetch=None, on_repair=None, repair=None)` | returns the investigation dict (section 3) | One round of the tool loop. `session` (an `investigator.Session`) carries the conversation and the model-call budget across rounds; without it the call is a self-contained investigation with its own budget. `review` is the previous review in a revision round. |
+| `investigator.review(conclusion, records, checks, symptoms, *, ask=None, context=None, session=None, on_repair=None, repair=None)` | returns `{verdict, feedback, unsupported_claims, unaddressed_contradictions, alternatives_tested, mode, degraded, validation_error}` | `verdict` is `ACCEPT`, `REVISE`, `INSUFFICIENT_EVIDENCE`, `HUMAN_REVIEW`, `ESCALATE`, or `UNAVAILABLE` when the reviewer failed (fail closed). `context` is built by `checks.review_context`. |
 | `InvestigationTools(context, config, *, symptoms=(), heartbeats=None, precedents=None, port=None, disabled=())` | | One tool belt per case investigation, kept across review rounds. |
 | `InvestigationTools.describe()` | `[{tool, args, returns}]` | Disabled tools are absent. |
 | `InvestigationTools.call(tool, args)` | `{result, evidence_ids, computed_ids}` or `{error}` | An unknown or disabled tool returns `{error}` and is not recorded as a call. `result` is JSON text followed by ` CITABLE_EVIDENCE_IDS: [...]`. |
 
 Older investigator doubles that declare only `investigate(tools, on_step=None, feedback=None)` and
-`review(conclusion, records, checks, symptoms)` keep working: the graph passes `session`, `review` and `context`
-only to callables that declare them.
+`review(conclusion, records, checks, symptoms)` keep working: the graph passes `session`, `review`, `context` and
+`on_repair` only to callables that declare them.
 
 ### Evaluation switches
 
@@ -119,6 +119,44 @@ An invalid citation (`citation_validity.all_valid: false`) sets `checks.unsuppor
 authority. The investigator loop already rejects a conclusion citing an id its tools did not return, so an invalid
 citation in a stored conclusion means an id that was listed but does not resolve or is dated after the snapshot.
 
+## 3a. Invalid-output repair (`SUHAIL_INVALID_OUTPUT_REPAIR`, off by default)
+
+Without the option (the evaluated behaviour, unchanged): a conclusion that is still invalid after its one corrective
+retry ends the investigation as degraded (`mode: "invalid_model_output"`), and a review verdict that is invalid twice is
+`UNAVAILABLE`. Either way the case goes to a person and no conclusion is substituted.
+
+With `SUHAIL_INVALID_OUTPUT_REPAIR=1` (read at each call; intended for the live demo backend) the role gets **one**
+more attempt after that retry: the model is asked again for a well-formed reply and is given the validation error and
+the required JSON shape. This applies to the investigator's conclusion and to the reviewer's verdict, once each per
+round.
+
+- The attempt is an ordinary model call under the per-case cap (`SUHAIL_MODEL_CALL_CAP`). The investigator's attempt is
+  skipped when only the call reserved for the review is left, or at the per-round turn limit; the reviewer's when no
+  call is left. A skipped repair leaves the result exactly as without the option.
+- A provider failure (`model_unavailable`) and a cap hit (`model_call_cap`) are not repaired.
+- If the repaired reply is valid the run continues normally. The result carries `invalid_output_repairs: 1` (on the
+  `investigation` dict; for the reviewer on the review stage event's `output.model_review`), and the rejected replies
+  stay listed in `validation_errors[]`.
+- If it is invalid too, the role fails closed as today: the same `mode` (`invalid_model_output`), the same
+  `validation_error` (the investigator: of the reply rejected last; the reviewer: of its retry), `degraded[]`,
+  `authority.rule_id: "AUTH-02-model-degraded"`, `workflow_state: "HUMAN_REVIEW"`. Never a fabricated conclusion.
+
+Each repair attempt is a pipeline event, emitted before the extra call, so the UI can show it while the call runs:
+
+```json
+{"sequence": 9, "stage": "classify", "status": "RETRYING", "iteration": 0, "recorded_at": "...", "evidence_as_of": "...",
+ "elapsed_seconds": 41.2,
+ "output": {"kind": "invalid_output_repair", "role": "investigator", "attempt": 1,
+            "message": "model reply invalid, retrying", "validation_error": "hypotheses must be a non-empty list",
+            "agent": "gpt-oss", "model_calls": {"model_call_cap": 20, "model_calls_used": 6, "...": "..."}}}
+```
+
+`stage` is `classify` (role `investigator`) or `review` (role `reviewer`). The status is `RETRYING`, which every
+consumer already treats as "this stage is still running"; tell it apart from a revision round's `classify` `RETRYING`
+event (empty `output`) by `output.kind == "invalid_output_repair"`. It is served live by `GET /cases/{case_id}/events`
+(in `events[]`) and stored in the run record's `pipeline_events[]` (`GET /cases/{case_id}` → `run.result.pipeline_events`).
+The stage's closing event follows as usual (`COMPLETED`, or `DEGRADED` when the repair failed).
+
 ## 4a. `latency` (one per run; measurement only)
 
 The run record's top-level `latency` object (schema `latency-1`, `operations.latency`) says where the run's time went.
@@ -139,6 +177,21 @@ when the graph starts, after the worker claimed the case; queue time before that
 | `other_seconds` | The rest: evidence loading, precedents, checks, the graph itself. |
 
 The investigator's `steps[]` also carry `model_seconds` (the model turn that chose the call) and `tool_seconds`.
+
+Where to read it in the case API: `GET /cases/{case_id}` → `run.result.latency` (present once the run has finished);
+`run.result.pipeline_events[].elapsed_seconds` and the same field on the live events of `GET /cases/{case_id}/events`;
+`run.result.investigation.steps[].model_seconds` / `tool_seconds`; and per tool call
+`run.result.investigation_log.rounds[].tool_calls[]` (`seconds`, `queries`, `query_seconds`, `cached_queries`).
+`scripts/investigation_latency.py` prints tables from run records or from the ledger.
+
+### Latency options (off by default; they change the investigator's inputs)
+
+| Variable | Effect |
+| --- | --- |
+| `SUHAIL_TOOL_BATCH` | `2`..`4`: the investigator may ask for up to that many independent tools in one reply (`{"action":"call","calls":[...]}`); each call is run, recorded and shown as a single call would be. Unset or `1`: one call per reply (the evaluated protocol). |
+| `SUHAIL_PREFETCH_OVERVIEW` | `1`: `shipment_overview` is fetched before the first model turn and shown as the first tool call and result; its step is recorded with `chosen_by: "prefetch"` and `model_seconds: null`. |
+
+Neither was part of the frozen evaluation; `docs/api/demo-lifecycle.md` section 0 gives the values recommended for the demo.
 
 ## 5. What the reviewer receives
 

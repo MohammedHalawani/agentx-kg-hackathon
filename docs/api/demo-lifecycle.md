@@ -12,6 +12,18 @@ returns them) and are accepted back in that form. Nothing served holds truth lab
 | `SUHAIL_SIM_STATE_ROOT` | the root of that export's private **physical** state (`<root>/<dataset_id>/development/parcels.jsonl` ...). With it the world operational simulator is the execution adapter. Without it there is no adapter: an authorized action is recorded as not acknowledged and the case goes to a person |
 | `SUHAIL_DEV_RESET=1` | only if the UI may reset the session |
 
+Recommended for the live demo (all four are read by the backend process; unset, each keeps the evaluated behaviour):
+
+| Variable | Value | Why |
+| --- | --- | --- |
+| `SUHAIL_TOOL_BATCH` | `3` | up to three independent evidence tools per model reply: fewer model round trips |
+| `SUHAIL_PREFETCH_OVERVIEW` | `1` | the shipment overview is fetched before the first model turn: one model call fewer |
+| `SUHAIL_INVALID_OUTPUT_REPAIR` | `1` | one repair attempt when a model reply is invalid twice, shown as a `RETRYING` event (`output.kind: "invalid_output_repair"`, "model reply invalid, retrying"); if it fails the case goes to a person as before |
+| `SUHAIL_MODEL_CALL_CAP` | `20` | the per-case model-call cap (default 12), so a repair and a revision round fit |
+
+These are demo settings: the frozen evaluation ran with none of them. Details and the `latency` block
+(`GET /cases/{case_id}` → `run.result.latency`) are in `docs/api/investigation-run.md` sections 3a and 4a.
+
 Never set a truth-label root for the server. `GET /worker/status` → `execution.adapter` says which adapter is attached:
 `world_operational_simulator`, or `none`.
 
