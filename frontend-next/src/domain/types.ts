@@ -204,6 +204,8 @@ export interface BackendCaseState {
     confidence: string | null;
     summary: string | null;
     toolCalls: number;
+    /** The conclusion was reached on the investigator's final allowed turn. */
+    forcedFinalTurn: boolean;
     requiresPhysicalCheck: boolean;
     snapshotSuperseded: boolean;
     hypotheses: {
@@ -244,6 +246,10 @@ export interface BackendCaseState {
     failedChecks: string[];
     nextEvidenceStep: string | null;
     degraded: string[];
+    /** The backend's own degraded kinds, e.g. turn_budget_exhausted. */
+    degradedKinds: string[];
+    /** Why model replies were rejected during the run, as the backend recorded them. */
+    rejectedReplies: string[];
   };
   /** The deterministic authority policy's decision on the recommended action. */
   authority?: {

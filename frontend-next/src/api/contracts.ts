@@ -209,7 +209,10 @@ export interface ApiDiagnosis {
     requires_physical_check?: boolean | null;
     tool_calls?: number;
     snapshot_superseded?: boolean;
+    forced_final_turn?: boolean;
   } | null;
+  /** True when the conclusion was reached on the investigator's final allowed turn. */
+  forced_final_turn?: boolean;
 }
 export interface ApiRecommendation {
   action?: string;
@@ -352,7 +355,12 @@ export interface ApiRunResult {
     first_review_seconds?: number;
     final_seconds?: number;
     stages?: Record<string, number>;
-    model?: { calls?: number; seconds?: number };
+    model?: {
+      calls?: number;
+      seconds?: number;
+      /** One entry per model call; invalid_kind says why a reply was rejected. */
+      turns?: { role?: string; invalid_kind?: string | null }[];
+    };
     tools?: { calls?: number; seconds?: number };
   } | null;
   investigation?: {

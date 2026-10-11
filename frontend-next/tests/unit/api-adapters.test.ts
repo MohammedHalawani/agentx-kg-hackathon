@@ -243,6 +243,14 @@ describe("backend case detail", () => {
     expect(answered.backend?.verification?.result).toBe("failed");
     const silent = applyDetail(base, detailA({ workflow_state: "HUMAN_REVIEW", outcome: { verification_status: "VERIFIED", success: false, outcome_type: "no_confirming_evidence", exception_cleared: false, reason: "No causally relevant confirming evidence arrived before the action deadline.", evidence_ids: [], current_cycle: true } }));
     expect(silent.backend?.verification?.result).toBe("unanswered");
+    // No conclusion within the turn budget is its own state, not an invalid model reply.
+    const seed = detailA();
+    const spent = applyDetail(base, detailA({ workflow_state: "HUMAN_REVIEW", run: { ...seed.run!, result: { ...seed.run!.result!, mode: "turn_budget_exhausted", degraded: [{ role: "investigator", kind: "turn_budget_exhausted", error: "turn budget exhausted without a valid conclusion" }], latency: { total_seconds: 90.9, model: { turns: [{ role: "investigator", invalid_kind: "empty_reply" }] } } } } }));
+    expect(spent.backend?.investigationLog?.degradedKinds).toEqual(["turn_budget_exhausted"]);
+    expect(spent.backend?.investigationLog?.degraded[0]).toMatch(/no valid conclusion within its turn budget/);
+    expect(spent.backend?.investigationLog?.degraded[0]).not.toMatch(/not valid, so nothing/);
+    expect(spent.backend?.investigationLog?.rejectedReplies).toEqual(["empty reply"]);
+    expect(spent.backend?.timing?.totalSeconds).toBe(90.9);
     expect(sent.backend?.verification).toBeUndefined();
     expect(sent.outcome).toBeUndefined();
     expect(controls(sent).humanOutcome).toBe(true);
@@ -366,6 +374,9 @@ describe("recorded pipeline and audit events", () => {
     expect(live.repairing).toBe("investigator");
     expect(live.stageDetail[2]).toMatch(/Model reply invalid, retrying \(investigator, attempt 1\)/);
     expect(live.stageElapsed[2]).toBe(41.2);
+    expect(
+      pipelineView([{ sequence: 12, stage: "classify", status: "RUNNING", output: { kind: "forced_final_turn", message: "turn budget exhausted; the investigator is asked once to conclude from the evidence already retrieved" } }]).stageDetail[2],
+    ).toMatch(/asked once to conclude/);
     expect(pipelineView([repair, { sequence: 10, stage: "classify", status: "COMPLETED", elapsed_seconds: 55, output: {} }]).repairing).toBeNull();
     const base = caseFromQueue(queueRows[2]);
     const running = applyPipeline(base, {

@@ -64,6 +64,12 @@ export function InvestigationRecord({ c }: { c: OperationalCase }) {
                 {` · ${t("measured by the backend", "قياس الخادم")}`}
               </p>
             )}
+            {log.rejectedReplies.length > 0 && (
+              <p className="finding-meta">
+                {t("Model replies rejected during the run", "ردود للنموذج رُفضت أثناء التحقيق")}:{" "}
+                {log.rejectedReplies.join(", ")}.
+              </p>
+            )}
             {log.capReached && log.degraded.length === 0 && (
               <p className="finding-caution">
                 {t(

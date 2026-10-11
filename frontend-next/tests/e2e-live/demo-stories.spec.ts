@@ -51,7 +51,9 @@ for (const id of CASES)
       await expect(context).toContainText(/no accepted agent diagnosis|Monitor detected/i);
     if (degraded.length)
       await expect(page.locator(".pipeline-meta")).toContainText(
-        "The model's reply could not be used",
+        degraded.some((item) => item.kind === "turn_budget_exhausted")
+          ? "reached no conclusion within its turn budget"
+          : "The model's reply could not be used",
       );
     if (execution?.status === "NOT_ACKNOWLEDGED" && !degraded.length)
       await expect(page.locator(".pipeline-meta")).toContainText(

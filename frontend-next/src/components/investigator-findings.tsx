@@ -50,6 +50,15 @@ export function InvestigatorFindings({
             )}
           </p>
         )}
+        {found.forcedFinalTurn && (
+          <p className="finding-caution" data-testid="final-turn-conclusion">
+            <AlertTriangle size={13} />
+            {t(
+              "Concluded on the final allowed turn: the turn budget was exhausted and the investigator was asked once to conclude from the evidence already retrieved.",
+              "استنتاج في الدور الأخير المسموح: استُنفد عدد الأدوار وطُلب من المحقق مرة واحدة أن يستنتج من الأدلة المسترجعة.",
+            )}
+          </p>
+        )}
         <p className="finding-meta">
           {t("Primary cause", "السبب الرئيسي")}:{" "}
           <b>{readable(found.primaryCause)}</b>

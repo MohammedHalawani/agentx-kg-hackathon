@@ -415,6 +415,8 @@ function stageSummary(event: ApiPipelineEvent): string {
   if (out.kind === "invalid_output_repair")
     // The backend's own live state; nothing is concluded while it asks again.
     return `Model reply invalid, retrying (${out.role ?? "model"}${out.attempt ? `, attempt ${out.attempt}` : ""}). No diagnosis is substituted.`;
+  if (out.kind === "forced_final_turn")
+    return "Turn budget exhausted; the investigator is asked once to conclude from the evidence already retrieved.";
   if (out.kind === "tool_call" && out.tool)
     // One evidence query of the investigator, as it happened.
     return `Investigator queried ${humanize(out.tool).toLowerCase()}${out.purpose ? `: ${out.purpose}` : ""}`;
@@ -583,8 +585,19 @@ function investigationLogOf(
       .filter((check) => !check.passed)
       .map((check) => humanize(check.check)),
     nextEvidenceStep: result.investigation?.next_evidence_step ?? null,
+    degradedKinds: (result.degraded ?? []).map((item) => item.kind ?? ""),
+    rejectedReplies: [
+      ...new Set(
+        (result.latency?.model?.turns ?? [])
+          .map((turn) => turn.invalid_kind)
+          .filter((kind): kind is string => !!kind)
+          .map((kind) => humanize(kind).toLowerCase()),
+      ),
+    ],
     degraded: (result.degraded ?? []).map((item) => {
       const who = item.role === "reviewer" ? "reviewer" : "investigator";
+      if (item.kind === "turn_budget_exhausted")
+        return `The ${who} reached no valid conclusion within its turn budget. No diagnosis was substituted. A person has this case.`;
       if (item.kind === "invalid_model_output")
         return `The ${who}'s reply from the model was not valid, so nothing from it was used and no diagnosis was substituted. A person has this case.`;
       if (item.kind === "model_unavailable")
@@ -617,6 +630,7 @@ function investigationOf(
       confidence: d.confidence,
       summary: d.summary,
       toolCalls: d.tool_calls ?? 0,
+      forcedFinalTurn: d.forced_final_turn === true,
       requiresPhysicalCheck: d.requires_physical_check === true,
       snapshotSuperseded: d.snapshot_superseded === true,
       hypotheses: hypotheses(d.hypotheses),
@@ -630,6 +644,7 @@ function investigationOf(
     confidence: u.confidence,
     summary: u.summary,
     toolCalls: u.tool_calls ?? 0,
+    forcedFinalTurn: u.forced_final_turn === true,
     requiresPhysicalCheck: u.requires_physical_check === true,
     snapshotSuperseded: u.snapshot_superseded === true,
     hypotheses: hypotheses(u.hypotheses),

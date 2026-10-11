@@ -410,6 +410,13 @@ export function InvestigationPage() {
                           "A person's finding is on record · case still open",
                           "نتيجة فحص بشري مسجلة · الحالة ما زالت مفتوحة",
                         )
+                  : c.backend?.investigationLog?.degradedKinds.includes(
+                        "turn_budget_exhausted",
+                      )
+                    ? t(
+                        "The investigator reached no conclusion within its turn budget · no diagnosis · with a person",
+                        "لم يصل المحقق إلى استنتاج ضمن عدد أدواره · لا تشخيص · لدى شخص",
+                      )
                   : c.backend?.investigationLog?.degraded.length
                     ? t(
                         "The model's reply could not be used · no diagnosis · with a person",
