@@ -1062,13 +1062,14 @@ class OperationsStore:
             current.update(workflow_state=analysis["result"]["workflow_state"],state_version=current["state_version"]+1,
                 last_run_id=run_id,recommendation_id=recommendation_id,claim_id=None,claim_at=None)
             if investigation_status(analysis)[0]:
-                # An agent investigation the independent reviewer accepted: its cause codes, the status they imply and the
-                # primary hypothesis's own text (model prose, English) describe the case in the queue.
+                # An agent investigation the independent reviewer accepted: its cause codes, the status they imply and its
+                # own summary (model prose, English) describe the case in the queue. The same text as case detail's
+                # diagnosis.summary; the leading hypothesis's assessment only when the investigation gave no summary.
                 investigation=analysis["investigation"];primary=investigation.get("primary_cause")
                 diagnosis=next((d for d in analysis["result"]["diagnoses"] if d["code"]==primary),None) or next(iter(analysis["result"]["diagnoses"]),None)
                 current.update(cause_codes=analysis["result"]["operational_labels"],operational_status=analysis["result"]["operational_status"],
                                diagnosis_available=True,rule_signal_codes=[],
-                               issue_summary=(diagnosis or {}).get("summary_en") or investigation.get("summary") or MONITOR_SUMMARY)
+                               issue_summary=(investigation.get("summary") or "").strip() or (diagnosis or {}).get("summary_en") or MONITOR_SUMMARY)
             else:
                 # No accepted diagnosis (rules only, a failed investigator, or a review that did not accept it): the monitor's
                 # view stands. Rule triage codes are kept apart and labelled as rule signals, never as the cause.

@@ -93,7 +93,7 @@ What a queue row says about its case comes from an accepted agent diagnosis only
 | Field | Meaning |
 | --- | --- |
 | `diagnosis_available` | `true` when the case's last run is an agent investigation the independent reviewer accepted. |
-| `summary_source` | `agent_diagnosis` (then `issue_summary` is the primary hypothesis's own text, model prose in English) or `monitor`. |
+| `summary_source` | `agent_diagnosis` (then `issue_summary` is the investigation's own summary, the same text as case detail's `diagnosis.summary`, model prose in English; the leading hypothesis's assessment only when that summary is empty) or `monitor`. |
 | `issue_summary` | With `monitor`: the monitor's neutral sentence. Never rule triage text. |
 | `category`, `cause_codes` | The accepted diagnosis's cause codes; `null` and `[]` otherwise. Never rule codes. |
 | `operational_status` | From the accepted diagnosis, or else from the observed `symptom_codes` (`RESOLVED` stays). |

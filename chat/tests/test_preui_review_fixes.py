@@ -71,15 +71,32 @@ class QueueSummaryTests(_Base):
         self.assertEqual(case["rule_signal_codes"], labels)  # Kept apart, under a name that says what they are.
         self.assertNotIn(case["issue_summary"], [d.get("summary_en") for d in run["result"]["diagnoses"]])
 
+    def test_without_an_investigation_summary_the_leading_assessment_describes_the_case(self):
+        from operations import diagnosis as served
+        original = served.investigation_status
+        def blank(analysis):
+            if (analysis or {}).get("investigation"):
+                analysis["investigation"]["summary"] = "  "
+            return original(analysis)
+        with mock.patch("operations.store.investigation_status", blank):
+            store, driver, result = self.approvable()
+        case = self.stored(driver, result["case_id"])
+        run = json.loads(next(v for v in self.kind(driver, "OpsRun") if v["case_id"] == result["case_id"])["result_json"])
+        self.assertTrue(case["diagnosis_available"])
+        self.assertEqual(case["issue_summary"], run["investigation"]["hypotheses"][0]["assessment"])
+
     def test_an_accepted_agent_diagnosis_describes_the_case_until_it_is_queued_again(self):
         store, driver, result = self.approvable()
         case = self.stored(driver, result["case_id"])
         run = json.loads(next(v for v in self.kind(driver, "OpsRun") if v["case_id"] == result["case_id"])["result_json"])
         self.assertTrue(case["diagnosis_available"])
         self.assertEqual(case["cause_codes"], ["BARCODE_MISMATCH"])
-        self.assertEqual(case["issue_summary"], run["investigation"]["hypotheses"][0]["assessment"])
+        # The queue row and the case detail read from one source: the investigation's summary.
+        self.assertEqual(case["issue_summary"], run["investigation"]["summary"])
+        self.assertNotEqual(case["issue_summary"], run["investigation"]["hypotheses"][0]["assessment"])
         self.assertEqual(case["rule_signal_codes"], [])
         detail = store.case_detail(result["case_id"])
+        self.assertEqual(detail["diagnosis"]["summary"], case["issue_summary"])
         store.request_reanalysis(result["case_id"], "DEMO-OPERATOR-LOCAL", detail["state_version"], "reanalyze-queue")
         queued = self.stored(driver, result["case_id"])
         self.assertEqual((queued["workflow_state"], queued["diagnosis_available"], queued["cause_codes"], queued["issue_summary"]),
