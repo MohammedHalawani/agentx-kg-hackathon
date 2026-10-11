@@ -188,8 +188,11 @@
 .brand-logo {
   display: block;
 }
+.brand-header:has(.brand-logo) {
+  padding: 20px 25px 8px !important;
+}
 .brand.brand-logo img {
-  width: 148px;
+  width: 76px;
   height: auto;
   max-width: 100%;
   display: block;
@@ -198,8 +201,11 @@
   /* The asset is black ink on transparency; inverted it reads as white ink, with no box. */
   filter: invert(1);
 }
+[data-state="collapsed"] .brand-header:has(.brand-logo) {
+  padding: 20px 14px 8px !important;
+}
 [data-state="collapsed"] .brand.brand-logo img {
-  width: 34px;
+  width: 30px;
   height: auto;
 }
 .workspace-selector[hidden] {
