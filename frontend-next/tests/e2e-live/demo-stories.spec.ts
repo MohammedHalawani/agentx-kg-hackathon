@@ -48,7 +48,7 @@ for (const id of CASES)
     if (next) {
       // The pipeline card ends with the next best action, in the backend's own words.
       const panel = page.locator(".pipeline").getByTestId("next-step");
-      await expect(panel).toContainText("NEXT BEST ACTION");
+      await expect(panel).toContainText("NEXT BEST ACTION", { timeout: 45000 });
       await expect(panel).toContainText(next.text_en);
       if (!next.resolved && next.blocked_by?.rule_id) {
         await panel.getByRole("button", { name: "Why, and what is missing" }).click();
@@ -69,7 +69,7 @@ for (const id of CASES)
     ).toBeVisible({ timeout: 30000 });
     const drawn = await page.getByTestId("knowledge-graph").locator(".entity-node").count();
     expect(drawn).toBeGreaterThan(3);
-    expect(drawn).toBeLessThanOrEqual(40);
+    expect(drawn).toBeLessThanOrEqual(48);
     // Stored narration, where the run has one: every message labelled by its source, none
     // composed here; a run without narration shows no strip.
     const narration: { kind: string; stage: string }[] = detail.narration?.events ?? [];

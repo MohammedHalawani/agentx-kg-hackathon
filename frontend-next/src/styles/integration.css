@@ -845,14 +845,25 @@
   gap: 8px;
   padding: 10px 0;
 }
-.narration-list h4 {
+.narration-list summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--primary);
+}
+.narration-list summary::-webkit-details-marker {
+  display: none;
+}
+.narration-list summary {
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 12px;
   font-weight: 600;
 }
-.narration-list h4 span {
+.narration-list summary span {
   font-weight: 400;
   font-size: 10px;
   color: var(--muted-foreground);

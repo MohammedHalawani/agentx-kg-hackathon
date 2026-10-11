@@ -309,14 +309,14 @@ export function NarrationStrip({
   );
 }
 
-/** The same stored narration as a plain list, for the Canopus panel. */
+/** The same stored narration as a list for the Canopus panel, folded so questions stay in view. */
 export function NarrationList({ c }: { c: OperationalCase }) {
   const { t } = usePreferences();
   const events = c.backend?.narration?.events ?? [];
   if (!events.length) return null;
   return (
-    <section className="narration-list" data-testid="narration-list">
-      <h4>
+    <details className="narration-list" data-testid="narration-list">
+      <summary>
         <Sparkles size={12} />
         {t("Narration of this investigation", "سرد هذا التحقيق")}
         <span>
@@ -325,12 +325,12 @@ export function NarrationList({ c }: { c: OperationalCase }) {
             `${events.length} رسالة مسجلة`,
           )}
         </span>
-      </h4>
+      </summary>
       {events
         .filter((event) => !isCheck(event))
         .map((event) => (
           <NarrationBubble key={event.id} event={event} active={false} />
         ))}
-    </section>
+    </details>
   );
 }
