@@ -418,6 +418,31 @@ def narrate(case_id: str,request: Request):
     return {"requested":True,"case_id":case_id}
 
 
+class CanopusTurn(StrictBody):
+    role: Literal["operator","canopus"]
+    text: str=Field(min_length=1,max_length=2000)
+
+
+class CanopusQuestion(StrictBody):
+    question: str=Field(min_length=1,max_length=500)
+    language: Literal["en","ar"]="en"
+    history: list[CanopusTurn]=Field(default_factory=list,max_length=6)
+
+
+@router.post("/cases/{case_id}/canopus/ask")
+def canopus_ask(case_id: str,request: Request,body: CanopusQuestion):
+    """One operator question about one case, answered from that case's stored records (operations.canopus). Reads the
+    case detail and writes nothing: Canopus's answer, verbatim quotes chosen by id, and the offers the existing rules
+    allow, which only the operator can confirm through the existing decision endpoints."""
+    authority.authorize(request)
+    from operations import canopus
+    if not canopus.enabled():raise HTTPException(409,"Canopus questions are not enabled on this server")
+    def ask(case):
+        detail=get_runtime().reader.case_detail(case)
+        return canopus.answer(detail,body.question,language=body.language,history=[t.model_dump() for t in body.history])
+    return invoke(ask,case_id)
+
+
 class HumanOutcomeBody(StrictBody):
     outcome_type: Literal["parcel_located","delivered_confirmed_by_person","returned_to_depot","parcel_not_found","data_corrected"]
     finding: str=Field(min_length=10,max_length=1000)
