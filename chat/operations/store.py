@@ -65,6 +65,108 @@ def context_changes(recorded, current, *, material=None):
     return [key for key in CONTEXT_KEYS if key in changed]
 
 
+# Progress events of a running investigation (operations.graph emits one per stage start, stage end and tool call) are
+# written in batches, not one transaction each: at about 0.3 s a write that was 5 to 8 s of every case, spent on the
+# investigation's own thread. An event now waits at most STAGE_FLUSH_SECONDS (default 0.75 s, never more than
+# STAGE_FLUSH_MAX_SECONDS = 1 s; SUHAIL_STAGE_FLUSH_SECONDS, 0 writes every event at once as before) before it is in
+# the run record, the audit trail, GET /cases/{id} and the SSE stream. See StageBuffer.
+STAGE_FLUSH_ENV = "SUHAIL_STAGE_FLUSH_SECONDS"
+STAGE_FLUSH_SECONDS = 0.75
+STAGE_FLUSH_MAX_SECONDS = 1.0
+
+
+def stage_flush_seconds(value=None):
+    """How long a progress event may wait to be written: the store's setting, else SUHAIL_STAGE_FLUSH_SECONDS, else
+    0.75 s; never negative and never above 1 s."""
+    if value is None:
+        try:
+            value = float(os.environ.get(STAGE_FLUSH_ENV, "").strip() or STAGE_FLUSH_SECONDS)
+        except ValueError:
+            value = STAGE_FLUSH_SECONDS
+    value = float(value)
+    return max(0.0, min(value if math.isfinite(value) else STAGE_FLUSH_SECONDS, STAGE_FLUSH_MAX_SECONDS))
+
+
+class StageBuffer:
+    """The progress events of one running investigation that are not written yet.
+
+    add(event, events) is called by the investigation for every event, in order. The first event of a run and a FAILED
+    event are written at once, on the investigation's own thread (so a run that cannot be recorded, or was superseded,
+    stops where it did before). Any other event starts a timer if none is running; when it fires, after `interval`
+    seconds, everything waiting is written in ONE transaction, in order, on the timer's thread, while the investigation
+    goes on. So no event waits longer than `interval` (plus the write itself), and events that arrive together (a
+    stage's end and the next stage's start; a burst of quick stages) share a write.
+
+    flush() writes whatever is waiting, on the caller's thread: before the run's result is committed. close() does
+    the same and ends the buffer: after the run, and on every failure path. Nothing is dropped: a write that fails
+    leaves its events waiting, a failed timer write is retried by the next add() on the investigation's thread (where
+    its error is raised, as it was when every event was written there), and close() writes the rest or raises.
+    Writes are serialised and each takes the oldest waiting events first, so the order is the order of add()."""
+
+    def __init__(self, write, interval, *, timer=threading.Timer):
+        self.write, self.interval, self.make_timer = write, interval, timer
+        self.lock, self.writing = threading.Lock(), threading.Lock()
+        self.pending, self.events, self.written = [], [], 0
+        self.timer, self.closed, self.retry = None, False, False
+
+    def add(self, event, events):
+        with self.lock:
+            self.pending.append(event)
+            self.events = events
+            now = (self.closed or self.interval <= 0 or self.retry or event.get("status") == "FAILED"
+                   or (not self.written and len(self.pending) == 1))
+            if not now and self.timer is None:
+                self.timer = self.make_timer(self.interval, self._timed)
+                self.timer.daemon = True
+                self.timer.start()
+        if now:
+            self.flush()
+
+    def _timed(self):
+        try:
+            self.flush(timed=True)
+        except Exception as error:   # Not lost: the events are still waiting, and the next add() or close() writes them.
+            logging.getLogger("operations.store").warning("A batch of progress events was not written (%s); it will be retried",
+                                                          type(error).__name__)
+            with self.lock:
+                self.retry = True
+
+    def flush(self, *, timed=False):
+        """Write every waiting event, oldest first, in one transaction. Returns how many were written."""
+        with self.writing:
+            with self.lock:
+                timer, self.timer = self.timer, None
+                if timed and self.closed:
+                    return 0
+                batch, events = list(self.pending), self.events
+            if timer is not None and not timed:
+                timer.cancel()
+            if not batch:
+                return 0
+            self.write(batch, events)             # raises: the batch stays waiting
+            with self.lock:
+                del self.pending[:len(batch)]
+                self.written += len(batch)
+                self.retry = False
+                if self.pending and self.timer is None and not self.closed and self.interval > 0:
+                    # Events that arrived during the write wait their own interval at most.
+                    self.timer = self.make_timer(self.interval, self._timed)
+                    self.timer.daemon = True
+                    self.timer.start()
+            return len(batch)
+
+    def close(self, *, quiet=False):
+        """Write what is waiting and end the buffer. quiet: on a failure path, where a second error must not hide the first."""
+        with self.lock:
+            self.closed = True
+        try:
+            return self.flush()
+        except Exception:
+            if not quiet:
+                raise
+            return 0
+
+
 def reset_token(control):
     """Names the current session (its digest part, unchanged by the public identifier mapping)."""
     session = control.get("session_id") or ""
@@ -244,6 +346,10 @@ class OperationsStore:
         # Simulated seconds after a run before the same case may be investigated again automatically
         # (None: SUHAIL_REINVESTIGATION_QUIET_SECONDS, default 7200).
         self.reinvestigation_quiet_seconds = None
+        # Seconds a progress event may wait before it is written (None: SUHAIL_STAGE_FLUSH_SECONDS, default 0.75, at
+        # most 1; 0 writes each event at once), and the timer that ends the wait (tests give their own).
+        self.stage_flush_seconds = None
+        self.stage_timer = threading.Timer
         self.demo_shipments = demo_shipments()   # None, or the only shipments the monitor may open cases for
         self._subscribers={}
         self._subscribers_lock=threading.RLock()
@@ -1234,23 +1340,39 @@ class OperationsStore:
             return {"processed":True,"case_id":current["entity_id"],"workflow_state":current["workflow_state"],
                     "state_version":current["state_version"],"run_id":run_id,"mode":analysis["mode"],"afl":analysis["afl"],"outcome":None}
         from operations.graph import investigate
+        # The run's progress events, written in batches (StageBuffer): everything waiting is written before the result
+        # is committed, after the run, and on every failure path.
+        stages=StageBuffer(lambda batch,events:self._record_stages(case,batch,events),stage_flush_seconds(self.stage_flush_seconds),
+                           timer=self.stage_timer)
+        def commit(analysis):
+            stages.flush()
+            return self._execute(lambda tx:finish(tx,analysis),write=True)
         try:
             analysis,result=investigate(case["shipment_id"],case["as_of"],self.config,self.reader.evidence,
                 lambda sid,codes:self.reader.precedents(sid,codes,as_of=case['as_of']),
-                commit=lambda a:self._execute(lambda tx:finish(tx,a),write=True),
-                on_event=lambda event,events:self._record_stage(case,event,events),
+                commit=commit,on_event=stages.add,
                 agents=self.agents,live_session=True,symptoms=case.get("symptom_codes") or [],
                 heartbeats=getattr(self.reader,"heartbeats",None),
                 # The read model's fixed cross-shipment queries (None for a reader without them: tools then say UNKNOWN).
                 port=getattr(self.reader,"fetch",None),disabled_tools=self.disabled_tools,call_cap=self.model_call_cap)
+            stages.close()   # The last stage's own events, before the run is saved as finished.
             analysis["writeback"]=result
             self._save_run_trace(case,analysis)
             return result
         except Exception:
+            stages.close(quiet=True)   # Whatever was emitted before the failure is on record; its error never hides this one.
             self.control("worker","pause")
             raise
 
     def _record_stage(self,claimed,event,events):
+        """One progress event, written at once."""
+        self._record_stages(claimed,[event],events)
+
+    def _record_stages(self,claimed,batch,events):
+        """Write a batch of consecutive progress events of the claimed run, in order, in one transaction: the run record
+        (its pipeline_events are `events`, every event up to the last of the batch) and one PIPELINE_STAGE audit entry
+        per event, exactly as each would have been written alone. Subscribers are then sent the state once."""
+        last=batch[-1]
         def record(tx):
             self._control(tx,lock=True)
             case=self._case(tx,claimed["entity_id"])
@@ -1261,17 +1383,18 @@ class OperationsStore:
             trace["pipeline_events"]=events
             self._put(tx,"OpsRun",{"entity_id":run_id,"shipment_id":case["shipment_id"],"case_id":case["entity_id"],
                 "recorded_at":claimed["as_of"],"mode":"deterministic_evidence_rules","result_json":canonical(trace),
-                "iteration":event["iteration"],"status":"FAILED" if event["status"]=="FAILED" else "RUNNING"},update=True)
+                "iteration":last["iteration"],"status":"FAILED" if last["status"]=="FAILED" else "RUNNING"},update=True)
             self._link(tx,"OPS_HAS_RUN",case["entity_id"],run_id,case["shipment_id"],claimed["as_of"])
-            audit_id=run_id.replace("-RUN-","-STAGE-")+f'-{event["sequence"]:04d}'
-            self._put(tx,"OpsAudit",{"entity_id":audit_id,"shipment_id":case["shipment_id"],"case_id":case["entity_id"],
-                "run_id":run_id,"event_type":"PIPELINE_STAGE","stage":event["stage"],"stage_status":event["status"],
-                "sequence":event["sequence"],"wall_recorded_at":event["recorded_at"],
-                "occurred_at":claimed["as_of"],"recorded_at":claimed["as_of"],"actor_id":"DEMO-RULE-WORKER",
-                "to_state":case["workflow_state"],"result":event["stage"]+": "+event["status"]})
-            self._link(tx,"OPS_HAS_AUDIT",case["entity_id"],audit_id,case["shipment_id"],claimed["as_of"])
+            for event in batch:
+                audit_id=run_id.replace("-RUN-","-STAGE-")+f'-{event["sequence"]:04d}'
+                self._put(tx,"OpsAudit",{"entity_id":audit_id,"shipment_id":case["shipment_id"],"case_id":case["entity_id"],
+                    "run_id":run_id,"event_type":"PIPELINE_STAGE","stage":event["stage"],"stage_status":event["status"],
+                    "sequence":event["sequence"],"wall_recorded_at":event["recorded_at"],
+                    "occurred_at":claimed["as_of"],"recorded_at":claimed["as_of"],"actor_id":"DEMO-RULE-WORKER",
+                    "to_state":case["workflow_state"],"result":event["stage"]+": "+event["status"]})
+                self._link(tx,"OPS_HAS_AUDIT",case["entity_id"],audit_id,case["shipment_id"],claimed["as_of"])
             return {'run_id':run_id,'events':events,'workflow_state':case['workflow_state'],
-                    'state_version':case['state_version'],'status':'FAILED' if event['status']=='FAILED' else 'RUNNING'}
+                    'state_version':case['state_version'],'status':'FAILED' if last['status']=='FAILED' else 'RUNNING'}
         state=self._execute(record,write=True)
         self._publish_pipeline(claimed['entity_id'],state)
 
