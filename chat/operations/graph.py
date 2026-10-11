@@ -207,9 +207,12 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
         session = holder["session"]
         def on_step(step):
             emit("classify", "RUNNING", s, {"kind": "tool_call", "agent": "gpt-oss", **step})
+        def on_repair(event):
+            # SUHAIL_INVALID_OUTPUT_REPAIR: the reply was invalid twice and is asked for once more ("model reply invalid, retrying").
+            emit("classify", "RETRYING", s, {"agent": "gpt-oss", **event})
         revising = bool(s.get("iteration"))
         investigation = agents.investigate(tools, on_step=on_step, feedback=s.get("feedback") if revising else None,
-                                           **_accepted(agents.investigate, session=session,
+                                           **_accepted(agents.investigate, session=session, on_repair=on_repair,
                                                        review=(session.reviews[-1] if revising and session.reviews else None)))
         holder["investigation"] = investigation
         update = {"investigation": investigation, "mode": "gpt_oss_agents", "result": agent_result(investigation, s["context"])}
@@ -326,7 +329,8 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
                 context = review_context(inv, tools, checks["citations"], round_number=s.get("iteration", 0),
                                          previous_reviews=session.reviews if session else ())
                 model_review = agents.review(inv, cited_records(inv, tools), checks["checks"], s.get("symptoms") or [],
-                                             **_accepted(agents.review, context=context, session=session))
+                                             **_accepted(agents.review, context=context, session=session,
+                                                         on_repair=lambda event: emit("review", "RETRYING", s, {"agent": "gpt-oss", **event})))
                 if session is not None:
                     session.reviews.append({"round": s.get("iteration", 0), "verdict": model_review["verdict"], "model_verdict": model_review["verdict"],
                                             "feedback": model_review.get("feedback"), "unsupported_claims": model_review.get("unsupported_claims") or [],
