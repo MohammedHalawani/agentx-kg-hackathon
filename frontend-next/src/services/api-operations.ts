@@ -359,6 +359,9 @@ export class ApiOperationsService implements OperationsService {
           processedCount: status.worker.processed_count ?? 0,
           lastCaseId: status.worker.last_case_id ?? null,
         },
+        curatedShipments: status.session?.demo_shipments?.enabled
+          ? (status.session.demo_shipments.count ?? 0)
+          : null,
         queue: {
           total: queue.first.filtered_total,
           loaded: queue.items.length,

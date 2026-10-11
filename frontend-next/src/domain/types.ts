@@ -169,6 +169,17 @@ export interface BackendCaseState {
   stageDetail: Record<number, string>;
   /** Evidence ids the recorded stage cited, by UI stage index. */
   stageEvidence: Record<number, string[]>;
+  /** Seconds into the run at each stage's latest event, as the backend measured them. */
+  stageElapsed?: Record<number, number>;
+  /** Set while the backend is asking a role again after an invalid model reply. */
+  repairing?: string | null;
+  /** The finished run's measured timings, from the run record. */
+  timing?: {
+    totalSeconds: number | null;
+    firstConclusionSeconds: number | null;
+    modelSeconds: number | null;
+    stageSeconds: Record<number, number>;
+  };
   pipelineStatus: string;
   /** Set while a re-investigation is queued: the earlier run, which is no longer current. */
   supersededRunId?: string | null;
@@ -338,6 +349,8 @@ export interface BackendConnection {
     processedCount: number;
     lastCaseId: string | null;
   };
+  /** Shipments in a curated session, when the monitor is limited to a listed set. */
+  curatedShipments?: number | null;
   queue?: { total: number; loaded: number; truncated: boolean };
   audit?: { total: number; loaded: number; truncated: boolean; loading: boolean };
   /** Whether operator controls can be sent from this page (same-origin, loopback). */

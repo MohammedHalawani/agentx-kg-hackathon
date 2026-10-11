@@ -137,11 +137,17 @@ export interface ApiPipelineEvent {
   iteration?: number;
   recorded_at?: string;
   evidence_as_of?: string;
+  /** Seconds since the investigation graph started, on the backend's clock. */
+  elapsed_seconds?: number;
   output?: {
     /** Which component produced the stage: e.g. evidence_rules, deterministic_guard, or an agent. */
     agent?: string | null;
     /** "tool_call": one evidence query of the investigator, as it happened (a classify RUNNING event). */
     kind?: string;
+    /** With kind "invalid_output_repair": which role is being asked again, and the backend's message. */
+    role?: string;
+    attempt?: number;
+    message?: string;
     tool?: string;
     purpose?: string;
     round?: number;
@@ -339,6 +345,16 @@ export interface ApiToolCall {
 }
 export interface ApiRunResult {
   mode?: string;
+  /** Where the run's time went (measurement only; present once the run has finished). */
+  latency?: {
+    total_seconds?: number;
+    first_conclusion_seconds?: number;
+    first_review_seconds?: number;
+    final_seconds?: number;
+    stages?: Record<string, number>;
+    model?: { calls?: number; seconds?: number };
+    tools?: { calls?: number; seconds?: number };
+  } | null;
   investigation?: {
     next_evidence_step?: string | null;
     recommended_action?: string | null;
@@ -396,6 +412,8 @@ export interface ApiWorkerStatus {
     monitor_pending?: number;
     monitor_checked?: number;
     monitor_opened?: number;
+    /** A curated session: the monitor opens cases only for a listed set of shipments. */
+    demo_shipments?: { enabled?: boolean; count?: number };
   };
   simulator?: { state: string; speed: number };
 }

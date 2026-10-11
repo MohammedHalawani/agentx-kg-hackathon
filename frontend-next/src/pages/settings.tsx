@@ -273,7 +273,14 @@ export function SettingsPage() {
                 </div>
                 <span className="date-pill">
                   {connection?.worker
-                    ? `${connection.worker.state} · ${connection.worker.processedCount} ${t("processed", "تمت معالجتها")}`
+                    ? `${connection.worker.state} · ${connection.worker.processedCount} ${t("processed", "تمت معالجتها")}${
+                        connection.curatedShipments != null
+                          ? ` · ${t(
+                              `curated session of ${connection.curatedShipments} shipments`,
+                              `جلسة منتقاة من ${connection.curatedShipments} شحنات`,
+                            )}`
+                          : ""
+                      }`
                     : "—"}
                 </span>
               </div>

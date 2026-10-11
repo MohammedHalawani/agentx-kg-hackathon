@@ -13,6 +13,13 @@ export function dateLabel(timestamp: string) {
     year: "numeric",
   });
 }
+/** A measured duration in seconds as "41s" or "2m 05s". */
+export function secondsLabel(seconds: number) {
+  const whole = Math.max(0, Math.round(seconds));
+  return whole < 60
+    ? `${whole}s`
+    : `${Math.floor(whole / 60)}m ${String(whole % 60).padStart(2, "0")}s`;
+}
 export function dateTimeLabel(timestamp: string) {
   return `${dateLabel(timestamp)} · ${timeLabel(timestamp)} AST`;
 }

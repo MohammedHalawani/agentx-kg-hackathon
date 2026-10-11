@@ -1,6 +1,7 @@
 import { Network, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { OperationalCase } from "@/domain/types";
+import { secondsLabel } from "@/lib/dates";
 import { usePreferences } from "@/state/preferences";
 
 const readable = (code: string) => code.replaceAll("_", " ").toLowerCase();
@@ -16,6 +17,7 @@ export function InvestigationRecord({ c }: { c: OperationalCase }) {
   const authority = c.backend?.authority;
   if (!c.backend || (!log && !authority)) return null;
   const beyond = log?.steps.reduce((sum, step) => sum + step.beyondShipment, 0) ?? 0;
+  const timing = c.backend.timing;
   return (
     <>
       {log && (
@@ -43,6 +45,25 @@ export function InvestigationRecord({ c }: { c: OperationalCase }) {
                   `${beyond} سجلاً من خارج هذه الشحنة`,
                 )}`}
             </p>
+            {timing?.totalSeconds != null && (
+              <p className="finding-meta" data-testid="investigation-timing">
+                {t(
+                  `Investigated in ${secondsLabel(timing.totalSeconds)}`,
+                  `استغرق التحقيق ${secondsLabel(timing.totalSeconds)}`,
+                )}
+                {timing.firstConclusionSeconds != null &&
+                  ` · ${t(
+                    `first conclusion at ${secondsLabel(timing.firstConclusionSeconds)}`,
+                    `أول استنتاج عند ${secondsLabel(timing.firstConclusionSeconds)}`,
+                  )}`}
+                {timing.modelSeconds != null &&
+                  ` · ${t(
+                    `${secondsLabel(timing.modelSeconds)} in model calls`,
+                    `${secondsLabel(timing.modelSeconds)} في استدعاءات النموذج`,
+                  )}`}
+                {` · ${t("measured by the backend", "قياس الخادم")}`}
+              </p>
+            )}
             {log.capReached && log.degraded.length === 0 && (
               <p className="finding-caution">
                 {t(

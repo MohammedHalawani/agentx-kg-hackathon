@@ -9,7 +9,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { useOperations } from "@/state/operations";
 import { usePreferences } from "@/state/preferences";
 import { stages, type OperationalCase } from "@/domain/types";
-import { timeLabel } from "@/lib/dates";
+import { secondsLabel, timeLabel } from "@/lib/dates";
 const LAB_BUILD = import.meta.env.VITE_SUHAIL_DATA === "lab";
 
 /** The case activity survives in Canopus without a second floating chat dock. */
@@ -97,6 +97,14 @@ export function CaseActivityMarkers({ c }: { c: OperationalCase }) {
                             "Ready for a simulated investigation",
                             "جاهز لتحقيق محاكى",
                           )}
+          {c.status === "investigating" &&
+            c.run &&
+            c.backend?.stageElapsed?.[c.run.stage] !== undefined && (
+              <small>
+                {secondsLabel(c.backend.stageElapsed[c.run.stage])}{" "}
+                {t("into the investigation", "منذ بدء التحقيق")}
+              </small>
+            )}
         </MarkerContent>
       </Marker>
     </div>

@@ -404,6 +404,9 @@ function stageSummary(event: ApiPipelineEvent): string {
   const out = event.output ?? {};
   // Rule output and deterministic guards are named as such, never as an agent's finding.
   const rules = out.agent === "evidence_rules";
+  if (out.kind === "invalid_output_repair")
+    // The backend's own live state; nothing is concluded while it asks again.
+    return `Model reply invalid, retrying (${out.role ?? "model"}${out.attempt ? `, attempt ${out.attempt}` : ""}). No diagnosis is substituted.`;
   if (out.kind === "tool_call" && out.tool)
     // One evidence query of the investigator, as it happened.
     return `Investigator queried ${humanize(out.tool).toLowerCase()}${out.purpose ? `: ${out.purpose}` : ""}`;
@@ -448,16 +451,25 @@ function stageSummary(event: ApiPipelineEvent): string {
 export function pipelineView(events: ApiPipelineEvent[]) {
   const stageDetail: Record<number, string> = {};
   const stageEvidence: Record<number, string[]> = {};
+  const stageElapsed: Record<number, number> = {};
+  let repairing: string | null = null;
   let stage = -1;
   for (const event of [...events].sort((a, b) => a.sequence - b.sequence)) {
     const index = STAGE_INDEX[event.stage];
     if (index === undefined) continue;
     stage = Math.max(stage, index);
     stageDetail[index] = stageSummary(event);
+    if (typeof event.elapsed_seconds === "number")
+      stageElapsed[index] = event.elapsed_seconds;
+    // A repair is live only until the stage's next event (its closing event follows).
+    repairing =
+      event.output?.kind === "invalid_output_repair"
+        ? (event.output.role ?? "model")
+        : null;
     if (event.output?.evidence_ids?.length)
       stageEvidence[index] = event.output.evidence_ids;
   }
-  return { stage, stageDetail, stageEvidence };
+  return { stage, stageDetail, stageEvidence, stageElapsed, repairing };
 }
 
 const VERDICTS: Record<string, AuthorityDecision["verdict"]> = {
@@ -934,6 +946,9 @@ export function applyDetail(
       approvalReason: detail.recommendation?.approval_reason,
       stageDetail: pipeline.stageDetail,
       stageEvidence: pipeline.stageEvidence,
+      stageElapsed: pipeline.stageElapsed,
+      repairing: workflow === "INVESTIGATING" ? pipeline.repairing : null,
+      timing: timingOf(detail),
       pipelineStatus: detail.pipeline?.status ?? "UNKNOWN",
       supersededRunId: detail.previous_run?.entity_id ?? null,
       investigationAsOf: detail.pipeline?.investigation_as_of ?? null,
@@ -985,6 +1000,24 @@ export function applyDetail(
   };
 }
 
+/** The finished run's timings as the backend measured them; absent until the run has finished. */
+function timingOf(detail: ApiCaseDetail) {
+  const latency = detail.run?.result?.latency;
+  if (!latency || typeof latency.total_seconds !== "number") return undefined;
+  const stageSeconds: Record<number, number> = {};
+  for (const [name, seconds] of Object.entries(latency.stages ?? {})) {
+    const index = STAGE_INDEX[name];
+    if (index !== undefined && typeof seconds === "number")
+      stageSeconds[index] = (stageSeconds[index] ?? 0) + seconds;
+  }
+  return {
+    totalSeconds: latency.total_seconds,
+    firstConclusionSeconds: latency.first_conclusion_seconds ?? null,
+    modelSeconds: latency.model?.seconds ?? null,
+    stageSeconds,
+  };
+}
+
 /** A live pipeline stream frame applied to the case's rail. Evidence is refetched separately. */
 export function applyPipeline(
   base: OperationalCase,
@@ -1013,6 +1046,10 @@ export function applyPipeline(
       stageEvidence: queued
         ? {}
         : { ...base.backend.stageEvidence, ...view.stageEvidence },
+      stageElapsed: queued
+        ? {}
+        : { ...base.backend.stageElapsed, ...view.stageElapsed },
+      repairing: state.workflow_state === "INVESTIGATING" ? view.repairing : null,
       allowed: allowedFor(
         state.workflow_state,
         // Approval eligibility is only known from the case detail.

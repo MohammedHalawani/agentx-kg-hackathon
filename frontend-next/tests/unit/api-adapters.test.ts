@@ -360,6 +360,13 @@ describe("recorded pipeline and audit events", () => {
     const view = pipelineView(pipelineEvents.slice(0, 3));
     expect(view.stage).toBe(2);
     expect(view.stageDetail[1]).toMatch(/41 nodes, 77 relationships/);
+    // An invalid reply being asked again is a live state with its elapsed time, then it ends.
+    const repair = { sequence: 9, stage: "classify", status: "RETRYING", elapsed_seconds: 41.2, output: { kind: "invalid_output_repair", role: "investigator", attempt: 1, message: "model reply invalid, retrying" } };
+    const live = pipelineView([repair]);
+    expect(live.repairing).toBe("investigator");
+    expect(live.stageDetail[2]).toMatch(/Model reply invalid, retrying \(investigator, attempt 1\)/);
+    expect(live.stageElapsed[2]).toBe(41.2);
+    expect(pipelineView([repair, { sequence: 10, stage: "classify", status: "COMPLETED", elapsed_seconds: 55, output: {} }]).repairing).toBeNull();
     const base = caseFromQueue(queueRows[2]);
     const running = applyPipeline(base, {
       workflow_state: "INVESTIGATING",

@@ -52,7 +52,7 @@ import { RouteMap } from "@/components/route-map";
 import { KnowledgeGraph } from "@/components/knowledge-graph";
 import { DecisionDialog } from "@/components/decision-dialog";
 import { StatusBadge, PriorityLabel, EmptyState } from "@/components/shared";
-import { dateTimeLabel, timeLabel } from "@/lib/dates";
+import { dateTimeLabel, secondsLabel, timeLabel } from "@/lib/dates";
 import { InvestigatorFindings } from "@/components/investigator-findings";
 import { InvestigationRecord } from "@/components/investigation-record";
 import { HumanOutcomeDialog } from "@/components/human-outcome-dialog";
@@ -448,7 +448,18 @@ export function InvestigationPage() {
                           : c.run
                             ? backend
                               ? c.status === "investigating"
-                                ? t("Investigation in progress", "التحقيق جارٍ")
+                                ? `${
+                                    c.backend?.repairing
+                                      ? t(
+                                          "Model reply invalid, retrying · no diagnosis is substituted",
+                                          "رد النموذج غير صالح، إعادة المحاولة · لا يُستبدل تشخيص",
+                                        )
+                                      : t("Investigation in progress", "التحقيق جارٍ")
+                                  }${
+                                    c.backend?.stageElapsed?.[c.run.stage] !== undefined
+                                      ? ` · ${secondsLabel(c.backend.stageElapsed[c.run.stage])}`
+                                      : ""
+                                  }`
                                 : c.status === "verifying"
                                   ? c.backend?.expectedResponseAt
                                     ? t(
@@ -464,7 +475,12 @@ export function InvestigationPage() {
                                           "Executed · awaiting independent verification",
                                           "نُفذ · بانتظار التحقق المستقل",
                                         )
-                                  : t("Recorded run", "تحقيق مسجل")
+                                  : c.backend?.timing?.totalSeconds != null
+                                    ? t(
+                                        `Recorded run · investigated in ${secondsLabel(c.backend.timing.totalSeconds)}`,
+                                        `تحقيق مسجل · استغرق ${secondsLabel(c.backend.timing.totalSeconds)}`,
+                                      )
+                                    : t("Recorded run", "تحقيق مسجل")
                               : t(
                                   "Simulated run in progress",
                                   "تحقيق محاكى جارٍ",
@@ -541,6 +557,9 @@ export function InvestigationPage() {
                         failed: "فشل",
                       }[state],
                     )}
+                    {state === "completed" &&
+                      c.backend?.timing?.stageSeconds[i] !== undefined &&
+                      ` · ${secondsLabel(c.backend.timing.stageSeconds[i])}`}
                   </small>
                 </span>
               </Button>
