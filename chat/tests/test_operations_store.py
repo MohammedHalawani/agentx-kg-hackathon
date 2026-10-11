@@ -85,7 +85,7 @@ class Tx:
             kind=q.split("MATCH(n:OpsEntity:")[1].split(" ")[0]
             rows=[copy.deepcopy(v) for k,v in self.ledger.values() if k==kind and v.get("case_id")==p["case_id"]]
             rows.sort(key=lambda v:(v.get("iteration",0) if "n.iteration" in q else 0,v["recorded_at"],v["entity_id"]),reverse=True)
-            return Result([{"props":r} for r in rows[:20]])
+            return Result([{"props":r} for r in rows[:500 if "LIMIT 500" in q else 20]])
         if q.startswith("MATCH(e:OpsExecution"):
             rows=[v for k,v in self.ledger.values() if k=="OpsExecution" and v["case_id"]==p["case_id"]]
             return Result([{"props":copy.deepcopy(r)} for r in sorted(rows,key=lambda r:r["recorded_at"],reverse=True)[:1]])

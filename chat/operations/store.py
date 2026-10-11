@@ -281,6 +281,18 @@ MONITOR_SUMMARY_PENDING = "Monitor detected an expected-vs-actual divergence in 
 MONITOR_SUMMARY = "Monitor detected an expected-vs-actual divergence in visible evidence; no accepted agent diagnosis."
 
 
+def narration_view(record):
+    """A stored narration record as served (the contract of docs/api/narration.md)."""
+    return {"id":record["entity_id"],"case_id":record["case_id"],"shipment_id":record["shipment_id"],"run_id":record["run_id"],
+            "sequence":record["sequence"],"stage":record["stage"],"phase":record["phase"],"kind":record["kind"],
+            "iteration":record.get("iteration") or 0,"title_en":record.get("title_en"),"title_ar":record.get("title_ar"),
+            "text_en":record.get("text_en"),"text_ar":record.get("text_ar"),"evidence_ids":list(record.get("evidence_ids") or []),
+            "graph_node_ids":list(record.get("graph_node_ids") or []),"source":json.loads(record.get("source_json") or "{}"),
+            "occurred_at":record.get("source_wall_at"),"scenario_time":record.get("scenario_time"),
+            "created_at":record.get("wall_recorded_at"),"model":record.get("model"),"grounded":record.get("grounded"),
+            "fallback":bool(record.get("fallback")),"outcome_state":record.get("outcome_state")}
+
+
 def without_diagnosis(case, *, pending):
     """Reset the case's summary fields to the monitor's view (also when a case goes back for re-investigation)."""
     case.update(issue_summary=MONITOR_SUMMARY_PENDING if pending else MONITOR_SUMMARY, cause_codes=[], rule_signal_codes=[],
@@ -353,13 +365,22 @@ class OperationsStore:
         self.demo_shipments = demo_shipments()   # None, or the only shipments the monitor may open cases for
         self._subscribers={}
         self._subscribers_lock=threading.RLock()
+        # Canopus narration (operations.narration.Narrator), attached by the server when SUHAIL_NARRATION is set. The
+        # store only tells it which case changed; it reads and writes through narration_sources / narration_append.
+        self.narrator=None
+        self._narration_dirty=set()
 
     def _execute(self, callback, *, write=False):
         with self.driver.session(database=self.database, default_access_mode="WRITE" if write else "READ") as session:
             def guarded(tx):
                 self._guard(tx)
                 return callback(tx)
-            return session.execute_write(guarded) if write else session.execute_read(guarded)
+            result=session.execute_write(guarded) if write else session.execute_read(guarded)
+        if write and self.narrator is not None and self._narration_dirty:
+            # After the commit: the cases whose audit trail just grew are narrated on the narrator's own thread.
+            dirty,self._narration_dirty=self._narration_dirty,set()
+            for case_id in dirty:self.narrator.request(case_id)
+        return result
 
     def _guard(self, tx):
         rows = list(tx.run("MATCH (m:_V2Import) RETURN properties(m) AS props"))
@@ -431,6 +452,7 @@ class OperationsStore:
             "event_type": event_type, "occurred_at": when, "recorded_at": when, "wall_recorded_at":datetime.now(timezone.utc).isoformat(), "actor_id": actor, "decision": decision,
             "result": result[:1000], "from_state": old, "to_state": case["workflow_state"]})
         self._link(tx, "OPS_HAS_AUDIT", case["entity_id"], audit_id, case["shipment_id"], when)
+        if self.narrator is not None:self._narration_dirty.add(case["entity_id"])
 
     def _invalidate_outcomes(self,tx,case):
         rows=tx.run("MATCH(n:OpsEntity:OpsOutcome {case_id:$case_id,dataset_id:$dataset}) RETURN properties(n) AS props ORDER BY n.recorded_at DESC,n.entity_id DESC LIMIT 20",
@@ -1471,6 +1493,7 @@ class OperationsStore:
                     'state_version':case['state_version'],'status':'FAILED' if last['status']=='FAILED' else 'RUNNING'}
         state=self._execute(record,write=True)
         self._publish_pipeline(claimed['entity_id'],state)
+        if self.narrator is not None:self.narrator.request(claimed['entity_id'])
 
     def _save_run_trace(self,case,analysis):
         def save(tx):
@@ -1507,6 +1530,70 @@ class OperationsStore:
                     except queue.Empty:pass
                     try:listener.put_nowait(state)
                     except queue.Full:pass
+
+    NARRATION_ROWS=("MATCH(n:OpsEntity:{kind} {{case_id:$case_id,dataset_id:$dataset}}) RETURN properties(n) AS props "
+                    "ORDER BY n.recorded_at DESC,n.entity_id DESC LIMIT 500")
+
+    def _narration_rows(self,tx,case_id,run_id=None):
+        rows=[public_value(r["props"]) for r in tx.run(self.NARRATION_ROWS.format(kind="OpsNarration"),case_id=case_id,dataset=self.dataset_id)]
+        return sorted((r for r in rows if run_id is None or r.get("run_id")==run_id),key=lambda r:(r.get("run_id") or "",r.get("sequence") or 0))
+
+    def narration_sources(self,case_id):
+        """Everything the narrator may read for a case's current run: the run's recorded pipeline events, conclusion and
+        final review, the case's audit entries since that run was claimed, and what is narrated already."""
+        def read(tx):
+            case=self._case(tx,case_id);run_id=case.get("last_run_id")
+            run=self._get(tx,"OpsRun",run_id or "")
+            if not run:return None
+            result=json.loads(run.get("result_json") or "{}")
+            audits=[public_value(r["props"]) for r in tx.run(self.NARRATION_ROWS.format(kind="OpsAudit"),case_id=case_id,dataset=self.dataset_id)]
+            audits=[a for a in audits if a.get("event_type")!="PIPELINE_STAGE"]
+            claims=[a.get("wall_recorded_at") or "" for a in audits if a.get("event_type")=="CASE_CLAIMED"]
+            since=max(claims) if claims else ""
+            audits=sorted((a for a in audits if (a.get("wall_recorded_at") or "")>=since),key=lambda a:(a.get("wall_recorded_at") or "",a["entity_id"]))
+            stored=self._narration_rows(tx,case_id,run_id)
+            return {"case":{"entity_id":case["entity_id"],"shipment_id":case["shipment_id"],"workflow_state":case["workflow_state"]},
+                    "run_id":run_id,"pipeline_events":result.get("pipeline_events") or [],"investigation":result.get("investigation"),
+                    "review":result.get("review"),"audits":audits,"existing_keys":[r.get("key") for r in stored],
+                    "model_calls":sum(1 for r in stored if r.get("model_call"))}
+        return self._execute(read)
+
+    def narration_append(self,case_id,run_id,events):
+        """Append narration events to a run (the narrator's only write). Returns the stored events."""
+        def write(tx):
+            case=self._case(tx,case_id);control=self._control(tx)
+            stored=self._narration_rows(tx,case_id,run_id)
+            known={r.get("key") for r in stored};sequence=max((r.get("sequence") or 0 for r in stored),default=0);out=[]
+            for event in events:
+                if event["key"] in known:continue
+                sequence+=1;known.add(event["key"])
+                record={"entity_id":identity("narration",run_id,event["key"]),"shipment_id":case["shipment_id"],"case_id":case["entity_id"],
+                        "run_id":run_id,"sequence":sequence,"key":event["key"],"stage":event["stage"],"phase":event["phase"],"kind":event["kind"],
+                        "iteration":event.get("iteration") or 0,"title_en":event.get("title_en"),"title_ar":event.get("title_ar"),
+                        "text_en":str(event.get("text_en") or "")[:2000],"text_ar":(str(event["text_ar"])[:2500] if event.get("text_ar") else None),
+                        "evidence_ids":list(event.get("evidence_ids") or []),"graph_node_ids":list(event.get("graph_node_ids") or []),
+                        "source_json":canonical(event.get("source") or {}),"source_wall_at":event.get("occurred_at"),
+                        "scenario_time":event.get("scenario_time"),"wall_recorded_at":datetime.now(timezone.utc).isoformat(),
+                        "model":event.get("model"),"grounded":event.get("grounded"),"fallback":bool(event.get("fallback")),
+                        "model_call":bool(event.get("model_call")),"outcome_state":event.get("outcome_state"),
+                        "recorded_at":control["as_of"],"occurred_at":control["as_of"]}
+                self._put(tx,"OpsNarration",record)
+                out.append(narration_view(record))
+            return out
+        stored=self._execute(write,write=True)
+        for event in stored:self._publish_pipeline(case_id,{"narration_event":event})
+        return stored
+
+    def narration(self,case_id,run_id=None):
+        """A run's narration as served: {run_id, status, model_calls, events} (the case's current run by default)."""
+        def read(tx):
+            case=self._case(tx,case_id);target=run_id or case.get("last_run_id")
+            rows=self._narration_rows(tx,case_id,target) if target else []
+            run=self._get(tx,"OpsRun",target or "") or {}
+            status=("idle" if not rows else "narrating" if run.get("status")=="RUNNING" and target==case.get("last_run_id") else "complete")
+            return {"run_id":target,"status":status,"model_calls":sum(1 for r in rows if r.get("model_call")),
+                    "events":[narration_view(r) for r in rows]}
+        return self._execute(read)
 
     def pipeline_state(self,case_id):
         def read(tx):

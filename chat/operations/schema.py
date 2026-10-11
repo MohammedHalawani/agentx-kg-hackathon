@@ -52,6 +52,11 @@ FIELDS = {
     "OpsOutcome": {"case_id", "execution_id", "action_code", "action_type", "success", "outcome_type", "evidence_ids",
                    "verification_status", "verified_at", "verifier_id", "invalidated", "observed_at", "reason", "rule_id", "expected_effect",
                    "exception_cleared", "remaining_symptoms", "source", "run_id", "relevant_evidence_ids", "trusted_precedent"},
+    # Canopus narration of a run (operations.narration): append-only, written by the narrator only, read by nothing
+    # that decides anything.
+    "OpsNarration": {"case_id", "run_id", "sequence", "key", "stage", "phase", "kind", "iteration", "title_en", "title_ar", "text_en",
+                     "text_ar", "evidence_ids", "graph_node_ids", "source_json", "source_wall_at", "scenario_time", "wall_recorded_at",
+                     "model", "grounded", "fallback", "model_call", "outcome_state"},
     "OpsNotification": {"case_id", "trigger", "status", "mode", "external_calls"},
     "OpsCommand": {"case_id", "idempotency_key", "request_hash", "result_json", "command_type"},
     "OpsRiskFlag": {"active", "certainty", "promise_at", "latest_estimate_at", "earliest_estimate_at", "evidence_ids", "checked_at"},

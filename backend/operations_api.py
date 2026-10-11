@@ -119,6 +119,10 @@ class OperationsRuntime:
         self.reader.store=self.store
         self.store.initialize()
         self.simulator=attach_simulator(self.store,self.reader,manifest)
+        if os.environ.get("SUHAIL_NARRATION","").strip().lower() in ("1","true","on","yes"):
+            # Canopus narration of each run, on its own thread, from recorded events only (operations.narration).
+            from operations.narration import Narrator
+            self.store.narrator=Narrator(self.store)
         from operations.workers import WorkerPool
         # Ingestion, monitoring, investigation and verification run on separate threads.
         self.workers=WorkerPool(self.store).start()
@@ -171,6 +175,13 @@ async def case_events(case_id: str,request: Request):
         try:
             state=await asyncio.to_thread(invoke,store.pipeline_state,case_id)
             while not await request.is_disconnected():
+                if isinstance(state,dict) and "narration_event" in state:
+                    # A stored Canopus narration event: its own message type, never mixed into the pipeline state.
+                    data=json.dumps(public_value(state["narration_event"]),ensure_ascii=False,separators=(",",":"))
+                    yield f'event: narration\ndata: {data}\n\n'
+                    try:state=await asyncio.to_thread(listener.get,True,1)
+                    except event_queue.Empty:state=await asyncio.to_thread(invoke,store.pipeline_state,case_id)
+                    continue
                 payload=json.dumps(public_value(state),ensure_ascii=False,separators=(",",":"))
                 if payload!=previous and pipeline_follows(last_state,state):
                     yield f'event: pipeline\ndata: {payload}\n\n'
@@ -227,6 +238,12 @@ def explore(cursor: str|None=Query(None,max_length=2048),limit: PageLimit=25,
 
 @router.get("/cases/{case_id}")
 def case_detail(case_id: str):return invoke(get_runtime().reader.case_detail,case_id)
+
+
+@router.get("/cases/{case_id}/narration")
+def case_narration(case_id: str,run_id: str|None=Query(None,min_length=1,max_length=160)):
+    """The stored Canopus narration of a run of this case (its current run by default). Read-only."""
+    return invoke(get_runtime().store.narration,case_id,run_id)
 
 
 @router.get("/shipments/{shipment_id}/context")
@@ -387,6 +404,18 @@ def reanalyze(case_id: str,request: Request,body: ReanalysisBody):
     result=({'processed':False,'reason':'idempotent_replay'} if requested.get('idempotent') else
             invoke(store.process_one,case_id=case_id))
     return {'requested':requested,'analysis':result}
+
+
+@router.post("/cases/{case_id}/narrate")
+def narrate(case_id: str,request: Request):
+    """Bring the stored Canopus narration of this case's current run up to date from its recorded events (a backfill for
+    a run investigated before narration was on). Writes narration records only; the case is not touched."""
+    authority.authorize(request)
+    store=get_runtime().store
+    if store.narrator is None:raise HTTPException(409,"Narration is not enabled on this server")
+    invoke(store.pipeline_state,case_id)
+    store.narrator.request(storage_value(case_id))
+    return {"requested":True,"case_id":case_id}
 
 
 class HumanOutcomeBody(StrictBody):
