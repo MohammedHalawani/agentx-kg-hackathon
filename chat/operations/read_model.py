@@ -550,6 +550,9 @@ class OperationsReader:
         # One plain account of the case for an operator, and a short fact per pipeline stage: composed by code from the
         # fields above on every read (operations.brief), nothing stored, no model call.
         from operations import brief
+        if self.store is not None and hasattr(self.store,"status"):
+            simulator=self.store.status()["simulator"]
+            detail["clock"]={"state":simulator["state"],"speed":simulator["speed"]}
         composed=brief.build(detail)
         detail["pipeline"]["stage_facts"]=brief.stage_facts(events,composed.pop("_stage_outcome"))
         detail["brief"]=composed

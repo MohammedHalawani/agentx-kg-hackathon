@@ -9,6 +9,7 @@ in their own fields. Real examples from archived runs of 11 October 2026 are in 
 | Field | Meaning |
 |---|---|
 | `resolved` | true only when the case is RESOLVED by a verified outcome |
+| `clock_paused`, `waiting_on_paused_clock` | whether the simulated clock is paused (null when unknown), and whether this case waits for evidence that cannot arrive until it runs. When true, the `status` line begins "The simulated clock is paused, so no new evidence can arrive. Press Start, or Skip to next event." |
 | `waiting_kind`, `waiting_label_en/_ar` | `queued_for_investigation` (OPEN, REOPENED), `investigating` (INVESTIGATING, RECOMMENDATION_READY), `awaiting_operator_decision` (AWAITING_APPROVAL, HUMAN_REVIEW, ESCALATED, NEEDS_EVIDENCE, and any unknown state), `awaiting_operational_action` (ACTION_INITIATED), `awaiting_new_evidence` (AWAITING_OUTCOME), `resolved`, `closed_unresolved` (REJECTED). There is no long-lived verifying state: verification happens when the awaited evidence arrives or the deadline passes |
 | `lines[]` | the operator's short view, in order: `{key, label_en, label_ar, text_en, text_ar}` with keys `problem`, `finding`, `review` (only when the review did not accept), `action`, `status` |
 | `what_happened` | `{text_en, text_ar, opened_at, symptoms[{code, label_en, label_ar}]}` |

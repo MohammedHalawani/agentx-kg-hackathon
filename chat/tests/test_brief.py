@@ -78,6 +78,23 @@ class BriefTests(unittest.TestCase):
         self.assertEqual((b["waiting_kind"], b["verification"]["status"]), ("awaiting_new_evidence", "awaiting_evidence"))
         self.assertIn("Nothing is verified yet", lines(b)["status"])
 
+    def test_a_case_waiting_for_evidence_says_when_the_clock_is_paused(self):
+        waiting = detail("AWAITING_OUTCOME", accepted=True, verdict="ACCEPT", executions=[EXECUTION])
+        paused = brief.build({**waiting, "clock": {"state": "paused", "speed": 60}})
+        self.assertEqual((paused["clock_paused"], paused["waiting_on_paused_clock"]), (True, True))
+        status = lines(paused)["status"]
+        self.assertTrue(status.startswith("The simulated clock is paused, so no new evidence can arrive. Press Start, or Skip to next event."))
+        self.assertIn("Waiting for a new barcode read of this parcel", status)
+        running = brief.build({**waiting, "clock": {"state": "running", "speed": 60}})
+        self.assertEqual((running["clock_paused"], running["waiting_on_paused_clock"]), (False, False))
+        self.assertNotIn("paused", lines(running)["status"])
+        self.assertEqual((brief.build(waiting)["clock_paused"], brief.build(waiting)["waiting_on_paused_clock"]), (None, False))
+        # A case that waits for a person, or a resolved one, is not waiting on the clock.
+        for state in ("HUMAN_REVIEW", "ESCALATED", "RESOLVED", "OPEN"):
+            b = brief.build({**detail(state, accepted=True, verdict="ACCEPT", executions=[EXECUTION], outcome=CLEARED), "clock": {"state": "paused", "speed": 60}})
+            self.assertEqual((b["clock_paused"], b["waiting_on_paused_clock"]), (True, False), state)
+            self.assertNotIn("clock is paused", lines(b)["status"], state)
+
     def test_an_unknown_recipient_is_said_to_be_unknown_and_an_undelivered_request_is_not_a_sent_one(self):
         nameless = {k: v for k, v in EXECUTION.items() if k != "target_device"}
         action = self.build("AWAITING_OUTCOME", executions=[nameless])["actions"][0]

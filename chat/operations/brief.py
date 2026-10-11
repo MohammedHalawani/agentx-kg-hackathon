@@ -272,8 +272,14 @@ def stage_facts(events, verification=None):
     return facts
 
 
+CLOCK_PAUSED = ("The simulated clock is paused, so no new evidence can arrive. Press Start, or Skip to next event.",
+                "الساعة المحاكاة متوقفة، فلا يمكن وصول أدلة جديدة. اضغط «بدء» أو «تخطٍّ إلى الحدث التالي».")
+
+
 def build(detail):
-    """The brief of a case detail (the dict GET /cases/{case_id} serves, before the brief is added)."""
+    """The brief of a case detail (the dict GET /cases/{case_id} serves, before the brief is added). detail["clock"],
+    when present, is {"state": "running" | "paused", "speed": n}: a case waiting for evidence while the clock is paused
+    says so, because nothing can arrive until the clock runs."""
     state = detail.get("workflow_state")
     run = detail.get("run") or {}
     result = run.get("result") or {}
@@ -401,10 +407,17 @@ def build(detail):
     lines.append({"key": "action", "label_en": "Action taken", "label_ar": "الإجراء المتخذ", "text_en": action_en, "text_ar": action_ar})
     status_en = verification["text_en"] if resolved or waiting == "awaiting_new_evidence" else (step.get("text_en") or WAITING[waiting][0] + ".")
     status_ar = verification["text_ar"] if resolved or waiting == "awaiting_new_evidence" else (step.get("text_ar") or WAITING[waiting][1] + ".")
+    clock_paused = (detail.get("clock") or {}).get("state") == "paused" if detail.get("clock") else None
+    stalled = bool(clock_paused) and waiting in ("awaiting_new_evidence", "awaiting_operational_action")
+    if stalled:
+        status_en, status_ar = f"{CLOCK_PAUSED[0]} {status_en}", f"{CLOCK_PAUSED[1]} {status_ar}"
     lines.append({"key": "status", "label_en": "Current status", "label_ar": "الوضع الحالي", "text_en": status_en, "text_ar": status_ar})
 
     return {
         "version": 1, "source": "composed by code from the case's stored records", "resolved": resolved,
+        # clock_paused: whether the simulated clock is paused (None when unknown). waiting_on_paused_clock: the case
+        # waits for evidence that cannot arrive until the clock runs.
+        "clock_paused": clock_paused, "waiting_on_paused_clock": stalled,
         "waiting_kind": waiting, "waiting_label_en": WAITING[waiting][0], "waiting_label_ar": WAITING[waiting][1], "lines": lines,
         "what_happened": {"text_en": happened_en, "text_ar": happened_ar, "opened_at": detail.get("opened_at"), "symptoms": symptoms},
         "suspected_cause": {"status": cause_status, "code": cause, "label_en": cause_en, "label_ar": cause_ar, "confidence": findings.get("confidence"),
