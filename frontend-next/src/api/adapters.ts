@@ -255,7 +255,15 @@ export function caseFromQueue(
         : allowedFor(row.workflow_state, false),
     },
   };
-  if (keep) base.diagnosis = keep.diagnosis;
+  if (keep) {
+    // The loaded detail's own diagnosis describes the case; the queue row's one-line summary
+    // (the leading hypothesis's assessment) must not replace it between polls.
+    base.diagnosis = keep.diagnosis;
+    if (row.diagnosis_available && keep.backend?.diagnosisAvailable) {
+      base.summary = keep.summary;
+      base.issue = keep.issue;
+    }
+  }
   return base;
 }
 

@@ -68,7 +68,7 @@ test("Every stage of a completed lifecycle is displayed as the backend recorded 
   const cleared = outcome.success === true && outcome.exception_cleared !== false;
   await expect(
     page.getByRole("button", {
-      name: new RegExp(`^Outcome · ${cleared ? "completed" : "failed"}`),
+      name: new RegExp(`^Outcome · ${cleared ? "completed" : outcome.success ? "waiting" : "failed"}`),
     }),
   ).toBeVisible();
   await page.getByRole("button", { name: /^Outcome ·/ }).click();

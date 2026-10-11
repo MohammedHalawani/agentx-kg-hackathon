@@ -508,10 +508,13 @@ export function InvestigationPage() {
                   ? c.status === "escalated" ||
                     // The authorized action was not carried out.
                     (i === 6 && !!c.backend && !!c.execution && !c.execution.successful) ||
-                    // The verifier checked and did not confirm the fix.
+                    // The verifier checked and did not confirm the fix. An action that
+                    // worked while the exception remains is not a failed check: it waits.
                     (i === 7 &&
                       !!c.backend?.verification &&
-                      c.backend.verification.result !== "confirmed")
+                      !["confirmed", "exception_remains"].includes(
+                        c.backend.verification.result,
+                      ))
                     ? "failed"
                     : ["human_review", "needs_evidence"].includes(c.status)
                       ? "waiting"

@@ -62,6 +62,11 @@ for (const id of CASES)
       await expect(page.locator(".pipeline-meta")).toContainText(
         execution.expected_response_at ? "an answer is scheduled for" : "answer expected by",
       );
+    // An action that worked while the exception remains is not shown as a failed check.
+    if (outcome?.success === true && outcome.exception_cleared === false) {
+      await expect(page.locator(".pipeline-meta")).toContainText("the exception remains");
+      await expect(page.getByRole("button", { name: /^Outcome · waiting/ })).toBeVisible();
+    }
     await page.waitForTimeout(1500);
     const name = `${detail.shipment_id.slice(-3)}-${String(detail.workflow_state).toLowerCase()}`;
     await page.screenshot({ path: `screenshots/story-${name}.png`, fullPage: true });
