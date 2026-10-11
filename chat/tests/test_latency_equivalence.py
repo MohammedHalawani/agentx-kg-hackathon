@@ -13,6 +13,8 @@ function and authority policy.
             with the same results, the same conclusions, review verdicts and authority decisions, one model call fewer.
 """
 import json
+from pathlib import Path
+import sys
 import unittest
 from unittest import mock
 
@@ -227,6 +229,46 @@ class LatencyRecord(unittest.TestCase):
         self.assertLessEqual(latency["first_review_seconds"], latency["final_seconds"])
         self.assertTrue(all("elapsed_seconds" in e for e in analysis["pipeline_events"]))
         self.assertEqual(latency["model"]["calls"], analysis["investigation_log"]["model_calls_used"])
+
+
+class AnalysisScript(unittest.TestCase):
+    """scripts/investigation_latency.py on the committed pilot records and on a run's own events (the ledger path)."""
+
+    @classmethod
+    def setUpClass(cls):
+        sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+        import investigation_latency
+        cls.script = investigation_latency
+
+    def test_pilot_records_give_the_committed_wall_times_and_estimate_only_the_first_conclusion(self):
+        path = Path(__file__).resolve().parents[2] / "docs/evals/2026-10-10_world1_pilot/pilot.json"
+        runs = [self.script.from_record(r) for r in self.script.load_records(path)]
+        self.assertEqual(len(runs), 12)
+        summary = self.script.summarize(runs)
+        self.assertEqual(summary["all"]["wall_seconds"]["worst"], 62.7)
+        self.assertEqual(summary["all"]["first_conclusion_is"], "estimated")
+        self.assertEqual({r["kind"] for r in runs}, {"ordinary", "complex"})
+
+    def test_a_stage3_result_line_is_read_as_well(self):
+        from stage3_eval.records import ArmResult
+        line = ArmResult(case_key="k", arm="agent", shipment_id="DEMO-SHP-1", wall_seconds=30.0, calls_used=8, review_rounds=1,
+                         steps=[{"tool": "scans"}]).to_dict()
+        run = self.script.from_record(line)
+        self.assertEqual((run["wall_seconds"], run["calls"], run["kind"], run["tool_calls"]), (30.0, 8, "ordinary", 1))
+        self.assertEqual(run["first_conclusion"], "estimated")
+
+    def test_the_ledger_path_measures_from_the_run_events(self):
+        fixture = small_world()
+        case = Equivalence()
+        case.fixture, case.end = fixture, fixture.world.config.as_of
+        Equivalence.setUpClass()
+        analysis, _, _, _ = case.run_case(Equivalence.shipments[0], PILOT_SEQUENCES[0])
+        run = self.script.from_run("C", "S", analysis, [])
+        self.assertEqual(run["kind"], "complex")
+        self.assertEqual(run["tool_calls"], 3)
+        self.assertIsNotNone(run["first_conclusion_seconds"])
+        self.assertLessEqual(run["first_conclusion_seconds"], run["final_seconds"])
+        self.assertIsNone(run["queue_seconds"])          # no audits given
 
 
 if __name__ == "__main__":
