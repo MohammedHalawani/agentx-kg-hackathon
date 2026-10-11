@@ -288,6 +288,8 @@ export interface BackendCaseState {
     verifiedAt: string | null;
   };
   /** Until when the verifier waits for evidence of the executed action. */
+  /** An outcome recorded for an earlier action of this case, superseded by a later cycle. */
+  earlierOutcome?: { reason: string; success: boolean } | null;
   verificationDeadline?: string | null;
   /** When an answer to the executed action is scheduled, if the backend says so. */
   expectedResponseAt?: string | null;

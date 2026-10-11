@@ -117,12 +117,22 @@ for (const id of CASES)
     }
     if (execution?.status === "NOT_ACKNOWLEDGED")
       await expect(sheet).toContainText("nothing was carried out");
-    if (outcome) {
+    if (outcome && outcome.current_cycle === false) {
+      // An earlier cycle's outcome is history, never the current action's outcome.
+      await expect(sheet.getByTestId("verification-result")).toHaveCount(0);
+      await expect(sheet.getByTestId("earlier-outcome")).toContainText(outcome.reason);
+    } else if (outcome) {
       const verification = sheet.getByTestId("verification-result");
       await verification.scrollIntoViewIfNeeded();
       await expect(verification).toContainText(outcome.reason);
+      if (outcome.outcome_type === "no_confirming_evidence")
+        await expect(verification).toContainText("Delivered · no answer by the deadline");
     } else await expect(sheet.getByTestId("verification-result")).toHaveCount(0);
     await page.screenshot({ path: `screenshots/story-${name}-assessment.png` });
+    // The assessment sheet never scrolls sideways: long identifiers wrap.
+    expect(
+      await sheet.evaluate((node) => node.scrollWidth <= node.clientWidth + 1),
+    ).toBe(true);
     await page.keyboard.press("Escape");
 
     // The Resolved queue holds this case only if the backend resolved it from a verified outcome.

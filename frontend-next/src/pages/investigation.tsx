@@ -1090,6 +1090,14 @@ export function InvestigationPage() {
               >
                 {c.execution?.detail ??
                   t("No action has been executed.", "لم يُنفذ أي إجراء.")}
+                {c.backend?.earlierOutcome && (
+                  <p className="finding-meta mt-3" data-testid="earlier-outcome">
+                    {t(
+                      `An earlier action on this case was checked by the verifier and ${c.backend.earlierOutcome.success ? "confirmed" : "not confirmed"}: ${c.backend.earlierOutcome.reason} It belongs to an earlier cycle and is not the outcome of the current action.`,
+                      `إجراء سابق في هذه الحالة فحصه المتحقق و${c.backend.earlierOutcome.success ? "تأكد" : "لم يتأكد"}: ${c.backend.earlierOutcome.reason} يخص دورة سابقة وليس نتيجة الإجراء الحالي.`,
+                    )}
+                  </p>
+                )}
                 {c.backend?.verification ? (
                   <div className="finding" data-testid="verification-result">
                     <Badge

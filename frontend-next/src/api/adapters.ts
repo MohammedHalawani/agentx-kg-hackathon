@@ -1031,6 +1031,10 @@ export function applyDetail(
       actionType: detail.recommendation?.action_type ?? null,
       outcomeStatus: detail.outcome?.verification_status ?? null,
       verification,
+      earlierOutcome:
+        detail.outcome && detail.outcome.current_cycle === false
+          ? { reason: detail.outcome.reason ?? "", success: detail.outcome.success === true }
+          : null,
       verificationDeadline: execution?.deadline_at ?? null,
       expectedResponseAt: execution?.expected_response_at ?? null,
       asOf: detail.as_of,
