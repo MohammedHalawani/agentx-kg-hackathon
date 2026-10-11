@@ -2005,6 +2005,7 @@ class OperationsStore:
             if outcomes:outcomes[0].update(outcome_id=outcomes[0]["entity_id"],current_cycle=in_cycle(outcomes[0]))
             for execution in executions:execution["current_cycle"]=in_cycle(execution)
             return {"case_id":case_id,"shipment_id":case["shipment_id"],"workflow_state":case["workflow_state"],
+                "symptom_codes":list(case.get("symptom_codes") or []),"opened_at":case.get("opened_at"),
                 "state_version":case["state_version"],"priority":case["priority"],"operational_status":case["operational_status"],
                 "as_of":case["as_of"],"recommendation_id":case.get("recommendation_id"),"last_run_id":case.get("last_run_id"),
                 "recommendation":recommendation,"review":reviews[0] if reviews else None,"outcome":outcomes[0] if outcomes else None,

@@ -1,0 +1,272 @@
+{
+ "brief": {
+  "version": 1,
+  "source": "composed by code from the case's stored records",
+  "resolved": false,
+  "waiting_kind": "awaiting_operator_decision",
+  "waiting_label_en": "Waiting for a person",
+  "waiting_label_ar": "بانتظار قرار شخص",
+  "lines": [
+   {
+    "key": "problem",
+    "label_en": "Problem",
+    "label_ar": "المشكلة",
+    "text_en": "A weight reading differs from the declared weight.",
+    "text_ar": "قراءة وزن تختلف عن الوزن المصرّح به."
+   },
+   {
+    "key": "finding",
+    "label_en": "Finding",
+    "label_ar": "ما توصل إليه التحقيق",
+    "text_en": "Suhail's investigation concluded that the cause is a weight discrepancy, and the independent review accepted it.",
+    "text_ar": "خلص تحقيق سهيل إلى أن السبب هو اختلاف في الوزن، وقبلته المراجعة المستقلة."
+   },
+   {
+    "key": "action",
+    "label_en": "Action taken",
+    "label_ar": "الإجراء المتخذ",
+    "text_en": "Reweigh request was sent to device SYN-DEV-SCL-SORT-DMM-01-1 at SYN-SORT-DMM-01 (simulated) under the automatic policy. The verifier did not find evidence that the request fixed the problem. A calibrated reweigh after the request still differs beyond tolerance.",
+    "text_ar": "أُرسل الطلب (طلب إعادة وزن الطرد بميزان معاير قبل متابعة مناولته.) (محاكاة). لم يجد المدقق دليلًا على أن الطلب عالج المشكلة."
+   },
+   {
+    "key": "status",
+    "label_en": "Current status",
+    "label_ar": "الوضع الحالي",
+    "text_en": "A person must investigate this case and record the finding. Nothing further will run automatically.",
+    "text_ar": "يجب أن يحقق شخص في هذه الحالة ويسجّل ما توصل إليه. لن يُنفَّذ أي إجراء آخر تلقائيًا."
+   }
+  ],
+  "what_happened": {
+   "text_en": "Suhail's monitor opened this case for shipment SYN-SHP-000058: a weight reading differs from the declared weight.",
+   "text_ar": "فتح نظام المراقبة هذه الحالة: قراءة وزن تختلف عن الوزن المصرّح به.",
+   "opened_at": null,
+   "symptoms": [
+    {
+     "code": "WEIGHT_READ_DIFFERS",
+     "label_en": "A weight reading differs from the declared weight",
+     "label_ar": "قراءة وزن تختلف عن الوزن المصرّح به"
+    }
+   ]
+  },
+  "suspected_cause": {
+   "status": "accepted",
+   "code": "WEIGHT_MISMATCH",
+   "label_en": "a weight discrepancy",
+   "label_ar": "اختلاف في الوزن",
+   "confidence": "high",
+   "text_en": "Suhail's investigation concluded that the cause is a weight discrepancy, and the independent review accepted it.",
+   "text_ar": "خلص تحقيق سهيل إلى أن السبب هو اختلاف في الوزن، وقبلته المراجعة المستقلة.",
+   "investigator_summary": "A weight mismatch is confirmed: the measured weight is outside allowed tolerance and barcode data is consistent, ruling out barcode error. The discrepancy likely stems from an inaccurate declared weight or a packaging issue."
+  },
+  "evidence": [
+   {
+    "id": "SYN-SHP-000058-SCAN-004",
+    "kind": "ScanEvent",
+    "label_en": "Scan (scale weigh) at SYN-SORT-DMM-01, 2026-09-14 12:17 UTC",
+    "label_ar": null,
+    "occurred_at": "2026-09-14T12:17:50+00:00",
+    "facility_id": "SYN-SORT-DMM-01",
+    "device_id": "SYN-DEV-SCL-SORT-DMM-01-1",
+    "in_graph": true
+   },
+   {
+    "id": "SYN-CMP-ef8b13ff5a6f820cefe3",
+    "kind": "ComputedResult",
+    "label_en": "Computed comparison",
+    "label_ar": null,
+    "occurred_at": null,
+    "facility_id": null,
+    "device_id": null,
+    "in_graph": false
+   },
+   {
+    "id": "SYN-POLICY-W1",
+    "kind": "Policy",
+    "label_en": "Policy",
+    "label_ar": null,
+    "occurred_at": null,
+    "facility_id": null,
+    "device_id": null,
+    "in_graph": true
+   }
+  ],
+  "review": {
+   "status": "accepted",
+   "text_en": "The independent review accepted this conclusion.",
+   "text_ar": "قبلت المراجعة المستقلة هذه النتيجة.",
+   "reason_summary_en": "The reviewer found that the evidence rules show a weight mismatch and that all citations are valid. The barcode-mismatch hypothesis was refuted, so a re-weigh action is appropriate for the next step.",
+   "reason_summary_ar": "المراجع وجد أن قواعد الأدلة تُظهر عدم تطابق الوزن وأن جميع الاستشهادات صالحة. تم دحض فرضية عدم تطابق الباركود، لذا فإن إجراء إعادة الوزن مناسب للخطوة التالية.",
+   "reason_original": "Citations are valid and directly support the weight‑mismatch conclusion; the barcode‑mismatch hypothesis was tested and refuted; the recommended re‑weigh action is appropriate.",
+   "verdict_code": "ACCEPT"
+  },
+  "policy": {
+   "decision": "automatic",
+   "text_en": "This is a safe, reversible request, so Suhail may send it without waiting for approval.",
+   "text_ar": "هذا طلب آمن وقابل للتراجع، لذا يجوز لسهيل إرساله دون انتظار موافقة.",
+   "action_type": "REQUEST_REWEIGH",
+   "action_label_en": "Reweigh request",
+   "action_label_ar": "طلب إعادة وزن الطرد بميزان معاير قبل متابعة مناولته.",
+   "action_description_en": "Request a calibrated reweigh before onward handling.",
+   "rule_id": "AUTH-10-auto-allowlist",
+   "rule_reason": "Low-risk, reversible, evidence-bound action within the synthetic automation allowlist."
+  },
+  "actions": [
+   {
+    "execution_id": "SYN-OPS-EXECUTION-f9464d39bf8520f71d06c2a3",
+    "action_type": "REQUEST_REWEIGH",
+    "label_en": "Reweigh request",
+    "label_ar": "طلب إعادة وزن الطرد بميزان معاير قبل متابعة مناولته.",
+    "simulated": true,
+    "authorized_by": "automatic_policy",
+    "status": "sent",
+    "sent_at": "2026-09-14T21:36:55.200000+00:00",
+    "recipient": {
+     "known": true,
+     "kind": "device",
+     "id": "SYN-DEV-SCL-SORT-DMM-01-1",
+     "facility_id": "SYN-SORT-DMM-01",
+     "label_en": "device SYN-DEV-SCL-SORT-DMM-01-1 at SYN-SORT-DMM-01",
+     "label_ar": "الجهاز SYN-DEV-SCL-SORT-DMM-01-1"
+    },
+    "awaiting": null,
+    "expected_response_at": null,
+    "expected_response_basis": null,
+    "deadline_at": "2026-09-17T21:36:55.200000+00:00",
+    "deadline_text_en": null,
+    "deadline_text_ar": null,
+    "continues_automatically": false,
+    "text_en": "Reweigh request was sent to device SYN-DEV-SCL-SORT-DMM-01-1 at SYN-SORT-DMM-01 (simulated) under the automatic policy. The verifier did not find evidence that the request fixed the problem. A calibrated reweigh after the request still differs beyond tolerance.",
+    "text_ar": "أُرسل الطلب (طلب إعادة وزن الطرد بميزان معاير قبل متابعة مناولته.) (محاكاة). لم يجد المدقق دليلًا على أن الطلب عالج المشكلة.",
+    "outcome": {
+     "verification_status": "VERIFIED",
+     "success": false,
+     "outcome_type": "weight_still_differs",
+     "exception_cleared": false,
+     "verified_at": "2026-09-15T03:49:43.800000+00:00",
+     "text_en": "The verifier did not find evidence that the request fixed the problem. A calibrated reweigh after the request still differs beyond tolerance.",
+     "text_ar": "لم يجد المدقق دليلًا على أن الطلب عالج المشكلة."
+    }
+   }
+  ],
+  "verification": {
+   "status": "verified_not_fixed",
+   "text_en": "The verifier did not find evidence that the request fixed the problem. A calibrated reweigh after the request still differs beyond tolerance.",
+   "text_ar": "لم يجد المدقق دليلًا على أن الطلب عالج المشكلة.",
+   "outcome_type": "weight_still_differs",
+   "verified_at": "2026-09-15T03:49:43.800000+00:00",
+   "verifier_reason": "A calibrated reweigh after the request still differs beyond tolerance."
+  },
+  "next_step": {
+   "code": "INVESTIGATE_AND_RECORD_FINDING",
+   "actor": "operator",
+   "text_en": "A person must investigate this case and record the finding. Nothing further will run automatically.",
+   "text_ar": "يجب أن يحقق شخص في هذه الحالة ويسجّل ما توصل إليه. لن يُنفَّذ أي إجراء آخر تلقائيًا."
+  },
+  "technical": {
+   "workflow_state": "HUMAN_REVIEW",
+   "state_version": 13,
+   "run_id": "SYN-OPS-RUN-344fa20136f032c649394349",
+   "authority_rule_id": "AUTH-10-auto-allowlist",
+   "review_verdict": "ACCEPT",
+   "closure": "AUTO"
+  }
+ },
+ "stage_facts": [
+  {
+   "stage": "extract",
+   "iteration": 0,
+   "sequence": 2,
+   "status": "done",
+   "fact_en": "Case opened: a weight reading differs from the declared weight",
+   "fact_ar": "فُتحت الحالة"
+  },
+  {
+   "stage": "retrieve",
+   "iteration": 0,
+   "sequence": 4,
+   "status": "done",
+   "fact_en": "56 records and 92 connections read from the graph",
+   "fact_ar": "قُرئ 56 سجلًا و92 علاقة من الرسم المعرفي"
+  },
+  {
+   "stage": "classify",
+   "iteration": 0,
+   "sequence": 11,
+   "status": "done",
+   "fact_en": "Suspected cause: a weight discrepancy (high confidence), after 5 checks",
+   "fact_ar": "السبب المرجّح: اختلاف في الوزن"
+  },
+  {
+   "stage": "retrieve_context",
+   "iteration": 0,
+   "sequence": 13,
+   "status": "done",
+   "fact_en": "4 verified similar cases found",
+   "fact_ar": "وُجد 4 من الحالات المشابهة المتحقق منها"
+  },
+  {
+   "stage": "recommend",
+   "iteration": 0,
+   "sequence": 15,
+   "status": "done",
+   "fact_en": "Proposed: reweigh request",
+   "fact_ar": "المقترح: طلب إعادة وزن الطرد بميزان معاير قبل متابعة مناولته."
+  },
+  {
+   "stage": "review",
+   "iteration": 1,
+   "sequence": 17,
+   "status": "rejected",
+   "fact_en": "Independent review: asked for a revision",
+   "fact_ar": "المراجعة المستقلة: لم يُقبل"
+  },
+  {
+   "stage": "classify",
+   "iteration": 1,
+   "sequence": 21,
+   "status": "done",
+   "fact_en": "Suspected cause: a weight discrepancy (high confidence), after 7 checks",
+   "fact_ar": "السبب المرجّح: اختلاف في الوزن"
+  },
+  {
+   "stage": "retrieve_context",
+   "iteration": 1,
+   "sequence": 23,
+   "status": "done",
+   "fact_en": "4 verified similar cases found",
+   "fact_ar": "وُجد 4 من الحالات المشابهة المتحقق منها"
+  },
+  {
+   "stage": "recommend",
+   "iteration": 1,
+   "sequence": 25,
+   "status": "done",
+   "fact_en": "Proposed: reweigh request",
+   "fact_ar": "المقترح: طلب إعادة وزن الطرد بميزان معاير قبل متابعة مناولته."
+  },
+  {
+   "stage": "review",
+   "iteration": 2,
+   "sequence": 27,
+   "status": "done",
+   "fact_en": "Independent review: accepted",
+   "fact_ar": "المراجعة المستقلة: مقبول"
+  },
+  {
+   "stage": "writeback",
+   "iteration": 2,
+   "sequence": 29,
+   "status": "done",
+   "fact_en": "Request sent automatically under policy",
+   "fact_ar": "أُرسل الطلب تلقائيًا وفق السياسة"
+  },
+  {
+   "stage": "outcome",
+   "iteration": null,
+   "sequence": null,
+   "status": "rejected",
+   "fact_en": "Not confirmed: problem remains",
+   "fact_ar": "لم يتأكد: المشكلة قائمة"
+  }
+ ]
+}

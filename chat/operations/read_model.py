@@ -518,7 +518,8 @@ class OperationsReader:
             # Stored workflow/approvals/outcomes are authoritative. Fresh triage is
             # a proposal and cannot silently replace an existing human decision.
             for key in ("workflow_state","state_version","priority","operational_status","recommendation_id",
-                        "last_run_id","recommendation","review","outcome","decisions","executions","run","previous_run","diagnosis"):
+                        "last_run_id","recommendation","review","outcome","decisions","executions","run","previous_run","diagnosis",
+                        "symptom_codes","opened_at"):
                 if key in ledger:
                     detail[key]=ledger[key]
             detail["investigated_at"]=(ledger.get("run") or {}).get("recorded_at")
@@ -546,4 +547,10 @@ class OperationsReader:
         # Canopus narration of the current run, as stored (append-only; nothing here is generated on read).
         if self.store is not None and hasattr(self.store,"narration"):
             detail["narration"]=self.store.narration(case_id)
+        # One plain account of the case for an operator, and a short fact per pipeline stage: composed by code from the
+        # fields above on every read (operations.brief), nothing stored, no model call.
+        from operations import brief
+        composed=brief.build(detail)
+        detail["pipeline"]["stage_facts"]=brief.stage_facts(events,composed.pop("_stage_outcome"))
+        detail["brief"]=composed
         return detail

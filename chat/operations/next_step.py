@@ -17,8 +17,8 @@ STEPS = {
     "APPROVE_OR_REJECT": ("operator", "Approve or reject {action}. It changes the shipment's handling, so it runs only with a person's approval.",
                           "وافق على الإجراء {action} أو ارفضه. يغيّر هذا الإجراء مناولة الشحنة، لذا لا يُنفَّذ إلا بموافقة شخص."),
     "APPROVE_EVIDENCE_REQUEST_OR_INVESTIGATE": (
-        "operator", "A person must investigate this case. You may approve the evidence request {action} to gather more evidence; it will not close the case.",
-        "يجب أن يحقق شخص في هذه الحالة. يمكنك الموافقة على طلب الأدلة {action} لجمع أدلة إضافية؛ لن يغلق ذلك الحالة."),
+        "operator", "A person must investigate this case. You may approve {action} to gather more evidence; it will not close the case.",
+        "يجب أن يحقق شخص في هذه الحالة. يمكنك الموافقة على طلب الأدلة الموصى به لجمع أدلة إضافية؛ لن يغلق ذلك الحالة."),
     "INVESTIGATE_AND_RECORD_FINDING": ("operator", "A person must investigate this case and record the finding. Nothing further will run automatically.",
                                        "يجب أن يحقق شخص في هذه الحالة ويسجّل ما توصل إليه. لن يُنفَّذ أي إجراء آخر تلقائيًا."),
     "REVIEW_VERIFIED_RESULT_AND_RECORD_FINDING": (
@@ -75,13 +75,18 @@ def next_step(detail):
     actor, english, arabic = STEPS[code]
     recommendation = detail.get("recommendation") or {}
     executions = detail.get("executions") or []
-    action = (executions[0].get("action_type") if code == "WAIT_VERIFICATION" and executions else recommendation.get("action_type")) or "the action"
+    action = (executions[0].get("action_type") if code == "WAIT_VERIFICATION" and executions else recommendation.get("action_type"))
+    # In the sentence the action is named in words; the code stays in the recommendation and execution records.
+    from operations.brief import ACTION_LABELS
+    action = "the " + ACTION_LABELS[action].lower() if action in ACTION_LABELS else "the action"
     authority = (((detail.get("run") or {}).get("result") or {}).get("authority")) or {}
     review = detail.get("review") or {}
     diagnosis = detail.get("diagnosis") or {}
     unaccepted = diagnosis.get("unaccepted_investigation") or {}
     resolved = code == "NONE"
-    return {"code": code, "actor": actor, "text_en": english.format(action=action), "text_ar": arabic.format(action=action), "resolved": resolved,
+    sentence = english.format(action=action)
+    arabic_action = "الإجراء"      # In Arabic the action is referred to generically; its Arabic name is in the recommendation.
+    return {"code": code, "actor": actor, "text_en": sentence[0].upper() + sentence[1:], "text_ar": arabic.format(action=arabic_action), "resolved": resolved,
             # Why the system did not resolve it by itself: the authority rule and the reviewer's verdict, as recorded.
             "blocked_by": None if resolved else {"rule_id": authority.get("rule_id"), "reason": authority.get("reason"),
                                                  "risk_class": authority.get("risk_class"), "review_verdict": review.get("model_verdict") or review.get("verdict"),

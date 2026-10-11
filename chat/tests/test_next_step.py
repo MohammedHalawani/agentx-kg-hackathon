@@ -49,12 +49,12 @@ class NextStepTests(unittest.TestCase):
     def test_the_step_names_who_acts_and_carries_both_languages_and_the_action(self):
         step = next_step(case("HUMAN_REVIEW", approvable=True, action="REQUEST_DEVICE_SYNC"))
         self.assertEqual(step["actor"], "operator")
-        self.assertIn("REQUEST_DEVICE_SYNC", step["text_en"])
-        self.assertIn("REQUEST_DEVICE_SYNC", step["text_ar"])
+        self.assertIn("the device sync request", step["text_en"])
+        self.assertTrue(step["text_ar"])
         self.assertIn("will not close the case", step["text_en"])
         waiting = next_step(case("AWAITING_OUTCOME", approvable=False, action="REQUEST_RESCAN", executions=[{"entity_id": "E1", "action_type": "REQUEST_HUB_CHECK"}]))
         self.assertEqual(waiting["actor"], "system")
-        self.assertIn("REQUEST_HUB_CHECK", waiting["text_en"])       # The action that was sent, not the recommendation's name.
+        self.assertIn("The facility check request was sent", waiting["text_en"])       # The action that was sent, not the recommendation's name.
         for code, (actor, english, arabic) in STEPS.items():
             self.assertIn(actor, ("none", "system", "operator"), code)
             self.assertTrue(english and arabic, code)

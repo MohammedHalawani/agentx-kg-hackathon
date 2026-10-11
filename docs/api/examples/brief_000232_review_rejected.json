@@ -1,0 +1,252 @@
+{
+ "brief": {
+  "version": 1,
+  "source": "composed by code from the case's stored records",
+  "resolved": false,
+  "waiting_kind": "awaiting_operator_decision",
+  "waiting_label_en": "Waiting for a person",
+  "waiting_label_ar": "بانتظار قرار شخص",
+  "lines": [
+   {
+    "key": "problem",
+    "label_en": "Problem",
+    "label_ar": "المشكلة",
+    "text_en": "An expected step of the journey has not been recorded and its deadline has passed.",
+    "text_ar": "خطوة متوقعة في الرحلة لم تُسجَّل وقد انقضى موعدها."
+   },
+   {
+    "key": "finding",
+    "label_en": "Finding",
+    "label_ar": "ما توصل إليه التحقيق",
+    "text_en": "The investigation suggests a gap in the custody chain. This is a hypothesis: the independent review has not accepted it.",
+    "text_ar": "يرجّح التحقيق فجوة في سلسلة الحيازة. هذه فرضية لم تقبلها المراجعة المستقلة."
+   },
+   {
+    "key": "review",
+    "label_en": "Review",
+    "label_ar": "المراجعة",
+    "text_en": "The independent review did not accept this conclusion and asked for it to be revised.",
+    "text_ar": "لم تقبل المراجعة المستقلة هذه النتيجة وطلبت تعديلها أو دعمها بأدلة."
+   },
+   {
+    "key": "action",
+    "label_en": "Action taken",
+    "label_ar": "الإجراء المتخذ",
+    "text_en": "Nothing has been sent. Proposed: custody reconciliation request. A person must take this case; Suhail may not act on it by itself.",
+    "text_ar": "لم يُرسل شيء. المقترح: مطابقة حيازة الطرد بدءًا من آخر حائز تؤيده الأدلة. يجب أن يتولى شخص هذه الحالة؛ لا يجوز لسهيل التصرف فيها بمفرده."
+   },
+   {
+    "key": "status",
+    "label_en": "Current status",
+    "label_ar": "الوضع الحالي",
+    "text_en": "The independent reviewer did not accept the investigation. Read its objection and the unaccepted findings, then re-analyse the case or investigate and record a finding.",
+    "text_ar": "لم يقبل المراجع المستقل نتيجة التحقيق. اقرأ اعتراضه والنتائج غير المقبولة، ثم أعد تحليل الحالة أو حقق وسجّل ما توصلت إليه."
+   }
+  ],
+  "what_happened": {
+   "text_en": "Suhail's monitor opened this case for shipment SYN-SHP-000232: an expected step of the journey has not been recorded and its deadline has passed.",
+   "text_ar": "فتح نظام المراقبة هذه الحالة: خطوة متوقعة في الرحلة لم تُسجَّل وقد انقضى موعدها.",
+   "opened_at": null,
+   "symptoms": [
+    {
+     "code": "MILESTONE_OVERDUE",
+     "label_en": "An expected step of the journey has not been recorded and its deadline has passed",
+     "label_ar": "خطوة متوقعة في الرحلة لم تُسجَّل وقد انقضى موعدها"
+    }
+   ]
+  },
+  "suspected_cause": {
+   "status": "hypothesis_not_accepted",
+   "code": "CUSTODY_GAP",
+   "label_en": "a gap in the custody chain",
+   "label_ar": "فجوة في سلسلة الحيازة",
+   "confidence": "high",
+   "text_en": "The investigation suggests a gap in the custody chain. This is a hypothesis: the independent review has not accepted it.",
+   "text_ar": "يرجّح التحقيق فجوة في سلسلة الحيازة. هذه فرضية لم تقبلها المراجعة المستقلة.",
+   "investigator_summary": "The shipment is overdue because the custody chain stops at the MED depot receipt with no record of a subsequent handover to the MAK depot, and the journey shows missing receipt, load, and delivery milestones. Device telemetry shows no pending uploads, so delayed sync is ruled out. Reconcile custody to locate the missing handover."
+  },
+  "evidence": [
+   {
+    "id": "SYN-SHP-000232-CUST-008",
+    "kind": "CustodyEvent",
+    "label_en": "Custody record (received) at SYN-DEPOT-MED-01, 2026-09-17 03:16 UTC",
+    "label_ar": null,
+    "occurred_at": "2026-09-17T03:16:46+00:00",
+    "facility_id": "SYN-DEPOT-MED-01",
+    "device_id": null,
+    "in_graph": true
+   },
+   {
+    "id": "SYN-CMP-0bcd019f253b2719b52f",
+    "kind": "ComputedResult",
+    "label_en": "Computed comparison",
+    "label_ar": null,
+    "occurred_at": null,
+    "facility_id": null,
+    "device_id": null,
+    "in_graph": false
+   },
+   {
+    "id": "SYN-CMP-dd655646eaf6871603b0",
+    "kind": "ComputedResult",
+    "label_en": "Computed comparison",
+    "label_ar": null,
+    "occurred_at": null,
+    "facility_id": null,
+    "device_id": null,
+    "in_graph": false
+   },
+   {
+    "id": "SYN-CMP-7c6e0a1152fd4d4a1674",
+    "kind": "ComputedResult",
+    "label_en": "Computed comparison",
+    "label_ar": null,
+    "occurred_at": null,
+    "facility_id": null,
+    "device_id": null,
+    "in_graph": false
+   }
+  ],
+  "review": {
+   "status": "challenged",
+   "text_en": "The independent review did not accept this conclusion and asked for it to be revised.",
+   "text_ar": "لم تقبل المراجعة المستقلة هذه النتيجة وطلبت تعديلها أو دعمها بأدلة.",
+   "reason_summary_en": "The reviewer checked the evidence-consistency rule, citation validity, conflict status, contractor custody and alternative explanations. The evidence-consistency check failed because the cited records do not directly prove a custody gap, and the claim of no later transfer is unsupported. The reviewer noted that later custody records such as SYN-SHP-000232-CUST-001 have not been addressed, so the investigation must be revised before proceeding.",
+   "reason_summary_ar": "قام المراجع بفحص قاعدة اتساق الأدلة، وصحة الاستشهادات، وحالة النزاع، وحيازة المتعهد، والشرح البديل. فشل فحص اتساق الأدلة لأن السجلات المستشهد بها لا تثبت مباشرة وجود فجوة في الحيازة، والادعاء بعدم وجود نقل لاحق غير مدعوم. أشار المراجع إلى أن سجلات الحيازة اللاحقة مثل SYN-SHP-000232-CUST-001 لم تُنظر فيها، لذا يجب تعديل التحقيق لحل هذه المسألة قبل المتابعة.",
+   "reason_original": "The claim of a custody gap is not directly supported by the cited records; you only show a receipt at MED and missing milestones at MAK, but no evidence that a handover never occurred. Address the deterministic check failure and cite (or explicitly rule out) any later custody events (e.g., synthetic‑SHP‑000232‑CUST‑001…007) that could contradict the gap hypothesis.",
+   "verdict_code": "REVISE"
+  },
+  "policy": {
+   "decision": "needs_person",
+   "text_en": "A person must take this case; Suhail may not act on it by itself.",
+   "text_ar": "يجب أن يتولى شخص هذه الحالة؛ لا يجوز لسهيل التصرف فيها بمفرده.",
+   "action_type": "INITIATE_CUSTODY_RECONCILIATION",
+   "action_label_en": "Custody reconciliation request",
+   "action_label_ar": "مطابقة حيازة الطرد بدءًا من آخر حائز تؤيده الأدلة.",
+   "action_description_en": "Reconcile package custody from the last corroborated holder.",
+   "rule_id": "AUTH-16-review-rejected",
+   "rule_reason": "Reviewer rejected the proposal after the bounded revision rounds."
+  },
+  "actions": [],
+  "verification": {
+   "status": "not_applicable",
+   "text_en": "No request has been sent, so there is nothing to verify.",
+   "text_ar": "لم يُرسل أي طلب، فلا يوجد ما يُتحقق منه.",
+   "outcome_type": null,
+   "verified_at": null,
+   "verifier_reason": null
+  },
+  "next_step": {
+   "code": "REVIEW_UNACCEPTED_INVESTIGATION",
+   "actor": "operator",
+   "text_en": "The independent reviewer did not accept the investigation. Read its objection and the unaccepted findings, then re-analyse the case or investigate and record a finding.",
+   "text_ar": "لم يقبل المراجع المستقل نتيجة التحقيق. اقرأ اعتراضه والنتائج غير المقبولة، ثم أعد تحليل الحالة أو حقق وسجّل ما توصلت إليه."
+  },
+  "technical": {
+   "workflow_state": "ESCALATED",
+   "state_version": 2,
+   "run_id": "SYN-OPS-RUN-363b4aa0fac2f2fb8da59530",
+   "authority_rule_id": "AUTH-16-review-rejected",
+   "review_verdict": "REVISE",
+   "closure": null
+  }
+ },
+ "stage_facts": [
+  {
+   "stage": "extract",
+   "iteration": 0,
+   "sequence": 2,
+   "status": "done",
+   "fact_en": "Case opened: an expected step of the journey has not been recorded and its deadline has passed",
+   "fact_ar": "فُتحت الحالة"
+  },
+  {
+   "stage": "retrieve",
+   "iteration": 0,
+   "sequence": 4,
+   "status": "done",
+   "fact_en": "81 records and 152 connections read from the graph",
+   "fact_ar": "قُرئ 81 سجلًا و152 علاقة من الرسم المعرفي"
+  },
+  {
+   "stage": "classify",
+   "iteration": 0,
+   "sequence": 14,
+   "status": "done",
+   "fact_en": "Suspected cause: a gap in the custody chain (high confidence), after 8 checks",
+   "fact_ar": "السبب المرجّح: فجوة في سلسلة الحيازة"
+  },
+  {
+   "stage": "retrieve_context",
+   "iteration": 0,
+   "sequence": 16,
+   "status": "done",
+   "fact_en": "6 verified similar cases found",
+   "fact_ar": "وُجد 6 من الحالات المشابهة المتحقق منها"
+  },
+  {
+   "stage": "recommend",
+   "iteration": 0,
+   "sequence": 18,
+   "status": "done",
+   "fact_en": "Proposed: custody reconciliation request",
+   "fact_ar": "المقترح: مطابقة حيازة الطرد بدءًا من آخر حائز تؤيده الأدلة."
+  },
+  {
+   "stage": "review",
+   "iteration": 1,
+   "sequence": 20,
+   "status": "rejected",
+   "fact_en": "Independent review: asked for a revision",
+   "fact_ar": "المراجعة المستقلة: لم يُقبل"
+  },
+  {
+   "stage": "classify",
+   "iteration": 1,
+   "sequence": 23,
+   "status": "done",
+   "fact_en": "Suspected cause: a gap in the custody chain (high confidence), after 9 checks",
+   "fact_ar": "السبب المرجّح: فجوة في سلسلة الحيازة"
+  },
+  {
+   "stage": "retrieve_context",
+   "iteration": 1,
+   "sequence": 25,
+   "status": "done",
+   "fact_en": "6 verified similar cases found",
+   "fact_ar": "وُجد 6 من الحالات المشابهة المتحقق منها"
+  },
+  {
+   "stage": "recommend",
+   "iteration": 1,
+   "sequence": 27,
+   "status": "done",
+   "fact_en": "Proposed: custody reconciliation request",
+   "fact_ar": "المقترح: مطابقة حيازة الطرد بدءًا من آخر حائز تؤيده الأدلة."
+  },
+  {
+   "stage": "review",
+   "iteration": 2,
+   "sequence": 29,
+   "status": "rejected",
+   "fact_en": "Independent review: asked for a revision",
+   "fact_ar": "المراجعة المستقلة: لم يُقبل"
+  },
+  {
+   "stage": "escalate",
+   "iteration": 2,
+   "sequence": 31,
+   "status": "done",
+   "fact_en": "Sent to a person: the review did not accept the investigation",
+   "fact_ar": "أُحيلت الحالة إلى شخص"
+  },
+  {
+   "stage": "outcome",
+   "iteration": null,
+   "sequence": null,
+   "status": "not_reached",
+   "fact_en": "Nothing sent",
+   "fact_ar": "لم يُرسل شيء"
+  }
+ ]
+}
