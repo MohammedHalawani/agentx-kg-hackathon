@@ -1,0 +1,304 @@
+{
+ "brief": {
+  "version": 1,
+  "source": "composed by code from the case's stored records",
+  "resolved": false,
+  "waiting_kind": "awaiting_new_evidence",
+  "waiting_label_en": "Waiting for new evidence",
+  "waiting_label_ar": "بانتظار أدلة جديدة",
+  "lines": [
+   {
+    "key": "problem",
+    "label_en": "Problem",
+    "label_ar": "المشكلة",
+    "text_en": "A barcode read does not match the shipment's manifest.",
+    "text_ar": "قراءة باركود لا تطابق بيان الشحنة."
+   },
+   {
+    "key": "finding",
+    "label_en": "Finding",
+    "label_ar": "ما توصل إليه التحقيق",
+    "text_en": "The investigation suggests a barcode-reading problem. This is a hypothesis: the independent review has not accepted it.",
+    "text_ar": "يرجّح التحقيق مشكلة في قراءة الباركود. هذه فرضية لم تقبلها المراجعة المستقلة."
+   },
+   {
+    "key": "review",
+    "label_en": "Review",
+    "label_ar": "المراجعة",
+    "text_en": "The independent review did not accept this conclusion and asked for it to be revised.",
+    "text_ar": "لم تقبل المراجعة المستقلة هذه النتيجة وطلبت تعديلها أو دعمها بأدلة."
+   },
+   {
+    "key": "action",
+    "label_en": "Action taken",
+    "label_ar": "الإجراء المتخذ",
+    "text_en": "Rescan request sent to device SYN-DEV-SR-SORT-JED-01 at SYN-SORT-JED-01 (simulated) under the automatic policy. Suhail is waiting for a new barcode read of this parcel. When it is recorded, Suhail checks it and verifies the result automatically. If nothing arrives by 2026-09-18 21:29 UTC, the verifier records the request as not confirmed and the case goes to a person.",
+    "text_ar": "أُرسل الطلب (طلب إعادة مسح الطرد في المنشأة الحالية.) (محاكاة). ينتظر سهيل قراءة باركود جديدة لهذا الطرد. عند تسجيلها يتحقق سهيل من النتيجة تلقائيًا. إذا لم يصل شيء حتى 2026-09-18 21:29 UTC يسجّل المدقق أن الطلب لم يتأكد وتُحال الحالة إلى شخص."
+   },
+   {
+    "key": "status",
+    "label_en": "Current status",
+    "label_ar": "الوضع الحالي",
+    "text_en": "Waiting for a new barcode read of this parcel. Nothing is verified yet.",
+    "text_ar": "بانتظار قراءة باركود جديدة لهذا الطرد. لم يُتحقق من شيء بعد."
+   }
+  ],
+  "what_happened": {
+   "text_en": "Suhail's monitor opened this case for shipment SYN-SHP-000375: a barcode read does not match the shipment's manifest.",
+   "text_ar": "فتح نظام المراقبة هذه الحالة: قراءة باركود لا تطابق بيان الشحنة.",
+   "opened_at": null,
+   "symptoms": [
+    {
+     "code": "BARCODE_READ_DIFFERS",
+     "label_en": "A barcode read does not match the shipment's manifest",
+     "label_ar": "قراءة باركود لا تطابق بيان الشحنة"
+    }
+   ]
+  },
+  "suspected_cause": {
+   "status": "hypothesis_not_accepted",
+   "code": "BARCODE_MISMATCH",
+   "label_en": "a barcode-reading problem",
+   "label_ar": "مشكلة في قراءة الباركود",
+   "confidence": "medium",
+   "text_en": "The investigation suggests a barcode-reading problem. This is a hypothesis: the independent review has not accepted it.",
+   "text_ar": "يرجّح التحقيق مشكلة في قراءة الباركود. هذه فرضية لم تقبلها المراجعة المستقلة.",
+   "investigator_summary": "The only anomaly is a single barcode mismatch for PKG-02 recorded by sorter SYN-DEV-SR-SORT-JED-01; all other scans for that package are correct and the scan was uploaded promptly, refuting delayed sync. Without device calibration data the root cause remains uncertain, so a rescanning and device check are needed."
+  },
+  "evidence": [
+   {
+    "id": "SYN-SHP-000375-SCAN-010",
+    "kind": "ScanEvent",
+    "label_en": "Scan (sorter read) at SYN-SORT-JED-01, 2026-09-15 20:23 UTC",
+    "label_ar": null,
+    "occurred_at": "2026-09-15T20:23:40+00:00",
+    "facility_id": "SYN-SORT-JED-01",
+    "device_id": "SYN-DEV-SR-SORT-JED-01",
+    "in_graph": true
+   },
+   {
+    "id": "SYN-CMP-97bbd0e007fd1cd44f5f",
+    "kind": "ComputedResult",
+    "label_en": "Computed comparison",
+    "label_ar": null,
+    "occurred_at": null,
+    "facility_id": null,
+    "device_id": null,
+    "in_graph": false
+   },
+   {
+    "id": "SYN-SHP-000375-SCAN-002",
+    "kind": "ScanEvent",
+    "label_en": "Scan (handheld receipt) at SYN-ORGWH-JED-02, 2026-09-15 13:18 UTC",
+    "label_ar": null,
+    "occurred_at": "2026-09-15T13:18:04+00:00",
+    "facility_id": "SYN-ORGWH-JED-02",
+    "device_id": "SYN-DEV-HH-ORGWH-JED-02",
+    "in_graph": true
+   },
+   {
+    "id": "SYN-CMP-b019710f8f26cfa7ea54",
+    "kind": "ComputedResult",
+    "label_en": "Computed comparison",
+    "label_ar": null,
+    "occurred_at": null,
+    "facility_id": null,
+    "device_id": null,
+    "in_graph": false
+   },
+   {
+    "id": "SYN-SHP-000375-SCAN-005",
+    "kind": "ScanEvent",
+    "label_en": "Scan (load confirmation) at SYN-ORGWH-JED-02, 2026-09-15 16:46 UTC",
+    "label_ar": null,
+    "occurred_at": "2026-09-15T16:46:50+00:00",
+    "facility_id": "SYN-ORGWH-JED-02",
+    "device_id": "SYN-DEV-APP-DRV-FM-JED-003",
+    "in_graph": true
+   },
+   {
+    "id": "SYN-CMP-2145c11eba652f3d5c1a",
+    "kind": "ComputedResult",
+    "label_en": "Computed comparison",
+    "label_ar": null,
+    "occurred_at": null,
+    "facility_id": null,
+    "device_id": null,
+    "in_graph": false
+   }
+  ],
+  "review": {
+   "status": "challenged",
+   "text_en": "The independent review did not accept this conclusion and asked for it to be revised.",
+   "text_ar": "لم تقبل المراجعة المستقلة هذه النتيجة وطلبت تعديلها أو دعمها بأدلة.",
+   "reason_summary_en": "The reviewer found that the evidence rules flagged a barcode mismatch, but the computed result SYN-CMP-bf48ee0d4a2e01018dda shows three reads differing from the manifest, indicating other mismatches. This must be acknowledged or disproved before the investigation can move forward.",
+   "reason_summary_ar": "وجد المراجع أن قواعد الأدلة أشارت إلى عدم تطابق الباركود، لكن النتيجة المحسوبة SYN-CMP-bf48ee0d4a2e01018dda تُظهر ثلاثة قراءات تختلف عن القائمة، مما يدل على وجود أخطاء أخرى. يجب الإشارة إلى هذه الأخطاء أو إثبات عدم صلتها قبل المتابعة.",
+   "reason_original": "The conclusion claims the barcode mismatch for PKG‑02 is the only anomaly, but the computed result SYN-CMP-bf48ee0d4a2e01018dda shows three reads differing from the manifest across the sorter device, indicating other mismatches that are not addressed. Revise the assessment to acknowledge these additional mismatches or provide evidence they are unrelated.",
+   "verdict_code": "REVISE"
+  },
+  "policy": {
+   "decision": "automatic",
+   "text_en": "The review did not accept the investigation, so only a safe evidence-gathering request may go out, and its result cannot close the case by itself: the case is investigated and reviewed again first.",
+   "text_ar": "لم تقبل المراجعة التحقيق، لذا يُسمح فقط بطلب آمن لجمع الأدلة، ولا تُغلق نتيجته الحالة بمفردها: يُعاد التحقيق والمراجعة أولًا.",
+   "action_type": "REQUEST_RESCAN",
+   "action_label_en": "Rescan request",
+   "action_label_ar": "طلب إعادة مسح الطرد في المنشأة الحالية.",
+   "action_description_en": "Request a package rescan at the current facility.",
+   "rule_id": "AUTH-27-reviewer-doubt-evidence-gathering",
+   "rule_reason": "The reviewer's doubt stays recorded; this safe, reversible evidence-gathering request may run to collect evidence. A verified result does not resolve the case: the investigation and the review are repeated on the new evidence first."
+  },
+  "actions": [
+   {
+    "execution_id": "SYN-OPS-EXECUTION-5fd995f0a17a13e8de45af9a",
+    "action_type": "REQUEST_RESCAN",
+    "label_en": "Rescan request",
+    "label_ar": "طلب إعادة مسح الطرد في المنشأة الحالية.",
+    "simulated": true,
+    "authorized_by": "automatic_policy",
+    "status": "sent",
+    "sent_at": "2026-09-15T21:29:26.400000+00:00",
+    "recipient": {
+     "known": true,
+     "kind": "device",
+     "id": "SYN-DEV-SR-SORT-JED-01",
+     "facility_id": "SYN-SORT-JED-01",
+     "label_en": "device SYN-DEV-SR-SORT-JED-01 at SYN-SORT-JED-01",
+     "label_ar": "الجهاز SYN-DEV-SR-SORT-JED-01"
+    },
+    "awaiting": {
+     "text_en": "a new barcode read of this parcel",
+     "text_ar": "قراءة باركود جديدة لهذا الطرد"
+    },
+    "expected_response_at": null,
+    "expected_response_basis": null,
+    "deadline_at": "2026-09-18T21:29:26.400000+00:00",
+    "deadline_text_en": "If no such record arrives by 2026-09-18 21:29 UTC, the verifier records the request as not confirmed and the case goes to a person.",
+    "deadline_text_ar": "إذا لم يصل هذا السجل حتى 2026-09-18 21:29 UTC يسجّل المدقق أن الطلب لم يتأكد وتُحال الحالة إلى شخص.",
+    "continues_automatically": true,
+    "text_en": "Rescan request sent to device SYN-DEV-SR-SORT-JED-01 at SYN-SORT-JED-01 (simulated) under the automatic policy. Suhail is waiting for a new barcode read of this parcel. When it is recorded, Suhail checks it and verifies the result automatically. If nothing arrives by 2026-09-18 21:29 UTC, the verifier records the request as not confirmed and the case goes to a person.",
+    "text_ar": "أُرسل الطلب (طلب إعادة مسح الطرد في المنشأة الحالية.) (محاكاة). ينتظر سهيل قراءة باركود جديدة لهذا الطرد. عند تسجيلها يتحقق سهيل من النتيجة تلقائيًا. إذا لم يصل شيء حتى 2026-09-18 21:29 UTC يسجّل المدقق أن الطلب لم يتأكد وتُحال الحالة إلى شخص.",
+    "outcome": null
+   }
+  ],
+  "verification": {
+   "status": "awaiting_evidence",
+   "text_en": "Waiting for a new barcode read of this parcel. Nothing is verified yet.",
+   "text_ar": "بانتظار قراءة باركود جديدة لهذا الطرد. لم يُتحقق من شيء بعد.",
+   "outcome_type": null,
+   "verified_at": null,
+   "verifier_reason": null
+  },
+  "next_step": {
+   "code": "WAIT_VERIFICATION",
+   "actor": "system",
+   "text_en": "REQUEST_RESCAN was sent. Waiting for evidence recorded after it; the verifier then decides whether the problem is cleared.",
+   "text_ar": "تم إرسال الإجراء REQUEST_RESCAN. بانتظار أدلة تُسجَّل بعده، ثم يقرر المدقق ما إذا زالت المشكلة."
+  },
+  "technical": {
+   "workflow_state": "AWAITING_OUTCOME",
+   "state_version": 15,
+   "run_id": "SYN-OPS-RUN-2e085fa38c1a097746212a69",
+   "authority_rule_id": "AUTH-27-reviewer-doubt-evidence-gathering",
+   "review_verdict": "REVISE",
+   "closure": "REASSESS"
+  }
+ },
+ "stage_facts": [
+  {
+   "stage": "extract",
+   "iteration": 0,
+   "sequence": 2,
+   "status": "done",
+   "fact_en": "Case opened: a barcode read does not match the shipment's manifest",
+   "fact_ar": "فُتحت الحالة"
+  },
+  {
+   "stage": "retrieve",
+   "iteration": 0,
+   "sequence": 4,
+   "status": "done",
+   "fact_en": "109 records and 204 connections read from the graph",
+   "fact_ar": "قُرئ 109 سجلًا و204 علاقة من الرسم المعرفي"
+  },
+  {
+   "stage": "classify",
+   "iteration": 0,
+   "sequence": 11,
+   "status": "done",
+   "fact_en": "Suspected cause: a barcode-reading problem (low confidence), after 5 checks",
+   "fact_ar": "السبب المرجّح: مشكلة في قراءة الباركود"
+  },
+  {
+   "stage": "retrieve_context",
+   "iteration": 0,
+   "sequence": 13,
+   "status": "done",
+   "fact_en": "4 verified similar cases found",
+   "fact_ar": "وُجد 4 من الحالات المشابهة المتحقق منها"
+  },
+  {
+   "stage": "recommend",
+   "iteration": 0,
+   "sequence": 15,
+   "status": "done",
+   "fact_en": "Proposed: rescan request",
+   "fact_ar": "المقترح: طلب إعادة مسح الطرد في المنشأة الحالية."
+  },
+  {
+   "stage": "review",
+   "iteration": 1,
+   "sequence": 17,
+   "status": "rejected",
+   "fact_en": "Independent review: asked for a revision",
+   "fact_ar": "المراجعة المستقلة: لم يُقبل"
+  },
+  {
+   "stage": "classify",
+   "iteration": 1,
+   "sequence": 20,
+   "status": "done",
+   "fact_en": "Suspected cause: a barcode-reading problem (medium confidence), after 6 checks",
+   "fact_ar": "السبب المرجّح: مشكلة في قراءة الباركود"
+  },
+  {
+   "stage": "retrieve_context",
+   "iteration": 1,
+   "sequence": 22,
+   "status": "done",
+   "fact_en": "4 verified similar cases found",
+   "fact_ar": "وُجد 4 من الحالات المشابهة المتحقق منها"
+  },
+  {
+   "stage": "recommend",
+   "iteration": 1,
+   "sequence": 24,
+   "status": "done",
+   "fact_en": "Proposed: rescan request",
+   "fact_ar": "المقترح: طلب إعادة مسح الطرد في المنشأة الحالية."
+  },
+  {
+   "stage": "review",
+   "iteration": 2,
+   "sequence": 26,
+   "status": "rejected",
+   "fact_en": "Independent review: asked for a revision",
+   "fact_ar": "المراجعة المستقلة: لم يُقبل"
+  },
+  {
+   "stage": "escalate",
+   "iteration": 2,
+   "sequence": 28,
+   "status": "done",
+   "fact_en": "Request sent automatically under policy",
+   "fact_ar": "أُرسل الطلب تلقائيًا وفق السياسة"
+  },
+  {
+   "stage": "outcome",
+   "iteration": null,
+   "sequence": null,
+   "status": "running",
+   "fact_en": "Awaiting new evidence",
+   "fact_ar": "بانتظار أدلة جديدة"
+  }
+ ]
+}

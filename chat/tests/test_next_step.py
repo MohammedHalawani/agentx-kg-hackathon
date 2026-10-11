@@ -15,7 +15,7 @@ def case(state, *, approvable=None, action="REQUEST_RESCAN", executions=(), outc
 
 class NextStepTests(unittest.TestCase):
     def test_each_state_has_one_step_and_only_a_resolved_case_needs_nothing(self):
-        expected = {"RESOLVED": "NONE", "OPEN": "WAIT_INVESTIGATION", "REOPENED": "WAIT_INVESTIGATION", "INVESTIGATING": "WAIT_INVESTIGATION",
+        expected = {"RESOLVED": "NONE", "OPEN": "START_INVESTIGATION", "REOPENED": "START_INVESTIGATION", "INVESTIGATING": "WAIT_INVESTIGATION",
                     "AWAITING_OUTCOME": "WAIT_VERIFICATION", "ACTION_INITIATED": "WAIT_VERIFICATION", "ESCALATED": "REVIEW_UNACCEPTED_INVESTIGATION",
                     "NEEDS_EVIDENCE": "PROVIDE_EVIDENCE_OR_REANALYSE", "HUMAN_REVIEW": "INVESTIGATE_AND_RECORD_FINDING"}
         for state, code in expected.items():
@@ -26,6 +26,14 @@ class NextStepTests(unittest.TestCase):
         codes = [step_code(case("HUMAN_REVIEW")), step_code(case("ESCALATED")), step_code(case("AWAITING_APPROVAL", approvable=True)),
                  step_code(case("AWAITING_OUTCOME")), step_code(case("RESOLVED"))]
         self.assertEqual(len(set(codes)), 5)
+
+    def test_a_case_waiting_to_be_investigated_says_so_and_does_not_claim_one_is_running(self):
+        for state in ("OPEN", "REOPENED"):
+            step = next_step(case(state))
+            self.assertEqual((step["code"], step["actor"]), ("START_INVESTIGATION", "operator"), state)
+            self.assertIn("Click Investigate now", step["text_en"])
+            self.assertNotIn("to finish", step["text_en"])
+        self.assertIn("to finish", next_step(case("INVESTIGATING"))["text_en"])
 
     def test_approval_is_offered_only_when_the_recorded_approval_check_allows_it(self):
         self.assertEqual(step_code(case("AWAITING_APPROVAL", approvable=True)), "APPROVE_OR_REJECT")
@@ -49,12 +57,12 @@ class NextStepTests(unittest.TestCase):
     def test_the_step_names_who_acts_and_carries_both_languages_and_the_action(self):
         step = next_step(case("HUMAN_REVIEW", approvable=True, action="REQUEST_DEVICE_SYNC"))
         self.assertEqual(step["actor"], "operator")
-        self.assertIn("REQUEST_DEVICE_SYNC", step["text_en"])
-        self.assertIn("REQUEST_DEVICE_SYNC", step["text_ar"])
+        self.assertIn("the device sync request", step["text_en"])
+        self.assertTrue(step["text_ar"])
         self.assertIn("will not close the case", step["text_en"])
         waiting = next_step(case("AWAITING_OUTCOME", approvable=False, action="REQUEST_RESCAN", executions=[{"entity_id": "E1", "action_type": "REQUEST_HUB_CHECK"}]))
         self.assertEqual(waiting["actor"], "system")
-        self.assertIn("REQUEST_HUB_CHECK", waiting["text_en"])       # The action that was sent, not the recommendation's name.
+        self.assertIn("The facility check request was sent", waiting["text_en"])       # The action that was sent, not the recommendation's name.
         for code, (actor, english, arabic) in STEPS.items():
             self.assertIn(actor, ("none", "system", "operator"), code)
             self.assertTrue(english and arabic, code)
