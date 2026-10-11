@@ -1,42 +1,72 @@
-# Suhail: test guide for the redesigned interface
+# Suhail: hands-on test guide
 
-Draft of 11 October 2026. Two parts are marked **GAP** and are filled in after the fresh demo
-session: how to start the backend, and the shipment ids to use.
+11 October 2026. One guide for the interface and the backend behind it.
 
-Everything you will see is synthetic data. Actions are carried out by the backend's simulator, not
-by any SPL system.
+Everything you will see is synthetic demonstration data. Actions are carried out by the backend's
+simulator; no SPL system is contacted.
 
 ## 1. Open the interface
 
 Open **http://127.0.0.1:8020/app/** in Chrome or Edge.
 
-The backend serves the interface itself, so there is no separate frontend to start. The top bar
-should show "Synthetic data", and the bottom of the left sidebar "Backend connected".
+The backend serves the interface, so there is no separate frontend to start. The top bar should
+show "Connected" and the bottom of the sidebar "Backend connected".
 
 | If you see | Do this |
 | --- | --- |
-| The page does not load at all | The backend is not running. **GAP: backend and Neo4j start instructions** |
-| A "not found" page at `/app/` | The interface build is missing. In PowerShell: `cd C:\Projects\demo\.ui-integration\frontend-next`, then `npm ci`, then `npm run build`, then reload |
+| The page does not load at all | Start Neo4j, then the backend (below) |
+| A "not found" page at `/app/` | The interface build is missing. In PowerShell: `cd C:\Projects\demo\.ui-integrationrontend-next`, then `npm ci`, then `npm run build`, then reload |
 | "Connecting…" for a few seconds after a reload | Normal on the first read. Wait |
-| A red notice that the backend is unreachable | The backend stopped. Restart it (see the gap above) |
+| "Backend offline" in the top bar | The backend stopped. Restart it (below) |
+
+### If something is not running
+
+1. **Neo4j:** open Neo4j Desktop and start the instance "AgentX".
+2. **Backend:** in PowerShell:
+
+```powershell
+cd C:\Projects\demo\.stage4\chat
+$env:LLM_MODEL='openai/gpt-oss:120b'
+$env:SUHAIL_OPERATIONS_DATABASE='shipments-v2-world-demo'
+$env:SUHAIL_SIM_STATE_ROOT='C:\Projects\suhail-sim-state\world-1-small-r4'
+$env:SUHAIL_FRONTEND_NEXT_DIST='C:\Projects\demo\.ui-integrationrontend-next\dist'
+$env:SUHAIL_MODEL_CALL_CAP='12'; $env:SUHAIL_TOOL_BATCH='3'; $env:SUHAIL_PREFETCH_OVERVIEW='1'
+$env:SUHAIL_INVALID_OUTPUT_REPAIR='1'; $env:SUHAIL_FORCED_CONCLUSION='1'; $env:SUHAIL_DEV_RESET='1'
+$env:SUHAIL_DEMO_SHIPMENTS='SYN-SHP-000104,SYN-SHP-000165,SYN-SHP-000359,SYN-SHP-000232,SYN-SHP-000416'
+uv run uvicorn --app-dir ../backend main:app --host 127.0.0.1 --port 8020
+```
+
+   The session's cases are stored in Neo4j, so a restart keeps them. The model key is read from
+   `C:\Projects\demo\.env`.
+3. **Frontend:** nothing to start.
+
+### A fresh session with the same five shipments (optional)
+
+```powershell
+cd C:\Projects\demo\.stage4\chat
+uv run python ../scripts/world_demo_session.py --live-from 2026-09-15T13:30:00+00:00 --preroll-speed 600 --live-speed 600
+```
+
+It saves the current session first, resets only the demo ledger and replays: about six minutes of
+preparation, then the five cases arrive over roughly fifteen minutes. Each run makes real model
+calls, and results differ from run to run because the model's answers differ.
 
 ## 2. Shipments to use
 
-**GAP: shipment and case ids from the fresh session**, one of each:
+The session now on screen was investigated with real GPT-OSS 120B calls. Type the shipment id into
+the search box on Operations, or press Ctrl+K.
 
-| What to look at | Shipment id | Case link |
+| What to look at | Shipment | What happened |
 | --- | --- | --- |
-| A successful, verified resolution | GAP | GAP |
-| A case routed to a person | GAP | GAP |
-| An unresolved case (action failed, unanswered, or reviewer did not accept) | GAP | GAP |
-
-To open any of them, type the shipment id into "Search exception queue" on Operations and click the
-row, or press Ctrl+K and search.
+| A successful, verified resolution | **SYN-SHP-000165** | Barcode mismatch. Reviewer accepted, automatic rescan, the verifier confirmed the barcode now matches. Resolved; it is in the Resolved panel |
+| Approval, for you to try | **SYN-SHP-000104** | With a person under the symptom-floor rule. Its evidence request can be approved from the interface. I left it untouched for you |
+| Unresolved after an action | **SYN-SHP-000359** | Device sync approved from the interface and delivered. No confirming evidence arrived by the deadline, so it stays with a person |
+| Reviewer did not accept | **SYN-SHP-000232**, **SYN-SHP-000416** | Escalated. Nothing was executed. The investigator's findings are shown labelled as not accepted |
 
 ## 3. Operations: the queue
 
 1. Click **Operations** in the sidebar. Cases are listed newest first.
-2. Type a shipment id into **Search exception queue**. The list narrows.
+2. Type a shipment id into the search box. The list narrows.
 3. Look at the **Automatic investigation** switch. On means the backend investigates the oldest
    waiting case by itself. Please leave it as you found it during a live session.
 4. Click **Expand resolved panel** on the right. Only cases the backend resolved from a verified
@@ -164,4 +194,8 @@ icon switches dark mode. Findings written by the model stay in the language the 
 | Re-investigation | A case can be investigated again when material new evidence arrives; the page then says "Queued for re-investigation" and an approval offered moments earlier can disappear |
 | First load | The queue takes several seconds to appear after a reload |
 | Model failures | If the model is unavailable or its reply is invalid, the case goes to a person with no diagnosis. This is intended, but it means some cases show no finding |
-| Never seen on real data | "No conclusion within its turn budget" and "concluded on the final allowed turn": built and unit-tested only |
+| Never seen on real data | "No conclusion within its turn budget", "concluded on the final allowed turn", and the reviewer-doubt rule AUTH-27 (it did not fire in this session; covered by tests only) |
+| The reviewer is inconsistent | The same case can be accepted in one session and doubted in the next. This is the main reason results differ between runs |
+| The investigator is not more accurate than rules | In the evaluation it got 81 of 119 right against 92 for a rule lookup, and never answered "not enough evidence". Do not present it as more accurate than rules |
+| Repeated investigation | SYN-SHP-000104 was investigated six times in this session as its symptoms changed |
+| Dataset label | The word "synthetic" no longer appears in the interface, as you asked. Settings still says the data is a demonstration dataset and not SPL operational data, and ids keep their SYN- prefix |
