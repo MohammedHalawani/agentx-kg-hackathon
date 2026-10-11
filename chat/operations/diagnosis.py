@@ -64,7 +64,7 @@ def _findings(run, result, investigation):
             "missing_evidence": list(investigation.get("missing_evidence") or []),
             "requires_physical_check": investigation.get("requires_physical_check"),
             "tool_calls": len(investigation.get("steps") or []),
-            "snapshot_superseded": any(d.get("role") == "snapshot" for d in result.get("degraded") or []),
+            "snapshot_superseded": any(d.get("role") == "snapshot" or d.get("kind") == "snapshot_superseded" for d in result.get("degraded") or []),
             # Model prose (summary, assessments) is the investigator's own text, untranslated.
             "language": "en"}
 

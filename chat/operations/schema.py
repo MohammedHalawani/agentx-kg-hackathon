@@ -26,6 +26,10 @@ FIELDS = {
                 "as_of", "state_version", "last_run_id", "recommendation_id", "issue_summary", "claim_id", "claim_at",
                 "is_terminal", "closed_at", "verified_outcome_id", "outcome_checked_as_of", "snapshot_refreshes",
                 "symptom_reinvestigations",
+                # Material re-investigation policy: evidence records ingested for the case (a counter), the snapshot of
+                # the last completed run, the clock up to which later records were checked for materiality, how often
+                # material evidence requeued the case, and when the next automatic investigation may start.
+                "evidence_events", "investigated_as_of", "evidence_checked_as_of", "evidence_reinvestigations", "quiet_until",
                 # Whether issue_summary/cause_codes come from an accepted agent diagnosis; rule triage codes kept apart.
                 "diagnosis_available", "rule_signal_codes"},
     "OpsAudit": {"case_id", "event_type", "actor_id", "decision", "result", "from_state", "to_state", "run_id",

@@ -15,6 +15,7 @@ from operations.lifecycle import OperationsConflict, decision_state, require_ver
 from operations.diagnosis import case_diagnosis, investigation_status
 from operations.simulator import SPEEDS, EVENT_KINDS
 from operations.worker import analyze
+from operations import materiality
 
 log = logging.getLogger("suhail.operations")
 CONTROL_ID = "DEMO-OPS-CONTROL"
@@ -64,6 +65,26 @@ MAX_SNAPSHOT_REFRESHES = 2
 # (the first diagnosis could not have known it). Bounded: after this many such re-investigations the case stays
 # where it is, and the approval and dispatch rechecks keep refusing a recommendation whose symptoms changed.
 MAX_SYMPTOM_REINVESTIGATIONS = 2
+# A finished investigation is superseded only by a material change (operations.materiality): a changed symptom set, or
+# a newly ingested record that replaces or contradicts what the conclusion rests on. Routine new records for the
+# shipment do not requeue it. Material evidence arriving after a run requeues the case at most this many times.
+MAX_EVIDENCE_REINVESTIGATIONS = 2
+# After a run finishes (or is released for a material mid-run change), the worker starts no automatic investigation of
+# the same case for this long on the simulation clock, so a burst of related records is investigated once. An operator's
+# explicit request (re-analysis, a manual step, a named case) is not delayed, and neither is anything while the
+# simulation is paused (the clock, and so the interval, would not move). 0 disables the interval.
+REINVESTIGATION_QUIET_ENV = "SUHAIL_REINVESTIGATION_QUIET_SECONDS"
+REINVESTIGATION_QUIET_SECONDS = 7200
+
+
+def reinvestigation_quiet_seconds(value=None):
+    """The quiet interval in simulated seconds: the store's setting, else the environment, else two hours."""
+    if value is None:
+        value = os.environ.get(REINVESTIGATION_QUIET_ENV, "").strip() or REINVESTIGATION_QUIET_SECONDS
+    try:
+        return max(0, int(float(value)))
+    except (TypeError, ValueError):
+        return REINVESTIGATION_QUIET_SECONDS
 # States in which an investigation has been recorded and no action is authorized, being dispatched or awaiting its
 # outcome. ACTION_INITIATED is left to the dispatch recheck (which refuses and requeues on a changed context).
 # AWAITING_OUTCOME is left to the outcome verifier: an executed action is always verified and its outcome recorded, and
@@ -171,7 +192,7 @@ def identity(kind, *parts):
 
 def temporal_properties(props):
     fields = UTC_FIELDS | {"initial_as_of", "cursor_time", "claim_at", "observed_at", "source_occurred_at",
-                           "outcome_checked_as_of", "deadline_at", "expected_response_at", "closed_at", "session_started_at", "last_processed_at", "executed_at"}
+                           "outcome_checked_as_of", "investigated_as_of", "evidence_checked_as_of", "quiet_until", "deadline_at", "expected_response_at", "closed_at", "session_started_at", "last_processed_at", "executed_at"}
     return {key: instant(value) if key in fields and isinstance(value, str) else value for key, value in props.items()}
 
 
@@ -197,6 +218,9 @@ class OperationsStore:
         # (None: SUHAIL_MODEL_CALL_CAP, default 12). Both are recorded with every run.
         self.disabled_tools = tuple(t for t in os.environ.get("SUHAIL_DISABLED_TOOLS", "").replace(" ", "").split(",") if t)
         self.model_call_cap = None
+        # Simulated seconds after a run before the same case may be investigated again automatically
+        # (None: SUHAIL_REINVESTIGATION_QUIET_SECONDS, default 7200).
+        self.reinvestigation_quiet_seconds = None
         self.demo_shipments = demo_shipments()   # None, or the only shipments the monitor may open cases for
         self._subscribers={}
         self._subscribers_lock=threading.RLock()
@@ -506,7 +530,7 @@ class OperationsStore:
             case = public_value(item["props"])
             if instant(when) <= instant(case["as_of"]):
                 continue
-            case.update(as_of=when, state_version=case["state_version"]+1)
+            case.update(as_of=when, state_version=case["state_version"]+1, evidence_events=(case.get("evidence_events") or 0)+1)
             if kind == "RecipientReport" and case["workflow_state"] == "RESOLVED":
                 case.update(workflow_state="REOPENED", state_version=case["state_version"]+1, is_terminal=False, closed_at=None, verified_outcome_id=None)
                 without_diagnosis(case, pending=True)
@@ -542,15 +566,17 @@ class OperationsStore:
             # Milestone risk is a travel-window estimate from route bounds, not a validated prediction:
             # it is recorded as a watch flag and never opens a case on its own.
             forecast=journey_forecast(world,assessment) if not finding["open"] else {"available":False}
-            findings.append((sid,finding,context["as_of"],forecast))
+            findings.append((sid,finding,context["as_of"],forecast,context))
         def record(tx):
             c=self._control(tx,lock=True);opened=[]
-            for sid,finding,as_of,forecast in findings:
+            for sid,finding,as_of,forecast,context in findings:
                 c["monitor_checked"]=c.get("monitor_checked",0)+1
                 self._risk_flag(tx,sid,forecast,as_of)
-                if not finding["open"]:continue
                 cases=[public_value(r["props"]) for r in tx.run("MATCH(c:OpsCase {shipment_id:$sid,dataset_id:$dataset,split:'development'}) RETURN properties(c) AS props",
                         sid=sid,dataset=self.dataset_id)]
+                # Records ingested since a finished investigation: only a material one requeues its case.
+                for case in cases:self._reinvestigate_for_evidence(tx,case,context,as_of)
+                if not finding["open"]:continue
                 active=[x for x in cases if not x.get("is_terminal") and x["workflow_state"]!="RESOLVED"]
                 if active:
                     # The open case follows this shipment; newly observed symptoms are added to it, not a new case.
@@ -594,6 +620,40 @@ class OperationsStore:
         self._put(tx,"OpsCase",case,update=True)
         self._audit(tx,case,"REINVESTIGATION_QUEUED",when,actor="SUHAIL-MONITOR",old=old,key="symptoms:"+",".join(significant),
                     result=f"New symptoms ({', '.join(significant)}) were observed after the investigation; the earlier investigation "
+                           "remains recorded and the case is investigated again with the evidence visible now.")
+        return True
+
+    def _reinvestigate_for_evidence(self,tx,case,context,when):
+        """Records became visible after a finished investigation. Routine ones leave the case where it is; a material
+        one (operations.materiality: it supersedes or re-versions a record the conclusion cites, is a late upload from
+        before the investigation's snapshot, or adds or clears a monitor finding) queues the case for re-investigation.
+        Bounded by MAX_EVIDENCE_REINVESTIGATIONS. As with symptoms, a case whose action is authorized, dispatched or
+        awaiting its outcome is never requeued here: the dispatch recheck and the outcome verifier handle it."""
+        checked=case.get("evidence_checked_as_of")
+        if (not case.get("last_run_id") or case.get("is_terminal") or case["workflow_state"] not in REINVESTIGABLE_STATES
+                or not checked or not case.get("investigated_as_of") or instant(case["as_of"])<=instant(checked)
+                or instant(when)<=instant(checked)):
+            return False
+        run=self._get(tx,"OpsRun",case["last_run_id"]) or {}
+        material=materiality.material_evidence(self._reader().evidence(case["shipment_id"],checked),context,
+                                               snapshot_at=case["investigated_as_of"],config=self.config,allowance=DETECTION_ALLOWANCE_SECONDS,
+                                               cited=materiality.cited_evidence_ids(json.loads(run.get("result_json") or "{}")))
+        case["evidence_checked_as_of"]=when  # Each record is checked once; the case version is not touched by the check.
+        done=case.get("evidence_reinvestigations") or 0
+        if not material or done>=MAX_EVIDENCE_REINVESTIGATIONS:
+            self._put(tx,"OpsCase",case,update=True)
+            if material:
+                self._audit(tx,case,"REINVESTIGATION_LIMIT",when,actor="SUHAIL-MONITOR",key="evidence:"+when,
+                            result=f"Material new evidence ({materiality.describe(material)}) after {done} evidence-driven re-investigations; "
+                                   f"the case stays {case['workflow_state']} for a person, and approval and dispatch keep rechecking its context.")
+            return False
+        old=case["workflow_state"]
+        case.update(workflow_state="OPEN",recommendation_id=None,state_version=case["state_version"]+1,
+                    evidence_reinvestigations=done+1,outcome_checked_as_of=None)
+        without_diagnosis(case,pending=True)
+        self._put(tx,"OpsCase",case,update=True)
+        self._audit(tx,case,"REINVESTIGATION_QUEUED",when,actor="SUHAIL-MONITOR",old=old,key="evidence:"+when,
+                    result=f"Material new evidence after the investigation ({materiality.describe(material)}); the earlier investigation "
                            "remains recorded and the case is investigated again with the evidence visible now.")
         return True
 
@@ -940,6 +1000,7 @@ class OperationsStore:
             if instant(when)>instant(case["as_of"]):
                 case["as_of"]=when
                 case["state_version"]+=1
+                case["evidence_events"]=(case.get("evidence_events") or 0)+1
                 if "RecipientReport" in row["labels"] and case["workflow_state"]=="RESOLVED":
                     case.update(workflow_state="REOPENED",state_version=case["state_version"]+1,is_terminal=False,closed_at=None,verified_outcome_id=None)
                     without_diagnosis(case,pending=True)
@@ -948,14 +1009,42 @@ class OperationsStore:
                 self._put(tx,"OpsCase",case,update=True)
             self._audit(tx,case,"SIMULATION_EVENT",when,result=next(k for k in row["labels"] if k in EVENT_KINDS),key=p["entity_id"],actor="DEMO-SIMULATOR")
 
+    def _quiet_until(self,when):
+        """When the next automatic investigation of a case whose run finished at `when` may start (None: at once)."""
+        seconds=reinvestigation_quiet_seconds(self.reinvestigation_quiet_seconds)
+        return (instant(when)+timedelta(seconds=seconds)).isoformat() if seconds else None
+
+    def _material_since_claim(self,current,claimed,analysis,now):
+        """(material changes, new records) since a running investigation claimed its snapshot.
+        Anything that moved the case record and is not accounted for by evidence ingestion is material."""
+        reasons=[]
+        before,after=set(claimed.get("symptom_codes") or []),set(current.get("symptom_codes") or [])
+        if before!=after:
+            reasons.append({"reason":"symptoms_changed","added":sorted(after-before),"cleared":sorted(before-after)})
+        events=(current.get("evidence_events") or 0)-(claimed.get("evidence_events") or 0)
+        if before==after and current["state_version"]-claimed["state_version"]!=events:
+            reasons.append({"reason":"case_record_changed"})
+        arrived=0
+        if events>0:
+            reader=self._reader();snapshot=reader.evidence(claimed["shipment_id"],claimed["as_of"]);visible=reader.evidence(claimed["shipment_id"],now)
+            arrived=len(materiality.new_records(snapshot,visible))
+            reasons+=materiality.material_evidence(snapshot,visible,snapshot_at=claimed["as_of"],cited=materiality.cited_evidence_ids(analysis),
+                                                   config=self.config,allowance=DETECTION_ALLOWANCE_SECONDS)
+        return reasons,arrived
+
     def process_one(self, case_id=None, *, manual=False):
         def claim(tx):
             control=self._control(tx,lock=True)
             if control.get("worker_claim") or (control["worker_state"]!="running" and not manual and case_id is None):return None
             rows=list(tx.run("MATCH(c:OpsCase {dataset_id:$dataset,split:'development'}) "
                 "WHERE c.workflow_state IN ['OPEN','REOPENED'] AND c.opened_at <= $clock "
+                # The quiet interval after a case's previous run: the automatic worker passes over it until then. It runs
+                # on the simulation clock, so it applies only while that clock is running: with the world paused nothing
+                # new can arrive, and a waiting case would otherwise never be investigated.
+                "AND ($explicit OR c.quiet_until IS NULL OR c.quiet_until <= $clock) "
                 "AND ($id IS NULL OR c.entity_id=$id) RETURN properties(c) AS props ORDER BY c.opened_at,c.entity_id LIMIT 1",
-                dataset=self.dataset_id,clock=instant(control["as_of"]),id=case_id))
+                dataset=self.dataset_id,clock=instant(control["as_of"]),id=case_id,
+                explicit=bool(manual or case_id is not None or control.get("simulator_state")!="running")))
             if not rows:return None
             case=public_value(rows[0]["props"]); token=identity("claim",case["entity_id"],case["state_version"])
             case.update(workflow_state="INVESTIGATING",state_version=case["state_version"]+1,claim_id=token,claim_at=control["as_of"],as_of=control['as_of'],
@@ -971,16 +1060,28 @@ class OperationsStore:
             control=self._control(tx,lock=True);current=self._case(tx,case["entity_id"])
             if current.get("claim_id")!=case["claim_id"] or current["workflow_state"]!="INVESTIGATING":
                 raise OperationsConflict("Worker claim was released or superseded")
-            stale=current["state_version"]!=case["state_version"] or current["as_of"]!=case["as_of"]
+            # The case record moved during the run. Only a material change supersedes the snapshot (a changed symptom
+            # set, a record that replaces or contradicts what the conclusion rests on, or a change to the case that
+            # evidence ingestion does not account for); routine new records do not, and the run is kept as the
+            # investigation of its snapshot.
+            moved=current["state_version"]!=case["state_version"] or current["as_of"]!=case["as_of"]
+            material,arrived=self._material_since_claim(current,case,analysis,control["as_of"]) if moved else ([],0)
+            stale=bool(material)
+            quiet_until=self._quiet_until(control["as_of"])
             if stale and (current.get("snapshot_refreshes") or 0)<MAX_SNAPSHOT_REFRESHES:
                 current.update(workflow_state="OPEN",state_version=current["state_version"]+1,claim_id=None,claim_at=None,
-                               snapshot_refreshes=(current.get("snapshot_refreshes") or 0)+1)
+                               snapshot_refreshes=(current.get("snapshot_refreshes") or 0)+1,quiet_until=quiet_until)
                 without_diagnosis(current,pending=True)
                 control.update(worker_claim=None,claim_at=None)
                 self._put(tx,"OpsCase",current,update=True);self._put(tx,"OpsControl",control,update=True)
-                self._audit(tx,current,"CLAIM_RELEASED",control["as_of"],result="Evidence snapshot changed during analysis; re-investigating with the new evidence.")
+                self._audit(tx,current,"CLAIM_RELEASED",control["as_of"],result="Evidence snapshot changed during analysis; re-investigating with the new evidence. "
+                            "Material change: "+materiality.describe(material)+".")
                 return {"processed":False,"case_id":current["entity_id"],"reason":"snapshot_changed","workflow_state":"OPEN",
-                        "state_version":current["state_version"],"outcome":None}
+                        "state_version":current["state_version"],"outcome":None,"material":material}
+            if moved and not stale:
+                self._audit(tx,current,"SNAPSHOT_KEPT",control["as_of"],actor="SUHAIL-INVESTIGATION-WORKER",key="snapshot",
+                            result=f"{arrived} new record(s) arrived during the investigation; none changes the symptoms or the evidence "
+                                   f"the conclusion rests on. The investigation stands as of its snapshot {case['as_of']}.")
             if stale:
                 # Evidence kept arriving: record this investigation, but never act on a superseded snapshot.
                 # Only an actionable result is turned over to a person; a rejected (ESCALATED) or evidence-less
@@ -991,7 +1092,8 @@ class OperationsStore:
                 analysis={**analysis,"authority":{**(analysis.get("authority") or {}),"risk_class":"HUMAN_REVIEW","reason":reason,
                           "rule_id":authority_rule(reason)},
                           "result":{**analysis["result"],"workflow_state":state if state in ("ESCALATED","NEEDS_EVIDENCE") else "HUMAN_REVIEW"},
-                          "degraded":[*(analysis.get("degraded") or []),{"role":"snapshot","error":"evidence changed during investigation"}]}
+                          "degraded":[*(analysis.get("degraded") or []),{"role":"snapshot","error":"evidence changed during investigation",
+                                                                       "kind":materiality.SNAPSHOT_SUPERSEDED_KIND}]}
             when=control["as_of"];run_id=identity("run",current["entity_id"],case["claim_id"])
             self._put(tx,"OpsRun",{"entity_id":run_id,"shipment_id":case["shipment_id"],"case_id":case["entity_id"],
                 "recorded_at":when,"mode":analysis["mode"],"result_json":canonical(analysis),"iteration":len(analysis["trace"]),
@@ -1059,8 +1161,11 @@ class OperationsStore:
                 # Every authority decision, including denials, with its rule and the inputs it used.
                 self._audit(tx,current,"AUTHORITY_DECISION",when,actor="SUHAIL-AUTHORITY-POLICY",old=old,key=authority.get("rule_id"),
                             result=canonical({k:authority.get(k) for k in ("rule_id","risk_class","action_type","closure","reason","inputs")}))
+            # Records up to now were checked against this run; later ones are checked by the monitor. The quiet interval
+            # starts when the run finishes.
             current.update(workflow_state=analysis["result"]["workflow_state"],state_version=current["state_version"]+1,
-                last_run_id=run_id,recommendation_id=recommendation_id,claim_id=None,claim_at=None)
+                last_run_id=run_id,recommendation_id=recommendation_id,claim_id=None,claim_at=None,
+                investigated_as_of=case["as_of"],evidence_checked_as_of=when,quiet_until=quiet_until)
             if investigation_status(analysis)[0]:
                 # An agent investigation the independent reviewer accepted: its cause codes, the status they imply and its
                 # own summary (model prose, English) describe the case in the queue. The same text as case detail's
@@ -1240,7 +1345,8 @@ class OperationsStore:
             if case['workflow_state'] not in {'HUMAN_REVIEW','AWAITING_APPROVAL','RECOMMENDATION_READY','NEEDS_EVIDENCE'}:
                 raise OperationsConflict('Re-analysis requires an eligible pending decision or evidence request')
             old=case['workflow_state'];when=control['as_of']
-            case.update(workflow_state='OPEN',state_version=case['state_version']+1,recommendation_id=None)
+            # A person asked for it: the quiet interval after the previous run does not delay it.
+            case.update(workflow_state='OPEN',state_version=case['state_version']+1,recommendation_id=None,quiet_until=None)
             self._put(tx,'OpsCase',without_diagnosis(case,pending=True),update=True)
             self._audit(tx,case,'REANALYSIS_REQUESTED',when,actor=actor_id,old=old,
                         result='Explicit re-analysis requested; previous investigation remains recorded.')

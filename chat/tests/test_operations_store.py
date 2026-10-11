@@ -92,7 +92,8 @@ class Tx:
         if q.startswith("MATCH(c:OpsCase"):
             rows=[v for k,v in self.ledger.values() if k=="OpsCase"]
             if "c.workflow_state IN" in q:
-                rows=[v for v in rows if v["workflow_state"] in {"OPEN","REOPENED"} and v["opened_at"]<=p["clock"] and (p["id"] is None or v["entity_id"]==p["id"])]
+                rows=[v for v in rows if v["workflow_state"] in {"OPEN","REOPENED"} and v["opened_at"]<=p["clock"] and (p["id"] is None or v["entity_id"]==p["id"])
+                      and (p.get("explicit") or v.get("quiet_until") is None or v["quiet_until"]<=p["clock"])]
                 rows=sorted(rows,key=lambda r:(r["opened_at"],r["entity_id"]))[:1]
             else:rows=[v for v in rows if v["shipment_id"]==p["sid"]]
             return Result([{"props":copy.deepcopy(r)} for r in rows])
