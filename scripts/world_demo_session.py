@@ -2,7 +2,7 @@
 
   cd chat
   uv run python ../scripts/world_demo_session.py --live-from 2026-09-15T13:30:00+00:00
-        [--origin http://127.0.0.1:8020] [--preroll-speed 600] [--live-speed 600|300] [--no-live]
+        [--origin http://127.0.0.1:8020] [--preroll-speed 600] [--live-speed 600|300|60|10] [--no-live]
         [--archive-dir artifacts/demo/sessions] [--no-archive]
   uv run python ../scripts/world_demo_session.py --export-only [--archive-dir DIR]
 
@@ -25,7 +25,7 @@ What it does, in order (every step is an ordinary call of the operations API, as
 5. Waits until the worker has caught up: no case in GET /cases/queue?scope=all is OPEN, REOPENED or INVESTIGATING, the
    monitor has nothing pending and the worker holds no case.
 6. Prints the queue: shipment, case id, state.
-7. Unless --no-live: POST /simulation/start at --live-speed (300 or 600, default 600) and prints the wall-clock time
+7. Unless --no-live: POST /simulation/start at --live-speed (10, 60, 300 or 600, default 600) and prints the wall-clock time
    the live phase started.
 
 This script talks to the backend and to nothing else. It imports no project module, opens no database and makes no
@@ -50,7 +50,7 @@ DEFAULT_ORIGIN = "http://127.0.0.1:8020"
 TOKEN_HEADER = "X-Operations-Token"
 MAX_PREROLL_SPEED = 600
 PREROLL_SPEEDS = (1, 10, 60, 300, 600)
-LIVE_SPEEDS = (300, 600)
+LIVE_SPEEDS = (10, 60, 300, 600)   # 10 and 60 for a manual walkthrough: an answer due in an hour arrives in minutes, and the world lasts hours
 PENDING_STATES = ("OPEN", "REOPENED", "INVESTIGATING")   # waiting for, or in, an investigation
 PAGE = 100
 ARCHIVE_SCHEMA = "demo-session-export-1"
@@ -373,7 +373,7 @@ def parse(argv=None):
                         help="reset WITHOUT exporting the current session's cases first (they are lost)")
     parser.add_argument("--export-only", action="store_true", help="export the current session's cases and do nothing else (no reset)")
     parser.add_argument("--preroll-speed", type=preroll_speed, default=600, help="speed of the pre-roll (default 600; never above 600)")
-    parser.add_argument("--live-speed", type=int, choices=LIVE_SPEEDS, default=600, help="speed of the live phase (default 600)")
+    parser.add_argument("--live-speed", type=int, choices=LIVE_SPEEDS, default=600, help="speed of the live phase (default 600; 60 suits a manual walkthrough)")
     parser.add_argument("--no-live", action="store_true", help="stop after the pre-roll (the simulation stays paused)")
     parser.add_argument("--manual", action="store_true",
                         help="leave automatic investigation OFF: the worker is never started and every case waits for an operator to start it")

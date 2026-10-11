@@ -488,7 +488,7 @@ class CommandLineTests(unittest.TestCase):
         self.assertIn("contradict", self.parse_error("--export-only", "--no-archive"))
         self.assertIn("a pre-roll above 600 is not allowed", self.parse_error("--live-from", LIVE_FROM, "--preroll-speed", "3600"))
         self.assertIn("the backend accepts", self.parse_error("--live-from", LIVE_FROM, "--preroll-speed", "120"))
-        self.assertIn("invalid choice", self.parse_error("--live-from", LIVE_FROM, "--live-speed", "60"))
+        self.assertIn("invalid choice", self.parse_error("--live-from", LIVE_FROM, "--live-speed", "3600"))
         self.assertIn("needs a UTC offset", self.parse_error("--live-from", "2026-09-15T13:30:00"))
         self.assertIn("not an ISO time", self.parse_error("--live-from", "tomorrow"))
 
