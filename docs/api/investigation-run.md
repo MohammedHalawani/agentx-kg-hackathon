@@ -58,7 +58,7 @@ the case sent to a person when such a symptom is recorded or still visible.
 | `proposal` | The recommended catalogue action as a proposal (`action_type`, `evidence_ids`, `target`), or `null`. |
 | `checks` | The deterministic checks of the last round: `checks[]`, `rule_codes`, `unsupported`, `sensitive`, `contractor_custody`, `alternative_recorded`, and `citations` (the citation summary without per-id rows). |
 | `authority` | The deterministic authority decision: `risk_class`, `reason`, `rule_id`, `action_type`, `closure`, `inputs`. |
-| `degraded[]` | Failed model roles: `{role, error, kind}` with `kind` one of `model_unavailable`, `invalid_model_output`, `model_call_cap`. |
+| `degraded[]` | Failed model roles: `{role, error, kind}` with `kind` one of `model_unavailable`, `invalid_model_output`, `model_call_cap`, `turn_budget_exhausted` (the investigator used every turn of the round without a valid conclusion; reported as `invalid_model_output` before stage 4). |
 | `investigation_log` | The per-round log (section 4). `null` for a rules-only run. |
 | `pipeline_events[]` | Stage events as they happened (each tool call is a `classify` `RUNNING` event). |
 | `result` | Case result fields derived from the conclusion (`diagnoses`, `assessment.supported_codes`, `workflow_state`). |
@@ -67,7 +67,8 @@ the case sent to a person when such a symptom is recorded or still visible.
 
 | Field | Meaning |
 | --- | --- |
-| `mode` | `gpt-oss` for a valid conclusion; else `model_unavailable`, `invalid_model_output` or `model_call_cap`. |
+| `mode` | `gpt-oss` for a valid conclusion; else `model_unavailable`, `invalid_model_output`, `model_call_cap` or `turn_budget_exhausted`. |
+| `forced_final_turn` | `true` when the round used the forced final turn (`SUHAIL_FORCED_CONCLUSION=1`; see `docs/api/demo-lifecycle.md`). Absent otherwise. Also on `investigation_log` and `investigation_log.rounds[].investigator`, and on case detail's `diagnosis`. |
 | `degraded` | `true` when no valid conclusion was reached. Then `primary_cause` is `null` and `hypotheses` is empty. |
 | `primary_cause` | A cause code of the catalogue, or `INSUFFICIENT_EVIDENCE`. (`UNKNOWN` from the model is stored as `INSUFFICIENT_EVIDENCE`.) |
 | `confidence` | `low`, `medium`, `high`. |

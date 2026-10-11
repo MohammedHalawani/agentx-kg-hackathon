@@ -13,14 +13,15 @@ returns them) and are accepted back in that form. Nothing served holds truth lab
 | `SUHAIL_DEV_RESET=1` | only if the UI may reset the session |
 | `SUHAIL_DEMO_SHIPMENTS` | optional, a curated session: comma-separated shipment ids (public `SYN-SHP-...` or internal `DEMO-SHP-...`). The monitor then opens cases **only** for these shipments. Everything else is still ingested and stays visible to the investigator's tools as evidence (cross-shipment queries work as usual); it just never becomes a case, so the queue holds the curated cases only and the automatic worker spends no model calls on the rest. Unset: every shipment is monitored. Read when the server starts. `GET /worker/status` → `session.demo_shipments` is `{"enabled": true, "count": <ids listed>}` (`{"enabled": false, "count": 0}` when unset) |
 
-Recommended for the live demo (all four are read by the backend process; unset, each keeps the evaluated behaviour):
+Recommended for the live demo (all are read by the backend process; unset, each keeps the evaluated behaviour):
 
 | Variable | Value | Why |
 | --- | --- | --- |
 | `SUHAIL_TOOL_BATCH` | `3` | up to three independent evidence tools per model reply: fewer model round trips |
 | `SUHAIL_PREFETCH_OVERVIEW` | `1` | the shipment overview is fetched before the first model turn: one model call fewer |
 | `SUHAIL_INVALID_OUTPUT_REPAIR` | `1` | one repair attempt when a model reply is invalid twice, shown as a `RETRYING` event (`output.kind: "invalid_output_repair"`, "model reply invalid, retrying"); if it fails the case goes to a person as before |
-| `SUHAIL_MODEL_CALL_CAP` | `20` | the per-case model-call cap (default 12), so a repair and a revision round fit |
+| `SUHAIL_MODEL_CALL_CAP` | `12` | the per-case model-call cap. The demo environment now uses 12 (the default and the evaluated value; it was 20): a case that cannot conclude costs at most 12 calls and reaches a person sooner |
+| `SUHAIL_FORCED_CONCLUSION` | `1` | when an investigation round uses its whole turn budget without a valid conclusion, the investigator gets **one** final turn (if the call cap still has room) that says only: no more tool calls are possible; conclude from the evidence already retrieved, or conclude `INSUFFICIENT_EVIDENCE` naming what is missing and the next step. See "Forced final turn" below |
 
 These are demo settings: the frozen evaluation ran with none of them. Details and the `latency` block
 (`GET /cases/{case_id}` → `run.result.latency`) are in `docs/api/investigation-run.md` sections 3a and 4a.
@@ -32,17 +33,95 @@ These are demo settings: the frozen evaluation ran with none of them. Details an
    ```
    SUHAIL_OPERATIONS_DATABASE=shipments-v2-world-<name>
    SUHAIL_SIM_STATE_ROOT=<root of that export's physical state>
-   SUHAIL_DEMO_SHIPMENTS=SYN-SHP-000064,SYN-SHP-000133        (the curated cases)
+   SUHAIL_DEMO_SHIPMENTS=SYN-SHP-000104,SYN-SHP-000165,SYN-SHP-000359,SYN-SHP-000232,SYN-SHP-000416
+   SUHAIL_DEV_RESET=1                                         (the seeding script resets the session)
    SUHAIL_TOOL_BATCH=3
    SUHAIL_PREFETCH_OVERVIEW=1
    SUHAIL_INVALID_OUTPUT_REPAIR=1
-   SUHAIL_MODEL_CALL_CAP=20
+   SUHAIL_MODEL_CALL_CAP=12
+   SUHAIL_FORCED_CONCLUSION=1
    ```
+
+   The five curated shipments are `SYN-SHP-000104`, `SYN-SHP-000165`, `SYN-SHP-000359`, `SYN-SHP-000232` and
+   `SYN-SHP-000416`; `SYN-SHP-000279` is optional (append it to `SUHAIL_DEMO_SHIPMENTS` for a sixth case).
 
    Check `GET /worker/status`: `execution.adapter` is `world_operational_simulator`, `session.demo_shipments.enabled`
    is `true` with the expected `count`, `database` is the world database.
-2. `POST /simulation/start` with `{"speed": 60, "replay_mode": "timeline"}`.
+2. Seed the session with `scripts/world_demo_session.py` (next section). By hand instead: `POST /simulation/start`
+   with `{"speed": 60, "replay_mode": "timeline"}`, then
 3. `POST /worker/start`: automatic investigation of the open cases, oldest first (FIFO, one at a time).
+
+### Seeding the session: `scripts/world_demo_session.py`
+
+```
+cd chat
+uv run python ../scripts/world_demo_session.py --live-from 2026-09-15T13:30:00+00:00
+```
+
+The script talks **only** to the running backend over HTTP (default `--origin http://127.0.0.1:8020`). It imports no
+project module, opens no database and makes no model call itself; the backend's worker makes the model calls of the
+cases it investigates during the pre-roll. In order:
+
+1. `GET /operations/session` for the token.
+2. `GET /simulation/status`, then `POST /simulation/reset` with `development_reset.confirmation`. Needs
+   `SUHAIL_DEV_RESET=1` on the backend; without it the script stops with a clear message and changes nothing. The
+   reset deletes the operations ledger of that backend's database and puts the clock back to the start.
+3. `POST /worker/start`.
+4. Pre-roll: `POST /simulation/start` at `--preroll-speed` (default 600; anything above 600 is refused), polling
+   `GET /simulation/status` until `as_of` reaches `--live-from`, then `POST /simulation/pause`. The ingestion worker
+   advances the clock in steps, so the pause lands a little after `--live-from`; the time is printed.
+5. Waits until the worker has caught up: no case in `GET /cases/queue?scope=all` is `OPEN`, `REOPENED` or
+   `INVESTIGATING`, `session.monitor_pending` is 0 and the worker holds no case (`--catchup-timeout`, default 3600 s).
+6. Prints the queue: shipment, case id, state.
+7. `POST /simulation/start` at `--live-speed` (`600`, the default, or `300`) and prints the wall-clock time the live
+   phase started. `--no-live` stops after step 6 with the simulation paused.
+
+| Option | Default | |
+| --- | --- | --- |
+| `--live-from` | required | simulation time at which the live phase starts, ISO with an offset. For the curated session: `2026-09-15T13:30:00+00:00` |
+| `--origin` | `http://127.0.0.1:8020` | the running backend |
+| `--preroll-speed` | `600` | 1, 10, 60, 300 or 600; above 600 is refused |
+| `--live-speed` | `600` | `300` or `600` |
+| `--no-live` | off | stop after the pre-roll |
+
+Exit status 0 when done, 2 when a step was refused or failed (the message names the step and the backend's reason).
+If the pre-roll fails or is interrupted the script pauses the simulation before it exits.
+
+Speed `300` is accepted by `POST /simulation/start` and `POST /simulation/tick` since this change (five simulated
+minutes a second: the answers in the table below arrive in a fifth of the time shown for 60). A backend started
+before it refuses 300 with HTTP 422 until it is restarted.
+
+### Forced final turn and the kinds of a failed investigation
+
+`degraded[].kind`, `investigation.mode` and the closing `classify` event's `output.agent` are one of:
+
+| Kind | Meaning |
+| --- | --- |
+| `model_unavailable` | the provider call failed twice |
+| `model_call_cap` | the per-case model-call cap was reached before a valid conclusion |
+| `turn_budget_exhausted` | the investigator used every turn of the round (it kept calling tools, or never produced a usable reply) without a valid conclusion. Error text: `turn budget exhausted without a valid conclusion`. Until this change it was reported as `invalid_model_output`; the split applies with or without the demo options |
+| `invalid_model_output` | a conclusion (or a review verdict) that was still invalid after its corrective retry (and its repair, when that option is on) |
+
+All four route the same way as before: `authority.rule_id` `AUTH-02-model-degraded`, `workflow_state` `HUMAN_REVIEW`,
+no conclusion substituted.
+
+With `SUHAIL_FORCED_CONCLUSION=1`, a round that would end as `turn_budget_exhausted` first gets one final model turn,
+provided the call cap has a call left beyond the one reserved for the review. The message is fixed text: it names no
+cause, adds no evidence and presents `INSUFFICIENT_EVIDENCE` as an answer in its own right. The reply goes through
+the normal validator (with its one corrective retry, and the repair attempt when `SUHAIL_INVALID_OUTPUT_REPAIR=1`),
+then the normal reviewer and authority. Where it shows:
+
+| Where | Field |
+| --- | --- |
+| `GET /cases/{case_id}` → `run.result.investigation` | `forced_final_turn: true` |
+| `run.result.investigation_log` | `forced_final_turn: true`, and on the round: `rounds[].investigator.forced_final_turn: true` |
+| `diagnosis` (and `diagnosis.unaccepted_investigation` when the review did not accept it) | `forced_final_turn: true` |
+| `run.result.pipeline_events[]` and the live event stream | stage `classify`, status `RUNNING`, `output.kind: "forced_final_turn"`, `output.role: "investigator"`, `output.message: "turn budget exhausted; the investigator is asked once to conclude from the evidence already retrieved"`, `output.model_calls` |
+
+The field is **absent** (not `false`) when no forced turn was made, so records of runs without the option are
+unchanged. If the forced turn is also invalid the case degrades as before, with kind `turn_budget_exhausted` and
+`forced_final_turn: true` on the record (the turn was given). A UI should say, next to such a diagnosis, that the
+investigator was stopped at its turn limit and asked to conclude from what it had.
 
 Why speed 60. The speed is simulated seconds per real second, so at 60 one simulated minute passes each second. The
 simulator answers a request after a fixed number of simulated minutes for the request to reach the field
@@ -76,7 +155,7 @@ header `X-Operations-Token: <token>` and a loopback connection. Bodies are stric
 | Call | Body | Use |
 | --- | --- | --- |
 | `GET /simulation/status` | | clock (`as_of`), simulator and worker state, `session.monitor_pending`, `execution.adapter` |
-| `POST /simulation/start` | `{"speed": 600, "replay_mode": "timeline"}` (speed 1, 10, 60, 600 or 3600) | the ingestion worker advances the clock; the monitor opens cases |
+| `POST /simulation/start` | `{"speed": 600, "replay_mode": "timeline"}` (speed 1, 10, 60, 300, 600 or 3600) | the ingestion worker advances the clock; the monitor opens cases |
 | `POST /simulation/pause` | | |
 | `POST /simulation/tick` | `{"seconds": 3600}` (optional `speed`, `replay_mode`) | one manual step |
 | `POST /worker/start`, `POST /worker/pause` | | automatic investigation of open cases, oldest first |
