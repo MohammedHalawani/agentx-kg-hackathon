@@ -8,6 +8,8 @@ from datetime import datetime, date, timezone
 
 from dataset_v2.contracts import Config, Edge, KINDS, Node, World, instant
 from dataset_v2.context import CATALOG, CONTEXT, OBSERVATIONS
+from operations import cross_shipment
+from operations.datasets import pairing_error, read_database_allowed
 from operations.diagnosis import absent_diagnosis
 from operations.pagination import LIMITS, fingerprint, encode_cursor, decode_cursor
 from operations.reasoning import public_evidence, route_layers, triage
@@ -198,7 +200,8 @@ WITH s,c,r,o,matched_codes,collect(DISTINCT e.entity_id) AS evidence_ids,
 WHERE size(evidence_ids)>0
 RETURN {shipment_id:s.entity_id,case_id:c.entity_id,exception_code:head(matched_codes),exception_codes:matched_codes,resolution_id:r.entity_id,
  outcome_id:o.entity_id,action_type:r.action_type,action:r.action,success:o.success,verified_at:o.verified_at,
- evidence_ids:evidence_ids[..20],evidence:evidence[..20],verification_policy:o.verification_policy,synthetic:true} AS item
+ evidence_ids:evidence_ids[..20],evidence:evidence[..20],verification_policy:o.verification_policy,
+ source:'history_verified',exception_cleared:(o.success=true AND coalesce(c.operationally_resolved,false)),synthetic:true} AS item
 ORDER BY item.verified_at DESC,item.outcome_id ASC LIMIT $precedent_limit
 """
 
@@ -253,10 +256,13 @@ def normalize_values(value):
 
 class OperationsReader:
     def __init__(self, driver, database, dataset_id, config=None, clock=None, store=None):
-        if not isinstance(database, str) or not re.fullmatch(r"shipments-v2-demo(?:-[a-z0-9-]+)?", database):
+        # The isolated V2 family, or a mechanism-world database (shipments-v2-world-<name>) holding a world dataset.
+        if not read_database_allowed(database):
             raise ValueError("Operations requires an explicit isolated V2 target")
         if not isinstance(dataset_id, str) or not dataset_id.startswith("DEMO-"):
             raise ValueError("Operations requires the audited synthetic storage namespace")
+        if pairing_error(database, dataset_id):
+            raise ValueError(pairing_error(database, dataset_id))
         self.driver, self.database, self.dataset_id = driver, database, dataset_id
         self.config = config or Config(dataset_id=dataset_id)
         if self.config.dataset_id != dataset_id:
@@ -268,7 +274,7 @@ class OperationsReader:
         # No injectable query fragments or write-capable driver calls in this module.
         if re.search(r"\b(CREATE|MERGE|DELETE|SET|REMOVE|DROP|LOAD|CALL)\b", query, re.I):
             raise ValueError("Read model rejected a non-read query")
-        params={key:instant(value) if key in {"snapshot","cutoff","from_at","to_at","after_time","execution_snapshot"} and value is not None else value
+        params={key:instant(value) if key in {"snapshot","cutoff","from_at","to_at","after_time","execution_snapshot","as_of"} and value is not None else value
                 for key,value in params.items()}
         with self.driver.session(database=self.database, default_access_mode="READ") as session:
             return session.execute_read(lambda tx: [normalize_values(dict(row)) for row in tx.run(query, dataset_id=self.dataset_id, **params)])
@@ -454,6 +460,15 @@ class OperationsReader:
                          "RETURN h.entity_id AS entity_id,h.occurred_at AS occurred_at,h.pending_uploads AS pending_uploads,"
                          "h.last_upload_at AS last_upload_at ORDER BY h.occurred_at DESC LIMIT 60",
                          device_id=device_id, from_at=since, cutoff=until)
+
+    def fetch(self, name, **params):
+        """One fixed cross-shipment evidence query (operations.cross_shipment.QUERIES) as of an investigation snapshot.
+
+        Read-only and bounded; the caller chooses a query by name and supplies validated parameters only. Rows are
+        records Suhail had recorded by `as_of` (and that had occurred by then) in this dataset's live, history and
+        shared data. Operational evidence for the investigation tools; never truth, gold or a held-out split."""
+        cleaned = cross_shipment.clean_params(name, params, self.clock())
+        return self._run(cross_shipment.QUERIES[name].cypher, **cleaned)
 
     def rule_signals(self, evidence):
         """Deterministic rule checks over the evidence visible at its as-of time. They feed monitoring and

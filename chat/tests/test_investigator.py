@@ -88,12 +88,18 @@ class ToolTests(Base):
                                    heartbeats=heartbeats_from(self.world),
                                    precedents=lambda cause: [{"case_id": "C1", "action_type": "REQUEST_RESCAN", "success": True, "verified_at": "2026-09-01T00:00:00+00:00"}])
         package = next(n.id for n in tools.world.nodes.values() if n.kind == "Package")
-        args = {"custody_chain": {"package_id": package}, "device_status": {"device_id": "DEMO-DEV-HH-DEPOT-RUH-01"}, "precedents": {"cause": "BARCODE_MISMATCH"}}
+        args = {"custody_chain": {"package_id": package}, "device_status": {"device_id": "DEMO-DEV-HH-DEPOT-RUH-01"}, "precedents": {"cause": "BARCODE_MISMATCH"},
+                "same_device_activity": {"device_id": "DEMO-DEV-HH-DEPOT-RUH-01"}, "same_route_run": {"route_run_id": "DEMO-RR-RUH-N-0901-1"},
+                "container_and_trip": {"trip_id": "DEMO-TRIP-LH-RUH-JED-0901-2130"}, "facility_window": {"facility_id": "DEMO-DEPOT-RUH-01"}}
         for tool in tools.CATALOG:
             out = tools.call(tool, args.get(tool, {}))
             self.assertIn("result", out, tool)
             self.assertNotIn("invalid arguments", out["result"], tool)
+            self.assertNotIn("query failed", out["result"], tool)
         self.assertIn("REQUEST_RESCAN", tools.call("precedents", {"cause": "BARCODE_MISMATCH"})["result"])
+        # Without the read model's cross-shipment queries, the tools that need them say so instead of guessing.
+        for tool in ("same_route_run", "container_and_trip", "facility_window"):
+            self.assertIn("UNKNOWN", tools.call(tool, args[tool])["result"], tool)
 
     def test_unknown_tool_and_foreign_package_are_refused(self):
         sid = self.shipment("on_time")
@@ -166,12 +172,46 @@ class FactCheckTests(Base):
         tools = self.tools(sid, iso(occurred + timedelta(hours=3)))
         package = next(n.id for n in tools.world.nodes.values() if n.kind == "Package")
         tools.call("journey", {"package_id": package})
-        milestone_ids = sorted(tools.retrieved)
-        inv = {"primary_cause": "DELAYED_SYNC", "hypotheses": [{"cause": "DELAYED_SYNC", "status": "supported",
-               "supporting_evidence_ids": milestone_ids[:2], "contradicting_evidence_ids": []}]}
-        self.assertTrue(fact_checks(inv, tools)["unsupported"])  # No silence or lag evidence retrieved yet.
-        tools.call("device_status", {"device_id": row["physical"]["device_id"]})
-        self.assertFalse(fact_checks(inv, tools)["unsupported"])
+        def delayed_sync(belt):
+            cited = sorted(i for i in belt.retrieved if i in belt.nodes)[:2]
+            return {"primary_cause": "DELAYED_SYNC", "hypotheses": [{"cause": "DELAYED_SYNC", "status": "supported",
+                    "supporting_evidence_ids": cited, "contradicting_evidence_ids": []}]}
+        # The handheld expected to record the missing receipt is silent at the snapshot: the check holds, whatever was cited.
+        checks = fact_checks(delayed_sync(tools), tools)
+        self.assertFalse(checks["unsupported"], checks["checks"])
+        self.assertIn("silent", checks["checks"][0]["detail"])
+        # The same conclusion on a shipment whose expected device is not silent and whose records arrived promptly
+        # loses automatic authority; the check never changes the diagnosis.
+        other = self.shipment("absent_session_receipt")
+        belt = self.tools(other, self.world.config.as_of)
+        belt.call("journey", {})
+        inv = delayed_sync(belt)
+        checks = fact_checks(inv, belt)
+        self.assertTrue(checks["unsupported"], checks["checks"])
+        self.assertEqual(inv["primary_cause"], "DELAYED_SYNC")
+
+    def test_custody_gap_requires_an_uncorroborated_or_discontinuous_transfer(self):
+        # An overdue milestone with every recorded transfer corroborated is not a gap in the custody chain.
+        sid = self.shipment("absent_session_receipt")
+        tools = self.tools(sid, self.world.config.as_of)
+        package = next(n.id for n in tools.world.nodes.values() if n.kind == "Package")
+        tools.call("custody_chain", {"package_id": package})
+        inv = {"primary_cause": "CUSTODY_GAP", "hypotheses": [{"cause": "CUSTODY_GAP", "status": "supported",
+               "supporting_evidence_ids": sorted(i for i in tools.retrieved if i in tools.nodes)[:1], "contradicting_evidence_ids": []}]}
+        checks = fact_checks(inv, tools)
+        self.assertNotIn("CUSTODY_GAP", checks["rule_codes"])
+        self.assertTrue(checks["unsupported"], checks["checks"])
+        self.assertIn("no uncorroborated or discontinuous transfer", checks["checks"][0]["detail"])
+        # A transfer that lacks its acknowledgments is one.
+        gap = self.shipment("contractor_unconfirmed_pickup")
+        belt = self.tools(gap, self.world.config.as_of)
+        package = next(n.id for n in belt.world.nodes.values() if n.kind == "Package")
+        belt.call("custody_chain", {"package_id": package})
+        inv = {"primary_cause": "CUSTODY_GAP", "hypotheses": [{"cause": "CUSTODY_GAP", "status": "supported",
+               "supporting_evidence_ids": sorted(i for i in belt.retrieved if i in belt.nodes)[:1], "contradicting_evidence_ids": []}]}
+        checks = fact_checks(inv, belt)
+        self.assertIn("CUSTODY_GAP", checks["rule_codes"])
+        self.assertFalse(checks["unsupported"], checks["checks"])
 
     def test_contractor_held_parcel_is_flagged(self):
         sid = self.shipment("contractor_unreturned")

@@ -1,0 +1,10 @@
+# Pre-registered Stage 3 evaluation files and their digests are stored and checked out byte for byte (no line-ending
+# conversion), so `sha256sum -c` gives the same answer on every platform. The harness also hashes canonical (LF)
+# bytes (chat/stage3_eval/design.py canonical_bytes), so a checkout made before this rule still verifies.
+*.sha256 -text
+docs/evals/**/preregistration/** -text
+# The harness fixture's data files: the same bytes everywhere.
+chat/stage3_eval/fixtures/world_*/** -text
+# The campaign's model-call ledger.
+docs/evals/model_call_ledger.json -text
+scripts/stage3_drive.sh text eol=lf

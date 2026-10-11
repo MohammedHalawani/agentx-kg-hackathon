@@ -91,6 +91,23 @@ def symptom_floor(risk, reason, action_type, symptoms):
     return risk, reason, "HUMAN"
 
 
+# Diagnosis codes that mean "no cause established". A conclusion made only of them never carries automatic closing
+# authority: an evidence request may still run, but only a person can close the case.
+ABSTENTION_CODES = frozenset(("INSUFFICIENT_EVIDENCE", "UNKNOWN"))
+
+
+def abstention_floor(risk, reason, closure, action_type, diagnosis_codes):
+    """Apply the insufficient-evidence floor after the symptom floor. Returns (risk, reason, closure)."""
+    codes = set(diagnosis_codes or [])
+    if codes and not codes <= ABSTENTION_CODES:
+        return risk, reason, closure
+    if risk == "AUTO" and action_type in EVIDENCE_GATHERING:
+        return risk, reason + " No cause is established yet: the evidence request may run, but only a person can close the case.", "HUMAN"
+    if risk in ("AUTO", "APPROVAL_REQUIRED"):
+        return "HUMAN_REVIEW", "The investigation found the evidence insufficient for a diagnosis; a person decides the next step.", "HUMAN"
+    return risk, reason, "HUMAN"
+
+
 STATE = {"AUTO": "AWAITING_OUTCOME", "APPROVAL_REQUIRED": "AWAITING_APPROVAL", "HUMAN_REVIEW": "HUMAN_REVIEW", "PROHIBITED": "HUMAN_REVIEW"}
 
 
@@ -112,6 +129,9 @@ def authorize(action_type, diagnosis_codes, *, review_verdict, evidence_conflict
         return "HUMAN_REVIEW", "A model role failed or was unavailable; automatic execution is blocked and a person must review."
     if review_verdict in ("HUMAN_REVIEW", "ESCALATE"):
         return "HUMAN_REVIEW", "Reviewer requested human judgment."
+    if review_verdict == "INSUFFICIENT_EVIDENCE":
+        # The reviewer's evidence-insufficient outcome goes to a person or to more evidence gathering, never to automatic action.
+        return "HUMAN_REVIEW", "Reviewer found the evidence insufficient; a person or further evidence gathering must follow."
     if contractor_custody:
         return "HUMAN_REVIEW", "The parcel's last corroborated holder is a contractor or independent driver; physical reconciliation needs a person."
     if codes & SENSITIVE_CODES:
@@ -175,7 +195,8 @@ def recheck_authority(action_type, inputs, symptoms, *, live_session=True):
                              evidence_conflict=bool(inputs.get("evidence_conflict")), synthetic=True, live_session=live_session,
                              degraded=bool(inputs.get("degraded")), contractor_custody=bool(inputs.get("contractor_custody")),
                              physical_check=bool(inputs.get("physical_check")))
-    return symptom_floor(risk, reason, action_type, symptoms)
+    risk, reason, closure = symptom_floor(risk, reason, action_type, symptoms)
+    return abstention_floor(risk, reason, closure, action_type, inputs.get("diagnosis_codes") or [])
 
 
 def default_action(code):
@@ -210,6 +231,8 @@ RULE_IDS = {
     "Rules-only proposal": "AUTH-22-rules-only-proposal",
     "recommendation was already authorized": "AUTH-24-recommendation-already-executed",
     "The investigation requested a physical check": "AUTH-23-physical-check-requested",
+    "Reviewer found the evidence insufficient": "AUTH-25-reviewer-insufficient-evidence",
+    "The investigation found the evidence insufficient": "AUTH-26-insufficient-evidence",
 }
 
 

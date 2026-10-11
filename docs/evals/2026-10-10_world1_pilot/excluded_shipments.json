@@ -1,0 +1,18 @@
+{
+ "reason": "Truth labels for these development shipments were committed to the repository on 2026-10-10 (721406f, 5802528); they must not be used as Stage 3 cases.",
+ "dataset_id": "DEMO-SUHAIL-WORLD-1",
+ "shipment_ids": [
+  "DEMO-SHP-000019",
+  "DEMO-SHP-000058",
+  "DEMO-SHP-000082",
+  "DEMO-SHP-000104",
+  "DEMO-SHP-000130",
+  "DEMO-SHP-000174",
+  "DEMO-SHP-000374",
+  "DEMO-SHP-000395",
+  "DEMO-SHP-000489",
+  "DEMO-SHP-000490",
+  "DEMO-SHP-000579",
+  "DEMO-SHP-000600"
+ ]
+}

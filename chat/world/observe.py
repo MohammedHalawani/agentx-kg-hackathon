@@ -28,38 +28,151 @@ SOURCE = {"FACILITY_HANDHELD": "spl-core:handheld", "SORTER_READER": "spl-core:s
           "DRIVER_APP": "driver-app"}
 FACILITY_KINDS = ("Branch", "Hub", "SortingCenter", "DeliveryDepot", "FulfillmentWarehouse", "OrganizationWarehouse")
 
-# Inbound message templates (synthetic). {t} is the tracking number, {d} a day word.
-REPORT_TEXT = {
-    "NOT_RECEIVED": (
+# Inbound recipient messages (synthetic). {t} is the tracking number, {d} a past day as the writer would name it,
+# {w} a weekday. The group a message is drawn from is decided by what physically happened to the parcel in the private
+# simulation (review finding N2: who took it, whether the recipient was home, whether the delivery was visible in
+# tracking, whether it is late, why the address or the day changes); the wording inside the group is drawn. A group
+# named ANY fits every situation of its report code. No text names a fault or a catalogue code.
+STATEMENTS = {
+    ("NOT_RECEIVED", "ANY"): (
         ("Tracking {t} says delivered but I have not received anything.", "رقم التتبع {t} يظهر أنه تم التسليم لكنني لم أستلم شيئًا."),
-        ("My parcel {t} shows as delivered {d}. Nobody here received it.", "شحنتي {t} تظهر مسلّمة {d} ولم يستلمها أحد هنا."),
-        ("I was home all day and no parcel arrived for {t}.", "كنت في المنزل طوال اليوم ولم تصل أي شحنة للرقم {t}."),
+        ("My parcel {t} shows as delivered {d}. I do not have it.", "شحنتي {t} تظهر مسلّمة {d} وليست لدي."),
         ("Please check {t}: marked delivered, not with me.", "يرجى التحقق من {t}: مسجلة كمسلّمة وليست لدي."),
         ("Where is my order? The app says delivered ({t}).", "أين طلبي؟ التطبيق يقول تم التسليم ({t})."),
     ),
-    "WHERE_IS_PARCEL": (
-        ("When will {t} arrive? It was expected {d}.", "متى تصل الشحنة {t}؟ كان من المتوقع وصولها {d}."),
-        ("Any update on {t}? No movement in tracking.", "هل من تحديث على {t}؟ لا يوجد تغيير في التتبع."),
-        ("My parcel {t} is late. Please advise.", "شحنتي {t} متأخرة. أرجو الإفادة."),
+    ("NOT_RECEIVED", "HOME"): (       # handed over somewhere else while the recipient was at home
+        ("I was home {d} and nobody came with {t}.", "كنت في المنزل {d} ولم يأتِ أحد بالشحنة {t}."),
+        ("My parcel {t} shows as delivered {d}. Nobody here received it.", "شحنتي {t} تظهر مسلّمة {d} ولم يستلمها أحد هنا."),
+        ("We were in {d}. No driver came to us with {t}.", "كنا في المنزل {d} ولم يصلنا أي مندوب بالشحنة {t}."),
+    ),
+    ("NOT_RECEIVED", "OUT"): (        # handed to someone else while the recipient was out
+        ("I was out when {t} was marked delivered. Nothing was left for me.", "كنت خارج المنزل عندما سُجلت الشحنة {t} كمسلّمة. لم يُترك لي شيء."),
+        ("Nobody was home {d}, yet {t} shows delivered. I have nothing.", "لم يكن أحد في المنزل {d}، ومع ذلك تظهر {t} مسلّمة. لم أستلم شيئًا."),
+        ("I came back to find {t} marked delivered, but there is no parcel here.", "عدت إلى المنزل فوجدت {t} مسجلة كمسلّمة، ولا توجد أي شحنة هنا."),
+    ),
+    ("NOT_RECEIVED", "UNSEEN"): (     # the delivery record had not reached tracking when the recipient wrote
+        ("I am still waiting for {t}. Nothing has reached me.", "ما زلت أنتظر الشحنة {t}. لم يصلني شيء."),
+        ("{t} has not been delivered to me. Please check.", "لم تُسلَّم لي الشحنة {t}. أرجو التحقق."),
+    ),
+    ("WHERE_IS_PARCEL", "ANY"): (
+        ("Any update on {t}?", "هل من تحديث على {t}؟"),
         ("Is {t} still on its way?", "هل ما زالت الشحنة {t} في الطريق؟"),
+        ("Can you tell me where {t} is now?", "هل يمكن إخباري أين الشحنة {t} الآن؟"),
     ),
-    "RECEIVED_CONFIRMATION": (
+    ("WHERE_IS_PARCEL", "LATE"): (    # written after the promised time, the parcel not handed over
+        ("When will {t} arrive? It was expected {d}.", "متى تصل الشحنة {t}؟ كان من المتوقع وصولها {d}."),
+        ("My parcel {t} is late. Please advise.", "شحنتي {t} متأخرة. أرجو الإفادة."),
+        ("{t} was due {d} and has not arrived.", "كان موعد الشحنة {t} {d} ولم تصل."),
+    ),
+    ("RECEIVED_CONFIRMATION", "ANY"): (
         ("I have received {t}, thank you.", "استلمت الشحنة {t}، شكرًا."),
-        ("Got the parcel {t}. A neighbour passed it to me.", "وصلتني الشحنة {t}، سلّمها لي أحد الجيران."),
-        ("Parcel {t} found, a family member had taken it.", "وجدت الشحنة {t}، كان أحد أفراد الأسرة قد استلمها."),
-        ("Received {t} {d}. You can close this.", "استلمت {t} {d}. يمكنكم إغلاق الطلب."),
+        ("Parcel {t} is with me now.", "الشحنة {t} معي الآن."),
+        ("Confirming that {t} has reached me.", "أؤكد أن الشحنة {t} وصلتني."),
     ),
-    "ADDRESS_CORRECTION": (
+    ("RECEIVED_CONFIRMATION", "HAND"): (          # the driver handed it to the recipient
+        ("Received {t} {d}. You can close this.", "استلمت {t} {d}. يمكنكم إغلاق الطلب."),
+        ("The driver handed me {t} {d}. Thanks.", "سلّمني المندوب الشحنة {t} {d}. شكرًا."),
+    ),
+    ("RECEIVED_CONFIRMATION", "FOUND"): (         # after the recipient's own claim on a parcel that had reached the household
+        ("Sorry, I found {t}. Please ignore my earlier message.", "عذرًا، وجدت الشحنة {t}. أرجو تجاهل رسالتي السابقة."),
+        ("My mistake, {t} was already at home.", "الخطأ مني، الشحنة {t} كانت في المنزل."),
+    ),
+    ("RECEIVED_CONFIRMATION", "NEIGHBOUR"): (     # someone next door took it
+        ("Got the parcel {t}. A neighbour passed it to me.", "وصلتني الشحنة {t}، سلّمها لي أحد الجيران."),
+        ("{t} was with the people next door. I have it now.", "الشحنة {t} كانت عند الجيران، وهي معي الآن."),
+        ("My neighbour had taken {t} in for me. Received.", "جاري استلم الشحنة {t} عني. تم الاستلام."),
+    ),
+    ("RECEIVED_CONFIRMATION", "FAMILY"): (
+        ("Parcel {t} found, a family member had taken it.", "وجدت الشحنة {t}، كان أحد أفراد الأسرة قد استلمها."),
+        ("Someone at home received {t} for me. All good.", "أحد أفراد المنزل استلم الشحنة {t} عني. كل شيء على ما يرام."),
+    ),
+    ("RECEIVED_CONFIRMATION", "RECEPTION"): (
+        ("{t} was at the building reception. Collected.", "الشحنة {t} كانت في استقبال المبنى. استلمتها."),
+        ("Picked up {t} from the front desk, thanks.", "استلمت {t} من مكتب الاستقبال، شكرًا."),
+    ),
+    ("RECEIVED_CONFIRMATION", "DOOR"): (          # left at the recipient's own door
+        ("Found {t} at my door, thank you.", "وجدت الشحنة {t} عند الباب، شكرًا."),
+        ("{t} was left by the door. I have it.", "تُركت الشحنة {t} عند الباب وهي معي."),
+    ),
+    ("RECEIVED_CONFIRMATION", "ELSEWHERE"): (     # left at another building
+        ("{t} had been left at another building. I collected it from there.", "الشحنة {t} تُركت في مبنى آخر. استلمتها من هناك."),
+        ("Someone from a nearby building brought {t} over.", "أحضر لي الشحنة {t} شخص من مبنى مجاور."),
+    ),
+    ("ADDRESS_CORRECTION", "MOVED"): (            # the booked address is outdated
         ("I moved. Please deliver {t} to my new address.", "انتقلت إلى عنوان جديد. أرجو توصيل {t} إليه."),
         ("The address on {t} needs updating. New location attached.", "العنوان في {t} يحتاج إلى تحديث. أرفقت الموقع الجديد."),
         ("Please use the pin I sent for {t}; the old address is outdated.", "أرجو استخدام الموقع المرسل للشحنة {t}؛ العنوان القديم لم يعد صالحًا."),
     ),
-    "RESCHEDULE_REQUEST": (
-        ("I am travelling. Please deliver {t} after {d}.", "أنا مسافر. أرجو توصيل {t} بعد {d}."),
-        ("Can you hold {t} for a couple of days?", "هل يمكن الاحتفاظ بالشحنة {t} ليومين؟"),
-        ("Not available this week for {t}, please reschedule.", "لست متاحًا هذا الأسبوع لاستلام {t}، أرجو إعادة الجدولة."),
+    ("ADDRESS_CORRECTION", "REFINED"): (          # same building, a more exact pin or an entrance
+        ("I have sent a more exact pin for {t}.", "أرسلت موقعًا أدق للشحنة {t}."),
+        ("Added the entrance details for {t}. Same building.", "أضفت تفاصيل المدخل للشحنة {t}. نفس المبنى."),
+        ("Please use the updated pin for {t}; it marks the right entrance.", "أرجو استخدام الموقع المحدّث للشحنة {t}؛ فهو يحدد المدخل الصحيح."),
+    ),
+    ("RESCHEDULE_REQUEST", "ANY"): (
+        ("Please reschedule the delivery of {t}.", "أرجو إعادة جدولة توصيل الشحنة {t}."),
+        ("Could you deliver {t} on another day?", "هل يمكن توصيل {t} في يوم آخر؟"),
+    ),
+    ("RESCHEDULE_REQUEST", "AWAY"): (             # away for days, still more than a day to go
+        ("I am travelling. Please deliver {t} after {w}.", "أنا مسافر. أرجو توصيل {t} بعد يوم {w}."),
+        ("Can you hold {t} for a couple of days? I am away.", "هل يمكن الاحتفاظ بالشحنة {t} ليومين؟ أنا خارج المدينة."),
+        ("I am away until after {w}. Please reschedule {t}.", "أنا مسافر إلى ما بعد يوم {w}. أرجو إعادة جدولة {t}."),
+    ),
+    ("RESCHEDULE_REQUEST", "ASKED_DRIVER"): (     # the recipient asked the driver for another day at the attempt
+        ("I could not take {t} {d}. Please bring it another day.", "لم أتمكن من استلام {t} {d}. أرجو إحضارها في يوم آخر."),
+        ("As I told the driver, please deliver {t} another day.", "كما أخبرت المندوب، أرجو توصيل {t} في يوم آخر."),
     ),
 }
+# Who physically took the parcel (world.physical `received`) -> the group of a confirmation.
+RECEIVED_GROUP = {"RECIPIENT": "HAND", "FAMILY": "FAMILY", "DOOR": "DOOR", "RECEPTION": "RECEPTION", "NEIGHBOUR_AUTHORIZED": "NEIGHBOUR",
+                  "NEIGHBOUR_UNAUTHORIZED": "NEIGHBOUR", "OCCUPANT": "ELSEWHERE"}
+PLAIN_SHARE = .3        # a message that could say what happened says only the plain thing this often
+WEEKDAYS = (("Monday", "الاثنين"), ("Tuesday", "الثلاثاء"), ("Wednesday", "الأربعاء"), ("Thursday", "الخميس"), ("Friday", "الجمعة"),
+            ("Saturday", "السبت"), ("Sunday", "الأحد"))
+
+
+def day_phrase(event, when):
+    """(English, Arabic): how someone writing at `when` names the local day of the earlier instant `event`."""
+    days = (local_date(when) - local_date(event)).days
+    if days <= 0:
+        return "today", "اليوم"
+    if days == 1:
+        return "yesterday", "أمس"
+    if days == 2:
+        return "two days ago", "قبل يومين"
+    en, ar = WEEKDAYS[local_date(event).weekday()]
+    return f"on {en}", f"يوم {ar}"
+
+
+def statement_group(code, when, *, received=None, visible_at=None, promise_at=None, about=None, away_until=None, failed_at=None):
+    """(group, the instant its {d} names, the instant its {w} names) for a recipient message of `code` written at
+    `when`, from what physically happened: `received` is the simulator's private handover fact (when, into whose
+    hands, recipient at home), `visible_at` when the delivery record reached tracking, `about` what prompted the
+    message. A non-receipt claim on a parcel the household did receive (`about` CLAIM) contradicts the handover by
+    its nature: it gets only the plain wording."""
+    if received and received["t"] > when:
+        received = None
+    if code == "RECEIVED_CONFIRMATION" and received:
+        return ("FOUND" if about == "FOUND" else RECEIVED_GROUP[received["by"]]), received["t"], None
+    if code == "NOT_RECEIVED" and received:
+        if visible_at is None or visible_at > when:
+            return "UNSEEN", None, None
+        if about != "CLAIM" and RECEIVED_GROUP[received["by"]] in ("NEIGHBOUR", "ELSEWHERE"):
+            return ("HOME" if received["at_home"] else "OUT"), received["t"], None
+        return "ANY", received["t"], None
+    if code == "NOT_RECEIVED":
+        return "UNSEEN", None, None
+    if code == "WHERE_IS_PARCEL" and promise_at and when > promise_at:
+        return "LATE", promise_at, None
+    if code == "ADDRESS_CORRECTION":
+        return ("REFINED" if about == "REFINED" else "MOVED"), None, None
+    if code == "RESCHEDULE_REQUEST":
+        if about == "AWAY" and away_until and away_until - when > timedelta(days=1):
+            return "AWAY", None, away_until - timedelta(days=1)     # the last day away
+        if about == "ASKED_DRIVER" and failed_at:
+            return "ASKED_DRIVER", failed_at, None
+    return "ANY", None, None
+
+
 REPORT_CHANNELS = (("PORTAL", .4), ("EMAIL", .25), ("CALL_CENTER", .2), ("WHATSAPP", .15))
 
 
@@ -139,6 +252,8 @@ class Observer:
         self.ran_trips = set()
         self.assign_by_day = {}     # (sid, service date) -> the shipment's last-mile VehicleAssignment that day
         self.recipient_pin = {}
+        self.not_received = set()   # shipments whose recipient reported non-receipt
+        self.delivery_visible = {}  # sid -> instant its first delivered attempt record reached the provider system
         self.segments = {}
         self.persons = {}
         self.handoff_by_person = {}
@@ -711,7 +826,8 @@ class Observer:
         pin = self.owned("LocationPin", f"{sid}-PIN-02", sid, a["t"], recorded, act=a["act"], mech=self.mech_of(a), address_version_id=v2,
                          supplier_id=s.recipient_id, purpose="recipient_supplied_destination", lat=lat, lng=lng,
                          accuracy_m=r["geocode_accuracy_m"], verification_status="ATTRIBUTED_REPORT", source_ref="recipient-portal")
-        self.report(s, "ADDRESS_CORRECTION", a["t"], mech=self.mech_of(a), pin=pin, recorded=recorded)
+        self.report(s, "ADDRESS_CORRECTION", a["t"], mech=self.mech_of(a), pin=pin, recorded=recorded,
+                    about="REFINED" if a.get("minor") else "MOVED")
         self.node_of_act[a["act"]] = v2
 
     def _trip_event(self, a):
@@ -764,29 +880,47 @@ class Observer:
                        template_ref=f"tpl-{purpose.lower()}-v2", secret_value_stored=None,
                        source_ref="messaging-gateway")
 
-    def report(self, s, code, when, *, mech=(), pin=None, recorded=None):
+    def statement(self, s, code, when, about=None, **facts):
+        """(English, Arabic) text of a recipient message: the group from what physically happened, the wording drawn."""
+        key = (s.sid, code, when.isoformat())
+        group, day_of, weekday_of = statement_group(code, when, received=self.sim.received.get(s.sid), visible_at=self.delivery_visible.get(s.sid),
+                                                    promise_at=s.promise_at, about=about, **facts)
+        # Some messages say only the plain thing. Not where the plain wording would be wrong: NOT_RECEIVED's plain
+        # wordings say tracking shows a delivery, and an address message always says which kind of change it is.
+        if group not in ("ANY", "UNSEEN", "MOVED", "REFINED") and self.d.chance(PLAIN_SHARE, *key, "plain"):
+            group = "ANY"
+            day_of = day_of if code == "NOT_RECEIVED" else None
+        en, ar = self.d.choice(STATEMENTS[(code, group)], *key, "text")
+        day = day_phrase(day_of, when) if day_of else ("", "")
+        weekday = WEEKDAYS[local_date(weekday_of).weekday()] if weekday_of else ("", "")
+        return en.format(t=s.tracking, d=day[0], w=weekday[0]), ar.format(t=s.tracking, d=day[1], w=weekday[1])
+
+    def report(self, s, code, when, *, mech=(), pin=None, recorded=None, about=None, **facts):
         if when >= self.config.end_at:
             return None
         key = (s.sid, code, when.isoformat())
-        en, ar = self.d.choice(REPORT_TEXT[code], *key, "text")
-        day = self.d.choice(("yesterday", "today", "on Sunday", "two days ago", "this morning"), *key, "day")
-        day_ar = {"yesterday": "أمس", "today": "اليوم", "on Sunday": "يوم الأحد", "two days ago": "قبل يومين", "this morning": "هذا الصباح"}[day]
+        en, ar = self.statement(s, code, when, about, **facts)
+        if code == "NOT_RECEIVED":
+            self.not_received.add(s.sid)
         channel = self.d.weighted(REPORT_CHANNELS, *key, "channel")
         recorded = recorded or when + timedelta(seconds=self.d.integer(5, 60, *key, "rec") if channel in ("PORTAL", "WHATSAPP")
                                                 else self.d.integer(120, 1200, *key, "rec"))
         return self.owned("RecipientReport", self.nid(s.sid, "REPORT"), s.sid, when, recorded, mech=mech, package_id=s.parcels[0].pid,
                           report_code=code, reporter_id=s.recipient_id, pin_id=pin if pin else self.recipient_pin.get(s.sid) if code == "NOT_RECEIVED" else None,
-                          statement_en=en.format(t=s.tracking, d=day), statement_ar=ar.format(t=s.tracking, d=day_ar),
+                          statement_en=en, statement_ar=ar,
                           verification_status="ATTRIBUTED_REPORT", channel=channel, source_ref="recipient-portal")
 
     def reports(self):
-        """Inbound recipient messages: some caused by what happened, some ordinary questions."""
+        """Inbound recipient messages: some caused by what happened, some ordinary questions. What a message says
+        follows what physically happened to the parcel (`statement`); nobody asks where a parcel is after it was
+        handed over."""
         delivered_at, first_failed, rescheduled = {}, {}, {}
         caused = {(self.mech.items[mid].type, sid): mid for mid, sids in sorted(self.sim.touch_ship.items()) for sid in sids}
         for a in self.sim.acts:
             if a["type"] == "attempt":
                 if a["disposition"] == "DELIVERED":
                     delivered_at.setdefault(a["sid"], a["t"])
+                    self.delivery_visible.setdefault(a["sid"], self.recorded[a["act"]])
                 else:
                     first_failed.setdefault(a["sid"], a["t"])
                     if a.get("reason") == "CUSTOMER_REQUESTED_RESCHEDULE":
@@ -818,29 +952,38 @@ class Observer:
                         self.report(s, "RECEIVED_CONFIRMATION", handed_at + timedelta(hours=self.d.uniform(10, 30, *key, "h")), mech=[mid])
                 elif mtype == "RECIPIENT_UNAVAILABLE" and sid in first_failed:
                     if self.d.chance(.35, *key, "resched"):
-                        self.report(s, "RESCHEDULE_REQUEST", first_failed[sid] + timedelta(hours=self.d.uniform(1, 8, *key, "h")), mech=[mid])
+                        self.report(s, "RESCHEDULE_REQUEST", first_failed[sid] + timedelta(hours=self.d.uniform(1, 8, *key, "h")), mech=[mid],
+                                    about="AWAY", away_until=params.get("end"))
                 elif mtype == "CUSTOMER_COMPLAINT":
                     if params["subtype"] == CLAIM_SUBTYPE and handed_at:
                         first = handed_at + timedelta(hours=self.d.uniform(4, 40, *key, "h"))
-                        self.report(s, "NOT_RECEIVED", first, mech=[mid])
+                        self.report(s, "NOT_RECEIVED", first, mech=[mid], about="CLAIM")
                         if self.d.chance(.4, *key, "found"):
-                            self.report(s, "RECEIVED_CONFIRMATION", first + timedelta(hours=self.d.uniform(5, 36, *key, "h2")), mech=[mid])
+                            self.report(s, "RECEIVED_CONFIRMATION", first + timedelta(hours=self.d.uniform(5, 36, *key, "h2")), mech=[mid], about="FOUND")
                     elif params["subtype"] != CLAIM_SUBTYPE:
                         when = params["at"]
                         if handed_at is None or when < handed_at:
                             self.report(s, "WHERE_IS_PARCEL", when, mech=[mid])
             # Ordinary messages: a reply to a failed-attempt notice asking for another day, a thank-you after delivery.
             if sid in rescheduled and self.d.chance(.3, sid, "bg-resched"):
-                self.report(s, "RESCHEDULE_REQUEST", rescheduled[sid] + timedelta(minutes=self.d.integer(10, 120, sid, "bg-resched-m")))
-            if sid in delivered_at and self.d.chance(.02, sid, "bg-thanks"):
+                self.report(s, "RESCHEDULE_REQUEST", rescheduled[sid] + timedelta(minutes=self.d.integer(10, 120, sid, "bg-resched-m")),
+                            about="ASKED_DRIVER", failed_at=rescheduled[sid])
+            # Nobody thanks for a parcel that went to another building or to someone next door unasked, or that they
+            # report as not received: those have their own messages above.
+            took = self.sim.received.get(sid, {}).get("by")
+            if sid in delivered_at and took not in ("OCCUPANT", "NEIGHBOUR_UNAUTHORIZED") and sid not in self.not_received and self.d.chance(.02, sid, "bg-thanks"):
                 self.report(s, "RECEIVED_CONFIRMATION", delivered_at[sid] + timedelta(hours=self.d.uniform(1, 12, sid, "bg-thanks-h")))
-            # A shipment that is late for any reason draws a question from some recipients.
+            # A shipment that is late for any reason draws a question from some recipients, while they still wait for it.
             if (handed_at is None or handed_at > s.promise_at) and self.d.chance(.3, sid, "late-question"):
-                self.report(s, "WHERE_IS_PARCEL", s.promise_at + timedelta(hours=self.d.uniform(3, 28, sid, "late-h")))
+                when = s.promise_at + timedelta(hours=self.d.uniform(3, 28, sid, "late-h"))
+                if handed_at is None or when < handed_at:
+                    self.report(s, "WHERE_IS_PARCEL", when)
             for x in s.parcels:
                 retained = self.sim.p[x.pid].retained
                 if retained and self.d.chance(.5, sid, "retained-question"):
-                    self.report(s, "WHERE_IS_PARCEL", s.promise_at + timedelta(hours=self.d.uniform(2, 20, sid, "ret-h")))
+                    when = s.promise_at + timedelta(hours=self.d.uniform(2, 20, sid, "ret-h"))
+                    if handed_at is None or when < handed_at:
+                        self.report(s, "WHERE_IS_PARCEL", when)
                     break
 
     # ------------------------------------------------------------------ shared observations

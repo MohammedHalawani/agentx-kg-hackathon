@@ -1,0 +1,284 @@
+[
+ {
+  "as_of": "2026-09-14T09:05:00+00:00",
+  "case_id": "FXT-CASE-E2-0001",
+  "opening_evidence_ids": [
+   "FXT-EV-E2-0001-O"
+  ],
+  "rule_codes": [
+   "CUSTODY_GAP"
+  ],
+  "shipment_id": "FXT-SHP-E2-0001",
+  "symptoms": [
+   "CUSTODY_TRANSFER_UNCONFIRMED"
+  ]
+ },
+ {
+  "as_of": "2026-09-14T12:05:00+00:00",
+  "case_id": "FXT-CASE-E2-0002",
+  "opening_evidence_ids": [
+   "FXT-EV-E2-0002-O"
+  ],
+  "rule_codes": [
+   "CUSTODY_GAP"
+  ],
+  "shipment_id": "FXT-SHP-E2-0002",
+  "symptoms": [
+   "CUSTODY_TRANSFER_UNCONFIRMED"
+  ]
+ },
+ {
+  "as_of": "2026-09-14T15:05:00+00:00",
+  "case_id": "FXT-CASE-E2-0003",
+  "opening_evidence_ids": [
+   "FXT-EV-E2-0003-O"
+  ],
+  "rule_codes": [
+   "CUSTODY_GAP"
+  ],
+  "shipment_id": "FXT-SHP-E2-0003",
+  "symptoms": [
+   "CUSTODY_TRANSFER_UNCONFIRMED"
+  ]
+ },
+ {
+  "as_of": "2026-09-14T18:05:00+00:00",
+  "case_id": "FXT-CASE-E2-0004",
+  "opening_evidence_ids": [
+   "FXT-EV-E2-0004-O"
+  ],
+  "rule_codes": [
+   "CUSTODY_GAP"
+  ],
+  "shipment_id": "FXT-SHP-E2-0004",
+  "symptoms": [
+   "CUSTODY_TRANSFER_UNCONFIRMED"
+  ]
+ },
+ {
+  "as_of": "2026-09-14T21:05:00+00:00",
+  "case_id": "FXT-CASE-E2-0005",
+  "opening_evidence_ids": [
+   "FXT-EV-E2-0005-O"
+  ],
+  "rule_codes": [
+   "CUSTODY_GAP"
+  ],
+  "shipment_id": "FXT-SHP-E2-0005",
+  "symptoms": [
+   "CUSTODY_TRANSFER_UNCONFIRMED"
+  ]
+ },
+ {
+  "as_of": "2026-09-15T00:05:00+00:00",
+  "case_id": "FXT-CASE-E2-0006",
+  "opening_evidence_ids": [
+   "FXT-EV-E2-0006-O"
+  ],
+  "rule_codes": [
+   "CUSTODY_GAP"
+  ],
+  "shipment_id": "FXT-SHP-E2-0006",
+  "symptoms": [
+   "CUSTODY_TRANSFER_UNCONFIRMED"
+  ]
+ },
+ {
+  "as_of": "2026-09-15T03:05:00+00:00",
+  "case_id": "FXT-CASE-E2-0007",
+  "opening_evidence_ids": [
+   "FXT-EV-E2-0007-O"
+  ],
+  "rule_codes": [
+   "MISSED_MILESTONE"
+  ],
+  "shipment_id": "FXT-SHP-E2-0007",
+  "symptoms": [
+   "MILESTONE_OVERDUE"
+  ]
+ },
+ {
+  "as_of": "2026-09-15T06:05:00+00:00",
+  "case_id": "FXT-CASE-E2-0008",
+  "opening_evidence_ids": [
+   "FXT-EV-E2-0008-O"
+  ],
+  "rule_codes": [
+   "MISSED_MILESTONE"
+  ],
+  "shipment_id": "FXT-SHP-E2-0008",
+  "symptoms": [
+   "MILESTONE_OVERDUE"
+  ]
+ },
+ {
+  "as_of": "2026-09-15T09:05:00+00:00",
+  "case_id": "FXT-CASE-E2-0009",
+  "opening_evidence_ids": [
+   "FXT-EV-E2-0009-O"
+  ],
+  "rule_codes": [
+   "MISSED_MILESTONE"
+  ],
+  "shipment_id": "FXT-SHP-E2-0009",
+  "symptoms": [
+   "MILESTONE_OVERDUE"
+  ]
+ },
+ {
+  "as_of": "2026-09-15T12:05:00+00:00",
+  "case_id": "FXT-CASE-E2-0010",
+  "opening_evidence_ids": [
+   "FXT-EV-E2-0010-O"
+  ],
+  "rule_codes": [
+   "MISSED_MILESTONE"
+  ],
+  "shipment_id": "FXT-SHP-E2-0010",
+  "symptoms": [
+   "MILESTONE_OVERDUE"
+  ]
+ },
+ {
+  "as_of": "2026-09-15T15:05:00+00:00",
+  "case_id": "FXT-CASE-E2-0011",
+  "opening_evidence_ids": [
+   "FXT-EV-E2-0011-O"
+  ],
+  "rule_codes": [
+   "WRONG_GATE",
+   "RECIPIENT_UNAVAILABLE"
+  ],
+  "shipment_id": "FXT-SHP-E2-0011",
+  "symptoms": [
+   "DELIVERY_ATTEMPT_FAILED"
+  ]
+ },
+ {
+  "as_of": "2026-09-15T18:05:00+00:00",
+  "case_id": "FXT-CASE-E2-0012",
+  "opening_evidence_ids": [
+   "FXT-EV-E2-0012-O"
+  ],
+  "rule_codes": [
+   "WRONG_GATE",
+   "RECIPIENT_UNAVAILABLE"
+  ],
+  "shipment_id": "FXT-SHP-E2-0012",
+  "symptoms": [
+   "DELIVERY_ATTEMPT_FAILED"
+  ]
+ },
+ {
+  "as_of": "2026-09-15T21:05:00+00:00",
+  "case_id": "FXT-CASE-E2-0013",
+  "opening_evidence_ids": [
+   "FXT-EV-E2-0013-O"
+  ],
+  "rule_codes": [
+   "RECIPIENT_UNAVAILABLE"
+  ],
+  "shipment_id": "FXT-SHP-E2-0013",
+  "symptoms": [
+   "DELIVERY_ATTEMPT_FAILED"
+  ]
+ },
+ {
+  "as_of": "2026-09-16T00:05:00+00:00",
+  "case_id": "FXT-CASE-E2-0014",
+  "opening_evidence_ids": [
+   "FXT-EV-E2-0014-O"
+  ],
+  "rule_codes": [
+   "RECIPIENT_UNAVAILABLE"
+  ],
+  "shipment_id": "FXT-SHP-E2-0014",
+  "symptoms": [
+   "DELIVERY_ATTEMPT_FAILED"
+  ]
+ },
+ {
+  "as_of": "2026-09-16T03:05:00+00:00",
+  "case_id": "FXT-CASE-E2-0015",
+  "opening_evidence_ids": [
+   "FXT-EV-E2-0015-O"
+  ],
+  "rule_codes": [
+   "WEIGHT_MISMATCH"
+  ],
+  "shipment_id": "FXT-SHP-E2-0015",
+  "symptoms": [
+   "WEIGHT_READ_DIFFERS"
+  ]
+ },
+ {
+  "as_of": "2026-09-16T06:05:00+00:00",
+  "case_id": "FXT-CASE-E2-0016",
+  "opening_evidence_ids": [
+   "FXT-EV-E2-0016-O"
+  ],
+  "rule_codes": [
+   "WEIGHT_MISMATCH"
+  ],
+  "shipment_id": "FXT-SHP-E2-0016",
+  "symptoms": [
+   "WEIGHT_READ_DIFFERS"
+  ]
+ },
+ {
+  "as_of": "2026-09-16T09:05:00+00:00",
+  "case_id": "FXT-CASE-E2-0017",
+  "opening_evidence_ids": [
+   "FXT-EV-E2-0017-O"
+  ],
+  "rule_codes": [
+   "BARCODE_MISMATCH"
+  ],
+  "shipment_id": "FXT-SHP-E2-0017",
+  "symptoms": [
+   "BARCODE_READ_DIFFERS"
+  ]
+ },
+ {
+  "as_of": "2026-09-16T12:05:00+00:00",
+  "case_id": "FXT-CASE-E2-0018",
+  "opening_evidence_ids": [
+   "FXT-EV-E2-0018-O"
+  ],
+  "rule_codes": [
+   "BARCODE_MISMATCH"
+  ],
+  "shipment_id": "FXT-SHP-E2-0018",
+  "symptoms": [
+   "BARCODE_READ_DIFFERS"
+  ]
+ },
+ {
+  "as_of": "2026-09-16T15:05:00+00:00",
+  "case_id": "FXT-CASE-E2-0019",
+  "opening_evidence_ids": [
+   "FXT-EV-E2-0019-O"
+  ],
+  "rule_codes": [
+   "CUSTODY_GAP"
+  ],
+  "shipment_id": "FXT-SHP-E2-0019",
+  "symptoms": [
+   "CUSTODY_TRANSFER_UNCONFIRMED"
+  ]
+ },
+ {
+  "as_of": "2026-09-16T18:05:00+00:00",
+  "case_id": "FXT-CASE-E2-0020",
+  "opening_evidence_ids": [
+   "FXT-EV-E2-0020-O"
+  ],
+  "rule_codes": [
+   "CUSTODY_GAP"
+  ],
+  "shipment_id": "FXT-SHP-E2-0020",
+  "symptoms": [
+   "CUSTODY_TRANSFER_UNCONFIRMED"
+  ]
+ }
+]

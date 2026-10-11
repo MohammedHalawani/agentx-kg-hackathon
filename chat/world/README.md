@@ -242,6 +242,20 @@ driver and vehicle and the job the parcel was dispatched on (`assignment_id`), s
 not an empty field. Custody DELIVERED always names the consignee; the
 HandoffEvidence names who physically took the parcel. No code value is ever stored.
 
+Recipient messages (RecipientReport `statement_en` / `statement_ar`; review finding N2). What a message says follows
+what physically happened to that parcel in the private simulation; only the wording is drawn (`observe.STATEMENTS`,
+two to four texts per situation, and three in ten messages say only the plain thing). The simulator keeps, privately,
+how each shipment left the network (`physical.received`: when, into whose hands, whether the recipient was home). A
+confirmation says "a neighbour passed it to me" only when someone next door took the parcel, and likewise for a
+family member, the reception, the door and another building; a non-receipt report says the writer was home or out as
+they were, and says tracking shows a delivery only once the delivery record had arrived; "late" and "was due" are
+written only after the promise; every day a text names ("yesterday", "on Sunday", "after Monday") is the real day of
+the handover, the promise, the failed attempt or the end of the absence; an address message says "I moved" for an
+outdated address and "a more exact pin" for a refinement. Nobody asks where a parcel is after it was handed over,
+thanks for a parcel that went elsewhere, or confirms and then reports non-receipt. A customer's own non-receipt claim
+on a parcel their household received contradicts the handover by its nature and gets only the plain wording. No text
+names a mechanism, a cause code or an action (tested); the tell detector does not read free text (`SKIP_FIELDS`).
+
 ## 5. Truth labels and physical state (`truth.py`, `export.py`; never imported, never in the repository)
 
 Two private outputs, kept apart (addendum B1) and both outside the repository. `truth_directory` and `state_directory`
@@ -409,12 +423,25 @@ case's most specific rule code (15%: the default action of another code the case
 from the shipment's own evidence recorded between the action and verification: succeeded when re-assessing the
 shipment no longer raises a rule code that opened the case, or when the evidence shows what the action was for
 (`ACTION_EVIDENCE`); otherwise failed. Verification happens at most 20 h after the action and at least 30 min before
-the live window starts. A history case is not imported as a precedent when its verification cannot finish before the
-cut-off or when a mechanism instance that caused something on its shipment is still active at or after the cut-off
-(`build.mechanism_active_until`: the end of the mechanism's window, the arrival of every record it shaped for the
-shipment and of its discrimination evidence, and, for faults with no natural recovery, the moment the parcels left the
-network). Provider retransmissions are exempt. The exclusion decision uses the generator's private record and is never
-written into the graph. Development export: 59 history cases, 39 precedents (14 succeeded, 25 failed), 20 excluded.
+the live window starts.
+
+What decides a history case's visible state (review finding N1). Only what operations could see by the cut-off: the
+case's opening time, its rule codes and the shipment's own records up to verification. A history case is left without
+an action and an outcome (it keeps its derived Case and Exception as the monitor left them, and PRECEDENTS never
+returns it) only when its verification cannot finish before the cut-off (`history.verification_window`, computed from
+the opening time), or when it has no rule code, no allowed action or no evidence to cite. Every other case is
+authored, whatever is still going on behind it; a fault that is still acting then usually shows as a failed outcome,
+because the shipment's records still raise the rule code. No private record is consulted and no exclusion list is
+passed in. The first builds decided it from the private record (no outcome whenever a mechanism instance was still
+active at the cut-off), which made "no outcome" mean "still active" in 20 of 20 cases of the development export; that
+rule is gone. `build.mechanism_active_at_cutoff` remains for measurement only: `validate.history_state_association`
+compares, among the cases opened early enough to be verified whatever their action delay, the share without an
+outcome between shipments with a fault still acting and the others, and gates on a difference of at most 0.10
+(test world: 0 of 10 against 0 of 11; the old rule on the same world: 10 of 10 against 0 of 11). What remains and is
+reported, not gated: a case opened in the last hours before the cut-off cannot be verified, and a case that recent has
+a recent fault, so over all cases "no outcome" still leans towards "still active" exactly as far as the opening time
+itself does. The numbers of the committed export (59 history cases, 39 precedents, 20 excluded) are from the old rule
+and change with the next export.
 
 ## 7. Build, validate, export, import
 
@@ -476,8 +503,10 @@ Validation (`validate.py`, all recomputed; everything gates the export unless ma
   export; every absence item's `cancelled_by` equals a full-scan recomputation of its `match` and is empty; every group
   has an item of the shipment; every estimate recomputes and is never before the mechanism started or the shipment was
   booked; nothing is identifiable one second before booking with everything delivered by then counted as ingested.
-- precedent cut-off: every history outcome verified (and every history fixture recorded) before the live window, and
-  no authored precedent whose shipment had a mechanism active at or after the cut-off (recomputed).
+- precedent cut-off: every history outcome verified (and every history fixture recorded) before the live window; every
+  history case either authored or left out for a visible reason; the time rule recomputed from the opening time; and,
+  among cases that could always be verified, a missing outcome not associated with a fault still acting (difference
+  of the two shares at most 0.10; the table and the all-cases figure are reported).
 - coverage: each scheduled mechanism is the cause of a deviation on at least min(10, target) development shipments.
   Reported: clean cases per mechanism and per family against the floor of 10, and the size that would reach it.
 - monitor replay (hourly ticks from the live start, 900 s allowance): gating on "no cause identifiable before a

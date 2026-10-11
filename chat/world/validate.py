@@ -16,6 +16,7 @@ Foundation rules that cannot apply to a world with real recording failures (docu
 from bisect import bisect_right
 from collections import Counter, defaultdict
 from datetime import timedelta
+import json
 import math
 import re
 
@@ -614,17 +615,64 @@ def discrimination(build, truth=None, present=None):
                     groups_by_size=dict(sorted(groups.items())))
 
 
+# Reasons a history case is left without an outcome. Each is read from what operations could see by the cut-off.
+VISIBLE_NOT_IMPORTED = {"NOT_VERIFIABLE_BEFORE_CUTOFF", "NO_RULE_CODE", "PROHIBITED_ACTION", "NO_EVIDENCE"}
+HIDDEN_ACTIVITY_TOLERANCE = .10
+
+
+def history_state_association(build, imported, live_start, authored=None):
+    """Review finding N1, measured: does a history case being left without an outcome say anything about a hidden
+    fault still acting on its shipment, beyond what its visible opening time already says?
+
+    The stratum is the cases opened early enough that verification could always finish before the cut-off (a visible
+    fact: the opening time). Inside it, the share of cases without an outcome is compared between shipments with a
+    mechanism still active at the cut-off and the others (private, used for this measurement only). Outside it, a
+    case may lack an outcome because it opened too late, and late cases have recent faults: that is the time the
+    case itself shows, and it is reported, not gated."""
+    from world.build import mechanism_active_at_cutoff
+    from world.history import LATEST_ACTION_START, MIN_VERIFY_AFTER, VERIFY_MARGIN
+    always_verifiable_before = live_start - VERIFY_MARGIN - MIN_VERIFY_AFTER - LATEST_ACTION_START
+    if authored is None:    # A test passes another set to measure a counterfactual authoring rule.
+        authored = {n.properties["holdout_group"] for n in imported.nodes.values() if n.kind == "Outcome"}
+    table = {scope: {"active": {"outcome": 0, "no_outcome": 0}, "not_active": {"outcome": 0, "no_outcome": 0}} for scope in ("all", "stratum")}
+    states = {"outcome": Counter(), "no_outcome": Counter()}
+    for case in sorted((n for n in imported.nodes.values() if n.kind == "Case" and n.properties["split"] == "history"), key=lambda n: n.id):
+        sid = case.properties["holdout_group"]
+        hidden = "active" if mechanism_active_at_cutoff(build, sid, live_start) else "not_active"
+        state = "outcome" if sid in authored else "no_outcome"
+        states[state][case.properties.get("state")] += 1
+        table["all"][hidden][state] += 1
+        if instant(case.properties["opened_at"]) <= always_verifiable_before:
+            table["stratum"][hidden][state] += 1
+
+    def rate(scope, hidden):
+        cell = table[scope][hidden]
+        total = cell["outcome"] + cell["no_outcome"]
+        return round(cell["no_outcome"] / total, 4) if total else None
+    rates = {scope: {hidden: rate(scope, hidden) for hidden in ("active", "not_active")} for scope in table}
+    a, b = rates["stratum"]["active"], rates["stratum"]["not_active"]
+    without = table["all"]["active"]["no_outcome"] + table["all"]["not_active"]["no_outcome"]
+    return {"always_verifiable_when_opened_by": iso(always_verifiable_before), "counts": table, "no_outcome_rate": rates,
+            "stratum_rate_difference": None if a is None or b is None else round(abs(a - b), 4),
+            "stratum_no_outcome_among_active": a,
+            "active_share_among_no_outcome_all_cases": round(table["all"]["active"]["no_outcome"] / without, 4) if without else None,
+            "case_states": {k: dict(sorted(v.items(), key=lambda kv: str(kv[0]))) for k, v in states.items()}}
+
+
 def precedent_cutoff(build, exports):
-    """Addendum A2: no precedent leaks across the history/development cut-off. Every history outcome is verified
-    before the live window starts, every authored precedent's shipment had no mechanism instance active at or after
-    the cut-off (recomputed here), and nothing excluded or live was authored."""
-    from world.build import CUTOFF_EXEMPT, mechanism_active_until
+    """Addendum A2 and review finding N1. Every history outcome is verified before the live window starts, and the
+    visible state of a history case is decided from visible evidence and time only: a case without an outcome has a
+    visible reason, the time rule is recomputed here from the opening time, and inside the stratum of cases that
+    could always be verified a missing outcome is not associated with a hidden fault still acting (measured)."""
+    from world.history import verification_window
+    from world.rand import Draws
     r = Report()
     summary = {}
     for live_split, (imported, items, truth, live_start) in exports.items():
         outcomes = [n for n in imported.nodes.values() if n.kind == "Outcome"]
         authored = {n.properties["holdout_group"] for n in outcomes}
         report = build.history_reports.get(live_split, {})
+        not_imported = report.get("not_imported", {})
         for n in outcomes:
             r.check(n.properties["split"] == "history", "OUTCOMES_ONLY_IN_HISTORY", n.id)
             r.check(instant(n.properties["verified_at"]) < live_start, "VERIFIED_BEFORE_LIVE_WINDOW", n.id, n.properties["verified_at"])
@@ -632,15 +680,27 @@ def precedent_cutoff(build, exports):
             for n in imported.nodes.values():
                 if n.kind == kind and n.properties.get("split") == "history":
                     r.check(instant(n.properties["recorded_at"]) < live_start, "HISTORY_RECORD_BEFORE_LIVE_WINDOW", n.id, kind)
-        for sid in sorted(authored):
-            active = [mechanism_active_until(build, m, sid) for m in build.truth[sid]["mechanisms"] if m["type"] not in CUTOFF_EXEMPT]
-            r.check(all(t is not None and t < live_start for t in active), "NO_MECHANISM_ACTIVE_AT_CUTOFF", sid)
-            r.check(sid not in report.get("not_imported", {}), "EXCLUDED_NOT_AUTHORED", sid)
-        cases = sum(1 for n in imported.nodes.values() if n.kind == "Case" and n.properties["split"] == "history")
-        summary[live_split] = {"live_start": iso(live_start), "history_cases": cases, "precedents_authored": len(authored),
-                               "not_imported_by_reason": dict(Counter(report.get("not_imported", {}).values())),
+        draws = Draws(build.config.seed)
+        cases = [n for n in imported.nodes.values() if n.kind == "Case" and n.properties["split"] == "history"]
+        for case in cases:
+            sid = case.properties["holdout_group"]
+            window = verification_window(instant(case.properties["opened_at"]), sid, draws, live_start, instant(imported.config.as_of))
+            reason = not_imported.get(sid)
+            r.check((sid in authored) != (sid in not_imported), "AUTHORED_OR_NOT_IMPORTED", sid)
+            r.check(reason is None or reason in VISIBLE_NOT_IMPORTED, "NOT_IMPORTED_FOR_A_VISIBLE_REASON", sid, str(reason))
+            # The time rule is the last visible rule applied: a case with a rule code and an allowed action is left out
+            # for time exactly when its window, recomputed from its opening time, does not fit before the cut-off.
+            timed = reason not in ("NO_RULE_CODE", "PROHIBITED_ACTION")
+            r.check(not timed or (window is None) == (reason == "NOT_VERIFIABLE_BEFORE_CUTOFF"), "TIME_RULE_FROM_THE_OPENING_TIME", sid, str(reason))
+        association = history_state_association(build, imported, live_start)
+        difference = association["stratum_rate_difference"]
+        r.check(difference is None or difference <= HIDDEN_ACTIVITY_TOLERANCE, "NO_OUTCOME_NOT_ASSOCIATED_WITH_HIDDEN_ACTIVITY", live_split,
+                json.dumps(association["no_outcome_rate"]["stratum"]))
+        summary[live_split] = {"live_start": iso(live_start), "history_cases": len(cases), "precedents_authored": len(authored),
+                               "not_imported_by_reason": dict(Counter(not_imported.values())),
                                "precedents_succeeded": sum(1 for n in outcomes if n.properties["success"]),
-                               "precedents_failed": sum(1 for n in outcomes if not n.properties["success"])}
+                               "precedents_failed": sum(1 for n in outcomes if not n.properties["success"]),
+                               "hidden_activity_association": association}
     return r.result(per_export=summary)
 
 

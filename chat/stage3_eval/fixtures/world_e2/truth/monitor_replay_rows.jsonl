@@ -1,0 +1,22 @@
+{"healthy": false, "opened_at": "2026-09-14T09:00:00+00:00", "opening_codes": ["CUSTODY_GAP"], "opening_symptoms": ["CUSTODY_TRANSFER_UNCONFIRMED"], "shipment_id": "FXT-SHP-E2-0001"}
+{"healthy": false, "opened_at": "2026-09-14T12:00:00+00:00", "opening_codes": ["CUSTODY_GAP"], "opening_symptoms": ["CUSTODY_TRANSFER_UNCONFIRMED"], "shipment_id": "FXT-SHP-E2-0002"}
+{"healthy": false, "opened_at": "2026-09-14T15:00:00+00:00", "opening_codes": ["CUSTODY_GAP"], "opening_symptoms": ["CUSTODY_TRANSFER_UNCONFIRMED"], "shipment_id": "FXT-SHP-E2-0003"}
+{"healthy": false, "opened_at": "2026-09-14T18:00:00+00:00", "opening_codes": ["CUSTODY_GAP"], "opening_symptoms": ["CUSTODY_TRANSFER_UNCONFIRMED"], "shipment_id": "FXT-SHP-E2-0004"}
+{"healthy": false, "opened_at": "2026-09-14T21:00:00+00:00", "opening_codes": ["CUSTODY_GAP"], "opening_symptoms": ["CUSTODY_TRANSFER_UNCONFIRMED"], "shipment_id": "FXT-SHP-E2-0005"}
+{"healthy": false, "opened_at": "2026-09-15T00:00:00+00:00", "opening_codes": ["CUSTODY_GAP"], "opening_symptoms": ["CUSTODY_TRANSFER_UNCONFIRMED"], "shipment_id": "FXT-SHP-E2-0006"}
+{"healthy": false, "opened_at": "2026-09-15T03:00:00+00:00", "opening_codes": ["MISSED_MILESTONE"], "opening_symptoms": ["MILESTONE_OVERDUE"], "shipment_id": "FXT-SHP-E2-0007"}
+{"healthy": false, "opened_at": "2026-09-15T06:00:00+00:00", "opening_codes": ["MISSED_MILESTONE"], "opening_symptoms": ["MILESTONE_OVERDUE"], "shipment_id": "FXT-SHP-E2-0008"}
+{"healthy": false, "opened_at": "2026-09-15T09:00:00+00:00", "opening_codes": ["MISSED_MILESTONE"], "opening_symptoms": ["MILESTONE_OVERDUE"], "shipment_id": "FXT-SHP-E2-0009"}
+{"healthy": false, "opened_at": "2026-09-15T12:00:00+00:00", "opening_codes": ["MISSED_MILESTONE"], "opening_symptoms": ["MILESTONE_OVERDUE"], "shipment_id": "FXT-SHP-E2-0010"}
+{"healthy": false, "opened_at": "2026-09-15T15:00:00+00:00", "opening_codes": ["WRONG_GATE", "RECIPIENT_UNAVAILABLE"], "opening_symptoms": ["DELIVERY_ATTEMPT_FAILED"], "shipment_id": "FXT-SHP-E2-0011"}
+{"healthy": false, "opened_at": "2026-09-15T18:00:00+00:00", "opening_codes": ["WRONG_GATE", "RECIPIENT_UNAVAILABLE"], "opening_symptoms": ["DELIVERY_ATTEMPT_FAILED"], "shipment_id": "FXT-SHP-E2-0012"}
+{"healthy": false, "opened_at": "2026-09-15T21:00:00+00:00", "opening_codes": ["RECIPIENT_UNAVAILABLE"], "opening_symptoms": ["DELIVERY_ATTEMPT_FAILED"], "shipment_id": "FXT-SHP-E2-0013"}
+{"healthy": false, "opened_at": "2026-09-16T00:00:00+00:00", "opening_codes": ["RECIPIENT_UNAVAILABLE"], "opening_symptoms": ["DELIVERY_ATTEMPT_FAILED"], "shipment_id": "FXT-SHP-E2-0014"}
+{"healthy": false, "opened_at": "2026-09-16T03:00:00+00:00", "opening_codes": ["WEIGHT_MISMATCH"], "opening_symptoms": ["WEIGHT_READ_DIFFERS"], "shipment_id": "FXT-SHP-E2-0015"}
+{"healthy": false, "opened_at": "2026-09-16T06:00:00+00:00", "opening_codes": ["WEIGHT_MISMATCH"], "opening_symptoms": ["WEIGHT_READ_DIFFERS"], "shipment_id": "FXT-SHP-E2-0016"}
+{"healthy": false, "opened_at": "2026-09-16T09:00:00+00:00", "opening_codes": ["BARCODE_MISMATCH"], "opening_symptoms": ["BARCODE_READ_DIFFERS"], "shipment_id": "FXT-SHP-E2-0017"}
+{"healthy": false, "opened_at": "2026-09-16T12:00:00+00:00", "opening_codes": ["BARCODE_MISMATCH"], "opening_symptoms": ["BARCODE_READ_DIFFERS"], "shipment_id": "FXT-SHP-E2-0018"}
+{"healthy": false, "opened_at": "2026-09-16T15:00:00+00:00", "opening_codes": ["CUSTODY_GAP"], "opening_symptoms": ["CUSTODY_TRANSFER_UNCONFIRMED"], "shipment_id": "FXT-SHP-E2-0019"}
+{"healthy": false, "opened_at": "2026-09-16T18:00:00+00:00", "opening_codes": ["CUSTODY_GAP"], "opening_symptoms": ["CUSTODY_TRANSFER_UNCONFIRMED"], "shipment_id": "FXT-SHP-E2-0020"}
+{"healthy": true, "opened_at": "2026-09-14T07:00:00+00:00", "opening_codes": ["MISSED_MILESTONE"], "opening_symptoms": ["MILESTONE_OVERDUE"], "shipment_id": "FXT-SHP-E2-H000"}
+{"healthy": true, "opened_at": "2026-09-14T12:00:00+00:00", "opening_codes": ["MISSED_MILESTONE"], "opening_symptoms": ["MILESTONE_OVERDUE"], "shipment_id": "FXT-SHP-E2-H001"}

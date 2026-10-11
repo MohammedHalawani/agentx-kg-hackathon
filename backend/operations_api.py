@@ -37,11 +37,13 @@ PageLimit=Annotated[int,AfterValidator(_page_limit)]
 
 def operations_database(driver):
     """SUHAIL_OPERATIONS_DATABASE wins; otherwise the live provider-feed dataset when it is fully
-    imported, else the foundation V2 replay database (which stays loadable under its own id)."""
-    from operations.store import OPERATIONS_DATABASES
+    imported, else the foundation V2 replay database (which stays loadable under its own id).
+    An explicit choice must be one of the fixed operations databases or a mechanism-world database
+    (shipments-v2-world-<name>); a world database is never chosen implicitly."""
+    from operations.datasets import operations_database_allowed
     chosen=os.environ.get("SUHAIL_OPERATIONS_DATABASE")
     if chosen:
-        if chosen not in OPERATIONS_DATABASES:raise RuntimeError("Unsupported operations database")
+        if not operations_database_allowed(chosen):raise RuntimeError("Unsupported operations database")
         return chosen
     try:
         with driver.session(database="shipments-v2-demo-live",default_access_mode="READ") as session:
@@ -54,8 +56,19 @@ def operations_database(driver):
 
 def attach_simulator(store,reader,manifest):
     """Development only: the synthetic operational simulator answers executed actions through the feed.
-    It needs the live bundle's truth file (never loaded into Neo4j); without it nothing responds."""
+    It needs the live bundle's truth file (never loaded into Neo4j); without it nothing responds.
+
+    Mechanism-world datasets have no operational simulator yet (it is built later from the world's private
+    physical state). The S5 simulator plays the live-network scenarios from their truth file and is never
+    attached to world data, and no truth or state file is opened for a world dataset. With no adapter an
+    authorized action is recorded as not acknowledged: no field response, nothing verified, nothing resolved,
+    and the case goes to a person."""
     if not getattr(store,"live",False):return None
+    from operations.datasets import is_world_dataset
+    if is_world_dataset(manifest.get("dataset_id")):
+        store.adapter=None
+        log.warning("No operational simulator for mechanism-world data: executed actions get no field response and nothing resolves")
+        return None
     from pathlib import Path
     from dataset_v2.live_bundle import read_truth
     from dataset_v2.contracts import digest as _digest
@@ -89,7 +102,8 @@ class OperationsRuntime:
         manifest=json.loads(row["manifest"])
         if manifest.get("synthetic") is not True or manifest.get("schema_version")!=SCHEMA_VERSION or digest(manifest)!=row["manifest_hash"]:
             raise RuntimeError("Invalid frozen V2 manifest")
-        dataset_config=Config(**manifest["config"])
+        from operations.datasets import dataset_config as read_dataset_config
+        dataset_config=read_dataset_config(manifest["config"])
         self.reader=OperationsReader(driver,self.database,dataset_config.dataset_id,dataset_config,
                                      lambda:self.store.status()["as_of"])
         from operations import agents,investigator

@@ -152,6 +152,9 @@ class Simulation:
         self.corrections = {}                   # sid -> instant the correction was applied by dispatch
         self.container_seq = defaultdict(int)
         self.person_seq = defaultdict(int)
+        # sid -> how the shipment left the network (its first handover): when, into whose hands, and whether the
+        # recipient was home then. Private (never exported); the recipient's own later messages are worded from it.
+        self.received = {}
         self.end = config.end_at
 
     # ------------------------------------------------------------------ plumbing
@@ -1490,6 +1493,8 @@ class Simulation:
             point = self.stop_point(shipment, t) if not at_old_address else shipment.recipient["registered_point"]
         if outcome == "FAILED" and reason not in ("NOT_ATTEMPTED_TIME", None) and self.d.chance(.08, *key, "reason-other"):
             reason = "OTHER"   # Driver-entered reason codes are noisy: some failures are filed under OTHER.
+        if outcome == "DELIVERED":
+            self.received.setdefault(sid, {"t": t, "by": receiver, "at_home": bool(available)})
         for n, pid in enumerate(pids):
             state = self.p[pid]
             state.attempts += 1

@@ -3,8 +3,17 @@
 A message becomes visible to Suhail only when the simulation clock reaches its delivery time.
 The gateway decodes the channel's format, resolves provider references (barcodes, tracking
 numbers), de-duplicates by source event identity, and writes one immutable evidence node
-(:V2Entity:<Kind>:LiveIngested) whose recorded_at is the ingestion time. occurred_at stays the
-provider's event time, so a late upload is visible as late, never back-dated into the past.
+(:V2Entity:<Kind>:LiveIngested).
+
+Three times are kept apart. occurred_at stays the provider's event time. recorded_at is when the
+provider delivered the message to the gateway (the feed's deliver_at), not the clock tick at which
+the gateway got round to it: a coarse tick must not make an ordinary record look an hour late.
+ingested_at is that tick. A late upload stays visibly late (its delivery time is late), and no
+record is ever back-dated: recorded_at is never before occurred_at, never after the tick, and a
+message that turns up with a delivery time at or before a clock the gateway had already drained
+(one enqueued late) is stamped at the tick instead, so a snapshot taken earlier can never gain a
+record afterwards.
+
 Every message, including duplicates and rejects, keeps its raw payload and outcome on its
 ProviderFeedItem. No truth, gold or scenario data is read here.
 """
@@ -79,6 +88,7 @@ class Gateway:
     def __init__(self, driver, database, dataset_id):
         self.driver, self.database, self.dataset_id = driver, database, dataset_id
         self._reference = None
+        self._drained = None   # The latest clock by which every delivered message had been ingested.
 
     def reference(self):
         if self._reference is None:
@@ -97,21 +107,37 @@ class Gateway:
                               clock=instant(clock)).single()
         return row["n"]
 
-    def ingest_due(self, clock, limit=500):
-        """Normalize up to `limit` messages delivered by `clock`. Returns counts and touched shipments."""
+    def ingest_due(self, clock, limit=500, not_before=None):
+        """Normalize up to `limit` messages delivered by `clock`. Returns counts and touched shipments.
+
+        not_before: a clock by which the caller knows every delivered message was already ingested (the store passes
+        its previous clock). The gateway also remembers the clocks it drained itself."""
         ref = self.reference()
         clock_at = instant(clock)
+        floors = [t for t in (instant(not_before) if isinstance(not_before, str) else not_before, self._drained) if t is not None]
+        floor = max(floors) if floors else None
         with self.driver.session(database=self.database) as session:
-            return session.execute_write(lambda tx: self._ingest(tx, ref, clock_at, limit))
+            result = session.execute_write(lambda tx: self._ingest(tx, ref, clock_at, limit, floor))
+        if result["messages"] < limit and (self._drained is None or clock_at > self._drained):
+            self._drained = clock_at
+        return result
 
-    def _ingest(self, tx, ref, clock_at, limit):
+    @staticmethod
+    def recorded_time(deliver_at, occurred_at, clock_at, floor=None):
+        """When the provider delivered the record: never before it occurred, never after the tick that ingested it, and
+        the tick itself for a message delivered at or before a clock that had already been drained."""
+        if deliver_at is None or (floor is not None and deliver_at <= floor):
+            return clock_at
+        return min(clock_at, max(deliver_at, occurred_at))
+
+    def _ingest(self, tx, ref, clock_at, limit, floor=None):
         items = [dict(r["f"]) for r in tx.run(
             "MATCH (f:ProviderFeedItem {status:'PENDING'}) WHERE f.deliver_at <= $clock "
             "RETURN f ORDER BY f.deliver_at, f.feed_id LIMIT $limit", clock=clock_at, limit=limit)]
         counts = {"ingested": 0, "duplicate": 0, "conflicting_duplicate": 0, "rejected": 0}
         touched, lags, ingested = set(), [], []
         for item in items:
-            status, entity_id, sid, error = self._one(tx, ref, item, clock_at)
+            status, entity_id, sid, error = self._one(tx, ref, item, clock_at, floor)
             counts[status.lower()] += 1
             if sid and status == "INGESTED":
                 touched.add(sid)
@@ -124,7 +150,7 @@ class Gateway:
         return {**counts, "messages": len(items), "shipments": sorted(touched), "items": ingested,
                 "max_lag_seconds": max(lags, default=0)}
 
-    def _one(self, tx, ref, item, clock_at):
+    def _one(self, tx, ref, item, clock_at, floor=None):
         try:
             kind, entity_id, sid, occurred_at, props = decode(item["channel"], item["message_type"], json.loads(item["payload_json"]), ref)
         except (KeyError, ValueError, StopIteration, TypeError):
@@ -140,16 +166,20 @@ class Gateway:
         if instant(occurred_at) > clock_at:
             return "REJECTED", entity_id, sid, "event_time_after_receipt"
         split = self._splits[sid] if sid else "shared"
+        delivered = item.get("deliver_at")
+        delivered = delivered.to_native() if hasattr(delivered, "to_native") else instant(delivered) if isinstance(delivered, str) else delivered
+        recorded = self.recorded_time(delivered, instant(occurred_at), clock_at, floor)
         envelope = {"entity_id": entity_id, "dataset_id": self.dataset_id, "schema_version": SCHEMA_VERSION, "synthetic": True,
                     "provenance": "SYNTHETIC_DEMO_ASSUMPTION", "split": split, "holdout_group": sid, "shipment_id": sid,
-                    "occurred_at": occurred_at, "recorded_at": clock_at.isoformat(), "ingested_at": clock_at.isoformat(),
+                    "occurred_at": occurred_at, "recorded_at": recorded.isoformat(), "ingested_at": clock_at.isoformat(),
                     "feed_id": item["feed_id"], "channel": item["channel"], "provider_id": item["provider_id"],
                     "raw_payload_hash": item["payload_hash"], "feed_origin": item["origin"],
-                    "ingest_lag_seconds": int((clock_at - instant(occurred_at)).total_seconds())}
+                    # How long after the event the provider delivered it (not how long the gateway's tick took to reach it).
+                    "ingest_lag_seconds": int((recorded - instant(occurred_at)).total_seconds())}
         labels = ":".join(("V2Entity", kind, "LiveIngested", *ALIASES.get(kind, ())))
         self._last_kind = kind
         tx.run(f"CREATE (n:{labels}) SET n=$props", props=_neo({**props, **envelope})).consume()
-        self._edges(tx, kind, entity_id, props, sid, split, clock_at)
+        self._edges(tx, kind, entity_id, props, sid, split, recorded)
         return "INGESTED", entity_id, sid, None
 
     def _edges(self, tx, kind, entity_id, props, sid, split, clock_at):
@@ -195,6 +225,7 @@ class Gateway:
 
     def reset(self):
         """New live session: remove normalized evidence and simulator messages; provider messages return to PENDING."""
+        self._drained = None
         with self.driver.session(database=self.database) as session:
             session.run("MATCH (n:LiveIngested {dataset_id:$d}) CALL (n) { DETACH DELETE n } IN TRANSACTIONS OF 2000 ROWS",
                         d=self.dataset_id).consume()

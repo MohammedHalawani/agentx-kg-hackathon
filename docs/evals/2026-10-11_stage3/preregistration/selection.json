@@ -1,0 +1,1732 @@
+{
+  "cases": [
+    {
+      "expected_opened_at": "2026-09-14T07:00:00+00:00",
+      "key": "E1:DEMO-SHP-000705",
+      "order": 0,
+      "shipment_id": "DEMO-SHP-000705",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-14T08:00:00+00:00",
+      "key": "E1:DEMO-SHP-000704",
+      "order": 1,
+      "shipment_id": "DEMO-SHP-000704",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-14T13:00:00+00:00",
+      "key": "E1:DEMO-SHP-000096",
+      "order": 2,
+      "shipment_id": "DEMO-SHP-000096",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-14T15:00:00+00:00",
+      "key": "E1:DEMO-SHP-000132",
+      "order": 3,
+      "shipment_id": "DEMO-SHP-000132",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-14T16:00:00+00:00",
+      "key": "E1:DEMO-SHP-000351",
+      "order": 4,
+      "shipment_id": "DEMO-SHP-000351",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-14T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000895",
+      "order": 5,
+      "shipment_id": "DEMO-SHP-000895",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-15T02:00:00+00:00",
+      "key": "E1:DEMO-SHP-000123",
+      "order": 6,
+      "shipment_id": "DEMO-SHP-000123",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-15T02:00:00+00:00",
+      "key": "E1:DEMO-SHP-000237",
+      "order": 7,
+      "shipment_id": "DEMO-SHP-000237",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-15T02:00:00+00:00",
+      "key": "E1:DEMO-SHP-000344",
+      "order": 8,
+      "shipment_id": "DEMO-SHP-000344",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-15T02:00:00+00:00",
+      "key": "E1:DEMO-SHP-000515",
+      "order": 9,
+      "shipment_id": "DEMO-SHP-000515",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-15T03:00:00+00:00",
+      "key": "E1:DEMO-SHP-000706",
+      "order": 10,
+      "shipment_id": "DEMO-SHP-000706",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-15T06:00:00+00:00",
+      "key": "E1:DEMO-SHP-000066",
+      "order": 11,
+      "shipment_id": "DEMO-SHP-000066",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-15T06:00:00+00:00",
+      "key": "E1:DEMO-SHP-000252",
+      "order": 12,
+      "shipment_id": "DEMO-SHP-000252",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-15T06:00:00+00:00",
+      "key": "E1:DEMO-SHP-000491",
+      "order": 13,
+      "shipment_id": "DEMO-SHP-000491",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-15T06:00:00+00:00",
+      "key": "E1:DEMO-SHP-000785",
+      "order": 14,
+      "shipment_id": "DEMO-SHP-000785",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-15T07:00:00+00:00",
+      "key": "E1:DEMO-SHP-000094",
+      "order": 15,
+      "shipment_id": "DEMO-SHP-000094",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-15T08:00:00+00:00",
+      "key": "E1:DEMO-SHP-000260",
+      "order": 16,
+      "shipment_id": "DEMO-SHP-000260",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-15T10:00:00+00:00",
+      "key": "E1:DEMO-SHP-000062",
+      "order": 17,
+      "shipment_id": "DEMO-SHP-000062",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-15T10:00:00+00:00",
+      "key": "E1:DEMO-SHP-000131",
+      "order": 18,
+      "shipment_id": "DEMO-SHP-000131",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-15T10:00:00+00:00",
+      "key": "E1:DEMO-SHP-000594",
+      "order": 19,
+      "shipment_id": "DEMO-SHP-000594",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-15T11:00:00+00:00",
+      "key": "E1:DEMO-SHP-000328",
+      "order": 20,
+      "shipment_id": "DEMO-SHP-000328",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-15T12:00:00+00:00",
+      "key": "E1:DEMO-SHP-000332",
+      "order": 21,
+      "shipment_id": "DEMO-SHP-000332",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-15T12:00:00+00:00",
+      "key": "E1:DEMO-SHP-000750",
+      "order": 22,
+      "shipment_id": "DEMO-SHP-000750",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-15T12:00:00+00:00",
+      "key": "E1:DEMO-SHP-000784",
+      "order": 23,
+      "shipment_id": "DEMO-SHP-000784",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-15T14:00:00+00:00",
+      "key": "E1:DEMO-SHP-000681",
+      "order": 24,
+      "shipment_id": "DEMO-SHP-000681",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-15T14:00:00+00:00",
+      "key": "E1:DEMO-SHP-000743",
+      "order": 25,
+      "shipment_id": "DEMO-SHP-000743",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-15T15:00:00+00:00",
+      "key": "E1:DEMO-SHP-000147",
+      "order": 26,
+      "shipment_id": "DEMO-SHP-000147",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-15T15:00:00+00:00",
+      "key": "E1:DEMO-SHP-000288",
+      "order": 27,
+      "shipment_id": "DEMO-SHP-000288",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-15T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000742",
+      "order": 28,
+      "shipment_id": "DEMO-SHP-000742",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-15T19:00:00+00:00",
+      "key": "E1:DEMO-SHP-000072",
+      "order": 29,
+      "shipment_id": "DEMO-SHP-000072",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-15T19:00:00+00:00",
+      "key": "E1:DEMO-SHP-000156",
+      "order": 30,
+      "shipment_id": "DEMO-SHP-000156",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-15T19:00:00+00:00",
+      "key": "E1:DEMO-SHP-000551",
+      "order": 31,
+      "shipment_id": "DEMO-SHP-000551",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-15T20:00:00+00:00",
+      "key": "E1:DEMO-SHP-000639",
+      "order": 32,
+      "shipment_id": "DEMO-SHP-000639",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-15T22:00:00+00:00",
+      "key": "E1:DEMO-SHP-000724",
+      "order": 33,
+      "shipment_id": "DEMO-SHP-000724",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T04:00:00+00:00",
+      "key": "E1:DEMO-SHP-000191",
+      "order": 34,
+      "shipment_id": "DEMO-SHP-000191",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T06:00:00+00:00",
+      "key": "E1:DEMO-SHP-000038",
+      "order": 35,
+      "shipment_id": "DEMO-SHP-000038",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T06:00:00+00:00",
+      "key": "E1:DEMO-SHP-000168",
+      "order": 36,
+      "shipment_id": "DEMO-SHP-000168",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T06:00:00+00:00",
+      "key": "E1:DEMO-SHP-000505",
+      "order": 37,
+      "shipment_id": "DEMO-SHP-000505",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T07:00:00+00:00",
+      "key": "E1:DEMO-SHP-000063",
+      "order": 38,
+      "shipment_id": "DEMO-SHP-000063",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T07:00:00+00:00",
+      "key": "E1:DEMO-SHP-000138",
+      "order": 39,
+      "shipment_id": "DEMO-SHP-000138",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T07:00:00+00:00",
+      "key": "E1:DEMO-SHP-000232",
+      "order": 40,
+      "shipment_id": "DEMO-SHP-000232",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T07:00:00+00:00",
+      "key": "E1:DEMO-SHP-000239",
+      "order": 41,
+      "shipment_id": "DEMO-SHP-000239",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T07:00:00+00:00",
+      "key": "E1:DEMO-SHP-000461",
+      "order": 42,
+      "shipment_id": "DEMO-SHP-000461",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T07:00:00+00:00",
+      "key": "E1:DEMO-SHP-000526",
+      "order": 43,
+      "shipment_id": "DEMO-SHP-000526",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T07:00:00+00:00",
+      "key": "E1:DEMO-SHP-000778",
+      "order": 44,
+      "shipment_id": "DEMO-SHP-000778",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T07:00:00+00:00",
+      "key": "E1:DEMO-SHP-000826",
+      "order": 45,
+      "shipment_id": "DEMO-SHP-000826",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T07:00:00+00:00",
+      "key": "E1:DEMO-SHP-000885",
+      "order": 46,
+      "shipment_id": "DEMO-SHP-000885",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T08:00:00+00:00",
+      "key": "E1:DEMO-SHP-000041",
+      "order": 47,
+      "shipment_id": "DEMO-SHP-000041",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T08:00:00+00:00",
+      "key": "E1:DEMO-SHP-000449",
+      "order": 48,
+      "shipment_id": "DEMO-SHP-000449",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T09:00:00+00:00",
+      "key": "E1:DEMO-SHP-000161",
+      "order": 49,
+      "shipment_id": "DEMO-SHP-000161",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T09:00:00+00:00",
+      "key": "E1:DEMO-SHP-000437",
+      "order": 50,
+      "shipment_id": "DEMO-SHP-000437",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T09:00:00+00:00",
+      "key": "E1:DEMO-SHP-000459",
+      "order": 51,
+      "shipment_id": "DEMO-SHP-000459",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T09:00:00+00:00",
+      "key": "E1:DEMO-SHP-000578",
+      "order": 52,
+      "shipment_id": "DEMO-SHP-000578",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T10:00:00+00:00",
+      "key": "E1:DEMO-SHP-000576",
+      "order": 53,
+      "shipment_id": "DEMO-SHP-000576",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T15:00:00+00:00",
+      "key": "E1:DEMO-SHP-000748",
+      "order": 54,
+      "shipment_id": "DEMO-SHP-000748",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T15:00:00+00:00",
+      "key": "E1:DEMO-SHP-000878",
+      "order": 55,
+      "shipment_id": "DEMO-SHP-000878",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T16:00:00+00:00",
+      "key": "E1:DEMO-SHP-000882",
+      "order": 56,
+      "shipment_id": "DEMO-SHP-000882",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000057",
+      "order": 57,
+      "shipment_id": "DEMO-SHP-000057",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000114",
+      "order": 58,
+      "shipment_id": "DEMO-SHP-000114",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000221",
+      "order": 59,
+      "shipment_id": "DEMO-SHP-000221",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000278",
+      "order": 60,
+      "shipment_id": "DEMO-SHP-000278",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000368",
+      "order": 61,
+      "shipment_id": "DEMO-SHP-000368",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000547",
+      "order": 62,
+      "shipment_id": "DEMO-SHP-000547",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000711",
+      "order": 63,
+      "shipment_id": "DEMO-SHP-000711",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T19:00:00+00:00",
+      "key": "E1:DEMO-SHP-000129",
+      "order": 64,
+      "shipment_id": "DEMO-SHP-000129",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T19:00:00+00:00",
+      "key": "E1:DEMO-SHP-000426",
+      "order": 65,
+      "shipment_id": "DEMO-SHP-000426",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-16T23:00:00+00:00",
+      "key": "E1:DEMO-SHP-000045",
+      "order": 66,
+      "shipment_id": "DEMO-SHP-000045",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T04:00:00+00:00",
+      "key": "E1:DEMO-SHP-000242",
+      "order": 67,
+      "shipment_id": "DEMO-SHP-000242",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T04:00:00+00:00",
+      "key": "E1:DEMO-SHP-000269",
+      "order": 68,
+      "shipment_id": "DEMO-SHP-000269",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T04:00:00+00:00",
+      "key": "E1:DEMO-SHP-000441",
+      "order": 69,
+      "shipment_id": "DEMO-SHP-000441",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T04:00:00+00:00",
+      "key": "E1:DEMO-SHP-000682",
+      "order": 70,
+      "shipment_id": "DEMO-SHP-000682",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T04:00:00+00:00",
+      "key": "E1:DEMO-SHP-000694",
+      "order": 71,
+      "shipment_id": "DEMO-SHP-000694",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T04:00:00+00:00",
+      "key": "E1:DEMO-SHP-000789",
+      "order": 72,
+      "shipment_id": "DEMO-SHP-000789",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T04:00:00+00:00",
+      "key": "E1:DEMO-SHP-000877",
+      "order": 73,
+      "shipment_id": "DEMO-SHP-000877",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T06:00:00+00:00",
+      "key": "E1:DEMO-SHP-000012",
+      "order": 74,
+      "shipment_id": "DEMO-SHP-000012",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T06:00:00+00:00",
+      "key": "E1:DEMO-SHP-000078",
+      "order": 75,
+      "shipment_id": "DEMO-SHP-000078",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T06:00:00+00:00",
+      "key": "E1:DEMO-SHP-000107",
+      "order": 76,
+      "shipment_id": "DEMO-SHP-000107",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T06:00:00+00:00",
+      "key": "E1:DEMO-SHP-000214",
+      "order": 77,
+      "shipment_id": "DEMO-SHP-000214",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T06:00:00+00:00",
+      "key": "E1:DEMO-SHP-000356",
+      "order": 78,
+      "shipment_id": "DEMO-SHP-000356",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T06:00:00+00:00",
+      "key": "E1:DEMO-SHP-000741",
+      "order": 79,
+      "shipment_id": "DEMO-SHP-000741",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T06:00:00+00:00",
+      "key": "E1:DEMO-SHP-000844",
+      "order": 80,
+      "shipment_id": "DEMO-SHP-000844",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T07:00:00+00:00",
+      "key": "E1:DEMO-SHP-000546",
+      "order": 81,
+      "shipment_id": "DEMO-SHP-000546",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T08:00:00+00:00",
+      "key": "E1:DEMO-SHP-000535",
+      "order": 82,
+      "shipment_id": "DEMO-SHP-000535",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T08:00:00+00:00",
+      "key": "E1:DEMO-SHP-000643",
+      "order": 83,
+      "shipment_id": "DEMO-SHP-000643",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T08:00:00+00:00",
+      "key": "E1:DEMO-SHP-000728",
+      "order": 84,
+      "shipment_id": "DEMO-SHP-000728",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T09:00:00+00:00",
+      "key": "E1:DEMO-SHP-000294",
+      "order": 85,
+      "shipment_id": "DEMO-SHP-000294",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T09:00:00+00:00",
+      "key": "E1:DEMO-SHP-000523",
+      "order": 86,
+      "shipment_id": "DEMO-SHP-000523",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T09:00:00+00:00",
+      "key": "E1:DEMO-SHP-000755",
+      "order": 87,
+      "shipment_id": "DEMO-SHP-000755",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T09:00:00+00:00",
+      "key": "E1:DEMO-SHP-000766",
+      "order": 88,
+      "shipment_id": "DEMO-SHP-000766",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T09:00:00+00:00",
+      "key": "E1:DEMO-SHP-000859",
+      "order": 89,
+      "shipment_id": "DEMO-SHP-000859",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T10:00:00+00:00",
+      "key": "E1:DEMO-SHP-000250",
+      "order": 90,
+      "shipment_id": "DEMO-SHP-000250",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T10:00:00+00:00",
+      "key": "E1:DEMO-SHP-000517",
+      "order": 91,
+      "shipment_id": "DEMO-SHP-000517",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T10:00:00+00:00",
+      "key": "E1:DEMO-SHP-000629",
+      "order": 92,
+      "shipment_id": "DEMO-SHP-000629",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T10:00:00+00:00",
+      "key": "E1:DEMO-SHP-000659",
+      "order": 93,
+      "shipment_id": "DEMO-SHP-000659",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T11:00:00+00:00",
+      "key": "E1:DEMO-SHP-000493",
+      "order": 94,
+      "shipment_id": "DEMO-SHP-000493",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T14:00:00+00:00",
+      "key": "E1:DEMO-SHP-000155",
+      "order": 95,
+      "shipment_id": "DEMO-SHP-000155",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T14:00:00+00:00",
+      "key": "E1:DEMO-SHP-000381",
+      "order": 96,
+      "shipment_id": "DEMO-SHP-000381",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T15:00:00+00:00",
+      "key": "E1:DEMO-SHP-000256",
+      "order": 97,
+      "shipment_id": "DEMO-SHP-000256",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T15:00:00+00:00",
+      "key": "E1:DEMO-SHP-000298",
+      "order": 98,
+      "shipment_id": "DEMO-SHP-000298",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T15:00:00+00:00",
+      "key": "E1:DEMO-SHP-000373",
+      "order": 99,
+      "shipment_id": "DEMO-SHP-000373",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000007",
+      "order": 100,
+      "shipment_id": "DEMO-SHP-000007",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000092",
+      "order": 101,
+      "shipment_id": "DEMO-SHP-000092",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000196",
+      "order": 102,
+      "shipment_id": "DEMO-SHP-000196",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000233",
+      "order": 103,
+      "shipment_id": "DEMO-SHP-000233",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000248",
+      "order": 104,
+      "shipment_id": "DEMO-SHP-000248",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000322",
+      "order": 105,
+      "shipment_id": "DEMO-SHP-000322",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000630",
+      "order": 106,
+      "shipment_id": "DEMO-SHP-000630",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000832",
+      "order": 107,
+      "shipment_id": "DEMO-SHP-000832",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T19:00:00+00:00",
+      "key": "E1:DEMO-SHP-000085",
+      "order": 108,
+      "shipment_id": "DEMO-SHP-000085",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T19:00:00+00:00",
+      "key": "E1:DEMO-SHP-000258",
+      "order": 109,
+      "shipment_id": "DEMO-SHP-000258",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T19:00:00+00:00",
+      "key": "E1:DEMO-SHP-000292",
+      "order": 110,
+      "shipment_id": "DEMO-SHP-000292",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T19:00:00+00:00",
+      "key": "E1:DEMO-SHP-000329",
+      "order": 111,
+      "shipment_id": "DEMO-SHP-000329",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T19:00:00+00:00",
+      "key": "E1:DEMO-SHP-000425",
+      "order": 112,
+      "shipment_id": "DEMO-SHP-000425",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T19:00:00+00:00",
+      "key": "E1:DEMO-SHP-000492",
+      "order": 113,
+      "shipment_id": "DEMO-SHP-000492",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T19:00:00+00:00",
+      "key": "E1:DEMO-SHP-000648",
+      "order": 114,
+      "shipment_id": "DEMO-SHP-000648",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T19:00:00+00:00",
+      "key": "E1:DEMO-SHP-000683",
+      "order": 115,
+      "shipment_id": "DEMO-SHP-000683",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T19:00:00+00:00",
+      "key": "E1:DEMO-SHP-000719",
+      "order": 116,
+      "shipment_id": "DEMO-SHP-000719",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T19:00:00+00:00",
+      "key": "E1:DEMO-SHP-000781",
+      "order": 117,
+      "shipment_id": "DEMO-SHP-000781",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-17T19:00:00+00:00",
+      "key": "E1:DEMO-SHP-000849",
+      "order": 118,
+      "shipment_id": "DEMO-SHP-000849",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-18T01:00:00+00:00",
+      "key": "E1:DEMO-SHP-000653",
+      "order": 119,
+      "shipment_id": "DEMO-SHP-000653",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-18T04:00:00+00:00",
+      "key": "E1:DEMO-SHP-000448",
+      "order": 120,
+      "shipment_id": "DEMO-SHP-000448",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-18T11:00:00+00:00",
+      "key": "E1:DEMO-SHP-000573",
+      "order": 121,
+      "shipment_id": "DEMO-SHP-000573",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T06:00:00+00:00",
+      "key": "E1:DEMO-SHP-000042",
+      "order": 122,
+      "shipment_id": "DEMO-SHP-000042",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T06:00:00+00:00",
+      "key": "E1:DEMO-SHP-000141",
+      "order": 123,
+      "shipment_id": "DEMO-SHP-000141",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T06:00:00+00:00",
+      "key": "E1:DEMO-SHP-000518",
+      "order": 124,
+      "shipment_id": "DEMO-SHP-000518",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T06:00:00+00:00",
+      "key": "E1:DEMO-SHP-000621",
+      "order": 125,
+      "shipment_id": "DEMO-SHP-000621",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T06:00:00+00:00",
+      "key": "E1:DEMO-SHP-000664",
+      "order": 126,
+      "shipment_id": "DEMO-SHP-000664",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T06:00:00+00:00",
+      "key": "E1:DEMO-SHP-000726",
+      "order": 127,
+      "shipment_id": "DEMO-SHP-000726",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T06:00:00+00:00",
+      "key": "E1:DEMO-SHP-000860",
+      "order": 128,
+      "shipment_id": "DEMO-SHP-000860",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T07:00:00+00:00",
+      "key": "E1:DEMO-SHP-000115",
+      "order": 129,
+      "shipment_id": "DEMO-SHP-000115",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T07:00:00+00:00",
+      "key": "E1:DEMO-SHP-000721",
+      "order": 130,
+      "shipment_id": "DEMO-SHP-000721",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T08:00:00+00:00",
+      "key": "E1:DEMO-SHP-000212",
+      "order": 131,
+      "shipment_id": "DEMO-SHP-000212",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T08:00:00+00:00",
+      "key": "E1:DEMO-SHP-000442",
+      "order": 132,
+      "shipment_id": "DEMO-SHP-000442",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T08:00:00+00:00",
+      "key": "E1:DEMO-SHP-000722",
+      "order": 133,
+      "shipment_id": "DEMO-SHP-000722",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T08:00:00+00:00",
+      "key": "E1:DEMO-SHP-000783",
+      "order": 134,
+      "shipment_id": "DEMO-SHP-000783",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T08:00:00+00:00",
+      "key": "E1:DEMO-SHP-000863",
+      "order": 135,
+      "shipment_id": "DEMO-SHP-000863",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T09:00:00+00:00",
+      "key": "E1:DEMO-SHP-000227",
+      "order": 136,
+      "shipment_id": "DEMO-SHP-000227",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T09:00:00+00:00",
+      "key": "E1:DEMO-SHP-000246",
+      "order": 137,
+      "shipment_id": "DEMO-SHP-000246",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T09:00:00+00:00",
+      "key": "E1:DEMO-SHP-000254",
+      "order": 138,
+      "shipment_id": "DEMO-SHP-000254",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T09:00:00+00:00",
+      "key": "E1:DEMO-SHP-000363",
+      "order": 139,
+      "shipment_id": "DEMO-SHP-000363",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T09:00:00+00:00",
+      "key": "E1:DEMO-SHP-000439",
+      "order": 140,
+      "shipment_id": "DEMO-SHP-000439",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T09:00:00+00:00",
+      "key": "E1:DEMO-SHP-000563",
+      "order": 141,
+      "shipment_id": "DEMO-SHP-000563",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T09:00:00+00:00",
+      "key": "E1:DEMO-SHP-000663",
+      "order": 142,
+      "shipment_id": "DEMO-SHP-000663",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T10:00:00+00:00",
+      "key": "E1:DEMO-SHP-000714",
+      "order": 143,
+      "shipment_id": "DEMO-SHP-000714",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T10:00:00+00:00",
+      "key": "E1:DEMO-SHP-000891",
+      "order": 144,
+      "shipment_id": "DEMO-SHP-000891",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000060",
+      "order": 145,
+      "shipment_id": "DEMO-SHP-000060",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000089",
+      "order": 146,
+      "shipment_id": "DEMO-SHP-000089",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000209",
+      "order": 147,
+      "shipment_id": "DEMO-SHP-000209",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000295",
+      "order": 148,
+      "shipment_id": "DEMO-SHP-000295",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000350",
+      "order": 149,
+      "shipment_id": "DEMO-SHP-000350",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000555",
+      "order": 150,
+      "shipment_id": "DEMO-SHP-000555",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000562",
+      "order": 151,
+      "shipment_id": "DEMO-SHP-000562",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000644",
+      "order": 152,
+      "shipment_id": "DEMO-SHP-000644",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000758",
+      "order": 153,
+      "shipment_id": "DEMO-SHP-000758",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T19:00:00+00:00",
+      "key": "E1:DEMO-SHP-000095",
+      "order": 154,
+      "shipment_id": "DEMO-SHP-000095",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T19:00:00+00:00",
+      "key": "E1:DEMO-SHP-000179",
+      "order": 155,
+      "shipment_id": "DEMO-SHP-000179",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T19:00:00+00:00",
+      "key": "E1:DEMO-SHP-000404",
+      "order": 156,
+      "shipment_id": "DEMO-SHP-000404",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T19:00:00+00:00",
+      "key": "E1:DEMO-SHP-000469",
+      "order": 157,
+      "shipment_id": "DEMO-SHP-000469",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T19:00:00+00:00",
+      "key": "E1:DEMO-SHP-000485",
+      "order": 158,
+      "shipment_id": "DEMO-SHP-000485",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T19:00:00+00:00",
+      "key": "E1:DEMO-SHP-000717",
+      "order": 159,
+      "shipment_id": "DEMO-SHP-000717",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T19:00:00+00:00",
+      "key": "E1:DEMO-SHP-000723",
+      "order": 160,
+      "shipment_id": "DEMO-SHP-000723",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T19:00:00+00:00",
+      "key": "E1:DEMO-SHP-000751",
+      "order": 161,
+      "shipment_id": "DEMO-SHP-000751",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T19:00:00+00:00",
+      "key": "E1:DEMO-SHP-000768",
+      "order": 162,
+      "shipment_id": "DEMO-SHP-000768",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T19:00:00+00:00",
+      "key": "E1:DEMO-SHP-000855",
+      "order": 163,
+      "shipment_id": "DEMO-SHP-000855",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-19T19:00:00+00:00",
+      "key": "E1:DEMO-SHP-000857",
+      "order": 164,
+      "shipment_id": "DEMO-SHP-000857",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-20T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000276",
+      "order": 165,
+      "shipment_id": "DEMO-SHP-000276",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-20T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000463",
+      "order": 166,
+      "shipment_id": "DEMO-SHP-000463",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-20T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000731",
+      "order": 167,
+      "shipment_id": "DEMO-SHP-000731",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-20T18:00:00+00:00",
+      "key": "E1:DEMO-SHP-000788",
+      "order": 168,
+      "shipment_id": "DEMO-SHP-000788",
+      "world": "E1"
+    },
+    {
+      "expected_opened_at": "2026-09-14T15:00:00+00:00",
+      "key": "E2:DEMO-SHP-000021",
+      "order": 169,
+      "shipment_id": "DEMO-SHP-000021",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-14T18:00:00+00:00",
+      "key": "E2:DEMO-SHP-000247",
+      "order": 170,
+      "shipment_id": "DEMO-SHP-000247",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-14T18:00:00+00:00",
+      "key": "E2:DEMO-SHP-000267",
+      "order": 171,
+      "shipment_id": "DEMO-SHP-000267",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-14T18:00:00+00:00",
+      "key": "E2:DEMO-SHP-000398",
+      "order": 172,
+      "shipment_id": "DEMO-SHP-000398",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-15T01:00:00+00:00",
+      "key": "E2:DEMO-SHP-000207",
+      "order": 173,
+      "shipment_id": "DEMO-SHP-000207",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-15T01:00:00+00:00",
+      "key": "E2:DEMO-SHP-000619",
+      "order": 174,
+      "shipment_id": "DEMO-SHP-000619",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-15T02:00:00+00:00",
+      "key": "E2:DEMO-SHP-000170",
+      "order": 175,
+      "shipment_id": "DEMO-SHP-000170",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-15T02:00:00+00:00",
+      "key": "E2:DEMO-SHP-000186",
+      "order": 176,
+      "shipment_id": "DEMO-SHP-000186",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-15T02:00:00+00:00",
+      "key": "E2:DEMO-SHP-000203",
+      "order": 177,
+      "shipment_id": "DEMO-SHP-000203",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-15T02:00:00+00:00",
+      "key": "E2:DEMO-SHP-000466",
+      "order": 178,
+      "shipment_id": "DEMO-SHP-000466",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-15T02:00:00+00:00",
+      "key": "E2:DEMO-SHP-000685",
+      "order": 179,
+      "shipment_id": "DEMO-SHP-000685",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-15T07:00:00+00:00",
+      "key": "E2:DEMO-SHP-000673",
+      "order": 180,
+      "shipment_id": "DEMO-SHP-000673",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-15T15:00:00+00:00",
+      "key": "E2:DEMO-SHP-000038",
+      "order": 181,
+      "shipment_id": "DEMO-SHP-000038",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-15T20:00:00+00:00",
+      "key": "E2:DEMO-SHP-000464",
+      "order": 182,
+      "shipment_id": "DEMO-SHP-000464",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-16T06:00:00+00:00",
+      "key": "E2:DEMO-SHP-000097",
+      "order": 183,
+      "shipment_id": "DEMO-SHP-000097",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-16T06:00:00+00:00",
+      "key": "E2:DEMO-SHP-000868",
+      "order": 184,
+      "shipment_id": "DEMO-SHP-000868",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-16T07:00:00+00:00",
+      "key": "E2:DEMO-SHP-000192",
+      "order": 185,
+      "shipment_id": "DEMO-SHP-000192",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-16T07:00:00+00:00",
+      "key": "E2:DEMO-SHP-000261",
+      "order": 186,
+      "shipment_id": "DEMO-SHP-000261",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-16T07:00:00+00:00",
+      "key": "E2:DEMO-SHP-000562",
+      "order": 187,
+      "shipment_id": "DEMO-SHP-000562",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-16T07:00:00+00:00",
+      "key": "E2:DEMO-SHP-000648",
+      "order": 188,
+      "shipment_id": "DEMO-SHP-000648",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-16T08:00:00+00:00",
+      "key": "E2:DEMO-SHP-000006",
+      "order": 189,
+      "shipment_id": "DEMO-SHP-000006",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-16T08:00:00+00:00",
+      "key": "E2:DEMO-SHP-000136",
+      "order": 190,
+      "shipment_id": "DEMO-SHP-000136",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-16T08:00:00+00:00",
+      "key": "E2:DEMO-SHP-000843",
+      "order": 191,
+      "shipment_id": "DEMO-SHP-000843",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-16T09:00:00+00:00",
+      "key": "E2:DEMO-SHP-000332",
+      "order": 192,
+      "shipment_id": "DEMO-SHP-000332",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-16T09:00:00+00:00",
+      "key": "E2:DEMO-SHP-000804",
+      "order": 193,
+      "shipment_id": "DEMO-SHP-000804",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-16T10:00:00+00:00",
+      "key": "E2:DEMO-SHP-000185",
+      "order": 194,
+      "shipment_id": "DEMO-SHP-000185",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-16T10:00:00+00:00",
+      "key": "E2:DEMO-SHP-000226",
+      "order": 195,
+      "shipment_id": "DEMO-SHP-000226",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-16T10:00:00+00:00",
+      "key": "E2:DEMO-SHP-000733",
+      "order": 196,
+      "shipment_id": "DEMO-SHP-000733",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-16T11:00:00+00:00",
+      "key": "E2:DEMO-SHP-000327",
+      "order": 197,
+      "shipment_id": "DEMO-SHP-000327",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-16T11:00:00+00:00",
+      "key": "E2:DEMO-SHP-000593",
+      "order": 198,
+      "shipment_id": "DEMO-SHP-000593",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-16T15:00:00+00:00",
+      "key": "E2:DEMO-SHP-000173",
+      "order": 199,
+      "shipment_id": "DEMO-SHP-000173",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-16T15:00:00+00:00",
+      "key": "E2:DEMO-SHP-000212",
+      "order": 200,
+      "shipment_id": "DEMO-SHP-000212",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-16T15:00:00+00:00",
+      "key": "E2:DEMO-SHP-000269",
+      "order": 201,
+      "shipment_id": "DEMO-SHP-000269",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-16T18:00:00+00:00",
+      "key": "E2:DEMO-SHP-000525",
+      "order": 202,
+      "shipment_id": "DEMO-SHP-000525",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-16T18:00:00+00:00",
+      "key": "E2:DEMO-SHP-000710",
+      "order": 203,
+      "shipment_id": "DEMO-SHP-000710",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-17T04:00:00+00:00",
+      "key": "E2:DEMO-SHP-000524",
+      "order": 204,
+      "shipment_id": "DEMO-SHP-000524",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-17T06:00:00+00:00",
+      "key": "E2:DEMO-SHP-000589",
+      "order": 205,
+      "shipment_id": "DEMO-SHP-000589",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-17T07:00:00+00:00",
+      "key": "E2:DEMO-SHP-000304",
+      "order": 206,
+      "shipment_id": "DEMO-SHP-000304",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-17T07:00:00+00:00",
+      "key": "E2:DEMO-SHP-000526",
+      "order": 207,
+      "shipment_id": "DEMO-SHP-000526",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-17T07:00:00+00:00",
+      "key": "E2:DEMO-SHP-000816",
+      "order": 208,
+      "shipment_id": "DEMO-SHP-000816",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-17T07:00:00+00:00",
+      "key": "E2:DEMO-SHP-000818",
+      "order": 209,
+      "shipment_id": "DEMO-SHP-000818",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-17T08:00:00+00:00",
+      "key": "E2:DEMO-SHP-000495",
+      "order": 210,
+      "shipment_id": "DEMO-SHP-000495",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-17T08:00:00+00:00",
+      "key": "E2:DEMO-SHP-000577",
+      "order": 211,
+      "shipment_id": "DEMO-SHP-000577",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-17T08:00:00+00:00",
+      "key": "E2:DEMO-SHP-000836",
+      "order": 212,
+      "shipment_id": "DEMO-SHP-000836",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-17T09:00:00+00:00",
+      "key": "E2:DEMO-SHP-000674",
+      "order": 213,
+      "shipment_id": "DEMO-SHP-000674",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-17T15:00:00+00:00",
+      "key": "E2:DEMO-SHP-000757",
+      "order": 214,
+      "shipment_id": "DEMO-SHP-000757",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-17T18:00:00+00:00",
+      "key": "E2:DEMO-SHP-000012",
+      "order": 215,
+      "shipment_id": "DEMO-SHP-000012",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-17T18:00:00+00:00",
+      "key": "E2:DEMO-SHP-000054",
+      "order": 216,
+      "shipment_id": "DEMO-SHP-000054",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-17T18:00:00+00:00",
+      "key": "E2:DEMO-SHP-000150",
+      "order": 217,
+      "shipment_id": "DEMO-SHP-000150",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-17T18:00:00+00:00",
+      "key": "E2:DEMO-SHP-000160",
+      "order": 218,
+      "shipment_id": "DEMO-SHP-000160",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-17T18:00:00+00:00",
+      "key": "E2:DEMO-SHP-000242",
+      "order": 219,
+      "shipment_id": "DEMO-SHP-000242",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-17T18:00:00+00:00",
+      "key": "E2:DEMO-SHP-000331",
+      "order": 220,
+      "shipment_id": "DEMO-SHP-000331",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-17T18:00:00+00:00",
+      "key": "E2:DEMO-SHP-000564",
+      "order": 221,
+      "shipment_id": "DEMO-SHP-000564",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-17T18:00:00+00:00",
+      "key": "E2:DEMO-SHP-000660",
+      "order": 222,
+      "shipment_id": "DEMO-SHP-000660",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-17T18:00:00+00:00",
+      "key": "E2:DEMO-SHP-000774",
+      "order": 223,
+      "shipment_id": "DEMO-SHP-000774",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-17T18:00:00+00:00",
+      "key": "E2:DEMO-SHP-000898",
+      "order": 224,
+      "shipment_id": "DEMO-SHP-000898",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-17T19:00:00+00:00",
+      "key": "E2:DEMO-SHP-000257",
+      "order": 225,
+      "shipment_id": "DEMO-SHP-000257",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-19T07:00:00+00:00",
+      "key": "E2:DEMO-SHP-000025",
+      "order": 226,
+      "shipment_id": "DEMO-SHP-000025",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-19T07:00:00+00:00",
+      "key": "E2:DEMO-SHP-000413",
+      "order": 227,
+      "shipment_id": "DEMO-SHP-000413",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-19T07:00:00+00:00",
+      "key": "E2:DEMO-SHP-000645",
+      "order": 228,
+      "shipment_id": "DEMO-SHP-000645",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-19T08:00:00+00:00",
+      "key": "E2:DEMO-SHP-000049",
+      "order": 229,
+      "shipment_id": "DEMO-SHP-000049",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-19T08:00:00+00:00",
+      "key": "E2:DEMO-SHP-000084",
+      "order": 230,
+      "shipment_id": "DEMO-SHP-000084",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-19T08:00:00+00:00",
+      "key": "E2:DEMO-SHP-000870",
+      "order": 231,
+      "shipment_id": "DEMO-SHP-000870",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-19T09:00:00+00:00",
+      "key": "E2:DEMO-SHP-000605",
+      "order": 232,
+      "shipment_id": "DEMO-SHP-000605",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-19T10:00:00+00:00",
+      "key": "E2:DEMO-SHP-000108",
+      "order": 233,
+      "shipment_id": "DEMO-SHP-000108",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-19T11:00:00+00:00",
+      "key": "E2:DEMO-SHP-000554",
+      "order": 234,
+      "shipment_id": "DEMO-SHP-000554",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-19T18:00:00+00:00",
+      "key": "E2:DEMO-SHP-000301",
+      "order": 235,
+      "shipment_id": "DEMO-SHP-000301",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-19T18:00:00+00:00",
+      "key": "E2:DEMO-SHP-000401",
+      "order": 236,
+      "shipment_id": "DEMO-SHP-000401",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-19T18:00:00+00:00",
+      "key": "E2:DEMO-SHP-000814",
+      "order": 237,
+      "shipment_id": "DEMO-SHP-000814",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-19T18:00:00+00:00",
+      "key": "E2:DEMO-SHP-000851",
+      "order": 238,
+      "shipment_id": "DEMO-SHP-000851",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-19T19:00:00+00:00",
+      "key": "E2:DEMO-SHP-000066",
+      "order": 239,
+      "shipment_id": "DEMO-SHP-000066",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-19T19:00:00+00:00",
+      "key": "E2:DEMO-SHP-000439",
+      "order": 240,
+      "shipment_id": "DEMO-SHP-000439",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-19T19:00:00+00:00",
+      "key": "E2:DEMO-SHP-000625",
+      "order": 241,
+      "shipment_id": "DEMO-SHP-000625",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-19T21:00:00+00:00",
+      "key": "E2:DEMO-SHP-000052",
+      "order": 242,
+      "shipment_id": "DEMO-SHP-000052",
+      "world": "E2"
+    },
+    {
+      "expected_opened_at": "2026-09-20T18:00:00+00:00",
+      "key": "E2:DEMO-SHP-000083",
+      "order": 243,
+      "shipment_id": "DEMO-SHP-000083",
+      "world": "E2"
+    }
+  ],
+  "config": {
+    "budget": 6808,
+    "c_cap": 20,
+    "freeze_commit": "284220ffa396c2432c8d3b33a8e7148e36352685",
+    "notes": "",
+    "r_cap": 0,
+    "sampling": "round_robin_by_mechanism",
+    "worlds": {
+      "E1": {
+        "database": "shipments-v2-world-eval-e1"
+      },
+      "E2": {
+        "database": "shipments-v2-world-eval-e2"
+      }
+    }
+  },
+  "n_main": 244,
+  "schema": "stage3-selection-2",
+  "sealed_config_hash": "a20e92e27460732cb29995504ae9715b206e0f60f9c88a09db2ebac451829727",
+  "unit": "first case per shipment, scored at its first investigation"
+}
