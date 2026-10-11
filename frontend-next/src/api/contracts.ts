@@ -226,6 +226,10 @@ export interface ApiExecution {
   action_type?: string;
   occurred_at?: string;
   recorded_at?: string;
+  /** When the request was delivered, and until when the verifier waits for evidence. */
+  executed_at?: string;
+  deadline_at?: string;
+  expected_result?: string;
   status?: string;
   authority?: string;
   closure?: string;
@@ -244,6 +248,8 @@ export interface ApiOutcome {
   recorded_at?: string;
   exception_cleared?: boolean | null;
   remaining_symptoms?: string[];
+  /** "evidence_verifier" or a person's finding. */
+  source?: string;
   current_cycle?: boolean;
 }
 export interface ApiDecisionRecord {

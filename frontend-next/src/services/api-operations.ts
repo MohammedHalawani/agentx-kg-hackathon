@@ -558,8 +558,20 @@ export class ApiOperationsService implements OperationsService {
         `This case is ${humanize(c.backend!.workflowState).toLowerCase()}; the backend only starts an investigation for a queued case.`,
       );
     const request = this.client
-      .post(`/cases/${encodeURIComponent(id)}/investigate`, undefined, 900000)
-      .then(() => undefined);
+      .post<{ processed?: boolean; reason?: string } | null>(
+        `/cases/${encodeURIComponent(id)}/investigate`,
+        undefined,
+        900000,
+      )
+      .then((result) => {
+        // The backend answers 200 even when it did not run the investigation.
+        if (result && result.processed === false)
+          throw new Error(
+            result.reason === "snapshot_changed"
+              ? "New evidence arrived during the investigation, so the backend queued the case again."
+              : "The backend did not start this investigation: another investigation is running, or the case is no longer queued.",
+          );
+      });
     // "Started" is what the backend reports, never a guess: wait until the request settles
     // or the backend shows the case out of the queue, whichever comes first.
     let settled = false;

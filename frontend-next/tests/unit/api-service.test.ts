@@ -341,6 +341,16 @@ describe("ApiOperationsService operator requests", () => {
     expect(world.service.answer()).toBe("");
   });
 
+  it("says so when the backend answers 200 but did not run the investigation", async () => {
+    const world = backend({
+      [`GET /cases/${CASE_C}`]: () => detailA({ case_id: CASE_C, workflow_state: "OPEN", state_version: 1, run: null, pipeline: { events: [], status: "QUEUED" }, recommendation: null }),
+      [`POST /cases/${CASE_C}/investigate`]: () => ({ processed: false, outcome: null }),
+    });
+    await world.service.refresh();
+    await expect(world.service.investigate(CASE_C)).rejects.toThrow(/did not start this investigation/);
+    expect(find(world.service, CASE_C).status).toBe("queued");
+  });
+
   it("retries once with a fresh session when the backend restarted and rotated its token", async () => {
     let tokens = 0;
     const world = backend({

@@ -87,6 +87,7 @@ export function InvestigationPage() {
     events,
     decisions,
     service,
+    connection,
     backend: fromBackend,
   } = useOperations();
   // Connected build: always the backend, so lab-only branches are removed at build time.
@@ -240,6 +241,10 @@ export function InvestigationPage() {
       ["investigating", "executing", "verifying"].includes(c.status),
     );
   const can = controls(c);
+  // The backend investigates one case at a time.
+  const busyElsewhere =
+    !!connection?.worker?.activeCaseId &&
+    connection.worker.activeCaseId !== c.id;
   const authority = authorityLabel(c);
   const lastCustody = c.evidence
     .filter((e) => e.confidence === "confirmed" && e.kind !== "gps")
@@ -350,11 +355,19 @@ export function InvestigationPage() {
           {can.investigate && (
             <Button
               size="sm"
-              disabled={active}
+              disabled={active || busyElsewhere}
+              title={
+                busyElsewhere
+                  ? t(
+                      "The backend is investigating another case; it runs one at a time.",
+                      "يحقق الخادم في حالة أخرى؛ يعمل على حالة واحدة في كل مرة.",
+                    )
+                  : undefined
+              }
               onClick={() =>
                 act(() => {
-                  service.investigate(c.id);
                   setPreviewStage(null);
+                  return service.investigate(c.id);
                 })
               }
             >
@@ -376,7 +389,33 @@ export function InvestigationPage() {
                     "Loading evidence from the backend…",
                     "جارٍ تحميل الأدلة من الخادم…",
                   ))
-                : c.backend?.workflowState === "HUMAN_REVIEW"
+                : c.backend?.verification &&
+                    c.backend.verification.result !== "confirmed"
+                  ? c.backend.verification.result === "failed"
+                    ? t(
+                        "Action executed · verification did not confirm it · with a person",
+                        "نُفذ الإجراء · لم يؤكده التحقق · لدى شخص",
+                      )
+                    : c.backend.verification.result === "exception_remains"
+                      ? t(
+                          "Action verified · the exception remains · with a person",
+                          "تم التحقق من الإجراء · الاستثناء باقٍ · لدى شخص",
+                        )
+                      : t(
+                          "A person's finding is on record · case still open",
+                          "نتيجة فحص بشري مسجلة · الحالة ما زالت مفتوحة",
+                        )
+                  : c.backend?.investigationLog?.degraded.length
+                    ? t(
+                        "The model's reply could not be used · no diagnosis · with a person",
+                        "تعذر استخدام رد النموذج · لا تشخيص · لدى شخص",
+                      )
+                  : c.execution && !c.execution.successful
+                    ? t(
+                        "The action was not carried out · with a person",
+                        "لم يُنفذ الإجراء · لدى شخص",
+                      )
+                  : c.backend?.workflowState === "HUMAN_REVIEW"
                   ? t(
                       "Waiting for a person to investigate",
                       "بانتظار تحقيق بشري",
@@ -435,7 +474,13 @@ export function InvestigationPage() {
               : c.status === "resolved" || i < c.run.stage
                 ? "completed"
                 : i === c.run.stage
-                  ? c.status === "escalated"
+                  ? c.status === "escalated" ||
+                    // The authorized action was not carried out.
+                    (i === 6 && !!c.backend && !!c.execution && !c.execution.successful) ||
+                    // The verifier checked and did not confirm the fix.
+                    (i === 7 &&
+                      !!c.backend?.verification &&
+                      c.backend.verification.result !== "confirmed")
                     ? "failed"
                     : ["human_review", "needs_evidence"].includes(c.status)
                       ? "waiting"
@@ -492,7 +537,8 @@ export function InvestigationPage() {
           <b>{t(stages[stage].label, stages[stage].arabic)}</b>
           <span>
             {c.backend
-              ? (c.backend.stageDetail[stage] ??
+              ? ((stage === 6 && c.execution ? c.execution.detail : undefined) ??
+                c.backend.stageDetail[stage] ??
                 (stage === 7
                   ? (c.outcome?.detail ??
                     t(
@@ -764,6 +810,11 @@ export function InvestigationPage() {
             )}
           </div>
           <p>
+            {evidence?.afterInvestigation &&
+              `${t(
+                "Recorded after the investigation's evidence snapshot; the investigator did not see it.",
+                "سُجل بعد لقطة أدلة التحقيق؛ لم يطّلع عليه المحقق.",
+              )} `}
             {edge?.detail ??
               evidence?.detail ??
               entity?.detail ??
@@ -843,7 +894,7 @@ export function InvestigationPage() {
                 </div>
                 <div>
                   <dt>{t("Opened", "فُتحت")}</dt>
-                  <dd>{timeLabel(c.openedAt)} AST</dd>
+                  <dd>{c.openedAt ? `${timeLabel(c.openedAt)} AST` : "—"}</dd>
                 </div>
               </dl>
               <DetailSection title={t("Current assessment", "التقييم الحالي")}>
@@ -927,6 +978,11 @@ export function InvestigationPage() {
                         {e.label}
                         <small>
                           {e.facility} · {e.time} AST
+                        {e.afterInvestigation &&
+                          ` · ${t(
+                            "recorded after the investigation",
+                            "سُجل بعد التحقيق",
+                          )}`}
                         </small>
                       </span>
                       {e.confidence === "confirmed" ? (
@@ -948,7 +1004,54 @@ export function InvestigationPage() {
               >
                 {c.execution?.detail ??
                   t("No action has been executed.", "لم يُنفذ أي إجراء.")}
-                {c.outcome && <p className="mt-3">{c.outcome.detail}</p>}
+                {c.backend?.verification ? (
+                  <div className="finding" data-testid="verification-result">
+                    <Badge
+                      variant="secondary"
+                      className={`finding-status finding-${c.backend.verification.result === "confirmed" ? "supported" : c.backend.verification.result === "failed" ? "refuted" : "uncertain"}`}
+                    >
+                      {t(
+                        {
+                          confirmed: "Verified · exception cleared",
+                          failed: "Checked · not confirmed",
+                          exception_remains: "Verified · exception remains",
+                          finding: "Finding on record · not resolved",
+                        }[c.backend.verification.result],
+                        {
+                          confirmed: "تم التحقق · زال الاستثناء",
+                          failed: "تم الفحص · لم يتأكد",
+                          exception_remains: "تم التحقق · الاستثناء باقٍ",
+                          finding: "نتيجة مسجلة · لم تُحل",
+                        }[c.backend.verification.result],
+                      )}
+                    </Badge>
+                    <b>
+                      {c.backend.verification.byPerson
+                        ? t("A person's finding", "نتيجة فحص بشري")
+                        : t("Independent verifier", "المتحقق المستقل")}
+                    </b>
+                    {c.backend.verification.reason && (
+                      <p>{c.backend.verification.reason}</p>
+                    )}
+                    {c.backend.verification.remainingSymptoms.length > 0 && (
+                      <p>
+                        {t("Still observed", "ما زال مرصوداً")}:{" "}
+                        {c.backend.verification.remainingSymptoms
+                          .map((code) => code.replaceAll("_", " ").toLowerCase())
+                          .join(", ")}
+                      </p>
+                    )}
+                  </div>
+                ) : c.backend?.verificationDeadline && c.status === "verifying" ? (
+                  <p className="mt-3">
+                    {t(
+                      `Waiting for evidence of the outcome. The verifier waits until ${dateTimeLabel(c.backend.verificationDeadline)} (dataset clock), then the case goes to a person.`,
+                      `بانتظار دليل على النتيجة. ينتظر المتحقق حتى ${dateTimeLabel(c.backend.verificationDeadline)} (ساعة البيانات)، ثم تُحال الحالة إلى شخص.`,
+                    )}
+                  </p>
+                ) : (
+                  c.outcome && <p className="mt-3">{c.outcome.detail}</p>
+                )}
               </DetailSection>
               {decisions
                 .filter((d) => d.caseId === c.id)

@@ -563,9 +563,16 @@ function investigationLogOf(
       .filter((check) => !check.passed)
       .map((check) => humanize(check.check)),
     nextEvidenceStep: result.investigation?.next_evidence_step ?? null,
-    degraded: (result.degraded ?? []).map(
-      (item) => `${humanize(item.role)}: ${humanize(item.kind)}`,
-    ),
+    degraded: (result.degraded ?? []).map((item) => {
+      const who = item.role === "reviewer" ? "reviewer" : "investigator";
+      if (item.kind === "invalid_model_output")
+        return `The ${who}'s reply from the model was not valid, so nothing from it was used and no diagnosis was substituted. A person has this case.`;
+      if (item.kind === "model_unavailable")
+        return `The model did not answer for the ${who}, so no diagnosis was substituted. A person has this case.`;
+      if (item.kind === "model_call_cap")
+        return `The ${who} reached the model-call cap before finishing. No diagnosis was substituted. A person has this case.`;
+      return `${humanize(item.role)}: ${humanize(item.kind)}. A person has this case.`;
+    }),
   };
 }
 
@@ -707,6 +714,8 @@ export function applyDetail(
   evidence.sort((a, b) =>
     (a.occurredAt ?? "9999").localeCompare(b.occurredAt ?? "9999"),
   );
+  for (const item of evidence)
+    if (byId.get(item.id)?.after_investigation) item.afterInvestigation = true;
 
   // Graph: real nodes and relationships, bounded for display. Cited evidence is always kept.
   const pipeline = pipelineView(detail.pipeline?.events ?? []);
@@ -760,6 +769,7 @@ export function applyDetail(
     kind,
     detail: nodeDetail(node),
     evidenceId: located.has(node.id) ? node.id : undefined,
+    occurredAt: text(node.properties.occurred_at) || undefined,
     sourceKind: node.kind,
   }));
   const allEdges = [...edges, ...ledger.edges];
@@ -792,6 +802,25 @@ export function applyDetail(
   const verified =
     !!outcome &&
     ["VERIFIED", "HUMAN_VERIFIED"].includes(outcome.verification_status ?? "");
+  const cleared =
+    verified && outcome!.success === true && outcome!.exception_cleared !== false;
+  const verification: BackendCaseState["verification"] = outcome
+    ? {
+        result:
+          outcome.verification_status === "HUMAN_FINDING"
+            ? "finding"
+            : cleared
+              ? "confirmed"
+              : outcome.success === true
+                ? "exception_remains"
+                : "failed",
+        status: outcome.verification_status ?? "",
+        byPerson: /HUMAN/.test(outcome.verification_status ?? ""),
+        reason: outcome.reason ?? "",
+        remainingSymptoms: outcome.remaining_symptoms ?? [],
+        verifiedAt: outcome.verified_at ?? outcome.recorded_at ?? null,
+      }
+    : undefined;
   const approvable = detail.recommendation?.approvable === true;
   // Furthest recorded step; execution and the verified outcome extend the rail past the graph.
   const stage = verified || workflow === "AWAITING_OUTCOME"
@@ -858,7 +887,11 @@ export function applyDetail(
       ? {
           id: execution.receipt_ref ?? execution.entity_id ?? "",
           action: humanize(execution.action_type),
-          timestamp: execution.occurred_at ?? execution.recorded_at ?? "",
+          timestamp:
+            execution.executed_at ??
+            execution.occurred_at ??
+            execution.recorded_at ??
+            "",
           successful: !/FAIL|REFUS|TIMEOUT|ERROR|NOT_ACK/i.test(execution.status ?? ""),
           detail: `${/NOT_ACK/i.test(execution.status ?? "") ? "The action was authorized but no execution adapter acknowledged it, so nothing was carried out and there is nothing to verify. " : ""}Execution ${humanize(execution.status) || "recorded"}${execution.authority ? ` under ${humanize(execution.authority)}` : ""}${execution.receipt_ref ? ` · receipt ${execution.receipt_ref}` : ""}. A receipt is not an outcome.`,
         }
@@ -942,6 +975,8 @@ export function applyDetail(
       riskClass: detail.recommendation?.risk_class ?? null,
       actionType: detail.recommendation?.action_type ?? null,
       outcomeStatus: detail.outcome?.verification_status ?? null,
+      verification,
+      verificationDeadline: execution?.deadline_at ?? null,
       asOf: detail.as_of,
     },
   };

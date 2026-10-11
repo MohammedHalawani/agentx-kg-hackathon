@@ -48,9 +48,25 @@ export function HumanOutcomeDialog({
   const [cited, setCited] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
-  const evidence = (c?.evidence ?? []).filter(
-    (e) => !e.id.startsWith("planned:"),
-  );
+  // Every recorded observation of the case, newest first: the backend accepts only evidence
+  // recorded after the last executed action, which is usually the most recent records.
+  const evidence = (c?.nodes ?? [])
+    .filter((node) => node.kind === "observation")
+    .sort((a, b) => (b.occurredAt ?? "").localeCompare(a.occurredAt ?? ""))
+    .map((node) => ({
+      id: node.id,
+      label: node.label,
+      facility: node.id.replace(/^SYN-/, ""),
+      time: node.occurredAt
+        ? new Date(node.occurredAt).toLocaleString("en-GB", {
+            timeZone: "Asia/Riyadh",
+            day: "2-digit",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : "—",
+    }));
   function close() {
     setFinding("");
     setCited([]);
@@ -150,8 +166,8 @@ export function HumanOutcomeDialog({
                       "يُسجل عدم العثور على الطرد ولا يحل الحالة.",
                     )
                   : t(
-                      "The backend decides the case's state from this record.",
-                      "يحدد الخادم حالة الحالة من هذا السجل.",
+                      "The backend accepts evidence recorded after the last executed action, runs the verifier's own check, and decides whether the case resolves.",
+                      "يقبل الخادم الأدلة المسجلة بعد آخر إجراء منفذ، ويجري فحص المتحقق نفسه، ويقرر إن كانت الحالة تُحل.",
                     )}
               </span>
             </div>

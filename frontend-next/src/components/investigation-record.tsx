@@ -43,7 +43,7 @@ export function InvestigationRecord({ c }: { c: OperationalCase }) {
                   `${beyond} سجلاً من خارج هذه الشحنة`,
                 )}`}
             </p>
-            {log.capReached && (
+            {log.capReached && log.degraded.length === 0 && (
               <p className="finding-caution">
                 {t(
                   "The model-call cap was reached. No diagnosis was substituted; the case went to a person.",

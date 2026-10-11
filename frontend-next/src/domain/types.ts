@@ -40,6 +40,8 @@ export interface EvidenceObservation {
   facility: string;
   /** Backend evidence: the ISO time the observation occurred (dataset clock). */
   occurredAt?: string;
+  /** Backend evidence: recorded after the investigation's evidence snapshot, so it did not see it. */
+  afterInvestigation?: boolean;
 }
 export interface GraphNode {
   id: string;
@@ -56,6 +58,8 @@ export interface GraphNode {
     | "outcome";
   detail: string;
   evidenceId?: string;
+  /** Backend evidence: when the record occurred (dataset clock). */
+  occurredAt?: string;
   /** Backend evidence: the Neo4j label this node was served with. */
   sourceKind?: string;
 }
@@ -245,6 +249,21 @@ export interface BackendCaseState {
   riskClass?: string | null;
   actionType?: string | null;
   outcomeStatus?: string | null;
+  /**
+   * What the independent verifier (or a person) recorded after the action, as served.
+   * "failed": checked and not confirmed. "exception_remains": the action worked but the
+   * exception is still there. "finding": a person's finding on record that did not resolve.
+   */
+  verification?: {
+    result: "confirmed" | "failed" | "exception_remains" | "finding";
+    status: string;
+    byPerson: boolean;
+    reason: string;
+    remainingSymptoms: string[];
+    verifiedAt: string | null;
+  };
+  /** Until when the verifier waits for evidence of the executed action. */
+  verificationDeadline?: string | null;
   asOf?: string;
 }
 export type AuditKind =
