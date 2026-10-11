@@ -23,6 +23,16 @@
    "tokens": 687366,
    "note": "cases 1, 2, 3, 4, 10 and 11 re-investigated after the prompt fix 907be31; entered afterwards from the results file's provenance",
    "reserved": null
+  },
+  {
+   "run": "stage3 run run1 selection 68abd34f94ff",
+   "started_at": "2026-10-11T02:28:17.574695+00:00",
+   "finished_at": "2026-10-11T08:04:12.806934+00:00",
+   "commit": "82f19acb6ba7a276f01ec0ee7fa5176f9ef33dbe",
+   "calls": 2595,
+   "tokens": 17815670,
+   "note": "stage3_eval run in run1; own cap 6808 (sealed in the selection); status: paused; resumed 2026-10-11T03:29:06.412730+00:00; status: completed",
+   "reserved": 6808
   }
  ]
 }
