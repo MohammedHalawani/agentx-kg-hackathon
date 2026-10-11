@@ -20,10 +20,12 @@ interface Detail {
 }
 
 async function openFromQueue(page: Page, detail: Detail) {
-  // In-app navigation, as an operator switches: no page reload between the two cases.
-  await page.getByRole("link", { name: "Operations" }).first().click();
-  await page.getByRole("textbox", { name: "Search exception queue" }).fill(detail.shipment_id);
-  await page.getByTestId(`data-row-${detail.case_id}`).click();
+  // In-app navigation, as an operator switches: no page reload between the two cases (a
+  // resolved case is not in the queue table, so the router is driven directly).
+  await page.evaluate((path) => {
+    window.history.pushState({}, "", path);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  }, `/app/cases/${detail.case_id}`);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(detail.shipment_id, {
     timeout: 60000,
   });
@@ -73,7 +75,7 @@ test("Each case shows only its own narration, conversation and highlights", asyn
     }
     // A highlight lights only nodes of this case's graph.
     const nodes = new Set(detail.evidence.nodes.map((node) => node.id));
-    const lit = page.locator(".narration-bubble footer button:not([disabled])").first();
+    const lit = page.locator(".narration-strip .narration-bubble footer button:not([disabled])").first();
     if (await lit.count()) {
       await lit.click({ timeout: 15000 });
       const ids = await page
