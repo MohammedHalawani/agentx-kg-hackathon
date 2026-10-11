@@ -29,9 +29,10 @@ npm run build          # writes frontend-next/dist
 # then start the backend as usual; open http://127.0.0.1:8000/app/
 ```
 
-`npm run dev` starts Vite on `http://127.0.0.1:5190/app/` and proxies API reads to
-`SUHAIL_BACKEND` (default `http://127.0.0.1:8000`). Operator controls need the same-origin
-build served by the backend: the backend refuses state changes from another origin.
+`SUHAIL_BACKEND=http://127.0.0.1:<port> npm run dev` starts Vite on
+`http://127.0.0.1:5190/app/` against any running backend (default `http://127.0.0.1:8000`).
+Reads, operator requests and the live stream go through its proxy. For a backend in another
+checkout to serve the production build, set `SUHAIL_FRONTEND_NEXT_DIST` to this folder's `dist`.
 
 ## What is connected
 

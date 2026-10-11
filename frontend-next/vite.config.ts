@@ -51,8 +51,9 @@ export default defineConfig(({ mode }) => {
       host: "127.0.0.1",
       port: lab ? 5180 : 5190,
       strictPort: true,
-      // Reads work through this proxy. Operator controls need the same-origin build served by
-      // the backend (/app/): the backend refuses state changes from another origin.
+      // SUHAIL_BACKEND=<origin> points the dev build at any running backend. Reads, operator
+      // requests and the live stream all go through this proxy (the browser stays same-origin
+      // with the dev server, which the backend's local-operations check accepts).
       proxy: lab
         ? undefined
         : Object.fromEntries(
