@@ -225,6 +225,15 @@ def answer(detail, question, *, language="en", history=(), ask=None, use_model=T
     if not usable:
         text, arabic, chosen = record_answer(detail, question, quotes)
     retrieved = [n for n in cited if n in evidence_nodes]
+    if not retrieved:
+        # The answer cited no graph record itself (often it cites a computation or a narration record): highlight the
+        # graph records the shown quotes are about, else the ones the leading hypothesis rests on. All are recorded ids.
+        events = {e.get("id"): e for e in (detail.get("narration") or {}).get("events") or []}
+        diagnosis = detail.get("diagnosis") or {}
+        findings = diagnosis if diagnosis.get("available") else (diagnosis.get("unaccepted_investigation") or {})
+        about = [i for q in chosen for i in (events.get(q) or {}).get("graph_node_ids") or []]
+        about = about or [i for h in (findings.get("hypotheses") or [])[:1] for i in h.get("supporting_evidence_ids") or []]
+        retrieved = [i for i in dict.fromkeys(about) if i in evidence_nodes][:12]
     return {**base, "kind": "canopus_answer" if usable else "record_answer", "answer_en": text, "answer_ar": arabic, "evidence_ids": cited,
-            "graph_node_ids": retrieved or graph_ids(cited, detail.get("shipment_id"), evidence_nodes), "quotes": [quotes[q] for q in chosen],
+            "graph_node_ids": retrieved, "quotes": [quotes[q] for q in chosen],
             "model": model, "grounded": True if usable else None, "fallback": bool(use_model and not usable), "model_calls": calls}

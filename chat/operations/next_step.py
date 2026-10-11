@@ -21,6 +21,10 @@ STEPS = {
         "يجب أن يحقق شخص في هذه الحالة. يمكنك الموافقة على طلب الأدلة {action} لجمع أدلة إضافية؛ لن يغلق ذلك الحالة."),
     "INVESTIGATE_AND_RECORD_FINDING": ("operator", "A person must investigate this case and record the finding. Nothing further will run automatically.",
                                        "يجب أن يحقق شخص في هذه الحالة ويسجّل ما توصل إليه. لن يُنفَّذ أي إجراء آخر تلقائيًا."),
+    "REVIEW_VERIFIED_RESULT_AND_RECORD_FINDING": (
+        "operator", "{action} was already carried out and independently verified, but the investigation was not accepted by the reviewer, so the case is "
+                    "not closed. Review the verified result and the reviewer's objection, then record a finding. Approving {action} again would only repeat it.",
+        "نُفِّذ الإجراء {action} وتم التحقق منه بشكل مستقل، لكن المراجع لم يقبل نتيجة التحقيق، لذا لم تُغلق الحالة. راجع النتيجة المتحقق منها واعتراض المراجع ثم سجّل ما توصلت إليه. الموافقة على {action} مرة أخرى ستكرره فقط."),
     "REVIEW_UNACCEPTED_INVESTIGATION": (
         "operator", "The independent reviewer did not accept the investigation. Read its objection and the unaccepted findings, then re-analyse the case or investigate and record a finding.",
         "لم يقبل المراجع المستقل نتيجة التحقيق. اقرأ اعتراضه والنتائج غير المقبولة، ثم أعد تحليل الحالة أو حقق وسجّل ما توصلت إليه."),
@@ -45,7 +49,11 @@ def step_code(detail):
     if state == "NEEDS_EVIDENCE":
         return "PROVIDE_EVIDENCE_OR_REANALYSE"
     if state == "HUMAN_REVIEW" and recommendation.get("approvable"):
-        return "APPROVE_EVIDENCE_REQUEST_OR_INVESTIGATE"
+        # The recommended request was already executed and verified as successful in this case (a reassessment the
+        # reviewer did not accept): the person's job is the verified result, not the same request again.
+        done = any(a.get("action_type") == recommendation.get("action_type") and a.get("success") is True and a.get("verification_status") == "VERIFIED"
+                   for a in attempted_actions(detail))
+        return "REVIEW_VERIFIED_RESULT_AND_RECORD_FINDING" if done else "APPROVE_EVIDENCE_REQUEST_OR_INVESTIGATE"
     return "INVESTIGATE_AND_RECORD_FINDING"      # HUMAN_REVIEW and any state not listed: a person, never an automatic step.
 
 

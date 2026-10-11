@@ -34,6 +34,18 @@ class NextStepTests(unittest.TestCase):
         self.assertEqual(step_code(case("HUMAN_REVIEW", approvable=False)), "INVESTIGATE_AND_RECORD_FINDING")
         self.assertEqual(step_code(case("ESCALATED", approvable=True)), "REVIEW_UNACCEPTED_INVESTIGATION")   # Never an approval prompt.
 
+    def test_an_already_verified_request_is_not_offered_again_as_the_next_step(self):
+        executions = [{"entity_id": "E1", "action_type": "REQUEST_REWEIGH", "authority": "AUTO_POLICY", "status": "ACKNOWLEDGED"}]
+        verified = {"execution_id": "E1", "verification_status": "VERIFIED", "success": True, "outcome_type": "weight_remeasured", "exception_cleared": True}
+        step = next_step(case("HUMAN_REVIEW", approvable=True, action="REQUEST_REWEIGH", executions=executions, outcome=verified))
+        self.assertEqual((step["code"], step["actor"], step["resolved"]), ("REVIEW_VERIFIED_RESULT_AND_RECORD_FINDING", "operator", False))
+        self.assertIn("already carried out and independently verified", step["text_en"])
+        self.assertIn("not closed", step["text_en"])
+        # A failed result, another action, or no result yet leaves the approval offer as it was.
+        for outcome, action in (({**verified, "success": False}, "REQUEST_REWEIGH"), (verified, "REQUEST_RESCAN"), (None, "REQUEST_REWEIGH")):
+            self.assertEqual(step_code(case("HUMAN_REVIEW", approvable=True, action=action, executions=executions, outcome=outcome)),
+                             "APPROVE_EVIDENCE_REQUEST_OR_INVESTIGATE")
+
     def test_the_step_names_who_acts_and_carries_both_languages_and_the_action(self):
         step = next_step(case("HUMAN_REVIEW", approvable=True, action="REQUEST_DEVICE_SYNC"))
         self.assertEqual(step["actor"], "operator")
