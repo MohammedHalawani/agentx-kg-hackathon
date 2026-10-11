@@ -19,7 +19,13 @@ test("A queued case is investigated by the real investigator and the interface s
   request,
 }) => {
   const status = await (await request.get("/worker/status")).json();
-  expect(String(status.database)).toMatch(/-(ui|test2?|ci-test)$|^shipments-v2-world-demo/);
+  // Scratch databases, or the demo database once the backend track has handed it over
+  // (SUHAIL_LIVE_DEMO_HANDED_OVER=1): investigating a case changes that database's ledger.
+  expect(String(status.database)).toMatch(
+    process.env.SUHAIL_LIVE_DEMO_HANDED_OVER === "1"
+      ? /-(ui|test2?|ci-test)$|^shipments-v2-world-demo$/
+      : /-(ui|test2?|ci-test)$/,
+  );
   const rows = (await (await request.get("/cases/queue?scope=all&limit=100")).json()).items as {
     case_id: string;
     shipment_id: string;

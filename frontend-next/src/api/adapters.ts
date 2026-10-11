@@ -296,6 +296,8 @@ const OBSERVATION_RANK: Record<string, number> = {
   GPSObservation: 6,
   TrafficObservation: 6,
   LocationPin: 6,
+  // Mechanism-world records: messages to and from customers and their delivery reports.
+  CommunicationEvent: 1,
 };
 /** How many of a case's recorded nodes the graph draws (cited evidence first). The total is always stated. */
 export const GRAPH_LIMIT = 48;
@@ -305,6 +307,8 @@ function graphKind(kind: string): GraphNode["kind"] | null {
   if (kind === "Package") return "package";
   if (FACILITY_KINDS.has(kind)) return "facility";
   if (kind === "Vehicle") return "vehicle";
+  // Mechanism-world transport records several shipments share (plan data, not custody).
+  if (kind === "Container" || kind === "Trip") return "vehicle";
   if (kind === "Driver") return "driver";
   if (kind === "Provider" || kind === "Organization") return "contractor";
   if (kind in OBSERVATION_RANK) return "observation";
@@ -327,6 +331,10 @@ function nodeLabel(node: ApiEvidenceNode) {
     return `Attempt · ${humanize(text(p.disposition))}`;
   if (kind === "StatusEvent") return `Status · ${humanize(text(p.status))}`;
   if (kind === "GPSObservation") return "Vehicle GPS";
+  if (kind === "Container" || kind === "Trip")
+    return `${kind} · ${shortId(node.id).split("-").slice(-2).join("-")}`;
+  if (kind === "CommunicationEvent")
+    return `Message · ${humanize(text(p.channel) || text(p.direction)) || "recorded"}`;
   if (kind === "Device")
     return `Device · ${humanize(text(p.device_kind)) || shortId(node.id)}`;
   if (kind === "OpsRecommendation")

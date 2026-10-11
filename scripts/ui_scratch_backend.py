@@ -10,6 +10,9 @@ named in SUHAIL_UI_DATABASE). By default it runs with the investigation agents o
 model key, so it makes no model calls; SUHAIL_UI_AGENTS=on runs the real GPT-OSS investigator. The legacy
 V1 routes of the same app (/v1/..., /threads) still use the configured chat and shipment
 databases if they are called; the redesigned interface never calls them.
+Switching to the demo database is one variable: SUHAIL_UI_DATABASE=shipments-v2-world-demo. Starting
+a backend initialises that database's operations ledger and its workers, so do it only once the
+backend track has handed the demo database over.
 Neo4j connection settings are read from an env file (default: the repository's .env, else the
 main checkout's at C:\\Projects\\demo\\.env); their values are never printed.
 """
