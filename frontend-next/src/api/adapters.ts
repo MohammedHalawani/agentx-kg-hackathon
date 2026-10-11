@@ -585,7 +585,9 @@ function investigationLogOf(
       .filter((check) => !check.passed)
       .map((check) => humanize(check.check)),
     nextEvidenceStep: result.investigation?.next_evidence_step ?? null,
-    degradedKinds: (result.degraded ?? []).map((item) => item.kind ?? ""),
+    degradedKinds: (result.degraded ?? []).map(
+      (item) => item.kind ?? (item.role === "snapshot" ? "snapshot_changed" : ""),
+    ),
     rejectedReplies: [
       ...new Set(
         (result.latency?.model?.turns ?? [])
@@ -596,6 +598,9 @@ function investigationLogOf(
     ],
     degraded: (result.degraded ?? []).map((item) => {
       const who = item.role === "reviewer" ? "reviewer" : "investigator";
+      if (item.role === "snapshot")
+        // Not a model failure: the evidence moved while the investigation ran.
+        return "Evidence changed during the investigation, so its conclusion rests on a superseded snapshot. A person must review the latest evidence.";
       if (item.kind === "turn_budget_exhausted")
         return `The ${who} reached no valid conclusion within its turn budget. No diagnosis was substituted. A person has this case.`;
       if (item.kind === "invalid_model_output")

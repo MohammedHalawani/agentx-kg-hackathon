@@ -417,7 +417,15 @@ export function InvestigationPage() {
                         "The investigator reached no conclusion within its turn budget · no diagnosis · with a person",
                         "لم يصل المحقق إلى استنتاج ضمن عدد أدواره · لا تشخيص · لدى شخص",
                       )
-                  : c.backend?.investigationLog?.degraded.length
+                  : c.backend?.investigationLog?.degradedKinds.includes(
+                        "snapshot_changed",
+                      )
+                    ? t(
+                        "Evidence changed during the investigation · a person must review the latest evidence",
+                        "تغيرت الأدلة أثناء التحقيق · على شخص مراجعة أحدث الأدلة",
+                      )
+                  : c.backend?.investigationLog?.degraded.length &&
+                      !c.backend.diagnosisAvailable
                     ? t(
                         "The model's reply could not be used · no diagnosis · with a person",
                         "تعذر استخدام رد النموذج · لا تشخيص · لدى شخص",
@@ -591,10 +599,12 @@ export function InvestigationPage() {
                     ))
                   : stage === 6 && c.execution
                     ? c.execution.detail
-                    : t(
-                        "No event is recorded for this stage in the current run.",
-                        "لا يوجد حدث مسجل لهذه المرحلة في التحقيق الحالي.",
-                      )))
+                    : c.status === "investigating" && stage === (c.run?.stage ?? 0)
+                      ? t("Starting…", "جارٍ البدء…")
+                      : t(
+                          "No event is recorded for this stage in the current run.",
+                          "لا يوجد حدث مسجل لهذه المرحلة في التحقيق الحالي.",
+                        )))
               : stage === 2
                 ? c.diagnosis
                 : stage === 4

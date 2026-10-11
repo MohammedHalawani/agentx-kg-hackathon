@@ -49,7 +49,15 @@ for (const id of CASES)
     else
       // No accepted diagnosis: the monitor's neutral sentence, never a cause.
       await expect(context).toContainText(/no accepted agent diagnosis|Monitor detected/i);
-    if (degraded.length)
+    // Evidence that moved during the run is not a model failure and leaves the diagnosis shown.
+    const snapshot = (result.degraded ?? []).some(
+      (item: { role?: string }) => item.role === "snapshot",
+    );
+    if (snapshot)
+      await expect(page.locator(".pipeline-meta")).toContainText(
+        "Evidence changed during the investigation",
+      );
+    else if (degraded.length)
       await expect(page.locator(".pipeline-meta")).toContainText(
         degraded.some((item) => item.kind === "turn_budget_exhausted")
           ? "reached no conclusion within its turn budget"
@@ -76,7 +84,7 @@ for (const id of CASES)
     await page.getByRole("button", { name: "Case details" }).click();
     const sheet = page.getByRole("dialog");
     if (result.investigation_log) await expect(sheet.getByTestId("investigation-steps")).toBeVisible();
-    if (degraded.length) {
+    if (degraded.length && !snapshot) {
       await expect(sheet.getByTestId("investigation-steps")).toContainText(
         /no diagnosis was substituted/,
       );

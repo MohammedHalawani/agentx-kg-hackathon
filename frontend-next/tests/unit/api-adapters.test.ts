@@ -251,6 +251,10 @@ describe("backend case detail", () => {
     expect(spent.backend?.investigationLog?.degraded[0]).not.toMatch(/not valid, so nothing/);
     expect(spent.backend?.investigationLog?.rejectedReplies).toEqual(["empty reply"]);
     expect(spent.backend?.timing?.totalSeconds).toBe(90.9);
+    // Evidence that moved during the run is not worded as a model failure.
+    const moved = applyDetail(base, detailA({ workflow_state: "HUMAN_REVIEW", run: { ...seed.run!, result: { ...seed.run!.result!, degraded: [{ role: "snapshot", error: "evidence changed during investigation" }] } } }));
+    expect(moved.backend?.investigationLog?.degradedKinds).toEqual(["snapshot_changed"]);
+    expect(moved.backend?.investigationLog?.degraded[0]).toMatch(/superseded snapshot/);
     expect(sent.backend?.verification).toBeUndefined();
     expect(sent.outcome).toBeUndefined();
     expect(controls(sent).humanOutcome).toBe(true);
