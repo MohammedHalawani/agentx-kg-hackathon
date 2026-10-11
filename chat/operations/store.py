@@ -975,6 +975,17 @@ class OperationsStore:
                     self._audit(tx,current,"OUTCOME_VERIFIED_HUMAN_CLOSURE",when,actor="SUHAIL-OUTCOME-VERIFIER",old=old,
                                 result=f"{execution['action_type']} verified: {verdict['reason']} Closure reserved for a person"
                                        +(f" ({', '.join(floor)})." if floor else "."))
+                elif success and execution.get("closure")=="REASSESS":
+                    # AUTH-27: the action ran under a reviewer's doubt. Its verified result is new evidence, not a
+                    # resolution: the case goes back to the investigator and the reviewer.
+                    current.update(workflow_state="OPEN",recommendation_id=None,reassess_outcome_id=outcome_id,quiet_until=None,
+                                   outcome_checked_as_of=None,state_version=current["state_version"]+1)
+                    without_diagnosis(current,pending=True)
+                    self._put(tx,"OpsCase",current,update=True)
+                    self._audit(tx,current,"OUTCOME_VERIFIED_REASSESSMENT",when,actor="SUHAIL-OUTCOME-VERIFIER",old=old,key=outcome_id,
+                                result=f"{execution['action_type']} verified: {verdict['reason']} The reviewer had not accepted the "
+                                       "investigation (AUTH-27), so nothing is resolved yet: the case is investigated and reviewed "
+                                       "again with the new evidence.")
                 elif success:
                     current.update(workflow_state="RESOLVED",operational_status="RESOLVED",is_terminal=True,closed_at=when,
                                    verified_outcome_id=outcome_id,state_version=current["state_version"]+1)
@@ -994,6 +1005,40 @@ class OperationsStore:
             result=self._execute(record,write=True)
             if result:results.append(result)
         return results
+
+    def _reassessment_result(self,tx,current,analysis,reassess,stale,when):
+        """AUTH-27, after the action that ran under a reviewer's doubt was verified: this run is the reassessment on the
+        new evidence. Returns (outcome id or None, analysis). The case resolves only when this run's independent review
+        accepted, nothing degraded or superseded it, and the exception is still cleared on its snapshot by the same test
+        the outcome verifier applies; otherwise it goes to a person. Nothing is executed from this run either way."""
+        from operations.authority import HUMAN_FLOOR_SYMPTOMS, DISPUTES_CLEARED_BY_ACTION
+        outcome=self._get(tx,"OpsOutcome",reassess["outcome_id"]) or {}
+        review=analysis.get("review") or {}
+        accepted=(review.get("verdict")=="accept" and review.get("model_verdict")=="ACCEPT" and not analysis.get("degraded")
+                  and not stale and bool(analysis.get("investigation")))
+        recorded=set(current.get("symptom_codes") or []);fresh=set(reassess.get("fresh") or [])
+        others=self._other_open_cases(tx,current)
+        remaining=remaining_symptoms(recorded,fresh,is_delivered=bool(reassess.get("delivered")),other_cases=others,
+                                     outcome_type=outcome.get("outcome_type"),
+                                     settled=DISPUTES_CLEARED_BY_ACTION.get(outcome.get("action_type"),frozenset()))
+        floor=sorted((recorded|fresh)&HUMAN_FLOOR_SYMPTOMS)
+        verified=bool(outcome.get("success")) and outcome.get("verification_status")=="VERIFIED" and not outcome.get("invalidated")
+        current["reassess_outcome_id"]=None
+        if accepted and verified and not remaining and not floor:
+            self._audit(tx,current,"REASSESSMENT_ACCEPTED",when,actor="SUHAIL-REVIEWER",key=reassess["outcome_id"],
+                        result="The investigation was repeated on the evidence gathered by the action and the independent reviewer "
+                               "accepted it; the verifier's result stands and no exception remains.")
+            self._audit(tx,current,"CASE_RESOLVED",when,actor="SUHAIL-OUTCOME-VERIFIER",key=reassess["outcome_id"],
+                        result="Resolved from independently observed later evidence after an accepted reassessment; no human action.")
+            self._audit(tx,current,"NOTIFICATION_QUEUED",when,actor="SUHAIL-OUTCOME-VERIFIER",result="Dry run only; zero external sends.")
+            return reassess["outcome_id"],{**analysis,"result":{**analysis["result"],"workflow_state":"RESOLVED"}}
+        why=("the reviewer did not accept the reassessment ("+str(review.get("model_verdict") or review.get("verdict"))+")" if not accepted
+             else "the verified result no longer stands" if not verified
+             else "the exception remains ("+", ".join(remaining)+")" if remaining
+             else "closure is reserved for a person ("+", ".join(floor)+")")
+        self._audit(tx,current,"REASSESSMENT_NOT_ACCEPTED",when,actor="SUHAIL-REVIEWER",key=reassess["outcome_id"],
+                    result=f"Not resolved after the reassessment: {why}. Routed to a person; nothing was executed from this run.")
+        return None,{**analysis,"result":{**analysis["result"],"workflow_state":"HUMAN_REVIEW"}}
 
     def _other_open_cases(self,tx,case):
         rows=[public_value(r["props"]) for r in tx.run("MATCH(c:OpsCase {shipment_id:$sid,dataset_id:$dataset,split:'development'}) "
@@ -1186,6 +1231,7 @@ class OperationsStore:
         case=self._execute(claim,write=True)
         if not case:return {"processed":False,"outcome":None}
         self._reader()
+        reassess={}
         def finish(tx,analysis):
             control=self._control(tx,lock=True);current=self._case(tx,case["entity_id"])
             if current.get("claim_id")!=case["claim_id"] or current["workflow_state"]!="INVESTIGATING":
@@ -1225,6 +1271,12 @@ class OperationsStore:
                           "degraded":[*(analysis.get("degraded") or []),{"role":"snapshot","error":"evidence changed during investigation",
                                                                        "kind":materiality.SNAPSHOT_SUPERSEDED_KIND}]}
             when=control["as_of"];run_id=identity("run",current["entity_id"],case["claim_id"])
+            # A reassessment run (after an action that ran under a reviewer's doubt was verified, AUTH-27) never acts by
+            # itself: it resolves the case or hands it to a person.
+            reassessing=bool(reassess.get("outcome_id")) and current.get("reassess_outcome_id")==reassess.get("outcome_id")
+            resolved_by_reassessment=None
+            if reassessing:
+                resolved_by_reassessment,analysis=self._reassessment_result(tx,current,analysis,reassess,stale,when)
             self._put(tx,"OpsRun",{"entity_id":run_id,"shipment_id":case["shipment_id"],"case_id":case["entity_id"],
                 "recorded_at":when,"mode":analysis["mode"],"result_json":canonical(analysis),"iteration":len(analysis["trace"]),
                 "status":"RUNNING","context_hash":analysis["context_hash"]},update=True)
@@ -1269,8 +1321,13 @@ class OperationsStore:
                 self._audit(tx,current,"MODEL_DEGRADED",when,actor="SUHAIL-"+item["role"].upper(),key=item["role"],
                             result=f"{item['role']} {failure} ({item.get('error') or 'no valid output'}); automatic execution blocked.")
             from operations.authority import execution_permission
-            auto=(recommendation_id and analysis["review"]["verdict"]=="accept" and authority.get("risk_class")=="AUTO"
-                  and not analysis.get("degraded"))
+            from operations.authority import reviewer_doubt_allows
+            # AUTH-27: the reviewer's doubt (never a guard rejection, never a request for a person) on an evidence-gathering
+            # action the authority policy decided AUTO. The doubt is recorded with the action and is not an acceptance.
+            doubted=bool(recommendation_id and analysis["review"]["verdict"]=="reject" and authority.get("risk_class")=="AUTO"
+                         and reviewer_doubt_allows(authority.get("action_type"),analysis["review"].get("model_verdict")))
+            auto=(recommendation_id and (analysis["review"]["verdict"]=="accept" or doubted) and authority.get("risk_class")=="AUTO"
+                  and not analysis.get("degraded") and not reassessing)
             permitted,refusal_rule,refusal_reason=execution_permission(authority.get("action_type"),"AUTO_POLICY",authority.get("risk_class"))
             if auto and not permitted:
                 auto=False
@@ -1282,6 +1339,11 @@ class OperationsStore:
                 self._authorize_execution(tx,current,execution_id,recommendation_id,analysis["proposal"],authority["action_type"],
                                           "AUTO_POLICY",when,decision_id=None,decided_risk=authority.get("risk_class"),
                                           closure=authority.get("closure","AUTO"),recommendation_id=recommendation_id,run_id=run_id)
+                if doubted:
+                    self._audit(tx,current,"REVIEWER_DOUBT_RECORDED",when,actor="SUHAIL-REVIEWER",key=authority.get("rule_id"),
+                                result=f"Reviewer verdict {analysis['review'].get('model_verdict')}, not an acceptance: "
+                                       f"{analysis['review'].get('feedback') or 'no feedback text'} The evidence request runs under "
+                                       "AUTH-27; the case is reassessed on the new evidence before any resolution.")
                 self._audit(tx,current,"ACTION_AUTHORIZED",when,actor="SUHAIL-AUTHORITY-POLICY",old=current["workflow_state"],
                             result=f"AUTO · {authority['action_type']} · {authority['reason']}")
                 current.update(workflow_state="ACTION_INITIATED",state_version=current["state_version"]+1)
@@ -1296,6 +1358,8 @@ class OperationsStore:
             current.update(workflow_state=analysis["result"]["workflow_state"],state_version=current["state_version"]+1,
                 last_run_id=run_id,recommendation_id=recommendation_id,claim_id=None,claim_at=None,
                 investigated_as_of=case["as_of"],evidence_checked_as_of=when,quiet_until=quiet_until)
+            if resolved_by_reassessment:
+                current.update(is_terminal=True,closed_at=when,verified_outcome_id=resolved_by_reassessment)
             if investigation_status(analysis)[0]:
                 # An agent investigation the independent reviewer accepted: its cause codes, the status they imply and its
                 # own summary (model prose, English) describe the case in the queue. The same text as case detail's
@@ -1310,6 +1374,7 @@ class OperationsStore:
                 # view stands. Rule triage codes are kept apart and labelled as rule signals, never as the cause.
                 without_diagnosis(current,pending=False)
                 if analysis["mode"]!="gpt_oss_agents":current["rule_signal_codes"]=list(analysis["result"].get("operational_labels") or [])
+            if resolved_by_reassessment:current["operational_status"]="RESOLVED"
             self._put(tx,"OpsCase",current,update=True)
             if recommendation_id:
                 # The approval context this recommendation rests on: the symptoms and evidence the investigation saw, its
@@ -1346,6 +1411,15 @@ class OperationsStore:
                            timer=self.stage_timer)
         def commit(analysis):
             stages.flush()
+            if case.get("reassess_outcome_id"):
+                # AUTH-27 reassessment: whether the exception is still cleared, re-assessed on this run's own snapshot.
+                from dataset_v2.derive import assess_shipment
+                from operations.reasoning import evidence_world
+                context=self._reader().evidence(case["shipment_id"],case["as_of"])
+                assessment=assess_shipment(evidence_world(context,self.config),case["shipment_id"],context["as_of"],
+                                           detection_allowance_seconds=DETECTION_ALLOWANCE_SECONDS)
+                reassess.update(outcome_id=case["reassess_outcome_id"],fresh=sorted(monitor_finding(assessment)["symptoms"]),
+                                delivered=delivery_corroborated(assessment))
             return self._execute(lambda tx:finish(tx,analysis),write=True)
         try:
             analysis,result=investigate(case["shipment_id"],case["as_of"],self.config,self.reader.evidence,

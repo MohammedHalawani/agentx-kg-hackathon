@@ -108,6 +108,36 @@ def abstention_floor(risk, reason, closure, action_type, diagnosis_codes):
     return risk, reason, "HUMAN"
 
 
+# Reviewer doubt (AUTH-27, approved by the project owner on 2026-10-11). The independent reviewer answering REVISE or
+# INSUFFICIENT_EVIDENCE asks for a revision or for more evidence: it doubts the conclusion; it does not reject on
+# safety and does not ask for a person. On such a verdict the proposed action may still proceed only when it is one
+# of the safe, reversible evidence-gathering requests (EVIDENCE_GATHERING), and only as every other authority rule
+# allows it: contractor custody, sensitive codes, a requested physical check, a deterministic evidence conflict, an
+# action that does not address the diagnosis, the symptom and abstention floors and execution_permission all apply
+# unchanged. A reviewer's HUMAN_REVIEW or ESCALATE, an unavailable review, a deterministic guard rejection and every
+# action outside the allowlist are untouched. The doubt is never treated as acceptance: it stays on the record, and
+# an action that ran under it carries closure REASSESS, so a verified success does not resolve the case. The
+# investigator and the reviewer reassess the case on the new evidence, and it resolves only when that review accepts
+# and the exception is still cleared; otherwise it stays with a person.
+REVIEWER_DOUBT_VERDICTS = frozenset(("REVISE", "INSUFFICIENT_EVIDENCE"))
+REVIEWER_DOUBT_REASON = ("The reviewer's doubt stays recorded; this safe, reversible evidence-gathering request may run to collect "
+                         "evidence. A verified result does not resolve the case: the investigation and the review are repeated on "
+                         "the new evidence first.")
+
+
+def reviewer_doubt_allows(action_type, review_verdict):
+    """True when a reviewer verdict of doubt leaves this action to the other authority rules (AUTH-27)."""
+    return review_verdict in REVIEWER_DOUBT_VERDICTS and action_type in EVIDENCE_GATHERING
+
+
+def reviewer_doubt_floor(risk, reason, closure, action_type, review_verdict):
+    """After the other floors: an automatic action that ran under a reviewer's doubt never closes the case by itself
+    (closure REASSESS). A closure already reserved for a person stays reserved."""
+    if risk == "AUTO" and closure == "AUTO" and reviewer_doubt_allows(action_type, review_verdict):
+        return risk, reason, "REASSESS"
+    return risk, reason, closure
+
+
 STATE = {"AUTO": "AWAITING_OUTCOME", "APPROVAL_REQUIRED": "AWAITING_APPROVAL", "HUMAN_REVIEW": "HUMAN_REVIEW", "PROHIBITED": "HUMAN_REVIEW"}
 
 
@@ -129,7 +159,7 @@ def authorize(action_type, diagnosis_codes, *, review_verdict, evidence_conflict
         return "HUMAN_REVIEW", "A model role failed or was unavailable; automatic execution is blocked and a person must review."
     if review_verdict in ("HUMAN_REVIEW", "ESCALATE"):
         return "HUMAN_REVIEW", "Reviewer requested human judgment."
-    if review_verdict == "INSUFFICIENT_EVIDENCE":
+    if review_verdict == "INSUFFICIENT_EVIDENCE" and action_type not in EVIDENCE_GATHERING:
         # The reviewer's evidence-insufficient outcome goes to a person or to more evidence gathering, never to automatic action.
         return "HUMAN_REVIEW", "Reviewer found the evidence insufficient; a person or further evidence gathering must follow."
     if contractor_custody:
@@ -144,6 +174,8 @@ def authorize(action_type, diagnosis_codes, *, review_verdict, evidence_conflict
         return "APPROVAL_REQUIRED", "Proposed action does not address a supported diagnosis."
     if risk == "AUTO" and not (synthetic and live_session):
         return "APPROVAL_REQUIRED", "Automatic execution is limited to synthetic live sessions."
+    if risk == "AUTO" and reviewer_doubt_allows(action_type, review_verdict):
+        return "AUTO", REVIEWER_DOUBT_REASON
     if risk == "AUTO" and review_verdict != "ACCEPT":
         return "APPROVAL_REQUIRED", "No independent model review accepted this action; operator authorization required."
     return risk, {"AUTO": "Low-risk, reversible, evidence-bound action within the synthetic automation allowlist.",
@@ -196,7 +228,8 @@ def recheck_authority(action_type, inputs, symptoms, *, live_session=True):
                              degraded=bool(inputs.get("degraded")), contractor_custody=bool(inputs.get("contractor_custody")),
                              physical_check=bool(inputs.get("physical_check")))
     risk, reason, closure = symptom_floor(risk, reason, action_type, symptoms)
-    return abstention_floor(risk, reason, closure, action_type, inputs.get("diagnosis_codes") or [])
+    risk, reason, closure = abstention_floor(risk, reason, closure, action_type, inputs.get("diagnosis_codes") or [])
+    return reviewer_doubt_floor(risk, reason, closure, action_type, inputs.get("review_verdict"))
 
 
 def default_action(code):
@@ -216,6 +249,7 @@ RULE_IDS = {
     "Deterministic evidence rules flagged a conflict": "AUTH-06-evidence-conflict",
     "Proposed action does not address": "AUTH-07-action-mismatch",
     "Automatic execution is limited to synthetic": "AUTH-08-not-live-synthetic",
+    "The reviewer's doubt stays recorded": "AUTH-27-reviewer-doubt-evidence-gathering",
     "No independent model review accepted": "AUTH-09-no-review-accept",
     "Low-risk, reversible": "AUTH-10-auto-allowlist",
     "Action changes destination": "AUTH-11-approval-required",

@@ -31,7 +31,10 @@ FIELDS = {
                 # material evidence requeued the case, and when the next automatic investigation may start.
                 "evidence_events", "investigated_as_of", "evidence_checked_as_of", "evidence_reinvestigations", "quiet_until",
                 # Whether issue_summary/cause_codes come from an accepted agent diagnosis; rule triage codes kept apart.
-                "diagnosis_available", "rule_signal_codes"},
+                "diagnosis_available", "rule_signal_codes",
+                # AUTH-27: the verified outcome of an action that ran under a reviewer's doubt, while the case waits for
+                # its reassessment (cleared by that run).
+                "reassess_outcome_id"},
     "OpsAudit": {"case_id", "event_type", "actor_id", "decision", "result", "from_state", "to_state", "run_id",
                  "stage", "stage_status", "sequence", "wall_recorded_at"},
     "OpsEventReceipt": {"source_event_id", "event_kind", "source_occurred_at", "case_id"},

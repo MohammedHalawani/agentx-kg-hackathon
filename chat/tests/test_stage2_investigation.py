@@ -273,8 +273,12 @@ class InvestigationRunTests(ti.Base):
         result, agents = self.run_case([call("scans"), conclude(), conclude()], [verdict("REVISE"), verdict("ACCEPT")], call_cap=4)
         self.assertEqual(len(agents.review_packets), 1)
         self.assertEqual(result["investigation_log"]["model_calls_used"], 3)
-        self.assertNotEqual(result["authority"]["risk_class"], "AUTO")
-        self.assertEqual(result["result"]["workflow_state"], "ESCALATED")
+        # The review stays REVISE and is not an acceptance. The rescan is an evidence-gathering request, so it may run
+        # under AUTH-27, and a verified result leads to a reassessment, never straight to a resolution.
+        self.assertEqual((result["review"]["verdict"], result["review"]["model_verdict"]), ("reject", "REVISE"))
+        self.assertEqual((result["authority"]["rule_id"], result["authority"]["risk_class"], result["authority"]["closure"]),
+                         ("AUTH-27-reviewer-doubt-evidence-gathering", "AUTO", "REASSESS"))
+        self.assertEqual(result["result"]["workflow_state"], "AWAITING_OUTCOME")
 
     def test_insufficient_evidence_must_name_what_is_missing_and_never_closes_automatically(self):
         abstain = dict(missing_evidence=["a second read of the label"], next_evidence_step="Ask the facility to rescan the parcel.")
@@ -292,11 +296,21 @@ class InvestigationRunTests(ti.Base):
             self.assertTrue(result["investigation"]["degraded"])
             self.assertEqual(result["authority"]["risk_class"], "HUMAN_REVIEW")
 
-    def test_a_reviewer_finding_of_insufficient_evidence_never_acts_automatically(self):
+    def test_a_reviewer_finding_of_insufficient_evidence_allows_only_an_evidence_request_and_never_a_resolution(self):
         result, agents = self.run_case([call("scans"), conclude(), conclude()],
                                        [verdict("INSUFFICIENT_EVIDENCE", "One read cannot establish this."), verdict("INSUFFICIENT_EVIDENCE", "Still one read.")])
         self.assertEqual(len(agents.review_packets), 2)                 # Sent back once for more evidence, then to a person.
         self.assertEqual(result["review"]["reason_code"], "MODEL_INSUFFICIENT_EVIDENCE")
+        # Not an acceptance. The rescan the investigator proposed is an evidence-gathering request, so it may run under
+        # AUTH-27; its verified result leads to a reassessment, never straight to a resolution.
+        self.assertEqual((result["review"]["verdict"], result["review"]["model_verdict"]), ("reject", "INSUFFICIENT_EVIDENCE"))
+        self.assertEqual((result["authority"]["rule_id"], result["authority"]["risk_class"], result["authority"]["closure"]),
+                         ("AUTH-27-reviewer-doubt-evidence-gathering", "AUTO", "REASSESS"))
+        self.assertEqual(result["result"]["workflow_state"], "AWAITING_OUTCOME")
+        # Any other action after the same verdict still goes to a person and nothing runs.
+        other = conclude("CUSTODY_GAP", "INITIATE_CUSTODY_RECONCILIATION")
+        result, _ = self.run_case([call("scans"), other, other],
+                                  [verdict("INSUFFICIENT_EVIDENCE", "One read cannot establish this."), verdict("INSUFFICIENT_EVIDENCE", "Still one read.")])
         self.assertEqual((result["authority"]["risk_class"], result["result"]["workflow_state"]), ("HUMAN_REVIEW", "ESCALATED"))
         self.assertIn("insufficient", result["authority"]["reason"])
 
