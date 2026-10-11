@@ -269,6 +269,43 @@ export interface ApiDecisionRecord {
   occurred_at?: string;
   actor_id?: string;
 }
+/** POST /cases/{id}/canopus/ask: one grounded answer about one case. Nothing is stored. */
+export interface ApiCanopusAnswer {
+  case_id: string;
+  shipment_id?: string;
+  run_id?: string | null;
+  workflow_state: string;
+  answered_at?: string;
+  kind: "canopus_answer" | "record_answer";
+  answer_en?: string | null;
+  answer_ar?: string | null;
+  evidence_ids?: string[];
+  graph_node_ids?: string[];
+  quotes?: {
+    role: "investigator" | "reviewer" | string;
+    text: string;
+    record_id: string;
+    run_id?: string | null;
+    stage?: string | null;
+    iteration?: number | null;
+    occurred_at?: string | null;
+    title_en?: string | null;
+  }[];
+  offers?: {
+    type: "approve_recommendation" | "request_evidence" | "reanalyze" | string;
+    action_type?: string | null;
+    allowed: boolean;
+    rule_id?: string | null;
+    reason?: string | null;
+    label_en?: string | null;
+    label_ar?: string | null;
+    confirm?: { method?: string; path?: string; body?: Record<string, unknown> } | null;
+  }[];
+  model?: string | null;
+  grounded?: boolean | null;
+  fallback?: boolean;
+  model_calls?: number;
+}
 /** One stored message of a run's narration (docs/api/narration.md). */
 export interface ApiNarrationEvent {
   id: string;

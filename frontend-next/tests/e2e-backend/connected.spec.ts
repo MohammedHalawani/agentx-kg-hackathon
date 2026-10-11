@@ -204,6 +204,44 @@ test("A case the backend does not have is reported, not rendered", async ({
   await expect(page.locator(".empty-state")).toContainText("not found");
 });
 
+test("Canopus answers about the open case with its sources kept apart, and offers only the existing approval path", async ({
+  page,
+}) => {
+  await stubBackend(page);
+  await page.goto(`/app/cases/${CASE_A}`);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(SHIP_A);
+  await page.getByRole("button", { name: "Open Canopus assistant" }).click();
+  const panel = page.locator(".canopus-window");
+  await expect(panel).toContainText("performs no action");
+  const box = panel.getByRole("textbox", { name: "Ask Canopus about this case" });
+  await box.fill("What did the reviewer say?");
+  await panel.getByRole("button", { name: "Send question" }).click();
+  // Canopus's own text, labelled as the model's.
+  const answer = panel.getByTestId("canopus-answer");
+  await expect(answer).toHaveAttribute("data-kind", "canopus_answer");
+  await expect(answer).toContainText("Canopus answer");
+  await expect(answer).toContainText("The reviewer accepted the finding");
+  await expect(answer).toContainText("Show 1 records in the graph");
+  // The reviewer's recorded message: source material, never Canopus's words.
+  const quote = panel.getByTestId("canopus-quote");
+  await expect(quote).toContainText("Reviewer's own words");
+  await expect(quote).toContainText("recorded message, not rewritten");
+  await expect(quote).toContainText("Citations are valid and support the conclusion.");
+  await expect(quote).toContainText("OPS-REVIEW-A");
+  // What the rules allow: a refused offer says why; an allowed one opens the existing dialog.
+  const offers = panel.getByTestId("canopus-offers");
+  await expect(offers).toContainText("Not available: Nothing changed since the last investigation.");
+  await offers.getByRole("button", { name: "Open Review & authorize" }).click();
+  await expect(page.getByRole("dialog").getByRole("button", { name: "Authorize action" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  // An answer built from the records without model text is labelled as such.
+  await box.fill("Show me the original message");
+  await panel.getByRole("button", { name: "Send question" }).click();
+  await expect(panel.getByTestId("canopus-answer").nth(1)).toContainText(
+    "Answer from the records · no model text",
+  );
+});
+
 test("Canopus keeps its floating window but answers nothing while it has no backend", async ({
   page,
 }) => {
@@ -212,8 +250,9 @@ test("Canopus keeps its floating window but answers nothing while it has no back
   await page.getByRole("button", { name: "Open Canopus assistant" }).click();
   const panel = page.locator(".canopus-window");
   await expect(panel).toBeVisible();
-  await expect(panel).toContainText("Canopus is not connected yet.");
-  await expect(panel).toContainText("Not connected · no AI responses are generated");
+  // No case is open: there is nothing to ask about, and nothing is generated.
+  await expect(panel).toContainText("Open a case to ask Canopus about it.");
+  await expect(panel).toContainText("No case is open · nothing is generated here");
   await expect(panel.getByRole("textbox", { name: "Ask Canopus" })).toBeDisabled();
   await expect(panel.locator(".suggested-questions button")).toHaveCount(0);
   await expect(panel.locator("[data-role='assistant'], .message-assistant")).toHaveCount(0);
@@ -318,7 +357,7 @@ test("Connected screens for visual review", async ({ page }) => {
   await shot("settings");
   await page.getByRole("button", { name: "Open Canopus assistant" }).click();
   await expect(page.locator(".canopus-window")).toContainText(
-    "Canopus is not connected yet.",
+    "Open a case to ask Canopus about it.",
   );
   await shot("canopus");
   await page.getByRole("button", { name: "Minimize Canopus conversation" }).click();

@@ -25,6 +25,7 @@ interface Seen {
   listedAfterMs: number | null;
   headers: string[];
   stageTexts: string[];
+  narration: string[];
   final?: string;
 }
 
@@ -65,6 +66,7 @@ test("Live arrivals appear in order and each investigation shows its running tim
           listedAfterMs: null,
           headers: [],
           stageTexts: [],
+          narration: [],
         };
         seen.set(row.case_id, item);
         console.log(`+${Math.round((Date.now() - started) / 1000)}s arrived ${row.shipment_id} ${row.workflow_state}`);
@@ -105,6 +107,30 @@ test("Live arrivals appear in order and each investigation shows its running tim
         .innerText({ timeout: 2000 })
         .catch(() => "");
       if (header && item.headers.at(-1) !== header) item.headers.push(header);
+      // Narration as it arrives: how many stored messages, of which sources, and how many
+      // graph records the message on screen lights up.
+      const told = await casePage
+        .locator(".narration-toggle")
+        .innerText({ timeout: 1000 })
+        .catch(() => "");
+      const kinds = await casePage
+        .getByTestId("narration-bubble")
+        .evaluateAll((nodes) => nodes.map((node) => (node as HTMLElement).dataset.kind))
+        .catch(() => [] as (string | undefined)[]);
+      const lit = await casePage
+        .getByTestId("knowledge-graph")
+        .locator(".evidence-path")
+        .count()
+        .catch(() => 0);
+      const line = `${told.replace(/\s+/g, " ")} | ${kinds.join(",")} | lit ${lit}`;
+      if (told && item.narration.at(-1) !== line) {
+        item.narration.push(line);
+        if ([2, 8, 16].includes(item.narration.length))
+          await casePage.screenshot({
+            path: `screenshots/live-${item.shipment}-narration-${item.narration.length}.png`,
+            fullPage: true,
+          });
+      }
       if (stage && item.stageTexts.at(-1) !== stage) item.stageTexts.push(stage);
       if (item.headers.length === 3)
         await casePage.screenshot({

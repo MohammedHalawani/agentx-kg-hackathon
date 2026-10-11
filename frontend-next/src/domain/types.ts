@@ -43,6 +43,38 @@ export interface EvidenceObservation {
   /** Backend evidence: recorded after the investigation's evidence snapshot, so it did not see it. */
   afterInvestigation?: boolean;
 }
+/** What the rules allow for a case right now, as Canopus reports it. It performs nothing. */
+export interface CanopusOffer {
+  type: string;
+  allowed: boolean;
+  ruleId: string | null;
+  reason: string;
+  label: string;
+  labelAr: string | null;
+  /** The existing endpoint and exact body to send after the operator confirms. */
+  confirm: { path: string; body: Record<string, unknown> } | null;
+}
+/** One answer from Canopus about one case, grounded in that case's records. */
+export interface CanopusAnswer {
+  /** "canopus_answer": the model's text. "record_answer": built by code from the records. */
+  kind: "canopus_answer" | "record_answer";
+  text: string;
+  textAr: string | null;
+  workflowState: string;
+  answeredAt: string | null;
+  evidenceIds: string[];
+  graphNodeIds: string[];
+  /** The agents' own recorded messages, copied by the server; never Canopus's words. */
+  quotes: {
+    role: string;
+    text: string;
+    recordId: string;
+    occurredAt: string | null;
+    title: string | null;
+  }[];
+  offers: CanopusOffer[];
+  model: string | null;
+}
 /** One stored narration message of a run, as the backend wrote it. */
 export interface NarrationEvent {
   id: string;
@@ -467,6 +499,15 @@ export interface OperationsService {
   ): Promise<void>;
   /** Backend only: load a case's evidence and follow its live pipeline stream. */
   watchCase?(caseId: string): () => void;
+  /** Backend only: one question about one case. Read-only; nothing is stored. */
+  askCanopus?(
+    caseId: string,
+    question: string,
+    language: "en" | "ar",
+    history: { role: "operator" | "canopus"; text: string }[],
+  ): Promise<CanopusAnswer>;
+  /** Backend only: send an offer's existing request after the operator confirmed it. */
+  confirmCanopusOffer?(caseId: string, offer: CanopusOffer): Promise<void>;
   /** Backend only: load evidence for these cases (a screen needs their detail). */
   loadCases?(caseIds: string[]): Promise<void>;
   /** Backend only: re-read the queue and status now. */

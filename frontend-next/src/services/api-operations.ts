@@ -5,6 +5,7 @@ import type {
   ApiDecisionResult,
   ApiExploreItem,
   ApiPage,
+  ApiCanopusAnswer,
   ApiNarrationEvent,
   ApiPipelineState,
   ApiQueueCase,
@@ -17,6 +18,7 @@ import {
   applyDetail,
   applyNarration,
   applyPipeline,
+  canopusAnswer,
   auditEvent,
   caseFromQueue,
   decisionFromAudit,
@@ -28,6 +30,8 @@ import {
 import { cityLocations, moreCityLocations } from "@/domain/geo";
 import type {
   AuthorityDecision,
+  CanopusAnswer,
+  CanopusOffer,
   BackendConnection,
   CaseQueue,
   Facility,
@@ -629,6 +633,43 @@ export class ApiOperationsService implements OperationsService {
     await this.loadDetail(id, true).catch(() => undefined);
     void this.refresh();
   }
+  /** One question about one case. The server reads stored records only and stores nothing. */
+  askCanopus = async (
+    id: string,
+    question: string,
+    language: "en" | "ar",
+    history: { role: "operator" | "canopus"; text: string }[],
+  ): Promise<CanopusAnswer> => {
+    try {
+      return canopusAnswer(
+        await this.client.post<ApiCanopusAnswer>(
+          `/cases/${encodeURIComponent(id)}/canopus/ask`,
+          { question, language, history: history.slice(-6) },
+          60000,
+        ),
+      );
+    } catch (error) {
+      if (error instanceof ApiError && (error.status === 409 || error.status === 404))
+        throw new Error("Canopus questions are not enabled on this backend.");
+      throw error;
+    }
+  };
+  /**
+   * Sends an offer's own request after the operator confirmed it. Only for a request with no
+   * dialog of its own (re-analysis); approvals go through Review & authorize.
+   */
+  confirmCanopusOffer = async (id: string, offer: CanopusOffer) => {
+    if (!offer.allowed || !offer.confirm || offer.type !== "reanalyze")
+      throw new Error("This request is confirmed in Review & authorize.");
+    if (!offer.confirm.path.startsWith(`/cases/${id}/`))
+      throw new Error("The offered request does not belong to this case.");
+    await this.client.post(offer.confirm.path, {
+      ...offer.confirm.body,
+      idempotency_key: idempotencyKey("reanalyze"),
+    });
+    await this.loadDetail(id, true).catch(() => undefined);
+    void this.refresh();
+  };
   async decide(
     id: string,
     verdict: AuthorityDecision["verdict"],

@@ -2,6 +2,7 @@ import type { Page, Route } from "@playwright/test";
 import {
   CASE_A,
   CASE_B,
+  SHIP_A,
   auditRows,
   detailA,
   detailB,
@@ -69,6 +70,53 @@ export async function stubBackend(page: Page): Promise<Stub> {
           body,
           token: request.headers()["x-operations-token"] ?? null,
         });
+        if (path === `/cases/${CASE_A}/canopus/ask`) {
+          // The ask contract's shape: an answer, a verbatim quote, and what the rules allow.
+          const body = request.postDataJSON() as { question: string };
+          return json(route, {
+            case_id: CASE_A,
+            shipment_id: SHIP_A,
+            run_id: "OPS-RUN-A",
+            workflow_state: stub.state.detailA.workflow_state,
+            answered_at: "2026-09-03T14:05:00+00:00",
+            kind: /original/i.test(body.question) ? "record_answer" : "canopus_answer",
+            answer_en: "The reviewer accepted the finding; the action waits for an operator.",
+            answer_ar: null,
+            evidence_ids: [`${SHIP_A}-CUST-02-01`, "SYN-CMP-1"],
+            graph_node_ids: [`${SHIP_A}-CUST-02-01`],
+            quotes: [
+              {
+                role: "reviewer",
+                text: "Citations are valid and support the conclusion.",
+                record_id: "OPS-REVIEW-A",
+                occurred_at: "2026-09-03T14:00:00+00:00",
+                title_en: "Reviewer's own words (ACCEPT)",
+              },
+            ],
+            offers: [
+              {
+                type: "approve_recommendation",
+                allowed: true,
+                rule_id: "AUTH-19-operator-approved",
+                reason: "The recommendation can be approved by an operator.",
+                label_en: "Approve the recommended action",
+                confirm: { method: "POST", path: `/cases/${CASE_A}/decision`, body: { decision: "approve", expected_version: 1 } },
+              },
+              {
+                type: "reanalyze",
+                allowed: false,
+                rule_id: "AUTH-24",
+                reason: "Nothing changed since the last investigation.",
+                label_en: "Re-analyse the case",
+                confirm: null,
+              },
+            ],
+            model: /original/i.test(body.question) ? null : "gpt-oss:120b",
+            grounded: true,
+            fallback: false,
+            model_calls: 1,
+          });
+        }
         if (path === `/cases/${CASE_A}/decision`) {
           // The backend accepted the approval: an execution was authorized, nothing is verified.
           const approved = body.decision === "approve";

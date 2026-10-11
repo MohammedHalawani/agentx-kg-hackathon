@@ -169,6 +169,28 @@ export function InvestigationPage() {
     setSplit(50);
     groupRef.current?.setLayout({ map: 50, graph: 50 });
   }, [caseId, groupRef, backend]);
+  // Canopus (in its panel) asks this page to show records or open the approval dialog. Both
+  // use the paths the page already has; nothing is decided from there.
+  useEffect(() => {
+    const show = (event: Event) => {
+      const detail = (event as CustomEvent<{ caseId: string; ids: string[] }>)
+        .detail;
+      if (detail?.caseId !== caseId) return;
+      setSelected(null);
+      setRelationship(null);
+      setNarrated({ id: null, ids: detail.ids });
+    };
+    const authorize = (event: Event) => {
+      const detail = (event as CustomEvent<{ caseId: string }>).detail;
+      if (detail?.caseId === caseId) setVerdict("approved");
+    };
+    window.addEventListener("suhail:graph-highlight", show);
+    window.addEventListener("suhail:authorize", authorize);
+    return () => {
+      window.removeEventListener("suhail:graph-highlight", show);
+      window.removeEventListener("suhail:authorize", authorize);
+    };
+  }, [caseId]);
   const detailsOpenFor = details ? caseId : null;
   useEffect(() => {
     // The case activity list reads the audit ledger; load it when the assessment opens.

@@ -1,4 +1,5 @@
 import { NarrationList } from "@/components/narration";
+import { CanopusAskComposer, CanopusAskThread } from "@/components/canopus-ask";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "motion/react";
@@ -54,7 +55,7 @@ export function CanopusPanel() {
     presentation,
     connected,
   } = canopus;
-  const { cases } = useOperations();
+  const { cases, service } = useOperations();
   const { t, preferences } = usePreferences();
   const systemReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   const reduced = preferences.motion === "reduce" || systemReducedMotion;
@@ -73,6 +74,8 @@ export function CanopusPanel() {
   const input = drafts[key] ?? "";
   const thread = canopus.thread(context);
   const selected = cases.find((c) => c.id === context.caseId);
+  // Connected product: questions go to the backend's ask endpoint, about the open case only.
+  const asking = !connected && !!selected?.backend && !!service.askCanopus;
   const expanded = presentation === "expanded";
   const close = canopus.close;
   useEffect(() => {
@@ -251,10 +254,12 @@ export function CanopusPanel() {
               <p id={descriptionId}>
                 {connected
                   ? t("Suhail operations assistant", "مساعد سهيل للعمليات")
-                  : t(
-                      "Not connected · development preview",
-                      "غير متصل · معاينة تطويرية",
-                    )}
+                  : asking
+                    ? t(
+                        "Reads the open case's records · performs no action",
+                        "يقرأ سجلات الحالة المفتوحة · لا ينفذ أي إجراء",
+                      )
+                    : t("Open a case to ask about it", "افتح حالة للسؤال عنها")}
               </p>
             </div>
             <div className="canopus-panel-actions">
@@ -392,6 +397,7 @@ export function CanopusPanel() {
                   <>
                     {/* The run's stored narration, read-only: the same messages as on the pipeline. */}
                     <NarrationList c={selected} />
+                    {asking && <CanopusAskThread c={selected} />}
                     <CaseActivityMarkers c={selected} />
                   </>
                 )
@@ -402,10 +408,12 @@ export function CanopusPanel() {
                     <Sparkles size={19} />
                     <h3>
                       {!connected
-                        ? t(
-                            "Canopus is not connected yet.",
-                            "كانوبس غير متصل بعد.",
-                          )
+                        ? asking
+                          ? t("Ask about this case.", "اسأل عن هذه الحالة.")
+                          : t(
+                              "Open a case to ask Canopus about it.",
+                              "افتح حالة لتسأل كانوبس عنها.",
+                            )
                         : selected
                           ? t("Let’s follow the evidence.", "لنتتبع الأدلة.")
                           : t("How can I help?", "كيف يمكنني مساعدتك؟")}
@@ -417,8 +425,8 @@ export function CanopusPanel() {
                             "افهم الأدلة والقرارات والنتائج، أو اطلب مني العثور على ما يهمك في هذه الصفحة.",
                           )
                         : t(
-                            "This conversation interface is in place, but Canopus has no backend yet, so it cannot answer and nothing is generated here. The recorded evidence, review, decisions and outcomes are on the case, Decisions and Audit screens.",
-                            "واجهة المحادثة جاهزة، لكن كانوبس بلا خادم بعد، فلا يستطيع الإجابة ولا يُولَّد شيء هنا. الأدلة والمراجعة والقرارات والنتائج المسجلة في شاشات الحالة والقرارات والتدقيق.",
+                            "Canopus answers from the open case's recorded evidence, review, decisions and outcomes. It quotes the investigator's and reviewer's own messages, shows which records an answer relies on, and performs no action: anything it offers goes through Review & authorize.",
+                            "يجيب كانوبس من الأدلة والمراجعة والقرارات والنتائج المسجلة للحالة المفتوحة. يقتبس رسائل المحقق والمراجع كما هي، ويبيّن السجلات التي تعتمد عليها الإجابة، ولا ينفذ أي إجراء: كل ما يعرضه يمر عبر المراجعة والتفويض.",
                           )}
                     </p>
                   </div>
@@ -447,7 +455,12 @@ export function CanopusPanel() {
               </Button>
             </div>
           )}
-          <footer className="canopus-compose-area">
+          {asking && selected && (
+            <footer className="canopus-compose-area">
+              <CanopusAskComposer c={selected} />
+            </footer>
+          )}
+          <footer className="canopus-compose-area" hidden={asking}>
             <ChatComposer
               value={input}
               onChange={(value) =>
@@ -463,8 +476,8 @@ export function CanopusPanel() {
                       "اسأل كانوبس، أو اذكر @reviewer…",
                     )
                   : t(
-                      "Canopus is not connected to a backend yet.",
-                      "كانوبس غير متصل بخادم بعد.",
+                      "Open a case to ask Canopus about it.",
+                      "افتح حالة لتسأل كانوبس عنها.",
                     )
               }
             />
@@ -477,8 +490,8 @@ export function CanopusPanel() {
                 : connected
                   ? t("Suhail operations assistant", "مساعد سهيل للعمليات")
                   : t(
-                      "Not connected · no AI responses are generated",
-                      "غير متصل · لا تُولَّد إجابات ذكاء اصطناعي",
+                      "No case is open · nothing is generated here",
+                      "لا حالة مفتوحة · لا يُولَّد شيء هنا",
                     )}
             </div>
           </footer>

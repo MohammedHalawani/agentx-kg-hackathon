@@ -811,3 +811,129 @@
   font-size: 10px;
   color: var(--muted-foreground);
 }
+
+/* Canopus questions about the open case. */
+.ask-thread {
+  display: grid;
+  gap: 14px;
+  padding: 6px 0 10px;
+}
+.ask-turn {
+  display: grid;
+  gap: 8px;
+}
+.ask-question {
+  justify-self: end;
+  max-width: 85%;
+  padding: 7px 11px;
+  border-radius: 12px;
+  border-end-end-radius: 3px;
+  background: var(--primary);
+  color: var(--primary-foreground, #fff);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.ask-waiting,
+.ask-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.ask-error {
+  color: var(--danger);
+}
+.ask-offers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.ask-offer {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--primary);
+}
+.ask-offer > span {
+  flex: 1;
+  color: var(--muted-foreground);
+  min-width: 0;
+}
+.ask-offer b {
+  display: block;
+  color: var(--foreground);
+  font-weight: 600;
+}
+.ask-offer i {
+  font-style: normal;
+  font-size: 10px;
+}
+.ask-offer em {
+  display: block;
+  font-style: normal;
+  color: var(--danger);
+}
+.ask-offer.refused {
+  color: var(--muted-foreground);
+  background: color-mix(in srgb, var(--muted) 40%, transparent);
+}
+.ask-offer button {
+  height: 26px;
+  font-size: 10px;
+  padding: 0 9px;
+  flex: none;
+}
+.ask-composer form {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px 4px 4px 12px;
+  background: var(--card);
+}
+.ask-composer input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: 13px;
+  color: var(--foreground);
+  height: 30px;
+}
+.ask-composer form button {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+}
+.ask-suggested {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.ask-suggested button {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  background: var(--card);
+  font-size: 11px;
+  color: var(--foreground);
+  cursor: pointer;
+}
+.ask-suggested button:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.canopus-compose-area[hidden] {
+  display: none;
+}

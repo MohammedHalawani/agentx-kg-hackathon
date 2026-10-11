@@ -5,6 +5,7 @@ import type {
   ApiExploreItem,
   ApiLayerPoint,
   ApiPipelineEvent,
+  ApiCanopusAnswer,
   ApiNarrationEvent,
   ApiPipelineState,
   ApiQueueCase,
@@ -18,6 +19,7 @@ import type {
   CaseStatus,
   EvidenceObservation,
   Facility,
+  CanopusAnswer,
   GraphNode,
   NarrationEvent,
   GraphRelationship,
@@ -1116,6 +1118,38 @@ function timingOf(detail: ApiCaseDetail) {
   };
 }
 
+/** The ask endpoint's answer, as the panel shows it. */
+export function canopusAnswer(answer: ApiCanopusAnswer): CanopusAnswer {
+  return {
+    kind: answer.kind === "canopus_answer" ? "canopus_answer" : "record_answer",
+    text: answer.answer_en ?? "",
+    textAr: answer.answer_ar ?? null,
+    workflowState: answer.workflow_state,
+    answeredAt: answer.answered_at ?? null,
+    evidenceIds: answer.evidence_ids ?? [],
+    graphNodeIds: answer.graph_node_ids ?? [],
+    quotes: (answer.quotes ?? []).map((quote) => ({
+      role: quote.role,
+      text: quote.text,
+      recordId: quote.record_id,
+      occurredAt: quote.occurred_at ?? null,
+      title: quote.title_en ?? null,
+    })),
+    offers: (answer.offers ?? []).map((offer) => ({
+      type: offer.type,
+      allowed: offer.allowed === true,
+      ruleId: offer.rule_id ?? null,
+      reason: offer.reason ?? "",
+      label: offer.label_en ?? humanize(offer.type),
+      labelAr: offer.label_ar ?? null,
+      confirm:
+        offer.confirm?.path && offer.confirm.body
+          ? { path: offer.confirm.path, body: offer.confirm.body }
+          : null,
+    })),
+    model: answer.model ?? null,
+  };
+}
 /** A stored narration message, placed on the rail's step. */
 export function narrationEvent(event: ApiNarrationEvent): NarrationEvent {
   // The rail's Outcome step is the interface's own: verification and reassessment belong there.
