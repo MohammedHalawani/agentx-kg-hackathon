@@ -30,7 +30,8 @@ class SkipTests(unittest.TestCase):
         self.assertEqual((detail["workflow_state"], detail["outcome"]["verification_status"], detail["outcome"]["outcome_type"]),
                          ("RESOLVED", "VERIFIED", "barcode_corrected"))               # Decided by the verifier from the simulated record.
         after = s.store.status()
-        self.assertEqual((after["simulator"]["state"], after["simulator"]["speed"]), (before["simulator"]["state"], before["simulator"]["speed"]))
+        self.assertEqual((after["simulator"]["state"], after["simulator"]["speed"]), ("paused", before["simulator"]["speed"]))
+        self.assertEqual(result["status"]["simulator"]["state"], "paused")
         self.assertGreater(instant(result["to"]), instant(result["from"]))
         self.assertLessEqual(result["simulated_minutes"], 24 * 60)
         self.assertEqual(result["still_awaiting_evidence"], 0)
@@ -44,7 +45,7 @@ class SkipTests(unittest.TestCase):
         self.assertEqual((detail["workflow_state"], detail["outcome"]["success"]), ("HUMAN_REVIEW", False))
         self.assertIn({"case_id": case_id, "workflow_state": "HUMAN_REVIEW"}, result["cases"])
 
-    def test_with_nothing_to_wait_for_it_stops_at_its_limit_and_a_running_clock_keeps_running(self):
+    def test_with_nothing_to_wait_for_it_stops_at_its_limit_and_a_running_clock_is_left_paused(self):
         s = Scenario(at("17T03:30"))
         s.store.control("simulator", "start", speed=60)
         result = s.store.skip_to_next_event(max_hours=1)
@@ -52,7 +53,18 @@ class SkipTests(unittest.TestCase):
         if result["reason"] == "limit_reached":
             self.assertGreaterEqual(result["simulated_minutes"], 59)
         after = s.store.status()["simulator"]
-        self.assertEqual((after["state"], after["speed"]), ("running", 60))
+        self.assertEqual((after["state"], after["speed"]), ("paused", 60))      # Paused afterwards, at the speed it had.
+        self.assertEqual(result["status"]["simulator"]["state"], "paused")
+
+    def test_a_step_that_fails_still_leaves_the_clock_paused(self):
+        from unittest import mock
+        s = Scenario(at("17T03:30"))
+        s.store.control("simulator", "start", speed=60)
+        with mock.patch.object(s.store, "outcome_step", side_effect=RuntimeError("database hiccup")):
+            with self.assertRaises(RuntimeError):
+                s.store.skip_to_next_event(max_hours=1)
+        after = s.store.status()["simulator"]
+        self.assertEqual((after["state"], after["speed"]), ("paused", 60))
 
     def test_it_is_bounded_and_refused_while_an_investigation_runs(self):
         s, case_id = self.seeded(MISREAD)

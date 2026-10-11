@@ -577,7 +577,8 @@ class OperationsStore:
     def skip_to_next_event(self, actor_id="DEMO-OPERATOR-LOCAL", max_hours=72):
         """Run the simulated clock forward, as fast as the machine allows, until something an operator is waiting for
         happens: a case that was awaiting evidence gets its verified outcome (the evidence arrived, or its deadline
-        passed), or the monitor opens a new case. Then put the clock back as it was (running or paused, same speed).
+        passed), or the monitor opens a new case. The clock is then left PAUSED, at the speed it had, whatever its state
+        was before: every advance of the world is an explicit Start or Skip, and nothing ages while the operator reads.
 
         It is the same clock, the same feed and the same monitor, execution and verification steps as at any speed:
         nothing is scheduled or looked up ahead, and nothing about a future event is returned, only what happened by
@@ -588,7 +589,7 @@ class OperationsStore:
         status = self.status()
         if status["worker"].get("active_case_id"):
             raise OperationsConflict("An investigation is running; wait for it to finish before skipping time")
-        was_running, speed = status["simulator"]["state"] == "running", status["simulator"]["speed"]
+        speed = status["simulator"]["speed"]
         started = instant(status["as_of"])
         end = instant(status["simulator"]["end_at"]) if status["simulator"].get("end_at") else None
         limit = started + timedelta(hours=max_hours)
@@ -615,7 +616,7 @@ class OperationsStore:
                     reason, changed = ("outcome_decided" if decided else "case_opened"), decided + opened
                     break
         finally:
-            self.control("simulator", "start" if was_running else "pause", speed=speed, actor_id=actor_id)
+            self.control("simulator", "pause", speed=speed, actor_id=actor_id)      # On every exit path, a failed step included.
         final = self.status()
         states = self._case_states()
         return {"reason": reason, "from": started.isoformat(), "to": final["as_of"],

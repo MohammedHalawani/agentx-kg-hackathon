@@ -54,8 +54,9 @@ the highest iteration (`brief.policy`, `brief.actions`).
 
 Operator token. Optional body `{"max_hours": 1..168}` (default 72). Runs the simulated clock forward as fast as the machine
 allows, in steps of thirty simulated minutes, until a case that was awaiting evidence gets its verified outcome (the
-evidence arrived, or its deadline passed) or the monitor opens a new case; then restores the clock to what it was (running
-or paused, same speed). 409 while an investigation is running.
+evidence arrived, or its deadline passed) or the monitor opens a new case; then leaves the clock PAUSED at the speed it
+had, whatever its state was before (also when a step fails), so every advance is an explicit Start or Skip. 409 while an
+investigation is running.
 
 Response: `{reason: outcome_decided / case_opened / limit_reached / end_of_timeline, from, to, simulated_minutes,
 cases[{case_id, workflow_state}], still_awaiting_evidence, status}`.
