@@ -370,8 +370,9 @@ class RealGraphTests(unittest.TestCase):
         arguments = dict(commit=None, live_session=True, symptoms=["MILESTONE_OVERDUE"], heartbeats=reader.heartbeats, port=reader.fetch, call_cap=12)
         direct, _ = investigate(self.sid, self.as_of, self.config, reader.evidence, lambda sid, codes: [], agents=plain, **arguments)
         tapped, _ = investigate(self.sid, self.as_of, self.config, reader.evidence, lambda sid, codes: [], agents=wiring.ToolTap(PlanAgents()), **arguments)
+        from tests.test_latency_equivalence import strip       # timing fields differ from run to run; nothing else may
         for field in ("investigation", "review", "authority", "investigation_log", "context_hash"):
-            self.assertEqual(json.dumps(direct[field], sort_keys=True, default=str), json.dumps(tapped[field], sort_keys=True, default=str), field)
+            self.assertEqual(json.dumps(strip(direct[field]), sort_keys=True, default=str), json.dumps(strip(tapped[field]), sort_keys=True, default=str), field)
 
 
 class CaptureAndScorerTests(unittest.TestCase):

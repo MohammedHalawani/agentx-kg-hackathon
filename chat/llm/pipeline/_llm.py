@@ -193,6 +193,8 @@ def ask_json(system: str, user: str, default: dict[str, Any]) -> dict:
     complete, valid shape for the caller's stage, so a downstream node never has to guard
     against half-populated state."""
     resp = model().invoke([SystemMessage(system), HumanMessage(user)])
+    from operations.latency import note_usage   # token counts for the caller's timing record; measurement only
+    note_usage(resp)
     raw = message_text(getattr(resp, "content", None))
     parsed = parse_json(raw)
     if parsed is None:

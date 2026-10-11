@@ -124,9 +124,10 @@ def _accepted(function, **extra):
 
 
 def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, events=None,
-                agents=None, live_session=False, symptoms=(), heartbeats=None, port=None, disabled_tools=(), call_cap=None):
+                agents=None, live_session=False, symptoms=(), heartbeats=None, port=None, disabled_tools=(), call_cap=None, meter=None):
     """agents: None (deterministic rules only) or an investigator (operations.investigator or a test double).
-    port: the read model's fixed cross-shipment queries (fetch), or None. call_cap: the per-case model-call cap."""
+    port: the read model's fixed cross-shipment queries (fetch), or None. call_cap: the per-case model-call cap.
+    meter: an operations.latency.Meter that times this run (measurement only), or None."""
     from operations.worker import review as guard, REVIEW_SUMMARY_AR
     from operations.authority import authorize, symptom_floor, abstention_floor, ACTIONS, ACTION_SUMMARY_AR, STATE
     from operations.checks import fact_checks, cited_records, review_context
@@ -139,8 +140,14 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
                  "iteration": state.get("iteration", 0),
                  "recorded_at": datetime.now(timezone.utc).isoformat(),
                  "evidence_as_of": state["as_of"], "output": output or {}}
+        if meter is not None:
+            event["elapsed_seconds"] = meter.elapsed()     # since the graph started; measurement only
         events.append(event)
-        if on_event: on_event(event, list(events))
+        if on_event:
+            if meter is not None:
+                meter.timed_write(on_event, event, list(events))
+            else:
+                on_event(event, list(events))
 
     def node(name, operation, retry_from=None):
         def run(state):
@@ -185,6 +192,8 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
                                                  disabled=disabled_tools)
             holder["session"] = Session(call_cap)
             holder["rounds"] = []
+            if meter is not None:
+                meter.session, meter.tools = holder["session"], holder["tools"]
         holder["tools"].begin_round(s.get("iteration", 0))
         return holder["tools"]
 
@@ -256,7 +265,8 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
         """One investigation round as later scoring reads it. Declared outputs only; no reasoning text beyond them."""
         session = holder.get("session")
         number = s.get("iteration", 0)
-        calls = [{k: c.get(k) for k in ("tool", "args", "evidence_ids", "computed_ids", "omitted_rows", "failure")}
+        calls = [{k: c.get(k) for k in ("tool", "args", "evidence_ids", "computed_ids", "omitted_rows", "failure",
+                                        "seconds", "queries", "query_seconds", "cached_queries")}
                  for c in (tools.round_calls(number) if tools else [])]
         conclusion = None
         if inv and not inv.get("degraded"):
@@ -438,10 +448,14 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
 
 def investigate(shipment_id, as_of, config, retrieve, precedents, *, commit=None, on_event=None,
                 agents=None, live_session=False, symptoms=(), heartbeats=None, port=None, disabled_tools=(), call_cap=None):
+    from operations.latency import Meter
     events = []
+    meter = Meter()
     graph = build_graph(config,retrieve,precedents,commit=commit,on_event=on_event,events=events,
                         agents=agents,live_session=live_session,symptoms=symptoms,heartbeats=heartbeats,
-                        port=port,disabled_tools=disabled_tools,call_cap=call_cap)
+                        port=port,disabled_tools=disabled_tools,call_cap=call_cap,meter=meter)
     result = graph.invoke({"shipment_id":shipment_id,"as_of":as_of,"symptoms":list(symptoms),"trace":[],"iteration":0,
                            "feedback":None,"degraded":[]})
-    return analysis(result,events), result.get("disposition")
+    recorded = analysis(result,events)
+    recorded["latency"] = meter.summary(events)
+    return recorded, result.get("disposition")

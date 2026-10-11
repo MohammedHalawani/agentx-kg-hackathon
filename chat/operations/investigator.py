@@ -19,6 +19,7 @@ output fields are kept.
 import json
 import os
 
+from operations import latency
 from operations.agents import BLAME, CAUSES, GPS_DELIVERY, VERDICTS
 from operations.authority import ACTIONS, EVIDENCE_GATHERING
 
@@ -27,6 +28,19 @@ MAX_TURNS = 14               # model turns per investigation round
 ATTEMPTS_PER_TURN = 2        # a provider failure, or an invalid conclusion, gets one retry
 DEFAULT_MODEL_CALL_CAP = 12  # investigator turns, reviewer calls, revision rounds and retries of one case investigation
 MODEL_CALL_CAP_ENV = "SUHAIL_MODEL_CALL_CAP"
+# Opt-in latency change (off unless set to 1): fetch shipment_overview before the first model turn instead of spending a
+# model call to ask for it. The investigator still sees it as its first tool call and result, and chooses everything
+# after it; the step is recorded as chosen_by "prefetch". It changes the agent's inputs (one turn fewer, a fixed first
+# step), so it needs its own quality check before it is switched on for an evaluated investigator.
+PREFETCH_ENV = "SUHAIL_PREFETCH_OVERVIEW"
+PREFETCH_TOOL = "shipment_overview"
+PREFETCH_PURPOSE = "Start here: the case's records and the ids they name (retrieved before the first turn)."
+# Opt-in latency change (off unless set to 2..4): the investigator may ask for up to that many tools in one reply, when it
+# already knows their arguments and their results do not depend on each other. Calls run in the order given, each is
+# recorded and shown to it exactly as a single call would be; the saving is model round trips. It changes the agent's
+# instructions, so like the prefetch it needs its own quality check before it is used for an evaluated investigator.
+BATCH_ENV = "SUHAIL_TOOL_BATCH"
+MAX_BATCH = 4
 RESERVED_FOR_REVIEW = 1      # the investigator always leaves one call for the independent review
 ABSTENTION = "INSUFFICIENT_EVIDENCE"
 CAUSE_CHOICES = (*CAUSES, "UNKNOWN")   # UNKNOWN is accepted as an older spelling of INSUFFICIENT_EVIDENCE
@@ -182,6 +196,31 @@ or, when the evidence supports a conclusion (or you must stop):
 """
 
 
+def prefetch_enabled():
+    return os.environ.get(PREFETCH_ENV, "").strip() == "1"
+
+
+def tool_batch():
+    """How many tools one reply may call: SUHAIL_TOOL_BATCH (2..4), else 1 (one call per reply, the evaluated protocol)."""
+    try:
+        return max(1, min(int(os.environ.get(BATCH_ENV, "").strip() or 1), MAX_BATCH))
+    except ValueError:
+        return 1
+
+
+def system_prompt(batch=1):
+    """The investigator's instructions. With batch 1 this is SYSTEM, unchanged."""
+    if batch <= 1:
+        return SYSTEM
+    one = "Work iteratively: call one tool at a time, read its result, and decide what to examine next."
+    shape = '{"action":"call","tool":"<tool name>","args":{...},"purpose":"<one short sentence>"}\n'
+    assert one in SYSTEM and shape in SYSTEM
+    return SYSTEM.replace(one, f"Work iteratively: in one reply you may call up to {batch} tools whose arguments you already know and whose "
+                               "results do not depend on each other; read their results, then decide what to examine next.").replace(
+        shape, shape + 'or, for several independent tools in one reply:\n'
+                       '{"action":"call","calls":[{"tool":"<tool name>","args":{...},"purpose":"<one short sentence>"}, ...]}\n')
+
+
 def model_call_cap():
     """The per-case model-call cap: SUHAIL_MODEL_CALL_CAP, default 12, kept within sane bounds."""
     try:
@@ -226,6 +265,7 @@ class Session:
         self.steps = []             # every tool call of every round
         self.rounds = 0
         self.reviews = []           # earlier review results (verdict, feedback, unsupported claims)
+        self.turns = []             # every model call's timing (operations.latency.turn_record); measurement only
 
 
 class CallCapReached(RuntimeError):
@@ -320,6 +360,7 @@ def model_turn(messages):
     wire = [SystemMessage(messages[0]["content"])] + [
         (AIMessage if m["role"] == "assistant" else HumanMessage)(m["content"]) for m in messages[1:]]
     response = _llm.model().invoke(wire)
+    latency.note_usage(response)
     return _llm.parse_json(_llm.message_text(getattr(response, "content", None)))
 
 
@@ -331,6 +372,7 @@ def case_packet(tools, session, feedback=None):
             "cause_catalogue": cause_catalogue(), "cause_catalogue_guidance": CATALOGUE_GUIDANCE,
             "action_types": {name: {"authority": entry[0], "summary": entry[3]} for name, entry in ACTIONS.items()},
             "limits": {"max_tool_calls": MAX_TOOL_CALLS,
+                       **({"max_tool_calls_per_reply": tool_batch()} if tool_batch() > 1 else {}),
                        "model_turns_available": max(session.budget.remaining - RESERVED_FOR_REVIEW, 0),
                        "note": "Turns are shared with the review of your conclusion and with any revision it asks for."},
             **({"reviewer_feedback": feedback} if feedback else {})}
@@ -349,7 +391,7 @@ def revision_message(review, feedback, remaining):
             f"a cause, conclude INSUFFICIENT_EVIDENCE with what is missing and the next step. Model turns available: {remaining}.")
 
 
-def investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, review=None):
+def investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, review=None, prefetch=None):
     """Run one investigation round of the bounded tool loop. Returns a result dict; never raises for model failures.
 
     session: the case investigation this round belongs to (conversation, call budget). A revision round continues the
@@ -358,8 +400,9 @@ def investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, 
     session = session or Session()
     budget = session.budget
     revising = session.messages is not None
+    batch = tool_batch()
     if not revising:
-        session.messages = [{"role": "system", "content": SYSTEM},
+        session.messages = [{"role": "system", "content": system_prompt(batch)},
                             {"role": "user", "content": json.dumps(case_packet(tools, session, feedback), ensure_ascii=False)}]
     else:
         session.messages.append({"role": "user", "content": revision_message(review, feedback, max(budget.remaining - RESERVED_FOR_REVIEW, 0))})
@@ -369,6 +412,18 @@ def investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, 
     made = lambda: len(tools.round_calls()) if hasattr(tools, "round_calls") else len(tools.calls)
     steps, errors = [], []
     error, problem, turns, provider_failures, invalid_conclusions = None, None, 0, 0, 0
+    if not revising and (prefetch_enabled() if prefetch is None else prefetch) and PREFETCH_TOOL in tools.CATALOG \
+            and PREFETCH_TOOL not in getattr(tools, "disabled", ()):
+        result = tools.call(PREFETCH_TOOL, {})
+        step = {"round": round_number, "tool": PREFETCH_TOOL, "args": {}, "purpose": PREFETCH_PURPOSE,
+                "evidence_ids": result["evidence_ids"], "computed_ids": result.get("computed_ids", []), "chosen_by": "prefetch",
+                "model_seconds": None, "tool_seconds": tools.calls[-1].get("seconds")}
+        steps.append(step)
+        session.steps.append(step)
+        if on_step:
+            on_step(step)
+        messages.append({"role": "assistant", "content": json.dumps({"action": "call", "tool": PREFETCH_TOOL, "args": {}, "purpose": PREFETCH_PURPOSE}, ensure_ascii=False)})
+        messages.append({"role": "user", "content": f"TOOL RESULT {PREFETCH_TOOL}: {result['result']}"})
 
     def reject(text):
         errors.append({"turn": turns, "error": text})
@@ -389,40 +444,65 @@ def investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, 
         if last or made() >= MAX_TOOL_CALLS:
             notes.append("No further tool calls are possible: reply with action conclude now. If the evidence does not establish a cause, "
                          "conclude INSUFFICIENT_EVIDENCE and name what is missing and the next step.")
+        sent = messages + [{"role": "user", "content": " ".join(notes)}] if notes else messages
+        latency.take_usage()
+        started = latency.now()
         try:
-            out = turn(messages + [{"role": "user", "content": " ".join(notes)}] if notes else messages)
+            out = turn(sent)
         except Exception as exc:  # Transport/provider failure: type only.
+            session.turns.append(latency.turn_record("investigator", round_number, latency.now() - started, "provider_failure",
+                                                     prompt_chars=sum(len(m["content"]) for m in sent)))
             provider_failures += 1
             problem = reject(f"model call failed ({type(exc).__name__})")
             if provider_failures >= ATTEMPTS_PER_TURN:
                 error = problem
                 break
             continue
+        session.turns.append(latency.turn_record("investigator", round_number, latency.now() - started,
+                                                 out.get("action") if isinstance(out, dict) and out.get("action") in ("call", "conclude") else "invalid",
+                                                 latency.take_usage(), prompt_chars=sum(len(m["content"]) for m in sent)))
         provider_failures = 0
         # A rejected reply on a tool-call turn is corrected on the next turn; it never ends the investigation by itself.
         if not isinstance(out, dict) or out.get("action") not in ("call", "conclude"):
             problem = reject("reply must be one JSON object with action call or conclude")
             continue
         if out["action"] == "call":
-            if out.get("tool") not in tools.CATALOG or out.get("tool") in getattr(tools, "disabled", ()):
-                problem = reject(f"unknown tool {_sanitize(out.get('tool'), 60)}")
+            several = batch > 1 and "calls" in out
+            requested = out.get("calls") if several else [out]
+            if not isinstance(requested, list) or not requested or not all(isinstance(c, dict) for c in requested):
+                problem = reject("calls must be a non-empty list of {tool, args, purpose}")
+                continue
+            unknown = next((c.get("tool") for c in requested if c.get("tool") not in tools.CATALOG or c.get("tool") in getattr(tools, "disabled", ())), False)
+            if unknown is not False:
+                problem = reject(f"unknown tool {_sanitize(unknown, 60)}")
                 continue
             if made() >= MAX_TOOL_CALLS or last:
                 problem = reject("tool budget exhausted; conclude now with what you have")
                 continue
             problem = None
-            purpose = _sanitize(out.get("purpose"), 160)
-            if BLAME.search(purpose) or GPS_DELIVERY.search(purpose):
-                purpose = ""
-            result = tools.call(out["tool"], out.get("args") or {})
-            step = {"round": round_number, "tool": out["tool"], "args": tools.calls[-1]["args"], "purpose": purpose,
-                    "evidence_ids": result["evidence_ids"], "computed_ids": result.get("computed_ids", [])}
-            steps.append(step)
-            session.steps.append(step)
-            if on_step:
-                on_step(step)
-            messages.append({"role": "assistant", "content": json.dumps({k: out.get(k) for k in ("action", "tool", "args", "purpose")}, ensure_ascii=False)})
-            messages.append({"role": "user", "content": f"TOOL RESULT {out['tool']}: {result['result']}"})
+            room = min(batch, MAX_TOOL_CALLS - made())
+            ran, results = [], []
+            for c in requested[:room]:
+                purpose = _sanitize(c.get("purpose"), 160)
+                if BLAME.search(purpose) or GPS_DELIVERY.search(purpose):
+                    purpose = ""
+                result = tools.call(c["tool"], c.get("args") or {})
+                step = {"round": round_number, "tool": c["tool"], "args": tools.calls[-1]["args"], "purpose": purpose,
+                        "evidence_ids": result["evidence_ids"], "computed_ids": result.get("computed_ids", []),
+                        # Measurement only: the model turn that chose this call and the tool's own time.
+                        "model_seconds": session.turns[-1]["seconds"], "tool_seconds": tools.calls[-1].get("seconds")}
+                steps.append(step)
+                session.steps.append(step)
+                if on_step:
+                    on_step(step)
+                ran.append({"tool": c["tool"], "args": c.get("args"), "purpose": c.get("purpose")})
+                results.append(f"TOOL RESULT {c['tool']}: {result['result']}")
+            reply = ({"action": "call", "calls": ran} if several else
+                     {k: out.get(k) for k in ("action", "tool", "args", "purpose")})
+            messages.append({"role": "assistant", "content": json.dumps(reply, ensure_ascii=False)})
+            if len(requested) > room:
+                results[-1] += f" NOTE: only the first {room} of your {len(requested)} calls ran (per-reply or tool-call limit)."
+            messages.extend({"role": "user", "content": text} for text in results)
             continue
         problem = validate_conclusion(out, tools.retrieved)
         if problem:
@@ -516,7 +596,17 @@ def review(conclusion, records, checks, symptoms, *, ask=None, context=None, ses
     def counted(system, user, default_):
         if session is not None and not session.budget.take("reviewer"):
             raise CallCapReached("model-call cap reached")
-        return ask(system, user, default_)
+        latency.take_usage()
+        started = latency.now()
+        outcome = "provider_failure"
+        try:
+            reply = ask(system, user, default_)
+            outcome = "review"
+            return reply
+        finally:
+            if session is not None:
+                session.turns.append(latency.turn_record("reviewer", len(session.reviews), latency.now() - started, outcome,
+                                                         latency.take_usage(), prompt_chars=len(system) + len(str(user))))
 
     refused_before = session.budget.refused if session is not None else 0
     out, mode, error = _ask(REVIEWER_SYSTEM, packet, {}, default, validate, counted)

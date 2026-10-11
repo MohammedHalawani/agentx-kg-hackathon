@@ -107,7 +107,7 @@ Each `rounds[]` entry:
 | --- | --- |
 | `round` | 0 for the first round, 1 for the revision round. |
 | `snapshot_as_of` | The snapshot time (the same for every round of a run). |
-| `tool_calls[]` | This round's calls: `tool`, `args`, `evidence_ids` (records listed as citable), `computed_ids`, `omitted_rows` (`{list: n}` rows left out by the size cap; their ids are not citable), `failure` (`null`, `invalid_arguments` or `query_failed`). |
+| `tool_calls[]` | This round's calls: `tool`, `args`, `evidence_ids` (records listed as citable), `computed_ids`, `omitted_rows` (`{list: n}` rows left out by the size cap; their ids are not citable), `failure` (`null`, `invalid_arguments` or `query_failed`); measurement only: `seconds` (the call's own time), `queries` and `query_seconds` (database reads it made and their time), `cached_queries` (reads answered by the case's query memo). |
 | `conclusion` | `primary_cause`, `confidence`, `hypotheses`, `missing_evidence`, `next_evidence_step`, `recommended_action`, `requires_physical_check`, `summary`; `null` when the round was degraded. |
 | `investigator` | `mode`, `degraded`, `validation_error`, `validation_errors[]`. |
 | `citation_validity` | Computed by code: `snapshot_as_of`, `cited`, `valid`, `invalid_ids`, `all_valid`, and `citations[]` with `id`, `kind`, `scope`, `resolves`, `retrieved_in_this_investigation`, `recorded_at_or_before_snapshot`, `valid`. `null` when the round was degraded. |
@@ -118,6 +118,27 @@ Each `rounds[]` entry:
 An invalid citation (`citation_validity.all_valid: false`) sets `checks.unsupported`, which removes automatic
 authority. The investigator loop already rejects a conclusion citing an id its tools did not return, so an invalid
 citation in a stored conclusion means an id that was listed but does not resolve or is dated after the snapshot.
+
+## 4a. `latency` (one per run; measurement only)
+
+The run record's top-level `latency` object (schema `latency-1`, `operations.latency`) says where the run's time went.
+It is written beside the record and changes nothing the investigator or reviewer is sent or decides. Its clock starts
+when the graph starts, after the worker claimed the case; queue time before that is read from the ledger's
+`CASE_OPENED` and `CASE_CLAIMED` audits (`scripts/investigation_latency.py ledger`). Every pipeline event also carries
+`elapsed_seconds` on the same clock.
+
+| Field | Meaning |
+| --- | --- |
+| `total_seconds` | Graph start to graph end. |
+| `first_conclusion_seconds` | When round 0's conclusion (hypotheses, or a degraded investigator) was available. |
+| `first_review_seconds`, `final_seconds` | The first independent review's verdict; the authority decision written back. |
+| `stages` | Seconds per pipeline stage, summed over rounds. |
+| `model` | `calls`, `seconds`, `by_role`, `input_tokens`/`output_tokens` when the provider reports them, and `turns[]` (`role`, `round`, `seconds`, `outcome`, `prompt_chars`, tokens) for every model call. |
+| `tools` | `calls`, `seconds`, `duplicate_calls` (same tool and arguments again), `queries`, `query_seconds`, `cached_queries`. |
+| `event_writes` | `count` and `seconds` spent persisting and publishing pipeline events (`on_event`). |
+| `other_seconds` | The rest: evidence loading, precedents, checks, the graph itself. |
+
+The investigator's `steps[]` also carry `model_seconds` (the model turn that chose the call) and `tool_seconds`.
 
 ## 5. What the reviewer receives
 
