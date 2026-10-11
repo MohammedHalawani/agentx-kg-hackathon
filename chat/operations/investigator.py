@@ -49,6 +49,18 @@ MAX_BATCH = 4
 REPAIR_ENV = "SUHAIL_INVALID_OUTPUT_REPAIR"
 REPAIR_KIND = "invalid_output_repair"
 REPAIR_MESSAGE = "model reply invalid, retrying"
+# Demo option, off by default (the evaluated behaviour): when a round's turn budget is exhausted without a valid conclusion and
+# the per-case model-call cap still has room, the investigator gets one final turn that says only that no tool call is
+# possible and that it must conclude now, from what it retrieved or as INSUFFICIENT_EVIDENCE. The message names no cause and
+# adds no evidence. The conclusion goes through the same validator (with its normal retry and repair), reviewer and
+# authority, and the record is marked forced_final_turn. Reported through on_forced (a RUNNING pipeline event).
+FORCED_ENV = "SUHAIL_FORCED_CONCLUSION"
+FORCED_KIND = "forced_final_turn"
+FORCED_EVENT_MESSAGE = "turn budget exhausted; the investigator is asked once to conclude from the evidence already retrieved"
+FORCED_MESSAGE = ("No more tool calls are possible. Reply with action conclude now: conclude from the evidence you have already "
+                  "retrieved, or conclude INSUFFICIENT_EVIDENCE and name what is missing and the next step. Either is a valid answer.")
+TURN_BUDGET_ERROR = "turn budget exhausted without a valid conclusion"
+TURN_BUDGET_KIND = "turn_budget_exhausted"
 RESERVED_FOR_REVIEW = 1      # the investigator always leaves one call for the independent review
 ABSTENTION = "INSUFFICIENT_EVIDENCE"
 CAUSE_CHOICES = (*CAUSES, "UNKNOWN")   # UNKNOWN is accepted as an older spelling of INSUFFICIENT_EVIDENCE
@@ -212,6 +224,16 @@ def repair_enabled():
     return os.environ.get(REPAIR_ENV, "").strip() == "1"
 
 
+def forced_enabled():
+    return os.environ.get(FORCED_ENV, "").strip() == "1"
+
+
+def forced_event(session=None):
+    """What the forced final turn reports: that it is happening and the calls used so far. Nothing about the case."""
+    return {"kind": FORCED_KIND, "role": "investigator", "message": FORCED_EVENT_MESSAGE,
+            **({"model_calls": session.budget.snapshot()} if session is not None else {})}
+
+
 def repair_event(role, error, session=None):
     """What a repair attempt reports: the role, the validation error it is asked to correct and the calls used so far."""
     return {"kind": REPAIR_KIND, "role": role, "attempt": 1, "message": REPAIR_MESSAGE, "validation_error": _sanitize(error),
@@ -289,6 +311,7 @@ class Session:
         self.rounds = 0
         self.reviews = []           # earlier review results (verdict, feedback, unsupported claims)
         self.turns = []             # every model call's timing (operations.latency.turn_record); measurement only
+        self.forced_final_turn = False  # SUHAIL_FORCED_CONCLUSION: a round of this case used its forced final turn
 
 
 class CallCapReached(RuntimeError):
@@ -296,10 +319,13 @@ class CallCapReached(RuntimeError):
 
 
 def failure_mode(error):
-    """How a model role failed: the provider call itself, the model-call cap, or output that never passed validation."""
+    """How a model role failed: the provider call itself, the model-call cap, the investigator's turn budget, or output
+    that never passed validation."""
     text = str(error or "")
     if text.startswith("model-call cap"):
         return "model_call_cap"
+    if text.startswith("turn budget exhausted"):
+        return TURN_BUDGET_KIND
     return "model_unavailable" if text.startswith("model call failed") else "invalid_model_output"
 
 
@@ -415,15 +441,19 @@ def revision_message(review, feedback, remaining):
 
 
 def investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, review=None, prefetch=None,
-                on_repair=None, repair=None):
+                on_repair=None, repair=None, on_forced=None, forced=None):
     """Run one investigation round of the bounded tool loop. Returns a result dict; never raises for model failures.
 
     session: the case investigation this round belongs to (conversation, call budget). A revision round continues the
     same conversation with the reviewer's feedback; without a session each call is a self-contained investigation.
     repair: one extra attempt after a conclusion that is still invalid after its retry (None reads
-    SUHAIL_INVALID_OUTPUT_REPAIR); on_repair(event) is told when that attempt is about to be made."""
+    SUHAIL_INVALID_OUTPUT_REPAIR); on_repair(event) is told when that attempt is about to be made.
+    forced: one final conclude-only turn when the turn budget is exhausted (None reads SUHAIL_FORCED_CONCLUSION);
+    on_forced(event) is told when that turn is about to be made."""
     turn = turn or model_turn
     repair = repair_enabled() if repair is None else bool(repair)
+    forced = forced_enabled() if forced is None else bool(forced)
+    forcing, limit = False, MAX_TURNS
     repairing, repaired = False, 0
     session = session or Session()
     budget = session.budget
@@ -458,11 +488,21 @@ def investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, 
         return text
 
     while True:
-        if turns >= MAX_TURNS:
-            error = "turn budget exhausted without a valid conclusion"
+        if turns >= limit:
+            if forced and not forcing and budget.remaining > RESERVED_FOR_REVIEW:
+                # The forced final turn: the same conversation and only FORCED_MESSAGE. Earlier rejections are not repeated.
+                # Room for that turn, its one corrective retry and, where the option is on and unused, one repair.
+                forcing, limit = True, turns + ATTEMPTS_PER_TURN + (1 if repair and not repaired else 0)
+                problem, repairing, provider_failures, invalid_conclusions = None, False, 0, 0
+                session.forced_final_turn = True
+                if on_forced:
+                    on_forced(forced_event(session))
+                continue
+            error = TURN_BUDGET_ERROR
             break
         if not budget.take("investigator", reserve=RESERVED_FOR_REVIEW):
-            error = "model-call cap reached before a valid conclusion"
+            # During the forced final turn's retry the cap only ends what the exhausted turn budget started.
+            error = TURN_BUDGET_ERROR if forcing else "model-call cap reached before a valid conclusion"
             break
         turns += 1
         last = budget.remaining <= RESERVED_FOR_REVIEW or turns >= MAX_TURNS
@@ -473,7 +513,9 @@ def investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, 
                          f"and nothing else, in this shape, citing only ids your tools returned: {CONCLUDE_SHAPE}")
         elif problem:
             notes.append(f"Your previous reply was rejected: {problem}. Reply with one corrected JSON object.")
-        if last or made() >= MAX_TOOL_CALLS:
+        if forcing:
+            notes.append(FORCED_MESSAGE)
+        elif last or made() >= MAX_TOOL_CALLS:
             notes.append("No further tool calls are possible: reply with action conclude now. If the evidence does not establish a cause, "
                          "conclude INSUFFICIENT_EVIDENCE and name what is missing and the next step.")
         sent = messages + [{"role": "user", "content": " ".join(notes)}] if notes else messages
@@ -543,25 +585,28 @@ def investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, 
             reject(problem)
             if invalid_conclusions >= ATTEMPTS_PER_TURN:
                 # One repair attempt, only when the option is on and the cap and the turn limit still have room for it.
-                if repair and not repaired and budget.remaining > RESERVED_FOR_REVIEW and turns < MAX_TURNS:
+                if repair and not repaired and budget.remaining > RESERVED_FOR_REVIEW and turns < limit:
                     repaired, repairing = 1, True
                     if on_repair:
                         on_repair(repair_event("investigator", problem, session))
                     continue
-                error = problem
+                # A forced final turn that is still invalid ends as the exhausted turn budget it came from.
+                error = TURN_BUDGET_ERROR if forcing else problem
                 break
             continue
         conclusion = _clean_conclusion(out)
         messages.append({"role": "assistant", "content": json.dumps({"action": "conclude", **conclusion}, ensure_ascii=False)})
         return {"mode": "gpt-oss", "degraded": False, "steps": list(session.steps), "round_steps": steps,
                 "retrieved_evidence_ids": sorted(tools.retrieved), "validation_error": None, "validation_errors": errors,
-                "model_calls": budget.snapshot(), **({"invalid_output_repairs": repaired} if repaired else {}), **conclusion}
-    # A provider failure is "model_unavailable"; the cap is "model_call_cap"; a model that answered but never produced a
-    # valid conclusion (schema, citation, blame or GPS violations that survived the corrective retry, or the turn budget)
-    # is "invalid_model_output". No diagnosis is substituted in any of them.
+                "model_calls": budget.snapshot(), **({"invalid_output_repairs": repaired} if repaired else {}),
+                **({FORCED_KIND: True} if forcing else {}), **conclusion}
+    # A provider failure is "model_unavailable"; the cap is "model_call_cap"; a model that kept calling tools or never
+    # concluded validly within the round's turns is "turn_budget_exhausted"; a conclusion with schema, citation, blame or GPS
+    # violations that survived the corrective retry is "invalid_model_output". No diagnosis is substituted in any of them.
     return {"mode": failure_mode(error), "degraded": True, "steps": list(session.steps), "round_steps": steps,
             "retrieved_evidence_ids": sorted(tools.retrieved), "validation_error": error, "validation_errors": errors,
             "model_calls": budget.snapshot(), **({"invalid_output_repairs": repaired} if repaired else {}),
+            **({FORCED_KIND: True} if forcing else {}),
             "hypotheses": [], "primary_cause": None, "confidence": None, "missing_evidence": [],
             "next_evidence_step": "", "recommended_action": None, "requires_physical_check": True,
             "summary": "Investigation could not reach a valid conclusion; no AI diagnosis was produced."}

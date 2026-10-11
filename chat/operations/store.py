@@ -1032,7 +1032,8 @@ class OperationsStore:
                                 result="New evidence arrived during each investigation attempt; routed to a person, no automatic action.")
                     continue
                 failure=("returned output that failed validation" if item.get("kind")=="invalid_model_output" else
-                         "reached the per-case model-call cap" if item.get("kind")=="model_call_cap" else "unavailable")
+                         "reached the per-case model-call cap" if item.get("kind")=="model_call_cap" else
+                         "used its turn budget without a valid conclusion" if item.get("kind")=="turn_budget_exhausted" else "unavailable")
                 self._audit(tx,current,"MODEL_DEGRADED",when,actor="SUHAIL-"+item["role"].upper(),key=item["role"],
                             result=f"{item['role']} {failure} ({item.get('error') or 'no valid output'}); automatic execution blocked.")
             from operations.authority import execution_permission

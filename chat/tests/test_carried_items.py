@@ -58,10 +58,10 @@ class InvalidOutputLabelTests(ti.Base):
         out = investigator.investigate(self.tools(), turn=ti.scripted(boom, boom))
         self.assertEqual((out["mode"], out["degraded"]), ("model_unavailable", True))
         call = {"action": "call", "tool": "policy", "args": {}, "purpose": "Read thresholds."}
-        # With calls to spare, a model that answers but never concludes runs out of turns: invalid output.
+        # With calls to spare, a model that answers but never concludes runs out of turns: its own kind.
         out = investigator.investigate(self.tools(), turn=ti.scripted(*[call] * (investigator.MAX_TURNS + 2)),
                                        session=investigator.Session(cap=30))
-        self.assertEqual(out["mode"], "invalid_model_output")  # The model answered but never concluded validly.
+        self.assertEqual(out["mode"], "turn_budget_exhausted")  # The model answered but never concluded within its turns.
         # Under the default per-case cap the same behaviour ends at the cap: a degraded run, labelled as such.
         out = investigator.investigate(self.tools(), turn=ti.scripted(*[call] * (investigator.MAX_TOOL_CALLS + 2)))
         self.assertEqual((out["mode"], out["degraded"], out["primary_cause"]), ("model_call_cap", True, None))

@@ -210,9 +210,12 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
         def on_repair(event):
             # SUHAIL_INVALID_OUTPUT_REPAIR: the reply was invalid twice and is asked for once more ("model reply invalid, retrying").
             emit("classify", "RETRYING", s, {"agent": "gpt-oss", **event})
+        def on_forced(event):
+            # SUHAIL_FORCED_CONCLUSION: the turn budget is exhausted and the investigator gets one final conclude-only turn.
+            emit("classify", "RUNNING", s, {"agent": "gpt-oss", **event})
         revising = bool(s.get("iteration"))
         investigation = agents.investigate(tools, on_step=on_step, feedback=s.get("feedback") if revising else None,
-                                           **_accepted(agents.investigate, session=session, on_repair=on_repair,
+                                           **_accepted(agents.investigate, session=session, on_repair=on_repair, on_forced=on_forced,
                                                        review=(session.reviews[-1] if revising and session.reviews else None)))
         holder["investigation"] = investigation
         update = {"investigation": investigation, "mode": "gpt_oss_agents", "result": agent_result(investigation, s["context"])}
@@ -278,7 +281,8 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
         return {"round": number, "snapshot_as_of": s["as_of"], "tool_calls": calls, "conclusion": conclusion,
                 "investigator": {"mode": (inv or {}).get("mode"), "degraded": bool((inv or {}).get("degraded")),
                                  "validation_error": (inv or {}).get("validation_error"),
-                                 "validation_errors": (inv or {}).get("validation_errors") or []},
+                                 "validation_errors": (inv or {}).get("validation_errors") or [],
+                                 **({"forced_final_turn": True} if (inv or {}).get("forced_final_turn") else {})},
                 "citation_validity": (checks or {}).get("citations"),
                 "fact_checks": (checks or {}).get("checks"),
                 "review": {"verdict": verdict.get("verdict"), "model_verdict": verdict.get("model_verdict"), "reason_code": verdict.get("reason_code"),
@@ -300,6 +304,8 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
                  for i in [*(h.get("supporting_evidence_ids") or []), *(h.get("contradicting_evidence_ids") or [])]}
         seen = [k for k in tools.computed if k in tools.retrieved] if tools else []
         return {"snapshot_as_of": tools.as_of if tools else None, **session.budget.snapshot(), "rounds": rounds,
+                # Present only when a round used the forced final turn (SUHAIL_FORCED_CONCLUSION).
+                **({"forced_final_turn": True} if any((r.get("investigator") or {}).get("forced_final_turn") for r in rounds) else {}),
                 # What the investigator saw beyond the shipment's own evidence nodes, kept so a citation can be resolved later.
                 "computed_results": {k: tools.computed[k] for k in seen} if tools else {},
                 "cited_external_records": {k: tools.external[k] for k in sorted(cited) if tools and k in tools.external and k not in tools.computed},
