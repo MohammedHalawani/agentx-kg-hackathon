@@ -306,3 +306,13 @@ class EvidenceTests(unittest.TestCase):
 
 
 if __name__=="__main__":unittest.main()
+
+
+class SnapshotCutoffTests(unittest.TestCase):
+    def test_a_shipment_without_its_own_snapshot_is_read_as_of_the_clock(self):
+        from operations.read_model import snapshot_cutoff
+        clock = "2026-09-20T00:00:00+00:00"
+        self.assertEqual(snapshot_cutoff({}, clock), clock)                                           # A mechanism-world shipment.
+        self.assertEqual(snapshot_cutoff({"as_of": "2026-09-18T00:00:00+00:00"}, clock), "2026-09-18T00:00:00+00:00")
+        self.assertEqual(snapshot_cutoff({"as_of": "2026-09-25T00:00:00+00:00"}, clock), clock)      # Never ahead of the clock.
+        self.assertEqual(snapshot_cutoff({}, clock, "2026-09-16T00:00:00+00:00"), "2026-09-16T00:00:00+00:00")

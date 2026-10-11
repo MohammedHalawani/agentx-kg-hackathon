@@ -254,6 +254,16 @@ def normalize_values(value):
     return value
 
 
+def snapshot_cutoff(shipment, clock, as_of=None):
+    """The evidence snapshot for a shipment view: the requested time, else the earlier of the shipment's own snapshot
+    and the logical clock. A shipment that records no snapshot of its own (a mechanism-world shipment) is read as of the
+    clock, so the shipment graph and context views answer for it instead of failing as "not found"."""
+    if as_of:
+        return as_of
+    own = shipment.get("as_of")
+    return min(own, clock, key=instant) if own else clock
+
+
 class OperationsReader:
     def __init__(self, driver, database, dataset_id, config=None, clock=None, store=None):
         # The isolated V2 family, or a mechanism-world database (shipments-v2-world-<name>) holding a world dataset.
@@ -393,7 +403,7 @@ class OperationsReader:
         if not any(row["kind"] == "Shipment" for row in owned):
             raise LookupError("Operational shipment not found")
         shipment_row = next(row for row in owned if row["kind"] == "Shipment")
-        cutoff = as_of or min(shipment_row["props"]["as_of"], self.clock(), key=instant)
+        cutoff = snapshot_cutoff(shipment_row["props"], self.clock(), as_of)
         if instant(cutoff) > instant(self.clock()):
             raise ValueError("Evidence snapshot is ahead of the logical clock")
         visible_rows = [r for r in owned if r["props"]["recorded_at"] <= cutoff
@@ -530,4 +540,7 @@ class OperationsReader:
                             "evidence_after_investigation":sum(bool(n.get("after_investigation")) for n in nodes)}
         if self.store is not None and hasattr(self.store,'case_graph'):
             detail['ledger_graph']=self.store.case_graph(case_id,[n['id'] for n in detail['evidence']['nodes']])
+        # What the case needs next and why it is not resolved, restated by code from the fields above (nothing stored).
+        from operations.next_step import next_step
+        detail["next_step"]=next_step(detail)
         return detail
