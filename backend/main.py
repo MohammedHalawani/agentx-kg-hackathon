@@ -332,7 +332,9 @@ if config.PHOTOS_DIR and Path(config.PHOTOS_DIR).is_dir():
 # The redesigned operator interface (frontend-next) is served under /app/ from this same origin, so
 # its page routes (/app/audit, /app/explore, /app/cases/...) never collide with the API routes of the
 # same names. The existing frontend below stays where it is, unchanged, as the rollback.
-_NEXT = Path(__file__).resolve().parent.parent / "frontend-next" / "dist"
+# SUHAIL_FRONTEND_NEXT_DIST points at a build made elsewhere (for example the UI integration checkout).
+import os as _os
+_NEXT = Path(_os.environ.get("SUHAIL_FRONTEND_NEXT_DIST") or Path(__file__).resolve().parent.parent / "frontend-next" / "dist")
 
 
 def next_app_file(path: str) -> Path | None:
