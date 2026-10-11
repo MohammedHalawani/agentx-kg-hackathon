@@ -37,8 +37,10 @@
 
 ## About "Skip to next event"
 
-- It takes about 4 seconds per simulated half hour: one to two and a half minutes for a typical
-  rescan wait. The button shows "Skipping…" meanwhile.
+- In my runs a press took between 24 seconds and two and a half minutes. The button shows
+  "Skipping…" meanwhile, and the clock is left paused when it returns.
+- Its report is one line, for example "Skipped 20.5 hours: the verifier decided a waiting case
+  for SYN-SHP-000165." Open the case to read whether the result confirmed the fix.
 - It stops at the first event, so reaching one case's result can take two or three presses when
   other cases open in between.
 - Every other shipment ages by the skipped time. Click "Investigate now" on the cases you care
@@ -65,6 +67,8 @@ questions in plain language with the agent's message quoted only when asked.
   action and a rejection, but they were not fresh.
 - **One skip in three failed at once** with a database-driver error and left everything
   unchanged; pressing again worked. The interface now retries once.
+- **A rescan can go unanswered.** SYN-SHP-000375, investigated on an aged queue, got no new read
+  before its deadline and went to a person. That is the simulator's world, not a fault.
 - **Outcomes vary between runs.** The same shipment can resolve in one run and go to a person in
   the next, because the model's answers and the reviewer's verdicts differ.
 - **Approval with Auto off is still not exercised**: no manually started case became approvable.
