@@ -62,7 +62,9 @@ export function explainStage(
       return record(
         b.authority.riskClass === "AUTO"
           ? `Automatic action allowed by ${b.authority.ruleId}.`
-          : `Held for a person by ${b.authority.ruleId}${b.allowed.approve ? "; the request can be approved" : ""}.`,
+          : c.status === "escalated"
+            ? `Escalated to a person as designed: ${b.authority.reason} (${b.authority.ruleId})`
+            : `Routed to a person by ${b.authority.ruleId}: ${b.authority.reason}${b.allowed.approve ? " The request can be approved." : ""}`,
       );
   }
   if (index === 7) {

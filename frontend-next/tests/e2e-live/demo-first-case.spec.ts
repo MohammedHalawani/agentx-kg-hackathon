@@ -41,7 +41,7 @@ test("Every stage of a completed lifecycle is displayed as the backend recorded 
   await page.screenshot({ path: shot("case"), fullPage: true });
 
   // The rail: each recorded stage, and the outcome stage as the verifier left it.
-  for (const stage of ["Collect", "Graph", "Diagnose", "Precedent", "Recommend", "Review", "Route"])
+  for (const stage of ["Collect", "Graph", "Diagnose", "Precedent", "Recommend", "Review", "Disposition"])
     await expect(
       page.getByRole("button", { name: new RegExp(`^${stage} · completed`) }),
     ).toBeVisible();
@@ -68,7 +68,7 @@ test("Every stage of a completed lifecycle is displayed as the backend recorded 
   const cleared = outcome.success === true && outcome.exception_cleared !== false;
   await expect(
     page.getByRole("button", {
-      name: new RegExp(`^Outcome · ${cleared ? "completed" : outcome.success ? "waiting" : "failed"}`),
+      name: new RegExp(`^Outcome · ${cleared ? "completed" : "waiting"}`),
     }),
   ).toBeVisible();
   await page.getByRole("button", { name: /^Outcome ·/ }).click();

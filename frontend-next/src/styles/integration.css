@@ -434,10 +434,56 @@
   box-shadow: 0 0 0 2px #8b6ccb;
 }
 
-/* Why a case is unresolved and what it needs next (the backend's next_step record). */
+/* The pipeline card's final output: the next best action (the backend's next_step record). */
 .next-step {
-  margin-top: 14px;
-  padding: 14px 18px 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.next-step-action {
+  border-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+.next-step-action > div {
+  flex: 1;
+  min-width: 0;
+}
+.next-step-recommended {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.next-step-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  background: var(--card);
+  color: var(--muted-foreground);
+  font-size: 10px;
+  cursor: pointer;
+}
+.next-step-toggle svg.open {
+  transform: rotate(180deg);
+}
+.next-step-facts {
+  margin-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+.next-step-facts .next-step-note {
+  grid-column: 1 / -1;
+  margin-top: 0;
+}
+.pipeline-step.state-waiting .stage-explain {
+  color: var(--foreground);
+}
+.brand.brand-logo {
+  justify-content: center;
+  width: 100%;
 }
 .next-step small {
   display: flex;

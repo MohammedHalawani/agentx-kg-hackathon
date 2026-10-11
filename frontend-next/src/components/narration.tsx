@@ -188,7 +188,10 @@ export function NarrationStrip({
           <Sparkles size={13} />
           <b>{t("Canopus narration", "سرد كانوبس")}</b>
           <span>
-            {t(stages[stage].label, stages[stage].arabic)} ·{" "}
+            {stage === 6
+              ? t("Disposition", "التصرف في الحالة")
+              : t(stages[stage].label, stages[stage].arabic)}{" "}
+            ·{" "}
             {t(
               `${here.length} of ${events.length} recorded messages`,
               `${here.length} من ${events.length} رسالة مسجلة`,

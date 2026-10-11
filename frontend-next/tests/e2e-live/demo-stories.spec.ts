@@ -45,12 +45,24 @@ for (const id of CASES)
 
     // Why the case is unresolved and what it needs next, exactly as the backend states it.
     const next = detail.next_step;
-    if (next && !next.resolved) {
-      const panel = page.getByTestId("next-step");
+    if (next) {
+      // The pipeline card ends with the next best action, in the backend's own words.
+      const panel = page.locator(".pipeline").getByTestId("next-step");
+      await expect(panel).toContainText("NEXT BEST ACTION");
       await expect(panel).toContainText(next.text_en);
-      if (next.blocked_by?.rule_id) await expect(panel).toContainText(next.blocked_by.rule_id);
-      for (const item of next.missing_evidence ?? []) await expect(panel).toContainText(item);
+      if (!next.resolved && next.blocked_by?.rule_id) {
+        await panel.getByRole("button", { name: "Why, and what is missing" }).click();
+        await expect(panel).toContainText(next.blocked_by.rule_id);
+        for (const item of next.missing_evidence ?? []) await expect(panel).toContainText(item);
+      }
     } else await expect(page.getByTestId("next-step")).toHaveCount(0);
+    // A case the workflow routed or escalated to a person is not shown as a failed step.
+    if (["ESCALATED", "HUMAN_REVIEW"].includes(detail.workflow_state) && !degraded.length && !(execution?.status === "NOT_ACKNOWLEDGED"))
+      await expect(page.locator(".pipeline-step.state-failed")).toHaveCount(0);
+    if (detail.workflow_state === "ESCALATED")
+      await expect(page.getByRole("button", { name: /^Disposition · waiting/ })).toContainText(
+        "Escalated to a person",
+      );
     // The graph opens focused: fewer nodes than the records it draws from, all of them real.
     await expect(
       page.getByTestId("knowledge-graph").locator(".entity-node").first(),

@@ -325,33 +325,56 @@ export function InvestigationPage() {
       );
   }
   /** Where a pipeline step stands, from the backend's recorded run and outcome. */
-  const stageState = (i: number): StageState =>
-    !c.run
-      ? "queued"
-      : // A stage the backend recorded as degraded did not produce its result.
-        i <= c.run.stage && c.backend?.stageStatus?.[i] === "DEGRADED"
-        ? "failed"
-        : c.status === "resolved" || i < c.run.stage
-          ? "completed"
-          : i === c.run.stage
-            ? c.status === "escalated" ||
-              // The authorized action was not carried out.
-              (i === 6 &&
-                !!c.backend &&
-                !!c.execution &&
-                !c.execution.successful) ||
-              // The verifier checked and did not confirm the fix. An action that
-              // worked while the exception remains is not a failed check: it waits.
-              (i === 7 &&
-                !!c.backend?.verification &&
-                !["confirmed", "exception_remains"].includes(
-                  c.backend.verification.result,
-                ))
-              ? "failed"
-              : ["human_review", "needs_evidence"].includes(c.status)
-                ? "waiting"
-                : "running"
-            : "queued";
+  const stageState = (i: number): StageState => {
+    if (!c.run) return "queued";
+    const recorded = c.backend?.stageStatus?.[i];
+    // A step the backend recorded as failed or degraded did not produce its result.
+    if (i <= c.run.stage && (recorded === "DEGRADED" || recorded === "FAILED"))
+      return "failed";
+    if (c.status === "resolved" || i < c.run.stage) return "completed";
+    if (i !== c.run.stage) return "queued";
+    // The authorized request could not be delivered: a genuine failure of the step.
+    if (i === 6 && !!c.backend && !!c.execution && !c.execution.successful)
+      return "failed";
+    // Routed to a person, awaiting approval, escalated, or checked and not confirmed: the
+    // workflow did what it should. These wait on someone; they are not failures.
+    if (
+      c.status === "escalated" ||
+      ["human_review", "needs_evidence"].includes(c.status) ||
+      (i === 7 &&
+        !!c.backend?.verification &&
+        c.backend.verification.result !== "confirmed")
+    )
+      return "waiting";
+    return "running";
+  };
+  /** What a waiting or failed step is waiting on, in the case's own recorded terms. */
+  const stageNote = (i: number, state: StageState): [string, string] | null => {
+    if (!c.backend) return null;
+    if (state === "failed")
+      return i === 6 && c.execution && !c.execution.successful
+        ? ["Request not delivered", "لم يُسلّم الطلب"]
+        : ["No result recorded", "لا نتيجة مسجلة"];
+    if (state !== "waiting") return null;
+    const verification = c.backend.verification;
+    if (i === 7 && verification)
+      return verification.result === "unanswered"
+        ? ["Executed · no answer, not verified", "نُفذ · بلا إجابة، غير متحقق"]
+        : verification.result === "exception_remains"
+          ? ["Executed · exception remains", "نُفذ · الاستثناء باقٍ"]
+          : verification.result === "finding"
+            ? ["Person's finding · not resolved", "نتيجة بشرية · غير محلولة"]
+            : [
+                "Executed · not verified as resolved",
+                "نُفذ · لم يُتحقق من الحل",
+              ];
+    if (c.status === "escalated")
+      return ["Escalated to a person", "صُعّدت إلى شخص"];
+    if (c.backend.allowed.approve)
+      return ["Awaiting your approval", "بانتظار موافقتك"];
+    if (c.status === "needs_evidence") return ["Needs evidence", "تحتاج أدلة"];
+    return ["Routed to a person", "أُحيلت إلى شخص"];
+  };
   return (
     <>
       <Breadcrumb className="mb-4">
@@ -608,7 +631,7 @@ export function InvestigationPage() {
                 key={s.label}
                 className={`pipeline-step state-${state} ${stage === i ? "selected" : ""} ${explanation ? "explained" : ""}`}
                 aria-pressed={stage === i}
-                aria-label={`${s.label} · ${state}`}
+                aria-label={`${i === 6 && c.backend ? "Disposition" : s.label} · ${state}`}
                 title={explanation?.text || s.detail || undefined}
                 onClick={() => inspectStage(i)}
               >
@@ -624,24 +647,29 @@ export function InvestigationPage() {
                   )}
                 </span>
                 <span>
-                  {t(s.label, s.arabic)}
+                  {/* For a case, this step is its disposition (who acts next), not a vehicle route. */}
+                  {i === 6 && c.backend
+                    ? t("Disposition", "التصرف في الحالة")
+                    : t(s.label, s.arabic)}
                   <small>
-                    {t(
-                      {
-                        queued: "Queued",
-                        completed: "Done",
-                        waiting: "Waiting",
-                        running: "Running",
-                        failed: "Failed",
-                      }[state],
-                      {
-                        queued: "انتظار",
-                        completed: "مكتمل",
-                        waiting: "متوقف",
-                        running: "جارٍ",
-                        failed: "فشل",
-                      }[state],
-                    )}
+                    {stageNote(i, state)
+                      ? t(...stageNote(i, state)!)
+                      : t(
+                          {
+                            queued: "Queued",
+                            completed: "Done",
+                            waiting: "Waiting",
+                            running: "Running",
+                            failed: "Failed",
+                          }[state],
+                          {
+                            queued: "انتظار",
+                            completed: "مكتمل",
+                            waiting: "متوقف",
+                            running: "جارٍ",
+                            failed: "فشل",
+                          }[state],
+                        )}
                     {state === "completed" &&
                       c.backend?.timing?.stageSeconds[i] !== undefined &&
                       ` · ${secondsLabel(c.backend.timing.stageSeconds[i])}`}
@@ -690,7 +718,11 @@ export function InvestigationPage() {
         </div>
         <div className="pipeline-stage-summary">
           <span className="purple-stage-dot" />
-          <b>{t(stages[stage].label, stages[stage].arabic)}</b>
+          <b>
+            {stage === 6 && c.backend
+              ? t("Disposition", "التصرف في الحالة")
+              : t(stages[stage].label, stages[stage].arabic)}
+          </b>
           <span>
             {c.backend
               ? (explainStage(c, stage, stageState(stage))?.text ??
@@ -718,6 +750,8 @@ export function InvestigationPage() {
                   : stages[stage].detail}
           </span>
         </div>
+        {/* The pipeline's final output. */}
+        <NextStep c={c} />
         {c.backend && (
           <NarrationStrip
             key={c.id}
@@ -736,7 +770,6 @@ export function InvestigationPage() {
           />
         )}
       </section>
-      <NextStep c={c} />
       <div className="workspace-toolbar">
         <div>
           <h2>{t("Evidence workspace", "مساحة الأدلة")}</h2>
