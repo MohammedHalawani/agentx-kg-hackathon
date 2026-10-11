@@ -55,20 +55,26 @@ def operations_database(driver):
 
 
 def attach_simulator(store,reader,manifest):
-    """Development only: the synthetic operational simulator answers executed actions through the feed.
-    It needs the live bundle's truth file (never loaded into Neo4j); without it nothing responds.
+    """Development only: a synthetic operational simulator answers executed actions through the provider feed.
 
-    Mechanism-world datasets have no operational simulator yet (it is built later from the world's private
-    physical state). The S5 simulator plays the live-network scenarios from their truth file and is never
-    attached to world data, and no truth or state file is opened for a world dataset. With no adapter an
-    authorized action is recorded as not acknowledged: no field response, nothing verified, nothing resolved,
-    and the case goes to a person."""
+    Live-network scenarios: the S5 simulator, from the live bundle's scenario file (never loaded into Neo4j).
+    Mechanism-world datasets: the world simulator (operations.world_simulation), attached only when the server was
+    started with a physical-state root for that export. It reads the export's private PHYSICAL state (where parcels
+    are, what devices hold, where recipients live) and never a truth label; no label file is opened for a world
+    dataset. With no adapter an authorized action is recorded as not acknowledged: no field response, nothing
+    verified, nothing resolved, and the case goes to a person."""
     if not getattr(store,"live",False):return None
     from operations.datasets import is_world_dataset
     if is_world_dataset(manifest.get("dataset_id")):
-        store.adapter=None
-        log.warning("No operational simulator for mechanism-world data: executed actions get no field response and nothing resolves")
-        return None
+        from operations import world_simulation
+        try:adapter=world_simulation.attach(store,reader,manifest)
+        except (OSError,ValueError) as error:
+            adapter=None
+            log.warning("World operational simulator unavailable (%s)",type(error).__name__)
+        if adapter is None:
+            store.adapter=None
+            log.warning("No operational simulator for mechanism-world data: executed actions get no field response and nothing resolves")
+        return adapter
     from pathlib import Path
     from dataset_v2.live_bundle import read_truth
     from dataset_v2.contracts import digest as _digest

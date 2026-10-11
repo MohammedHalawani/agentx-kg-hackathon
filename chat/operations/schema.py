@@ -44,7 +44,7 @@ FIELDS = {
                      "decided_risk", "permission_rule", "approval_context_json", "recommendation_id", "run_id"},
     "OpsOutcome": {"case_id", "execution_id", "action_code", "action_type", "success", "outcome_type", "evidence_ids",
                    "verification_status", "verified_at", "verifier_id", "invalidated", "observed_at", "reason", "rule_id", "expected_effect",
-                   "exception_cleared", "remaining_symptoms", "source", "run_id"},
+                   "exception_cleared", "remaining_symptoms", "source", "run_id", "relevant_evidence_ids", "trusted_precedent"},
     "OpsNotification": {"case_id", "trigger", "status", "mode", "external_calls"},
     "OpsCommand": {"case_id", "idempotency_key", "request_hash", "result_json", "command_type"},
     "OpsRiskFlag": {"active", "certainty", "promise_at", "latest_estimate_at", "earliest_estimate_at", "evidence_ids", "checked_at"},

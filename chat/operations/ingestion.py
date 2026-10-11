@@ -215,6 +215,37 @@ class Gateway:
             return [r["id"] for r in session.run("MATCH (f:ProviderFeedItem {status:'PENDING'}) WHERE f.source_event_id IN $ids "
                                                  "RETURN f.feed_id AS id", ids=list(source_event_ids))]
 
+    def pending_records(self, source_event_ids=None, *, prefix=None):
+        """Undelivered provider messages, decoded far enough to know what they are about: feed id, record id, shipment,
+        event time and delivery time. By record ids, or by a record-id prefix (one shipment's records). For the
+        execution adapter only, which must not ask a device for a record that does not exist yet."""
+        ref = self.reference()
+        with self.driver.session(database=self.database, default_access_mode="READ") as session:
+            rows = [dict(r["f"]) for r in session.run(
+                "MATCH (f:ProviderFeedItem {status:'PENDING'}) WHERE ($ids IS NOT NULL AND f.source_event_id IN $ids) "
+                "OR ($prefix IS NOT NULL AND f.source_event_id STARTS WITH $prefix) "
+                "RETURN f {.feed_id,.source_event_id,.channel,.message_type,.payload_json,.deliver_at} AS f ORDER BY f.feed_id",
+                ids=list(source_event_ids) if source_event_ids is not None else None, prefix=prefix)]
+        out = []
+        for row in rows:
+            try:
+                kind, entity_id, sid, occurred_at, _ = decode(row["channel"], row["message_type"], json.loads(row["payload_json"]), ref)
+            except (KeyError, ValueError, StopIteration, TypeError):
+                continue
+            delivered = row["deliver_at"]
+            out.append({"feed_id": row["feed_id"], "source_event_id": row["source_event_id"], "kind": kind, "shipment_id": sid,
+                        "occurred_at": occurred_at,
+                        "deliver_at": delivered.to_native().isoformat() if hasattr(delivered, "to_native") else str(delivered)})
+        return out
+
+    def withdraw(self, feed_ids, reason):
+        """Messages that will never be sent, because an executed action changed what happens next in the field.
+        They stay on record with their reason and return to PENDING with the next session reset."""
+        with self.driver.session(database=self.database) as session:
+            return session.run("MATCH (f:ProviderFeedItem {status:'PENDING'}) WHERE f.feed_id IN $ids "
+                               "SET f.status='WITHDRAWN', f.error=$reason RETURN count(f) AS n",
+                               ids=list(feed_ids), reason=reason).single()["n"]
+
     def reschedule(self, feed_ids, deliver_at):
         """A device sync request makes the device upload what it buffered: earlier delivery, same messages."""
         with self.driver.session(database=self.database) as session:

@@ -16,6 +16,9 @@ from dataset_v2.derive import custody_corroborated, number, proof_assessment
 FACILITIES = ("Branch", "Hub", "SortingCenter", "DeliveryDepot", "FulfillmentWarehouse", "OrganizationWarehouse")
 # Kept for the operator path: these actions only gather evidence.
 EVIDENCE_ACTIONS = {"REQUEST_RESCAN", "REQUEST_REWEIGH", "REQUEST_ADDITIONAL_EVIDENCE", "REQUEST_DEVICE_SYNC"}
+# A facility's answer to a check request when the parcel is not there (a ScanEvent with no read and no facility of
+# presence: it says where someone looked, never where the parcel is).
+NOT_FOUND = "FACILITY_CHECK_NOT_FOUND"
 
 
 def _ingested_after(node, start, cutoff):
@@ -24,6 +27,12 @@ def _ingested_after(node, start, cutoff):
     occurred = node.properties.get("occurred_at")
     # Strictly after: evidence ingested in the same instant the action was executed predates it.
     return bool(recorded) and start < instant(recorded) <= cutoff and (not occurred or instant(occurred) <= cutoff)
+
+
+def _made_after(node, start):
+    """The observation itself was made after the action (not an older record that merely arrived late)."""
+    occurred = node.properties.get("occurred_at")
+    return bool(occurred) and instant(occurred) > start
 
 
 def _result(status, outcome_type, evidence, reason):
@@ -56,7 +65,8 @@ def _evaluate(world, sid, execution, cutoff_text):
     if action == "REQUEST_RESCAN":
         minimum = number(pp.get("barcode_min_confidence")) or 0
         scans = [n for n in later if n.kind == "ScanEvent" and n.properties.get("package_id") in packages and n.properties.get("readable") is True
-                 and (number(n.properties.get("confidence")) or 0) >= minimum and n.properties.get("observed_barcode") is not None]
+                 and (number(n.properties.get("confidence")) or 0) >= minimum and n.properties.get("observed_barcode") is not None
+                 and _made_after(n, start)]
         good = [n for n in scans if n.properties["observed_barcode"] == packages[n.properties["package_id"]].properties.get("manifest_barcode")]
         bad = [n for n in scans if n not in good]
         if bad:
@@ -66,7 +76,8 @@ def _evaluate(world, sid, execution, cutoff_text):
     elif action == "REQUEST_REWEIGH":
         absolute, relative = number(pp.get("weight_absolute_kg")) or 0, number(pp.get("weight_relative_fraction")) or 0
         measured = [n for n in later if n.kind == "ScanEvent" and n.properties.get("calibrated") is True
-                    and n.properties.get("measurement_units") == "kg" and n.properties.get("package_id") in packages]
+                    and n.properties.get("measurement_units") == "kg" and n.properties.get("package_id") in packages
+                    and _made_after(n, start)]
         def within(n):
             expected = number(packages[n.properties["package_id"]].properties.get("weight_kg"))
             value = number(n.properties.get("measured_weight_kg"))
@@ -87,12 +98,10 @@ def _evaluate(world, sid, execution, cutoff_text):
         allowance = timedelta(minutes=15)
         def uploader(n):
             return (nodes.get(n.properties.get("source_event_id")) or n).properties.get("device_ref")
-        def expected_device(n):
-            facility = n.properties.get("to_id") or n.properties.get("facility_id") or ""
-            return "DEMO-DEV-HH-" + facility.removeprefix("DEMO-")
+        # Credited only to the device the request targeted: a record another device uploaded on its own (its natural
+        # reconnect) is not this action's effect, and a request with no target device can confirm nothing.
         late = [n for n in later if n.kind == "CustodyEvent" and instant(n.properties["occurred_at"]) + allowance <= opened
-                and custody_corroborated(world, n, cutoff)
-                and (not device or uploader(n) in (device, expected_device(n)))]
+                and custody_corroborated(world, n, cutoff) and bool(device) and uploader(n) == device]
         def covers(item):
             return any(n.properties.get("package_id") == item["package_id"] and n.properties.get("event_type") == item["predicate"]
                        and item["location_id"] in (n.properties.get("to_id"), n.properties.get("facility_id")) for n in late)
@@ -112,16 +121,22 @@ def _evaluate(world, sid, execution, cutoff_text):
                      and n.properties.get("observed_barcode") == (packages.get(n.properties.get("package_id")).properties.get("manifest_barcode")
                                                                   if packages.get(n.properties.get("package_id")) else None)]
             outcome_type, reason = "parcel_located", "A readable scan at a facility located every package after the check request."
+        # The check itself must have been made after the request: an older scan arriving late is not its answer.
+        found = [n for n in found if _made_after(n, start)]
+        absent = [n for n in later if n.kind == "ScanEvent" and n.properties.get("observation_type") == NOT_FOUND
+                  and n.properties.get("package_id") in packages and _made_after(n, start)]
         if packages and set(packages) <= {n.properties.get("package_id") for n in found}:
             verdict = _result("success", outcome_type, found, reason)
+        elif absent and not found:
+            verdict = _result("failure", "parcel_not_found", absent, "The facility checked after the request and did not find the parcel.")
     elif action == "REQUEST_ADDRESS_CONFIRMATION":
         confirmed = [n for n in later if n.kind == "AddressVersion" and n.properties.get("verification_status") == "VERIFIED"
-                     and n.properties.get("confirmed_by")]
+                     and n.properties.get("confirmed_by") and _made_after(n, start)]
         if confirmed:
             verdict = _result("success", "address_confirmed", confirmed, "The recipient confirmed the effective address after the request.")
-    elif action == "PRIORITIZE_NEXT_SESSION":
-        attempts = [n for n in later if n.kind == "DeliveryAttempt"]
-        proofs = [(n, proof_assessment(world, n, cutoff)) for n in later if n.kind == "DeliveryProof"]
+    elif action in ("PRIORITIZE_NEXT_SESSION", "REROUTE_TO_CONFIRMED_DESTINATION"):
+        attempts = [n for n in later if n.kind == "DeliveryAttempt" and _made_after(n, start)]
+        proofs = [(n, proof_assessment(world, n, cutoff)) for n in later if n.kind == "DeliveryProof" and _made_after(n, start)]
         covered = {n.properties.get("package_id") for n, row in proofs if row["corroborated"]}
         if packages and set(packages) <= covered:
             verdict = _result("success", "delivery_verified", [i for n, row in proofs if row["corroborated"] for i in row["evidence_ids"]],
@@ -129,6 +144,28 @@ def _evaluate(world, sid, execution, cutoff_text):
         elif any(n.properties.get("disposition") == "FAILED" for n in attempts):
             verdict = _result("failure", "delivery_failed_again", [n for n in attempts if n.properties.get("disposition") == "FAILED"],
                               "The prioritized delivery attempt failed.")
+    elif action == "RETURN_TO_SENDER":
+        # Corroborated receipt of every package at the facility the shipment was first handed over at, made after the request.
+        origin = {}
+        for n in sorted((n for n in nodes.values() if n.kind == "CustodyEvent"), key=lambda n: n.properties["occurred_at"]):
+            holder = nodes.get(n.properties.get("to_id"))
+            if holder is not None and holder.kind in FACILITIES:
+                origin.setdefault(n.properties.get("package_id"), holder.id)
+        back = [n for n in later if n.kind == "CustodyEvent" and _made_after(n, start)
+                and n.properties.get("to_id") == origin.get(n.properties.get("package_id"))
+                and n.properties.get("event_type") == "RECEIVED" and custody_corroborated(world, n, cutoff)]
+        if packages and set(packages) <= {n.properties.get("package_id") for n in back}:
+            verdict = _result("success", "returned_to_origin", back, "Corroborated receipt of every package at its origin facility was recorded after the request.")
+    elif action == "REQUEST_ADDITIONAL_EVIDENCE":
+        # The specific observations that were missing arrive after the request (they were made before it and held back).
+        expected = execution.get("expected_evidence") or []
+        held = [n for n in later if n.kind == "CustodyEvent" and instant(n.properties["occurred_at"]) <= start
+                and custody_corroborated(world, n, cutoff)]
+        def supplied(item):
+            return any(n.properties.get("package_id") == item["package_id"] and n.properties.get("event_type") == item["predicate"]
+                       and item["location_id"] in (n.properties.get("to_id"), n.properties.get("facility_id")) for n in held)
+        if expected and all(supplied(item) for item in expected):
+            verdict = _result("success", "requested_evidence_received", held, "The missing observations arrived after the request.")
     if verdict:
         return verdict
     if cutoff >= instant(execution["deadline_at"]):

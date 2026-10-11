@@ -819,8 +819,13 @@ class WorldBuildTests(unittest.TestCase):
                             r"^\s*(?:from|import)\s+world(?:\.|\s|$)", re.M)
         files = [*(REPO / "chat" / "operations").rglob("*.py"), *(REPO / "backend").rglob("*.py")]
         self.assertTrue(files)
+        # Stage 4: the world operational simulator is the one runtime module that may name the physical-state root (it
+        # reads physical state only). It may name no truth-label path, and no other module may name either.
+        truth_only = re.compile(r"suhail-eval-truth|SUHAIL_EVAL_TRUTH|DEFAULT_TRUTH_ROOT|truth_directory|read_truth_labels|write_truth|"
+                                r"suhail-sim-state|DEFAULT_STATE_ROOT|write_state|private_physical|^\s*(?:from|import)\s+world(?:\.|\s|$)", re.M)
         for path in files:
-            self.assertIsNone(banned.search(path.read_text(encoding="utf-8")), str(path))
+            pattern = truth_only if path.name == "world_simulation.py" else banned
+            self.assertIsNone(pattern.search(path.read_text(encoding="utf-8")), str(path))
 
     def test_physical_state_scan_is_hygiene_and_says_so(self):
         for split, export in self.report["exports"].items():

@@ -442,6 +442,9 @@ class OperationsReader:
                          "WHERE o.verification_status IN ['VERIFIED','HUMAN_VERIFIED'] "
                          "AND o.shipment_id <> $shipment_id AND datetime(o.verified_at) <= $snapshot AND any(x IN coalesce(c.cause_codes,[]) WHERE x IN $codes) "
                          "AND o.success IN [true,false] "
+                         # Verified from evidence, or an operator's finding that passed the same evidence check; never a
+                         # harness or simulated finding, an unresolved finding, or an outcome of a reopened case.
+                         "AND coalesce(o.trusted_precedent,o.verification_status='VERIFIED') "
                          "RETURN {shipment_id:o.shipment_id,case_id:c.entity_id,exception_codes:c.cause_codes,action_type:o.action_type,"
                          "action:o.outcome_type,success:o.success,verified_at:o.verified_at,outcome_id:o.entity_id,exception_cleared:coalesce(o.exception_cleared,o.success),"
                          "source:CASE o.verification_status WHEN 'HUMAN_VERIFIED' THEN 'live_human_verified' ELSE 'live_evidence_verified' END,synthetic:true} AS item "

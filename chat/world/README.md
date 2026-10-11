@@ -616,9 +616,13 @@ Still open:
 - Discrimination specs encode what separates a mechanism from the ones that share its opening symptoms in this world,
   as judged by the generator's author; they are machine-checkable but not exhaustive, and `shares_opening_with` is
   computed from one world's openings. `RULE_CODES` (which rule codes a mechanism can raise) is an authored table too.
-- The backend's existing S5 simulator hook (`backend/operations_api.py attach_simulator`) reads `truth.jsonl` from the
-  live-network bundle; world bundles have no such file, so it stays disabled for world data until Stage 4 reads the
-  physical state.
+- Stage 4: `backend/operations_api.py attach_simulator` attaches the world operational simulator
+  (`operations/world_simulation.py`) for a world dataset when the server is started with `SUHAIL_SIM_STATE_ROOT`. It
+  reads the export's physical state only (`parcels`, `containers`, `devices`, `recipients`, `routes`), refuses a
+  directory that holds label files, and is the one runtime module allowed to name the state root. Without the
+  variable there is no adapter and nothing resolves. The S5 simulator (live-network scenarios, from that bundle's own
+  scenario file) is never attached to world data. What the simulator does per action and its limits:
+  `docs/api/demo-lifecycle.md` section 8.
 - derive's ADDRESS_CONFLICT cannot fire (imported address versions are never closed) and TRAFFIC_DELAY never fires
   (no shipment-owned traffic records); a not-attempted stop raises no rule code. Outdated addresses and closed roads are
   therefore visible to the monitor only through a missed promise.
