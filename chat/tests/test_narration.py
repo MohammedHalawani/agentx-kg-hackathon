@@ -138,6 +138,8 @@ class GroundingTests(unittest.TestCase):
         self.assertIsNone(summarize(draft, lambda s, u: {**good, "text_en": "It read DEMO‑SHP‑000009‑SCAN‑001."}))
         # In an investigation round only the investigator has acted.
         self.assertIsNone(summarize(draft, lambda s, u: {**good, "text_en": "The reviewer concluded a custody gap."}))
+        later = {**draft, "job": {**draft["job"], "round": 1}}       # A revision round answers the reviewer and may name it.
+        self.assertIsNotNone(summarize(later, lambda s, u: {**good, "text_en": "The investigator answered the reviewer's objection."}))
         kept = summarize(draft, lambda s, u: {**good, "text_ar": "قرأ DEMO-SHP-000009-SCAN-001", "title_en": "DEMO-OTHER-1 check"})
         self.assertEqual((kept["text_ar"], kept["title_en"]), (None, draft["title_en"]))      # Ungrounded parts fall away; the rest stands.
 

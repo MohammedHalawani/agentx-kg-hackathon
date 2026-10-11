@@ -141,7 +141,8 @@ def pipeline_drafts(events):
                                           "supporting_evidence_ids": _ids(h.get("supporting_evidence_ids"), 8)} for h in investigation.get("hypotheses") or []],
                           "recommended_action": investigation.get("recommended_action")}
             degraded = bool(investigation.get("degraded"))
-            fallback = (f"The investigator made {len(calls)} tool call(s)" + (f" ({', '.join(str(c['tool']) for c in calls[:8])})" if calls else "")
+            fallback = ((f"The investigator made {len(calls)} tool call(s) ({', '.join(str(c['tool']) for c in calls[:8])})" if calls
+                         else "The investigator revised its conclusion from the evidence already retrieved, without new tool calls,")
                         + (". It did not reach a usable conclusion in this round." if degraded or not investigation.get("primary_cause")
                            else f" and concluded {investigation.get('primary_cause')} with {investigation.get('confidence')} confidence. "
                                 "This is a hypothesis until the independent review."))
@@ -235,7 +236,7 @@ SYSTEM_PROMPT = (
     "investigation as JSON. Explain it to an operations operator in plain English, in 2 to 4 short sentences: what was checked, what was "
     "found, and why it matters for the next step. Rules: use only facts in the JSON; do not add a cause, an outcome, a number or a record id "
     "that is not there; mention at most three record ids and copy them exactly with plain hyphens; a hypothesis is not a fact, so say "
-    "'the investigator concluded' in an investigation_round (the reviewer has not acted yet, do not mention it) and 'the reviewer found' "
+    "'the investigator concluded' in an investigation_round (when round is 0 the reviewer has not acted yet, do not mention it) and 'the reviewer found' "
     "in a review_round; never say the case is resolved, fixed or closed unless case_state is exactly RESOLVED; do not "
     "describe your own reasoning. Reply with JSON only: {\"title_en\": up to 8 words, \"text_en\": the explanation, \"text_ar\": the same "
     "explanation in Modern Standard Arabic}.")
@@ -264,8 +265,9 @@ def summarize(draft, ask):
     if not isinstance(reply, dict):
         return None
     reply = {key: plain_hyphens(value) for key, value in reply.items()}
-    # Only the investigator acts in an investigation round: a summary that credits the reviewer there misattributes.
-    if job.get("task") == "investigation_round" and re.search(r"\breviewer\b", str(reply.get("text_en") or ""), re.IGNORECASE):
+    # In the first investigation round only the investigator has acted: a summary that credits the reviewer there
+    # misattributes. A later round answers the reviewer's objection, so it may name the reviewer.
+    if job.get("task") == "investigation_round" and not job.get("round") and re.search(r"\breviewer\b", str(reply.get("text_en") or ""), re.IGNORECASE):
         return None
     allowed = set(ID_SHAPE.findall(payload))
     resolved = job.get("case_state") == "RESOLVED"
