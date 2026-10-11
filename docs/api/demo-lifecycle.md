@@ -105,6 +105,12 @@ before it refuses 300 with HTTP 422 until it is restarted.
 All four route the same way as before: `authority.rule_id` `AUTH-02-model-degraded`, `workflow_state` `HUMAN_REVIEW`,
 no conclusion substituted.
 
+`degraded[]` has one more kind, which is not a failed model role:
+
+| Kind | Meaning |
+| --- | --- |
+| `snapshot_superseded` | the evidence changed materially during each of three investigation attempts. The entry is `{role: "snapshot", error: "evidence changed during investigation", kind: "snapshot_superseded"}` (role and error text as before; the kind is new). `authority.rule_id` is `AUTH-15-superseded-snapshot`, the case goes to a person, `diagnosis.snapshot_superseded` is `true` and the audit trail has `SNAPSHOT_SUPERSEDED` |
+
 With `SUHAIL_FORCED_CONCLUSION=1`, a round that would end as `turn_budget_exhausted` first gets one final model turn,
 provided the call cap has a call left beyond the one reserved for the review. The message is fixed text: it names no
 cause, adds no evidence and presents `INSUFFICIENT_EVIDENCE` as an answer in its own right. The reply goes through
@@ -143,6 +149,31 @@ At 600 the same answers arrive in 1 to 10 seconds, too fast to watch, and the cl
 at 10 a rescan takes four and a half minutes. The verification deadline (72 simulated hours) is 72 real minutes at
 speed 60. While a case is being investigated the clock keeps running: pause the simulation
 (`POST /simulation/pause`) to hold the world still while talking over a case, and start it again to let the answer arrive.
+
+Records that arrive during an investigation. At speed 600 a 40 second investigation spans 6.7 simulated hours, so
+routine scans land while it runs. They no longer supersede it. An investigation is superseded and run again only on a
+material change: the case's symptoms changed, or a new record replaces or contradicts what the conclusion rests on (a
+late upload from before the snapshot, a new version of a cited record, a record that adds or clears a monitor
+finding). The full rules are in `investigation-run.md`, "When an investigation is superseded".
+
+| What you see | Meaning |
+| --- | --- |
+| audit `SNAPSHOT_KEPT` | routine records arrived during the run; it was kept as the investigation of its snapshot (`diagnosis.as_of`) |
+| audit `CLAIM_RELEASED` naming a material change, `previous_run.superseded: true` | a material change during the run; the case is queued again |
+| audit `REINVESTIGATION_QUEUED` | a new standing symptom, or material evidence, after a finished run |
+| `degraded[].kind` `snapshot_superseded`, `AUTH-15-superseded-snapshot` | material changes during three attempts in a row; the case went to a person |
+
+A requeued case waits a quiet interval of 2 simulated hours after its previous run before the worker investigates it
+again: 12 real seconds at speed 600, 24 at 300, 2 minutes at 60. Set `SUHAIL_REINVESTIGATION_QUIET_SECONDS` in the
+server's environment to change it (`0` disables it). A named case, a manual worker step and an operator's re-analysis
+request are not delayed, and the interval does not apply while the simulation is paused, so the worker still catches
+up after the pre-roll of `scripts/world_demo_session.py`.
+
+Still as before: approving a recommendation, and dispatching an authorized action, are refused with
+`AUTH-20-approval-context-stale` when any record was ingested after the recommendation's snapshot, and the case is
+investigated again. At speed 600 that includes records that arrived while the investigation ran, so an automatic
+action or an approval that follows such a run is refused and the case investigated again, at most twice before it
+goes to a person (`--live-speed 300` halves the simulated time a run spans).
 
 Never set a truth-label root for the server. `GET /worker/status` → `execution.adapter` says which adapter is attached:
 `world_operational_simulator`, or `none`.

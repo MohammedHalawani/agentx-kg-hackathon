@@ -8,7 +8,7 @@ no field holds truth, gold or scenario data, and no chain-of-thought is requeste
 
 | Call | Shape | Notes |
 | --- | --- | --- |
-| `OperationsStore.process_one(case_id=None, *, manual=False)` | returns `{processed, case_id, workflow_state, state_version, run_id, mode, afl, outcome}` or `{processed: False, ...}` | Claims one `OPEN`/`REOPENED` case, runs the graph at the store's clock (the evidence snapshot) and writes the run. `{processed: False, reason: "snapshot_changed"}` means new evidence arrived during the run and the case was requeued (at most twice). |
+| `OperationsStore.process_one(case_id=None, *, manual=False)` | returns `{processed, case_id, workflow_state, state_version, run_id, mode, afl, outcome}` or `{processed: False, ...}` | Claims one `OPEN`/`REOPENED` case, runs the graph at the store's clock (the evidence snapshot) and writes the run. `{processed: False, reason: "snapshot_changed", material: [...]}` means a material change happened during the run and the case was requeued (at most twice; see "When an investigation is superseded"). Routine new records do not requeue it. Without `case_id` and `manual`, and while the simulation is running, a case inside its quiet interval is passed over. |
 | `graph.investigate(shipment_id, as_of, config, retrieve, precedents, *, commit=None, on_event=None, agents=None, live_session=False, symptoms=(), heartbeats=None, port=None, disabled_tools=(), call_cap=None)` | returns `(analysis, disposition)` | `port` is `OperationsReader.fetch` (the fixed cross-shipment queries) or `None`; `disabled_tools` and `call_cap` are the evaluation switches below. |
 | `investigator.investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, review=None, prefetch=None, on_repair=None, repair=None)` | returns the investigation dict (section 3) | One round of the tool loop. `session` (an `investigator.Session`) carries the conversation and the model-call budget across rounds; without it the call is a self-contained investigation with its own budget. `review` is the previous review in a revision round. |
 | `investigator.review(conclusion, records, checks, symptoms, *, ask=None, context=None, session=None, on_repair=None, repair=None)` | returns `{verdict, feedback, unsupported_claims, unaddressed_contradictions, alternatives_tested, mode, degraded, validation_error}` | `verdict` is `ACCEPT`, `REVISE`, `INSUFFICIENT_EVIDENCE`, `HUMAN_REVIEW`, `ESCALATE`, or `UNAVAILABLE` when the reviewer failed (fail closed). `context` is built by `checks.review_context`. |
@@ -43,11 +43,61 @@ While a re-investigation is queued (`OPEN`, `REOPENED`) `run` is `null` and the 
 (see `case-detail.md`). `run.status` is `RUNNING` while the graph executes, `REVIEWED` when the run was written
 back and `ABORTED` when it was not (snapshot changed).
 
-The monitor queues a re-investigation when a standing or human-floor symptom is added to a case that was already
-investigated and is in `RECOMMENDATION_READY`, `AWAITING_APPROVAL`, `HUMAN_REVIEW`, `NEEDS_EVIDENCE` or `ESCALATED`
-(at most twice per case). A case in `ACTION_INITIATED` or `AWAITING_OUTCOME` is never requeued this way: the dispatch
-recheck refuses an action whose context changed, and an executed action is always verified, its outcome recorded, and
-the case sent to a person when such a symptom is recorded or still visible.
+### When an investigation is superseded
+
+An investigation is superseded and run again only on a material change. A routine new record for the shipment (the next
+scan, a GPS fix, a status event) is not one, whether it lands during the run or after it. This is the monitor's and the
+worker's policy for every dataset; there is no option to turn it off. The rules are in `operations/materiality.py` and
+are deterministic (visible evidence only, no model).
+
+| `reason` | Material change |
+| --- | --- |
+| `symptoms_changed` | The case's symptom set differs from the one the run started with (`added`, `cleared`). The monitor only adds symptoms to an open case, so `cleared` is empty today. |
+| `finding_added` | The new records add a monitor finding (`codes`) that the same evidence without them does not show at the same clock. |
+| `finding_cleared` | The new records clear a finding the investigation saw at its snapshot and that would still stand without them (the expected observation arrived). |
+| `late_upload` | A new observation that happened more than the normal upload allowance (900 s) before the investigation's snapshot and was not visible at it: the conclusion was reached without an observation from the period it examined. This is the late upload of an observation the conclusion calls missing. `missing_evidence` is model prose and is not parsed. |
+| `cited_record_superseded` | A new record whose `supersedes_id` is a record the conclusion cites. |
+| `cited_record_new_version` | A new record that carries `version` and is of the same kind as a record the conclusion cites. |
+| `case_record_changed` | During a run only: the case record changed in a way evidence ingestion does not account for. Treated as material. |
+
+Cited records are every `...evidence_ids` list in `investigation`, `proposal` and `result.diagnoses`.
+
+During a run. Every ingested record still advances the case (`as_of`, `state_version`, audit `EVIDENCE_INGESTED`).
+When the run is written back the records that arrived since its snapshot are checked:
+
+- none is material: the run is written and kept. It is the investigation of its snapshot (`investigation_log.snapshot_as_of`,
+  `diagnosis.as_of`); the audit trail has `SNAPSHOT_KEPT` with the number of records and the snapshot time.
+- a material change: the run is `ABORTED`, the case goes back to `OPEN` (audit `CLAIM_RELEASED`, which names the
+  change) and `process_one` returns `reason: "snapshot_changed"` with `material`. At most twice per case.
+- a material change on the third attempt: the run is written but never acted on. `authority.rule_id` is
+  `AUTH-15-superseded-snapshot`, the case goes to `HUMAN_REVIEW` (a rejected or evidence-less result keeps `ESCALATED`
+  or `NEEDS_EVIDENCE`), and `degraded[]` carries `{role: "snapshot", error: "evidence changed during investigation", kind: "snapshot_superseded"}`.
+
+After a run. The monitor checks each record ingested after a finished investigation once, against that investigation
+(`investigated_as_of`, the cited records). A material one queues a re-investigation of a case in `RECOMMENDATION_READY`,
+`AWAITING_APPROVAL`, `HUMAN_REVIEW`, `NEEDS_EVIDENCE` or `ESCALATED` (audit `REINVESTIGATION_QUEUED`, key `evidence:<time>`),
+at most twice per case; after that the case stays where it is (audit `REINVESTIGATION_LIMIT`). The monitor also queues
+a re-investigation when a standing or human-floor symptom is added to such a case (at most twice per case), as before.
+A case in `ACTION_INITIATED` or `AWAITING_OUTCOME` is never requeued either way: the dispatch recheck refuses an action
+whose context changed, and an executed action is always verified, its outcome recorded, and the case sent to a person
+when such a symptom is recorded or still visible.
+
+Quiet interval. After a run finishes, and after a run released for a material change, the worker starts no automatic
+investigation of the same case for 2 simulated hours (`quiet_until` on the case). The case stays queued (`OPEN`) meanwhile.
+
+| Setting | Where | Effect |
+| --- | --- | --- |
+| Quiet interval | `store.reinvestigation_quiet_seconds` (int or `None`); default from `SUHAIL_REINVESTIGATION_QUIET_SECONDS`, else `7200` | Simulated seconds. `0` disables it. Read when a run finishes. |
+
+Not delayed: `process_one(case_id=...)`, `process_one(manual=True)` (the worker step control), an operator's
+re-analysis request, which clears `quiet_until`, and any case while the simulation is paused (the interval is simulated
+time and could not pass; nothing new can arrive either).
+
+Unchanged: the approval recheck and the dispatch recheck (`AUTH-20-approval-context-stale`). Their context still
+includes the evidence count, the latest evidence time and the case version, so any record ingested after a
+recommendation's snapshot, routine or not, makes its approval or its dispatch stale and sends the case back for
+re-investigation (bounded as before). A run kept with routine records that arrived during it therefore still cannot
+be approved or dispatched without a renewed investigation.
 
 | `run.result` field | Meaning |
 | --- | --- |
@@ -58,7 +108,7 @@ the case sent to a person when such a symptom is recorded or still visible.
 | `proposal` | The recommended catalogue action as a proposal (`action_type`, `evidence_ids`, `target`), or `null`. |
 | `checks` | The deterministic checks of the last round: `checks[]`, `rule_codes`, `unsupported`, `sensitive`, `contractor_custody`, `alternative_recorded`, and `citations` (the citation summary without per-id rows). |
 | `authority` | The deterministic authority decision: `risk_class`, `reason`, `rule_id`, `action_type`, `closure`, `inputs`. |
-| `degraded[]` | Failed model roles: `{role, error, kind}` with `kind` one of `model_unavailable`, `invalid_model_output`, `model_call_cap`, `turn_budget_exhausted` (the investigator used every turn of the round without a valid conclusion; reported as `invalid_model_output` before stage 4). |
+| `degraded[]` | Failed model roles: `{role, error, kind}` with `kind` one of `model_unavailable`, `invalid_model_output`, `model_call_cap`, `turn_budget_exhausted` (the investigator used every turn of the round without a valid conclusion; reported as `invalid_model_output` before stage 4). One entry is not a model role: `{role: "snapshot", error: "evidence changed during investigation", kind: "snapshot_superseded"}`, a material change during the third attempt (`AUTH-15-superseded-snapshot`); it had no `kind` before this change. |
 | `investigation_log` | The per-round log (section 4). `null` for a rules-only run. |
 | `pipeline_events[]` | Stage events as they happened (each tool call is a `classify` `RUNNING` event). |
 | `result` | Case result fields derived from the conclusion (`diagnoses`, `assessment.supported_codes`, `workflow_state`). |
