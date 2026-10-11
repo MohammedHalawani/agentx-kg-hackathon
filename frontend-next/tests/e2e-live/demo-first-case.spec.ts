@@ -54,7 +54,7 @@ test("Every stage of a completed lifecycle is displayed as the backend recorded 
     ).toBeVisible();
     await page.getByRole("button", { name: /^Outcome ·/ }).click();
     await expect(page.locator(".pipeline-stage-summary")).toContainText(
-      "No independently verified outcome is recorded.",
+      /No independently verified outcome is recorded|Waiting for evidence that it worked/,
     );
     await page.screenshot({ path: shot(`awaiting-${detail.shipment_id}`), fullPage: true });
     await page.getByRole("button", { name: "Case details" }).click();
@@ -74,7 +74,7 @@ test("Every stage of a completed lifecycle is displayed as the backend recorded 
   await page.getByRole("button", { name: /^Outcome ·/ }).click();
   await expect(page.locator(".pipeline-stage-summary")).toContainText(outcome.reason);
   await page.getByRole("button", { name: /^Review ·/ }).click();
-  await expect(page.locator(".pipeline-stage-summary")).toContainText("Reviewer verdict");
+  await expect(page.locator(".pipeline-stage-summary")).toContainText(/reviewer/i);
   await page.screenshot({ path: shot("rail") });
 
   // The assessment: investigation steps, review, authority, execution, verification.

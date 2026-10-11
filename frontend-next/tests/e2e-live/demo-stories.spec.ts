@@ -43,6 +43,21 @@ for (const id of CASES)
     await expect(page.locator(".app-error")).toHaveCount(0);
     await expect(page.locator(".case-heading")).toContainText(LABEL[detail.workflow_state]);
 
+    // Why the case is unresolved and what it needs next, exactly as the backend states it.
+    const next = detail.next_step;
+    if (next && !next.resolved) {
+      const panel = page.getByTestId("next-step");
+      await expect(panel).toContainText(next.text_en);
+      if (next.blocked_by?.rule_id) await expect(panel).toContainText(next.blocked_by.rule_id);
+      for (const item of next.missing_evidence ?? []) await expect(panel).toContainText(item);
+    } else await expect(page.getByTestId("next-step")).toHaveCount(0);
+    // The graph opens focused: fewer nodes than the records it draws from, all of them real.
+    await expect(
+      page.getByTestId("knowledge-graph").locator(".entity-node").first(),
+    ).toBeVisible({ timeout: 30000 });
+    const drawn = await page.getByTestId("knowledge-graph").locator(".entity-node").count();
+    expect(drawn).toBeGreaterThan(3);
+    expect(drawn).toBeLessThanOrEqual(40);
     const context = page.locator(".case-context");
     // An accepted finding is the agent's, unverified; without one, only what the monitor saw.
     await expect(page.getByTestId("context-source")).toContainText(

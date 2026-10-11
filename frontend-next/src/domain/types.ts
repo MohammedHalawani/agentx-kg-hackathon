@@ -62,6 +62,8 @@ export interface GraphNode {
   occurredAt?: string;
   /** Backend evidence: the Neo4j label this node was served with. */
   sourceKind?: string;
+  /** Backend evidence: a record the diagnosis, recommendation, rule checks or outcome cite. */
+  cited?: boolean;
 }
 export interface GraphRelationship {
   id: string;
@@ -288,6 +290,30 @@ export interface BackendCaseState {
     verifiedAt: string | null;
   };
   /** Until when the verifier waits for evidence of the executed action. */
+  /** The backend's statement of why the case is unresolved and what it needs next. */
+  nextStep?: {
+    code: string;
+    actor: string;
+    text: string;
+    textAr: string;
+    resolved: boolean;
+    blockedBy: {
+      ruleId: string;
+      reason: string;
+      reviewVerdict: string | null;
+      reviewFeedback: string | null;
+    } | null;
+    missingEvidence: string[];
+    attempted: {
+      actionType: string;
+      authority: string;
+      status: string;
+      verificationStatus: string | null;
+      success: boolean | null;
+      exceptionCleared: boolean | null;
+      reason: string | null;
+    }[];
+  } | null;
   /** An outcome recorded for an earlier action of this case, superseded by a later cycle. */
   earlierOutcome?: { reason: string; success: boolean } | null;
   verificationDeadline?: string | null;

@@ -145,7 +145,17 @@ function Navigation() {
               onClick={closeMobile}
               aria-label="Suhail"
             >
-              <img src={asset("suhail-logo.png")} alt="Suhail" />
+              <img
+                className="brand-full"
+                src={asset("suhail-logo.png")}
+                alt="Suhail"
+              />
+              <img
+                className="brand-star"
+                src={asset("suhail-star.png")}
+                alt=""
+                aria-hidden="true"
+              />
             </Link>
           ) : (
             <>

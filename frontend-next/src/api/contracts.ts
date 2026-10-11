@@ -269,7 +269,36 @@ export interface ApiDecisionRecord {
   occurred_at?: string;
   actor_id?: string;
 }
+/** What an unresolved case needs next, computed by the backend from recorded fields only. */
+export interface ApiNextStep {
+  code: string;
+  actor: "none" | "system" | "operator" | string;
+  text_en?: string;
+  text_ar?: string;
+  resolved?: boolean;
+  blocked_by?: {
+    rule_id?: string | null;
+    reason?: string | null;
+    risk_class?: string | null;
+    review_verdict?: string | null;
+    review_feedback?: string | null;
+    approval_rule?: string | null;
+    approval_reason?: string | null;
+  } | null;
+  missing_evidence?: string[];
+  attempted?: {
+    action_type?: string;
+    authority?: string;
+    status?: string;
+    verification_status?: string | null;
+    success?: boolean | null;
+    outcome_type?: string | null;
+    exception_cleared?: boolean | null;
+    reason?: string | null;
+  }[];
+}
 export interface ApiCaseDetail {
+  next_step?: ApiNextStep | null;
   case_id: string;
   shipment_id: string;
   workflow_state: WorkflowState;

@@ -59,7 +59,7 @@ the search box on Operations, or press Ctrl+K.
 | What to look at | Shipment | What happened |
 | --- | --- | --- |
 | A successful, verified resolution | **SYN-SHP-000165** | Barcode mismatch. Reviewer accepted, automatic rescan, the verifier confirmed the barcode now matches. Resolved; it is in the Resolved panel |
-| Approval, for you to try | **SYN-SHP-000104** | With a person under the symptom-floor rule. Its evidence request can be approved from the interface. I left it untouched for you |
+| Approval, for you to try | **SYN-SHP-000104** | With a person under the symptom-floor rule. Its evidence request can be approved from the interface. I left it untouched for you. This session's simulated clock has reached the end of its timeline, so the request is sent but its answer will not arrive: to see an approval through to a verified outcome, start a fresh session (section 1) |
 | Unresolved after an action | **SYN-SHP-000359** | Device sync approved from the interface and delivered. No confirming evidence arrived by the deadline, so it stays with a person |
 | Reviewer did not accept | **SYN-SHP-000232**, **SYN-SHP-000416** | Escalated. Nothing was executed. The investigator's findings are shown labelled as not accepted |
 
@@ -77,7 +77,13 @@ there.
 
 ## 4. An investigation
 
-Open a case. From top to bottom:
+Open a case. Under each pipeline step there is now one short sentence saying what that step
+recorded (for example "Finding: barcode mismatch", "Independent reviewer: accept", "Verifier
+confirmed the fix"). On a case that is not resolved, a panel under the pipeline says what you need
+to do, why Suhail did not resolve it automatically, what evidence is missing and what was already
+attempted, all taken from the backend's records.
+
+From top to bottom:
 
 1. **Header**: shipment id, state (for example "Human investigation", "Verifying outcome",
    "Resolved"), origin and destination.
@@ -121,14 +127,23 @@ Check: a vehicle position is labelled as vehicle only. It is never shown as wher
 
 ## 7. The knowledge graph
 
-In **Knowledge graph**:
+In **Knowledge graph** (use **Graph focus** above the workspace for a large view):
 
-1. Drag to move, scroll to zoom. **Force** and **Tree** change the layout.
-2. Click a node to see the record. **Evidence path** shows the records the finding rests on.
-3. The header says how many of the recorded nodes are drawn (for example "48 of 107"). The graph
-   is limited so it stays readable.
-4. **Explore** in the sidebar shows the wider graph and, under **Schema**, the node and
-   relationship types.
+1. It opens focused: the shipment in the centre, its packages, the records the finding cites
+   (ringed in purple), and the case's own decision records (case, run, review, recommendation,
+   execution, outcome). The header says how many are shown, for example "22 of 96".
+2. Colours tell record types apart: custody, scans, status and proof, devices, facilities,
+   vehicles and trips, people and organisations. The legend lists the ones on screen.
+3. Click a record to inspect it; the same record is highlighted on the map. A small **+N** on a
+   node, or a double-click, brings in more records connected to it. **All N records** shows the
+   whole set; **Focused view** returns.
+4. **Evidence path** dims everything except the cited records and what links them to the shipment.
+5. **Force** arranges records in rings around the shipment; **Tree** in columns by distance from it.
+6. Drag to move, scroll to zoom. **Explore** in the sidebar shows the wider network and, under
+   **Schema**, the node and relationship types.
+
+Every node and line is a record or relationship read from Neo4j through the backend. Nothing is
+drawn that the backend did not serve.
 
 ## 8. Actions and approvals
 
@@ -176,12 +191,23 @@ You should see one of these, and only the first resolves the case:
 "A receipt is not an outcome" means the request was received, nothing more. **Audit** in the
 sidebar shows the full trail for a case, including the verifier's entry.
 
-## 10. Language and theme
+## 10. Checklist
+
+| Check | Where | Expected |
+| --- | --- | --- |
+| Resolved case | SYN-SHP-000165 | "Resolved"; all eight steps done with their sentences; no "what you need to do" panel; listed in the Resolved panel |
+| Human investigation | SYN-SHP-000104 | "Human investigation"; panel names rule AUTH-14, the missing evidence, "No corrective action has been carried out"; **Review & authorize** offered |
+| After an action | SYN-SHP-000359 | "Human investigation"; panel lists the device sync as approved by an operator, delivered, verified as not successful |
+| Escalated | SYN-SHP-000232, SYN-SHP-000416 | "Escalated"; panel gives the reviewer's objection; no approval offered |
+| Graph | any case, **Graph focus** | Shipment centred, readable labels, +N expands, click highlights the map |
+| Logo | sidebar toggle (top left of the page) | Full logo when open, star alone when collapsed, in light and dark |
+
+## 11. Language and theme
 
 **EN / AR** in the top bar switches the interface to Arabic with right-to-left layout. The moon
 icon switches dark mode. Findings written by the model stay in the language the model wrote.
 
-## 11. Unfinished or unreliable in the interface
+## 12. Unfinished or unreliable in the interface
 
 | Item | What you will notice |
 | --- | --- |
@@ -191,6 +217,8 @@ icon switches dark mode. Findings written by the model stay in the language the 
 | Request evidence, reopen, re-analyse | No buttons for these |
 | Elapsed time | Moves in steps with each backend event, not second by second |
 | Records from other shipments | Counted and tagged "cross-shipment" in the steps, not drawn in the graph |
+| Scans and their devices | A scan names its device and facility inside the record, not as a relationship, so the graph draws no line between them. Devices and facilities appear through custody records |
+| Live narration by Canopus | Not in this build. The step sentences restate recorded fields; the narrated bubbles follow once the backend serves narration |
 | Re-investigation | A case can be investigated again when material new evidence arrives; the page then says "Queued for re-investigation" and an approval offered moments earlier can disappear |
 | First load | The queue takes several seconds to appear after a reload |
 | Model failures | If the model is unavailable or its reply is invalid, the case goes to a person with no diagnosis. This is intended, but it means some cases show no finding |

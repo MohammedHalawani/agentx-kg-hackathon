@@ -251,6 +251,12 @@ describe("backend case detail", () => {
     expect(spent.backend?.investigationLog?.degraded[0]).not.toMatch(/not valid, so nothing/);
     expect(spent.backend?.investigationLog?.rejectedReplies).toEqual(["empty reply"]);
     expect(spent.backend?.timing?.totalSeconds).toBe(90.9);
+    // The backend's next step is carried as stated; nothing is derived in the browser.
+    const held = applyDetail(base, detailA({ workflow_state: "HUMAN_REVIEW", next_step: { code: "INVESTIGATE_AND_RECORD_FINDING", actor: "operator", text_en: "A person must investigate.", text_ar: "", resolved: false, blocked_by: { rule_id: "AUTH-06-evidence-conflict", reason: "Evidence conflicts.", review_verdict: "ACCEPT" }, missing_evidence: ["a later scan"], attempted: [{ action_type: "REQUEST_DEVICE_SYNC", authority: "OPERATOR_APPROVAL", status: "ACKNOWLEDGED", verification_status: "VERIFIED", success: false, reason: "No confirming evidence." }] } }));
+    expect(held.backend?.nextStep?.blockedBy?.ruleId).toBe("AUTH-06-evidence-conflict");
+    expect(held.backend?.nextStep?.missingEvidence).toEqual(["a later scan"]);
+    expect(held.backend?.nextStep?.attempted[0].success).toBe(false);
+    expect(applyDetail(base, detailA()).backend?.nextStep).toBeNull();
     // Evidence that moved during the run is not worded as a model failure.
     const moved = applyDetail(base, detailA({ workflow_state: "HUMAN_REVIEW", run: { ...seed.run!, result: { ...seed.run!.result!, degraded: [{ role: "snapshot", error: "evidence changed during investigation" }] } } }));
     expect(moved.backend?.investigationLog?.degradedKinds).toEqual(["snapshot_changed"]);

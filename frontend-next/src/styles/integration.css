@@ -184,29 +184,63 @@
   min-height: 0;
 }
 
-/* The connected product's logo: the mark alone, proportions kept, legible on both themes. */
-.brand-logo {
-  display: block;
-}
+/* The connected product's logo: the full mark when the sidebar is open, the star alone when it
+   is collapsed. Proportions kept, nothing beside it, legible on both themes. */
 .brand-header:has(.brand-logo) {
-  padding: 20px 25px 8px !important;
+  padding: 16px 22px 6px !important;
+}
+.brand.brand-logo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 46px;
 }
 .brand.brand-logo img {
-  width: 76px;
-  height: auto;
-  max-width: 100%;
   display: block;
+  height: auto;
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+.brand.brand-logo .brand-full {
+  /* Fitted, never stretched: bounded by height and by the sidebar's width. */
+  width: auto;
+  max-height: 46px;
+  max-width: 100%;
+  object-fit: contain;
+}
+.brand.brand-logo .brand-star {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 26px;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.6);
+  pointer-events: none;
 }
 .dark .brand.brand-logo img {
-  /* The asset is black ink on transparency; inverted it reads as white ink, with no box. */
+  /* The assets are black ink on transparency; inverted they read as white ink, with no box. */
   filter: invert(1);
 }
 [data-state="collapsed"] .brand-header:has(.brand-logo) {
-  padding: 20px 14px 8px !important;
+  padding: 16px 0 6px !important;
+  align-items: center;
 }
-[data-state="collapsed"] .brand.brand-logo img {
-  width: 30px;
+[data-state="collapsed"] .brand.brand-logo {
+  width: 100%;
+  justify-content: center;
+}
+[data-state="collapsed"] .brand.brand-logo .brand-full {
+  opacity: 0;
+  max-width: 0;
+  transform: scale(0.6);
+}
+[data-state="collapsed"] .brand.brand-logo .brand-star {
+  opacity: 1;
+  width: 26px;
   height: auto;
+  object-fit: contain;
+  transform: translate(-50%, -50%) scale(1);
 }
 .workspace-selector[hidden] {
   display: none;
@@ -218,4 +252,309 @@
 .investigation-steps li > div {
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+/* Knowledge graph: a focused, shipment-centred picture of real records. */
+.evidence-split {
+  --evidence-height: 560px;
+}
+.graph-panel .entity-node {
+  width: 112px;
+  gap: 6px;
+  --node: var(--primary);
+  --node-soft: var(--accent);
+  color: var(--node);
+}
+.graph-panel .node-circle {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  /* Opaque, so relationship lines end at the circle's edge. */
+  background: color-mix(in srgb, var(--node-soft) 100%, var(--card));
+  border: 1.6px solid color-mix(in srgb, var(--node) 55%, transparent);
+  box-shadow: 0 1px 3px #1926380f;
+}
+.graph-panel .node-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 11px;
+  line-height: 1.25;
+  max-width: 112px;
+  padding: 1px 5px 2px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  color: var(--foreground);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.graph-panel .node-label small {
+  font-size: 9px;
+  color: var(--muted-foreground);
+}
+.graph-panel .entity-node .react-flow__handle {
+  top: 22px;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+}
+.graph-panel .category-shipment .node-circle {
+  width: 58px;
+  height: 58px;
+  margin-top: -7px;
+  background: var(--primary);
+  color: var(--primary-foreground, #fff);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--primary) 14%, transparent);
+}
+.graph-panel .category-shipment .node-label {
+  font-weight: 600;
+  font-size: 12px;
+}
+.graph-panel .category-package {
+  --node: #7b61c5;
+  --node-soft: var(--accent);
+}
+.graph-panel .category-custody {
+  --node: #3f7fb8;
+  --node-soft: #e8f1fa;
+}
+.graph-panel .category-scan {
+  --node: #2f9a94;
+  --node-soft: #e4f4f2;
+}
+.graph-panel .category-status,
+.graph-panel .category-attempt,
+.graph-panel .category-proof,
+.graph-panel .category-message,
+.graph-panel .category-position {
+  --node: #6b7488;
+  --node-soft: #eef0f4;
+}
+.graph-panel .category-device {
+  --node: #c0558f;
+  --node-soft: #fbeaf3;
+}
+.graph-panel .category-facility {
+  --node: #3d9462;
+  --node-soft: #e7f4ec;
+}
+.graph-panel .category-vehicle,
+.graph-panel .category-transport {
+  --node: #c58a2b;
+  --node-soft: #fbf2df;
+}
+.graph-panel .category-person,
+.graph-panel .category-organisation {
+  --node: #c96a45;
+  --node-soft: #fbece5;
+}
+.graph-panel .category-recommendation,
+.graph-panel .category-outcome {
+  --node: #5b54c9;
+  --node-soft: #ebeafb;
+}
+.graph-panel .category-recommendation .node-circle {
+  border-style: dashed;
+}
+.dark .graph-panel .category-custody { --node: #7fb4e6; --node-soft: #1f3247; }
+.dark .graph-panel .category-scan { --node: #6fd0c9; --node-soft: #1c3836; }
+.dark .graph-panel .category-status,
+.dark .graph-panel .category-attempt,
+.dark .graph-panel .category-proof,
+.dark .graph-panel .category-message,
+.dark .graph-panel .category-position { --node: #aab2c5; --node-soft: #2a2f3c; }
+.dark .graph-panel .category-device { --node: #ec8fc0; --node-soft: #40243a; }
+.dark .graph-panel .category-facility { --node: #7fcf9f; --node-soft: #213a2c; }
+.dark .graph-panel .category-vehicle,
+.dark .graph-panel .category-transport { --node: #e6b869; --node-soft: #3d3220; }
+.dark .graph-panel .category-person,
+.dark .graph-panel .category-organisation { --node: #eb9a7a; --node-soft: #41291f; }
+.dark .graph-panel .category-recommendation,
+.dark .graph-panel .category-outcome { --node: #a09af0; --node-soft: #2a2950; }
+.dark .graph-panel .category-package { --node: #b5a2ea; }
+/* The cited evidence path stands out; the selection stands out more. */
+.graph-panel .evidence-path .node-circle {
+  box-shadow: 0 0 0 3px var(--card), 0 0 0 5.5px #8b6ccb;
+}
+.graph-panel .evidence-selected .node-circle {
+  box-shadow: 0 0 0 3px var(--card), 0 0 0 7px var(--primary);
+  border-color: var(--primary);
+}
+.graph-panel .evidence-focus .node-label {
+  color: var(--primary);
+}
+.graph-panel .entity-node.dimmed {
+  opacity: 0.16;
+}
+.graph-panel .node-more {
+  position: absolute;
+  top: -7px;
+  right: -12px;
+  min-width: 22px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted-foreground);
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 15px;
+  cursor: pointer;
+}
+.graph-panel .node-more:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+.graph-legend {
+  gap: 11px;
+}
+.graph-legend .dot {
+  width: 7px;
+  height: 7px;
+}
+.category-dot-shipment { background: var(--primary); }
+.category-dot-custody { background: #3f7fb8; }
+.category-dot-scan { background: #2f9a94; }
+.category-dot-status { background: #6b7488; }
+.category-dot-device { background: #c0558f; }
+.category-dot-facility { background: #3d9462; }
+.category-dot-vehicle { background: #c58a2b; }
+.category-dot-person { background: #c96a45; }
+.category-dot-outcome { background: #5b54c9; }
+.graph-legend .dot.ring {
+  background: transparent;
+  box-shadow: 0 0 0 2px #8b6ccb;
+}
+
+/* Why a case is unresolved and what it needs next (the backend's next_step record). */
+.next-step {
+  margin-top: 14px;
+  padding: 14px 18px 12px;
+}
+.next-step small {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+  letter-spacing: 0.7px;
+  color: var(--muted-foreground);
+  margin-bottom: 4px;
+}
+.next-step-action {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--primary);
+}
+.next-step-action p {
+  color: var(--foreground);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+.next-step-facts {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1.2fr;
+  gap: 22px;
+  padding-top: 12px;
+}
+.next-step-facts p,
+.next-step-facts li {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+.next-step-facts p + p {
+  margin-top: 5px;
+  color: var(--muted-foreground);
+}
+.next-step-facts ul {
+  margin: 0;
+  padding-inline-start: 15px;
+  list-style: disc;
+}
+.next-step-facts b {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.next-step-rule {
+  font-size: 10px;
+  color: var(--muted-foreground);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0 5px;
+  white-space: nowrap;
+}
+.next-step-note {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 10px;
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+@media (max-width: 1100px) {
+  .next-step-facts {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+/* Pipeline explanation layer: one short sentence under each step that has run or is running. */
+.pipeline-stages:has(.explained) {
+  align-items: stretch;
+  gap: 8px;
+}
+.pipeline-stages:has(.explained) > button {
+  height: auto;
+  min-height: 76px;
+  align-items: flex-start;
+  padding: 8px 8px 9px;
+  white-space: normal;
+  min-width: 0;
+}
+.pipeline-stages:has(.explained) > button > span:last-child {
+  min-width: 0;
+  flex: 1;
+}
+.pipeline-stages:has(.explained) > button:not(:last-child)::after {
+  top: 17px;
+}
+.stage-explain {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  margin-top: 5px;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 9.5px;
+  line-height: 1.35;
+  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
+}
+.pipeline-step.state-running .stage-explain {
+  color: var(--primary);
+}
+.pipeline-step.state-failed .stage-explain {
+  color: var(--danger);
+}
+.pipeline-step.selected .stage-explain {
+  color: var(--foreground);
+}
+@media (max-width: 1100px) {
+  .stage-explain {
+    display: none;
+  }
 }

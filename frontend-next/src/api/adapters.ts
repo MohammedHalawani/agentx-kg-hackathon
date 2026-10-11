@@ -308,7 +308,7 @@ const OBSERVATION_RANK: Record<string, number> = {
   CommunicationEvent: 1,
 };
 /** How many of a case's recorded nodes the graph draws (cited evidence first). The total is always stated. */
-export const GRAPH_LIMIT = 48;
+export const GRAPH_LIMIT = 96;
 
 function graphKind(kind: string): GraphNode["kind"] | null {
   if (kind === "Shipment") return "shipment";
@@ -323,6 +323,9 @@ function graphKind(kind: string): GraphNode["kind"] | null {
   // Scanners and driver apps are where observations come from; drawn with the observations.
   if (kind === "Device") return "observation";
   if (kind === "OpsRecommendation") return "recommendation";
+  // The case's own ledger records: they tie the recommendation and outcome to the shipment.
+  if (["OpsCase", "OpsRun", "OpsReview", "OpsExecution"].includes(kind))
+    return "recommendation";
   if (kind === "OpsOutcome") return "outcome";
   return null;
 }
@@ -349,6 +352,13 @@ function nodeLabel(node: ApiEvidenceNode) {
     return text(p.action_en) || text(p.action) || "Recommendation";
   if (kind === "OpsOutcome")
     return `Outcome · ${humanize(text(p.verification_status)) || "recorded"}`;
+  if (kind === "OpsCase")
+    return `Case · ${humanize(text(p.workflow_state)) || "recorded"}`;
+  if (kind === "OpsRun") return "Investigation run";
+  if (kind === "OpsReview")
+    return `Review · ${humanize(text(p.verdict)) || "recorded"}`;
+  if (kind === "OpsExecution")
+    return `Execution · ${humanize(text(p.status)) || "recorded"}`;
   if (graphKind(kind) === "observation")
     return kind.replace(/([a-z])([A-Z])/g, "$1 $2");
   return shortId(node.id);
@@ -790,11 +800,20 @@ export function applyDetail(
     .filter((item): item is { node: ApiEvidenceNode; kind: GraphNode["kind"] } =>
       item.kind !== null,
     );
+  // What the cited records point at (their facility, device, vehicle, holder): kept with them,
+  // so a cited scan is drawn with where and by what it was recorded.
+  const citedContext = new Set<string>();
+  for (const edge of [...edges, ...ledger.edges]) {
+    if (cited.has(edge.start)) citedContext.add(edge.end);
+    if (cited.has(edge.end)) citedContext.add(edge.start);
+  }
   const rank = ({ node, kind }: (typeof candidates)[number]) => {
     if (kind === "shipment") return 0;
     if (kind === "package") return 1;
     if (kind === "recommendation" || kind === "outcome") return 2;
     if (cited.has(node.id)) return 3;
+    if (citedContext.has(node.id) && node.kind !== "CustodyEvent" && node.kind !== "ScanEvent")
+      return 3.5;
     if (located.has(node.id)) return 4;
     if (kind !== "observation") return 5;
     return 6 + (OBSERVATION_RANK[node.kind] ?? 6);
@@ -816,6 +835,7 @@ export function applyDetail(
     evidenceId: located.has(node.id) ? node.id : undefined,
     occurredAt: text(node.properties.occurred_at) || undefined,
     sourceKind: node.kind,
+    cited: cited.has(node.id) || undefined,
   }));
   const allEdges = [...edges, ...ledger.edges];
   const relationships: GraphRelationship[] = allEdges
@@ -1037,6 +1057,33 @@ export function applyDetail(
           : null,
       verificationDeadline: execution?.deadline_at ?? null,
       expectedResponseAt: execution?.expected_response_at ?? null,
+      nextStep: detail.next_step
+        ? {
+            code: detail.next_step.code,
+            actor: detail.next_step.actor,
+            text: detail.next_step.text_en ?? "",
+            textAr: detail.next_step.text_ar ?? "",
+            resolved: detail.next_step.resolved === true,
+            blockedBy: detail.next_step.blocked_by?.rule_id
+              ? {
+                  ruleId: detail.next_step.blocked_by.rule_id,
+                  reason: detail.next_step.blocked_by.reason ?? "",
+                  reviewVerdict: detail.next_step.blocked_by.review_verdict ?? null,
+                  reviewFeedback: detail.next_step.blocked_by.review_feedback ?? null,
+                }
+              : null,
+            missingEvidence: detail.next_step.missing_evidence ?? [],
+            attempted: (detail.next_step.attempted ?? []).map((item) => ({
+              actionType: item.action_type ?? "",
+              authority: item.authority ?? "",
+              status: item.status ?? "",
+              verificationStatus: item.verification_status ?? null,
+              success: item.success ?? null,
+              exceptionCleared: item.exception_cleared ?? null,
+              reason: item.reason ?? null,
+            })),
+          }
+        : null,
       asOf: detail.as_of,
     },
   };

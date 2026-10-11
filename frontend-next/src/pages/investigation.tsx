@@ -55,6 +55,8 @@ import { StatusBadge, PriorityLabel, EmptyState } from "@/components/shared";
 import { dateTimeLabel, secondsLabel, timeLabel } from "@/lib/dates";
 import { InvestigatorFindings } from "@/components/investigator-findings";
 import { InvestigationRecord } from "@/components/investigation-record";
+import { NextStep } from "@/components/next-step";
+import { explainStage, type StageState } from "@/domain/stage-explain";
 import { HumanOutcomeDialog } from "@/components/human-outcome-dialog";
 import {
   stages,
@@ -291,6 +293,34 @@ export function InvestigationPage() {
           : "destination",
       );
   }
+  /** Where a pipeline step stands, from the backend's recorded run and outcome. */
+  const stageState = (i: number): StageState =>
+    !c.run
+      ? "queued"
+      : // A stage the backend recorded as degraded did not produce its result.
+        i <= c.run.stage && c.backend?.stageStatus?.[i] === "DEGRADED"
+        ? "failed"
+        : c.status === "resolved" || i < c.run.stage
+          ? "completed"
+          : i === c.run.stage
+            ? c.status === "escalated" ||
+              // The authorized action was not carried out.
+              (i === 6 &&
+                !!c.backend &&
+                !!c.execution &&
+                !c.execution.successful) ||
+              // The verifier checked and did not confirm the fix. An action that
+              // worked while the exception remains is not a failed check: it waits.
+              (i === 7 &&
+                !!c.backend?.verification &&
+                !["confirmed", "exception_remains"].includes(
+                  c.backend.verification.result,
+                ))
+              ? "failed"
+              : ["human_review", "needs_evidence"].includes(c.status)
+                ? "waiting"
+                : "running"
+            : "queued";
   return (
     <>
       <Breadcrumb className="mb-4">
@@ -401,15 +431,15 @@ export function InvestigationPage() {
                           "Request delivered · no answer by the deadline · with a person",
                           "سُلّم الطلب · لا إجابة حتى الموعد النهائي · لدى شخص",
                         )
-                    : c.backend.verification.result === "exception_remains"
-                      ? t(
-                          "Action verified · the exception remains · with a person",
-                          "تم التحقق من الإجراء · الاستثناء باقٍ · لدى شخص",
-                        )
-                      : t(
-                          "A person's finding is on record · case still open",
-                          "نتيجة فحص بشري مسجلة · الحالة ما زالت مفتوحة",
-                        )
+                      : c.backend.verification.result === "exception_remains"
+                        ? t(
+                            "Action verified · the exception remains · with a person",
+                            "تم التحقق من الإجراء · الاستثناء باقٍ · لدى شخص",
+                          )
+                        : t(
+                            "A person's finding is on record · case still open",
+                            "نتيجة فحص بشري مسجلة · الحالة ما زالت مفتوحة",
+                          )
                   : c.backend?.investigationLog?.degradedKinds.includes(
                         "turn_budget_exhausted",
                       )
@@ -417,102 +447,113 @@ export function InvestigationPage() {
                         "The investigator reached no conclusion within its turn budget · no diagnosis · with a person",
                         "لم يصل المحقق إلى استنتاج ضمن عدد أدواره · لا تشخيص · لدى شخص",
                       )
-                  : c.backend?.investigationLog?.degradedKinds.includes(
-                        "snapshot_changed",
-                      )
-                    ? t(
-                        "Evidence changed during the investigation · a person must review the latest evidence",
-                        "تغيرت الأدلة أثناء التحقيق · على شخص مراجعة أحدث الأدلة",
-                      )
-                  : c.backend?.investigationLog?.degradedKinds.includes(
-                        "model_unavailable",
-                      ) && !c.backend.diagnosisAvailable
-                    ? t(
-                        "The model was unavailable · no investigation result · with a person",
-                        "النموذج غير متاح · لا نتيجة تحقيق · لدى شخص",
-                      )
-                  : c.backend?.investigationLog?.degraded.length &&
-                      !c.backend.diagnosisAvailable
-                    ? t(
-                        "The model's reply could not be used · no diagnosis · with a person",
-                        "تعذر استخدام رد النموذج · لا تشخيص · لدى شخص",
-                      )
-                  : c.execution && !c.execution.successful
-                    ? t(
-                        "The request could not be delivered · nothing carried out · with a person",
-                        "تعذر تسليم الطلب · لم يُنفذ شيء · لدى شخص",
-                      )
-                  : c.backend?.workflowState === "HUMAN_REVIEW"
-                  ? c.backend.authority?.ruleId
-                    ? t(
-                        `Routed to a person by policy rule ${c.backend.authority.ruleId} · the agent's finding is not verified`,
-                        `أُحيلت إلى شخص بقاعدة السياسة ${c.backend.authority.ruleId} · استنتاج الوكيل غير متحقق منه`,
-                      )
-                    : t(
-                        "Waiting for a person to investigate",
-                        "بانتظار تحقيق بشري",
-                      )
-                  : c.status === "human_review"
-                    ? t(
-                        "Waiting for operator authority",
-                        "بانتظار صلاحية المشغل",
-                      )
-                    : c.status === "needs_evidence"
-                      ? t(
-                          "Blocked · independent evidence needed",
-                          "متوقف · يحتاج أدلة مستقلة",
+                    : c.backend?.investigationLog?.degradedKinds.includes(
+                          "snapshot_changed",
                         )
-                      : c.status === "escalated"
+                      ? t(
+                          "Evidence changed during the investigation · a person must review the latest evidence",
+                          "تغيرت الأدلة أثناء التحقيق · على شخص مراجعة أحدث الأدلة",
+                        )
+                      : c.backend?.investigationLog?.degradedKinds.includes(
+                            "model_unavailable",
+                          ) && !c.backend.diagnosisAvailable
                         ? t(
-                            "Escalated · manual follow-up",
-                            "تم التصعيد · متابعة بشرية",
+                            "The model was unavailable · no investigation result · with a person",
+                            "النموذج غير متاح · لا نتيجة تحقيق · لدى شخص",
                           )
-                        : c.backend?.supersededRunId && c.status === "queued"
+                        : c.backend?.investigationLog?.degraded.length &&
+                            !c.backend.diagnosisAvailable
                           ? t(
-                              "Queued for re-investigation · the earlier run is superseded",
-                              "في انتظار إعادة التحقيق · التحقيق السابق لم يعد سارياً",
+                              "The model's reply could not be used · no diagnosis · with a person",
+                              "تعذر استخدام رد النموذج · لا تشخيص · لدى شخص",
                             )
-                          : c.run
-                            ? backend
-                              ? c.status === "investigating"
-                                ? `${
-                                    c.backend?.repairing
-                                      ? t(
-                                          "Model reply invalid, retrying · no diagnosis is substituted",
-                                          "رد النموذج غير صالح، إعادة المحاولة · لا يُستبدل تشخيص",
-                                        )
-                                      : t("Investigation in progress", "التحقيق جارٍ")
-                                  }${
-                                    c.backend?.stageElapsed?.[c.run.stage] !== undefined
-                                      ? ` · ${secondsLabel(c.backend.stageElapsed[c.run.stage])}`
-                                      : ""
-                                  }`
-                                : c.status === "verifying"
-                                  ? c.backend?.expectedResponseAt
+                          : c.execution && !c.execution.successful
+                            ? t(
+                                "The request could not be delivered · nothing carried out · with a person",
+                                "تعذر تسليم الطلب · لم يُنفذ شيء · لدى شخص",
+                              )
+                            : c.backend?.workflowState === "HUMAN_REVIEW"
+                              ? c.backend.authority?.ruleId
+                                ? t(
+                                    `Routed to a person by policy rule ${c.backend.authority.ruleId} · the agent's finding is not verified`,
+                                    `أُحيلت إلى شخص بقاعدة السياسة ${c.backend.authority.ruleId} · استنتاج الوكيل غير متحقق منه`,
+                                  )
+                                : t(
+                                    "Waiting for a person to investigate",
+                                    "بانتظار تحقيق بشري",
+                                  )
+                              : c.status === "human_review"
+                                ? t(
+                                    "Waiting for operator authority",
+                                    "بانتظار صلاحية المشغل",
+                                  )
+                                : c.status === "needs_evidence"
+                                  ? t(
+                                      "Blocked · independent evidence needed",
+                                      "متوقف · يحتاج أدلة مستقلة",
+                                    )
+                                  : c.status === "escalated"
                                     ? t(
-                                        `Request delivered · an answer is scheduled for ${dateTimeLabel(c.backend.expectedResponseAt)}`,
-                                        `سُلّم الطلب · إجابة مجدولة عند ${dateTimeLabel(c.backend.expectedResponseAt)}`,
+                                        "Escalated · manual follow-up",
+                                        "تم التصعيد · متابعة بشرية",
                                       )
-                                    : c.backend?.verificationDeadline
+                                    : c.backend?.supersededRunId &&
+                                        c.status === "queued"
                                       ? t(
-                                          `Request delivered · answer expected by ${dateTimeLabel(c.backend.verificationDeadline)}`,
-                                          `سُلّم الطلب · الإجابة متوقعة قبل ${dateTimeLabel(c.backend.verificationDeadline)}`,
+                                          "Queued for re-investigation · the earlier run is superseded",
+                                          "في انتظار إعادة التحقيق · التحقيق السابق لم يعد سارياً",
                                         )
-                                      : t(
-                                          "Executed · awaiting independent verification",
-                                          "نُفذ · بانتظار التحقق المستقل",
-                                        )
-                                  : c.backend?.timing?.totalSeconds != null
-                                    ? t(
-                                        `Recorded run · investigated in ${secondsLabel(c.backend.timing.totalSeconds)}`,
-                                        `تحقيق مسجل · استغرق ${secondsLabel(c.backend.timing.totalSeconds)}`,
-                                      )
-                                    : t("Recorded run", "تحقيق مسجل")
-                              : t(
-                                  "Simulated run in progress",
-                                  "تحقيق محاكى جارٍ",
-                                )
-                            : t("Queued", "في الانتظار")}
+                                      : c.run
+                                        ? backend
+                                          ? c.status === "investigating"
+                                            ? `${
+                                                c.backend?.repairing
+                                                  ? t(
+                                                      "Model reply invalid, retrying · no diagnosis is substituted",
+                                                      "رد النموذج غير صالح، إعادة المحاولة · لا يُستبدل تشخيص",
+                                                    )
+                                                  : t(
+                                                      "Investigation in progress",
+                                                      "التحقيق جارٍ",
+                                                    )
+                                              }${
+                                                c.backend?.stageElapsed?.[
+                                                  c.run.stage
+                                                ] !== undefined
+                                                  ? ` · ${secondsLabel(c.backend.stageElapsed[c.run.stage])}`
+                                                  : ""
+                                              }`
+                                            : c.status === "verifying"
+                                              ? c.backend?.expectedResponseAt
+                                                ? t(
+                                                    `Request delivered · an answer is scheduled for ${dateTimeLabel(c.backend.expectedResponseAt)}`,
+                                                    `سُلّم الطلب · إجابة مجدولة عند ${dateTimeLabel(c.backend.expectedResponseAt)}`,
+                                                  )
+                                                : c.backend
+                                                      ?.verificationDeadline
+                                                  ? t(
+                                                      `Request delivered · answer expected by ${dateTimeLabel(c.backend.verificationDeadline)}`,
+                                                      `سُلّم الطلب · الإجابة متوقعة قبل ${dateTimeLabel(c.backend.verificationDeadline)}`,
+                                                    )
+                                                  : t(
+                                                      "Executed · awaiting independent verification",
+                                                      "نُفذ · بانتظار التحقق المستقل",
+                                                    )
+                                              : c.backend?.timing
+                                                    ?.totalSeconds != null
+                                                ? t(
+                                                    `Recorded run · investigated in ${secondsLabel(c.backend.timing.totalSeconds)}`,
+                                                    `تحقيق مسجل · استغرق ${secondsLabel(c.backend.timing.totalSeconds)}`,
+                                                  )
+                                                : t(
+                                                    "Recorded run",
+                                                    "تحقيق مسجل",
+                                                  )
+                                          : t(
+                                              "Simulated run in progress",
+                                              "تحقيق محاكى جارٍ",
+                                            )
+                                        : t("Queued", "في الانتظار")}
           </span>
           {previewStage !== null && (
             <Button
@@ -527,37 +568,17 @@ export function InvestigationPage() {
         </div>
         <div className="pipeline-stages">
           {stages.map((s, i) => {
-            const state = !c.run
-              ? "queued"
-              : // A stage the backend recorded as degraded did not produce its result.
-                i <= c.run.stage && c.backend?.stageStatus?.[i] === "DEGRADED"
-                ? "failed"
-                : c.status === "resolved" || i < c.run.stage
-                ? "completed"
-                : i === c.run.stage
-                  ? c.status === "escalated" ||
-                    // The authorized action was not carried out.
-                    (i === 6 && !!c.backend && !!c.execution && !c.execution.successful) ||
-                    // The verifier checked and did not confirm the fix. An action that
-                    // worked while the exception remains is not a failed check: it waits.
-                    (i === 7 &&
-                      !!c.backend?.verification &&
-                      !["confirmed", "exception_remains"].includes(
-                        c.backend.verification.result,
-                      ))
-                    ? "failed"
-                    : ["human_review", "needs_evidence"].includes(c.status)
-                      ? "waiting"
-                      : "running"
-                  : "queued";
+            const state = stageState(i);
+            // What this step did or is doing, from the case's records where they exist.
+            const explanation = explainStage(c, i, state);
             return (
               <Button
                 variant="ghost"
                 key={s.label}
-                className={`pipeline-step state-${state} ${stage === i ? "selected" : ""}`}
+                className={`pipeline-step state-${state} ${stage === i ? "selected" : ""} ${explanation ? "explained" : ""}`}
                 aria-pressed={stage === i}
                 aria-label={`${s.label} · ${state}`}
-                title={s.detail || undefined}
+                title={explanation?.text || s.detail || undefined}
                 onClick={() => inspectStage(i)}
               >
                 <span className="stage-number">
@@ -594,6 +615,15 @@ export function InvestigationPage() {
                       c.backend?.timing?.stageSeconds[i] !== undefined &&
                       ` · ${secondsLabel(c.backend.timing.stageSeconds[i])}`}
                   </small>
+                  {explanation && (
+                    <em
+                      className="stage-explain"
+                      data-source={explanation.source}
+                      data-testid={`stage-explain-${i}`}
+                    >
+                      {explanation.text}
+                    </em>
+                  )}
                 </span>
               </Button>
             );
@@ -604,7 +634,8 @@ export function InvestigationPage() {
           <b>{t(stages[stage].label, stages[stage].arabic)}</b>
           <span>
             {c.backend
-              ? ((stage === 6 && c.execution ? c.execution.detail : undefined) ??
+              ? (explainStage(c, stage, stageState(stage))?.text ??
+                (stage === 6 && c.execution ? c.execution.detail : undefined) ??
                 c.backend.stageDetail[stage] ??
                 (stage === 7
                   ? (c.outcome?.detail ??
@@ -614,7 +645,8 @@ export function InvestigationPage() {
                     ))
                   : stage === 6 && c.execution
                     ? c.execution.detail
-                    : c.status === "investigating" && stage === (c.run?.stage ?? 0)
+                    : c.status === "investigating" &&
+                        stage === (c.run?.stage ?? 0)
                       ? t("Starting…", "جارٍ البدء…")
                       : t(
                           "No event is recorded for this stage in the current run.",
@@ -628,6 +660,7 @@ export function InvestigationPage() {
           </span>
         </div>
       </section>
+      <NextStep c={c} />
       <div className="workspace-toolbar">
         <div>
           <h2>{t("Evidence workspace", "مساحة الأدلة")}</h2>
@@ -639,8 +672,8 @@ export function InvestigationPage() {
             {c.backend?.graphTotals &&
               c.backend.graphTotals.shown < c.backend.graphTotals.nodes &&
               ` · ${t(
-                `graph shows ${c.backend.graphTotals.shown} of ${c.backend.graphTotals.nodes} recorded nodes`,
-                `يعرض الرسم ${c.backend.graphTotals.shown} من ${c.backend.graphTotals.nodes} عقدة مسجلة`,
+                `graph draws from ${c.backend.graphTotals.shown} of ${c.backend.graphTotals.nodes} recorded nodes, cited evidence first`,
+                `يستند الرسم إلى ${c.backend.graphTotals.shown} من ${c.backend.graphTotals.nodes} عقدة مسجلة، والأدلة المستشهد بها أولاً`,
               )}`}
           </span>
         </div>
@@ -820,10 +853,7 @@ export function InvestigationPage() {
           <span className="context-lab">
             <span className="live-dot" />
             {backend
-              ? t(
-                  "Backend evidence",
-                  "أدلة الخادم",
-                )
+              ? t("Backend evidence", "أدلة الخادم")
               : t("Synthetic evidence", "أدلة محاكاة")}
           </span>
         </aside>
@@ -1073,11 +1103,11 @@ export function InvestigationPage() {
                         {e.label}
                         <small>
                           {e.facility} · {e.time} AST
-                        {e.afterInvestigation &&
-                          ` · ${t(
-                            "recorded after the investigation",
-                            "سُجل بعد التحقيق",
-                          )}`}
+                          {e.afterInvestigation &&
+                            ` · ${t(
+                              "recorded after the investigation",
+                              "سُجل بعد التحقيق",
+                            )}`}
                         </small>
                       </span>
                       {e.confidence === "confirmed" ? (
@@ -1100,7 +1130,10 @@ export function InvestigationPage() {
                 {c.execution?.detail ??
                   t("No action has been executed.", "لم يُنفذ أي إجراء.")}
                 {c.backend?.earlierOutcome && (
-                  <p className="finding-meta mt-3" data-testid="earlier-outcome">
+                  <p
+                    className="finding-meta mt-3"
+                    data-testid="earlier-outcome"
+                  >
                     {t(
                       `An earlier action on this case was checked by the verifier and ${c.backend.earlierOutcome.success ? "confirmed" : "not confirmed"}: ${c.backend.earlierOutcome.reason} It belongs to an earlier cycle and is not the outcome of the current action.`,
                       `إجراء سابق في هذه الحالة فحصه المتحقق و${c.backend.earlierOutcome.success ? "تأكد" : "لم يتأكد"}: ${c.backend.earlierOutcome.reason} يخص دورة سابقة وليس نتيجة الإجراء الحالي.`,
@@ -1142,12 +1175,15 @@ export function InvestigationPage() {
                       <p>
                         {t("Still observed", "ما زال مرصوداً")}:{" "}
                         {c.backend.verification.remainingSymptoms
-                          .map((code) => code.replaceAll("_", " ").toLowerCase())
+                          .map((code) =>
+                            code.replaceAll("_", " ").toLowerCase(),
+                          )
                           .join(", ")}
                       </p>
                     )}
                   </div>
-                ) : c.backend?.verificationDeadline && c.status === "verifying" ? (
+                ) : c.backend?.verificationDeadline &&
+                  c.status === "verifying" ? (
                   <p className="mt-3">
                     {t(
                       `Waiting for evidence of the outcome.${c.backend.expectedResponseAt ? ` An answer is scheduled for ${dateTimeLabel(c.backend.expectedResponseAt)}.` : ""} The verifier waits until ${dateTimeLabel(c.backend.verificationDeadline)} (dataset clock); with no confirming evidence by then it records a failed outcome and the case goes to a person.`,

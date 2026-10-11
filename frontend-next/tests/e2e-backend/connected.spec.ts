@@ -28,7 +28,7 @@ test("Operations shows the backend queue with real identities and honest labels"
   await expect(page.locator(".operator-button")).toContainText("SYN-OPERATOR-LOCAL");
   // Demo-facing cleanup: no workspace card, no visible dataset wording, the logo alone.
   await expect(page.locator(".workspace-selector")).toHaveCount(0);
-  await expect(page.locator(".brand-logo img")).toBeVisible();
+  await expect(page.locator(".brand-logo .brand-full")).toBeVisible();
   await expect(page.locator(".brand-header")).toHaveText("");
   await expect(page.locator("body")).not.toContainText(/synthetic/i);
   await expect(page.locator(".environment-badge")).toHaveAttribute("data-dataset", "synthetic");
@@ -86,16 +86,23 @@ test("Investigation shows recorded evidence, keeps GPS apart from custody, and r
     "Operator approval required",
   );
   // Graph: bounded, and it says so.
-  await expect(
-    page.getByTestId("knowledge-graph").locator(".entity-node"),
-  ).toHaveCount(48);
+  // The graph opens focused on the shipment; every drawn node is a real record, and the whole
+  // bounded set is one click away.
+  const graphNodes = page.getByTestId("knowledge-graph").locator(".entity-node");
+  await expect(graphNodes.first()).toBeVisible();
+  const all = page.getByRole("button", { name: /^All \d+ records$/ });
+  const total = Number((await all.innerText()).match(/\d+/)![0]);
+  expect(await graphNodes.count()).toBeLessThan(total);
+  await all.click();
+  await expect(graphNodes).toHaveCount(total);
+  await page.getByRole("button", { name: "Focused view" }).click();
   await expect(page.locator(".workspace-toolbar")).toContainText(
-    /graph shows 48 of \d+ recorded nodes/,
+    /graph draws from \d+ of \d+ recorded nodes/,
   );
   // A recorded stage shows the reviewer's own verdict and highlights what the stage cited.
   await page.getByRole("button", { name: /^Review ·/ }).click();
   await expect(page.locator(".pipeline-stage-summary")).toContainText(
-    "Reviewer verdict: accept",
+    "Independent reviewer: accept",
   );
   await page.getByRole("button", { name: /^Diagnose ·/ }).click();
   await expect(page.getByTestId("evidence-inspector")).toContainText(
@@ -292,8 +299,8 @@ test("Connected screens for visual review", async ({ page }) => {
   await shot("operations");
   await page.goto(`/app/cases/${CASE_A}`);
   await expect(
-    page.getByTestId("knowledge-graph").locator(".entity-node"),
-  ).toHaveCount(48);
+    page.getByTestId("knowledge-graph").locator(".entity-node").first(),
+  ).toBeVisible();
   await shot("investigation");
   await page.goto("/app/decisions");
   await expect(page.getByTestId(`data-row-${CASE_A}`)).toContainText(
@@ -322,8 +329,8 @@ test("Connected screens for visual review", async ({ page }) => {
   await page.getByRole("button", { name: "تبديل المظهر" }).click();
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   await expect(
-    page.getByTestId("knowledge-graph").locator(".entity-node"),
-  ).toHaveCount(48);
+    page.getByTestId("knowledge-graph").locator(".entity-node").first(),
+  ).toBeVisible();
   await shot("investigation-arabic-dark");
   await page.getByRole("button", { name: "Switch to English" }).click();
   await page.getByRole("button", { name: "Toggle theme" }).click();
