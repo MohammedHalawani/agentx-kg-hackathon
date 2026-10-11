@@ -195,7 +195,7 @@ def notools_model_turn(messages):
     from operations import latency
     wire = [SystemMessage(messages[0]["content"])] + [
         (AIMessage if m["role"] == "assistant" else HumanMessage)(m["content"]) for m in messages[1:]]
-    response = _llm.model().invoke(wire)
+    response = _llm.invoke(wire, deadline=_llm.call_timeout())      # the agent's per-call deadline, as model_turn's
     latency.note_usage(response)
     return _llm.message_text(getattr(response, "content", None)) or ""
 

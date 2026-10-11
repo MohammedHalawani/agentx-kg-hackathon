@@ -410,12 +410,14 @@ def _clean_conclusion(out):
 
 
 def model_turn(messages):
-    """One provider call; returns the parsed JSON object or None. Raises on transport errors."""
+    """One provider call; returns the parsed JSON object or None. Raises on transport errors, and TimeoutError
+    (llm.pipeline._llm.ModelCallTimeout) when the call has not returned within the per-call deadline
+    (SUHAIL_MODEL_CALL_TIMEOUT_SECONDS, default 60 s): a provider failure like any other to the loop above."""
     from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
     from llm.pipeline import _llm
     wire = [SystemMessage(messages[0]["content"])] + [
         (AIMessage if m["role"] == "assistant" else HumanMessage)(m["content"]) for m in messages[1:]]
-    response = _llm.model().invoke(wire)
+    response = _llm.invoke(wire, deadline=_llm.call_timeout())
     latency.note_usage(response)
     text = _llm.message_text(getattr(response, "content", None))
     parsed = _llm.parse_json(text)
@@ -745,5 +747,7 @@ def review(conclusion, records, checks, symptoms, *, ask=None, context=None, ses
 
 
 def _review_call(system, user, default):
-    from llm.pipeline._llm import ask_json
-    return ask_json(system, user, default)
+    """The reviewer's provider call, under the same per-call deadline as an investigator turn (a call that exceeds it
+    raises TimeoutError, which the bounded attempts above treat as a provider failure)."""
+    from llm.pipeline import _llm
+    return _llm.ask_json(system, user, default, deadline=_llm.call_timeout())

@@ -11,10 +11,13 @@ stage, ask_json() strips fences, scans for the first balanced {...} object, and 
 a caller-supplied default so one malformed generation degrades that stage instead of failing
 the whole run.
 """
+import contextvars
 import json
 import logging
 import math
+import os
 import re
+import threading
 from copy import deepcopy
 from functools import lru_cache
 from typing import Any
@@ -136,6 +139,65 @@ def model() -> ChatLiteLLM:
     )
 
 
+# The wall-clock limit of ONE live model call (an investigator turn, a reviewer call, the no-tools baseline's call).
+# request_timeout above is handed to the HTTP client, where it bounds the connection and each wait for more bytes; a
+# provider that keeps the connection alive can therefore hold a call far longer than that (a 210 s call was recorded
+# with the 120 s setting). `invoke(messages, deadline=...)` is the limit that actually applies: the caller stops
+# waiting at the deadline and gets ModelCallTimeout, a TimeoutError, which every caller already treats as a provider
+# failure (one retry, then the role fails closed).
+# Default 60 s: the measured median is under 6 s per call and a slow provider reaches about 30 s, so 60 s is twice the
+# slowest healthy call and still ends a stalled one before a person watching gives up. Set
+# SUHAIL_MODEL_CALL_TIMEOUT_SECONDS to change it (5 to 1800 s; anything unreadable is the default).
+CALL_TIMEOUT_ENV = "SUHAIL_MODEL_CALL_TIMEOUT_SECONDS"
+DEFAULT_CALL_TIMEOUT_SECONDS = 60.0
+CALL_TIMEOUT_BOUNDS = (5.0, 1800.0)
+
+
+class ModelCallTimeout(TimeoutError):
+    """One model call did not return within its wall-clock deadline."""
+
+
+def call_timeout() -> float:
+    """The per-call deadline of the live investigator and reviewer calls, in seconds (SUHAIL_MODEL_CALL_TIMEOUT_SECONDS)."""
+    try:
+        value = float(os.environ.get(CALL_TIMEOUT_ENV, "").strip() or DEFAULT_CALL_TIMEOUT_SECONDS)
+    except ValueError:
+        value = DEFAULT_CALL_TIMEOUT_SECONDS
+    if not math.isfinite(value):
+        value = DEFAULT_CALL_TIMEOUT_SECONDS
+    return max(CALL_TIMEOUT_BOUNDS[0], min(value, CALL_TIMEOUT_BOUNDS[1]))
+
+
+def invoke(messages, *, deadline: float | None = None):
+    """One provider call. With `deadline` (seconds) the call is abandoned when it has not returned by then and
+    ModelCallTimeout is raised; without it this is model().invoke(messages), bounded only by the HTTP client.
+
+    The call runs on its own thread so the wait can end at the deadline whatever the HTTP client is doing. The same
+    number is also given to the client as its own timeout, so an abandoned call's connection is dropped by the client
+    at its next quiet period rather than at request_timeout. An abandoned call cannot be cancelled: if the provider
+    still answers, the answer is discarded (the provider's own call count still includes it, as it does a failed call)."""
+    if deadline is None:
+        return model().invoke(messages)
+    outcome = {}
+    context = contextvars.copy_context()      # callbacks and tracing of the calling thread apply to the call
+
+    def call():
+        try:
+            outcome["response"] = context.run(model().invoke, messages, timeout=deadline)
+        except BaseException as error:        # delivered to the caller below, on its own thread
+            outcome["error"] = error
+
+    thread = threading.Thread(target=call, name="model-call", daemon=True)
+    thread.start()
+    thread.join(deadline)
+    if thread.is_alive():
+        log.warning("Model call abandoned after %.0f s (%s)", deadline, CALL_TIMEOUT_ENV)
+        raise ModelCallTimeout(f"model call exceeded {deadline:g} s")
+    if "error" in outcome:
+        raise outcome["error"]
+    return outcome["response"]
+
+
 def _first_json_object(text: str) -> str | None:
     """Scan for the first balanced {...} span, respecting strings/escapes so a brace inside
     a quoted Arabic description doesn't end the object early."""
@@ -187,12 +249,12 @@ def parse_json(raw: str) -> dict | None:
     return None
 
 
-def ask_json(system: str, user: str, default: dict[str, Any]) -> dict:
+def ask_json(system: str, user: str, default: dict[str, Any], *, deadline: float | None = None) -> dict:
     """Run one prompt and return the parsed JSON object, falling back to `default` (with a
     logged warning) when the model returns something unparseable. The default is always a
     complete, valid shape for the caller's stage, so a downstream node never has to guard
-    against half-populated state."""
-    resp = model().invoke([SystemMessage(system), HumanMessage(user)])
+    against half-populated state. deadline: the call's wall-clock limit in seconds (see invoke)."""
+    resp = invoke([SystemMessage(system), HumanMessage(user)], deadline=deadline)
     from operations.latency import note_usage   # token counts for the caller's timing record; measurement only
     note_usage(resp)
     raw = message_text(getattr(resp, "content", None))
