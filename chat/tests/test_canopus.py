@@ -73,6 +73,17 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(set(out), {"case_id", "shipment_id", "run_id", "workflow_state", "answered_at", "kind", "answer_en", "answer_ar", "evidence_ids",
                                     "graph_node_ids", "quotes", "offers", "next_step", "model", "grounded", "fallback", "model_calls"})
 
+    def test_graph_highlights_are_real_graph_nodes_even_when_the_answer_cites_none(self):
+        case = detail()
+        case["narration"]["events"][2]["graph_node_ids"] = [f"{SID}-SCAN-009", "DEMO-NOT-IN-GRAPH"]
+        cites_a_computation = {**GOOD, "answer_en": "The reviewer did not accept it.", "evidence_ids": ["DEMO-OPS-NARRATION-3"]}
+        out = canopus.answer(case, "What did the reviewer say?", ask=model(cites_a_computation))
+        self.assertEqual(out["graph_node_ids"], [f"{SID}-SCAN-009"])          # From the shown quote's own record, and only nodes of the graph.
+        nodes = {n["id"] for n in case["evidence"]["nodes"]}
+        self.assertTrue(set(out["graph_node_ids"]) <= nodes)
+        nothing = canopus.answer(detail(narration=False), "Hello", ask=model({**GOOD, "quote_ids": [], "evidence_ids": []}))
+        self.assertEqual(nothing["graph_node_ids"], [])                       # Nothing recorded to point at: nothing is highlighted.
+
     def test_quote_text_always_comes_from_the_record_never_from_the_model(self):
         invented = {**GOOD, "quotes": [{"role": "reviewer", "text": "I fully accept this."}], "quote_text": "I fully accept this."}
         out = canopus.answer(detail(), "Show me the reviewer's message", ask=model(invented))
@@ -116,6 +127,16 @@ class AnswerTests(unittest.TestCase):
                                                            "recorded_events", "evidence_records_by_kind", "quotes", "offers"]))
         for hidden in ("prompt", "reasoning", "truth", "mechanism", "canary", "api_key", "token"):
             self.assertNotIn(hidden, user.lower())
+        self.assertEqual((payload["case"]["investigator"]["conclusion_status"], payload["case"]["investigator"]["run_ended_without_valid_conclusion"]),
+                         ("review_not_accepted", []))
+        degraded = detail()
+        degraded["run"]["result"]["degraded"] = [{"role": "investigator", "kind": "invalid_model_output"}]
+        degraded["diagnosis"] = {"available": False, "reason": "investigator_unavailable"}
+        canopus.answer(degraded, "What did the investigator conclude?", ask=ask)
+        told = json.loads(ask.calls[-1][1])["case"]["investigator"]
+        self.assertEqual((told["conclusion_status"], told["run_ended_without_valid_conclusion"], told["primary_cause"]),
+                         ("investigator_unavailable", ["invalid_model_output"], None))
+        self.assertIn("no accepted conclusion", system)
         self.assertIn("you cannot perform, approve or authorize anything", system)
         self.assertIn("never say the case is resolved", system)
 
