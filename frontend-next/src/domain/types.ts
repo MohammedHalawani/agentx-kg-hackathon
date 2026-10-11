@@ -156,6 +156,8 @@ export interface BackendCaseState {
     reject: boolean;
     escalate: boolean;
     verify: boolean;
+    /** A person may record the finding of a physical or administrative check. */
+    humanOutcome: boolean;
   };
   approvalRule?: string;
   approvalReason?: string;
@@ -197,6 +199,43 @@ export interface BackendCaseState {
       contradicting: string[];
     }[];
     missingEvidence: string[];
+  };
+  /** What the investigation did, from the run record: every evidence query, the reviews, the budget. */
+  investigationLog?: {
+    mode: string;
+    modelCallsUsed: number | null;
+    modelCallCap: number | null;
+    capReached: boolean;
+    steps: {
+      round: number;
+      tool: string;
+      purpose: string;
+      args: string;
+      records: number;
+      /** Records of other shipments or shared records this query returned. */
+      beyondShipment: number;
+      failure: string | null;
+    }[];
+    reviews: {
+      round: number;
+      verdict: string;
+      feedback: string;
+      unsupportedClaims: string[];
+      unaddressedContradictions: string[];
+      alternativesTested: boolean | null;
+      byModel: boolean;
+    }[];
+    citations: { cited: number; valid: number } | null;
+    failedChecks: string[];
+    nextEvidenceStep: string | null;
+    degraded: string[];
+  };
+  /** The deterministic authority policy's decision on the recommended action. */
+  authority?: {
+    riskClass: string;
+    ruleId: string;
+    reason: string;
+    closure: string | null;
   };
   /** Deterministic rule checks, labelled: signals for monitoring, never the cause. */
   ruleSignals?: {
@@ -293,6 +332,12 @@ export interface OperationsCatalog {
   cityLocations: Record<string, [number, number]>;
   facilities: Facility[];
 }
+export type HumanOutcomeType =
+  | "parcel_located"
+  | "delivered_confirmed_by_person"
+  | "returned_to_depot"
+  | "parcel_not_found"
+  | "data_corrected";
 type Result = void | Promise<void>;
 export interface OperationsService {
   getSnapshot(): CaseQueue;
@@ -310,6 +355,15 @@ export interface OperationsService {
   reset(): void;
   answer(caseId: string, question: string): string;
   catalog(): OperationsCatalog;
+  /** Backend only: record a person's finding after a physical or administrative check. */
+  recordHumanOutcome?(
+    caseId: string,
+    finding: {
+      outcomeType: HumanOutcomeType;
+      finding: string;
+      evidenceIds: string[];
+    },
+  ): Promise<void>;
   /** Backend only: load a case's evidence and follow its live pipeline stream. */
   watchCase?(caseId: string): () => void;
   /** Backend only: load evidence for these cases (a screen needs their detail). */

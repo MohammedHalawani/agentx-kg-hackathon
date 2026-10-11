@@ -93,6 +93,7 @@ export function controls(c: OperationalCase) {
     reject: c.status === "human_review",
     escalate: c.status === "human_review" || c.status === "needs_evidence",
     verify: c.status === "verifying",
+    humanOutcome: false,
   };
 }
 

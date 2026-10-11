@@ -82,6 +82,12 @@ function allowedFor(
     reject: DECISION_SOURCES.reject.includes(workflow),
     escalate: DECISION_SOURCES.escalate.includes(workflow),
     verify: workflow === "AWAITING_OUTCOME",
+    humanOutcome: [
+      "HUMAN_REVIEW",
+      "ESCALATED",
+      "NEEDS_EVIDENCE",
+      "AWAITING_APPROVAL",
+    ].includes(workflow),
   };
 }
 
@@ -390,6 +396,9 @@ function stageSummary(event: ApiPipelineEvent): string {
   const out = event.output ?? {};
   // Rule output and deterministic guards are named as such, never as an agent's finding.
   const rules = out.agent === "evidence_rules";
+  if (out.kind === "tool_call" && out.tool)
+    // One evidence query of the investigator, as it happened.
+    return `Investigator queried ${humanize(out.tool).toLowerCase()}${out.purpose ? `: ${out.purpose}` : ""}`;
   switch (event.stage) {
     case "extract":
       return out.evidence_ids
@@ -478,6 +487,77 @@ function recommendationOf(detail: ApiCaseDetail): Recommendation {
     risk: risk === "AUTO" ? "low" : "medium",
     expectedOutcome: NO_RECOMMENDATION.expectedOutcome,
     available: true,
+  };
+}
+
+/** The run record's per-round log, as the screens list it. Absent for a rules-only run. */
+function investigationLogOf(
+  detail: ApiCaseDetail,
+): BackendCaseState["investigationLog"] {
+  const result = detail.run?.result;
+  const log = result?.investigation_log;
+  if (!result || !log) return undefined;
+  const index = log.evidence_index ?? {};
+  const beyond = (ids: string[] | undefined) =>
+    (ids ?? []).filter((id) =>
+      ["other_shipment", "shared"].includes(index[id]?.scope ?? ""),
+    ).length;
+  const purposes = new Map(
+    (result.investigation?.steps ?? []).map((step) => [
+      `${step.round ?? 0}|${step.tool}|${JSON.stringify(step.args ?? {})}`,
+      step.purpose ?? "",
+    ]),
+  );
+  const rounds = log.rounds ?? [];
+  const last = rounds.at(-1);
+  return {
+    mode: result.mode ?? "",
+    modelCallsUsed: log.model_calls_used ?? null,
+    modelCallCap: log.model_call_cap ?? null,
+    capReached: log.cap_reached === true,
+    steps: rounds.flatMap((round) =>
+      (round.tool_calls ?? []).map((call) => ({
+        round: round.round,
+        tool: call.tool,
+        purpose:
+          call.purpose ??
+          purposes.get(
+            `${round.round}|${call.tool}|${JSON.stringify(call.args ?? {})}`,
+          ) ??
+          "",
+        args: Object.entries(call.args ?? {})
+          .map(([key, value]) => `${key}: ${String(value).replace(/^SYN-/, "")}`)
+          .join(", "),
+        records: call.evidence_ids?.length ?? 0,
+        beyondShipment: beyond(call.evidence_ids),
+        failure: call.failure ?? null,
+      })),
+    ),
+    reviews: rounds
+      .filter((round) => round.review)
+      .map((round) => ({
+        round: round.round,
+        verdict: round.review!.model_verdict ?? round.review!.verdict ?? "",
+        feedback: round.review!.feedback ?? "",
+        unsupportedClaims: round.review!.unsupported_claims ?? [],
+        unaddressedContradictions:
+          round.review!.unaddressed_contradictions ?? [],
+        alternativesTested: round.review!.alternatives_tested ?? null,
+        byModel: !!round.review!.model_verdict && round.review!.degraded !== true,
+      })),
+    citations: last?.citation_validity
+      ? {
+          cited: last.citation_validity.cited ?? 0,
+          valid: last.citation_validity.valid ?? 0,
+        }
+      : null,
+    failedChecks: (last?.fact_checks ?? [])
+      .filter((check) => !check.passed)
+      .map((check) => humanize(check.check)),
+    nextEvidenceStep: result.investigation?.next_evidence_step ?? null,
+    degraded: (result.degraded ?? []).map(
+      (item) => `${humanize(item.role)}: ${humanize(item.kind)}`,
+    ),
   };
 }
 
@@ -771,8 +851,8 @@ export function applyDetail(
           id: execution.receipt_ref ?? execution.entity_id ?? "",
           action: humanize(execution.action_type),
           timestamp: execution.occurred_at ?? execution.recorded_at ?? "",
-          successful: !/FAIL|REFUS|TIMEOUT|ERROR/i.test(execution.status ?? ""),
-          detail: `Execution ${humanize(execution.status) || "recorded"}${execution.authority ? ` under ${humanize(execution.authority)}` : ""}${execution.receipt_ref ? ` · receipt ${execution.receipt_ref}` : ""}. A receipt is not an outcome.`,
+          successful: !/FAIL|REFUS|TIMEOUT|ERROR|NOT_ACK/i.test(execution.status ?? ""),
+          detail: `${/NOT_ACK/i.test(execution.status ?? "") ? "The action was authorized but no execution adapter acknowledged it, so nothing was carried out and there is nothing to verify. " : ""}Execution ${humanize(execution.status) || "recorded"}${execution.authority ? ` under ${humanize(execution.authority)}` : ""}${execution.receipt_ref ? ` · receipt ${execution.receipt_ref}` : ""}. A receipt is not an outcome.`,
         }
       : undefined,
     outcome:
@@ -832,6 +912,15 @@ export function applyDetail(
           }
         : undefined,
       investigation: investigationOf(detail),
+      investigationLog: investigationLogOf(detail),
+      authority: detail.run?.result?.authority?.risk_class
+        ? {
+            riskClass: detail.run.result.authority.risk_class,
+            ruleId: detail.run.result.authority.rule_id ?? "",
+            reason: detail.run.result.authority.reason ?? "",
+            closure: detail.run.result.authority.closure ?? null,
+          }
+        : undefined,
       ruleSignals: detail.rule_signals
         ? {
             asOf: detail.rule_signals.as_of,

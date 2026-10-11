@@ -29,6 +29,7 @@ import type {
   BackendConnection,
   CaseQueue,
   Facility,
+  HumanOutcomeType,
   InvestigationStageEvent,
   OperationalCase,
   OperationsCatalog,
@@ -636,6 +637,30 @@ export class ApiOperationsService implements OperationsService {
         idempotency_key: idempotencyKey("verify"),
       }),
     );
+  }
+
+  /** A person's finding. The backend records it as human-verified and decides the case's state. */
+  async recordHumanOutcome(
+    id: string,
+    finding: {
+      outcomeType: HumanOutcomeType;
+      finding: string;
+      evidenceIds: string[];
+    },
+  ) {
+    await this.command(id, (c) => {
+      if (!c.backend!.allowed.humanOutcome)
+        throw new Error(
+          "The backend accepts a person's finding only for a case that is waiting for a person.",
+        );
+      return this.client.post(`/cases/${encodeURIComponent(id)}/human-outcome`, {
+        outcome_type: finding.outcomeType,
+        finding: finding.finding,
+        evidence_ids: finding.evidenceIds,
+        expected_version: c.backend!.stateVersion,
+        idempotency_key: idempotencyKey("human"),
+      });
+    });
   }
 
   /** The audit ledger, oldest first from the backend, loaded in bounded pages and then incrementally. */

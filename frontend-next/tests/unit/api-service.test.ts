@@ -292,6 +292,25 @@ describe("ApiOperationsService operator requests", () => {
     expect(find(world.service, CASE_A).outcome).toBeUndefined();
   });
 
+  it("sends a person's finding with its evidence and lets the backend decide the state", async () => {
+    const world = backend({
+      [`GET /cases/${CASE_A}`]: () => detailA({ workflow_state: "HUMAN_REVIEW" }),
+      [`POST /cases/${CASE_A}/human-outcome`]: () => ({ case_id: CASE_A, workflow_state: "HUMAN_REVIEW" }),
+    });
+    await world.service.refresh();
+    await world.service.recordHumanOutcome(CASE_A, {
+      outcomeType: "parcel_not_found",
+      finding: "Depot shelves and returns cage searched; not found.",
+      evidenceIds: ["SYN-SHP-000101-CUST-02-01"],
+    });
+    const body = world.posts()[0].body as Record<string, unknown>;
+    expect(Object.keys(body).sort()).toEqual(["evidence_ids", "expected_version", "finding", "idempotency_key", "outcome_type"]);
+    expect(body.outcome_type).toBe("parcel_not_found");
+    // The browser resolves nothing: the case is whatever the backend then reports.
+    expect(find(world.service, CASE_A).status).toBe("human_review");
+    expect(find(world.service, CASE_A).outcome).toBeUndefined();
+  });
+
   it("starts and pauses the backend worker and reflects only what the backend then reports", async () => {
     const world = backend({
       "POST /worker/start": () => ({}),

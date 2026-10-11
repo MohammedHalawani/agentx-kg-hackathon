@@ -109,3 +109,77 @@
   margin-top: 2px;
   color: var(--warning);
 }
+
+/* The investigator's evidence queries, in the order they were made. */
+.investigation-steps {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.investigation-steps li {
+  display: flex;
+  gap: 10px;
+  padding: 9px 0;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.investigation-steps .step-index {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-size: 10px;
+  font-weight: 600;
+  display: grid;
+  place-items: center;
+}
+.investigation-steps li.failed .step-index {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.investigation-steps b {
+  font-weight: 500;
+  text-transform: capitalize;
+  margin-inline-end: 6px;
+}
+.investigation-steps p {
+  margin-top: 2px;
+  color: var(--muted-foreground);
+}
+.investigation-steps small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted-foreground);
+  font-size: 10px;
+  word-break: break-word;
+}
+.finding-cross {
+  background: var(--info-soft);
+  color: var(--info);
+  gap: 3px;
+}
+.human-evidence {
+  max-height: 150px;
+  overflow-y: auto;
+  margin: 8px 0;
+}
+.human-evidence small {
+  display: block;
+  color: var(--muted-foreground);
+  font-size: 10px;
+}
+
+[data-testid="review-rounds"] .finding > b {
+  text-transform: none;
+}
+
+/* Side sheets: let the scroll area shrink inside the sheet's column so long, real content
+   scrolls instead of being clipped below the fold. */
+.case-details-sheet [data-slot="scroll-area"],
+.decision-detail-sheet [data-slot="scroll-area"],
+.audit-detail-sheet [data-slot="scroll-area"] {
+  min-height: 0;
+}

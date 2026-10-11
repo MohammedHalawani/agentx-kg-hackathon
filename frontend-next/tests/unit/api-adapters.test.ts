@@ -119,6 +119,7 @@ describe("backend case detail", () => {
       reject: true,
       escalate: true,
       verify: false,
+      humanOutcome: true,
     });
     expect(c.shipment.weight).toBe(2.23);
     expect(c.execution).toBeUndefined();
@@ -185,7 +186,7 @@ describe("backend case detail", () => {
     expect(resolved.status).toBe("resolved");
     expect(resolved.outcome?.successful).toBe(true);
     expect(resolved.run?.stage).toBe(7);
-    expect(controls(resolved)).toEqual({ investigate: false, approve: false, reject: false, escalate: false, verify: false });
+    expect(controls(resolved)).toEqual({ investigate: false, approve: false, reject: false, escalate: false, verify: false, humanOutcome: false });
   });
 
   it("serves the investigator's hypotheses with their evidence, and rule checks as labelled signals", () => {
@@ -204,6 +205,41 @@ describe("backend case detail", () => {
     expect(c.backend!.ruleSignals?.signals[0].code).toBe("MISSED_MILESTONE");
     expect(c.issue).toBe("Unreconciled custody");
     expect(c.backend!.causeCodes).not.toContain("MISSED_MILESTONE");
+  });
+
+  it("lists the investigation as the run record has it: queries, budget, reviews, authority", () => {
+    const log = c.backend!.investigationLog!;
+    expect(log.modelCallsUsed).toBe(6);
+    expect(log.modelCallCap).toBe(12);
+    expect(log.steps.map((step) => step.tool)).toEqual(["custody_chain", "same_device_activity", "facility_window"]);
+    expect(log.steps[0].purpose).toBe("Trace who last held the parcel");
+    // Records of other shipments are counted as cross-shipment evidence.
+    expect(log.steps[1].beyondShipment).toBe(2);
+    expect(log.steps[0].beyondShipment).toBe(0);
+    // A failed query is a failure, never an absence of evidence.
+    expect(log.steps[2].failure).toBe("query_failed");
+    expect(log.reviews[0]).toMatchObject({ verdict: "ACCEPT", byModel: true, unaddressedContradictions: ["The failed attempt is not explained."] });
+    expect(log.citations).toEqual({ cited: 2, valid: 2 });
+    expect(log.failedChecks).toEqual(["Alternative explanation recorded"]);
+    expect(c.backend!.authority).toMatchObject({ riskClass: "APPROVAL_REQUIRED", ruleId: "AUTH-11-approval-required" });
+    // A live tool-call event reads as the investigator's own query.
+    expect(
+      pipelineView([{ sequence: 1, stage: "classify", status: "RUNNING", output: { kind: "tool_call", tool: "custody_chain", purpose: "Trace who last held the parcel" } }]).stageDetail[2],
+    ).toBe("Investigator queried custody chain: Trace who last held the parcel");
+  });
+
+  it("does not present an unacknowledged execution as carried out", () => {
+    const sent = applyDetail(
+      base,
+      detailA({
+        workflow_state: "HUMAN_REVIEW",
+        executions: [{ receipt_ref: "no_adapter:SYN-EXEC-1", action_type: "REQUEST_RESCAN", status: "NOT_ACKNOWLEDGED", authority: "AUTO_POLICY", current_cycle: true }],
+      }),
+    );
+    expect(sent.execution?.successful).toBe(false);
+    expect(sent.execution?.detail).toMatch(/nothing was carried out/);
+    expect(sent.outcome).toBeUndefined();
+    expect(controls(sent).humanOutcome).toBe(true);
   });
 
   it("labels findings the reviewer did not accept and never promotes them to the diagnosis", () => {

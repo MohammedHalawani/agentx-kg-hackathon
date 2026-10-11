@@ -184,8 +184,59 @@ export function detailA(overrides: Partial<ApiCaseDetail> = {}): ApiCaseDetail {
     run: {
       entity_id: "SYN-RUN-1",
       recorded_at: "2026-10-09T10:00:00+00:00",
-      mode: "agent_tool_loop",
+      mode: "gpt_oss_agents",
       status: "REVIEWED",
+      // Shaped as docs/api/investigation-run.md describes the run record.
+      result: {
+        mode: "gpt_oss_agents",
+        investigation: {
+          next_evidence_step: null,
+          steps: [
+            { round: 0, tool: "custody_chain", args: { package_id: `${SHIP_A}-PKG-01` }, purpose: "Trace who last held the parcel" },
+            { round: 0, tool: "same_device_activity", args: { device_id: "SYN-DEV-HH-01" }, purpose: "Did other parcels on this device stop too?" },
+          ],
+        },
+        authority: {
+          risk_class: "APPROVAL_REQUIRED",
+          rule_id: "AUTH-11-approval-required",
+          reason: "Action changes custody records; operator authorization required.",
+          closure: "HUMAN",
+        },
+        degraded: [],
+        investigation_log: {
+          snapshot_as_of: "2026-09-03T13:00:00+00:00",
+          model_calls_used: 6,
+          model_call_cap: 12,
+          cap_reached: false,
+          rounds: [
+            {
+              round: 0,
+              tool_calls: [
+                { tool: "custody_chain", args: { package_id: `${SHIP_A}-PKG-01` }, evidence_ids: [`${SHIP_A}-CUST-01-01`, `${SHIP_A}-CUST-02-01`], failure: null },
+                { tool: "same_device_activity", args: { device_id: "SYN-DEV-HH-01" }, evidence_ids: ["SYN-SHP-000777-SCAN-01", "SYN-SHP-000778-SCAN-01"], failure: null },
+                { tool: "facility_window", args: { facility_id: "SYN-DEPOT-DMM-01" }, evidence_ids: [], failure: "query_failed" },
+              ],
+              citation_validity: { cited: 2, valid: 2, all_valid: true },
+              fact_checks: [
+                { check: "citations_valid", passed: true },
+                { check: "alternative_explanation_recorded", passed: false },
+              ],
+              review: {
+                verdict: "accept",
+                model_verdict: "ACCEPT",
+                feedback: "Cited custody records support the conclusion.",
+                unsupported_claims: [],
+                unaddressed_contradictions: ["The failed attempt is not explained."],
+                alternatives_tested: true,
+              },
+            },
+          ],
+          evidence_index: {
+            "SYN-SHP-000777-SCAN-01": { kind: "ScanEvent", scope: "other_shipment" },
+            "SYN-SHP-000778-SCAN-01": { kind: "ScanEvent", scope: "other_shipment" },
+          },
+        },
+      },
     },
     evidence: {
       nodes: [

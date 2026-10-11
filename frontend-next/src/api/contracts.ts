@@ -140,6 +140,11 @@ export interface ApiPipelineEvent {
   output?: {
     /** Which component produced the stage: e.g. evidence_rules, deterministic_guard, or an agent. */
     agent?: string | null;
+    /** "tool_call": one evidence query of the investigator, as it happened (a classify RUNNING event). */
+    kind?: string;
+    tool?: string;
+    purpose?: string;
+    round?: number;
     evidence_ids?: string[];
     edge_ids?: string[];
     nodes?: number;
@@ -263,6 +268,8 @@ export interface ApiCaseDetail {
     recorded_at?: string;
     mode?: string;
     status?: string;
+    /** The run record (docs/api/investigation-run.md). No truth, gold or chain-of-thought is in it. */
+    result?: ApiRunResult | null;
   } | null;
   /** While a re-investigation is queued: the earlier run, superseded. Never the current run. */
   previous_run?: { entity_id?: string; recorded_at?: string; superseded?: boolean } | null;
@@ -312,6 +319,57 @@ export interface ApiCaseDetail {
     };
     truncated?: Record<string, boolean>;
   };
+}
+export interface ApiToolCall {
+  round?: number;
+  tool: string;
+  args?: Record<string, unknown>;
+  purpose?: string;
+  evidence_ids?: string[];
+  computed_ids?: string[];
+  failure?: string | null;
+}
+export interface ApiRunResult {
+  mode?: string;
+  investigation?: {
+    next_evidence_step?: string | null;
+    recommended_action?: string | null;
+    steps?: ApiToolCall[];
+  } | null;
+  authority?: {
+    risk_class?: string;
+    reason?: string;
+    rule_id?: string;
+    action_type?: string | null;
+    closure?: string;
+  } | null;
+  degraded?: { role?: string; error?: string; kind?: string }[];
+  investigation_log?: {
+    snapshot_as_of?: string | null;
+    model_calls_used?: number;
+    model_call_cap?: number;
+    model_calls_by_role?: Record<string, number>;
+    cap_reached?: boolean;
+    disabled_tools?: string[];
+    rounds?: {
+      round: number;
+      tool_calls?: ApiToolCall[];
+      citation_validity?: { cited?: number; valid?: number; all_valid?: boolean } | null;
+      fact_checks?: { check: string; passed: boolean; detail?: string }[];
+      review?: {
+        verdict?: string;
+        model_verdict?: string | null;
+        reason_code?: string;
+        feedback?: string;
+        unsupported_claims?: string[];
+        unaddressed_contradictions?: string[];
+        alternatives_tested?: boolean | null;
+        mode?: string;
+        degraded?: boolean;
+      } | null;
+    }[];
+    evidence_index?: Record<string, { kind?: string; scope?: string }>;
+  } | null;
 }
 export interface ApiWorkerStatus {
   synthetic: boolean;

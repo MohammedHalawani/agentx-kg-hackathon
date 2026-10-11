@@ -54,6 +54,8 @@ import { DecisionDialog } from "@/components/decision-dialog";
 import { StatusBadge, PriorityLabel, EmptyState } from "@/components/shared";
 import { dateTimeLabel, timeLabel } from "@/lib/dates";
 import { InvestigatorFindings } from "@/components/investigator-findings";
+import { InvestigationRecord } from "@/components/investigation-record";
+import { HumanOutcomeDialog } from "@/components/human-outcome-dialog";
 import {
   stages,
   type AuthorityDecision,
@@ -105,6 +107,7 @@ export function InvestigationPage() {
     null,
   );
   const [details, setDetails] = useState(false);
+  const [humanOutcome, setHumanOutcome] = useState(false);
   const groupRef = useGroupRef();
   const smallCanvas = useMediaQuery("(max-width:767px)");
   const requestedEvidence = params.get("evidence");
@@ -659,6 +662,15 @@ export function InvestigationPage() {
                     )}
               </p>
             ) : null}
+            {can.humanOutcome && c.backend?.detailLoaded && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setHumanOutcome(true)}
+              >
+                {t("Record a person's finding", "تسجيل نتيجة فحص بشري")}
+              </Button>
+            )}
             <Button size="sm" variant="ghost" onClick={() => setDetails(true)}>
               <FileSearch size={13} />
               {t("Full assessment", "التقييم الكامل")}
@@ -841,6 +853,7 @@ export function InvestigationPage() {
                 {c.shipment.origin} → {c.shipment.destination}
                 {!backend && <> → {t("Delivery depot", "مستودع التسليم")}</>}
               </DetailSection>
+              <InvestigationRecord c={c} />
               <InvestigatorFindings
                 c={c}
                 onEvidence={(id) => {
@@ -962,6 +975,10 @@ export function InvestigationPage() {
           </ScrollArea>
         </SheetContent>
       </Sheet>
+      <HumanOutcomeDialog
+        c={humanOutcome ? c : null}
+        onClose={() => setHumanOutcome(false)}
+      />
       <DecisionDialog
         c={verdict ? c : null}
         verdict={verdict ?? "approved"}

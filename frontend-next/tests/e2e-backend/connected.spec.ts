@@ -135,6 +135,15 @@ test("Investigation shows recorded evidence, keeps GPS apart from custody, and r
   const sheet = page.getByRole("dialog");
   await expect(sheet).toContainText("A receipt is not an outcome");
   await expect(sheet).toContainText("Independent review");
+  // What the investigation did, from the run record: queries, budget, review, authority.
+  const steps = sheet.getByTestId("investigation-steps");
+  await expect(steps.locator(".investigation-steps li")).toHaveCount(3);
+  await expect(steps).toContainText("6 of 12 model calls");
+  await expect(steps).toContainText("2 records from beyond this shipment");
+  await expect(steps.locator(".finding-cross")).toHaveCount(1);
+  await expect(steps).toContainText("not treated as absence of evidence");
+  await expect(sheet.getByTestId("review-rounds")).toContainText("Independent model review · round 1");
+  await expect(sheet.getByTestId("authority-decision")).toContainText("AUTH-11-approval-required");
   // The investigator's hypotheses with their status and cited evidence; rule checks labelled.
   const findings = sheet.getByTestId("investigator-findings");
   await expect(findings).toContainText("Investigator's findings");
@@ -148,7 +157,10 @@ test("Investigation shows recorded evidence, keeps GPS apart from custody, and r
   await expect(sheet.getByTestId("rule-signals")).toContainText(
     "Rule checks · not a diagnosis",
   );
-  await findings.getByRole("button", { name: "SHP-000101-CUST-02-01" }).click();
+  const citation = findings.getByRole("button", { name: "SHP-000101-CUST-02-01" });
+  await citation.scrollIntoViewIfNeeded();
+  await expect(citation).toBeEnabled();
+  await citation.click();
   await expect(page.getByTestId("evidence-inspector")).toContainText(
     "Custody · Loaded",
   );

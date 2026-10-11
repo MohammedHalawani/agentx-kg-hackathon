@@ -5,8 +5,9 @@ UI integration branch only. Serves the API and the built frontend-next app on on
     cd frontend-next && npm ci && npm run build && cd ..
     <python of chat/.venv> scripts/ui_scratch_backend.py            # http://127.0.0.1:8010/app/
 
-Operations (cases, ledger, evidence) always use the database shipments-v2-demo-ui. It runs with
-the investigation agents off and clears every model key, so it makes no model calls. The legacy
+Operations (cases, ledger, evidence) always use the database shipments-v2-demo-ui (or the one
+named in SUHAIL_UI_DATABASE). By default it runs with the investigation agents off and clears every
+model key, so it makes no model calls; SUHAIL_UI_AGENTS=on runs the real GPT-OSS investigator. The legacy
 V1 routes of the same app (/v1/..., /threads) still use the configured chat and shipment
 databases if they are called; the redesigned interface never calls them.
 Neo4j connection settings are read from an env file (default: the repository's .env, else the
@@ -17,7 +18,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-UI_DATABASE = "shipments-v2-demo-ui"
+UI_DATABASE = os.environ.get("SUHAIL_UI_DATABASE", "shipments-v2-demo-ui")
 CONNECTION_KEYS = ("NEO4J_URI", "NEO4J_USERNAME", "NEO4J_PASSWORD", "NEO4J_DATABASE", "CHAT_DATABASE", "SHIPMENT_DATABASE")
 
 
@@ -31,9 +32,18 @@ def environment():
             key, value = line.split("=", 1)
             if key.strip() in CONNECTION_KEYS:
                 os.environ[key.strip()] = value.strip().strip('"').strip("'")
-    for key in ("LLM_API_KEY", "OPENAI_API_KEY", "OLLAMA_API_KEY"):
-        os.environ[key] = ""
-    os.environ["SUHAIL_V2_AGENTS"] = "off"
+    if os.environ.get("SUHAIL_UI_AGENTS") == "on":
+        # Demo testing with the real investigator: the model settings come from the same env file.
+        # Every "Investigate now" then makes real GPT-OSS calls (capped per case by the backend).
+        for line in source.read_text(encoding="utf-8").splitlines():
+            if "=" in line and line.split("=", 1)[0].strip() in ("LLM_MODEL", "LLM_API_KEY", "LLM_API_BASE"):
+                key, value = line.split("=", 1)
+                os.environ[key.strip()] = value.strip().strip('"').strip("'")
+        os.environ.pop("SUHAIL_V2_AGENTS", None)
+    else:
+        for key in ("LLM_API_KEY", "OPENAI_API_KEY", "OLLAMA_API_KEY"):
+            os.environ[key] = ""
+        os.environ["SUHAIL_V2_AGENTS"] = "off"
     os.environ["SUHAIL_OPERATIONS_DATABASE"] = UI_DATABASE
     os.environ["SUHAIL_TEST_DATABASE"] = UI_DATABASE
 
@@ -44,5 +54,6 @@ if __name__ == "__main__":
     sys.path[:0] = [str(ROOT / "backend"), str(ROOT / "chat"), str(ROOT)]
     import uvicorn
     port = int(os.environ.get("SUHAIL_UI_PORT", "8010"))
-    print(f"Suhail interface: http://127.0.0.1:{port}/app/  (database {UI_DATABASE}, agents off)")
+    agents = "ON (real model calls)" if os.environ.get("SUHAIL_UI_AGENTS") == "on" else "off"
+    print(f"Suhail interface: http://127.0.0.1:{port}/app/  (database {UI_DATABASE}, agents {agents})")
     uvicorn.run("main:app", app_dir=str(ROOT / "backend"), host="127.0.0.1", port=port, log_level="warning")
