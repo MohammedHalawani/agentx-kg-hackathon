@@ -10,6 +10,9 @@ workflow state says so, which only the outcome verifier (or a person's recorded 
 STEPS = {
     "NONE": ("none", "No action needed: the case is resolved and the outcome was verified.",
              "لا يلزم أي إجراء: تمت معالجة الحالة والتحقق من النتيجة."),
+    "START_INVESTIGATION": ("operator", "This case has not been investigated with the current evidence. Click Investigate now to start; with Auto on, "
+                                        "Suhail starts it by itself.",
+                            "لم يُحقَّق في هذه الحالة بالأدلة الحالية. اضغط «حقّق الآن» للبدء؛ ومع تشغيل الوضع التلقائي يبدأ سهيل التحقيق بنفسه."),
     "WAIT_INVESTIGATION": ("system", "Waiting for the investigation of the current evidence to finish.",
                            "بانتظار اكتمال التحقيق في الأدلة الحالية."),
     "WAIT_VERIFICATION": ("system", "{action} was sent. Waiting for evidence recorded after it; the verifier then decides whether the problem is cleared.",
@@ -31,7 +34,7 @@ STEPS = {
     "PROVIDE_EVIDENCE_OR_REANALYSE": ("operator", "There is no grounded recommendation yet. Add or wait for evidence, then re-analyse the case.",
                                       "لا توجد توصية مدعومة بالأدلة بعد. أضف أدلة أو انتظر وصولها، ثم أعد تحليل الحالة."),
 }
-WAITING_ON_SYSTEM = {"OPEN": "WAIT_INVESTIGATION", "REOPENED": "WAIT_INVESTIGATION", "INVESTIGATING": "WAIT_INVESTIGATION",
+WAITING_ON_SYSTEM = {"OPEN": "START_INVESTIGATION", "REOPENED": "START_INVESTIGATION", "INVESTIGATING": "WAIT_INVESTIGATION",
                      "RECOMMENDATION_READY": "WAIT_INVESTIGATION", "ACTION_INITIATED": "WAIT_VERIFICATION", "AWAITING_OUTCOME": "WAIT_VERIFICATION"}
 
 
