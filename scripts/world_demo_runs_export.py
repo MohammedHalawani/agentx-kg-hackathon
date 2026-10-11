@@ -5,7 +5,8 @@
 world_demo_session.py exports each case's current detail (its latest run) and its whole audit trail. A case that was
 investigated more than once has earlier runs whose full result is not in that file; this writes all of them: each
 run's stored record with its result (pipeline events, investigation, review trace, authority decision), plus the
-reviews, recommendations, executions, outcomes, decisions and narration events of the session. It only reads, with a
+reviews, recommendations, executions, outcomes, decisions, narration events, audit entries, risk flags, notifications
+and commands of the session. It only reads, with a
 read-only session, and writes one JSON file. Ids are in their public spelling.
 """
 import argparse
@@ -17,7 +18,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "chat"))
 
-KINDS = ("OpsCase", "OpsRun", "OpsReview", "OpsRecommendation", "OpsDecision", "OpsExecution", "OpsOutcome", "OpsNarration")
+KINDS = ("OpsCase", "OpsRun", "OpsReview", "OpsRecommendation", "OpsDecision", "OpsExecution", "OpsOutcome", "OpsNarration", "OpsAudit",
+         "OpsRiskFlag", "OpsNotification", "OpsCommand")
 
 
 def main():
