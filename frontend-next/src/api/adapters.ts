@@ -1176,7 +1176,12 @@ export function canopusAnswer(answer: ApiCanopusAnswer): CanopusAnswer {
           reason: `${offer.label_en ?? humanize(offer.type)}: ${offer.reason}`,
           reasonAr: null,
         })),
-    ].filter((item) => item.reason),
+    ]
+      .filter((item) => item.reason)
+      // The same reason for several actions is said once.
+      .filter(
+        (item, index, all) => all.findIndex((other) => other.reason === item.reason) === index,
+      ),
     model: answer.model ?? null,
   };
 }

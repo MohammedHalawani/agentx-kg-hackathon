@@ -377,7 +377,20 @@ export function CanopusPanel() {
               ]}
             />
           </div>
-          <div className="canopus-transcript" key={key}>
+          {asking && selected && asked > 0 && (
+            // The conversation about the open case scrolls on its own, newest message in view.
+            <div
+              className="canopus-transcript chat-scroll"
+              key={`ask-${selected.id}`}
+            >
+              <CanopusAskThread c={selected} />
+            </div>
+          )}
+          <div
+            className="canopus-transcript"
+            key={key}
+            hidden={asking && asked > 0}
+          >
             <ConversationTranscript
               messages={thread.messages}
               label={t("Canopus conversation transcript", "سجل محادثة كانوبس")}
@@ -396,11 +409,7 @@ export function CanopusPanel() {
               activity={
                 selected &&
                 // A plain conversation: no automatic cards, markers or narration here.
-                (asking ? (
-                  <CanopusAskThread c={selected} />
-                ) : (
-                  <CaseActivityMarkers c={selected} />
-                ))
+                (asking ? null : <CaseActivityMarkers c={selected} />)
               }
               intro={
                 asked > 0 ? undefined : (

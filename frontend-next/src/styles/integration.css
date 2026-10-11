@@ -1644,3 +1644,14 @@
   font-size: 11.5px;
   flex: none;
 }
+
+/* The chat scrolls inside the panel, between its header and the anchored input. */
+.canopus-transcript.chat-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 16px 10px;
+}
+.canopus-transcript[hidden] {
+  display: none;
+}

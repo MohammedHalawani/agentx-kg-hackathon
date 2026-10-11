@@ -52,8 +52,10 @@ test("Each shipment is investigated by a click and reads as one clear assessment
   await expect(page.getByRole("switch", { name: "Automatic investigation" })).not.toBeChecked();
   // Start the clock first: nothing can arrive while it is paused.
   const clock = page.getByTestId("clock-control");
-  if (/paused/i.test(await clock.innerText())) await clock.click();
-  await expect(clock).toContainText("running", { timeout: 20000 });
+  if (process.env.SUHAIL_UX_KEEP_PAUSED !== "1") {
+    if (/paused/i.test(await clock.innerText())) await clock.click();
+    await expect(clock).toContainText("running", { timeout: 20000 });
+  }
   await page.screenshot({ path: shot("0-operations") });
 
   for (const shipment of SHIPMENTS) {
@@ -77,9 +79,11 @@ test("Each shipment is investigated by a click and reads as one clear assessment
     // A case already investigated in an earlier pass is only read, not investigated again.
     const fresh = /^(OPEN|REOPENED)$/.test(row!.workflow_state);
     const id = row!.case_id;
-    await page.goto("/app/operations");
-    await page.getByRole("textbox", { name: "Search exception queue" }).fill(shipment);
-    await page.getByTestId(`data-row-${id}`).click();
+    if (fresh) {
+      await page.goto("/app/operations");
+      await page.getByRole("textbox", { name: "Search exception queue" }).fill(shipment);
+      await page.getByTestId(`data-row-${id}`).click();
+    } else await page.goto(`/app/cases/${id}`); // a resolved case is not in the queue table
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(shipment, { timeout: 60000 });
     // The sidebar folds to give the case room.
     await expect(page.locator(".brand-star")).toBeVisible();
@@ -130,7 +134,11 @@ test("Each shipment is investigated by a click and reads as one clear assessment
       await expect(button).toBeEnabled({ timeout: 60000 });
       const began = Date.now();
       await button.click();
-      const toast = page.locator("[data-sonner-toast]").last();
+      // The skip's own message (other notifications may appear beside it).
+      const toast = page
+        .locator("[data-sonner-toast]")
+        .filter({ hasText: /Skipped|unavailable|investigation is running/ })
+        .last();
       // A skip the backend could not complete says so; it is noted and tried again.
       await expect(toast).toContainText(/Skipped|unavailable|running/, { timeout: 6 * 60 * 1000 });
       console.log(`   skip ${skip + 1} (${Math.round((Date.now() - began) / 1000)} s): ${(await toast.innerText()).replace(/\s+/g, " ")}`);
@@ -194,5 +202,11 @@ test("Each shipment is investigated by a click and reads as one clear assessment
     await page.screenshot({ path: shot(`${tag}-5-chat`) });
     await panel.getByRole("button", { name: "Minimize Canopus conversation" }).click();
   }
+  // Leave the clock paused: nothing should age while nobody is watching.
+  await page.goto("/app/operations");
+  const stop = page.getByTestId("clock-control");
+  await expect(stop).toBeVisible({ timeout: 60000 });
+  if (/running/i.test(await stop.innerText())) await stop.click();
+  await expect(stop).toContainText("paused", { timeout: 20000 });
   expect(errors).toEqual([]);
 });
