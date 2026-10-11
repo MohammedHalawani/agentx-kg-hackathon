@@ -38,7 +38,7 @@ import sys
 from stage3_eval.arms import CaseRef
 from stage3_eval.budget import BudgetExceeded, BudgetLedger, CapViolation, RunStopped
 from stage3_eval.canary import marker_hits
-from stage3_eval.design import EXTRAS_ORDER, EvalConfig, canonical_bytes, runtime_selection_problem, sealed_hash
+from stage3_eval.design import EXTRAS_ORDER, EvalConfig, canonical_bytes, runtime_selection_problem, sealed_notools_max_calls
 from stage3_eval.records import ArmResult
 
 TRUTH_ENV = "SUHAIL_EVAL_TRUTH_ROOT"
@@ -181,7 +181,8 @@ def _previous_results(out_dir, phase):
 
 def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, capture=None, extras_arms=None, dry_run=False,
         resume=False, provenance=None, campaign=None, campaign_commit=None, provider_calls=None, extras_path=None,
-        enforce_isolation=False, max_cases=None):
+        enforce_isolation=False, max_cases=None, only_keys=None, arm_names=None, budget=None, campaign_run=None,
+        expected_as_of=None, manifest_extra=None):
     """Run every arm over the selection. arms: {"agent": AgentArm, "notools": NoToolsArm, "rulecode": ..., "symptom": ...};
     extras_arms: {"cross_shipment_ablation": AgentArm (cross-shipment tools disabled), "stability_rerun": AgentArm}.
     provenance: a dict, or a callable returning one, called when the run has finished (so it can report the model calls
@@ -205,18 +206,39 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
     this directory count). The stop reads nothing but that number and the position in the order. The run then ends
     with status "paused": no extra runs, the run-level surfaces are captured as of the pause, and the campaign entry
     is settled at the calls committed so far (a resume reserves the run's maximum again).
+    The last six are the post hoc completion's (stage3_eval.completion.rerun_failed) and are never given by `run`:
+    only_keys: run only these cases of the selection, in the selection's order. arm_names: run only these arms on them
+    (in MAIN_ARM_ORDER's order). budget: this run's own maximum, in place of the selection's sealed one (the worst case
+    of the listed cases and arms; the sealed budget is the whole selection's). campaign_run: its entry's name in the
+    campaign ledger. expected_as_of: {key: snapshot time}; a case whose source gives another time, or whose agent
+    result carries another snapshot, stops the run. manifest_extra: entries added to the manifest.
     Returns the run manifest (also written to <out_dir>/run_manifest.json)."""
     refuse_truth_environment()
     selection, selection_sha = load_selection(selection_path)
-    if selection["sealed_config_hash"] != sealed_hash(config):
+    sealed_notools = sealed_notools_max_calls(selection["sealed_config_hash"], config)
+    if sealed_notools is None:
         raise ValueError("the configuration differs from the one the selection was sealed with (amendment 1, H)")
     if config.budget is None:
         raise ValueError("the configuration has no sealed budget; run with the configuration `select` sealed (selection.json)")
+    run_budget = config.budget if budget is None else _whole(budget, "budget")
+    limits = replace(config, budget=run_budget)       # what the campaign's guards are checked against
+    arm_names = tuple(a for a in MAIN_ARM_ORDER if a in arm_names) if arm_names is not None else MAIN_ARM_ORDER
+    if not arm_names:
+        raise ValueError("no arm to run")
+    rows = [row for row in selection["cases"] if only_keys is None or row["key"] in set(only_keys)]
+    if only_keys is not None and len(rows) != len(set(only_keys)):
+        raise ValueError("a listed case is not in the selection")
     if max_cases is not None and (isinstance(max_cases, bool) or not isinstance(max_cases, int) or max_cases < 1):
         raise ValueError("max_cases must be a whole number of cases, one or more")
-    missing = [a for a in MAIN_ARM_ORDER if a not in arms]
+    missing = [a for a in arm_names if a not in arms]
     if missing:
         raise ValueError(f"every arm runs on the same cases; missing: {missing}")
+    # A run with its own budget (the completion) is not sized from the seal; it records the arm it used instead.
+    if budget is None and arms["notools"].uses_model and arms["notools"].worst_case() > sealed_notools:
+        # A selection sealed before the no-tools arm's correction holds 2 calls per case for it, and its budget is sized
+        # from that: the corrected arm (3 calls) is not the arm that selection was sealed for.
+        raise ValueError(f"the selection was sealed for a no-tools arm of at most {sealed_notools} calls per case and this arm takes "
+                         f"{arms['notools'].worst_case()}; select again for a run with this arm")
     for arm in [*arms.values(), *(extras_arms or {}).values()]:
         if callable(getattr(arm, "bind_config", None)):
             arm.bind_config(config)       # the no-tools arm's packet states the sealed per-case cap, as the agent's does
@@ -232,18 +254,19 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
     if resume and (out / "settled.jsonl").exists():
         settled_before = [json.loads(line) for line in (out / "settled.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
     settled_keys = {row["key"] for row in settled_before}
-    campaign_run = f"stage3 run {out.name} selection {selection_sha[:12]}"
+    campaign_run = campaign_run or f"stage3 run {out.name} selection {selection_sha[:12]}"
     if campaign is not None:
-        refuse_past_stop_line(campaign, config, run_name=campaign_run if resume else None)
-        refuse_into_reserve(campaign, config, run_name=campaign_run if resume else None)
+        refuse_past_stop_line(campaign, limits, run_name=campaign_run if resume else None)
+        refuse_into_reserve(campaign, limits, run_name=campaign_run if resume else None)
         if dry_run:
-            campaign.check(config.budget)        # LedgerRefused if it would not fit; nothing is written
+            campaign.check(run_budget)           # LedgerRefused if it would not fit; nothing is written
         else:
-            campaign.reserve(campaign_run, config.budget, commit=campaign_commit, resume=resume,
-                             note=f"stage3_eval run in {out.name}; own cap {config.budget} (sealed in the selection)")
+            campaign.reserve(campaign_run, run_budget, commit=campaign_commit, resume=resume,
+                             note=f"stage3_eval run in {out.name}; own cap {run_budget} " +
+                                  ("(sealed in the selection)" if budget is None else "(the worst case of the cases it re-runs)"))
     writer = RunWriter(out)
     started = datetime.now(timezone.utc).isoformat()
-    ledger = BudgetLedger(out / "ledger.jsonl", config.budget, dry_run=dry_run, resume=resume,
+    ledger = BudgetLedger(out / "ledger.jsonl", run_budget, dry_run=dry_run, resume=resume,
                           meta={"selection_sha256": selection_sha, "sealed_config_hash": selection["sealed_config_hash"]})
     done = _previous_results(out, "main") if resume else {}
     written_cases = set()
@@ -252,7 +275,7 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
     status, counts = "completed", {"cases": 0, "not_opened": 0, "budget_refused": 0, "arm_errors": 0}
     screened = {"cases_screened_for_truth_markers": sum(1 for row in settled_before if row.get("screened")), "run_level_marker_hits": 0}
     refs, agent_t = {}, {}
-    total, settled_count, paused = len(selection["cases"]), 0, False
+    total, settled_count, paused = len(rows), 0, False
     # The provider's count starts at this process; so does the ledger's side of the comparison (a resumed ledger already
     # holds the earlier attempt's calls, crash recoveries included).
     reconcile = None
@@ -260,7 +283,7 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
         base_ledger, base_provider = ledger.committed, int(provider_calls())
         reconcile = lambda key, phase="main": ledger.reconcile(key, int(provider_calls()) - base_provider, ledger.committed - base_ledger, phase=phase)
     try:
-        for index, row in enumerate(selection["cases"]):
+        for index, row in enumerate(rows):
             if max_cases is not None and index >= max_cases:
                 # The only stopping rule: the count given by the caller. Before the next case is asked for, so the
                 # backend's clock has not moved towards it and nothing is reserved for it.
@@ -271,6 +294,9 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
             ref = case_source.case_ref(world, sid)
             if ref is not None:
                 ref = replace(ref, key=key, world=world, shipment_id=sid)
+                if expected_as_of is not None and ref.as_of != expected_as_of.get(key):
+                    # Before any arm: a case is re-run as of its original snapshot time, or not at all.
+                    raise RunStopped(f"{key} would be investigated as of {ref.as_of}, not its original snapshot {expected_as_of.get(key)}")
                 refs[key] = ref
                 if key not in written_cases:
                     writer.append("cases.jsonl", {"key": key, "world": world, "shipment_id": sid, "case_id": ref.case_id, "as_of": ref.as_of,
@@ -279,7 +305,7 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
             else:
                 counts["not_opened"] += 1
             results = {}
-            for name in MAIN_ARM_ORDER:
+            for name in arm_names:
                 if (key, name) in done:
                     results[name] = done[(key, name)]
                     # What an earlier attempt counted for this case stays counted.
@@ -301,6 +327,9 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
                     result = _run_arm(arm, case_for_arm, ledger, dry_run, counts)
                 results[name] = result
                 writer.result(result)
+                if (expected_as_of is not None and name == "agent" and result.not_run is None and result.as_of
+                        and result.as_of != expected_as_of.get(key)):
+                    raise RunStopped(f"the agent's snapshot on {key} is {result.as_of}, not its original snapshot {expected_as_of.get(key)}")
             if results.get("agent") is not None and results["agent"].as_of:
                 agent_t[key] = results["agent"].as_of
             was_screened = ref is not None and not dry_run
@@ -348,13 +377,13 @@ def run(selection_path, out_dir, *, arms, case_source, config: EvalConfig, captu
     manifest = {"schema": "stage3-run-1", "status": status, "dry_run": dry_run, "started_at": started,
                 "finished_at": datetime.now(timezone.utc).isoformat(), "selection_sha256": selection_sha,
                 "sealed_config_hash": selection["sealed_config_hash"], "config": config.as_dict(),
-                "arms": {k: {"worst_case": v.worst_case(), "uses_model": v.uses_model} for k, v in arms.items()},
+                "arms": {k: {"worst_case": v.worst_case(), "uses_model": v.uses_model} for k, v in arms.items() if k in arm_names},
                 "counts": counts, "extras": extras, "ledger": ledger.summary(), "isolation": isolation,
                 "progress": {"paused": paused, "cases_settled": settled_count, "cases_total": total, "max_cases": max_cases,
                              "order": "pre-registered (selection.json)",
                              "stop_rule": "the case count given to the run; no result is read" if max_cases is not None else None},
                 "earlier_segments": _earlier_segments(earlier_manifest),
-                "provenance": (provenance() if callable(provenance) else provenance) or {}}
+                "provenance": (provenance() if callable(provenance) else provenance) or {}, **(manifest_extra or {})}
     if campaign is not None and not dry_run:
         # Committed, not only settled: a reservation still open here (there is none on a clean finish) counts in full.
         settled = campaign.settle(campaign_run, ledger.committed, tokens=ledger.tokens, note=f"status: {status}")

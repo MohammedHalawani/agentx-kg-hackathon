@@ -7,6 +7,9 @@ stage3_eval/WIRING.md asks. Loaded by the harness, from chat/:
   python -m stage3_eval checkpoint --selection .../selection.json --run RUN --wiring scripts.stage3_wiring:build_checkpoint
 
 build(config, dry_run, resume, selection) -> arms, case source, capture, extras, provenance (the run process: no truth).
+build_completion(config, ..., source_run, keys, original_as_of) -> the same for `rerun-failed`: the provider-failed
+                                             cases of a finished run, each as of its original snapshot, nothing written
+                                             to the database (build_completion_replay: by replaying the feed instead).
 build_checkpoint(config, run_dir)         -> evidence resolver for the checkpoint of a paused run (read-only, no truth).
 build_scorer(config, run_dir)             -> ingestion log and evidence resolver (the scorer process, after the run).
 
@@ -504,6 +507,156 @@ def build(config, *, dry_run=False, resume=False, selection=None, agents=None, n
             # Every provider call of this process, completed or failed: the harness compares it with its ledger after each case.
             "provider_calls": pilot.provider_calls if real_model else provider_calls,
             "provenance": provenance, "close": close, "sessions": sessions}
+
+
+# ---------------------------------------------------------------------- the post hoc completion (rerun-failed)
+def require_source_session(ws, ran, latest_as_of):
+    """The completion investigates as of each case's original snapshot on the database AS THE SOURCE RUN LEFT IT. That
+    is only the same evidence if the live session is still that run's: the records the feed delivered are stamped
+    with the time they were delivered in that session, so `recorded_at <= as_of` selects what the run held at as_of.
+    Refuses (SystemExit) a database whose session was reset since, whose import differs, or whose clock has not
+    reached the latest snapshot asked for. Returns the store's status."""
+    from dataset_v2.contracts import instant
+    status = ws.store.status()
+    session = status["session"].get("session_id")
+    if not ran or not ran.get("session_id"):
+        raise SystemExit(f"{ws.database}: the source run's manifest names no live session for {ws.world}; its snapshots cannot be reproduced "
+                         "from this database")
+    if session != ran["session_id"]:
+        raise SystemExit(f"{ws.database}: the live session is {session}, not the source run's {ran['session_id']} (it was reset after the run). "
+                         "The records that run ingested are gone, so its snapshots cannot be read back as of their time. Replay the feed "
+                         "instead: rerun-failed with --wiring scripts.stage3_wiring:build_completion_replay (the E2 session is reset and "
+                         "replayed to each listed case in order).")
+    if ran.get("manifest_hash") and ws.manifest_hash != ran["manifest_hash"]:
+        raise SystemExit(f"{ws.database} holds a different import than the one the source run names")
+    if latest_as_of and instant(status["as_of"]) < instant(latest_as_of):
+        raise SystemExit(f"{ws.database}: the clock is at {status['as_of']}, before the latest snapshot to re-run ({latest_as_of})")
+    return status
+
+
+def _source_worlds(source_run):
+    manifest = json.loads((Path(source_run) / "run_manifest.json").read_text(encoding="utf-8"))
+    return (manifest.get("provenance") or {}).get("worlds") or {}
+
+
+def build_completion(config, *, dry_run=False, resume=False, selection=None, source_run=None, keys=(), original_as_of=None, agents=None,
+                     notools_turn=None, driver=None, provider_calls=None):
+    """The run side of `python -m stage3_eval rerun-failed`: the provider-failed cases of a finished run, each
+    investigated AS OF ITS ORIGINAL SNAPSHOT TIME on the database as that run left it (investigate_as_of, the path the
+    exploratory extras use). The harness reads each case's facts from the source run's cases.jsonl (no case source is
+    returned), so no clock moves and nothing is replayed.
+
+    The agent arm here against the main run's (run_case: store.process_one, then store.execute_step):
+    - the same: the investigation graph, tools, investigator, reviewer, revision rounds and the authority decision
+      (operations.graph.investigate), the per-case model-call cap (the sealed C_cap, checked before each case), the
+      evidence visible at the snapshot (every tool and the retrieval read `recorded_at <= as_of`), the symptoms, the
+      one per-case call counter, and what is captured (tool results, tool index, API responses, receipts, graph, logs);
+    - different: nothing is committed. No claim, no OpsRun, recommendation, review or audit record is written, the
+      case's workflow state does not change (final_state is empty in the result, and the case API still shows the
+      source run's failed investigation), and no execution step runs (executions and outcomes are empty). The
+      store's check that evidence moved during the investigation (snapshot_changed / snapshot_superseded) does not
+      apply: the snapshot is fixed. Precedents are read as of the snapshot from the ledger as it stands now, which
+      holds the source run's later records too (filtered by time, as for the extras).
+    So the conclusion, citations, review verdict, authority and call count are comparable with the main run's; the
+    execution and outcome columns of these cases are not, and stay empty.
+
+    The database is only read: the worker is not paused and no session is prepared or reset (the store's cap and
+    withheld-tools settings are set on the store object in this process, not in the database). It refuses a database
+    whose live session is not the source run's (require_source_session); the replay variant is
+    build_completion_replay. `agents`, `notools_turn`, `driver` and `provider_calls` are for tests."""
+    pilot = _pilot()
+    pilot.refuse_truth_access()
+    from operations import investigator
+    if not source_run:
+        raise SystemExit("build_completion is the wiring of rerun-failed: it needs the source run")
+    real_model = agents is None and not dry_run
+    code_state = pilot.git_state()
+    started_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    logs = LogCapture()
+    logging.getLogger().addHandler(logs)
+    log.setLevel(logging.INFO)
+    owns_driver = driver is None
+    if driver is None:
+        import config as settings
+        from neo4j import GraphDatabase
+        logging.getLogger("neo4j").setLevel(logging.ERROR)
+        driver = GraphDatabase.driver(settings.NEO4J_URI, auth=(settings.NEO4J_USERNAME, settings.NEO4J_PASSWORD))
+    tap = ToolTap(agents or investigator)
+    ran = _source_worlds(source_run)
+    original_as_of = dict(original_as_of or {})
+    sessions, prepared = {}, {}
+    for world in sorted({key.split(":", 1)[0] for key in keys}):      # only the worlds that have a case to re-run
+        ws = sessions[world] = open_world(driver, world, config.worlds.get(world), tap)
+        latest = max((at for key, at in original_as_of.items() if key.split(":", 1)[0] == world), default=None)
+        status = require_source_session(ws, ran.get(world), latest)
+        ws.store.model_call_cap = int(config.c_cap)      # on the store object only; nothing is written
+        ws.store.disabled_tools = ()
+        prepared[world] = {"database": ws.database, "dataset_id": ws.dataset_id, "manifest_hash": ws.manifest_hash,
+                           "session_id": status["session"]["session_id"], "session_reset": False, "clock": status["as_of"],
+                           "per_case_model_call_cap": int(config.c_cap), "backend_model_call_cap": require_sealed_cap(ws, config.c_cap),
+                           "database_writes": "none (investigate as of the snapshot, no commit, no execution step)"}
+        log.info("%s: %s session %s clock %s (completion, as of each original snapshot)", world, ws.database, prepared[world]["session_id"], status["as_of"])
+    refuse_excluded(sessions, {"cases": [row for row in (selection or {}).get("cases", []) if row["key"] in set(keys)]})
+    if real_model:
+        pilot.record_model_calls()
+    tokens = (lambda: pilot.MODEL_CALLS["total_tokens"]) if real_model else None
+
+    def agent(case):
+        return investigate_as_of(sessions[case.world], case, disabled=(), tap=tap, tokens=tokens, arm="agent", c_cap=config.c_cap)
+
+    def provenance():
+        import config as settings
+        from dataset_v2.contracts import digest
+        now = pilot.git_state()
+        calls = json.loads(json.dumps(pilot.MODEL_CALLS)) if real_model else {"succeeded": {}, "failed": {}, "prompt_tokens": 0,
+                                                                              "completion_tokens": 0, "total_tokens": 0}
+        return {"wiring": "chat/scripts/stage3_wiring.py:build_completion", "commit": code_state[0], "dirty_tree": code_state[1],
+                "tree_changed_during_run": now != code_state, "started_at": started_at,
+                "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "model": "scripted (test)" if agents is not None else "none (dry run)" if dry_run else settings.LLM_MODEL,
+                "model_api_base": settings.LLM_API_BASE if real_model else None,
+                "investigator_prompt_sha256": digest(investigator.SYSTEM), "reviewer_prompt_sha256": digest(investigator.REVIEWER_SYSTEM),
+                "cause_catalogue_sha256": digest(investigator.cause_catalogue()), "model_calls": calls,
+                "agent_path": "operations.graph.investigate as of the original snapshot, commit=None (investigate_as_of); the main run "
+                              "used store.process_one and store.execute_step",
+                "not_done_for_these_cases": ["claim", "OpsRun / recommendation / review / audit records", "workflow state change",
+                                             "execution step", "snapshot-changed check"],
+                "worlds": {w: {**prepared[w], "clock_at_end": sessions[w].clock()} for w in sessions},
+                "truth_environment_set": pilot.truth_environment(), "world_truth_imported": pilot.truth_module_loaded()}
+
+    def close():
+        logging.getLogger().removeHandler(logs)
+        if owns_driver:
+            driver.close()
+
+    return {"arms": {"agent": AgentArm(agent, config.c_cap, config.r_cap),
+                     "notools": NoToolsArm(turn=notools_turn, c_cap=config.c_cap)},
+            "capture": WorldCapture(sessions, tap, logs),
+            "provider_calls": pilot.provider_calls if real_model else provider_calls,
+            "provenance": provenance, "close": close, "sessions": sessions}
+
+
+def build_completion_replay(config, *, dry_run=False, resume=False, selection=None, source_run=None, keys=(), original_as_of=None, **test):
+    """The replay variant of the completion, for a database whose live session is no longer the source run's: `build`
+    on the worlds that have a case to re-run only (the other world's session, and with it the source run's ingestion
+    times there, is not opened, prepared or reset). The session is reset as `build` resets it (SUHAIL_STAGE3_RESET_SESSION=1,
+    or --resume), the feed is replayed hour by hour to each listed case in order, and only the listed cases are
+    investigated, through the main run's own path (store.process_one, store.execute_step). The harness stops the run
+    if a case opens at any time other than its original snapshot.
+
+    Not equivalent to the source run in one respect, which is why build_completion is the default: the cases the
+    source run investigated before these are not investigated in the replay, so the operations ledger holds none of
+    their runs, executions or outcomes (precedents from them are absent). Score the SOURCE run before using this: the
+    reset removes the ingestion times its scoring reads."""
+    worlds = sorted({key.split(":", 1)[0] for key in keys})
+    if not worlds:
+        raise SystemExit("build_completion_replay is the wiring of rerun-failed: it needs the cases to re-run")
+    from dataclasses import replace
+    only = replace(config, worlds={world: config.worlds[world] for world in worlds})
+    listed = {"cases": [row for row in (selection or {}).get("cases", []) if row["key"] in set(keys)]}
+    wired = build(only, dry_run=dry_run, resume=resume, selection=listed, **test)
+    wired.pop("extras_arms", None)
+    return wired
 
 
 # ---------------------------------------------------------------------- the scorer seams (section 7)

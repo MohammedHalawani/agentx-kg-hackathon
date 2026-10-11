@@ -243,7 +243,7 @@ class ExecutionRecoveryTests(_Store):
 
 
 class HumanClosureTests(_Store):
-    def test_person_closes_with_evidence_as_human_verified_not_evidence_verified(self):
+    def test_a_person_cannot_close_a_case_with_evidence_that_was_already_there(self):
         store, driver, result = self.processed()
         def to_human(tx):
             tx.ledger[result["case_id"]][1]["workflow_state"] = "HUMAN_REVIEW"
@@ -255,13 +255,21 @@ class HumanClosureTests(_Store):
         with self.assertRaises(OperationsConflict):
             store.record_human_outcome(case["case_id"], "DEMO-OPERATOR-LOCAL", "parcel_located", "Parcel found on shelf B4 during the depot check.",
                                        ["DEMO-NOT-VISIBLE"], case["state_version"], "foreign-1")
-        closed = store.record_human_outcome(case["case_id"], "DEMO-OPERATOR-LOCAL", "parcel_located",
-                                            "Parcel found on shelf B4 during the depot check.", evidence, case["state_version"], "human-01")
-        self.assertEqual((closed["workflow_state"], closed["verification_status"]), ("RESOLVED", "HUMAN_VERIFIED"))
+        # Stage 4: evidence that was already there when the case opened proves nothing new. A person cannot close a
+        # case by citing it; a finding needs relevant evidence recorded after the case's last action (or its opening).
+        # The closing path is covered in tests/test_world_simulation.py (HumanOutcomeTests).
+        with self.assertRaises(OperationsConflict):
+            store.record_human_outcome(case["case_id"], "DEMO-OPERATOR-LOCAL", "parcel_located",
+                                       "Parcel found on shelf B4 during the depot check.", evidence, case["state_version"], "human-01")
+        self.assertFalse([v for k, v in driver.ledger.values() if k == "OpsOutcome"])
+        recorded = store.record_human_outcome(case["case_id"], "DEMO-OPERATOR-LOCAL", "parcel_not_found",
+                                              "Searched shelf B4 and the returns cage during the depot check.", evidence, case["state_version"], "human-02")
+        self.assertEqual((recorded["workflow_state"], recorded["verification_status"], recorded["resolved"]), ("ESCALATED", "HUMAN_FINDING", False))
         outcome = next(v for k, v in driver.ledger.values() if k == "OpsOutcome")
-        self.assertEqual((outcome["verification_status"], outcome["verifier_id"]), ("HUMAN_VERIFIED", "DEMO-OPERATOR-LOCAL"))
-        self.assertTrue(store.record_human_outcome(case["case_id"], "DEMO-OPERATOR-LOCAL", "parcel_located",
-                                                   "Parcel found on shelf B4 during the depot check.", evidence, case["state_version"], "human-01")["idempotent"])
+        self.assertEqual((outcome["verifier_id"], outcome["success"], outcome["trusted_precedent"]), ("DEMO-OPERATOR-LOCAL", False, False))
+        self.assertTrue(store.record_human_outcome(case["case_id"], "DEMO-OPERATOR-LOCAL", "parcel_not_found",
+                                                   "Searched shelf B4 and the returns cage during the depot check.", evidence,
+                                                   case["state_version"], "human-02")["idempotent"])
 
 
 class ReviewerOutageRecordTests(_Store):

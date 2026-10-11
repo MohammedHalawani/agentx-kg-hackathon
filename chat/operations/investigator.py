@@ -19,6 +19,7 @@ output fields are kept.
 import json
 import os
 
+from operations import latency
 from operations.agents import BLAME, CAUSES, GPS_DELIVERY, VERDICTS
 from operations.authority import ACTIONS, EVIDENCE_GATHERING
 
@@ -27,6 +28,39 @@ MAX_TURNS = 14               # model turns per investigation round
 ATTEMPTS_PER_TURN = 2        # a provider failure, or an invalid conclusion, gets one retry
 DEFAULT_MODEL_CALL_CAP = 12  # investigator turns, reviewer calls, revision rounds and retries of one case investigation
 MODEL_CALL_CAP_ENV = "SUHAIL_MODEL_CALL_CAP"
+# Opt-in latency change (off unless set to 1): fetch shipment_overview before the first model turn instead of spending a
+# model call to ask for it. The investigator still sees it as its first tool call and result, and chooses everything
+# after it; the step is recorded as chosen_by "prefetch". It changes the agent's inputs (one turn fewer, a fixed first
+# step), so it needs its own quality check before it is switched on for an evaluated investigator.
+PREFETCH_ENV = "SUHAIL_PREFETCH_OVERVIEW"
+PREFETCH_TOOL = "shipment_overview"
+PREFETCH_PURPOSE = "Start here: the case's records and the ids they name (retrieved before the first turn)."
+# Opt-in latency change (off unless set to 2..4): the investigator may ask for up to that many tools in one reply, when it
+# already knows their arguments and their results do not depend on each other. Calls run in the order given, each is
+# recorded and shown to it exactly as a single call would be; the saving is model round trips. It changes the agent's
+# instructions, so like the prefetch it needs its own quality check before it is used for an evaluated investigator.
+BATCH_ENV = "SUHAIL_TOOL_BATCH"
+MAX_BATCH = 4
+# Opt-in recovery for the live path (off unless set to 1, so an evaluated investigator behaves as it was frozen): when a
+# role's reply is still invalid after its corrective retry, ask ONCE more for a well-formed reply, quoting the validation
+# error and the required shape. The extra call is counted against the same per-case cap and is skipped when the cap has no
+# room for it. If it fails too, the role fails closed exactly as without the option (same mode, same reason): no
+# conclusion or verdict is substituted. Each repair is reported through on_repair (a RETRYING pipeline event).
+REPAIR_ENV = "SUHAIL_INVALID_OUTPUT_REPAIR"
+REPAIR_KIND = "invalid_output_repair"
+REPAIR_MESSAGE = "model reply invalid, retrying"
+# Demo option, off by default (the evaluated behaviour): when a round's turn budget is exhausted without a valid conclusion and
+# the per-case model-call cap still has room, the investigator gets one final turn that says only that no tool call is
+# possible and that it must conclude now, from what it retrieved or as INSUFFICIENT_EVIDENCE. The message names no cause and
+# adds no evidence. The conclusion goes through the same validator (with its normal retry and repair), reviewer and
+# authority, and the record is marked forced_final_turn. Reported through on_forced (a RUNNING pipeline event).
+FORCED_ENV = "SUHAIL_FORCED_CONCLUSION"
+FORCED_KIND = "forced_final_turn"
+FORCED_EVENT_MESSAGE = "turn budget exhausted; the investigator is asked once to conclude from the evidence already retrieved"
+FORCED_MESSAGE = ("No more tool calls are possible. Reply with action conclude now: conclude from the evidence you have already "
+                  "retrieved, or conclude INSUFFICIENT_EVIDENCE and name what is missing and the next step. Either is a valid answer.")
+TURN_BUDGET_ERROR = "turn budget exhausted without a valid conclusion"
+TURN_BUDGET_KIND = "turn_budget_exhausted"
 RESERVED_FOR_REVIEW = 1      # the investigator always leaves one call for the independent review
 ABSTENTION = "INSUFFICIENT_EVIDENCE"
 CAUSE_CHOICES = (*CAUSES, "UNKNOWN")   # UNKNOWN is accepted as an older spelling of INSUFFICIENT_EVIDENCE
@@ -182,6 +216,63 @@ or, when the evidence supports a conclusion (or you must stop):
 """
 
 
+def prefetch_enabled():
+    return os.environ.get(PREFETCH_ENV, "").strip() == "1"
+
+
+def repair_enabled():
+    return os.environ.get(REPAIR_ENV, "").strip() == "1"
+
+
+def forced_enabled():
+    return os.environ.get(FORCED_ENV, "").strip() == "1"
+
+
+def forced_event(session=None):
+    """What the forced final turn reports: that it is happening and the calls used so far. Nothing about the case."""
+    return {"kind": FORCED_KIND, "role": "investigator", "message": FORCED_EVENT_MESSAGE,
+            **({"model_calls": session.budget.snapshot()} if session is not None else {})}
+
+
+def repair_event(role, error, session=None):
+    """What a repair attempt reports: the role, the validation error it is asked to correct and the calls used so far."""
+    return {"kind": REPAIR_KIND, "role": role, "attempt": 1, "message": REPAIR_MESSAGE, "validation_error": _sanitize(error),
+            **({"model_calls": session.budget.snapshot()} if session is not None else {})}
+
+
+CONCLUDE_SHAPE = SYSTEM[SYSTEM.index('{"action":"conclude"'):].strip()
+REVIEW_SHAPE = ('{"verdict":"ACCEPT|REVISE|INSUFFICIENT_EVIDENCE|HUMAN_REVIEW|ESCALATE","feedback":"<one to three sentences>",'
+                '"unsupported_claims":["..."],"unaddressed_contradictions":["<evidence id>"],"alternatives_tested":"yes|no"}')
+
+
+def tool_batch():
+    """How many tools one reply may call: SUHAIL_TOOL_BATCH (2..4), else 1 (one call per reply, the evaluated protocol)."""
+    try:
+        return max(1, min(int(os.environ.get(BATCH_ENV, "").strip() or 1), MAX_BATCH))
+    except ValueError:
+        return 1
+
+
+def system_prompt(batch=1):
+    """The investigator's instructions. With batch 1 this is SYSTEM, unchanged.
+
+    With batch > 1 the call shape is a list, and the instructions say when to fill it. Offering the list as a second,
+    optional shape after the single call was not enough: on eight demo cases (2026-10-11) GPT-OSS kept to one tool
+    per reply. The single shape is still accepted."""
+    if batch <= 1:
+        return SYSTEM
+    one = "Work iteratively: call one tool at a time, read its result, and decide what to examine next."
+    shape = '{"action":"call","tool":"<tool name>","args":{...},"purpose":"<one short sentence>"}\n'
+    assert one in SYSTEM and shape in SYSTEM
+    return SYSTEM.replace(one, (
+        f"Work in rounds of evidence. Every reply costs several seconds, so in one reply ask for every tool (up to {batch}) "
+        "whose arguments you already know and whose result you will want whatever the others show; then read the results "
+        "together and decide what to examine next. Ask for a tool on its own only when its arguments, or whether you need it "
+        "at all, depend on a result you have not yet seen. For example, once shipment_overview has named the packages, devices "
+        "and route runs, the tools you want about them can usually be asked for together.")).replace(
+        shape, f'{{"action":"call","calls":[{{"tool":"<tool name>","args":{{...}},"purpose":"<one short sentence>"}}, ...]}}  (1 to {batch} calls)\n')
+
+
 def model_call_cap():
     """The per-case model-call cap: SUHAIL_MODEL_CALL_CAP, default 12, kept within sane bounds."""
     try:
@@ -226,6 +317,8 @@ class Session:
         self.steps = []             # every tool call of every round
         self.rounds = 0
         self.reviews = []           # earlier review results (verdict, feedback, unsupported claims)
+        self.turns = []             # every model call's timing (operations.latency.turn_record); measurement only
+        self.forced_final_turn = False  # SUHAIL_FORCED_CONCLUSION: a round of this case used its forced final turn
 
 
 class CallCapReached(RuntimeError):
@@ -233,10 +326,13 @@ class CallCapReached(RuntimeError):
 
 
 def failure_mode(error):
-    """How a model role failed: the provider call itself, the model-call cap, or output that never passed validation."""
+    """How a model role failed: the provider call itself, the model-call cap, the investigator's turn budget, or output
+    that never passed validation."""
     text = str(error or "")
     if text.startswith("model-call cap"):
         return "model_call_cap"
+    if text.startswith("turn budget exhausted"):
+        return TURN_BUDGET_KIND
     return "model_unavailable" if text.startswith("model call failed") else "invalid_model_output"
 
 
@@ -314,13 +410,19 @@ def _clean_conclusion(out):
 
 
 def model_turn(messages):
-    """One provider call; returns the parsed JSON object or None. Raises on transport errors."""
+    """One provider call; returns the parsed JSON object or None. Raises on transport errors, and TimeoutError
+    (llm.pipeline._llm.ModelCallTimeout) when the call has not returned within the per-call deadline
+    (SUHAIL_MODEL_CALL_TIMEOUT_SECONDS, default 60 s): a provider failure like any other to the loop above."""
     from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
     from llm.pipeline import _llm
     wire = [SystemMessage(messages[0]["content"])] + [
         (AIMessage if m["role"] == "assistant" else HumanMessage)(m["content"]) for m in messages[1:]]
-    response = _llm.model().invoke(wire)
-    return _llm.parse_json(_llm.message_text(getattr(response, "content", None)))
+    response = _llm.invoke(wire, deadline=_llm.call_timeout())
+    latency.note_usage(response)
+    text = _llm.message_text(getattr(response, "content", None))
+    parsed = _llm.parse_json(text)
+    latency.note_reply(text, parsed)
+    return parsed
 
 
 def case_packet(tools, session, feedback=None):
@@ -331,6 +433,7 @@ def case_packet(tools, session, feedback=None):
             "cause_catalogue": cause_catalogue(), "cause_catalogue_guidance": CATALOGUE_GUIDANCE,
             "action_types": {name: {"authority": entry[0], "summary": entry[3]} for name, entry in ACTIONS.items()},
             "limits": {"max_tool_calls": MAX_TOOL_CALLS,
+                       **({"max_tool_calls_per_reply": tool_batch()} if tool_batch() > 1 else {}),
                        "model_turns_available": max(session.budget.remaining - RESERVED_FOR_REVIEW, 0),
                        "note": "Turns are shared with the review of your conclusion and with any revision it asks for."},
             **({"reviewer_feedback": feedback} if feedback else {})}
@@ -349,17 +452,27 @@ def revision_message(review, feedback, remaining):
             f"a cause, conclude INSUFFICIENT_EVIDENCE with what is missing and the next step. Model turns available: {remaining}.")
 
 
-def investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, review=None):
+def investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, review=None, prefetch=None,
+                on_repair=None, repair=None, on_forced=None, forced=None):
     """Run one investigation round of the bounded tool loop. Returns a result dict; never raises for model failures.
 
     session: the case investigation this round belongs to (conversation, call budget). A revision round continues the
-    same conversation with the reviewer's feedback; without a session each call is a self-contained investigation."""
+    same conversation with the reviewer's feedback; without a session each call is a self-contained investigation.
+    repair: one extra attempt after a conclusion that is still invalid after its retry (None reads
+    SUHAIL_INVALID_OUTPUT_REPAIR); on_repair(event) is told when that attempt is about to be made.
+    forced: one final conclude-only turn when the turn budget is exhausted (None reads SUHAIL_FORCED_CONCLUSION);
+    on_forced(event) is told when that turn is about to be made."""
     turn = turn or model_turn
+    repair = repair_enabled() if repair is None else bool(repair)
+    forced = forced_enabled() if forced is None else bool(forced)
+    forcing, limit = False, MAX_TURNS
+    repairing, repaired = False, 0
     session = session or Session()
     budget = session.budget
     revising = session.messages is not None
+    batch = tool_batch()
     if not revising:
-        session.messages = [{"role": "system", "content": SYSTEM},
+        session.messages = [{"role": "system", "content": system_prompt(batch)},
                             {"role": "user", "content": json.dumps(case_packet(tools, session, feedback), ensure_ascii=False)}]
     else:
         session.messages.append({"role": "user", "content": revision_message(review, feedback, max(budget.remaining - RESERVED_FOR_REVIEW, 0))})
@@ -369,60 +482,120 @@ def investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, 
     made = lambda: len(tools.round_calls()) if hasattr(tools, "round_calls") else len(tools.calls)
     steps, errors = [], []
     error, problem, turns, provider_failures, invalid_conclusions = None, None, 0, 0, 0
+    if not revising and (prefetch_enabled() if prefetch is None else prefetch) and PREFETCH_TOOL in tools.CATALOG \
+            and PREFETCH_TOOL not in getattr(tools, "disabled", ()):
+        result = tools.call(PREFETCH_TOOL, {})
+        step = {"round": round_number, "tool": PREFETCH_TOOL, "args": {}, "purpose": PREFETCH_PURPOSE,
+                "evidence_ids": result["evidence_ids"], "computed_ids": result.get("computed_ids", []), "chosen_by": "prefetch",
+                "model_seconds": None, "tool_seconds": tools.calls[-1].get("seconds")}
+        steps.append(step)
+        session.steps.append(step)
+        if on_step:
+            on_step(step)
+        # Written in the call shape the instructions ask for, so the model's first turn of its own does not copy another.
+        prefetched = {"tool": PREFETCH_TOOL, "args": {}, "purpose": PREFETCH_PURPOSE}
+        messages.append({"role": "assistant", "content": json.dumps({"action": "call", **prefetched} if batch <= 1 else
+                                                                    {"action": "call", "calls": [prefetched]}, ensure_ascii=False)})
+        messages.append({"role": "user", "content": f"TOOL RESULT {PREFETCH_TOOL}: {result['result']}"})
 
     def reject(text):
         errors.append({"turn": turns, "error": text})
         return text
 
     while True:
-        if turns >= MAX_TURNS:
-            error = "turn budget exhausted without a valid conclusion"
+        if turns >= limit:
+            if forced and not forcing and budget.remaining > RESERVED_FOR_REVIEW:
+                # The forced final turn: the same conversation and only FORCED_MESSAGE. Earlier rejections are not repeated.
+                # Room for that turn, its one corrective retry and, where the option is on and unused, one repair.
+                forcing, limit = True, turns + ATTEMPTS_PER_TURN + (1 if repair and not repaired else 0)
+                problem, repairing, provider_failures, invalid_conclusions = None, False, 0, 0
+                session.forced_final_turn = True
+                if on_forced:
+                    on_forced(forced_event(session))
+                continue
+            error = TURN_BUDGET_ERROR
             break
         if not budget.take("investigator", reserve=RESERVED_FOR_REVIEW):
-            error = "model-call cap reached before a valid conclusion"
+            # During the forced final turn's retry the cap only ends what the exhausted turn budget started.
+            error = TURN_BUDGET_ERROR if forcing else "model-call cap reached before a valid conclusion"
             break
         turns += 1
         last = budget.remaining <= RESERVED_FOR_REVIEW or turns >= MAX_TURNS
         notes = []
-        if problem:
+        if problem and repairing:
+            repairing = False
+            notes.append(f"Your last replies were rejected. Validation error: {problem}. Reply with exactly one well-formed JSON object "
+                         f"and nothing else, in this shape, citing only ids your tools returned: {CONCLUDE_SHAPE}")
+        elif problem:
             notes.append(f"Your previous reply was rejected: {problem}. Reply with one corrected JSON object.")
-        if last or made() >= MAX_TOOL_CALLS:
+        if forcing:
+            notes.append(FORCED_MESSAGE)
+        elif last or made() >= MAX_TOOL_CALLS:
             notes.append("No further tool calls are possible: reply with action conclude now. If the evidence does not establish a cause, "
                          "conclude INSUFFICIENT_EVIDENCE and name what is missing and the next step.")
+        sent = messages + [{"role": "user", "content": " ".join(notes)}] if notes else messages
+        latency.take_usage()
+        latency.take_reply()
+        started = latency.now()
         try:
-            out = turn(messages + [{"role": "user", "content": " ".join(notes)}] if notes else messages)
+            out = turn(sent)
         except Exception as exc:  # Transport/provider failure: type only.
+            session.turns.append(latency.turn_record("investigator", round_number, latency.now() - started, "provider_failure",
+                                                     prompt_chars=sum(len(m["content"]) for m in sent)))
             provider_failures += 1
             problem = reject(f"model call failed ({type(exc).__name__})")
             if provider_failures >= ATTEMPTS_PER_TURN:
                 error = problem
                 break
             continue
+        valid = isinstance(out, dict) and out.get("action") in ("call", "conclude")
+        session.turns.append(latency.turn_record("investigator", round_number, latency.now() - started,
+                                                 out["action"] if valid else "invalid", latency.take_usage(),
+                                                 prompt_chars=sum(len(m["content"]) for m in sent),
+                                                 invalid=None if valid else latency.invalid_kind(out)))
+        latency.take_reply()
         provider_failures = 0
         # A rejected reply on a tool-call turn is corrected on the next turn; it never ends the investigation by itself.
         if not isinstance(out, dict) or out.get("action") not in ("call", "conclude"):
             problem = reject("reply must be one JSON object with action call or conclude")
             continue
         if out["action"] == "call":
-            if out.get("tool") not in tools.CATALOG or out.get("tool") in getattr(tools, "disabled", ()):
-                problem = reject(f"unknown tool {_sanitize(out.get('tool'), 60)}")
+            several = batch > 1 and "calls" in out
+            requested = out.get("calls") if several else [out]
+            if not isinstance(requested, list) or not requested or not all(isinstance(c, dict) for c in requested):
+                problem = reject("calls must be a non-empty list of {tool, args, purpose}")
+                continue
+            unknown = next((c.get("tool") for c in requested if c.get("tool") not in tools.CATALOG or c.get("tool") in getattr(tools, "disabled", ())), False)
+            if unknown is not False:
+                problem = reject(f"unknown tool {_sanitize(unknown, 60)}")
                 continue
             if made() >= MAX_TOOL_CALLS or last:
                 problem = reject("tool budget exhausted; conclude now with what you have")
                 continue
             problem = None
-            purpose = _sanitize(out.get("purpose"), 160)
-            if BLAME.search(purpose) or GPS_DELIVERY.search(purpose):
-                purpose = ""
-            result = tools.call(out["tool"], out.get("args") or {})
-            step = {"round": round_number, "tool": out["tool"], "args": tools.calls[-1]["args"], "purpose": purpose,
-                    "evidence_ids": result["evidence_ids"], "computed_ids": result.get("computed_ids", [])}
-            steps.append(step)
-            session.steps.append(step)
-            if on_step:
-                on_step(step)
-            messages.append({"role": "assistant", "content": json.dumps({k: out.get(k) for k in ("action", "tool", "args", "purpose")}, ensure_ascii=False)})
-            messages.append({"role": "user", "content": f"TOOL RESULT {out['tool']}: {result['result']}"})
+            room = min(batch, MAX_TOOL_CALLS - made())
+            ran, results = [], []
+            for c in requested[:room]:
+                purpose = _sanitize(c.get("purpose"), 160)
+                if BLAME.search(purpose) or GPS_DELIVERY.search(purpose):
+                    purpose = ""
+                result = tools.call(c["tool"], c.get("args") or {})
+                step = {"round": round_number, "tool": c["tool"], "args": tools.calls[-1]["args"], "purpose": purpose,
+                        "evidence_ids": result["evidence_ids"], "computed_ids": result.get("computed_ids", []),
+                        # Measurement only: the model turn that chose this call and the tool's own time.
+                        "model_seconds": session.turns[-1]["seconds"], "tool_seconds": tools.calls[-1].get("seconds")}
+                steps.append(step)
+                session.steps.append(step)
+                if on_step:
+                    on_step(step)
+                ran.append({"tool": c["tool"], "args": c.get("args"), "purpose": c.get("purpose")})
+                results.append(f"TOOL RESULT {c['tool']}: {result['result']}")
+            reply = ({"action": "call", "calls": ran} if several else
+                     {k: out.get(k) for k in ("action", "tool", "args", "purpose")})
+            messages.append({"role": "assistant", "content": json.dumps(reply, ensure_ascii=False)})
+            if len(requested) > room:
+                results[-1] += f" NOTE: only the first {room} of your {len(requested)} calls ran (per-reply or tool-call limit)."
+            messages.extend({"role": "user", "content": text} for text in results)
             continue
         problem = validate_conclusion(out, tools.retrieved)
         if problem:
@@ -430,20 +603,30 @@ def investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, 
             invalid_conclusions += 1
             reject(problem)
             if invalid_conclusions >= ATTEMPTS_PER_TURN:
-                error = problem
+                # One repair attempt, only when the option is on and the cap and the turn limit still have room for it.
+                if repair and not repaired and budget.remaining > RESERVED_FOR_REVIEW and turns < limit:
+                    repaired, repairing = 1, True
+                    if on_repair:
+                        on_repair(repair_event("investigator", problem, session))
+                    continue
+                # A forced final turn that is still invalid ends as the exhausted turn budget it came from.
+                error = TURN_BUDGET_ERROR if forcing else problem
                 break
             continue
         conclusion = _clean_conclusion(out)
         messages.append({"role": "assistant", "content": json.dumps({"action": "conclude", **conclusion}, ensure_ascii=False)})
         return {"mode": "gpt-oss", "degraded": False, "steps": list(session.steps), "round_steps": steps,
                 "retrieved_evidence_ids": sorted(tools.retrieved), "validation_error": None, "validation_errors": errors,
-                "model_calls": budget.snapshot(), **conclusion}
-    # A provider failure is "model_unavailable"; the cap is "model_call_cap"; a model that answered but never produced a
-    # valid conclusion (schema, citation, blame or GPS violations that survived the corrective retry, or the turn budget)
-    # is "invalid_model_output". No diagnosis is substituted in any of them.
+                "model_calls": budget.snapshot(), **({"invalid_output_repairs": repaired} if repaired else {}),
+                **({FORCED_KIND: True} if forcing else {}), **conclusion}
+    # A provider failure is "model_unavailable"; the cap is "model_call_cap"; a model that kept calling tools or never
+    # concluded validly within the round's turns is "turn_budget_exhausted"; a conclusion with schema, citation, blame or GPS
+    # violations that survived the corrective retry is "invalid_model_output". No diagnosis is substituted in any of them.
     return {"mode": failure_mode(error), "degraded": True, "steps": list(session.steps), "round_steps": steps,
             "retrieved_evidence_ids": sorted(tools.retrieved), "validation_error": error, "validation_errors": errors,
-            "model_calls": budget.snapshot(), "hypotheses": [], "primary_cause": None, "confidence": None, "missing_evidence": [],
+            "model_calls": budget.snapshot(), **({"invalid_output_repairs": repaired} if repaired else {}),
+            **({FORCED_KIND: True} if forcing else {}),
+            "hypotheses": [], "primary_cause": None, "confidence": None, "missing_evidence": [],
             "next_evidence_step": "", "recommended_action": None, "requires_physical_check": True,
             "summary": "Investigation could not reach a valid conclusion; no AI diagnosis was produced."}
 
@@ -490,13 +673,15 @@ CONCLUSION_FIELDS = ("hypotheses", "primary_cause", "confidence", "missing_evide
                      "requires_physical_check", "summary")
 
 
-def review(conclusion, records, checks, symptoms, *, ask=None, context=None, session=None):
+def review(conclusion, records, checks, symptoms, *, ask=None, context=None, session=None, on_repair=None, repair=None):
     """Independent review; a failed reviewer is UNAVAILABLE (fail closed), never ACCEPT.
 
     context: what the graph adds for the reviewer (citation validity, the tool-computed results the investigator saw,
     retrieved-but-uncited evidence, the tool calls, earlier reviews). session: the case's model-call budget; a call the
-    cap refuses is a failed review."""
+    cap refuses is a failed review. repair / on_repair: as for investigate, for a verdict still invalid after its retry."""
     from operations.agents import _ask
+    repair = repair_enabled() if repair is None else bool(repair)
+    repaired = 0
     ask = ask or _review_call
     packet = {"case_symptoms": symptoms, "investigator_conclusion": {k: conclusion.get(k) for k in CONCLUSION_FIELDS if k in conclusion or k != "next_evidence_step"},
               "cited_records": records, "deterministic_checks": checks, "visible_evidence_ids": sorted(records), **(context or {})}
@@ -516,10 +701,35 @@ def review(conclusion, records, checks, symptoms, *, ask=None, context=None, ses
     def counted(system, user, default_):
         if session is not None and not session.budget.take("reviewer"):
             raise CallCapReached("model-call cap reached")
-        return ask(system, user, default_)
+        latency.take_usage()
+        started = latency.now()
+        outcome = "provider_failure"
+        try:
+            reply = ask(system, user, default_)
+            outcome = "review"
+            return reply
+        finally:
+            if session is not None:
+                session.turns.append(latency.turn_record("reviewer", len(session.reviews), latency.now() - started, outcome,
+                                                         latency.take_usage(), prompt_chars=len(system) + len(str(user))))
 
     refused_before = session.budget.refused if session is not None else 0
     out, mode, error = _ask(REVIEWER_SYSTEM, packet, {}, default, validate, counted)
+    if (out is None and repair and failure_mode(error) == "invalid_model_output"
+            and not (session is not None and (session.budget.refused > refused_before or session.budget.remaining < 1))):
+        # One repair attempt within the cap. A failure of any kind here leaves the review as it was: UNAVAILABLE, same reason.
+        repaired = 1
+        if on_repair:
+            on_repair(repair_event("reviewer", error, session))
+        user = (json.dumps({"facts": packet}, default=str, ensure_ascii=False) +
+                f"\n\nYour last outputs were rejected. Validation error: {error}. Return exactly one well-formed JSON object and "
+                f"nothing else, in this shape: {REVIEW_SHAPE}")
+        try:
+            again = counted(REVIEWER_SYSTEM, user, default)
+            if isinstance(again, dict) and not validate(again):
+                out, mode = again, "gpt-oss"
+        except Exception:  # A provider failure or malformed output: the repair did not succeed.
+            pass
     if out is None:
         capped = session is not None and session.budget.refused > refused_before
         # Still UNAVAILABLE for authority (fail closed); the mode says whether the call failed, was refused by the cap or
@@ -527,14 +737,17 @@ def review(conclusion, records, checks, symptoms, *, ask=None, context=None, ses
         return {"verdict": "UNAVAILABLE", "feedback": "Independent model review could not be completed.", "unsupported_claims": [],
                 "unaddressed_contradictions": [], "alternatives_tested": "",
                 "mode": "model_call_cap" if capped else failure_mode(error), "degraded": True,
-                "validation_error": "model-call cap reached before the review completed" if capped else error}
+                "validation_error": "model-call cap reached before the review completed" if capped else error,
+                **({"invalid_output_repairs": repaired} if repaired else {})}
     return {"verdict": out["verdict"], "feedback": _sanitize(out["feedback"], 500),
             "unsupported_claims": [_sanitize(x, 200) for x in out.get("unsupported_claims") or []][:6],
             "unaddressed_contradictions": [_sanitize(x, 160) for x in out.get("unaddressed_contradictions") or [] if isinstance(x, str)][:10],
             "alternatives_tested": out.get("alternatives_tested") if out.get("alternatives_tested") in ("yes", "no") else "",
-            "mode": mode, "degraded": False, "validation_error": None}
+            "mode": mode, "degraded": False, "validation_error": None, **({"invalid_output_repairs": repaired} if repaired else {})}
 
 
 def _review_call(system, user, default):
-    from llm.pipeline._llm import ask_json
-    return ask_json(system, user, default)
+    """The reviewer's provider call, under the same per-call deadline as an investigator turn (a call that exceeds it
+    raises TimeoutError, which the bounded attempts above treat as a provider failure)."""
+    from llm.pipeline import _llm
+    return _llm.ask_json(system, user, default, deadline=_llm.call_timeout())

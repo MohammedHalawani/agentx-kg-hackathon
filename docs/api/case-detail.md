@@ -72,8 +72,8 @@ cause, and must not fall back to them when `diagnosis.available` is `false`.
 ## `recommendation` approval fields
 
 `approvable` is the result of the same recheck an approval runs, on the current case: the recorded
-approval context (symptoms, visible evidence count and latest ingestion time, run, final review,
-case version) must be unchanged, the proposal must come from an agent investigation, and the
+approval context (symptoms, visible evidence, run, final review, case version) must be unchanged, where routine new
+records are not a change and a material one is (`docs/api/investigation-run.md`), the proposal must come from an agent investigation, and the
 authority policy is recomputed. `approval_rule` names the deciding rule and `approval_reason` explains
 it: `AUTH-20-approval-context-stale` (the basis changed; the case is re-investigated and reviewed
 before anything is approved), `AUTH-21-human-investigation-required` (only evidence-gathering requests
@@ -93,7 +93,7 @@ What a queue row says about its case comes from an accepted agent diagnosis only
 | Field | Meaning |
 | --- | --- |
 | `diagnosis_available` | `true` when the case's last run is an agent investigation the independent reviewer accepted. |
-| `summary_source` | `agent_diagnosis` (then `issue_summary` is the primary hypothesis's own text, model prose in English) or `monitor`. |
+| `summary_source` | `agent_diagnosis` (then `issue_summary` is the investigation's own summary, the same text as case detail's `diagnosis.summary`, model prose in English; the leading hypothesis's assessment only when that summary is empty) or `monitor`. |
 | `issue_summary` | With `monitor`: the monitor's neutral sentence. Never rule triage text. |
 | `category`, `cause_codes` | The accepted diagnosis's cause codes; `null` and `[]` otherwise. Never rule codes. |
 | `operational_status` | From the accepted diagnosis, or else from the observed `symptom_codes` (`RESOLVED` stays). |

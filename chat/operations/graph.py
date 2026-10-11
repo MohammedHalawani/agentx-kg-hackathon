@@ -124,9 +124,10 @@ def _accepted(function, **extra):
 
 
 def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, events=None,
-                agents=None, live_session=False, symptoms=(), heartbeats=None, port=None, disabled_tools=(), call_cap=None):
+                agents=None, live_session=False, symptoms=(), heartbeats=None, port=None, disabled_tools=(), call_cap=None, meter=None):
     """agents: None (deterministic rules only) or an investigator (operations.investigator or a test double).
-    port: the read model's fixed cross-shipment queries (fetch), or None. call_cap: the per-case model-call cap."""
+    port: the read model's fixed cross-shipment queries (fetch), or None. call_cap: the per-case model-call cap.
+    meter: an operations.latency.Meter that times this run (measurement only), or None."""
     from operations.worker import review as guard, REVIEW_SUMMARY_AR
     from operations.authority import authorize, symptom_floor, abstention_floor, ACTIONS, ACTION_SUMMARY_AR, STATE
     from operations.checks import fact_checks, cited_records, review_context
@@ -139,8 +140,14 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
                  "iteration": state.get("iteration", 0),
                  "recorded_at": datetime.now(timezone.utc).isoformat(),
                  "evidence_as_of": state["as_of"], "output": output or {}}
+        if meter is not None:
+            event["elapsed_seconds"] = meter.elapsed()     # since the graph started; measurement only
         events.append(event)
-        if on_event: on_event(event, list(events))
+        if on_event:
+            if meter is not None:
+                meter.timed_write(on_event, event, list(events))
+            else:
+                on_event(event, list(events))
 
     def node(name, operation, retry_from=None):
         def run(state):
@@ -185,6 +192,8 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
                                                  disabled=disabled_tools)
             holder["session"] = Session(call_cap)
             holder["rounds"] = []
+            if meter is not None:
+                meter.session, meter.tools = holder["session"], holder["tools"]
         holder["tools"].begin_round(s.get("iteration", 0))
         return holder["tools"]
 
@@ -198,9 +207,15 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
         session = holder["session"]
         def on_step(step):
             emit("classify", "RUNNING", s, {"kind": "tool_call", "agent": "gpt-oss", **step})
+        def on_repair(event):
+            # SUHAIL_INVALID_OUTPUT_REPAIR: the reply was invalid twice and is asked for once more ("model reply invalid, retrying").
+            emit("classify", "RETRYING", s, {"agent": "gpt-oss", **event})
+        def on_forced(event):
+            # SUHAIL_FORCED_CONCLUSION: the turn budget is exhausted and the investigator gets one final conclude-only turn.
+            emit("classify", "RUNNING", s, {"agent": "gpt-oss", **event})
         revising = bool(s.get("iteration"))
         investigation = agents.investigate(tools, on_step=on_step, feedback=s.get("feedback") if revising else None,
-                                           **_accepted(agents.investigate, session=session,
+                                           **_accepted(agents.investigate, session=session, on_repair=on_repair, on_forced=on_forced,
                                                        review=(session.reviews[-1] if revising and session.reviews else None)))
         holder["investigation"] = investigation
         update = {"investigation": investigation, "mode": "gpt_oss_agents", "result": agent_result(investigation, s["context"])}
@@ -256,7 +271,8 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
         """One investigation round as later scoring reads it. Declared outputs only; no reasoning text beyond them."""
         session = holder.get("session")
         number = s.get("iteration", 0)
-        calls = [{k: c.get(k) for k in ("tool", "args", "evidence_ids", "computed_ids", "omitted_rows", "failure")}
+        calls = [{k: c.get(k) for k in ("tool", "args", "evidence_ids", "computed_ids", "omitted_rows", "failure",
+                                        "seconds", "queries", "query_seconds", "cached_queries")}
                  for c in (tools.round_calls(number) if tools else [])]
         conclusion = None
         if inv and not inv.get("degraded"):
@@ -265,7 +281,8 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
         return {"round": number, "snapshot_as_of": s["as_of"], "tool_calls": calls, "conclusion": conclusion,
                 "investigator": {"mode": (inv or {}).get("mode"), "degraded": bool((inv or {}).get("degraded")),
                                  "validation_error": (inv or {}).get("validation_error"),
-                                 "validation_errors": (inv or {}).get("validation_errors") or []},
+                                 "validation_errors": (inv or {}).get("validation_errors") or [],
+                                 **({"forced_final_turn": True} if (inv or {}).get("forced_final_turn") else {})},
                 "citation_validity": (checks or {}).get("citations"),
                 "fact_checks": (checks or {}).get("checks"),
                 "review": {"verdict": verdict.get("verdict"), "model_verdict": verdict.get("model_verdict"), "reason_code": verdict.get("reason_code"),
@@ -287,6 +304,8 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
                  for i in [*(h.get("supporting_evidence_ids") or []), *(h.get("contradicting_evidence_ids") or [])]}
         seen = [k for k in tools.computed if k in tools.retrieved] if tools else []
         return {"snapshot_as_of": tools.as_of if tools else None, **session.budget.snapshot(), "rounds": rounds,
+                # Present only when a round used the forced final turn (SUHAIL_FORCED_CONCLUSION).
+                **({"forced_final_turn": True} if any((r.get("investigator") or {}).get("forced_final_turn") for r in rounds) else {}),
                 # What the investigator saw beyond the shipment's own evidence nodes, kept so a citation can be resolved later.
                 "computed_results": {k: tools.computed[k] for k in seen} if tools else {},
                 "cited_external_records": {k: tools.external[k] for k in sorted(cited) if tools and k in tools.external and k not in tools.computed},
@@ -316,7 +335,8 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
                 context = review_context(inv, tools, checks["citations"], round_number=s.get("iteration", 0),
                                          previous_reviews=session.reviews if session else ())
                 model_review = agents.review(inv, cited_records(inv, tools), checks["checks"], s.get("symptoms") or [],
-                                             **_accepted(agents.review, context=context, session=session))
+                                             **_accepted(agents.review, context=context, session=session,
+                                                         on_repair=lambda event: emit("review", "RETRYING", s, {"agent": "gpt-oss", **event})))
                 if session is not None:
                     session.reviews.append({"round": s.get("iteration", 0), "verdict": model_review["verdict"], "model_verdict": model_review["verdict"],
                                             "feedback": model_review.get("feedback"), "unsupported_claims": model_review.get("unsupported_claims") or [],
@@ -438,10 +458,14 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
 
 def investigate(shipment_id, as_of, config, retrieve, precedents, *, commit=None, on_event=None,
                 agents=None, live_session=False, symptoms=(), heartbeats=None, port=None, disabled_tools=(), call_cap=None):
+    from operations.latency import Meter
     events = []
+    meter = Meter()
     graph = build_graph(config,retrieve,precedents,commit=commit,on_event=on_event,events=events,
                         agents=agents,live_session=live_session,symptoms=symptoms,heartbeats=heartbeats,
-                        port=port,disabled_tools=disabled_tools,call_cap=call_cap)
+                        port=port,disabled_tools=disabled_tools,call_cap=call_cap,meter=meter)
     result = graph.invoke({"shipment_id":shipment_id,"as_of":as_of,"symptoms":list(symptoms),"trace":[],"iteration":0,
                            "feedback":None,"degraded":[]})
-    return analysis(result,events), result.get("disposition")
+    recorded = analysis(result,events)
+    recorded["latency"] = meter.summary(events)
+    return recorded, result.get("disposition")

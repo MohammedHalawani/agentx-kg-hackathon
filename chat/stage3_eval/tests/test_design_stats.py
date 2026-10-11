@@ -21,7 +21,7 @@ def test_the_design_commits_name_every_amendment_and_the_cap_is_sealed_not_plann
     if touched:
         assert set(design.DESIGN_COMMITS.values()) <= set(touched)   # each is a commit of the design document
     # Amendment 3: C_cap 16 and the budget left before the stop line, both sealed at selection; 12 is only the planning value.
-    assert design.C_CAP_PLANNING == 12 and design.worst_case_per_case(16) == 18
+    assert design.C_CAP_PLANNING == 12 and design.worst_case_per_case(16) == 19      # 16 + the corrected no-tools arm's 3
     assert design.n_main(16, budget=design.evaluation_budget(173)) == 190
     assert allocate(16, budget=design.evaluation_budget(173))["cells"][design.MAIN_TEST_CELL] == 105
 
@@ -40,9 +40,9 @@ def test_the_lifted_budget_gates_nothing_and_the_worst_case_is_arithmetic(monkey
     assert design.sealed_hash(dataclasses.replace(config, stop_at=3600)) != sealed
     assert dataclasses.replace(config, stop_at=3600).as_dict()["stop_at"] == 3600
     # 285 cases at C_cap 16, the ablation on 100 of them and the stability rerun on 40.
-    assert design.worst_case_calls(285, 100, 40, 16) == {"main": 285 * 18, "cross_shipment_ablation": 1600, "stability_rerun": 640,
-                                                         "total": 285 * 18 + 1600 + 640}
-    assert design.worst_case_calls(10, 0, 0, 12, r_cap=2)["total"] == 10 * 16
+    assert design.worst_case_calls(285, 100, 40, 16) == {"main": 285 * 19, "cross_shipment_ablation": 1600, "stability_rerun": 640,
+                                                         "total": 285 * 19 + 1600 + 640}
+    assert design.worst_case_calls(10, 0, 0, 12, r_cap=2)["total"] == 10 * 17
     with pytest.raises(ValueError):
         design.worst_case_calls(1, 0, 0, 0)
 
@@ -71,7 +71,7 @@ def test_the_historical_worst_case_plan_always_fitted_the_old_cap():
     for c_cap in range(4, 30):
         for r_cap in (0, 2, 4):
             total = sum(allocate(c_cap, r_cap)["cells"].values())
-            assert total * design.worst_case_per_case(c_cap, r_cap) <= design.CALL_BUDGET
+            assert total * (c_cap + r_cap + design.NOTOOLS_MAX_CALLS_BEFORE_CORRECTION) <= design.CALL_BUDGET   # the 2-call arm of that plan
 
 
 def test_eval_seed_is_derived_from_the_full_freeze_commit():
@@ -134,3 +134,19 @@ def test_power_grows_with_gain_and_mdg_matches_the_design_order_of_magnitude():
 
 def test_percentile_nearest_rank():
     assert percentile([1, 2, 3, 4], 50) == 2 and percentile([1, 2, 3, 4], 99) == 4 and percentile([], 50) is None
+
+
+def test_the_no_tools_arm_gets_the_agents_attempts_at_a_conclusion_and_an_earlier_seal_is_still_recognised():
+    from operations import investigator
+    from stage3_eval import arms
+    # The agent's conclusion gets one call and its corrective retry; so does the arm's, and a provider failure likewise.
+    assert design.NOTOOLS_CONCLUSION_ATTEMPTS == investigator.ATTEMPTS_PER_TURN == arms.PROVIDER_ATTEMPTS == 2
+    assert design.NOTOOLS_MAX_CALLS == 3 and design.worst_case_per_case(20) == 23
+    assert arms.NoToolsArm().worst_case() == 3
+    # The historical formula keeps the 2 calls it was written with.
+    assert design.n_main(12) == 285 and design.NOTOOLS_MAX_CALLS_BEFORE_CORRECTION == 2
+    config = design.EvalConfig(freeze_commit="a" * 40, c_cap=20, budget=6808)
+    now, before = design.sealed_hash(config), design.sealed_hash(config, 2)
+    assert now != before
+    assert design.sealed_notools_max_calls(now, config) == 3 and design.sealed_notools_max_calls(before, config) == 2
+    assert design.sealed_notools_max_calls(now, dataclasses.replace(config, c_cap=16)) is None

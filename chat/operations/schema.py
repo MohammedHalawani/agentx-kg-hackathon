@@ -26,6 +26,10 @@ FIELDS = {
                 "as_of", "state_version", "last_run_id", "recommendation_id", "issue_summary", "claim_id", "claim_at",
                 "is_terminal", "closed_at", "verified_outcome_id", "outcome_checked_as_of", "snapshot_refreshes",
                 "symptom_reinvestigations",
+                # Material re-investigation policy: evidence records ingested for the case (a counter), the snapshot of
+                # the last completed run, the clock up to which later records were checked for materiality, how often
+                # material evidence requeued the case, and when the next automatic investigation may start.
+                "evidence_events", "investigated_as_of", "evidence_checked_as_of", "evidence_reinvestigations", "quiet_until",
                 # Whether issue_summary/cause_codes come from an accepted agent diagnosis; rule triage codes kept apart.
                 "diagnosis_available", "rule_signal_codes"},
     "OpsAudit": {"case_id", "event_type", "actor_id", "decision", "result", "from_state", "to_state", "run_id",
@@ -39,12 +43,12 @@ FIELDS = {
                   "reason_code"},
     "OpsDecision": {"case_id", "recommendation_id", "decision", "actor_id", "expected_version", "idempotency_key", "source"},
     "OpsExecution": {"case_id", "decision_id", "action_code", "receipt_ref", "status", "mode",
-                     "action_type", "authority", "expected_result", "deadline_at", "idempotency_key", "target_device",
+                     "action_type", "authority", "expected_result", "deadline_at", "expected_response_at", "idempotency_key", "target_device",
                      "expected_evidence_json", "adapter_result_json", "executed_at", "closure", "case_opened_at",
                      "decided_risk", "permission_rule", "approval_context_json", "recommendation_id", "run_id"},
     "OpsOutcome": {"case_id", "execution_id", "action_code", "action_type", "success", "outcome_type", "evidence_ids",
                    "verification_status", "verified_at", "verifier_id", "invalidated", "observed_at", "reason", "rule_id", "expected_effect",
-                   "exception_cleared", "remaining_symptoms", "source", "run_id"},
+                   "exception_cleared", "remaining_symptoms", "source", "run_id", "relevant_evidence_ids", "trusted_precedent"},
     "OpsNotification": {"case_id", "trigger", "status", "mode", "external_calls"},
     "OpsCommand": {"case_id", "idempotency_key", "request_hash", "result_json", "command_type"},
     "OpsRiskFlag": {"active", "certainty", "promise_at", "latest_estimate_at", "earliest_estimate_at", "evidence_ids", "checked_at"},

@@ -172,6 +172,18 @@ def test_each_condition_fails_the_checkpoint_by_itself(good, tmp_path, condition
     assert [c["name"] for c in document["conditions"] if not c["ok"]] == [condition]
 
 
+def test_an_exhausted_turn_budget_is_degraded_like_any_other_failure(good, tmp_path):
+    """Since stage 4 the investigator reports an exhausted turn budget as "turn_budget_exhausted", no longer as
+    "invalid_model_output". The checkpoint reads the degraded flag, so the share and the verdict are the same."""
+    selection, run_dir = _copy(good, tmp_path)
+    kinds = ["turn_budget_exhausted"] * 4 + ["invalid_model_output"] * 3
+    _agent(run_dir, lambda rows: [r.update(degraded=True, primary_cause=None, hypotheses=[], failure_mode=kind) for r, kind in zip(rows, kinds)])
+    document = checkpoint(selection, run_dir, resolver=FixtureDatabase())
+    assert document["pass"] is False and document["failed"] == ["degraded"]
+    assert document["details"]["agent_arm"]["degraded"] == 7
+    assert document["details"]["agent_arm"]["failure_modes"] == {"invalid_model_output": 3, "turn_budget_exhausted": 4}
+
+
 def test_other_ways_a_condition_fails_and_nothing_unchecked_passes(good, tmp_path):
     selection, run_dir = good
     # No resolver: the evidence was not checked, and neither were the citations of records that carry no flag of their own.

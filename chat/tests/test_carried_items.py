@@ -58,10 +58,10 @@ class InvalidOutputLabelTests(ti.Base):
         out = investigator.investigate(self.tools(), turn=ti.scripted(boom, boom))
         self.assertEqual((out["mode"], out["degraded"]), ("model_unavailable", True))
         call = {"action": "call", "tool": "policy", "args": {}, "purpose": "Read thresholds."}
-        # With calls to spare, a model that answers but never concludes runs out of turns: invalid output.
+        # With calls to spare, a model that answers but never concludes runs out of turns: its own kind.
         out = investigator.investigate(self.tools(), turn=ti.scripted(*[call] * (investigator.MAX_TURNS + 2)),
                                        session=investigator.Session(cap=30))
-        self.assertEqual(out["mode"], "invalid_model_output")  # The model answered but never concluded validly.
+        self.assertEqual(out["mode"], "turn_budget_exhausted")  # The model answered but never concluded within its turns.
         # Under the default per-case cap the same behaviour ends at the cap: a degraded run, labelled as such.
         out = investigator.investigate(self.tools(), turn=ti.scripted(*[call] * (investigator.MAX_TOOL_CALLS + 2)))
         self.assertEqual((out["mode"], out["degraded"], out["primary_cause"]), ("model_call_cap", True, None))
@@ -204,12 +204,14 @@ class OperatorIdentityTests(_Store):
         case = store.case_detail(result["case_id"])
         evidence = [n["id"] for n in store.reader.evidence(case["shipment_id"], store.status()["as_of"])["nodes"] if n["kind"] == "Package"]
         with self.assertRaises(OperationsConflict):  # The harness never acts as an operator.
-            store.record_human_outcome(case["case_id"], HARNESS_ACTOR, "parcel_located", "Parcel found during the harness check.",
+            store.record_human_outcome(case["case_id"], HARNESS_ACTOR, "parcel_not_found", "Nothing found during the harness check.",
                                        evidence, case["state_version"], "harness-as-operator")
-        store.record_human_outcome(case["case_id"], HARNESS_ACTOR, "parcel_located", "Parcel found during the harness check.",
+        # Stage 4: a finding that something was found needs relevant evidence recorded after the case opened (covered
+        # in tests/test_world_simulation.py); a negative finding is recorded, resolves nothing and is never a precedent.
+        store.record_human_outcome(case["case_id"], HARNESS_ACTOR, "parcel_not_found", "Nothing found during the harness check.",
                                    evidence, case["state_version"], "harness-finding", source="harness")
         [outcome] = self.kind(driver, "OpsOutcome")
-        self.assertEqual((outcome["verifier_id"], outcome["source"]), (HARNESS_ACTOR, "harness"))
+        self.assertEqual((outcome["verifier_id"], outcome["source"], outcome["trusted_precedent"]), (HARNESS_ACTOR, "harness", False))
         audit = next(a for a in self.kind(driver, "OpsAudit") if a["event_type"] == "HUMAN_OUTCOME_RECORDED")
         self.assertEqual(audit["actor_id"], HARNESS_ACTOR)
         self.assertIn("(harness)", audit["result"])

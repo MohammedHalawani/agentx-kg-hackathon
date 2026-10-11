@@ -162,5 +162,11 @@ class OperationsAPITests(unittest.TestCase):
         self.assertEqual(self.client.post("/simulation/tick",json={"seconds":-1},headers=self.headers()).status_code,422)
         self.store.control.assert_not_called()
 
+    def test_the_live_demo_speeds_start_the_simulation(self):
+        self.store.control.return_value={"simulator":{"state":"running"}}
+        for speed in (300,600):
+            self.assertEqual(self.client.post("/simulation/start",json={"speed":speed},headers=self.headers()).status_code,200)
+            self.assertEqual(self.store.control.call_args.kwargs["speed"],speed)
+
 
 if __name__=="__main__":unittest.main()

@@ -13,8 +13,10 @@ stable id of its own (DEMO-CMP-...), recorded for the run, so the investigator c
 reads exactly what the investigator saw. Long results keep the rows that deviate and leave out routine ones;
 the ids of rows that were left out are never listed as citable.
 """
+import copy
 from datetime import timedelta
 import json
+import time
 
 from dataset_v2.contracts import digest, instant
 from dataset_v2.derive import custody_corroborated, number, point_distance_m, proof_assessment
@@ -79,16 +81,22 @@ class InvestigationTools:
     calls      every call: round, tool, arguments, evidence ids and computed-result ids returned
     """
 
-    def __init__(self, context, config, *, symptoms=(), heartbeats=None, precedents=None, port=None, disabled=()):
+    def __init__(self, context, config, *, symptoms=(), heartbeats=None, precedents=None, port=None, disabled=(), memo=True):
         self.context, self.config = context, config
         self.sid, self.as_of = context["shipment_id"], context["as_of"]
         self.world = evidence_world(context, config)
         self.nodes = self.world.nodes
         self.cutoff = instant(self.as_of)
         self.symptoms = list(symptoms)
-        self._heartbeats = heartbeats or (lambda device_id, since, until: [])
-        self._precedent_source = precedents or (lambda cause: [])
+        # Every database read a tool makes is counted and timed (measurement only; see operations.latency).
+        self.queries, self.query_seconds, self.cached_queries = 0, 0.0, 0
+        self._heartbeats = self._timed(heartbeats) if heartbeats else (lambda device_id, since, until: [])
+        self._precedent_source = self._timed(precedents) if precedents else (lambda cause: [])
         self.port = port                 # fetch(name, **params): the fixed cross-shipment queries, or None
+        # A fixed query with the same parameters at the same snapshot returns the same rows: within one case
+        # investigation each is read from the database once (memo=False reads it every time; same rows either way).
+        self.memo = memo
+        self._fetched = {}
         self.disabled = frozenset(disabled)
         self.retrieved = set()
         self.calls = []
@@ -148,11 +156,22 @@ class InvestigationTools:
     def round_calls(self, number_=None):
         return [c for c in self.calls if c["round"] == (self.round if number_ is None else number_)]
 
+    def _timed(self, source):
+        def read(*args, **kwargs):
+            started = time.perf_counter()
+            try:
+                return source(*args, **kwargs)
+            finally:
+                self.queries += 1
+                self.query_seconds += time.perf_counter() - started
+        return read
+
     def call(self, tool, args):
         if tool not in self.CATALOG or tool in self.disabled:
             return {"error": f"unknown tool {tool}"}
         allowed = self.CATALOG[tool][0]
         args = {k: v for k, v in (args if isinstance(args, dict) else {}).items() if k in allowed}
+        started, queries, query_seconds, cached = time.perf_counter(), self.queries, self.query_seconds, self.cached_queries
         self._tool, failure = tool, None
         try:
             result = getattr(self, "_" + tool)(**args)
@@ -164,7 +183,10 @@ class InvestigationTools:
         computed = [i for i in ids if i in self.computed]
         self.retrieved.update(ids)
         self.calls.append({"round": self.round, "tool": tool, "args": args, "evidence_ids": ids, "computed_ids": computed,
-                           "omitted_rows": omitted, "failure": failure})
+                           "omitted_rows": omitted, "failure": failure,
+                           # Measurement only: the call's own time, and the database reads it made (and took from the memo).
+                           "seconds": round(time.perf_counter() - started, 4), "queries": self.queries - queries,
+                           "query_seconds": round(self.query_seconds - query_seconds, 4), "cached_queries": self.cached_queries - cached})
         self._tool = None
         return {"result": text, "evidence_ids": ids, "computed_ids": computed}
 
@@ -272,7 +294,19 @@ class InvestigationTools:
     def _fetch(self, name, **params):
         if self.port is None:
             raise LookupError(NO_PORT)
-        return self.port(name, as_of=self.as_of, **params)
+        key = (name, json.dumps(params, sort_keys=True, default=str))
+        if self.memo and key in self._fetched:
+            self.cached_queries += 1
+            return copy.deepcopy(self._fetched[key])
+        started = time.perf_counter()
+        try:
+            rows = self.port(name, as_of=self.as_of, **params)
+        finally:
+            self.queries += 1
+            self.query_seconds += time.perf_counter() - started
+        if self.memo:
+            self._fetched[key] = copy.deepcopy(rows)
+        return rows
 
     def _shared(self, entity_id):
         """A shared record (device, facility, route run, trip, container...) as (properties, kind), or (None, None)."""

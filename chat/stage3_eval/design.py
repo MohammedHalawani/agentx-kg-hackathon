@@ -33,7 +33,17 @@ STAGE3_STOP_AT = 3600
 # `select` (--c-cap, required), sealed in the selection, and the wiring refuses to run unless the backend's cap
 # equals it. Amendment 3 sets it to 16 (the development data is censored at 12), one counter, R_cap 0.
 C_CAP_PLANNING = 12
-NOTOOLS_MAX_CALLS = 2         # One call plus one retry on invalid output (addendum 2, item 2).
+# B_notools (corrected 2026-10-11; a prepared correction, not used in any run yet: README, "The no-tools arm").
+# The arm gets the attempts at its conclusion that the agent's conclusion gets: NOTOOLS_CONCLUSION_ATTEMPTS = 2, which is
+# operations.investigator.ATTEMPTS_PER_TURN (one call plus its one corrective retry; tested equal). As for the agent,
+# a reply that is not a conclusion (a tool call, or no JSON object) is corrected and is not one of those attempts; the
+# arm allows one such reply. So the arm makes at most 3 calls.
+NOTOOLS_CONCLUSION_ATTEMPTS = 2
+NOTOOLS_REDIRECTS = 1
+NOTOOLS_MAX_CALLS = NOTOOLS_CONCLUSION_ATTEMPTS + NOTOOLS_REDIRECTS
+# What every selection sealed before the correction holds (addendum 2, item 2: one call plus one retry, 2 calls in
+# all). The historical sizing helpers below keep it, and sealed_notools_max_calls recognises such a selection.
+NOTOOLS_MAX_CALLS_BEFORE_CORRECTION = 2
 
 
 def n_main(c_cap=C_CAP_PLANNING, r_cap=0, budget=CALL_BUDGET):
@@ -41,7 +51,7 @@ def n_main(c_cap=C_CAP_PLANNING, r_cap=0, budget=CALL_BUDGET):
     addendum, item 1): 285 at the planning figures (12 and 4,000), 190 at 16 and 3,427 (addendum to amendment 3)."""
     if c_cap < 1 or r_cap < 0:
         raise ValueError("C_cap must be at least 1 and R_cap at least 0")
-    return budget // (c_cap + r_cap + NOTOOLS_MAX_CALLS)
+    return budget // (c_cap + r_cap + NOTOOLS_MAX_CALLS_BEFORE_CORRECTION)
 
 
 def evaluation_budget(spent, reserve=0, cap=CALL_BUDGET, stop_at=STAGE3_STOP_AT):
@@ -277,11 +287,22 @@ def runtime_selection_problem(document):
     return None
 
 
-def sealed_hash(config: EvalConfig) -> str:
-    """Hash of the configuration and every frozen table above; a run whose hash differs is not the sealed run."""
+def sealed_hash(config: EvalConfig, notools_max_calls=NOTOOLS_MAX_CALLS) -> str:
+    """Hash of the configuration and every frozen table above; a run whose hash differs is not the sealed run.
+    notools_max_calls: the no-tools arm's calls per case that the hash seals (this code's, unless given)."""
     payload = {"config": config.as_dict(), "allocation": sorted((list(k), v) for k, v in ALLOCATION_AT_PLANNING.items()),
                "shrink": SHRINK_ORDER, "pass_bars": PASS_BARS, "rulecode_order": RULECODE_ORDER, "symptom_cause": SYMPTOM_CAUSE,
                "symptom_order": SYMPTOM_ORDER, "categories": CATEGORIES, "min_support": STRATUM_MIN_SUPPORT,
-               "max_hypotheses": MAX_SUPPORTED_HYPOTHESES, "notools_max_calls": NOTOOLS_MAX_CALLS,
+               "max_hypotheses": MAX_SUPPORTED_HYPOTHESES, "notools_max_calls": notools_max_calls,
                "cross_shipment": CROSS_SHIPMENT_MECHANISMS, "extras": EXTRAS_ORDER, "stability_max": STABILITY_MAX}
     return hashlib.sha256(json.dumps(payload, sort_keys=True, default=list).encode()).hexdigest()
+
+
+def sealed_notools_max_calls(sealed, config: EvalConfig):
+    """The no-tools arm's calls per case that a sealed hash holds for this configuration: this code's (3), or the 2 of
+    a selection sealed before the arm's correction. None when the hash is neither: the configuration is not the
+    sealed one."""
+    for calls in (NOTOOLS_MAX_CALLS, NOTOOLS_MAX_CALLS_BEFORE_CORRECTION):
+        if sealed == sealed_hash(config, calls):
+            return calls
+    return None

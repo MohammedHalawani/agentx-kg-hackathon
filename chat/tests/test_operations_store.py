@@ -92,7 +92,8 @@ class Tx:
         if q.startswith("MATCH(c:OpsCase"):
             rows=[v for k,v in self.ledger.values() if k=="OpsCase"]
             if "c.workflow_state IN" in q:
-                rows=[v for v in rows if v["workflow_state"] in {"OPEN","REOPENED"} and v["opened_at"]<=p["clock"] and (p["id"] is None or v["entity_id"]==p["id"])]
+                rows=[v for v in rows if v["workflow_state"] in {"OPEN","REOPENED"} and v["opened_at"]<=p["clock"] and (p["id"] is None or v["entity_id"]==p["id"])
+                      and (p.get("explicit") or v.get("quiet_until") is None or v["quiet_until"]<=p["clock"])]
                 rows=sorted(rows,key=lambda r:(r["opened_at"],r["entity_id"]))[:1]
             else:rows=[v for v in rows if v["shipment_id"]==p["sid"]]
             return Result([{"props":copy.deepcopy(r)} for r in rows])
@@ -218,7 +219,21 @@ class StoreTests(unittest.TestCase):
         states=[]
         while not listener.empty():states.append(listener.get_nowait())
         events=store.pipeline_state(case_id)['events']
-        self.assertEqual([s['events'][-1]['sequence'] for s in states[:-1]],list(range(1,len(events)+1)))
+        # Progress events are written, and sent to subscribers, in batches (StageBuffer): every state carries every event
+        # up to its batch, each state extends the one before it, and the last one before the finished run holds them all.
+        sequences=[[e['sequence'] for e in s['events']] for s in states[:-1]]
+        self.assertTrue(all(seq==list(range(1,len(seq)+1)) for seq in sequences))
+        self.assertEqual(sorted(sequences,key=len),sequences)
+        self.assertEqual(sequences[0],[1])
+        self.assertEqual(sequences[-1],list(range(1,len(events)+1)))
+        self.assertLess(len(sequences),len(events))
+        # With no wait (SUHAIL_STAGE_FLUSH_SECONDS=0) the stream is one state per event, as it was.
+        other,other_driver=self.make();other.stage_flush_seconds=0
+        other_id=next(v['entity_id'] for kind,v in other_driver.ledger.values() if kind=='OpsCase')
+        other_listener=other.subscribe_pipeline(other_id);other.process_one(case_id=other_id)
+        other_states=[]
+        while not other_listener.empty():other_states.append(other_listener.get_nowait())
+        self.assertEqual([s['events'][-1]['sequence'] for s in other_states[:-1]],list(range(1,len(other.pipeline_state(other_id)['events'])+1)))
         self.assertEqual(states[0]['events'][-1]['status'],'RUNNING')
         self.assertEqual(states[-1]['status'],'REVIEWED')
         self.assertEqual(states[-1]['workflow_state'],result['workflow_state'])

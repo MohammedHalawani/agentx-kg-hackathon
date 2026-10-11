@@ -64,9 +64,16 @@ def _findings(run, result, investigation):
             "missing_evidence": list(investigation.get("missing_evidence") or []),
             "requires_physical_check": investigation.get("requires_physical_check"),
             "tool_calls": len(investigation.get("steps") or []),
-            "snapshot_superseded": any(d.get("role") == "snapshot" for d in result.get("degraded") or []),
+            "snapshot_superseded": any(d.get("role") == "snapshot" or d.get("kind") == "snapshot_superseded" for d in result.get("degraded") or []),
             # Model prose (summary, assessments) is the investigator's own text, untranslated.
             "language": "en"}
+
+
+def _forced(result):
+    """{"forced_final_turn": True} when the run's investigation used the forced final turn, else nothing."""
+    investigation = (result or {}).get("investigation") or {}
+    log = (result or {}).get("investigation_log") or {}
+    return {"forced_final_turn": True} if investigation.get("forced_final_turn") or log.get("forced_final_turn") else {}
 
 
 def case_diagnosis(case, run):
@@ -89,8 +96,9 @@ def case_diagnosis(case, run):
     if reason == "review_not_accepted":
         # The investigator's findings, labelled as not accepted by the independent reviewer: never "what happened".
         return absent_diagnosis(reason, run_id=run_id, review=review,
-                                unaccepted={**_findings(run, result, result["investigation"]), "accepted": False, "review": review})
+                                unaccepted={**_findings(run, result, result["investigation"]), "accepted": False, "review": review,
+                                            **_forced(result)}) | _forced(result)
     if not available:
-        return absent_diagnosis(reason, run_id=run_id, review=review)
+        return absent_diagnosis(reason, run_id=run_id, review=review) | _forced(result)
     return {"available": True, "reason": None, "source": "agent_investigation", "superseded_run_id": None,
-            **_findings(run, result, result["investigation"]), "review": review, "unaccepted_investigation": None}
+            **_findings(run, result, result["investigation"]), "review": review, "unaccepted_investigation": None, **_forced(result)}

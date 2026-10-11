@@ -34,13 +34,30 @@
       --min-opened 0.90); the others are fixed: no evidence after a snapshot, markers clean, ledger reconciled, no
       truth module loaded.
 
-  python -m stage3_eval report --selection DIR/selection.json [--run RUN_DIR]
-      Writes report.json and report.md (into RUN_DIR, or beside the selection for a skeleton).
+  python -m stage3_eval report --selection DIR/selection.json [--run RUN_DIR] [--completion COMPLETION_DIR]
+      Writes report.json and report.md (into RUN_DIR, or beside the selection for a skeleton). With --completion (a
+      scored `rerun-failed` directory of that run) the report is of the union and is written into COMPLETION_DIR, never
+      into RUN_DIR: the completed world's cells take the re-run cases' results from the completion and every other
+      result from RUN_DIR, and are labelled "completed post hoc after a provider quota failure"; the other world's
+      cells are exactly as scored from RUN_DIR.
+
+  python -m stage3_eval rerun-failed --selection DIR/selection.json --run RUN_DIR --out NEW_DIR --wiring MODULE:FUNCTION
+      --world E2 [--arm agent,notools] [--dry-run] [--resume] [--max-cases N]
+      A post hoc completion (completion.py). Selects exactly the cases of the finished run RUN_DIR whose agent or
+      no-tools result is a provider failure (failure_mode model_unavailable), in the pre-registered order, of the
+      world named, and runs only those, only in the arms named, into NEW_DIR. RUN_DIR is only read. Each case is
+      investigated as of its original snapshot time (RUN_DIR/cases.jsonl). The campaign ledger is used as by `run`:
+      the worst case of those cases and arms is reserved, each case is reconciled, the entry is settled. The manifest
+      records the source run, the re-run case keys and that this is a post hoc completion. --dry-run lists the cases
+      it would re-run and their worst case, and builds no wiring, opens no database and writes nothing.
+      FUNCTION(config, dry_run, resume, selection, source_run, keys, original_as_of) returns what `run`'s does;
+      without a "case_source" the cases are read from RUN_DIR (scripts.stage3_wiring:build_completion).
+      Then: score --run NEW_DIR --world E2=TRUTH_DIR ..., and report --run RUN_DIR --completion NEW_DIR.
 
 The campaign's model-call ledger (docs/evals/model_call_ledger.json, or --ledger FILE, or SUHAIL_CALL_LEDGER) holds
 every real model call made so far. Its cap is a runaway guard, not a budget (the 4,000 cap, the 3,600 stop line and
 the 400 reserve were lifted on 2026-10-11), and nothing is sized from it. `select` seals the worst case of what it
-selected as the run's own maximum: n_cases * (C_cap + R_cap + 2), plus C_cap + R_cap for every listed extra. `run`
+selected as the run's own maximum: n_cases * (C_cap + R_cap + 3), plus C_cap + R_cap for every listed extra. `run`
 reserves that in the ledger before the first case, refuses to start only if it would cross the guard, and writes what
 it used at the end (a run that dies stays counted at its whole maximum). The fixture dry run touches no ledger.
 `select --reserve N` and `select --stop-at N` are optional and off by default; each is sealed in the configuration,
@@ -106,21 +123,41 @@ def _scorer_selection(selection_path):
     return scorer_view(selection_path)
 
 
-def _report(selection, run_dir, out_dir):
+def _scored(run_dir):
+    """(scores, manifest, canary) of a run directory; each None when its file is not there."""
+    run_dir = Path(run_dir)
+    scores = manifest = canary = None
+    if (run_dir / "scores.jsonl").exists():
+        scores = [json.loads(l) for l in (run_dir / "scores.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
+    if (run_dir / "run_manifest.json").exists():
+        manifest = json.loads((run_dir / "run_manifest.json").read_text(encoding="utf-8"))
+    if (run_dir / "canary.json").exists():
+        canary = json.loads((run_dir / "canary.json").read_text(encoding="utf-8"))
+    return scores, manifest, canary
+
+
+def _report(selection, run_dir, out_dir, completion_dir=None):
     from stage3_eval.report import build_report, write_report
     run_dir = Path(run_dir) if run_dir else None
-    scores = manifest = canary = None
-    if run_dir:
-        if (run_dir / "scores.jsonl").exists():
-            scores = [json.loads(l) for l in (run_dir / "scores.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
-        if (run_dir / "run_manifest.json").exists():
-            manifest = json.loads((run_dir / "run_manifest.json").read_text(encoding="utf-8"))
-        if (run_dir / "canary.json").exists():
-            canary = json.loads((run_dir / "canary.json").read_text(encoding="utf-8"))
+    scores, manifest, canary = _scored(run_dir) if run_dir else (None, None, None)
     pairs_path = Path(out_dir) / "pairs.json"
     pairs = json.loads(pairs_path.read_text(encoding="utf-8")) if pairs_path.exists() else None
-    report = build_report(selection, scores=scores, run_manifest=manifest, canary=canary, pairs=pairs)
-    return write_report(run_dir or out_dir, report)
+    completion = None
+    if completion_dir:
+        if not run_dir or scores is None:
+            raise SystemExit("--completion needs --run, the scored run it completes")
+        done_scores, done_manifest, done_canary = _scored(completion_dir)
+        record = (done_manifest or {}).get("completion") or {}
+        if not record:
+            raise SystemExit(f"{completion_dir} is not a completion (its manifest carries no completion record)")
+        if Path(record["source_run"]).name != run_dir.resolve().name or done_manifest.get("selection_sha256") != (manifest or {}).get("selection_sha256"):
+            raise SystemExit(f"{completion_dir} completes {record['source_run']} of another selection or run, not {run_dir}")
+        if done_scores is None:
+            raise SystemExit(f"{completion_dir} is not scored yet (python -m stage3_eval score --run {completion_dir} ...)")
+        completion = {"manifest": done_manifest, "scores": done_scores, "canary": done_canary}
+    report = build_report(selection, scores=scores, run_manifest=manifest, canary=canary, pairs=pairs, completion=completion)
+    # The union report goes with the completion: the run it completes is never written to.
+    return write_report(completion_dir or run_dir or out_dir, report)
 
 
 def dry_run_fixture(out):
@@ -142,6 +179,63 @@ def dry_run_fixture(out):
     selection = _scorer_selection(out / "selection.json")
     report_path = _report(selection, out / "run", out)
     return summary, manifest, report_path
+
+
+def _rerun_failed(args):
+    from stage3_eval import completion
+    from stage3_eval.arms import NoToolsArm
+    from stage3_eval.runner import load_selection, refuse_into_reserve, refuse_past_stop_line, refuse_truth_environment
+    try:
+        refuse_truth_environment()            # BEFORE the wiring opens a database or anything else is read
+    except RuntimeError as refusal:
+        raise SystemExit(f"Refusing to run: {refusal}") from None
+    arms = tuple(a.strip() for a in args.arm.split(",") if a.strip())
+    if not arms or set(arms) - set(completion.MODEL_ARMS):
+        raise SystemExit(f"--arm takes {', '.join(completion.MODEL_ARMS)} (the model arms), separated by commas")
+    config, _document = _config(args.selection)
+    selection, _sha = load_selection(args.selection)
+    if args.world not in config.worlds:
+        raise SystemExit(f"--world {args.world} is not a world of this selection ({', '.join(config.worlds)})")
+    try:
+        todo = completion.plan(selection, args.run, arms=arms, world=args.world)
+    except ValueError as refusal:
+        raise SystemExit(f"Refusing to run: {refusal}") from None
+    if args.dry_run:
+        # The list and its worst case, from the files alone: the agent arm at the sealed cap, the no-tools arm as built here.
+        per_arm = {"agent": config.c_cap + config.r_cap, "notools": NoToolsArm().worst_case()}
+        per_case = sum(per_arm[a] for a in todo["arms"])
+        print(json.dumps({"dry_run": True, "label": completion.LABEL, "source_run": str(Path(args.run).resolve()), "world": args.world,
+                          "arms": todo["arms"], "cases": len(todo["keys"]), "by_world": todo["by_world"],
+                          "provider_failed_cases_in_other_worlds": todo["failed_in_other_worlds"],
+                          "worst_case_calls": {"per_arm": {a: per_arm[a] for a in todo["arms"]}, "per_case": per_case,
+                                               "total": per_case * len(todo["keys"])},
+                          "case_keys": todo["keys"], "failed_arms_in_source": todo["failed_arms"], "original_as_of": todo["as_of"]},
+                         indent=1))
+        return 0
+    if not args.out or not args.wiring:
+        raise SystemExit("rerun-failed needs --out and --wiring (or --dry-run to list the cases)")
+    if not todo["keys"]:
+        raise SystemExit(f"Refusing to run: no provider-failed case of {args.world} in {args.run}; there is nothing to complete")
+    if args.max_cases is not None and args.max_cases < 1:
+        raise SystemExit("Refusing to run: --max-cases must be 1 or more")
+    from operations.call_ledger import LedgerError, LedgerRefused
+    campaign = _campaign(args.ledger)
+    wired = _call_wiring(_wiring(args.wiring), config, dry_run=False, resume=args.resume, selection=selection,
+                         source_run=str(Path(args.run).resolve()), keys=list(todo["keys"]), original_as_of=dict(todo["as_of"]))
+    try:
+        manifest = completion.rerun_failed(args.selection, args.run, args.out, arms=wired["arms"], config=config, rerun_arms=arms,
+                                           world=args.world, case_source=wired.get("case_source"), capture=wired.get("capture"),
+                                           resume=args.resume, provenance=wired.get("provenance"), campaign=campaign,
+                                           campaign_commit=_head_commit(), provider_calls=wired.get("provider_calls"),
+                                           enforce_isolation=True, max_cases=args.max_cases)
+    except (LedgerRefused, LedgerError, ValueError, FileExistsError) as refusal:
+        raise SystemExit(f"Refusing to run: {refusal}") from None
+    finally:
+        if callable(wired.get("close")):
+            wired["close"]()
+    print(json.dumps({"campaign_ledger": campaign.summary(), **{k: manifest[k] for k in ("status", "progress", "counts", "ledger", "completion")}},
+                     indent=1, default=str))
+    return 0
 
 
 def main(argv=None):
@@ -193,6 +287,18 @@ def main(argv=None):
     rp = sub.add_parser("report")
     rp.add_argument("--selection", required=True)
     rp.add_argument("--run")
+    rp.add_argument("--completion", help="a scored rerun-failed directory of --run: report the union, into this directory")
+    rf = sub.add_parser("rerun-failed")
+    rf.add_argument("--selection", required=True)
+    rf.add_argument("--run", required=True, help="the finished run directory (only read)")
+    rf.add_argument("--out", help="the NEW run directory of the completion (not needed with --dry-run)")
+    rf.add_argument("--wiring", help="MODULE:FUNCTION (scripts.stage3_wiring:build_completion); not needed with --dry-run")
+    rf.add_argument("--world", required=True, help="the world whose provider-failed cases are re-run (E2)")
+    rf.add_argument("--arm", default="agent,notools", help="the model arms to re-run on them: agent,notools (default), agent or notools")
+    rf.add_argument("--dry-run", action="store_true", help="list the cases it would re-run; builds no wiring and writes nothing")
+    rf.add_argument("--resume", action="store_true")
+    rf.add_argument("--max-cases", type=int, metavar="N")
+    rf.add_argument("--ledger", help="campaign model-call ledger (default docs/evals/model_call_ledger.json)")
     args = ap.parse_args(argv)
 
     if args.cmd == "dry-run":
@@ -294,7 +400,9 @@ def main(argv=None):
         return 0 if document["pass"] else 3
     elif args.cmd == "report":
         _config(args.selection)
-        print(_report(_scorer_selection(args.selection), args.run, Path(args.selection).parent))
+        print(_report(_scorer_selection(args.selection), args.run, Path(args.selection).parent, args.completion))
+    elif args.cmd == "rerun-failed":
+        return _rerun_failed(args)
     return 0
 
 

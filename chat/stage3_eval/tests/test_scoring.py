@@ -1,4 +1,5 @@
 """Blind scoring categories, citation validity and knowability at t."""
+import pytest
 from stage3_eval.fixtures.fakes import FixtureDatabase
 from stage3_eval.records import ArmResult
 from stage3_eval.scoring import score_result
@@ -78,9 +79,11 @@ def test_truth_vocabulary_in_an_output_is_unsafe(worlds):
     assert "truth vocabulary in the output" in _score(worlds, 1, r)["unsafe_reasons"]
 
 
-def test_degraded_counts_wrong(worlds):
-    s = _score(worlds, 1, _result(1, None, degraded=True, failure_mode="invalid_model_output"))
-    assert s["category"] == "degraded" and not s["correct"]
+@pytest.mark.parametrize("kind", ["invalid_model_output", "turn_budget_exhausted", "model_call_cap", "model_unavailable"])
+def test_degraded_counts_wrong(worlds, kind):
+    # Whatever the kind of failure (the turn budget has its own since stage 4), a degraded result scores as degraded.
+    s = _score(worlds, 1, _result(1, None, degraded=True, failure_mode=kind))
+    assert s["category"] == "degraded" and not s["correct"] and s["failure_mode"] == kind
 
 
 def test_knowability_comes_from_the_run_ingestion_log(worlds):

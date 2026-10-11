@@ -8,17 +8,17 @@ no field holds truth, gold or scenario data, and no chain-of-thought is requeste
 
 | Call | Shape | Notes |
 | --- | --- | --- |
-| `OperationsStore.process_one(case_id=None, *, manual=False)` | returns `{processed, case_id, workflow_state, state_version, run_id, mode, afl, outcome}` or `{processed: False, ...}` | Claims one `OPEN`/`REOPENED` case, runs the graph at the store's clock (the evidence snapshot) and writes the run. `{processed: False, reason: "snapshot_changed"}` means new evidence arrived during the run and the case was requeued (at most twice). |
+| `OperationsStore.process_one(case_id=None, *, manual=False)` | returns `{processed, case_id, workflow_state, state_version, run_id, mode, afl, outcome}` or `{processed: False, ...}` | Claims one `OPEN`/`REOPENED` case, runs the graph at the store's clock (the evidence snapshot) and writes the run. `{processed: False, reason: "snapshot_changed", material: [...]}` means a material change happened during the run and the case was requeued (at most twice; see "When an investigation is superseded"). Routine new records do not requeue it. Without `case_id` and `manual`, and while the simulation is running, a case inside its quiet interval is passed over. |
 | `graph.investigate(shipment_id, as_of, config, retrieve, precedents, *, commit=None, on_event=None, agents=None, live_session=False, symptoms=(), heartbeats=None, port=None, disabled_tools=(), call_cap=None)` | returns `(analysis, disposition)` | `port` is `OperationsReader.fetch` (the fixed cross-shipment queries) or `None`; `disabled_tools` and `call_cap` are the evaluation switches below. |
-| `investigator.investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, review=None)` | returns the investigation dict (section 3) | One round of the tool loop. `session` (an `investigator.Session`) carries the conversation and the model-call budget across rounds; without it the call is a self-contained investigation with its own budget. `review` is the previous review in a revision round. |
-| `investigator.review(conclusion, records, checks, symptoms, *, ask=None, context=None, session=None)` | returns `{verdict, feedback, unsupported_claims, unaddressed_contradictions, alternatives_tested, mode, degraded, validation_error}` | `verdict` is `ACCEPT`, `REVISE`, `INSUFFICIENT_EVIDENCE`, `HUMAN_REVIEW`, `ESCALATE`, or `UNAVAILABLE` when the reviewer failed (fail closed). `context` is built by `checks.review_context`. |
+| `investigator.investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, review=None, prefetch=None, on_repair=None, repair=None)` | returns the investigation dict (section 3) | One round of the tool loop. `session` (an `investigator.Session`) carries the conversation and the model-call budget across rounds; without it the call is a self-contained investigation with its own budget. `review` is the previous review in a revision round. |
+| `investigator.review(conclusion, records, checks, symptoms, *, ask=None, context=None, session=None, on_repair=None, repair=None)` | returns `{verdict, feedback, unsupported_claims, unaddressed_contradictions, alternatives_tested, mode, degraded, validation_error}` | `verdict` is `ACCEPT`, `REVISE`, `INSUFFICIENT_EVIDENCE`, `HUMAN_REVIEW`, `ESCALATE`, or `UNAVAILABLE` when the reviewer failed (fail closed). `context` is built by `checks.review_context`. |
 | `InvestigationTools(context, config, *, symptoms=(), heartbeats=None, precedents=None, port=None, disabled=())` | | One tool belt per case investigation, kept across review rounds. |
 | `InvestigationTools.describe()` | `[{tool, args, returns}]` | Disabled tools are absent. |
 | `InvestigationTools.call(tool, args)` | `{result, evidence_ids, computed_ids}` or `{error}` | An unknown or disabled tool returns `{error}` and is not recorded as a call. `result` is JSON text followed by ` CITABLE_EVIDENCE_IDS: [...]`. |
 
 Older investigator doubles that declare only `investigate(tools, on_step=None, feedback=None)` and
-`review(conclusion, records, checks, symptoms)` keep working: the graph passes `session`, `review` and `context`
-only to callables that declare them.
+`review(conclusion, records, checks, symptoms)` keep working: the graph passes `session`, `review`, `context` and
+`on_repair` only to callables that declare them.
 
 ### Evaluation switches
 
@@ -43,11 +43,79 @@ While a re-investigation is queued (`OPEN`, `REOPENED`) `run` is `null` and the 
 (see `case-detail.md`). `run.status` is `RUNNING` while the graph executes, `REVIEWED` when the run was written
 back and `ABORTED` when it was not (snapshot changed).
 
-The monitor queues a re-investigation when a standing or human-floor symptom is added to a case that was already
-investigated and is in `RECOMMENDATION_READY`, `AWAITING_APPROVAL`, `HUMAN_REVIEW`, `NEEDS_EVIDENCE` or `ESCALATED`
-(at most twice per case). A case in `ACTION_INITIATED` or `AWAITING_OUTCOME` is never requeued this way: the dispatch
-recheck refuses an action whose context changed, and an executed action is always verified, its outcome recorded, and
-the case sent to a person when such a symptom is recorded or still visible.
+### When an investigation is superseded
+
+An investigation is superseded and run again only on a material change. A routine new record for the shipment (the next
+scan, a GPS fix, a status event) is not one, whether it lands during the run or after it. This is the monitor's and the
+worker's policy for every dataset; there is no option to turn it off. The rules are in `operations/materiality.py` and
+are deterministic (visible evidence only, no model).
+
+| `reason` | Material change |
+| --- | --- |
+| `symptoms_changed` | The case's symptom set differs from the one the run started with (`added`, `cleared`). The monitor only adds symptoms to an open case, so `cleared` is empty today. |
+| `finding_added` | The new records add a monitor finding (`codes`) that the same evidence without them does not show at the same clock. |
+| `finding_cleared` | The new records clear a finding the investigation saw at its snapshot and that would still stand without them (the expected observation arrived). |
+| `late_upload` | A new observation that happened more than the normal upload allowance (900 s) before the investigation's snapshot and was not visible at it: the conclusion was reached without an observation from the period it examined. This is the late upload of an observation the conclusion calls missing. `missing_evidence` is model prose and is not parsed. |
+| `cited_record_superseded` | A new record whose `supersedes_id` is a record the conclusion cites. |
+| `cited_record_new_version` | A new record that carries `version` and is of the same kind as a record the conclusion cites. |
+| `case_record_changed` | During a run only: the case record changed in a way evidence ingestion does not account for. Treated as material. |
+
+Cited records are every `...evidence_ids` list in `investigation`, `proposal` and `result.diagnoses`.
+
+During a run. Every ingested record still advances the case (`as_of`, `state_version`, audit `EVIDENCE_INGESTED`).
+When the run is written back the records that arrived since its snapshot are checked:
+
+- none is material: the run is written and kept. It is the investigation of its snapshot (`investigation_log.snapshot_as_of`,
+  `diagnosis.as_of`); the audit trail has `SNAPSHOT_KEPT` with the number of records and the snapshot time.
+- a material change: the run is `ABORTED`, the case goes back to `OPEN` (audit `CLAIM_RELEASED`, which names the
+  change) and `process_one` returns `reason: "snapshot_changed"` with `material`. At most twice per case.
+- a material change on the third attempt: the run is written but never acted on. `authority.rule_id` is
+  `AUTH-15-superseded-snapshot`, the case goes to `HUMAN_REVIEW` (a rejected or evidence-less result keeps `ESCALATED`
+  or `NEEDS_EVIDENCE`), and `degraded[]` carries `{role: "snapshot", error: "evidence changed during investigation", kind: "snapshot_superseded"}`.
+
+After a run. The monitor checks each record ingested after a finished investigation once, against that investigation
+(`investigated_as_of`, the cited records). A material one queues a re-investigation of a case in `RECOMMENDATION_READY`,
+`AWAITING_APPROVAL`, `HUMAN_REVIEW`, `NEEDS_EVIDENCE` or `ESCALATED` (audit `REINVESTIGATION_QUEUED`, key `evidence:<time>`),
+at most twice per case; after that the case stays where it is (audit `REINVESTIGATION_LIMIT`). The monitor also queues
+a re-investigation when a standing or human-floor symptom is added to such a case (at most twice per case), as before.
+A case in `ACTION_INITIATED` or `AWAITING_OUTCOME` is never requeued either way: the dispatch recheck refuses an action
+whose context changed, and an executed action is always verified, its outcome recorded, and the case sent to a person
+when such a symptom is recorded or still visible.
+
+Quiet interval. After a run finishes, and after a run released for a material change, the worker starts no automatic
+investigation of the same case for 2 simulated hours (`quiet_until` on the case). The case stays queued (`OPEN`) meanwhile.
+
+| Setting | Where | Effect |
+| --- | --- | --- |
+| Quiet interval | `store.reinvestigation_quiet_seconds` (int or `None`); default from `SUHAIL_REINVESTIGATION_QUIET_SECONDS`, else `7200` | Simulated seconds. `0` disables it. Read when a run finishes. |
+
+Not delayed: `process_one(case_id=...)`, `process_one(manual=True)` (the worker step control), an operator's
+re-analysis request, which clears `quiet_until`, and any case while the simulation is paused (the interval is simulated
+time and could not pass; nothing new can arrive either).
+
+The approval recheck and the dispatch recheck (`AUTH-20-approval-context-stale`) use the same rule. Both still run,
+on the current case, at approval and again immediately before dispatch, and both still recompute authority. A routine
+record ingested after a recommendation's snapshot (during the run or after it) no longer makes its approval or its
+dispatch stale; a material change does, and sends the case back for re-investigation (bounded as before).
+
+What counts as "the context changed" (`operations.store.context_changes`, with `operations/materiality.py`, the module
+the monitor and the worker use):
+
+| Change since the context was recorded | Approval / dispatch |
+| --- | --- |
+| the symptom set | refused, `AUTH-20` |
+| the investigation run, its final review, or the reviewer's verdict | refused, `AUTH-20` |
+| a new record that supersedes a cited record, or is a new version of a cited kind of record | refused, `AUTH-20` (`cited_record_superseded`, `cited_record_new_version`) |
+| a late upload: an observation from more than the normal upload allowance before the investigation's snapshot | refused, `AUTH-20` (`late_upload`) |
+| new records that add or clear a monitor finding | refused, `AUTH-20` (`finding_added`, `finding_cleared`) |
+| the case version moved by more than the records ingested since | refused, `AUTH-20` (`state_version`) |
+| the evidence differs and no new record accounts for it, or the context was recorded without its evidence time or its run is gone | refused, `AUTH-20` (as before this change) |
+| routine new records only (none of the above) | **not a change**: the recheck goes on to the authority recomputation, and its audit entry (`APPROVAL_CONTEXT_CHECKED`, `EXECUTION_CONTEXT_CHECKED`) carries `routine_new_records` |
+
+The refusal's reason and the `APPROVAL_CONTEXT_STALE` / `EXECUTION_CONTEXT_STALE` audit entry name the changed keys
+and the material reasons. Everything after that decision is as it was: authority is recomputed against the latest
+evidence, symptoms, run, review and case state; `AUTH-21`, `AUTH-22`, `AUTH-24`, the human-review allowlist and the
+closure checks are untouched (`tests/test_material_reinvestigation.py`, `tests/test_approval_recheck.py`).
 
 | `run.result` field | Meaning |
 | --- | --- |
@@ -58,7 +126,7 @@ the case sent to a person when such a symptom is recorded or still visible.
 | `proposal` | The recommended catalogue action as a proposal (`action_type`, `evidence_ids`, `target`), or `null`. |
 | `checks` | The deterministic checks of the last round: `checks[]`, `rule_codes`, `unsupported`, `sensitive`, `contractor_custody`, `alternative_recorded`, and `citations` (the citation summary without per-id rows). |
 | `authority` | The deterministic authority decision: `risk_class`, `reason`, `rule_id`, `action_type`, `closure`, `inputs`. |
-| `degraded[]` | Failed model roles: `{role, error, kind}` with `kind` one of `model_unavailable`, `invalid_model_output`, `model_call_cap`. |
+| `degraded[]` | Failed model roles: `{role, error, kind}` with `kind` one of `model_unavailable`, `invalid_model_output`, `model_call_cap`, `turn_budget_exhausted` (the investigator used every turn of the round without a valid conclusion; reported as `invalid_model_output` before stage 4). One entry is not a model role: `{role: "snapshot", error: "evidence changed during investigation", kind: "snapshot_superseded"}`, a material change during the third attempt (`AUTH-15-superseded-snapshot`); it had no `kind` before this change. |
 | `investigation_log` | The per-round log (section 4). `null` for a rules-only run. |
 | `pipeline_events[]` | Stage events as they happened (each tool call is a `classify` `RUNNING` event). |
 | `result` | Case result fields derived from the conclusion (`diagnoses`, `assessment.supported_codes`, `workflow_state`). |
@@ -67,7 +135,8 @@ the case sent to a person when such a symptom is recorded or still visible.
 
 | Field | Meaning |
 | --- | --- |
-| `mode` | `gpt-oss` for a valid conclusion; else `model_unavailable`, `invalid_model_output` or `model_call_cap`. |
+| `mode` | `gpt-oss` for a valid conclusion; else `model_unavailable`, `invalid_model_output`, `model_call_cap` or `turn_budget_exhausted`. |
+| `forced_final_turn` | `true` when the round used the forced final turn (`SUHAIL_FORCED_CONCLUSION=1`; see `docs/api/demo-lifecycle.md`). Absent otherwise. Also on `investigation_log` and `investigation_log.rounds[].investigator`, and on case detail's `diagnosis`. |
 | `degraded` | `true` when no valid conclusion was reached. Then `primary_cause` is `null` and `hypotheses` is empty. |
 | `primary_cause` | A cause code of the catalogue, or `INSUFFICIENT_EVIDENCE`. (`UNKNOWN` from the model is stored as `INSUFFICIENT_EVIDENCE`.) |
 | `confidence` | `low`, `medium`, `high`. |
@@ -107,7 +176,7 @@ Each `rounds[]` entry:
 | --- | --- |
 | `round` | 0 for the first round, 1 for the revision round. |
 | `snapshot_as_of` | The snapshot time (the same for every round of a run). |
-| `tool_calls[]` | This round's calls: `tool`, `args`, `evidence_ids` (records listed as citable), `computed_ids`, `omitted_rows` (`{list: n}` rows left out by the size cap; their ids are not citable), `failure` (`null`, `invalid_arguments` or `query_failed`). |
+| `tool_calls[]` | This round's calls: `tool`, `args`, `evidence_ids` (records listed as citable), `computed_ids`, `omitted_rows` (`{list: n}` rows left out by the size cap; their ids are not citable), `failure` (`null`, `invalid_arguments` or `query_failed`); measurement only: `seconds` (the call's own time), `queries` and `query_seconds` (database reads it made and their time), `cached_queries` (reads answered by the case's query memo). |
 | `conclusion` | `primary_cause`, `confidence`, `hypotheses`, `missing_evidence`, `next_evidence_step`, `recommended_action`, `requires_physical_check`, `summary`; `null` when the round was degraded. |
 | `investigator` | `mode`, `degraded`, `validation_error`, `validation_errors[]`. |
 | `citation_validity` | Computed by code: `snapshot_as_of`, `cited`, `valid`, `invalid_ids`, `all_valid`, and `citations[]` with `id`, `kind`, `scope`, `resolves`, `retrieved_in_this_investigation`, `recorded_at_or_before_snapshot`, `valid`. `null` when the round was degraded. |
@@ -118,6 +187,80 @@ Each `rounds[]` entry:
 An invalid citation (`citation_validity.all_valid: false`) sets `checks.unsupported`, which removes automatic
 authority. The investigator loop already rejects a conclusion citing an id its tools did not return, so an invalid
 citation in a stored conclusion means an id that was listed but does not resolve or is dated after the snapshot.
+
+## 3a. Invalid-output repair (`SUHAIL_INVALID_OUTPUT_REPAIR`, off by default)
+
+Without the option (the evaluated behaviour, unchanged): a conclusion that is still invalid after its one corrective
+retry ends the investigation as degraded (`mode: "invalid_model_output"`), and a review verdict that is invalid twice is
+`UNAVAILABLE`. Either way the case goes to a person and no conclusion is substituted.
+
+With `SUHAIL_INVALID_OUTPUT_REPAIR=1` (read at each call; intended for the live demo backend) the role gets **one**
+more attempt after that retry: the model is asked again for a well-formed reply and is given the validation error and
+the required JSON shape. This applies to the investigator's conclusion and to the reviewer's verdict, once each per
+round.
+
+- The attempt is an ordinary model call under the per-case cap (`SUHAIL_MODEL_CALL_CAP`). The investigator's attempt is
+  skipped when only the call reserved for the review is left, or at the per-round turn limit; the reviewer's when no
+  call is left. A skipped repair leaves the result exactly as without the option.
+- A provider failure (`model_unavailable`) and a cap hit (`model_call_cap`) are not repaired.
+- If the repaired reply is valid the run continues normally. The result carries `invalid_output_repairs: 1` (on the
+  `investigation` dict; for the reviewer on the review stage event's `output.model_review`), and the rejected replies
+  stay listed in `validation_errors[]`.
+- If it is invalid too, the role fails closed as today: the same `mode` (`invalid_model_output`), the same
+  `validation_error` (the investigator: of the reply rejected last; the reviewer: of its retry), `degraded[]`,
+  `authority.rule_id: "AUTH-02-model-degraded"`, `workflow_state: "HUMAN_REVIEW"`. Never a fabricated conclusion.
+
+Each repair attempt is a pipeline event, emitted before the extra call, so the UI can show it while the call runs:
+
+```json
+{"sequence": 9, "stage": "classify", "status": "RETRYING", "iteration": 0, "recorded_at": "...", "evidence_as_of": "...",
+ "elapsed_seconds": 41.2,
+ "output": {"kind": "invalid_output_repair", "role": "investigator", "attempt": 1,
+            "message": "model reply invalid, retrying", "validation_error": "hypotheses must be a non-empty list",
+            "agent": "gpt-oss", "model_calls": {"model_call_cap": 20, "model_calls_used": 6, "...": "..."}}}
+```
+
+`stage` is `classify` (role `investigator`) or `review` (role `reviewer`). The status is `RETRYING`, which every
+consumer already treats as "this stage is still running"; tell it apart from a revision round's `classify` `RETRYING`
+event (empty `output`) by `output.kind == "invalid_output_repair"`. It is served live by `GET /cases/{case_id}/events`
+(in `events[]`) and stored in the run record's `pipeline_events[]` (`GET /cases/{case_id}` → `run.result.pipeline_events`).
+The stage's closing event follows as usual (`COMPLETED`, or `DEGRADED` when the repair failed).
+
+## 4a. `latency` (one per run; measurement only)
+
+The run record's top-level `latency` object (schema `latency-1`, `operations.latency`) says where the run's time went.
+It is written beside the record and changes nothing the investigator or reviewer is sent or decides. Its clock starts
+when the graph starts, after the worker claimed the case; queue time before that is read from the ledger's
+`CASE_OPENED` and `CASE_CLAIMED` audits (`scripts/investigation_latency.py ledger`). Every pipeline event also carries
+`elapsed_seconds` on the same clock.
+
+| Field | Meaning |
+| --- | --- |
+| `total_seconds` | Graph start to graph end. |
+| `first_conclusion_seconds` | When round 0's conclusion (hypotheses, or a degraded investigator) was available. |
+| `first_review_seconds`, `final_seconds` | The first independent review's verdict; the authority decision written back. |
+| `stages` | Seconds per pipeline stage, summed over rounds. |
+| `model` | `calls`, `seconds`, `by_role`, `input_tokens`/`output_tokens` when the provider reports them, and `turns[]` (`role`, `round`, `seconds`, `outcome`, `prompt_chars`, tokens) for every model call. An investigator turn whose reply was neither a call nor a conclusion has `outcome: "invalid"` and `invalid_kind`: why, as a kind only, never the reply text (`empty`, `no_json_object`, `json_error`, `not_an_object`, `no_action`, `action:<value>`). Replies rejected for another reason (unknown tool, tool budget, an invalid conclusion) are listed with their turn number and reason in `investigation.validation_errors[]` and `investigation_log.rounds[].investigator.validation_errors[]`. |
+| `tools` | `calls`, `seconds`, `duplicate_calls` (same tool and arguments again), `queries`, `query_seconds`, `cached_queries`. |
+| `event_writes` | `count` and `seconds` spent persisting and publishing pipeline events (`on_event`). |
+| `other_seconds` | The rest: evidence loading, precedents, checks, the graph itself. |
+
+The investigator's `steps[]` also carry `model_seconds` (the model turn that chose the call) and `tool_seconds`.
+
+Where to read it in the case API: `GET /cases/{case_id}` → `run.result.latency` (present once the run has finished);
+`run.result.pipeline_events[].elapsed_seconds` and the same field on the live events of `GET /cases/{case_id}/events`;
+`run.result.investigation.steps[].model_seconds` / `tool_seconds`; and per tool call
+`run.result.investigation_log.rounds[].tool_calls[]` (`seconds`, `queries`, `query_seconds`, `cached_queries`).
+`scripts/investigation_latency.py` prints tables from run records or from the ledger.
+
+### Latency options (off by default; they change the investigator's inputs)
+
+| Variable | Effect |
+| --- | --- |
+| `SUHAIL_TOOL_BATCH` | `2`..`4`: the investigator may ask for up to that many independent tools in one reply (`{"action":"call","calls":[...]}`); each call is run, recorded and shown as a single call would be. Unset or `1`: one call per reply (the evaluated protocol). |
+| `SUHAIL_PREFETCH_OVERVIEW` | `1`: `shipment_overview` is fetched before the first model turn and shown as the first tool call and result; its step is recorded with `chosen_by: "prefetch"` and `model_seconds: null`. |
+
+Neither was part of the frozen evaluation; `docs/api/demo-lifecycle.md` section 0 gives the values recommended for the demo.
 
 ## 5. What the reviewer receives
 

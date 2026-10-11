@@ -369,7 +369,8 @@ class RunRecordTests(unittest.TestCase):
                         "model_calls_used", "model_call_cap"):
                 self.assertIn(key, entry)
             for tool_call in entry["tool_calls"]:
-                self.assertEqual(set(tool_call), {"tool", "args", "evidence_ids", "computed_ids", "omitted_rows", "failure"})
+                self.assertEqual(set(tool_call), {"tool", "args", "evidence_ids", "computed_ids", "omitted_rows", "failure",
+                                                  "seconds", "queries", "query_seconds", "cached_queries"})
             self.assertEqual(set(entry["review"]) >= {"verdict", "model_verdict", "reason_code", "feedback", "unsupported_claims"}, True)
         self.assertEqual(log["rounds"][1]["conclusion"]["missing_evidence"], ["the receiving scan"])
         # The run record next to it: the conclusion, the final review and the authority decision.

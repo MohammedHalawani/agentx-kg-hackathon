@@ -167,7 +167,7 @@ def test_selection_is_sized_from_the_targets_and_the_world_and_seals_its_own_wor
     assert summary["allocation"]["notes"]                              # the main test below 150 is stated, not refused
     ablation, stability = len(extras["cross_shipment_ablation"]), len(extras["stability_rerun"])
     assert stability == 34 and sizing["extras"] == {"cross_shipment_ablation": ablation, "stability_rerun": 34, "stability_max": 40}
-    worst = {"main": 70 * (16 + 2), "cross_shipment_ablation": ablation * 16, "stability_rerun": 34 * 16}
+    worst = {"main": 70 * (16 + 3), "cross_shipment_ablation": ablation * 16, "stability_rerun": 34 * 16}
     assert sizing["worst_case_calls"] == {**worst, "total": sum(worst.values())} == design.worst_case_calls(70, ablation, 34, 16)
     assert run_side["config"]["budget"] == summary["budget"] == sizing["sealed_budget"] == sum(worst.values())
     sealed = design.EvalConfig(**summary["config"])
