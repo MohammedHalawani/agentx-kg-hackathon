@@ -6,3 +6,4 @@ test-results/
 playwright-report/
 *.log
 dist-lab/
+dist-8022/

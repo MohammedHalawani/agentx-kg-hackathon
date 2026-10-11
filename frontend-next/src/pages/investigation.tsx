@@ -56,7 +56,11 @@ import { dateTimeLabel, secondsLabel, timeLabel } from "@/lib/dates";
 import { InvestigatorFindings } from "@/components/investigator-findings";
 import { InvestigationRecord } from "@/components/investigation-record";
 import { NextStep } from "@/components/next-step";
-import { CaseAssessment } from "@/components/case-assessment";
+import { ClockNotice } from "@/components/clock-notice";
+import {
+  AssessmentAnswers,
+  CaseAssessment,
+} from "@/components/case-assessment";
 import { NarrationStrip } from "@/components/narration";
 import { explainStage, type StageState } from "@/domain/stage-explain";
 import { HumanOutcomeDialog } from "@/components/human-outcome-dialog";
@@ -860,6 +864,7 @@ export function InvestigationPage() {
             </span>
           </div>
         )}
+        <ClockNotice c={c} />
         {/* The pipeline's final output. */}
         <NextStep c={c} />
         {c.backend && (
@@ -1262,199 +1267,213 @@ export function InvestigationPage() {
                   <dd>{c.openedAt ? `${timeLabel(c.openedAt)} AST` : "—"}</dd>
                 </div>
               </dl>
-              <DetailSection title={t("Current assessment", "التقييم الحالي")}>
-                {c.diagnosis}
-              </DetailSection>
-              <DetailSection title={t("Expected journey", "الرحلة المتوقعة")}>
-                {c.shipment.origin} → {c.shipment.destination}
-                {!backend && <> → {t("Delivery depot", "مستودع التسليم")}</>}
-              </DetailSection>
-              <InvestigationRecord c={c} />
-              <InvestigatorFindings
+              <AssessmentAnswers
                 c={c}
                 onEvidence={(id) => {
-                  select(id);
                   setDetails(false);
+                  select(id);
                 }}
               />
-              {c.backend?.ruleSignals &&
-                c.backend.ruleSignals.signals.length > 0 && (
-                  <section
-                    className="detail-section"
-                    data-testid="rule-signals"
-                  >
-                    <h3>
-                      {t(
-                        "Rule checks · not a diagnosis",
-                        "فحوص القواعد · ليست تشخيصاً",
-                      )}
-                    </h3>
-                    <div>
-                      <p className="finding-meta">
-                        {t(
-                          `Deterministic checks over the evidence visible at ${dateTimeLabel(c.backend.ruleSignals.asOf)}. They open cases and back fact checks; they do not say what happened.`,
-                          `فحوص حتمية على الأدلة الظاهرة عند ${dateTimeLabel(c.backend.ruleSignals.asOf)}. تفتح الحالات وتدعم التحقق من الوقائع، ولا تحدد ما حدث.`,
-                        )}
-                      </p>
-                      {c.backend.ruleSignals.signals.map((signal) => (
-                        <div className="finding" key={signal.code}>
-                          <b>
-                            {signal.code.replaceAll("_", " ").toLowerCase()}
-                          </b>
-                          {signal.summary && <p>{signal.summary}</p>}
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                )}
-              {c.backend?.review && (
+              <TechnicalRecord folded={!!c.backend?.brief}>
                 <DetailSection
-                  title={
-                    c.backend.review.byModel
-                      ? t("Independent review", "المراجعة المستقلة")
-                      : t(
-                          "Deterministic evidence guard · no model review",
-                          "حارس أدلة حتمي · دون مراجعة نموذج",
-                        )
-                  }
+                  title={t("Current assessment", "التقييم الحالي")}
                 >
-                  {t("Verdict", "الحكم")}: {c.backend.review.verdict ?? "—"}
-                  {c.backend.review.summary && (
-                    <p className="mt-2">{c.backend.review.summary}</p>
+                  {c.diagnosis}
+                </DetailSection>
+                <DetailSection title={t("Expected journey", "الرحلة المتوقعة")}>
+                  {c.shipment.origin} → {c.shipment.destination}
+                  {!backend && <> → {t("Delivery depot", "مستودع التسليم")}</>}
+                </DetailSection>
+                <InvestigationRecord c={c} />
+                <InvestigatorFindings
+                  c={c}
+                  onEvidence={(id) => {
+                    select(id);
+                    setDetails(false);
+                  }}
+                />
+                {c.backend?.ruleSignals &&
+                  c.backend.ruleSignals.signals.length > 0 && (
+                    <section
+                      className="detail-section"
+                      data-testid="rule-signals"
+                    >
+                      <h3>
+                        {t(
+                          "Rule checks · not a diagnosis",
+                          "فحوص القواعد · ليست تشخيصاً",
+                        )}
+                      </h3>
+                      <div>
+                        <p className="finding-meta">
+                          {t(
+                            `Deterministic checks over the evidence visible at ${dateTimeLabel(c.backend.ruleSignals.asOf)}. They open cases and back fact checks; they do not say what happened.`,
+                            `فحوص حتمية على الأدلة الظاهرة عند ${dateTimeLabel(c.backend.ruleSignals.asOf)}. تفتح الحالات وتدعم التحقق من الوقائع، ولا تحدد ما حدث.`,
+                          )}
+                        </p>
+                        {c.backend.ruleSignals.signals.map((signal) => (
+                          <div className="finding" key={signal.code}>
+                            <b>
+                              {signal.code.replaceAll("_", " ").toLowerCase()}
+                            </b>
+                            {signal.summary && <p>{signal.summary}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+                {c.backend?.review && (
+                  <DetailSection
+                    title={
+                      c.backend.review.byModel
+                        ? t("Independent review", "المراجعة المستقلة")
+                        : t(
+                            "Deterministic evidence guard · no model review",
+                            "حارس أدلة حتمي · دون مراجعة نموذج",
+                          )
+                    }
+                  >
+                    {t("Verdict", "الحكم")}: {c.backend.review.verdict ?? "—"}
+                    {c.backend.review.summary && (
+                      <p className="mt-2">{c.backend.review.summary}</p>
+                    )}
+                  </DetailSection>
+                )}
+                <div className="detail-section">
+                  <h3>{t("Actual evidence", "الأدلة الفعلية")}</h3>
+                  {c.evidence
+                    // The planned-route end marker is drawn by this screen, not recorded evidence.
+                    .filter((e) => !(c.backend && e.id.startsWith("planned:")))
+                    .map((e) => (
+                      <Button
+                        key={e.id}
+                        variant="ghost"
+                        className="detail-evidence"
+                        onClick={() => {
+                          select(e.id);
+                          setDetails(false);
+                        }}
+                      >
+                        <span>
+                          {e.label}
+                          <small>
+                            {e.facility} · {e.time} AST
+                            {e.afterInvestigation &&
+                              ` · ${t(
+                                "recorded after the investigation",
+                                "سُجل بعد التحقيق",
+                              )}`}
+                          </small>
+                        </span>
+                        {e.confidence === "confirmed" ? (
+                          <ShieldCheck size={14} />
+                        ) : (
+                          <AlertTriangle size={14} />
+                        )}
+                      </Button>
+                    ))}
+                </div>
+                <DetailSection title={c.recommendation.title}>
+                  {c.recommendation.detail}
+                  <p className="detail-expected">
+                    {c.recommendation.expectedOutcome}
+                  </p>
+                </DetailSection>
+                <DetailSection
+                  title={t("Execution & verification", "التنفيذ والتحقق")}
+                >
+                  {c.execution?.detail ??
+                    t("No action has been executed.", "لم يُنفذ أي إجراء.")}
+                  {c.backend?.earlierOutcome && (
+                    <p
+                      className="finding-meta mt-3"
+                      data-testid="earlier-outcome"
+                    >
+                      {t(
+                        `An earlier action on this case was checked by the verifier and ${c.backend.earlierOutcome.success ? "confirmed" : "not confirmed"}: ${c.backend.earlierOutcome.reason} It belongs to an earlier cycle and is not the outcome of the current action.`,
+                        `إجراء سابق في هذه الحالة فحصه المتحقق و${c.backend.earlierOutcome.success ? "تأكد" : "لم يتأكد"}: ${c.backend.earlierOutcome.reason} يخص دورة سابقة وليس نتيجة الإجراء الحالي.`,
+                      )}
+                    </p>
+                  )}
+                  {c.backend?.verification ? (
+                    <div className="finding" data-testid="verification-result">
+                      <Badge
+                        variant="secondary"
+                        className={`finding-status finding-${c.backend.verification.result === "confirmed" ? "supported" : ["failed", "unanswered"].includes(c.backend.verification.result) ? "refuted" : "uncertain"}`}
+                      >
+                        {t(
+                          {
+                            confirmed:
+                              "Answered · verified · exception cleared",
+                            failed: "Answered · not confirmed",
+                            unanswered: "Delivered · no answer by the deadline",
+                            exception_remains: "Verified · exception remains",
+                            finding: "Finding on record · not resolved",
+                          }[c.backend.verification.result],
+                          {
+                            confirmed: "تم التحقق · زال الاستثناء",
+                            failed: "أُجيب · لم يتأكد",
+                            unanswered: "سُلّم · لا إجابة حتى الموعد النهائي",
+                            exception_remains: "تم التحقق · الاستثناء باقٍ",
+                            finding: "نتيجة مسجلة · لم تُحل",
+                          }[c.backend.verification.result],
+                        )}
+                      </Badge>
+                      <b>
+                        {c.backend.verification.byPerson
+                          ? t("A person's finding", "نتيجة فحص بشري")
+                          : t("Independent verifier", "المتحقق المستقل")}
+                      </b>
+                      {c.backend.verification.reason && (
+                        <p>{c.backend.verification.reason}</p>
+                      )}
+                      {c.backend.verification.remainingSymptoms.length > 0 && (
+                        <p>
+                          {t("Still observed", "ما زال مرصوداً")}:{" "}
+                          {c.backend.verification.remainingSymptoms
+                            .map((code) =>
+                              code.replaceAll("_", " ").toLowerCase(),
+                            )
+                            .join(", ")}
+                        </p>
+                      )}
+                    </div>
+                  ) : c.backend?.verificationDeadline &&
+                    c.status === "verifying" ? (
+                    <p className="mt-3">
+                      {t(
+                        `Waiting for evidence of the outcome.${c.backend.expectedResponseAt ? ` An answer is scheduled for ${dateTimeLabel(c.backend.expectedResponseAt)}.` : ""} The verifier waits until ${dateTimeLabel(c.backend.verificationDeadline)} (dataset clock); with no confirming evidence by then it records a failed outcome and the case goes to a person.`,
+                        `بانتظار دليل على النتيجة. ينتظر المتحقق حتى ${dateTimeLabel(c.backend.verificationDeadline)} (ساعة البيانات)، ثم تُحال الحالة إلى شخص.`,
+                      )}
+                    </p>
+                  ) : (
+                    c.outcome && <p className="mt-3">{c.outcome.detail}</p>
                   )}
                 </DetailSection>
-              )}
-              <div className="detail-section">
-                <h3>{t("Actual evidence", "الأدلة الفعلية")}</h3>
-                {c.evidence
-                  // The planned-route end marker is drawn by this screen, not recorded evidence.
-                  .filter((e) => !(c.backend && e.id.startsWith("planned:")))
-                  .map((e) => (
-                    <Button
-                      key={e.id}
-                      variant="ghost"
-                      className="detail-evidence"
-                      onClick={() => {
-                        select(e.id);
-                        setDetails(false);
-                      }}
-                    >
-                      <span>
-                        {e.label}
-                        <small>
-                          {e.facility} · {e.time} AST
-                          {e.afterInvestigation &&
-                            ` · ${t(
-                              "recorded after the investigation",
-                              "سُجل بعد التحقيق",
-                            )}`}
-                        </small>
-                      </span>
-                      {e.confidence === "confirmed" ? (
-                        <ShieldCheck size={14} />
-                      ) : (
-                        <AlertTriangle size={14} />
-                      )}
-                    </Button>
-                  ))}
-              </div>
-              <DetailSection title={c.recommendation.title}>
-                {c.recommendation.detail}
-                <p className="detail-expected">
-                  {c.recommendation.expectedOutcome}
-                </p>
-              </DetailSection>
-              <DetailSection
-                title={t("Execution & verification", "التنفيذ والتحقق")}
-              >
-                {c.execution?.detail ??
-                  t("No action has been executed.", "لم يُنفذ أي إجراء.")}
-                {c.backend?.earlierOutcome && (
-                  <p
-                    className="finding-meta mt-3"
-                    data-testid="earlier-outcome"
-                  >
-                    {t(
-                      `An earlier action on this case was checked by the verifier and ${c.backend.earlierOutcome.success ? "confirmed" : "not confirmed"}: ${c.backend.earlierOutcome.reason} It belongs to an earlier cycle and is not the outcome of the current action.`,
-                      `إجراء سابق في هذه الحالة فحصه المتحقق و${c.backend.earlierOutcome.success ? "تأكد" : "لم يتأكد"}: ${c.backend.earlierOutcome.reason} يخص دورة سابقة وليس نتيجة الإجراء الحالي.`,
-                    )}
-                  </p>
-                )}
-                {c.backend?.verification ? (
-                  <div className="finding" data-testid="verification-result">
-                    <Badge
-                      variant="secondary"
-                      className={`finding-status finding-${c.backend.verification.result === "confirmed" ? "supported" : ["failed", "unanswered"].includes(c.backend.verification.result) ? "refuted" : "uncertain"}`}
-                    >
-                      {t(
-                        {
-                          confirmed: "Answered · verified · exception cleared",
-                          failed: "Answered · not confirmed",
-                          unanswered: "Delivered · no answer by the deadline",
-                          exception_remains: "Verified · exception remains",
-                          finding: "Finding on record · not resolved",
-                        }[c.backend.verification.result],
-                        {
-                          confirmed: "تم التحقق · زال الاستثناء",
-                          failed: "أُجيب · لم يتأكد",
-                          unanswered: "سُلّم · لا إجابة حتى الموعد النهائي",
-                          exception_remains: "تم التحقق · الاستثناء باقٍ",
-                          finding: "نتيجة مسجلة · لم تُحل",
-                        }[c.backend.verification.result],
-                      )}
-                    </Badge>
-                    <b>
-                      {c.backend.verification.byPerson
-                        ? t("A person's finding", "نتيجة فحص بشري")
-                        : t("Independent verifier", "المتحقق المستقل")}
-                    </b>
-                    {c.backend.verification.reason && (
-                      <p>{c.backend.verification.reason}</p>
-                    )}
-                    {c.backend.verification.remainingSymptoms.length > 0 && (
-                      <p>
-                        {t("Still observed", "ما زال مرصوداً")}:{" "}
-                        {c.backend.verification.remainingSymptoms
-                          .map((code) =>
-                            code.replaceAll("_", " ").toLowerCase(),
-                          )
-                          .join(", ")}
+                {decisions
+                  .filter((d) => d.caseId === c.id)
+                  .map((d, i) => (
+                    <DetailSection key={i} title={`${d.verdict} · ${d.actor}`}>
+                      {d.reason ||
+                        t(
+                          "The backend does not store a reason for decisions yet.",
+                          "لا يخزن الخادم سبب القرارات بعد.",
+                        )}
+                      <p className="mt-2 text-xs">
+                        {timeLabel(d.timestamp)} AST
                       </p>
-                    )}
-                  </div>
-                ) : c.backend?.verificationDeadline &&
-                  c.status === "verifying" ? (
-                  <p className="mt-3">
-                    {t(
-                      `Waiting for evidence of the outcome.${c.backend.expectedResponseAt ? ` An answer is scheduled for ${dateTimeLabel(c.backend.expectedResponseAt)}.` : ""} The verifier waits until ${dateTimeLabel(c.backend.verificationDeadline)} (dataset clock); with no confirming evidence by then it records a failed outcome and the case goes to a person.`,
-                      `بانتظار دليل على النتيجة. ينتظر المتحقق حتى ${dateTimeLabel(c.backend.verificationDeadline)} (ساعة البيانات)، ثم تُحال الحالة إلى شخص.`,
-                    )}
-                  </p>
-                ) : (
-                  c.outcome && <p className="mt-3">{c.outcome.detail}</p>
-                )}
-              </DetailSection>
-              {decisions
-                .filter((d) => d.caseId === c.id)
-                .map((d, i) => (
-                  <DetailSection key={i} title={`${d.verdict} · ${d.actor}`}>
-                    {d.reason ||
-                      t(
-                        "The backend does not store a reason for decisions yet.",
-                        "لا يخزن الخادم سبب القرارات بعد.",
-                      )}
-                    <p className="mt-2 text-xs">{timeLabel(d.timestamp)} AST</p>
-                  </DetailSection>
-                ))}
-              <DetailSection title={t("Activity", "النشاط")}>
-                {caseEvents.slice(0, 8).map((e) => (
-                  <div key={e.id} className="detail-activity">
-                    <b>{e.title}</b>
-                    <small>{timeLabel(e.timestamp)} AST</small>
-                    <p>{e.detail}</p>
-                  </div>
-                ))}
-              </DetailSection>
+                    </DetailSection>
+                  ))}
+                <DetailSection title={t("Activity", "النشاط")}>
+                  {caseEvents.slice(0, 8).map((e) => (
+                    <div key={e.id} className="detail-activity">
+                      <b>{e.title}</b>
+                      <small>{timeLabel(e.timestamp)} AST</small>
+                      <p>{e.detail}</p>
+                    </div>
+                  ))}
+                </DetailSection>
+              </TechnicalRecord>
             </div>
           </ScrollArea>
         </SheetContent>
@@ -1469,6 +1488,31 @@ export function InvestigationPage() {
         onClose={() => setVerdict(null)}
       />
     </>
+  );
+}
+/**
+ * The investigation's technical record: steps, findings, reviewer rounds, policy rule,
+ * execution and audit. Folded behind one line when the plain assessment is shown.
+ */
+function TechnicalRecord({
+  folded,
+  children,
+}: {
+  folded: boolean;
+  children: React.ReactNode;
+}) {
+  const { t } = usePreferences();
+  if (!folded) return <>{children}</>;
+  return (
+    <details className="technical-record" data-testid="technical-record">
+      <summary>
+        {t(
+          "Technical record: investigation steps, findings, reviewer rounds, policy and audit",
+          "السجل التقني: خطوات التحقيق والاستنتاجات وجولات المراجعة والسياسة والتدقيق",
+        )}
+      </summary>
+      {children}
+    </details>
   );
 }
 function DetailSection({

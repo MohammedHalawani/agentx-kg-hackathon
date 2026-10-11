@@ -1550,3 +1550,97 @@
 .simulation-note {
   opacity: 0.85;
 }
+
+/* The full assessment as plain answers; the technical record folded beneath. */
+.assessment-answers {
+  display: grid;
+  gap: 16px;
+  margin: 18px 0 22px;
+}
+.assessment-answers dt {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 4px;
+}
+.assessment-answers dd {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+.assessment-answers ul {
+  margin: 0;
+  padding-inline-start: 17px;
+  list-style: disc;
+}
+.assessment-answers li button {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--primary);
+  font-size: 13px;
+  text-align: start;
+  cursor: pointer;
+}
+.assessment-tag {
+  display: inline-block;
+  margin-inline-end: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 10.5px;
+  font-weight: 550;
+  vertical-align: 1px;
+}
+.assessment-tag.accepted {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.assessment-reason {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.technical-record > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+}
+.technical-record > summary::-webkit-details-marker {
+  display: none;
+}
+.technical-record[open] > summary {
+  margin-bottom: 14px;
+}
+
+/* A waiting case with the clock paused: say so, with the way out beside it. */
+.clock-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.clock-notice p {
+  flex: 1;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--foreground);
+}
+.clock-notice button {
+  height: 28px;
+  font-size: 11.5px;
+  flex: none;
+}

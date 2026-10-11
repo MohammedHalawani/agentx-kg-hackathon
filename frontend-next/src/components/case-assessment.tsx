@@ -196,3 +196,142 @@ export function CaseAssessment({
     </div>
   );
 }
+
+/**
+ * The full assessment as plain answers to the operator's questions, each one the backend's own
+ * sentence from its brief. A hypothesis is marked as a hypothesis; "resolved" is stated only
+ * when the backend's record says so.
+ */
+export function AssessmentAnswers({
+  c,
+  onEvidence,
+}: {
+  c: OperationalCase;
+  onEvidence: (id: string) => void;
+}) {
+  const { t, preferences } = usePreferences();
+  const brief = c.backend?.brief;
+  if (!brief) return null;
+  const arabic = preferences.language === "ar";
+  const say = (en?: string | null, ar?: string | null) =>
+    arabic && ar ? ar : (en ?? "");
+  const cause = brief.suspected_cause;
+  const action = brief.actions?.[0];
+  const next = c.backend?.nextStep;
+  const rows: [string, string, React.ReactNode][] = [
+    [
+      "happened",
+      t("What happened?", "ماذا حدث؟"),
+      say(brief.what_happened?.text_en, brief.what_happened?.text_ar),
+    ],
+    [
+      "cause",
+      t("What does Suhail believe caused it?", "ما السبب في تقدير سهيل؟"),
+      cause && cause.status !== "none" ? (
+        <>
+          <span
+            className={`assessment-tag ${cause.status === "accepted" ? "accepted" : ""}`}
+          >
+            {cause.status === "accepted"
+              ? t(
+                  "Accepted by the review · not yet proven",
+                  "قبلته المراجعة · لم يثبت بعد",
+                )
+              : t(
+                  "Hypothesis · not accepted by the review",
+                  "فرضية · لم تقبلها المراجعة",
+                )}
+          </span>
+          {say(cause.text_en, cause.text_ar)}
+        </>
+      ) : (
+        t(
+          "The investigation reached no conclusion.",
+          "لم يصل التحقيق إلى استنتاج.",
+        )
+      ),
+    ],
+    [
+      "evidence",
+      t("What evidence supports that?", "ما الأدلة التي تدعم ذلك؟"),
+      (brief.evidence ?? []).length ? (
+        <ul>
+          {brief.evidence!.map((item) => (
+            <li key={item.id}>
+              {item.in_graph ? (
+                <button
+                  type="button"
+                  onClick={() => onEvidence(item.id)}
+                  title={item.id}
+                >
+                  {say(item.label_en, item.label_ar) || item.id}
+                </button>
+              ) : (
+                say(item.label_en, item.label_ar) || item.id
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        t("No cited evidence is recorded.", "لا توجد أدلة مستشهد بها مسجلة.")
+      ),
+    ],
+    [
+      "review",
+      t("Did the independent review accept it?", "هل قبلته المراجعة المستقلة؟"),
+      brief.review ? (
+        <>
+          {say(brief.review.text_en, brief.review.text_ar)}
+          {brief.review.reason_summary_en && (
+            <span className="assessment-reason">
+              {say(
+                brief.review.reason_summary_en,
+                brief.review.reason_summary_ar,
+              )}
+            </span>
+          )}
+        </>
+      ) : (
+        ""
+      ),
+    ],
+    [
+      "action",
+      t(
+        "What action was taken or recommended?",
+        "ما الإجراء المتخذ أو الموصى به؟",
+      ),
+      say(action?.text_en, action?.text_ar) ||
+        say(brief.policy?.text_en, brief.policy?.text_ar),
+    ],
+    [
+      "next",
+      t("What happens next?", "ما الذي يحدث بعد ذلك؟"),
+      next ? (arabic ? next.textAr || next.text : next.text) : "",
+    ],
+    [
+      "resolved",
+      t("Is the shipment issue resolved?", "هل حُلّت مشكلة الشحنة؟"),
+      <>
+        <span className={`assessment-tag ${brief.resolved ? "accepted" : ""}`}>
+          {brief.resolved
+            ? t("Yes · independently verified", "نعم · تم التحقق المستقل")
+            : t("No · not resolved", "لا · غير محلولة")}
+        </span>
+        {say(brief.verification?.text_en, brief.verification?.text_ar)}
+      </>,
+    ],
+  ];
+  return (
+    <dl className="assessment-answers" data-testid="assessment-answers">
+      {rows
+        .filter(([, , answer]) => answer !== "")
+        .map(([key, question, answer]) => (
+          <div key={key}>
+            <dt>{question}</dt>
+            <dd>{answer}</dd>
+          </div>
+        ))}
+    </dl>
+  );
+}
