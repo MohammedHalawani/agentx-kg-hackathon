@@ -169,6 +169,8 @@ export interface BackendCaseState {
   stageDetail: Record<number, string>;
   /** Evidence ids the recorded stage cited, by UI stage index. */
   stageEvidence: Record<number, string[]>;
+  /** Each stage's latest recorded status (e.g. COMPLETED, DEGRADED). */
+  stageStatus?: Record<number, string>;
   /** Seconds into the run at each stage's latest event, as the backend measured them. */
   stageElapsed?: Record<number, number>;
   /** Set while the backend is asking a role again after an invalid model reply. */

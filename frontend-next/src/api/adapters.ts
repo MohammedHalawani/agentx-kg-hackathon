@@ -462,6 +462,7 @@ export function pipelineView(events: ApiPipelineEvent[]) {
   const stageDetail: Record<number, string> = {};
   const stageEvidence: Record<number, string[]> = {};
   const stageElapsed: Record<number, number> = {};
+  const stageStatus: Record<number, string> = {};
   let repairing: string | null = null;
   let stage = -1;
   for (const event of [...events].sort((a, b) => a.sequence - b.sequence)) {
@@ -469,6 +470,7 @@ export function pipelineView(events: ApiPipelineEvent[]) {
     if (index === undefined) continue;
     stage = Math.max(stage, index);
     stageDetail[index] = stageSummary(event);
+    stageStatus[index] = event.status;
     if (typeof event.elapsed_seconds === "number")
       stageElapsed[index] = event.elapsed_seconds;
     // A repair is live only until the stage's next event (its closing event follows).
@@ -479,7 +481,7 @@ export function pipelineView(events: ApiPipelineEvent[]) {
     if (event.output?.evidence_ids?.length)
       stageEvidence[index] = event.output.evidence_ids;
   }
-  return { stage, stageDetail, stageEvidence, stageElapsed, repairing };
+  return { stage, stageDetail, stageEvidence, stageElapsed, stageStatus, repairing };
 }
 
 const VERDICTS: Record<string, AuthorityDecision["verdict"]> = {
@@ -586,7 +588,10 @@ function investigationLogOf(
       .map((check) => humanize(check.check)),
     nextEvidenceStep: result.investigation?.next_evidence_step ?? null,
     degradedKinds: (result.degraded ?? []).map(
-      (item) => item.kind ?? (item.role === "snapshot" ? "snapshot_changed" : ""),
+      (item) =>
+        item.kind === "snapshot_superseded" || item.role === "snapshot"
+          ? "snapshot_changed"
+          : (item.kind ?? ""),
     ),
     rejectedReplies: [
       ...new Set(
@@ -598,7 +603,7 @@ function investigationLogOf(
     ],
     degraded: (result.degraded ?? []).map((item) => {
       const who = item.role === "reviewer" ? "reviewer" : "investigator";
-      if (item.role === "snapshot")
+      if (item.kind === "snapshot_superseded" || item.role === "snapshot")
         // Not a model failure: the evidence moved while the investigation ran.
         return "Evidence changed during the investigation, so its conclusion rests on a superseded snapshot. A person must review the latest evidence.";
       if (item.kind === "turn_budget_exhausted")
@@ -969,12 +974,17 @@ export function applyDetail(
       diagnosisReason: diagnosis?.available ? null : (diagnosis?.reason ?? null),
       detailLoaded: true,
       detailError: undefined,
-      allowed: allowedFor(workflow, approvable),
+      allowed: {
+        ...allowedFor(workflow, approvable),
+        // With no recommended action there is nothing to reject.
+        ...(detail.recommendation?.action_type ? {} : { reject: false }),
+      },
       approvalRule: detail.recommendation?.approval_rule,
       approvalReason: detail.recommendation?.approval_reason,
       stageDetail: pipeline.stageDetail,
       stageEvidence: pipeline.stageEvidence,
       stageElapsed: pipeline.stageElapsed,
+      stageStatus: pipeline.stageStatus,
       repairing: workflow === "INVESTIGATING" ? pipeline.repairing : null,
       timing: timingOf(detail),
       pipelineStatus: detail.pipeline?.status ?? "UNKNOWN",
@@ -1077,6 +1087,9 @@ export function applyPipeline(
       stageElapsed: queued
         ? {}
         : { ...base.backend.stageElapsed, ...view.stageElapsed },
+      stageStatus: queued
+        ? {}
+        : { ...base.backend.stageStatus, ...view.stageStatus },
       repairing: state.workflow_state === "INVESTIGATING" ? view.repairing : null,
       allowed: allowedFor(
         state.workflow_state,
@@ -1182,6 +1195,9 @@ export function auditEvent(row: ApiAuditEvent): InvestigationStageEvent {
     title:
       row.event_type === "PIPELINE_STAGE"
         ? `${humanize(row.stage)} · ${humanize(row.stage_status) || "recorded"}`
+        : row.event_type === "SNAPSHOT_KEPT"
+          ? // The backend kept the run: nothing material changed.
+            "New records arrived · the finding still stands"
         : `${humanize(row.event_type)}${row.decision ? ` · ${humanize(row.decision)}` : ""}`,
     detail:
       row.result ||

@@ -51,7 +51,8 @@ for (const id of CASES)
       await expect(context).toContainText(/no accepted agent diagnosis|Monitor detected/i);
     // Evidence that moved during the run is not a model failure and leaves the diagnosis shown.
     const snapshot = (result.degraded ?? []).some(
-      (item: { role?: string }) => item.role === "snapshot",
+      (item: { role?: string; kind?: string }) =>
+        item.role === "snapshot" || item.kind === "snapshot_superseded",
     );
     if (snapshot)
       await expect(page.locator(".pipeline-meta")).toContainText(
@@ -61,6 +62,8 @@ for (const id of CASES)
       await expect(page.locator(".pipeline-meta")).toContainText(
         degraded.some((item) => item.kind === "turn_budget_exhausted")
           ? "reached no conclusion within its turn budget"
+          : degraded.some((item) => item.kind === "model_unavailable")
+            ? "The model was unavailable"
           : "The model's reply could not be used",
       );
     if (execution?.status === "NOT_ACKNOWLEDGED" && !degraded.length)

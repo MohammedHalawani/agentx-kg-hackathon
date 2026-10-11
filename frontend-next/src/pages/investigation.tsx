@@ -424,6 +424,13 @@ export function InvestigationPage() {
                         "Evidence changed during the investigation · a person must review the latest evidence",
                         "تغيرت الأدلة أثناء التحقيق · على شخص مراجعة أحدث الأدلة",
                       )
+                  : c.backend?.investigationLog?.degradedKinds.includes(
+                        "model_unavailable",
+                      ) && !c.backend.diagnosisAvailable
+                    ? t(
+                        "The model was unavailable · no investigation result · with a person",
+                        "النموذج غير متاح · لا نتيجة تحقيق · لدى شخص",
+                      )
                   : c.backend?.investigationLog?.degraded.length &&
                       !c.backend.diagnosisAvailable
                     ? t(
@@ -517,7 +524,10 @@ export function InvestigationPage() {
           {stages.map((s, i) => {
             const state = !c.run
               ? "queued"
-              : c.status === "resolved" || i < c.run.stage
+              : // A stage the backend recorded as degraded did not produce its result.
+                i <= c.run.stage && c.backend?.stageStatus?.[i] === "DEGRADED"
+                ? "failed"
+                : c.status === "resolved" || i < c.run.stage
                 ? "completed"
                 : i === c.run.stage
                   ? c.status === "escalated" ||

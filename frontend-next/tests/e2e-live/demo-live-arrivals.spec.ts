@@ -44,8 +44,12 @@ test("Live arrivals appear in order and each investigation shows its running tim
   const casePage = await context.newPage();
   casePage.on("pageerror", (error) => errors.push(error.message));
   let watching: string | null = null;
+  // Keep watching for a while after the last arrival, so repeat investigations are seen.
+  const settle = Number(process.env.SUHAIL_DEMO_SETTLE_MINUTES ?? 0) * 60 * 1000;
   const done = () =>
-    seen.size >= EXPECTED && [...seen.values()].every((item) => item.final !== undefined);
+    seen.size >= EXPECTED &&
+    [...seen.values()].every((item) => item.final !== undefined) &&
+    Date.now() - Math.max(...[...seen.values()].map((item) => item.arrivedAt)) > settle;
 
   while (!done() && Date.now() - started < MINUTES * 60 * 1000) {
     const queue = await request
@@ -69,7 +73,7 @@ test("Live arrivals appear in order and each investigation shows its running tim
         item.listedAfterMs = Date.now() - item.arrivedAt;
         await page.screenshot({ path: `screenshots/live-queue-${seen.size}.png` });
       }
-      if (!/^(OPEN|INVESTIGATING)$/.test(row.workflow_state) && item.final === undefined) {
+      if (!/^(OPEN|REOPENED|INVESTIGATING)$/.test(row.workflow_state) && item.final !== row.workflow_state) {
         item.final = row.workflow_state;
         console.log(`+${Math.round((Date.now() - started) / 1000)}s ${row.shipment_id} -> ${row.workflow_state}`);
         if (watching === row.case_id) {
@@ -111,7 +115,25 @@ test("Live arrivals appear in order and each investigation shows its running tim
     await page.waitForTimeout(2000);
   }
   const report = [...seen.values()];
-  writeFileSync("test-results/live-arrivals.json", JSON.stringify({ errors, report }, null, 2));
+  // The backend's own account of why runs repeated or were kept, for the report.
+  const audit: unknown[] = [];
+  let cursor: string | null = null;
+  for (let pageNo = 0; pageNo < 8; pageNo++) {
+    const body: { items?: unknown[]; next_cursor?: string | null } = await request
+      .get(`/audit?limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`)
+      .then((response) => response.json())
+      .catch(() => ({}));
+    audit.push(...(body.items ?? []));
+    cursor = body.next_cursor ?? null;
+    if (!cursor) break;
+  }
+  const details: unknown[] = [];
+  for (const id of seen.keys())
+    details.push(await request.get(`/cases/${id}`).then((r) => r.json()).catch(() => null));
+  writeFileSync(
+    "test-results/live-arrivals.json",
+    JSON.stringify({ errors, report, audit, details }, null, 2),
+  );
   for (const item of report)
     console.log(
       `${item.shipment}: final ${item.final ?? "not finished"}; listed after ${item.listedAfterMs ?? "never"} ms; ${item.headers.length} header texts; running clock seen: ${item.headers.some((text) => /in progress · \d/.test(text))}`,
