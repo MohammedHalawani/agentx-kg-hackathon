@@ -153,7 +153,8 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
     port: the read model's fixed cross-shipment queries (fetch), or None. call_cap: the per-case model-call cap.
     meter: an operations.latency.Meter that times this run (measurement only), or None."""
     from operations.worker import review as guard, REVIEW_SUMMARY_AR
-    from operations.authority import authorize, symptom_floor, abstention_floor, ACTIONS, ACTION_SUMMARY_AR, STATE
+    from operations.authority import (authorize, symptom_floor, abstention_floor, reviewer_doubt_allows, reviewer_doubt_floor,
+                                      ACTIONS, ACTION_SUMMARY_AR, STATE)
     from operations.checks import fact_checks, cited_records, review_context
     from operations.investigator import Session, abstains
     events = events if events is not None else []
@@ -405,6 +406,33 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
             "agent": (model_review or {}).get("mode", "deterministic_guard"),
             "model_review": model_review, "model_calls": session.budget.snapshot() if (agents and session) else None}
 
+    def policy_decision(s):
+        # The deterministic authority policy, never the model, decides who may act. Returns (risk, reason, closure).
+        checks = s.get("checks") or {}
+        codes = s["result"]["assessment"]["supported_codes"] or [s["proposal"]["action_code"]]
+        inv = s.get("investigation")
+        # The investigator asking for a physical check is its own reason (AUTH-23), not a rule-detected conflict.
+        physical = bool(inv and inv.get("requires_physical_check"))
+        conflict = ((not inv and s["result"]["assessment"]["requires_human_review"]) or checks.get("unsupported") or checks.get("sensitive"))
+        risk, reason = authorize(s["proposal"]["action_type"], codes, review_verdict=s["review"].get("model_verdict"),
+                                 evidence_conflict=bool(conflict), synthetic=True, live_session=live_session,
+                                 degraded=bool(s.get("degraded")), contractor_custody=bool(checks.get("contractor_custody")),
+                                 physical_check=physical)
+        risk, reason, closure = symptom_floor(risk, reason, s["proposal"]["action_type"], s.get("symptoms"))
+        # An insufficient-evidence conclusion never carries automatic closing authority.
+        risk, reason, closure = abstention_floor(risk, reason, closure, s["proposal"]["action_type"], codes)
+        # AUTH-27: an action that ran under a reviewer's doubt never closes the case by itself.
+        return reviewer_doubt_floor(risk, reason, closure, s["proposal"]["action_type"], s["review"].get("model_verdict"))
+
+    def doubted_evidence_request(s):
+        # AUTH-27: the model reviewer's doubt (REVISE or INSUFFICIENT_EVIDENCE after the bounded rounds) on a proposal the
+        # deterministic guard passed, for an evidence-gathering action that every other authority rule allows to run
+        # automatically. Anything else stays the rejection it was: a guard rejection carries no model verdict, and a
+        # doubted request another rule holds back is escalated, not made approvable.
+        review, proposal = s["review"], s.get("proposal") or {}
+        return (review["verdict"] == "reject" and reviewer_doubt_allows(proposal.get("action_type"), review.get("model_verdict"))
+                and policy_decision(s)[0] == "AUTO")
+
     def route(s):
         state = s
         checks = s.get("checks") or {}
@@ -413,7 +441,7 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
             authority = {"risk_class": "HUMAN_REVIEW", "reason": f"Model role unavailable ({roles}); automatic execution blocked.",
                          "action_type": (s.get("proposal") or {}).get("action_type"), "policy": "deterministic_action_authority"}
             state = {**s, "authority": authority, "result": {**s["result"], "workflow_state": "HUMAN_REVIEW"}}
-        elif s["review"]["verdict"] not in ("accept", "human_review"):
+        elif s["review"]["verdict"] not in ("accept", "human_review") and not doubted_evidence_request(s):
             # Denials are policy decisions too: recorded with their rule and inputs.
             insufficient = s["review"].get("model_verdict") == "INSUFFICIENT_EVIDENCE"
             reason = ("Reviewer found the evidence insufficient; a person or further evidence gathering must follow." if s["proposal"] and insufficient
@@ -423,19 +451,7 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
                          "policy": "deterministic_action_authority"}
             state = {**s, "authority": authority, "result": {**s["result"], "workflow_state": "ESCALATED" if s["proposal"] else "NEEDS_EVIDENCE"}}
         elif s["proposal"] and s["proposal"].get("action_type"):
-            # The deterministic authority policy, never the model, decides who may act.
-            codes = s["result"]["assessment"]["supported_codes"] or [s["proposal"]["action_code"]]
-            inv = s.get("investigation")
-            # The investigator asking for a physical check is its own reason (AUTH-23), not a rule-detected conflict.
-            physical = bool(inv and inv.get("requires_physical_check"))
-            conflict = ((not inv and s["result"]["assessment"]["requires_human_review"]) or checks.get("unsupported") or checks.get("sensitive"))
-            risk, reason = authorize(s["proposal"]["action_type"], codes, review_verdict=s["review"].get("model_verdict"),
-                                     evidence_conflict=bool(conflict), synthetic=True, live_session=live_session,
-                                     degraded=bool(s.get("degraded")), contractor_custody=bool(checks.get("contractor_custody")),
-                                     physical_check=physical)
-            risk, reason, closure = symptom_floor(risk, reason, s["proposal"]["action_type"], s.get("symptoms"))
-            # An insufficient-evidence conclusion never carries automatic closing authority.
-            risk, reason, closure = abstention_floor(risk, reason, closure, s["proposal"]["action_type"], codes)
+            risk, reason, closure = policy_decision(s)
             authority = {"risk_class": risk, "reason": reason, "action_type": s["proposal"]["action_type"], "closure": closure,
                          "policy": "deterministic_action_authority"}
             state = {**s, "authority": authority, "result": {**s["result"], "workflow_state": STATE[risk]}}

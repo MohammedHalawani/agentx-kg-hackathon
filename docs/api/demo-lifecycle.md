@@ -286,6 +286,26 @@ is a possible answer and only the deadline turns it into a human review.
 An operator may ask the verifier to check now: `POST /cases/{case_id}/outcomes` with
 `{"expected_version": 9, "idempotency_key": "ui-verify-0009"}`. There is no field for success: nobody can declare it.
 
+### Reviewer doubt (AUTH-27)
+
+When the independent reviewer's final verdict is `REVISE` or `INSUFFICIENT_EVIDENCE` and the recommended action is one of
+the evidence-gathering requests (`REQUEST_RESCAN`, `REQUEST_REWEIGH`, `REQUEST_DEVICE_SYNC`, `REQUEST_ADDITIONAL_EVIDENCE`,
+`REQUEST_HUB_CHECK`), every other authority rule decides the action as usual. If any of them holds it back, the rejection
+stands as before (`AUTH-16-review-rejected`, `ESCALATED`, not approvable). If they allow it automatically:
+
+- `run.result.authority.rule_id` is `AUTH-27-reviewer-doubt-evidence-gathering`, `risk_class` `AUTO`, `closure` `REASSESS`
+  (or `HUMAN` where a floor already reserved closure for a person); `executions[].closure` carries the same value.
+- The investigation is still not accepted: `diagnosis.available` is `false` with `reason` `review_not_accepted`, the
+  reviewer's text is in `review` and `diagnosis.unaccepted_investigation`, and the audit has `REVIEWER_DOUBT_RECORDED`.
+- A verified success does not resolve the case. The audit records `OUTCOME_VERIFIED_REASSESSMENT`, the case returns to
+  `OPEN` and is investigated and reviewed again on the new evidence. Nothing is executed from that run. It ends in
+  `RESOLVED` (`REASSESSMENT_ACCEPTED`, `CASE_RESOLVED`) only if that review accepts and no exception remains; otherwise
+  `HUMAN_REVIEW` (`REASSESSMENT_NOT_ACCEPTED`).
+- A failed or unconfirmed action, or a success that leaves the exception, goes to `HUMAN_REVIEW` as before.
+
+A reviewer's `HUMAN_REVIEW` or `ESCALATE`, an unavailable review, a deterministic guard rejection and every action
+outside that list are decided exactly as before (`AUTH-03`, `AUTH-02`, `AUTH-16`).
+
 ## 6. A person's finding
 
 `POST /cases/{case_id}/human-outcome` (case in `HUMAN_REVIEW`, `ESCALATED`, `NEEDS_EVIDENCE` or `AWAITING_APPROVAL`)
