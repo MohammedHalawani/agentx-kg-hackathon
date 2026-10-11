@@ -108,8 +108,38 @@ def interim_look(run_manifest):
                          "this is not the evaluation's result: the pass bars are tested once, on the whole sample."}
 
 
-def build_report(selection, *, scores=None, run_manifest=None, ledger_summary=None, canary=None, pairs=None):
+def union_scores(scores, completion_scores, completion_manifest):
+    """The scores of a run with its post hoc completion: for each case the completion lists and each arm it re-ran,
+    the completion's row replaces the run's; every other row is the run's own, unchanged. Returns (rows, counts).
+    A listed case the completion has no row for (it was paused, or the case was refused) keeps the run's row."""
+    record = completion_manifest["completion"]
+    keys, arms = set(record["case_keys"]), set(record["arms_rerun"])
+    rerun = {(r["key"], r["arm"]): r for r in completion_scores
+             if r.get("phase", "main") == "main" and r["key"] in keys and r["arm"] in arms and r.get("category") not in (None, "not_run")}
+    rows, replaced = [], 0
+    for r in scores:
+        new = rerun.get((r["key"], r["arm"])) if r.get("phase", "main") == "main" else None
+        if new is None:
+            rows.append(r)
+        else:
+            # The stratum is the pre-registered one, as in the run's own row.
+            rows.append({**new, "stratum": r.get("stratum"), "phase": "main", "post_hoc_completion": True})
+            replaced += 1
+    return rows, {"listed_cases": len(keys), "arms_rerun": sorted(arms), "results_replaced": replaced,
+                  "results_listed": len(keys) * len(arms), "results_not_completed": len(keys) * len(arms) - replaced}
+
+
+def build_report(selection, *, scores=None, run_manifest=None, ledger_summary=None, canary=None, pairs=None, completion=None):
+    """completion: {"manifest", "scores", "canary"} of a scored post hoc completion of this run (`rerun-failed`). The
+    report is then of the union (union_scores), every cell of a completed world is labelled, and the cells of the
+    other worlds are computed from the run's own rows only, exactly as without it."""
     scores = scores or []
+    post_hoc = None
+    if completion and scores:
+        from stage3_eval.completion import LABEL
+        record = completion["manifest"]["completion"]
+        scores, counts = union_scores(scores, completion.get("scores") or [], completion["manifest"])
+        post_hoc = {"label": LABEL, "record": record, "counts": counts, "worlds": sorted({k.split(":", 1)[0] for k in record["case_keys"]})}
     dry = not scores
     interim = interim_look(run_manifest)
     alloc = selection["allocation"]
@@ -135,6 +165,11 @@ def build_report(selection, *, scores=None, run_manifest=None, ledger_summary=No
                 cell["agent_confident_wrong_by_confidence"] = dict(wrong_by_conf)
             else:
                 cell["minimum_detectable_gain_points"] = _mdg(cell["selected"])
+            if post_hoc and world in post_hoc["worlds"]:
+                rerun_here = sorted(c["key"] for c in selection["cases"] if c["world"] == world and c["stratum"] == stratum
+                                    and c["key"] in set(post_hoc["record"]["case_keys"]))
+                cell["post_hoc"] = {"label": post_hoc["label"], "cases_rerun": len(rerun_here), "arms_rerun": post_hoc["record"]["arms_rerun"],
+                                    "cases_from_the_original_run": cell["selected"] - len(rerun_here)}
             cells.append(cell)
     bars = []
     for bar in PASS_BARS:
@@ -145,6 +180,8 @@ def build_report(selection, *, scores=None, run_manifest=None, ledger_summary=No
         else:
             p = next(c for c in cells if (c["world"], c["stratum"]) == bar["cell"])["paired"][bar["baseline"]]
             entry["result"] = p
+            if post_hoc and world in post_hoc["worlds"]:
+                entry["post_hoc"] = post_hoc["label"]      # never silently: a bar on a completed world says so
             if not p["n"]:
                 entry["verdict"] = "not run"
             elif interim:
@@ -160,6 +197,21 @@ def build_report(selection, *, scores=None, run_manifest=None, ledger_summary=No
         main = [r for r in scores if r.get("phase", "main") == "main"]
         report.update(_details(main, pairs))
         report["extras"] = _extras(scores, run_manifest)
+    if post_hoc:
+        record, done = post_hoc["record"], completion["manifest"]
+        untouched = [w for w in WORLDS if w not in post_hoc["worlds"]]
+        report["post_hoc_completion"] = {
+            "label": post_hoc["label"], "worlds": post_hoc["worlds"], "source_run": record.get("source_run"), "reason": record.get("reason"),
+            "arms_rerun": record["arms_rerun"], "cases_rerun": len(record["case_keys"]), "case_keys": record["case_keys"], **post_hoc["counts"],
+            "notools_arm": record.get("notools_arm"), "snapshot": record.get("snapshot"),
+            "statement": (f"The cells of {', '.join(post_hoc['worlds'])} are the union of the original run's results and a later re-run of "
+                          f"{len(record['case_keys'])} case(s) whose {' and '.join(record['arms_rerun'])} result in the original run was a provider "
+                          f"failure (the model was never asked, or never answered). They are {post_hoc['label']}: a deviation from the "
+                          f"pre-registered single pass, selected on the provider's failure and on no answer. "
+                          + (f"The cells of {', '.join(untouched)} are exactly as scored from the original run. " if untouched else "")
+                          + "The sections pooled over every case (abstention, citations, usage, outcomes and the like) include the re-run results."),
+            "completion_run": {"status": done.get("status"), "ledger": done.get("ledger"), "campaign_ledger": done.get("campaign_ledger"),
+                               "validity": _validity(selection, done, completion.get("canary"), completion.get("scores") or [])}}
     return report
 
 
@@ -317,9 +369,13 @@ def render_markdown(report):
     title = "# Stage 3 blind evaluation report"
     if interim:
         title += f" (INTERIM: first {interim['cases_settled']} of {interim['cases_total']} cases in the pre-registered order)"
+    post_hoc = report.get("post_hoc_completion")
+    marked = lambda c: (f"{c['world']} / {c['stratum']}" + (f" ({c['post_hoc']['label']}: {c['post_hoc']['cases_rerun']} of {c['selected']} "
+                                                              "cases re-run)" if c.get("post_hoc") else ""))
     lines = [title + (" (dry-run skeleton)" if report["dry_run"] else ""), "",
              "All data is synthetic. Nothing here describes real SPL operations.", "",
              *([f"**{interim['statement']}**", ""] if interim else []),
+             *([f"**{', '.join(post_hoc['worlds'])}: {post_hoc['label']}.** {post_hoc['statement']}", ""] if post_hoc else []),
              f"Sealed configuration: `{report['sealed_config_hash'][:16]}`. Cases selected: {report['selection_n']} (N_main {report['n_main']}).", ""]
     lines += ["## Pass bars (fixed before any case existed)", "", "| Bar | Cell | Test | Verdict | Agent only / baseline only | p |", "|---|---|---|---|---|---|"]
     for b in report["pass_bars"]:
@@ -338,7 +394,7 @@ def render_markdown(report):
         lines += ["", "## Arms side by side (plain accuracy; Wilson 95%)", "", "| World / stratum | " + " | ".join(ARM_LABELS.values()) + " |",
                   "|---|" + "---|" * len(ARM_LABELS)]
         for c in report["cells"]:
-            lines.append(f"| {c['world']} / {c['stratum']} | " + " | ".join(_fmt_acc(c["arms"][a]["accuracy"]) for a in ARM_LABELS) + " |")
+            lines.append(f"| {marked(c)} | " + " | ".join(_fmt_acc(c["arms"][a]["accuracy"]) for a in ARM_LABELS) + " |")
         lines += ["", "## Correct answers by level, per arm and stratum", "",
                   "Observation level: the cause is the code an opening symptom maps to (what the alert's own name gives). Mechanism level: "
                   "a correct specific cause that no opening symptom maps to. Abstention: a correct INSUFFICIENT_EVIDENCE or UNKNOWN. "
@@ -356,11 +412,11 @@ def render_markdown(report):
             for a in ARM_LABELS:
                 cats = c["arms"][a]["categories"]
                 if sum(cats.values()):
-                    lines.append(f"| {c['world']} / {c['stratum']} | {ARM_LABELS[a]} | " + " | ".join(str(cats[k]) for k in CATEGORIES) + " |")
+                    lines.append(f"| {marked(c)} | {ARM_LABELS[a]} | " + " | ".join(str(cats[k]) for k in CATEGORIES) + " |")
         flags = [f"{c['world']}/{c['stratum']}" for c in report["cells"] if c.get("regression_flag")]
         lines += ["", f"Determined-stratum regressions against B_rulecode: {', '.join(flags) if flags else 'none'}."]
-        for section in ("abstention", "versus_rulecode", "symptom_name_dependence", "citations", "reviewer", "cause_sets", "matched_pairs",
-                        "usage", "outcomes", "per_mechanism", "extras"):
+        for section in ("post_hoc_completion", "abstention", "versus_rulecode", "symptom_name_dependence", "citations", "reviewer", "cause_sets",
+                        "matched_pairs", "usage", "outcomes", "per_mechanism", "extras"):
             if section in report:
                 lines += ["", f"## {section.replace('_', ' ').capitalize()}", "", "```", json.dumps(report[section], indent=1, sort_keys=True, default=str), "```"]
         lines += ["", f"Cases whose knowability at t differs from the pre-registered stratum: {report.get('stratum_moved_at_t')}."]

@@ -22,7 +22,7 @@ from dataset_v2.contracts import instant
 from scripts import stage3_wiring as wiring
 from stage3_eval.arms import CaseRef
 from stage3_eval.design import EvalConfig
-from stage3_eval.records import from_ops_run
+from stage3_eval.records import ArmResult, from_ops_run
 from stage3_eval.runner import run
 from tests.test_stage2_pilot import PlanAgents, SCRATCH, TEST_DATABASE, build_world_database
 
@@ -373,6 +373,160 @@ class RealGraphTests(unittest.TestCase):
         from tests.test_latency_equivalence import strip       # timing fields differ from run to run; nothing else may
         for field in ("investigation", "review", "authority", "investigation_log", "context_hash"):
             self.assertEqual(json.dumps(strip(direct[field]), sort_keys=True, default=str), json.dumps(strip(tapped[field]), sort_keys=True, default=str), field)
+
+
+class CompletionWiringTests(unittest.TestCase):
+    """build_completion (`rerun-failed`): the provider-failed cases of a finished run, each through the real
+    investigation graph as of its ORIGINAL snapshot, with review and authority, and nothing written anywhere but the
+    new run directory. The database is the in-memory world; the model is scripted."""
+
+    @classmethod
+    def setUpClass(cls):
+        from tests.world_fixture import small_world
+        cls.fixture = small_world()
+        cls.world_config = cls.fixture.world.config
+        cls.sids = sorted(n.id for n in cls.fixture.world.of_kind("Shipment") if n.properties.get("split") == "development")[:3]
+        cls.as_of = cls.world_config.as_of
+
+    def setUp(self):
+        import hashlib
+        from stage3_eval import design
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+        clean = {k: v for k, v in os.environ.items() if "TRUTH" not in k.upper()}
+        patcher = mock.patch.dict(os.environ, clean, clear=True)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        # A sealed selection of three E2 cases and the finished run of it: the second and third lost to the provider.
+        self.config = EvalConfig(freeze_commit="c" * 40, c_cap=12, budget=45, worlds={"E1": {"database": "shipments-v2-world-e1"},
+                                                                                     "E2": {"database": "shipments-v2-world-e2"}})
+        keys = [f"E2:{sid}" for sid in self.sids]
+        document = {"schema": "stage3-selection-run-1", "sealed_config_hash": design.sealed_hash(self.config), "config": self.config.as_dict(),
+                    "n_main": 3, "unit": "first case per shipment", "cases": [
+                        {"order": i, "key": key, "world": "E2", "shipment_id": sid, "expected_opened_at": self.as_of}
+                        for i, (key, sid) in enumerate(zip(keys, self.sids))]}
+        data = (json.dumps(document, indent=2, sort_keys=True) + "\n").encode()
+        (self.root / "selection.json").write_bytes(data)
+        (self.root / "selection.json.sha256").write_text(hashlib.sha256(design.canonical_bytes(data)).hexdigest() + "\n", encoding="utf-8")
+        self.selection = document
+        source = self.root / "run1"
+        (source / "results" / "main").mkdir(parents=True)
+        cases = [{"key": key, "world": "E2", "shipment_id": sid, "case_id": f"DEMO-OPS-CASE-{i}", "as_of": self.as_of,
+                  "symptoms": ["MILESTONE_OVERDUE"], "rule_codes": ["MISSED_MILESTONE"], "opening_evidence_ids": []}
+                 for i, (key, sid) in enumerate(zip(keys, self.sids))]
+        (source / "cases.jsonl").write_text("".join(json.dumps(c) + "\n" for c in cases), encoding="utf-8")
+        for arm in ("agent", "notools"):
+            rows = [{"case_key": c["key"], "arm": arm, "shipment_id": c["shipment_id"], "case_id": c["case_id"], "as_of": c["as_of"],
+                     "degraded": i > 0, "failure_mode": "model_unavailable" if i > 0 else None, "primary_cause": None if i > 0 else "INSUFFICIENT_EVIDENCE",
+                     "calls_used": 2 if i > 0 else 7, "not_run": None} for i, c in enumerate(cases)]
+            (source / "results" / "main" / f"{arm}.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+        (source / "run_manifest.json").write_text(json.dumps({
+            "status": "completed", "selection_sha256": hashlib.sha256(design.canonical_bytes(data)).hexdigest(),
+            "provenance": {"worlds": {"E2": {"session_id": "DEMO-SESSION-RUN1", "manifest_hash": "0" * 64}}}}), encoding="utf-8")
+        self.source, self.keys, self.cases = source, keys, cases
+        self.opened, self.written = [], []
+
+    def fake_world(self, *, session_id="DEMO-SESSION-RUN1", clock=None):
+        """open_world over the in-memory world: a store that can read its status and nothing else. It has no
+        process_one, no execute_step, no control and no reset, so any attempt to record or reset fails the test."""
+        def open_world(driver, world, spec, agents):
+            self.opened.append(world)
+            store = SimpleNamespace(config=self.world_config, agents=agents, model_call_cap=None, disabled_tools=("left", "over"),
+                                    dataset_id="DEMO-SUHAIL-WORLD-FAKE",
+                                    status=lambda: {"as_of": clock or self.as_of, "session": {"session_id": session_id},
+                                                    "worker": {"state": "running"}, "execution": {"adapter": "none"}})
+            return SimpleNamespace(world=world, database=spec["database"], dataset_id=store.dataset_id, manifest_hash="0" * 64, store=store,
+                                   reader=self.fixture.reader, clock=lambda: store.status()["as_of"], rows=lambda kind, **where: [],
+                                   api_responses=lambda case: [{"endpoint": "case_detail", "response": {"case_id": case.case_id}}],
+                                   graph_dump=lambda: iter([{"world": world, "nodes": []}]))
+        return mock.patch.object(wiring, "open_world", open_world)
+
+    def wired(self, **options):
+        from stage3_eval import completion
+        todo = completion.plan(self.selection, self.source, world="E2")
+        self.agents = PlanAgents()
+
+        def notools(messages):
+            return {"action": "conclude", "primary_cause": "MISSED_MILESTONE", "confidence": "low", "recommended_action": "REQUEST_ADDITIONAL_EVIDENCE",
+                    "hypotheses": [{"cause": "MISSED_MILESTONE", "status": "supported", "supporting_evidence_ids": [], "contradicting_evidence_ids": [],
+                                    "assessment": "From the symptoms only."}], "missing_evidence": ["records"], "requires_physical_check": False,
+                    "summary": "Symptoms only."}
+        with self.fake_world(**options):
+            return todo, wiring.build_completion(self.config, selection=self.selection, source_run=str(self.source), keys=todo["keys"],
+                                                 original_as_of=todo["as_of"], agents=self.agents, notools_turn=notools, driver=object(),
+                                                 provider_calls=lambda: self.agents.calls)
+
+    def test_the_failed_cases_are_investigated_as_of_their_original_snapshot_and_nothing_is_recorded(self):
+        from stage3_eval import completion
+        from stage3_eval.canary import marker_hits
+        todo, wired = self.wired()
+        self.addCleanup(wired["close"])
+        self.assertEqual(todo["keys"], self.keys[1:])
+        self.assertEqual(self.opened, ["E2"])                                  # the other world is never opened
+        self.assertNotIn("case_source", wired)                                 # the cases come from the source run's record
+        store = wired["sessions"]["E2"].store
+        self.assertEqual((store.model_call_cap, store.disabled_tools), (12, ()))
+        before = {p.relative_to(self.source): p.read_bytes() for p in self.source.rglob("*") if p.is_file()}
+        manifest = completion.rerun_failed(self.root / "selection.json", self.source, self.root / "done", arms=wired["arms"], config=self.config,
+                                           world="E2", capture=wired["capture"], provenance=wired["provenance"],
+                                           provider_calls=wired["provider_calls"])
+        self.assertEqual(manifest["status"], "completed")
+        self.assertEqual({p.relative_to(self.source): p.read_bytes() for p in self.source.rglob("*") if p.is_file()}, before)
+        rows = [json.loads(l) for l in (self.root / "done" / "results" / "main" / "agent.jsonl").read_text(encoding="utf-8").splitlines()]
+        self.assertEqual([r["case_key"] for r in rows], self.keys[1:])
+        for row in rows:
+            # The real graph ran: tools, a conclusion, the reviewer and the authority decision, at the original snapshot.
+            self.assertEqual((row["as_of"], row["degraded"], row["primary_cause"]), (self.as_of, False, "INSUFFICIENT_EVIDENCE"))
+            self.assertEqual(row["review_verdict"], "ACCEPT")
+            self.assertIn(row["authority"], ("AUTO", "HUMAN_REVIEW"))                 # the authority policy decided, on this record
+            self.assertTrue(row["steps"] and row["retrieved_ids"] and set(ArmResult.from_dict(row).cited_ids) <= set(row["retrieved_ids"]))
+            self.assertTrue(2 <= row["calls_used"] <= 12)
+            # What the main run's path adds and this one does not: no execution, no outcome, no workflow state.
+            self.assertEqual((row["executions"], row["outcomes"], row["final_state"]), ([], [], None))
+        used = sum(r["calls_used"] for r in rows)
+        self.assertEqual(manifest["ledger"]["calls_by_arm"], {"agent": used, "notools": 2})
+        self.assertEqual(manifest["ledger"]["budget"], 2 * (12 + 3))
+        self.assertEqual(manifest["ledger"]["cases_reconciled_with_provider"], 2)
+        # The surfaces the scorer and the canary scan need, the tool index included.
+        for surface in ("tools", "tool_index", "api", "receipts", "graph", "logs", "arm_outputs"):
+            self.assertTrue(any((self.root / "done" / "captured" / surface).iterdir()), surface)
+        index = wiring.read_tool_index(self.root / "done")["E2"]
+        self.assertTrue(set(rows[0]["retrieved_ids"]) <= set(index))
+        self.assertEqual(marker_hits(manifest), 0)
+        provenance = manifest["provenance"]
+        self.assertEqual(provenance["worlds"]["E2"]["session_id"], "DEMO-SESSION-RUN1")       # what the scorer's session check reads
+        self.assertFalse(provenance["worlds"]["E2"]["session_reset"])
+        self.assertIn("execution step", provenance["not_done_for_these_cases"])
+        self.assertIn("commit=None", provenance["agent_path"])
+        self.assertEqual(manifest["completion"]["case_keys"], self.keys[1:])
+
+    def test_a_database_that_is_no_longer_the_source_runs_session_is_refused_and_the_replay_variant_named(self):
+        with self.assertRaises(SystemExit) as refused:
+            self.wired(session_id="DEMO-SESSION-AFTER-A-RESET")
+        self.assertIn("it was reset after the run", str(refused.exception))
+        self.assertIn("build_completion_replay", str(refused.exception))
+        with self.assertRaises(SystemExit) as behind:
+            self.wired(clock="2020-01-01T00:00:00+00:00")
+        self.assertIn("before the latest snapshot to re-run", str(behind.exception))
+        with mock.patch.dict(os.environ, {"SUHAIL_EVAL_TRUTH_ROOT": "x"}), self.assertRaises(SystemExit):
+            self.wired()
+
+    def test_the_replay_variant_opens_only_the_worlds_with_a_case_to_re_run(self):
+        seen = {}
+
+        def build(config, **options):
+            seen.update(config=config, options=options)
+            return {"arms": {}, "case_source": "replay", "extras_arms": {"stability_rerun": None}}
+        with mock.patch.object(wiring, "build", build):
+            wired = wiring.build_completion_replay(self.config, selection=self.selection, source_run=str(self.source), keys=self.keys[1:],
+                                                   original_as_of={}, resume=True)
+        self.assertEqual(list(seen["config"].worlds), ["E2"])                  # E1's session is not opened, prepared or reset
+        self.assertEqual([row["key"] for row in seen["options"]["selection"]["cases"]], self.keys[1:])
+        self.assertTrue(seen["options"]["resume"])
+        self.assertEqual(wired, {"arms": {}, "case_source": "replay"})         # its own case source (the replay), and no extras
+        with self.assertRaises(SystemExit):
+            wiring.build_completion_replay(self.config, keys=())
 
 
 class CaptureAndScorerTests(unittest.TestCase):

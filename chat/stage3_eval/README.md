@@ -18,6 +18,7 @@ hand-specified stand-in labelled FIXTURE, not a world-1 export.
 | `checkpoint` | on a paused run | **no**: refused like `run` while a truth variable is set; reads the run directory, `selection.json` and, read-only, the run's database | `checkpoint.json` (exit code 0 on pass, 3 on fail) |
 | `score` | after the run | yes | `scores.jsonl`, `canary.json` |
 | `report` | after scoring | no | `report.json`, `report.md` |
+| `rerun-failed` | after a finished run | **no**: as `run` | a new run directory with the same files as `run`, its manifest marked `completion` |
 
 `selection.json` carries, per case, only its order, key, world, shipment and expected opening: no stratum, main-test
 flag, extras list, cause, mechanism, label or canary (checked on write, and refused by the run on load); the run
@@ -121,6 +122,53 @@ pre-registered order", shows the pass bars' counts with the verdict `interim (no
 whole sample, once) and gives an interim validity verdict. Scoring reads truth, so do it in its own process and never
 hand its output to a later part of the run.
 
+## Completing a run after a provider failure (`rerun-failed`): post hoc, and labelled so
+
+A run whose provider ran out of quota leaves cases whose agent or no-tools result is degraded with failure_mode
+`model_unavailable`: the model was never asked, or never answered. In run1 that is the last 52 cases of the
+pre-registered order, all in E2, in both model arms. `rerun-failed` re-runs exactly those and nothing else:
+
+```
+python -m stage3_eval rerun-failed --selection DIR/selection.json --run RUN --world E2 --dry-run
+python -m stage3_eval rerun-failed --selection DIR/selection.json --run RUN --out NEW --wiring scripts.stage3_wiring:build_completion --world E2 [--arm agent,notools]
+python -m stage3_eval score  --selection DIR/selection.json --run NEW --world E2=TRUTH_DIR --wiring scripts.stage3_wiring:build_scorer
+python -m stage3_eval report --selection DIR/selection.json --run RUN --completion NEW
+```
+
+- **What is selected.** The cases of `RUN` whose main result in one of the named arms has failure_mode
+  `model_unavailable`, of the world named, in the selection's order (`completion.plan`). A result that holds an
+  answer (right, wrong, invalid, capped) is never re-run. `--dry-run` prints the list and its worst case and builds
+  no wiring, opens no database and writes nothing.
+- **Where it goes.** A new run directory. `RUN` is only read (its results, `cases.jsonl` and manifest); a completion
+  into `RUN` or below it is refused (`tests/test_completion.py` compares the directory before and after).
+- **The ledger.** As for `run`: the worst case of the listed cases and arms only (cases * (C_cap + R_cap + 3) for both
+  arms) is the completion's own budget, reserved in the campaign ledger before the first case; each case is
+  reconciled with the provider's count; the entry is settled at what was used. `--max-cases` and `--resume` work.
+- **The manifest** carries `completion`: `post_hoc: true`, the label, the source run, the re-run case keys, the arms,
+  each case's original snapshot time, and which no-tools arm ran. A completion that re-runs `notools` uses the
+  corrected arm (above) while the rest of the source run's no-tools column comes from the arm as it was: the manifest
+  and the report say so, and `--arm agent` leaves the no-tools column to the source run.
+- **The replay clock.** Each case is investigated as of its original snapshot time (`RUN/cases.jsonl` `as_of`); a
+  case that would be investigated at another time stops the run. `scripts.stage3_wiring:build_completion` does it
+  without replaying anything: the agent arm is `operations.graph.investigate` as of that time with no commit (the
+  path the extras use), on the database as the source run left it, which it only reads. That is the same graph,
+  tools, investigator, reviewer, revision rounds, authority decision, cap and visible evidence as the main run's
+  `store.process_one`; what is missing is everything that records: no claim, no run, recommendation, review or audit
+  record, no workflow state, no execution step (executions, outcomes and final state are empty for these cases), and
+  no snapshot-changed check. It refuses a database whose live session is not the source run's (after a reset the
+  ingested records are gone). For that case `scripts.stage3_wiring:build_completion_replay` resets the session of that
+  world only and replays the feed to each listed case in order through the main run's own path; the cases the source
+  run investigated before them are then absent from the operations ledger, and the source run must be scored first.
+- **Scoring and the report.** `score --run NEW` scores the completion like any run. `report --run RUN --completion NEW`
+  writes the union report into `NEW`, never into `RUN`: for each re-run case and arm the completion's row replaces the
+  source run's, every other row is the source run's own (`report.union_scores`). Every cell of the completed world,
+  and any pass bar on it, is labelled "completed post hoc after a provider quota failure" with the number of cases
+  re-run; the other world's cells are computed from the source run's rows only and are exactly as scored from it
+  (tested). The sections pooled over every case include the re-run results, and the report says so.
+
+It is a deviation from the pre-registered single pass, selected on the provider's failure and on no answer. It needs
+a dated line in the design before a number that rests on it is reported.
+
 ## Design item to module
 
 | Design item | Where |
@@ -146,6 +194,7 @@ hand its output to a later part of the run.
 | Abstention metrics, agreement with B_rulecode, symptom-name dependence, reviewer vs correctness, matched pairs, usage, latency, outcome rates | `report._details` |
 | Exploratory extras (cross-shipment ablation on every eligible main-test case, stability on 40 seeded ones), fixed order, inside the sealed worst case, never pooled | `selection.select`, `runner._run_extras`, `report._extras` |
 | Run validity (provider failures > 5%, crash, sealed-hash mismatch, dirty tree, canary hit) | `report._validity` |
+| Post hoc completion of provider-failed cases (not in the design; labelled wherever it is used) | `completion.py`, `runner.run(only_keys=...)`, `report.union_scores`, `scripts/stage3_wiring.build_completion` |
 
 ## Answer categories
 
