@@ -269,6 +269,35 @@ export interface ApiDecisionRecord {
   occurred_at?: string;
   actor_id?: string;
 }
+/** One stored message of a run's narration (docs/api/narration.md). */
+export interface ApiNarrationEvent {
+  id: string;
+  run_id?: string;
+  sequence: number;
+  stage: string;
+  phase?: string;
+  kind: "canopus_summary" | "agent_output" | "system_event";
+  iteration?: number;
+  title_en?: string | null;
+  title_ar?: string | null;
+  text_en?: string | null;
+  text_ar?: string | null;
+  evidence_ids?: string[];
+  graph_node_ids?: string[];
+  occurred_at?: string | null;
+  scenario_time?: string | null;
+  created_at?: string | null;
+  model?: string | null;
+  grounded?: boolean | null;
+  fallback?: boolean;
+  outcome_state?: string | null;
+}
+export interface ApiNarration {
+  run_id?: string | null;
+  status?: "idle" | "narrating" | "complete" | string;
+  model_calls?: number;
+  events?: ApiNarrationEvent[];
+}
 /** What an unresolved case needs next, computed by the backend from recorded fields only. */
 export interface ApiNextStep {
   code: string;
@@ -299,6 +328,7 @@ export interface ApiNextStep {
 }
 export interface ApiCaseDetail {
   next_step?: ApiNextStep | null;
+  narration?: ApiNarration | null;
   case_id: string;
   shipment_id: string;
   workflow_state: WorkflowState;

@@ -558,3 +558,256 @@
     display: none;
   }
 }
+
+/* Canopus narration: stored messages of the run, attached to the pipeline. */
+.stage-explain.narrated {
+  color: var(--foreground);
+}
+.stage-explain.narrated-canopus_summary::before {
+  content: "✦ ";
+  color: var(--primary);
+}
+.pipeline-step.explained:has(.narrated) .stage-explain {
+  -webkit-line-clamp: 2;
+}
+.narration-strip {
+  margin-top: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+.narration-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.narration-toggle {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px 2px;
+  background: none;
+  border: 0;
+  color: var(--primary);
+  font-size: 11px;
+  cursor: pointer;
+  text-align: start;
+}
+.narration-toggle b {
+  font-weight: 600;
+  color: var(--foreground);
+}
+.narration-toggle > span {
+  color: var(--muted-foreground);
+  font-size: 10px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.narration-strip svg.open {
+  transform: rotate(180deg);
+}
+.narration-head > button:not(.narration-toggle) {
+  height: 26px;
+  font-size: 10px;
+  padding: 0 9px;
+}
+.narration-body {
+  margin-top: 8px;
+  max-height: 330px;
+  overflow-y: auto;
+  padding-inline-end: 4px;
+}
+.narration-empty {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.narration-bubbles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 10px;
+}
+.narration-bubble {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  border-start-start-radius: 3px;
+  padding: 10px 12px 9px;
+  background: var(--card);
+  font-size: 12px;
+  line-height: 1.5;
+  min-width: 0;
+  animation: narration-in 240ms ease both;
+}
+@keyframes narration-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+}
+.narration-bubble.active {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 14%, transparent);
+}
+.narration-bubble header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: 9.5px;
+  color: var(--muted-foreground);
+}
+.narration-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+.narration-kind i {
+  font-style: normal;
+  font-weight: 400;
+}
+.narration-bubble b {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.narration-bubble p {
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+.narration-canopus_summary {
+  background: color-mix(in srgb, var(--accent) 55%, var(--card));
+  border-color: color-mix(in srgb, var(--primary) 30%, var(--border));
+}
+.narration-canopus_summary .narration-kind {
+  color: var(--primary);
+}
+.narration-agent_output p {
+  font-style: italic;
+  border-inline-start: 2px solid var(--border);
+  padding-inline-start: 8px;
+}
+.narration-agent_output .narration-kind {
+  color: #2f9a94;
+}
+.narration-system_event {
+  background: color-mix(in srgb, var(--muted) 45%, var(--card));
+}
+.narration-bubble footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 7px;
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+.narration-bubble footer button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 1px 8px;
+  background: var(--card);
+  color: var(--primary);
+  font-size: 10px;
+  cursor: pointer;
+}
+.narration-bubble footer button:disabled {
+  color: var(--muted-foreground);
+  cursor: default;
+}
+.narration-state {
+  text-transform: capitalize;
+}
+.narration-checks {
+  margin-bottom: 10px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 11px;
+}
+.narration-checks > button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  background: none;
+  border: 0;
+  color: #2f9a94;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: start;
+}
+.narration-checks > button span {
+  flex: 1;
+  color: var(--muted-foreground);
+  font-weight: 400;
+  text-transform: capitalize;
+}
+.narration-checks ol {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.narration-checks li button {
+  display: grid;
+  grid-template-columns: 150px 1fr auto;
+  gap: 10px;
+  width: 100%;
+  padding: 3px 6px;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  font-size: 11px;
+  text-align: start;
+  cursor: pointer;
+  color: var(--foreground);
+}
+.narration-checks li button:disabled {
+  cursor: default;
+}
+.narration-checks li b {
+  text-transform: capitalize;
+  font-weight: 500;
+}
+.narration-checks li span {
+  color: var(--muted-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.narration-checks li i {
+  font-style: normal;
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+.narration-checks li.active button,
+.narration-checks li button:hover:not(:disabled) {
+  background: var(--accent);
+}
+.narration-list {
+  display: grid;
+  gap: 8px;
+  padding: 10px 0;
+}
+.narration-list h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.narration-list h4 span {
+  font-weight: 400;
+  font-size: 10px;
+  color: var(--muted-foreground);
+}

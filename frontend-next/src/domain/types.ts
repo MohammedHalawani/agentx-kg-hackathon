@@ -43,6 +43,29 @@ export interface EvidenceObservation {
   /** Backend evidence: recorded after the investigation's evidence snapshot, so it did not see it. */
   afterInvestigation?: boolean;
 }
+/** One stored narration message of a run, as the backend wrote it. */
+export interface NarrationEvent {
+  id: string;
+  sequence: number;
+  /** The pipeline step it belongs to, as the rail's index. */
+  stage: number;
+  phase: string;
+  /** Who wrote it: the narrator model, an agent (quoted), or code from a deterministic record. */
+  kind: "canopus_summary" | "agent_output" | "system_event";
+  title: string;
+  titleAr: string | null;
+  text: string;
+  textAr: string | null;
+  evidenceIds: string[];
+  /** The cited records that are nodes of the case's evidence graph. */
+  graphNodeIds: string[];
+  occurredAt: string | null;
+  scenarioTime: string | null;
+  model: string | null;
+  fallback: boolean;
+  /** The recorded case state after this message; "resolved" is never inferred from prose. */
+  outcomeState: string | null;
+}
 export interface GraphNode {
   id: string;
   label: string;
@@ -290,6 +313,8 @@ export interface BackendCaseState {
     verifiedAt: string | null;
   };
   /** Until when the verifier waits for evidence of the executed action. */
+  /** The run's stored narration, oldest first; empty until the backend narrates a run. */
+  narration?: { runId: string | null; status: string; events: NarrationEvent[] };
   /** The backend's statement of why the case is unresolved and what it needs next. */
   nextStep?: {
     code: string;

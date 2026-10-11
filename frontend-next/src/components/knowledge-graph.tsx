@@ -225,7 +225,9 @@ function depths(nodes: GraphNode[], edges: GraphRelationship[]) {
   }
   const depth = new Map<string, number>();
   const roots = nodes.filter((node) => node.kind === "shipment");
-  const queue = (roots.length ? roots : nodes.slice(0, 1)).map((node) => node.id);
+  const queue = (roots.length ? roots : nodes.slice(0, 1)).map(
+    (node) => node.id,
+  );
   for (const id of queue) depth.set(id, 0);
   while (queue.length) {
     const id = queue.shift()!;
@@ -309,8 +311,11 @@ function GraphInner({
   onRelation,
   stage,
   filter = "all",
+  highlight,
 }: {
   c: OperationalCase;
+  /** Records a narration message cites: drawn, ringed and lit while it is shown. */
+  highlight?: string[];
   selected: string | null;
   onSelect: (id: string) => void;
   onRelation: (id: string) => void;
@@ -355,7 +360,9 @@ function GraphInner({
           .filter(
             (n) =>
               n.cited ||
-              ["shipment", "package", "recommendation", "outcome"].includes(n.kind),
+              ["shipment", "package", "recommendation", "outcome"].includes(
+                n.kind,
+              ),
           )
           .map((n) => n.id),
       ),
@@ -387,10 +394,19 @@ function GraphInner({
         keep.add(n.id);
     // What those records refer to: where, by which device, on which vehicle, who held it.
     // One thing per record first (a device or facility before anything else), then more.
-    const order: Category[] = ["device", "facility", "vehicle", "transport", "person", "organisation"];
+    const order: Category[] = [
+      "device",
+      "facility",
+      "vehicle",
+      "transport",
+      "person",
+      "organisation",
+    ];
     const events = [...keep]
       .map((id) => byId.get(id))
-      .filter((node): node is GraphNode => !!node && EVENTS.has(categoryOf(node)));
+      .filter(
+        (node): node is GraphNode => !!node && EVENTS.has(categoryOf(node)),
+      );
     for (const round of [0, 1])
       for (const node of events) {
         if (keep.size >= FOCUS_LIMIT) break;
@@ -398,28 +414,44 @@ function GraphInner({
           .map((other) => byId.get(other))
           .filter(
             (item): item is GraphNode =>
-              !!item && !EVENTS.has(categoryOf(item)) && item.kind !== "package",
+              !!item &&
+              !EVENTS.has(categoryOf(item)) &&
+              item.kind !== "package",
           )
-          .sort((a, b) => order.indexOf(categoryOf(a)) - order.indexOf(categoryOf(b)));
+          .sort(
+            (a, b) =>
+              order.indexOf(categoryOf(a)) - order.indexOf(categoryOf(b)),
+          );
         const next = around.filter((item) => !keep.has(item.id))[0];
         if (next && (round === 1 || !around.some((item) => keep.has(item.id))))
           keep.add(next.id);
       }
-    // Whatever the operator selected (on the map too) or expanded is always drawn.
+    // Whatever the operator selected (on the map too) or expanded is always drawn, and so are
+    // the records a narration message points at (bounded, so a wide query stays readable).
     if (selectedNode) keep.add(selectedNode.id);
+    for (const id of (highlight ?? []).slice(0, 18))
+      if (byId.has(id)) keep.add(id);
     for (const [id, count] of Object.entries(expanded)) {
       const around = (neighbours.get(id) ?? [])
         .map((other) => byId.get(other))
         .filter((item): item is GraphNode => !!item)
         .sort(
           (a, b) =>
-            Number(EVENTS.has(categoryOf(a))) - Number(EVENTS.has(categoryOf(b))) ||
-            recent(a, b),
+            Number(EVENTS.has(categoryOf(a))) -
+              Number(EVENTS.has(categoryOf(b))) || recent(a, b),
         );
       for (const item of around.slice(0, count)) keep.add(item.id);
     }
     return keep;
-  }, [pool, neighbours, expanded, showAll, selectedNode, hasCitations]);
+  }, [
+    pool,
+    neighbours,
+    expanded,
+    showAll,
+    selectedNode,
+    hasCitations,
+    highlight,
+  ]);
 
   const drawn = useMemo(
     () =>
@@ -450,7 +482,9 @@ function GraphInner({
 
   useEffect(() => {
     const related = new Set(
-      selectedNode ? [selectedNode.id, ...(neighbours.get(selectedNode.id) ?? [])] : [],
+      selectedNode
+        ? [selectedNode.id, ...(neighbours.get(selectedNode.id) ?? [])]
+        : [],
     );
     const stageKinds =
       stage === 1
@@ -462,8 +496,21 @@ function GraphInner({
             : stage === 7
               ? ["outcome"]
               : [];
-    // The highlighted set: around the selection if there is one, else the cited evidence path.
-    const lit = selectedNode ? related : hasCitations ? path : new Set<string>();
+    // The highlighted set: around the selection if there is one, else what the narration
+    // message on screen cites, else the cited evidence path.
+    const narrated = new Set(highlight ?? []);
+    const lit = selectedNode
+      ? related
+      : narrated.size
+        ? new Set([
+            ...narrated,
+            ...pool
+              .filter((n) => n.kind === "shipment" || n.kind === "package")
+              .map((n) => n.id),
+          ])
+        : hasCitations
+          ? path
+          : new Set<string>();
     const expand = (id: string) =>
       setExpanded((all) => ({ ...all, [id]: (all[id] ?? 0) + EXPAND_STEP }));
     setNodes(
@@ -483,8 +530,11 @@ function GraphInner({
             time: EVENTS.has(category) ? stamp(n.occurredAt) : "",
             selectedEvidence: n.id === selected || n.evidenceId === selected,
             focused: stageKinds.includes(n.kind) || related.has(n.id),
-            onPath: hasCitations && !!n.cited,
-            dimmed: pathOnly && lit.size > 0 && !lit.has(n.id),
+            onPath: narrated.size
+              ? narrated.has(n.id)
+              : hasCitations && !!n.cited,
+            dimmed:
+              (pathOnly || narrated.size > 0) && lit.size > 0 && !lit.has(n.id),
             more: hidden,
             expand,
           },
@@ -518,7 +568,12 @@ function GraphInner({
           style: {
             stroke: strong ? "#8b6ccb" : dark ? "#4a5166" : "#c5c9d6",
             strokeWidth: strong ? 2.4 : 1.2,
-            opacity: pathOnly && lit.size > 0 && !strong ? 0.1 : strong ? 0.95 : 0.7,
+            opacity:
+              (pathOnly || narrated.size > 0) && lit.size > 0 && !strong
+                ? 0.1
+                : strong
+                  ? 0.95
+                  : 0.7,
           },
           labelStyle: {
             fontSize: 10,
@@ -544,6 +599,8 @@ function GraphInner({
     visible,
     path,
     hasCitations,
+    highlight,
+    pool,
     layoutPositions,
     layout,
     stage,
@@ -582,15 +639,40 @@ function GraphInner({
   const focusable = pool.length > FOCUS_LIMIT;
   const present = new Set(drawn.map(categoryOf));
   const legend: [string, string, string, Category[]][] = [
-    ["shipment", "Shipment & packages", "الشحنة والطرود", ["shipment", "package"]],
+    [
+      "shipment",
+      "Shipment & packages",
+      "الشحنة والطرود",
+      ["shipment", "package"],
+    ],
     ["custody", "Custody", "الحيازة", ["custody"]],
     ["scan", "Scans", "المسح", ["scan"]],
-    ["status", "Status, attempts, proof", "الحالة والمحاولات والإثبات", ["status", "attempt", "proof", "message", "position"]],
+    [
+      "status",
+      "Status, attempts, proof",
+      "الحالة والمحاولات والإثبات",
+      ["status", "attempt", "proof", "message", "position"],
+    ],
     ["device", "Devices", "الأجهزة", ["device"]],
     ["facility", "Facilities", "المرافق", ["facility"]],
-    ["vehicle", "Vehicles & trips", "المركبات والرحلات", ["vehicle", "transport"]],
-    ["person", "People & organisations", "الأشخاص والجهات", ["person", "organisation"]],
-    ["outcome", "Decision & outcome", "القرار والنتيجة", ["recommendation", "outcome"]],
+    [
+      "vehicle",
+      "Vehicles & trips",
+      "المركبات والرحلات",
+      ["vehicle", "transport"],
+    ],
+    [
+      "person",
+      "People & organisations",
+      "الأشخاص والجهات",
+      ["person", "organisation"],
+    ],
+    [
+      "outcome",
+      "Decision & outcome",
+      "القرار والنتيجة",
+      ["recommendation", "outcome"],
+    ],
   ];
   return (
     <section
@@ -677,7 +759,10 @@ function GraphInner({
               {showAll ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
               {showAll
                 ? t("Focused view", "عرض مركّز")
-                : t(`All ${pool.length} records`, `كل السجلات (${pool.length})`)}
+                : t(
+                    `All ${pool.length} records`,
+                    `كل السجلات (${pool.length})`,
+                  )}
             </Button>
           )}
           <Button
@@ -693,7 +778,9 @@ function GraphInner({
       </div>
       <div className="viz-legend graph-legend">
         {legend
-          .filter(([, , , categories]) => categories.some((item) => present.has(item)))
+          .filter(([, , , categories]) =>
+            categories.some((item) => present.has(item)),
+          )
           .map(([key, en, ar]) => (
             <span key={key}>
               <i className={`dot category-dot-${key}`} />

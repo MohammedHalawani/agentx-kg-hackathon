@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { applyNarration, narrationEvent } from "@/api/adapters";
 import {
   GRAPH_LIMIT,
   applyDetail,
@@ -257,6 +258,17 @@ describe("backend case detail", () => {
     expect(held.backend?.nextStep?.missingEvidence).toEqual(["a later scan"]);
     expect(held.backend?.nextStep?.attempted[0].success).toBe(false);
     expect(applyDetail(base, detailA()).backend?.nextStep).toBeNull();
+    // Narration is carried as stored: labelled by who wrote it, placed on its step, appended once.
+    const told = { id: "SYN-OPS-NARRATION-1", run_id: "R1", sequence: 2, stage: "review", phase: "review", kind: "canopus_summary" as const, title_en: "Review", text_en: "The reviewer asked for a revision.", evidence_ids: ["a", "SYN-CMP-1"], graph_node_ids: ["a"], model: "gpt-oss:120b", outcome_state: null };
+    expect(narrationEvent(told)).toMatchObject({ stage: 5, kind: "canopus_summary", graphNodeIds: ["a"], model: "gpt-oss:120b" });
+    expect(narrationEvent({ ...told, stage: "writeback", phase: "verification", kind: "system_event", outcome_state: "HUMAN_REVIEW" })).toMatchObject({ stage: 7, outcomeState: "HUMAN_REVIEW" });
+    const empty = applyDetail(base, detailA());
+    expect(empty.backend?.narration?.events).toEqual([]);
+    const once = applyNarration(empty, told);
+    expect(once.backend?.narration?.events).toHaveLength(1);
+    expect(applyNarration(once, told)).toBe(once);
+    const earlier = applyNarration(once, { ...told, id: "SYN-OPS-NARRATION-0", sequence: 1, stage: "extract", kind: "system_event" });
+    expect(earlier.backend?.narration?.events.map((event) => event.sequence)).toEqual([1, 2]);
     // Evidence that moved during the run is not worded as a model failure.
     const moved = applyDetail(base, detailA({ workflow_state: "HUMAN_REVIEW", run: { ...seed.run!, result: { ...seed.run!.result!, degraded: [{ role: "snapshot", error: "evidence changed during investigation" }] } } }));
     expect(moved.backend?.investigationLog?.degradedKinds).toEqual(["snapshot_changed"]);

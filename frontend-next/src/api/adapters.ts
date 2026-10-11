@@ -5,6 +5,7 @@ import type {
   ApiExploreItem,
   ApiLayerPoint,
   ApiPipelineEvent,
+  ApiNarrationEvent,
   ApiPipelineState,
   ApiQueueCase,
   ApiRouteSegment,
@@ -18,6 +19,7 @@ import type {
   EvidenceObservation,
   Facility,
   GraphNode,
+  NarrationEvent,
   GraphRelationship,
   InvestigationStageEvent,
   OperationalCase,
@@ -1057,6 +1059,13 @@ export function applyDetail(
           : null,
       verificationDeadline: execution?.deadline_at ?? null,
       expectedResponseAt: execution?.expected_response_at ?? null,
+      narration: {
+        runId: detail.narration?.run_id ?? null,
+        status: detail.narration?.status ?? "idle",
+        events: (detail.narration?.events ?? [])
+          .map(narrationEvent)
+          .sort((a, b) => a.sequence - b.sequence),
+      },
       nextStep: detail.next_step
         ? {
             code: detail.next_step.code,
@@ -1104,6 +1113,56 @@ function timingOf(detail: ApiCaseDetail) {
     firstConclusionSeconds: latency.first_conclusion_seconds ?? null,
     modelSeconds: latency.model?.seconds ?? null,
     stageSeconds,
+  };
+}
+
+/** A stored narration message, placed on the rail's step. */
+export function narrationEvent(event: ApiNarrationEvent): NarrationEvent {
+  // The rail's Outcome step is the interface's own: verification and reassessment belong there.
+  const stage =
+    event.phase === "verification" || event.phase === "reassessment"
+      ? 7
+      : (STAGE_INDEX[event.stage] ?? 6);
+  return {
+    id: event.id,
+    sequence: event.sequence,
+    stage,
+    phase: event.phase ?? "",
+    kind: event.kind,
+    title: event.title_en ?? "",
+    titleAr: event.title_ar ?? null,
+    text: event.text_en ?? "",
+    textAr: event.text_ar ?? null,
+    evidenceIds: event.evidence_ids ?? [],
+    graphNodeIds: event.graph_node_ids ?? [],
+    occurredAt: event.occurred_at ?? null,
+    scenarioTime: event.scenario_time ?? null,
+    model: event.model ?? null,
+    fallback: event.fallback === true,
+    outcomeState: event.outcome_state ?? null,
+  };
+}
+/** One narration message from the live stream, appended once (the list is append-only). */
+export function applyNarration(
+  base: OperationalCase,
+  event: ApiNarrationEvent,
+): OperationalCase {
+  if (!base.backend) return base;
+  const current = base.backend.narration ?? { runId: null, status: "narrating", events: [] };
+  // A message of another run than the one on screen starts that run's list.
+  const sameRun = !event.run_id || !current.runId || current.runId === event.run_id;
+  const events = sameRun ? current.events : [];
+  if (events.some((item) => item.id === event.id)) return base;
+  return {
+    ...base,
+    backend: {
+      ...base.backend,
+      narration: {
+        runId: event.run_id ?? current.runId,
+        status: current.status === "complete" && sameRun ? "complete" : "narrating",
+        events: [...events, narrationEvent(event)].sort((a, b) => a.sequence - b.sequence),
+      },
+    },
   };
 }
 

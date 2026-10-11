@@ -5,6 +5,7 @@ import type {
   ApiDecisionResult,
   ApiExploreItem,
   ApiPage,
+  ApiNarrationEvent,
   ApiPipelineState,
   ApiQueueCase,
   ApiSchema,
@@ -14,6 +15,7 @@ import type {
 import {
   DECISION_BY_VERDICT,
   applyDetail,
+  applyNarration,
   applyPipeline,
   auditEvent,
   caseFromQueue,
@@ -508,6 +510,21 @@ export class ApiOperationsService implements OperationsService {
       this.commit();
       // The stream carries stages only; a state change means new evidence, review or outcome.
       if (changed) void this.loadDetail(id, true).catch(() => undefined);
+    });
+    // The narrator's messages for the run, as they are stored (de-duplicated by id).
+    stream.addEventListener("narration", (event) => {
+      let message: ApiNarrationEvent;
+      try {
+        message = JSON.parse(event.data) as ApiNarrationEvent;
+      } catch {
+        return;
+      }
+      const current = this.cases.get(id);
+      if (!current || !message?.id) return;
+      const next = applyNarration(current, message);
+      if (next === current) return;
+      this.put(next);
+      this.commit();
     });
     stream.addEventListener("unavailable", reconnect);
     stream.onerror = reconnect;

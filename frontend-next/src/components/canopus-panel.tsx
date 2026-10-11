@@ -1,3 +1,4 @@
+import { NarrationList } from "@/components/narration";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "motion/react";
@@ -386,7 +387,15 @@ export function CanopusPanel() {
                   : undefined
               }
               onRetry={(messageId) => void canopus.retry(context, messageId)}
-              activity={selected && <CaseActivityMarkers c={selected} />}
+              activity={
+                selected && (
+                  <>
+                    {/* The run's stored narration, read-only: the same messages as on the pipeline. */}
+                    <NarrationList c={selected} />
+                    <CaseActivityMarkers c={selected} />
+                  </>
+                )
+              }
               intro={
                 <>
                   <div className="canopus-welcome">

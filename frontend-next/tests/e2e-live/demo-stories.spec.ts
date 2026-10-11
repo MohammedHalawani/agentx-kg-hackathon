@@ -58,6 +58,22 @@ for (const id of CASES)
     const drawn = await page.getByTestId("knowledge-graph").locator(".entity-node").count();
     expect(drawn).toBeGreaterThan(3);
     expect(drawn).toBeLessThanOrEqual(40);
+    // Stored narration, where the run has one: every message labelled by its source, none
+    // composed here; a run without narration shows no strip.
+    const narration: { kind: string; stage: string }[] = detail.narration?.events ?? [];
+    if (narration.length) {
+      const strip = page.getByTestId("narration-strip");
+      await expect(strip).toContainText(`of ${narration.length} recorded messages`);
+      await page.getByRole("button", { name: /^Review ·/ }).click();
+      const kinds = new Set(
+        narration.filter((event) => event.stage === "review").map((event) => event.kind),
+      );
+      for (const kind of kinds)
+        await expect(
+          strip.locator(`[data-testid="narration-bubble"][data-kind="${kind}"]`).first(),
+        ).toBeVisible();
+      await page.getByRole("button", { name: "Follow current stage" }).click();
+    } else await expect(page.getByTestId("narration-strip")).toHaveCount(0);
     const context = page.locator(".case-context");
     // An accepted finding is the agent's, unverified; without one, only what the monitor saw.
     await expect(page.getByTestId("context-source")).toContainText(

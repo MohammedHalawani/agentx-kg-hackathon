@@ -56,6 +56,7 @@ import { dateTimeLabel, secondsLabel, timeLabel } from "@/lib/dates";
 import { InvestigatorFindings } from "@/components/investigator-findings";
 import { InvestigationRecord } from "@/components/investigation-record";
 import { NextStep } from "@/components/next-step";
+import { NarrationStrip } from "@/components/narration";
 import { explainStage, type StageState } from "@/domain/stage-explain";
 import { HumanOutcomeDialog } from "@/components/human-outcome-dialog";
 import {
@@ -105,6 +106,14 @@ export function InvestigationPage() {
   );
   const [relationship, setRelationship] = useState<string | null>(null);
   const [previewStage, setPreviewStage] = useState<number | null>(null);
+  // The narration message whose cited records are lit in the graph.
+  const [narrated, setNarrated] = useState<{
+    id: string | null;
+    ids: string[];
+  }>({
+    id: null,
+    ids: [],
+  });
   const [split, setSplit] = useState(50);
   const [verdict, setVerdict] = useState<AuthorityDecision["verdict"] | null>(
     null,
@@ -615,15 +624,43 @@ export function InvestigationPage() {
                       c.backend?.timing?.stageSeconds[i] !== undefined &&
                       ` · ${secondsLabel(c.backend.timing.stageSeconds[i])}`}
                   </small>
-                  {explanation && (
-                    <em
-                      className="stage-explain"
-                      data-source={explanation.source}
-                      data-testid={`stage-explain-${i}`}
-                    >
-                      {explanation.text}
-                    </em>
-                  )}
+                  {(() => {
+                    // The stored narration speaks for the step when the run has one; else
+                    // the recorded fields do.
+                    const told = (c.backend?.narration?.events ?? [])
+                      .filter(
+                        (event) =>
+                          event.stage === i &&
+                          !/^Investigator checks:/i.test(event.title),
+                      )
+                      .at(-1);
+                    const live =
+                      state === "running"
+                        ? (c.backend?.narration?.events ?? [])
+                            .filter((event) => event.stage === i)
+                            .at(-1)
+                        : undefined;
+                    const shown = live ?? told;
+                    return shown ? (
+                      <em
+                        className={`stage-explain narrated narrated-${shown.kind}`}
+                        data-source="narration"
+                        data-testid={`stage-explain-${i}`}
+                      >
+                        {(preferences.language === "ar" && shown.titleAr) ||
+                          shown.title ||
+                          shown.text}
+                      </em>
+                    ) : explanation ? (
+                      <em
+                        className="stage-explain"
+                        data-source={explanation.source}
+                        data-testid={`stage-explain-${i}`}
+                      >
+                        {explanation.text}
+                      </em>
+                    ) : null;
+                  })()}
                 </span>
               </Button>
             );
@@ -659,6 +696,23 @@ export function InvestigationPage() {
                   : stages[stage].detail}
           </span>
         </div>
+        {c.backend && (
+          <NarrationStrip
+            key={c.id}
+            c={c}
+            stage={stage}
+            onStage={(index) => setPreviewStage(index)}
+            onHighlight={(ids, id) => {
+              // The narration's cited records take the graph: a manual selection gives way.
+              if (ids.length) {
+                setSelected(null);
+                setRelationship(null);
+              }
+              setNarrated({ id, ids });
+            }}
+            highlighted={narrated.id}
+          />
+        )}
       </section>
       <NextStep c={c} />
       <div className="workspace-toolbar">
@@ -889,6 +943,7 @@ export function InvestigationPage() {
                 setSelected(null);
               }}
               stage={stage}
+              highlight={narrated.ids}
             />
           </ResizablePanel>
         </ResizablePanelGroup>
