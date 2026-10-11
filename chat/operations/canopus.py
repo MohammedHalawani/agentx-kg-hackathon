@@ -37,7 +37,9 @@ SYSTEM_PROMPT = (
     "actions attempted and what the verifier found, what is needed next, the quotes available, and the offers the rules allow. Answer in "
     "2 to 5 short sentences, in plain language. Rules: use only the JSON; if it does not contain the answer, say what is not recorded; "
     "never add a cause, an outcome, a number or a record id that is not there, and copy record ids exactly with plain hyphens; a "
-    "hypothesis is not a fact, so say 'the investigator concluded' or 'the reviewer found'; never say the case is resolved, fixed or "
+    "hypothesis is not a fact, so say 'the investigator concluded' or 'the reviewer found'; when investigator.conclusion_status is not "
+    "'accepted', say first that there is no accepted conclusion and why (the reviewer did not accept it, or the run ended without a "
+    "valid conclusion), and only then what the investigator recorded; never say the case is resolved, fixed or "
     "closed unless workflow_state is exactly RESOLVED; you cannot perform, approve or authorize anything: when the operator asks for an "
     "action, say which offer in `offers` covers it and that the operator must confirm it, or that the rules do not allow it and why; do "
     "not quote the investigator or the reviewer from memory: to show their words, put the ids of the matching entries of `quotes` in "
@@ -136,7 +138,12 @@ def context_of(detail, quotes, offers):
     return {
         "case_id": detail.get("case_id"), "shipment_id": detail.get("shipment_id"), "workflow_state": detail.get("workflow_state"),
         "investigation_status": run.get("status"), "simulation_clock": detail.get("as_of"),
-        "investigator": {"accepted_by_reviewer": bool(diagnosis.get("available")), "primary_cause": findings.get("primary_cause"),
+        # conclusion_status: "accepted", or why there is no accepted conclusion (review_not_accepted, a failed
+        # investigator, ...). A run that ended without a valid conclusion has none, whatever an earlier round recorded.
+        "investigator": {"accepted_by_reviewer": bool(diagnosis.get("available")),
+                         "conclusion_status": "accepted" if diagnosis.get("available") else (diagnosis.get("reason") or "none"),
+                         "run_ended_without_valid_conclusion": [d.get("kind") or d.get("role") for d in result.get("degraded") or []],
+                         "primary_cause": findings.get("primary_cause"),
                          "confidence": findings.get("confidence"), "summary": _clip(findings.get("summary"), 700),
                          "missing_evidence": findings.get("missing_evidence") or [],
                          "hypotheses": [{"cause": h.get("cause"), "status": h.get("status"), "assessment": _clip(h.get("assessment"), 300),

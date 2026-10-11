@@ -116,6 +116,16 @@ class AnswerTests(unittest.TestCase):
                                                            "recorded_events", "evidence_records_by_kind", "quotes", "offers"]))
         for hidden in ("prompt", "reasoning", "truth", "mechanism", "canary", "api_key", "token"):
             self.assertNotIn(hidden, user.lower())
+        self.assertEqual((payload["case"]["investigator"]["conclusion_status"], payload["case"]["investigator"]["run_ended_without_valid_conclusion"]),
+                         ("review_not_accepted", []))
+        degraded = detail()
+        degraded["run"]["result"]["degraded"] = [{"role": "investigator", "kind": "invalid_model_output"}]
+        degraded["diagnosis"] = {"available": False, "reason": "investigator_unavailable"}
+        canopus.answer(degraded, "What did the investigator conclude?", ask=ask)
+        told = json.loads(ask.calls[-1][1])["case"]["investigator"]
+        self.assertEqual((told["conclusion_status"], told["run_ended_without_valid_conclusion"], told["primary_cause"]),
+                         ("investigator_unavailable", ["invalid_model_output"], None))
+        self.assertIn("no accepted conclusion", system)
         self.assertIn("you cannot perform, approve or authorize anything", system)
         self.assertIn("never say the case is resolved", system)
 
