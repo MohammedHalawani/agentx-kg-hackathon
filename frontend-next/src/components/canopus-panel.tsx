@@ -1,5 +1,8 @@
-import { NarrationList } from "@/components/narration";
-import { CanopusAskComposer, CanopusAskThread } from "@/components/canopus-ask";
+import {
+  CanopusAskComposer,
+  CanopusAskThread,
+  useAskCount,
+} from "@/components/canopus-ask";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "motion/react";
@@ -76,6 +79,7 @@ export function CanopusPanel() {
   const selected = cases.find((c) => c.id === context.caseId);
   // Connected product: questions go to the backend's ask endpoint, about the open case only.
   const asking = !connected && !!selected?.backend && !!service.askCanopus;
+  const asked = useAskCount(asking ? selected?.id : undefined);
   const expanded = presentation === "expanded";
   const close = canopus.close;
   useEffect(() => {
@@ -255,10 +259,7 @@ export function CanopusPanel() {
                 {connected
                   ? t("Suhail operations assistant", "مساعد سهيل للعمليات")
                   : asking
-                    ? t(
-                        "Reads the open case's records · performs no action",
-                        "يقرأ سجلات الحالة المفتوحة · لا ينفذ أي إجراء",
-                      )
+                    ? t("Suhail assistant", "مساعد سهيل")
                     : t("Open a case to ask about it", "افتح حالة للسؤال عنها")}
               </p>
             </div>
@@ -393,56 +394,60 @@ export function CanopusPanel() {
               }
               onRetry={(messageId) => void canopus.retry(context, messageId)}
               activity={
-                selected && (
-                  <>
-                    {/* The run's stored narration, read-only: the same messages as on the pipeline. */}
-                    <NarrationList c={selected} />
-                    {asking && <CanopusAskThread c={selected} />}
-                    <CaseActivityMarkers c={selected} />
-                  </>
-                )
+                selected &&
+                // A plain conversation: no automatic cards, markers or narration here.
+                (asking ? (
+                  <CanopusAskThread c={selected} />
+                ) : (
+                  <CaseActivityMarkers c={selected} />
+                ))
               }
               intro={
-                <>
-                  <div className="canopus-welcome">
-                    <Sparkles size={19} />
-                    <h3>
-                      {!connected
-                        ? asking
-                          ? t("Ask about this case.", "اسأل عن هذه الحالة.")
-                          : t(
-                              "Open a case to ask Canopus about it.",
-                              "افتح حالة لتسأل كانوبس عنها.",
+                asked > 0 ? undefined : (
+                  <>
+                    <div className="canopus-welcome">
+                      <Sparkles size={19} />
+                      <h3>
+                        {!connected
+                          ? asking
+                            ? t(
+                                "Ask about this shipment.",
+                                "اسأل عن هذه الشحنة.",
+                              )
+                            : t(
+                                "Open a case to ask Canopus about it.",
+                                "افتح حالة لتسأل كانوبس عنها.",
+                              )
+                          : selected
+                            ? t("Let’s follow the evidence.", "لنتتبع الأدلة.")
+                            : t("How can I help?", "كيف يمكنني مساعدتك؟")}
+                      </h3>
+                      <p>
+                        {connected
+                          ? t(
+                              "Understand evidence, decisions, and outcomes. Or ask me to find what matters on this page.",
+                              "افهم الأدلة والقرارات والنتائج، أو اطلب مني العثور على ما يهمك في هذه الصفحة.",
                             )
-                        : selected
-                          ? t("Let’s follow the evidence.", "لنتتبع الأدلة.")
-                          : t("How can I help?", "كيف يمكنني مساعدتك؟")}
-                    </h3>
-                    <p>
-                      {connected
-                        ? t(
-                            "Understand evidence, decisions, and outcomes. Or ask me to find what matters on this page.",
-                            "افهم الأدلة والقرارات والنتائج، أو اطلب مني العثور على ما يهمك في هذه الصفحة.",
-                          )
-                        : t(
-                            "Canopus answers from the open case's recorded evidence, review, decisions and outcomes. It quotes the investigator's and reviewer's own messages, shows which records an answer relies on, and performs no action: anything it offers goes through Review & authorize.",
-                            "يجيب كانوبس من الأدلة والمراجعة والقرارات والنتائج المسجلة للحالة المفتوحة. يقتبس رسائل المحقق والمراجع كما هي، ويبيّن السجلات التي تعتمد عليها الإجابة، ولا ينفذ أي إجراء: كل ما يعرضه يمر عبر المراجعة والتفويض.",
-                          )}
-                    </p>
-                  </div>
-                  <div className="suggested-questions">
-                    {(connected ? questions : []).map((question) => (
-                      <Button
-                        variant="outline"
-                        key={question}
-                        onClick={() => send(question)}
-                      >
-                        {question}
-                        <ArrowRight size={12} />
-                      </Button>
-                    ))}
-                  </div>
-                </>
+                          : t(
+                              "Canopus answers from this case's records. It takes no action on its own.",
+                              "يجيب كانوبس من سجلات هذه الحالة. لا ينفذ أي إجراء من تلقاء نفسه.",
+                            )}
+                      </p>
+                    </div>
+                    <div className="suggested-questions">
+                      {(connected ? questions : []).map((question) => (
+                        <Button
+                          variant="outline"
+                          key={question}
+                          onClick={() => send(question)}
+                        >
+                          {question}
+                          <ArrowRight size={12} />
+                        </Button>
+                      ))}
+                    </div>
+                  </>
+                )
               }
             />
           </div>

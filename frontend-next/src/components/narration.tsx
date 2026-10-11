@@ -141,7 +141,8 @@ export function NarrationStrip({
     () => c.backend?.narration?.events ?? [],
     [c.backend?.narration],
   );
-  const [open, setOpen] = useState(true);
+  // Optional commentary: folded until the operator asks for it.
+  const [open, setOpen] = useState(false);
   const [checksOpen, setChecksOpen] = useState(false);
   // Replay: how many stored messages are revealed (null = all, no replay running).
   const [replay, setReplay] = useState<number | null>(null);
@@ -149,11 +150,12 @@ export function NarrationStrip({
   const last = events.at(-1);
   // While the run is live, follow the newest message: its step and its cited records.
   useEffect(() => {
-    if (!live || !last) return;
+    // Only while the commentary is open does it move the page with the newest message.
+    if (!live || !last || !open) return;
     onStage(last.stage);
     if (last.graphNodeIds.length) onHighlight(last.graphNodeIds, last.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [live, last?.id]);
+  }, [live, last?.id, open]);
   useEffect(() => {
     if (replay === null) return;
     if (replay >= events.length) {
@@ -174,7 +176,15 @@ export function NarrationStrip({
   const revealed = replay === null ? events : events.slice(0, replay + 1);
   const here = revealed.filter((event) => event.stage === stage);
   const checks = here.filter(isCheck);
-  const messages = here.filter((event) => !isCheck(event));
+  // One message per title on a step: a later round's record replaces the earlier one here
+  // (a revised run records "Proposed action" once per round); the audit keeps them all.
+  const messages = [
+    ...new Map(
+      here
+        .filter((event) => !isCheck(event))
+        .map((event) => [event.title || event.id, event]),
+    ).values(),
+  ];
   const status = c.backend?.narration?.status;
   return (
     <div className="narration-strip" data-testid="narration-strip">
@@ -186,7 +196,7 @@ export function NarrationStrip({
           onClick={() => setOpen((value) => !value)}
         >
           <Sparkles size={13} />
-          <b>{t("Canopus narration", "سرد كانوبس")}</b>
+          <b>{t("Investigation commentary", "تعليق على التحقيق")}</b>
           <span>
             {stage === 6
               ? t("Disposition", "التصرف في الحالة")

@@ -1,3 +1,4 @@
+import { existsSync, readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { CASE_A, SHIP_A } from "../fixtures/backend";
 import { stubBackend } from "./backend-stub";
@@ -204,7 +205,103 @@ test("A case the backend does not have is reported, not rendered", async ({
   await expect(page.locator(".empty-state")).toContainText("not found");
 });
 
-test("Canopus answers about the open case with its sources kept apart, and offers only the existing approval path", async ({
+test("A case reads as one assessment with a connected pipeline; details and commentary are optional", async ({
+  page,
+}) => {
+  const stub = await stubBackend(page);
+  // The backend's brief and stage facts, in the contract's shape.
+  stub.state.detailA = {
+    ...stub.state.detailA,
+    brief: {
+      resolved: false,
+      waiting_kind: "awaiting_new_evidence",
+      waiting_label_en: "Waiting for new evidence",
+      lines: [
+        { key: "problem", label_en: "Problem", text_en: "Barcode mismatch detected at the sorting center." },
+        { key: "finding", label_en: "Finding", text_en: "One scanner recorded a barcode inconsistent with the manifest." },
+        { key: "action", label_en: "Action taken", text_en: "Rescan request sent to sorter SYN-DEV-SR-SORT-JED-01 (simulated). If nothing arrives by 18 Sept, the case goes to a person." },
+        { key: "status", label_en: "Current status", text_en: "Waiting for the new scan to verify the mismatch is corrected." },
+      ],
+      suspected_cause: { status: "accepted", text_en: "Suhail's investigation concluded a barcode mismatch.", confidence: "medium" },
+      evidence: [{ id: `${SHIP_A}-CUST-02-01`, label_en: "Custody record at the Dammam depot", in_graph: true }],
+      review: { status: "accepted", text_en: "The independent review accepted the finding.", reason_original: "Citations are valid." },
+      policy: { decision: "automatic", text_en: "A rescan is allowed automatically.", rule_id: "AUTH-10-auto-allowlist" },
+      actions: [
+        {
+          action_type: "REQUEST_RESCAN",
+          status: "sent",
+          simulated: true,
+          text_en: "Rescan request sent to sorter SYN-DEV-SR-SORT-JED-01 (simulated). Suhail is waiting for a new barcode read of this parcel.",
+          deadline_text_en: "If no such record arrives by 18 Sept, the verifier records the action as not confirmed and the case goes to a person.",
+          outcome: null,
+        },
+      ],
+      technical: { workflow_state: "AWAITING_OUTCOME", authority_rule_id: "AUTH-10-auto-allowlist" },
+    },
+    pipeline: {
+      ...stub.state.detailA.pipeline!,
+      stage_facts: [
+        { stage: "extract", status: "done", fact_en: "Case opened for: barcode read differs", sequence: 1 },
+        { stage: "classify", status: "done", fact_en: "Suspected cause: barcode mismatch", sequence: 3 },
+      ],
+    },
+  };
+  await page.goto(`/app/cases/${CASE_A}`);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(SHIP_A);
+  // One assessment: the four lines, in the backend's words.
+  const assessment = page.getByTestId("case-assessment");
+  await expect(assessment).toContainText("Barcode mismatch detected at the sorting center.");
+  await expect(assessment).toContainText("Rescan request sent to sorter");
+  await expect(assessment).toContainText("Waiting for new evidence");
+  // The pending action says who received the request, what is awaited and until when.
+  const pending = page.getByTestId("pending-action");
+  await expect(pending).toContainText("sent to sorter SYN-DEV-SR-SORT-JED-01 (simulated)");
+  await expect(pending).toContainText("the case goes to a person");
+  // Rule ids and the reviewer's own words only in the details.
+  await expect(assessment).not.toContainText("AUTH-10-auto-allowlist");
+  await assessment.getByRole("button", { name: "Evidence and technical details" }).click();
+  await expect(assessment).toContainText("AUTH-10-auto-allowlist");
+  await expect(assessment).toContainText("Citations are valid.");
+  // The pipeline is one connected line with the backend's short fact under a step.
+  await expect(page.locator(".pipeline-stages.connected")).toBeVisible();
+  await expect(page.getByTestId("stage-explain-2")).toHaveText("Suspected cause: barcode mismatch");
+  // The sidebar folds to give the case room; the logo becomes the star.
+  await expect(page.locator(".suhail-sidebar [data-state='collapsed'], [data-state='collapsed'].suhail-sidebar, [data-slot='sidebar'][data-state='collapsed']").first()).toBeAttached();
+  // Nothing to inspect yet: one quiet line.
+  await expect(page.getByTestId("evidence-inspector")).toHaveClass(/idle/);
+  await page.screenshot({ path: "screenshots/graph/calm-case.png", fullPage: true });
+});
+
+// The backend's own example briefs (real archived runs), rendered for review when present.
+for (const name of [
+  "brief_000375_awaiting_evidence",
+  "brief_000375_resolved",
+  "brief_000232_review_rejected",
+  "brief_000058_action_not_confirmed",
+]) {
+  const file = `C:/Projects/demo/.stage4/docs/api/examples/${name}.json`;
+  test(`The backend's example ${name} renders as one assessment`, async ({ page }) => {
+    test.skip(!existsSync(file), "the backend's example file is not on this machine");
+    const example = JSON.parse(readFileSync(file, "utf-8"));
+    const stub = await stubBackend(page);
+    stub.state.detailA = {
+      ...stub.state.detailA,
+      brief: example.brief,
+      next_step: example.brief.next_step,
+      pipeline: { ...stub.state.detailA.pipeline!, stage_facts: example.stage_facts },
+    };
+    await page.goto(`/app/cases/${CASE_A}`);
+    const assessment = page.getByTestId("case-assessment");
+    for (const line of example.brief.lines as { text_en: string }[])
+      await expect(assessment).toContainText(line.text_en);
+    // A round the reviewer sent back is a review outcome, never a failed step.
+    await expect(page.locator(".pipeline-step.state-failed")).toHaveCount(0);
+    await page.waitForTimeout(1500);
+    await page.screenshot({ path: `screenshots/graph/calm-${name}.png`, fullPage: true });
+  });
+}
+
+test("Canopus is a plain chat about the open case: answers first, sources and agent quotes on request", async ({
   page,
 }) => {
   await stubBackend(page);
@@ -212,34 +309,54 @@ test("Canopus answers about the open case with its sources kept apart, and offer
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(SHIP_A);
   await page.getByRole("button", { name: "Open Canopus assistant" }).click();
   const panel = page.locator(".canopus-window");
-  await expect(panel).toContainText("performs no action");
+  await expect(panel).toContainText("It takes no action on its own.");
+  // No automatic cards: no narration, no markers, nothing until a question is asked.
+  await expect(panel.getByTestId("narration-bubble")).toHaveCount(0);
+  await expect(panel.getByTestId("canopus-answer")).toHaveCount(0);
   const box = panel.getByRole("textbox", { name: "Ask Canopus about this case" });
-  await box.fill("What did the reviewer say?");
+  await box.fill("What happened to this shipment?");
   await panel.getByRole("button", { name: "Send question" }).click();
-  // Canopus's own text, labelled as the model's.
+  // The operator's message on one side, a readable answer on the other.
+  await expect(panel.locator(".chat-question")).toHaveText("What happened to this shipment?");
   const answer = panel.getByTestId("canopus-answer");
-  await expect(answer).toHaveAttribute("data-kind", "canopus_answer");
-  await expect(answer).toContainText("Canopus answer");
-  await expect(answer).toContainText("The reviewer accepted the finding");
-  await expect(answer).toContainText("Show 1 records in the graph");
-  // The reviewer's recorded message: source material, never Canopus's words.
-  const quote = panel.getByTestId("canopus-quote");
-  await expect(quote).toContainText("Reviewer's own words");
-  await expect(quote).toContainText("recorded message, not rewritten");
-  await expect(quote).toContainText("Citations are valid and support the conclusion.");
-  await expect(quote).toContainText("OPS-REVIEW-A");
-  // What the rules allow: a refused offer says why; an allowed one opens the existing dialog.
-  const offers = panel.getByTestId("canopus-offers");
-  await expect(offers).toContainText("Not available: Nothing changed since the last investigation.");
-  await offers.getByRole("button", { name: "Open Review & authorize" }).click();
-  await expect(page.getByRole("dialog").getByRole("button", { name: "Authorize action" })).toBeVisible();
-  await page.keyboard.press("Escape");
-  // An answer built from the records without model text is labelled as such.
-  await box.fill("Show me the original message");
-  await panel.getByRole("button", { name: "Send question" }).click();
-  await expect(panel.getByTestId("canopus-answer").nth(1)).toContainText(
-    "Answer from the records · no model text",
+  await expect(answer.locator(".chat-prose")).toHaveText(
+    "The reviewer accepted the finding; the action waits for an operator.",
   );
+  // No quote, record id, rule id or refused action in the conversation by default.
+  await expect(answer.getByTestId("canopus-quote")).toHaveCount(0);
+  await expect(answer).not.toContainText("AUTH-");
+  await expect(answer).not.toContainText("Not available");
+  await expect(answer).not.toContainText(`${SHIP_A}-CUST-02-01`);
+  // Only the action the rules allow now, and it opens the existing dialog.
+  const offers = answer.getByTestId("canopus-offers");
+  await expect(offers.getByRole("button")).toHaveCount(1);
+  // Sources are secondary: the agent's recorded words and the record ids, one click away.
+  await answer.getByRole("button", { name: "Sources" }).click();
+  const sources = answer.getByTestId("canopus-sources");
+  await expect(sources.getByTestId("canopus-quote")).toContainText(
+    "Citations are valid and support the conclusion.",
+  );
+  await expect(sources).toContainText(`${SHIP_A}-CUST-02-01`);
+  await offers.getByRole("button", { name: /review and authorize/ }).click();
+  await expect(
+    page.getByRole("dialog").getByRole("button", { name: "Authorize action" }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  // Asked for the original message: it is quoted in the answer, labelled with its source.
+  await box.fill("Show me the reviewer's original message");
+  await panel.getByRole("button", { name: "Send question" }).click();
+  const second = panel.getByTestId("canopus-answer").nth(1);
+  await expect(second.getByTestId("canopus-quote")).toContainText("The reviewer's own words");
+  await expect(second).toContainText("from the case record");
+  // Asked why something cannot be done: the reason in plain words, without a rule id.
+  await box.fill("Why can't you re-analyse the case?");
+  await panel.getByRole("button", { name: "Send question" }).click();
+  const third = panel.getByTestId("canopus-answer").nth(2);
+  await expect(third.getByTestId("canopus-unavailable")).toContainText(
+    "Nothing changed since the last investigation.",
+  );
+  await expect(third.getByTestId("canopus-unavailable")).not.toContainText("AUTH-24");
+  await page.screenshot({ path: "screenshots/graph/calm-chat.png" });
 });
 
 test("Canopus keeps its floating window but answers nothing while it has no backend", async ({

@@ -56,6 +56,7 @@ import { dateTimeLabel, secondsLabel, timeLabel } from "@/lib/dates";
 import { InvestigatorFindings } from "@/components/investigator-findings";
 import { InvestigationRecord } from "@/components/investigation-record";
 import { NextStep } from "@/components/next-step";
+import { CaseAssessment } from "@/components/case-assessment";
 import { NarrationStrip } from "@/components/narration";
 import { explainStage, type StageState } from "@/domain/stage-explain";
 import { HumanOutcomeDialog } from "@/components/human-outcome-dialog";
@@ -375,6 +376,104 @@ export function InvestigationPage() {
     if (c.status === "needs_evidence") return ["Needs evidence", "تحتاج أدلة"];
     return ["Routed to a person", "أُحيلت إلى شخص"];
   };
+  /**
+   * One short line per pipeline step for a backend case, saying what the step did. Every line
+   * is read from the case's records (stage events, finding, review, authority, execution,
+   * outcome); a step that has not run shows nothing.
+   */
+  const stageShort = (
+    i: number,
+    state: StageState,
+  ): [string, string] | null => {
+    const b = c.backend;
+    if (!b || state === "queued") return null;
+    const note = stageNote(i, state);
+    if (note && i >= 6) return note;
+    const recorded = b.stageDetail[i] ?? "";
+    const words = (code: string | null | undefined) =>
+      (code ?? "").replaceAll("_", " ").toLowerCase();
+    const clip = (text: string, max = 46) =>
+      text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
+    if (state === "failed") return ["No result recorded", "لا نتيجة مسجلة"];
+    const running = state === "running";
+    switch (i) {
+      case 0:
+        return running
+          ? ["Collecting evidence", "جمع الأدلة"]
+          : ["Evidence collected", "جُمعت الأدلة"];
+      case 1: {
+        const count = /(\d+) nodes/.exec(recorded)?.[1];
+        return running
+          ? ["Examining connections", "فحص الروابط"]
+          : count
+            ? [
+                `${count} linked records examined`,
+                `فُحص ${count} سجلاً مرتبطاً`,
+              ]
+            : ["Connections examined", "فُحصت الروابط"];
+      }
+      case 2: {
+        if (running) {
+          const tool = /^Investigator queried ([^:]+)/.exec(recorded)?.[1];
+          return tool
+            ? [`Checking ${tool}`, `فحص ${tool}`]
+            : ["Investigating", "جارٍ التحقيق"];
+        }
+        const finding = b.investigation;
+        if (b.investigationLog?.degraded.length && !b.diagnosisAvailable)
+          return ["No conclusion reached", "لم يُتوصل إلى استنتاج"];
+        if (finding?.primaryCause)
+          return finding.accepted
+            ? [
+                `Suspected cause: ${words(finding.primaryCause)}`,
+                `السبب المرجح: ${words(finding.primaryCause)}`,
+              ]
+            : [
+                `Suspected: ${words(finding.primaryCause)} (challenged)`,
+                `مرجح: ${words(finding.primaryCause)} (اعتُرض عليه)`,
+              ];
+        return ["Cause assessed", "قُيّم السبب"];
+      }
+      case 3: {
+        const count = /(\d+) verified precedents/.exec(recorded)?.[1];
+        return running
+          ? ["Checking similar cases", "مراجعة حالات مشابهة"]
+          : count
+            ? [`${count} similar cases checked`, `رُوجعت ${count} حالات مشابهة`]
+            : ["Similar cases checked", "رُوجعت حالات مشابهة"];
+      }
+      case 4:
+        return running
+          ? ["Choosing an action", "اختيار إجراء"]
+          : c.recommendation.available
+            ? [
+                clip(`Proposed: ${c.recommendation.title}`),
+                clip(`مقترح: ${c.recommendation.title}`),
+              ]
+            : ["No action proposed", "لم يُقترح إجراء"];
+      case 5: {
+        if (running) return ["Independent review", "مراجعة مستقلة"];
+        const verdict = (b.review?.verdict ?? "").toLowerCase();
+        return verdict === "accept"
+          ? ["Reviewer accepted", "قبِل المراجع"]
+          : verdict
+            ? ["Reviewer challenged it", "اعترض المراجع"]
+            : ["Review recorded", "سُجلت المراجعة"];
+      }
+      case 6:
+        return running
+          ? ["Deciding who acts", "تحديد من يتصرف"]
+          : c.execution
+            ? ["Action dispatched", "أُرسل الإجراء"]
+            : ["Decided by policy", "قررته السياسة"];
+      default:
+        return running || c.status === "verifying"
+          ? ["Awaiting evidence", "بانتظار الأدلة"]
+          : c.status === "resolved"
+            ? ["Verified: resolved", "تم التحقق: حُلّت"]
+            : null;
+    }
+  };
   return (
     <>
       <Breadcrumb className="mb-4">
@@ -609,42 +708,58 @@ export function InvestigationPage() {
                                             )
                                         : t("Queued", "في الانتظار")}
           </span>
-          {previewStage !== null && (
+          {previewStage !== null && previewStage !== (c.run?.stage ?? 0) && (
             <Button
               className="follow-button"
               variant="ghost"
               size="sm"
-              onClick={() => setPreviewStage(null)}
+              onClick={() => {
+                // Back to the step the case is on now, brought into view.
+                setPreviewStage(null);
+                setNarrated({ id: null, ids: [] });
+                requestAnimationFrame(() =>
+                  document
+                    .querySelector(".pipeline-step.selected")
+                    ?.scrollIntoView({
+                      block: "nearest",
+                      inline: "center",
+                      behavior: "smooth",
+                    }),
+                );
+              }}
             >
               {t("Follow current stage", "تتبع المرحلة الحالية")}
             </Button>
           )}
         </div>
-        <div className="pipeline-stages">
+        <div
+          className={`pipeline-stages ${c.backend ? "connected" : ""}`}
+          style={
+            {
+              // How far the case has come, for the connecting line (from the recorded step).
+              "--progress": c.run
+                ? c.status === "resolved"
+                  ? 1
+                  : Math.min(1, (c.run.stage + 0.5) / stages.length)
+                : 0,
+            } as React.CSSProperties
+          }
+        >
           {stages.map((s, i) => {
             const state = stageState(i);
             // What this step did or is doing, from the case's records where they exist.
             const explanation = explainStage(c, i, state);
-            // The stored narration speaks for a step that has run in the current run; a step
-            // still queued (a superseded run's narration included) shows nothing.
-            const narration =
-              state === "queued" ? [] : (c.backend?.narration?.events ?? []);
-            const told =
-              (state === "running"
-                ? narration.filter((event) => event.stage === i).at(-1)
-                : undefined) ??
-              narration
-                .filter(
-                  (event) =>
-                    event.stage === i &&
-                    !/^Investigator checks:/i.test(event.title),
-                )
-                .at(-1);
+            // One short line of what the step did, from the case's records.
+            const fact =
+              state === "queued" ? undefined : c.backend?.stageFacts?.[i];
+            const short: [string, string] | null = fact
+              ? [fact.en, fact.ar ?? fact.en]
+              : stageShort(i, state);
             return (
               <Button
                 variant="ghost"
                 key={s.label}
-                className={`pipeline-step state-${state} ${stage === i ? "selected" : ""} ${explanation || told ? "explained" : ""}`}
+                className={`pipeline-step state-${state} ${stage === i ? "selected" : ""} ${explanation || short ? "explained" : ""}`}
                 aria-pressed={stage === i}
                 aria-label={`${i === 6 && c.backend ? "Disposition" : s.label} · ${state}`}
                 title={explanation?.text || s.detail || undefined}
@@ -666,87 +781,85 @@ export function InvestigationPage() {
                   {i === 6 && c.backend
                     ? t("Disposition", "التصرف في الحالة")
                     : t(s.label, s.arabic)}
-                  <small>
-                    {stageNote(i, state)
-                      ? t(...stageNote(i, state)!)
-                      : t(
-                          {
-                            queued: "Queued",
-                            completed: "Done",
-                            waiting: "Waiting",
-                            running: "Running",
-                            failed: "Failed",
-                          }[state],
-                          {
-                            queued: "انتظار",
-                            completed: "مكتمل",
-                            waiting: "متوقف",
-                            running: "جارٍ",
-                            failed: "فشل",
-                          }[state],
-                        )}
-                    {state === "completed" &&
-                      c.backend?.timing?.stageSeconds[i] !== undefined &&
-                      ` · ${secondsLabel(c.backend.timing.stageSeconds[i])}`}
-                  </small>
-                  {told ? (
+                  {short ? (
                     <em
-                      className={`stage-explain narrated narrated-${told.kind}`}
-                      data-source="narration"
+                      className="stage-explain stage-short"
+                      data-source="record"
                       data-testid={`stage-explain-${i}`}
                     >
-                      {(preferences.language === "ar" && told.titleAr) ||
-                        told.title ||
-                        told.text}
+                      {t(...short)}
                     </em>
-                  ) : explanation ? (
-                    <em
-                      className="stage-explain"
-                      data-source={explanation.source}
-                      data-testid={`stage-explain-${i}`}
-                    >
-                      {explanation.text}
-                    </em>
-                  ) : null}
+                  ) : (
+                    <small>
+                      {t(
+                        {
+                          queued: "Queued",
+                          completed: "Done",
+                          waiting: "Waiting",
+                          running: "Running",
+                          failed: "Failed",
+                        }[state],
+                        {
+                          queued: "انتظار",
+                          completed: "مكتمل",
+                          waiting: "متوقف",
+                          running: "جارٍ",
+                          failed: "فشل",
+                        }[state],
+                      )}
+                    </small>
+                  )}
+                  {state === "completed" &&
+                    c.backend?.timing?.stageSeconds[i] !== undefined &&
+                    c.backend.timing.stageSeconds[i] >= 1 && (
+                      <small className="stage-time">
+                        {secondsLabel(c.backend.timing.stageSeconds[i])}
+                      </small>
+                    )}
                 </span>
               </Button>
             );
           })}
         </div>
-        <div className="pipeline-stage-summary">
-          <span className="purple-stage-dot" />
-          <b>
-            {stage === 6 && c.backend
-              ? t("Disposition", "التصرف في الحالة")
-              : t(stages[stage].label, stages[stage].arabic)}
-          </b>
-          <span>
-            {c.backend
-              ? (explainStage(c, stage, stageState(stage))?.text ??
-                (stage === 6 && c.execution ? c.execution.detail : undefined) ??
-                c.backend.stageDetail[stage] ??
-                (stage === 7
-                  ? (c.outcome?.detail ??
-                    t(
-                      "No independently verified outcome is recorded.",
-                      "لا توجد نتيجة متحقق منها بشكل مستقل.",
-                    ))
-                  : stage === 6 && c.execution
+        {/* The full record of a step, when the operator picks one (lab: always shown). */}
+        {(!c.backend || previewStage !== null) && (
+          <div className="pipeline-stage-summary">
+            <span className="purple-stage-dot" />
+            <b>
+              {stage === 6 && c.backend
+                ? t("Disposition", "التصرف في الحالة")
+                : t(stages[stage].label, stages[stage].arabic)}
+            </b>
+            <span>
+              {c.backend
+                ? (explainStage(c, stage, stageState(stage))?.text ??
+                  (stage === 6 && c.execution
                     ? c.execution.detail
-                    : c.status === "investigating" &&
-                        stage === (c.run?.stage ?? 0)
-                      ? t("Starting…", "جارٍ البدء…")
-                      : t(
-                          "No event is recorded for this stage in the current run.",
-                          "لا يوجد حدث مسجل لهذه المرحلة في التحقيق الحالي.",
-                        )))
-              : stage === 2
-                ? c.diagnosis
-                : stage === 4
-                  ? c.recommendation.title
-                  : stages[stage].detail}
-          </span>
-        </div>
+                    : undefined) ??
+                  c.backend.stageDetail[stage] ??
+                  (stage === 7
+                    ? (c.outcome?.detail ??
+                      t(
+                        "No independently verified outcome is recorded.",
+                        "لا توجد نتيجة متحقق منها بشكل مستقل.",
+                      ))
+                    : stage === 6 && c.execution
+                      ? c.execution.detail
+                      : c.status === "investigating" &&
+                          stage === (c.run?.stage ?? 0)
+                        ? t("Starting…", "جارٍ البدء…")
+                        : t(
+                            "No event is recorded for this stage in the current run.",
+                            "لا يوجد حدث مسجل لهذه المرحلة في التحقيق الحالي.",
+                          )))
+                : stage === 2
+                  ? c.diagnosis
+                  : stage === 4
+                    ? c.recommendation.title
+                    : stages[stage].detail}
+            </span>
+          </div>
+        )}
         {/* The pipeline's final output. */}
         <NextStep c={c} />
         {c.backend && (
@@ -814,58 +927,75 @@ export function InvestigationPage() {
         </div>
       </div>
       <div className="case-workspace">
-        <aside className="case-context">
-          <div className="context-section">
-            {c.backend?.authority?.ruleId.startsWith("AUTH-27") &&
-              !c.backend.diagnosisAvailable && (
-                <small data-testid="context-doubt">
-                  {t(
-                    "REVIEWER DID NOT ACCEPT THE FINDING · EVIDENCE-GATHERING ACTION ONLY",
-                    "لم يقبل المراجع الاستنتاج · إجراء جمع أدلة فقط",
-                  )}
-                </small>
-              )}
-            <small data-testid="context-source">
-              {!c.backend
-                ? t("WHAT HAPPENED", "ما الذي حدث")
-                : c.backend.diagnosisAvailable
-                  ? t(
-                      "AGENT'S FINDING · REVIEWER ACCEPTED · NOT VERIFIED",
-                      "استنتاج الوكيل · قبله المراجع · غير متحقق منه",
-                    )
-                  : t("WHAT THE MONITOR OBSERVED", "ما رصدته المراقبة")}
-            </small>
-            <h3>{c.issue}</h3>
-            <p>
-              {c.summary ||
-                (c.backend && !c.backend.diagnosisAvailable
-                  ? t(
-                      "No accepted agent diagnosis is recorded for this case.",
-                      "لا يوجد تشخيص مقبول من الوكيل لهذه الحالة.",
-                    )
-                  : "")}
-            </p>
-          </div>
-          <div className="context-section">
-            <small>{t("LAST CONFIRMED CUSTODY", "آخر حيازة مؤكدة")}</small>
-            <b>
-              {lastCustody?.facility ??
-                t("No confirmed custody observation", "لا توجد حيازة مؤكدة")}
-            </b>
-            {lastCustody && (
-              <span className="context-custody">
-                <ShieldCheck size={11} />
-                {lastCustody.time} AST
-              </span>
-            )}
-          </div>
-          <div className="context-section">
-            <small>{t("RECOMMENDATION", "التوصية")}</small>
-            <b>{c.recommendation.title}</b>
-            <Badge variant="secondary" className="context-authority">
-              {t(authority[0], authority[1])}
-            </Badge>
-          </div>
+        <aside
+          className={`case-context ${c.backend?.brief ? "with-assessment" : ""}`}
+        >
+          {c.backend?.brief ? (
+            <div className="context-section">
+              <small>{t("CASE ASSESSMENT", "تقييم الحالة")}</small>
+              <CaseAssessment c={c} onEvidence={select} />
+            </div>
+          ) : (
+            <div className="context-section">
+              {c.backend?.authority?.ruleId.startsWith("AUTH-27") &&
+                !c.backend.diagnosisAvailable && (
+                  <small data-testid="context-doubt">
+                    {t(
+                      "REVIEWER DID NOT ACCEPT THE FINDING · EVIDENCE-GATHERING ACTION ONLY",
+                      "لم يقبل المراجع الاستنتاج · إجراء جمع أدلة فقط",
+                    )}
+                  </small>
+                )}
+              <small data-testid="context-source">
+                {!c.backend
+                  ? t("WHAT HAPPENED", "ما الذي حدث")
+                  : c.backend.diagnosisAvailable
+                    ? t(
+                        "AGENT'S FINDING · REVIEWER ACCEPTED · NOT VERIFIED",
+                        "استنتاج الوكيل · قبله المراجع · غير متحقق منه",
+                      )
+                    : t("WHAT THE MONITOR OBSERVED", "ما رصدته المراقبة")}
+              </small>
+              <h3>{c.issue}</h3>
+              <p>
+                {c.summary ||
+                  (c.backend && !c.backend.diagnosisAvailable
+                    ? t(
+                        "No accepted agent diagnosis is recorded for this case.",
+                        "لا يوجد تشخيص مقبول من الوكيل لهذه الحالة.",
+                      )
+                    : "")}
+              </p>
+            </div>
+          )}
+          {/* The assessment already says what was found and what was done. */}
+          {!c.backend?.brief && (
+            <>
+              <div className="context-section">
+                <small>{t("LAST CONFIRMED CUSTODY", "آخر حيازة مؤكدة")}</small>
+                <b>
+                  {lastCustody?.facility ??
+                    t(
+                      "No confirmed custody observation",
+                      "لا توجد حيازة مؤكدة",
+                    )}
+                </b>
+                {lastCustody && (
+                  <span className="context-custody">
+                    <ShieldCheck size={11} />
+                    {lastCustody.time} AST
+                  </span>
+                )}
+              </div>
+              <div className="context-section">
+                <small>{t("RECOMMENDATION", "التوصية")}</small>
+                <b>{c.recommendation.title}</b>
+                <Badge variant="secondary" className="context-authority">
+                  {t(authority[0], authority[1])}
+                </Badge>
+              </div>
+            </>
+          )}
           <div className="context-actions">
             {c.status === "human_review" ? (
               <>
@@ -1001,7 +1131,7 @@ export function InvestigationPage() {
         </ResizablePanelGroup>
       </div>
       <div
-        className="evidence-inspector surface"
+        className={`evidence-inspector surface ${edge || evidence || entity ? "" : "idle"}`}
         data-testid="evidence-inspector"
       >
         <span
@@ -1021,7 +1151,10 @@ export function InvestigationPage() {
               {edge?.label ??
                 evidence?.label ??
                 entity?.label ??
-                t("Select evidence to inspect", "اختر دليلاً لفحصه")}
+                t(
+                  "Click a map marker or a graph record to inspect it",
+                  "انقر علامة على الخريطة أو سجلاً في الرسم لفحصه",
+                )}
             </b>
             {evidence && (
               <Badge

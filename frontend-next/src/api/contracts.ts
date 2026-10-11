@@ -269,6 +269,107 @@ export interface ApiDecisionRecord {
   occurred_at?: string;
   actor_id?: string;
 }
+/** A sentence the backend composed from stored records, in both languages. */
+export interface ApiText {
+  text_en?: string | null;
+  text_ar?: string | null;
+}
+/** One action as an operator should read it: who got the request and what is awaited. */
+export interface ApiActionExplanation extends ApiText {
+  execution_id?: string;
+  action_type?: string;
+  label_en?: string | null;
+  label_ar?: string | null;
+  simulated?: boolean;
+  authorized_by?: "automatic_policy" | "operator_approval" | string;
+  status?: "authorized" | "sent" | "not_delivered" | string;
+  sent_at?: string | null;
+  recipient?: {
+    known?: boolean;
+    kind?: string | null;
+    id?: string | null;
+    label_en?: string | null;
+    label_ar?: string | null;
+  } | null;
+  awaiting?: ApiText | null;
+  /** Only when grounded in verified past cases; a typical time, never a promise. */
+  expected_response_at?: string | null;
+  deadline_at?: string | null;
+  deadline_text_en?: string | null;
+  deadline_text_ar?: string | null;
+  continues_automatically?: boolean;
+  outcome?: (ApiText & {
+    verification_status?: string;
+    success?: boolean | null;
+    outcome_type?: string | null;
+    exception_cleared?: boolean | null;
+    verified_at?: string | null;
+  }) | null;
+}
+/** The case as one assessment, recomputed by the backend from its records on every read. */
+export interface ApiBrief {
+  resolved?: boolean;
+  waiting_kind?: string;
+  waiting_label_en?: string | null;
+  waiting_label_ar?: string | null;
+  lines?: ({ key: string; label_en?: string; label_ar?: string } & ApiText)[];
+  what_happened?: (ApiText & { opened_at?: string | null }) | null;
+  suspected_cause?: (ApiText & {
+    status?: "accepted" | "hypothesis_not_accepted" | "none" | string;
+    code?: string | null;
+    label_en?: string | null;
+    label_ar?: string | null;
+    confidence?: string | null;
+    investigator_summary?: string | null;
+  }) | null;
+  evidence?: {
+    id: string;
+    kind?: string;
+    label_en?: string | null;
+    label_ar?: string | null;
+    occurred_at?: string | null;
+    in_graph?: boolean;
+  }[];
+  review?: (ApiText & {
+    status?: string;
+    reason_summary_en?: string | null;
+    reason_summary_ar?: string | null;
+    reason_original?: string | null;
+    verdict_code?: string | null;
+  }) | null;
+  policy?: (ApiText & {
+    decision?: string;
+    action_type?: string | null;
+    action_label_en?: string | null;
+    action_label_ar?: string | null;
+    rule_id?: string | null;
+    rule_reason?: string | null;
+  }) | null;
+  actions?: ApiActionExplanation[];
+  verification?: (ApiText & {
+    status?: string;
+    outcome_type?: string | null;
+    verified_at?: string | null;
+    verifier_reason?: string | null;
+  }) | null;
+  technical?: {
+    workflow_state?: string;
+    state_version?: number;
+    run_id?: string | null;
+    authority_rule_id?: string | null;
+    review_verdict?: string | null;
+    closure?: string | null;
+  } | null;
+}
+/** What one pipeline stage did in one round, as a short fact from its recorded events. */
+export interface ApiStageFact {
+  stage: string;
+  iteration?: number;
+  status?: "done" | "running" | "rejected" | "failed" | "not_reached" | string;
+  fact_en?: string | null;
+  fact_ar?: string | null;
+  sequence?: number;
+}
 /** POST /cases/{id}/canopus/ask: one grounded answer about one case. Nothing is stored. */
 export interface ApiCanopusAnswer {
   case_id: string;
@@ -301,6 +402,20 @@ export interface ApiCanopusAnswer {
     label_ar?: string | null;
     confirm?: { method?: string; path?: string; body?: Record<string, unknown> } | null;
   }[];
+  /** Offers the rules do not allow now; shown only when the operator asks why. */
+  unavailable_offers?: {
+    type?: string;
+    action_type?: string | null;
+    reason_en?: string | null;
+    reason_ar?: string | null;
+  }[];
+  /** Codes and ids, kept apart from the sentences. */
+  technical?: {
+    workflow_state?: string;
+    rule_id?: string | null;
+    review_verdict?: string | null;
+    evidence_ids?: string[];
+  } | null;
   model?: string | null;
   grounded?: boolean | null;
   fallback?: boolean;
@@ -366,6 +481,7 @@ export interface ApiNextStep {
 export interface ApiCaseDetail {
   next_step?: ApiNextStep | null;
   narration?: ApiNarration | null;
+  brief?: ApiBrief | null;
   case_id: string;
   shipment_id: string;
   workflow_state: WorkflowState;
@@ -391,6 +507,7 @@ export interface ApiCaseDetail {
   diagnosis?: ApiDiagnosis;
   pipeline?: {
     events: ApiPipelineEvent[];
+    stage_facts?: ApiStageFact[];
     status: string;
     source?: string;
     investigation_as_of?: string | null;

@@ -1,19 +1,7 @@
-import { useState, useSyncExternalStore } from "react";
-import {
-  ArrowUp,
-  Cpu,
-  Network,
-  Quote,
-  ShieldCheck,
-  Sparkles,
-} from "lucide-react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { ArrowUp, ChevronDown, Network } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
-import type {
-  CanopusAnswer,
-  CanopusOffer,
-  OperationalCase,
-} from "@/domain/types";
+import type { CanopusAnswer, CanopusOffer, OperationalCase } from "@/domain/types";
 import { useOperations } from "@/state/operations";
 import { usePreferences } from "@/state/preferences";
 
@@ -39,6 +27,14 @@ const useTurns = (caseId: string) =>
     () => store.get(caseId) ?? EMPTY,
   );
 const busy = new Set<string>();
+/** How many questions the open case's conversation holds (for the panel's welcome text). */
+// eslint-disable-next-line react-refresh/only-export-components
+export const useAskCount = (caseId: string | undefined) =>
+  useSyncExternalStore(
+    subscribe,
+    () => (caseId ? (store.get(caseId)?.length ?? 0) : 0),
+    () => 0,
+  );
 
 /** Asks the other screens to act, through the paths they already have. */
 const highlightInGraph = (caseId: string, ids: string[]) =>
@@ -46,9 +42,7 @@ const highlightInGraph = (caseId: string, ids: string[]) =>
     new CustomEvent("suhail:graph-highlight", { detail: { caseId, ids } }),
   );
 const openAuthorize = (caseId: string) =>
-  window.dispatchEvent(
-    new CustomEvent("suhail:authorize", { detail: { caseId } }),
-  );
+  window.dispatchEvent(new CustomEvent("suhail:authorize", { detail: { caseId } }));
 
 const clock = (value: string | null | undefined) =>
   value && !Number.isNaN(Date.parse(value))
@@ -60,213 +54,225 @@ const clock = (value: string | null | undefined) =>
         minute: "2-digit",
       })
     : "";
+/** The operator asked to see an agent's own message, or why something cannot be done. */
+const wantsQuote = (question: string) =>
+  /original|exact|verbatim|quote|own words|actual (message|words)|what did .* (say|write)|show me .* message|الأصلي|حرفي|اقتبس|نص/i.test(
+    question,
+  );
+const wantsWhyNot = (question: string) =>
+  /why (can'?t|cannot|not|isn'?t)|can (you|i|we)|could (you|i)|request|approve|allowed|available|لماذا لا|هل يمكن|اطلب|وافق/i.test(
+    question,
+  );
+/**
+ * Internal state codes read as words in the conversation (AWAITING_OUTCOME -> "awaiting
+ * outcome"). Presentation only: the sentence is the backend's, and the codes stay in details.
+ */
+const plain = (text: string) =>
+  text.replace(/\b[A-Z][A-Z]+(?:_[A-Z]+)+\b/g, (code) =>
+    code.replaceAll("_", " ").toLowerCase(),
+  );
 
-function Offer({ c, offer }: { c: OperationalCase; offer: CanopusOffer }) {
+/** Paragraphs and short bullets, as a chat answer reads. */
+function Prose({ text, rtl }: { text: string; rtl: boolean }) {
+  const blocks: (string | string[])[] = [];
+  for (const line of plain(text).split(/\n+/).map((item) => item.trim()).filter(Boolean)) {
+    const bullet = /^(?:[-*•]|\d+[.)])\s+(.*)$/.exec(line);
+    const last = blocks.at(-1);
+    if (bullet)
+      if (Array.isArray(last)) last.push(bullet[1]);
+      else blocks.push([bullet[1]]);
+    else blocks.push(line);
+  }
+  return (
+    <div className="chat-prose" dir={rtl ? "rtl" : "ltr"}>
+      {blocks.map((block, index) =>
+        Array.isArray(block) ? (
+          <ul key={index}>
+            {block.map((item, at) => (
+              <li key={at}>{item}</li>
+            ))}
+          </ul>
+        ) : (
+          <p key={index}>{block}</p>
+        ),
+      )}
+    </div>
+  );
+}
+
+function OfferButton({ c, offer }: { c: OperationalCase; offer: CanopusOffer }) {
   const { service } = useOperations();
   const { t, preferences } = usePreferences();
-  const [state, setState] = useState<"idle" | "confirm" | "sending" | "done">(
-    "idle",
-  );
+  const [state, setState] = useState<"idle" | "confirm" | "sending" | "done">("idle");
   const [error, setError] = useState("");
   const label = (preferences.language === "ar" && offer.labelAr) || offer.label;
-  if (!offer.allowed)
-    return (
-      <li className="ask-offer refused">
-        <ShieldCheck size={12} />
-        <span>
-          <b>{label}</b>
-          {t("Not available", "غير متاح")}: {offer.reason}
-          {offer.ruleId && <i dir="ltr"> {offer.ruleId}</i>}
-        </span>
-      </li>
-    );
   // A decision that has a dialog today is confirmed in that dialog, never from here.
-  const viaDialog = offer.type !== "reanalyze";
+  if (offer.type !== "reanalyze")
+    return (
+      <Button size="sm" variant="outline" onClick={() => openAuthorize(c.id)}>
+        {label} · {t("review and authorize", "راجع وفوّض")}
+      </Button>
+    );
+  if (state === "done") return <span className="chat-note">{t("Requested.", "تم الطلب.")}</span>;
   return (
-    <li className="ask-offer">
-      <ShieldCheck size={12} />
-      <span>
-        <b>{label}</b>
-        {offer.reason}
-        {error && <em role="alert">{error}</em>}
-      </span>
-      {viaDialog ? (
-        <Button size="sm" variant="outline" onClick={() => openAuthorize(c.id)}>
-          {t("Open Review & authorize", "فتح المراجعة والتفويض")}
-        </Button>
-      ) : state === "done" ? (
-        <i>{t("Requested", "تم الطلب")}</i>
-      ) : (
-        <Button
-          size="sm"
-          variant={state === "confirm" ? "default" : "outline"}
-          disabled={state === "sending" || !service.confirmCanopusOffer}
-          onClick={() => {
-            if (state === "idle") return setState("confirm");
-            setState("sending");
-            service.confirmCanopusOffer!(c.id, offer)
-              .then(() => setState("done"))
-              .catch((e: Error) => {
-                setError(e.message);
-                setState("idle");
-              });
-          }}
-        >
-          {state === "confirm"
-            ? t("Confirm: send this request", "تأكيد: إرسال هذا الطلب")
-            : t("Request it", "اطلبه")}
-        </Button>
+    <>
+      <Button
+        size="sm"
+        variant={state === "confirm" ? "default" : "outline"}
+        disabled={state === "sending" || !service.confirmCanopusOffer}
+        onClick={() => {
+          if (state === "idle") return setState("confirm");
+          setState("sending");
+          service
+            .confirmCanopusOffer!(c.id, offer)
+            .then(() => setState("done"))
+            .catch((e: Error) => {
+              setError(e.message);
+              setState("idle");
+            });
+        }}
+      >
+        {state === "confirm" ? t(`Confirm: ${label}`, `تأكيد: ${label}`) : label}
+      </Button>
+      {error && (
+        <span className="chat-note" role="alert">
+          {error}
+        </span>
       )}
-    </li>
+    </>
+  );
+}
+
+function Answer({ c, turn }: { c: OperationalCase; turn: Turn }) {
+  const { t, preferences } = usePreferences();
+  const [open, setOpen] = useState(false);
+  const answer = turn.answer!;
+  const arabic = preferences.language === "ar";
+  const quoted = wantsQuote(turn.question);
+  const sources = answer.evidenceIds.length || answer.graphNodeIds.length;
+  const hasDetails =
+    sources > 0 || (!quoted && answer.quotes.length > 0) || answer.unavailable.length > 0;
+  const quotes = (
+    <>
+      {answer.quotes.map((quote) => (
+        <blockquote key={quote.recordId} className="chat-quote" data-testid="canopus-quote">
+          <small>
+            {quote.role === "reviewer"
+              ? t("The reviewer's own words", "كلام المراجع نفسه")
+              : t("The investigator's own words", "كلام المحقق نفسه")}
+            {quote.occurredAt && ` · ${clock(quote.occurredAt)}`}
+          </small>
+          <p dir="ltr">{quote.text}</p>
+        </blockquote>
+      ))}
+    </>
+  );
+  return (
+    <div className="chat-answer" data-testid="canopus-answer" data-kind={answer.kind}>
+      <Prose
+        text={(arabic && answer.textAr) || answer.text}
+        rtl={arabic && !!answer.textAr}
+      />
+      {quoted && quotes}
+      {answer.unavailable.length > 0 && wantsWhyNot(turn.question) && (
+        <ul className="chat-why-not" data-testid="canopus-unavailable">
+          {answer.unavailable.map((item, index) => (
+            <li key={index}>{plain((arabic && item.reasonAr) || item.reason)}</li>
+          ))}
+        </ul>
+      )}
+      {answer.offers.length > 0 && (
+        <div className="chat-offers" data-testid="canopus-offers">
+          {answer.offers.map((offer, index) => (
+            <OfferButton key={`${offer.type}-${index}`} c={c} offer={offer} />
+          ))}
+        </div>
+      )}
+      <div className="chat-meta">
+        <span>
+          Canopus
+          {answer.kind === "record_answer" &&
+            ` · ${t("from the case record", "من سجل الحالة")}`}
+          {answer.answeredAt && ` · ${clock(answer.answeredAt)}`}
+        </span>
+        {answer.graphNodeIds.length > 0 && (
+          <button type="button" onClick={() => highlightInGraph(c.id, answer.graphNodeIds)}>
+            <Network size={11} />
+            {t("Show in graph", "أظهر في الرسم")}
+          </button>
+        )}
+        {hasDetails && (
+          <button type="button" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
+            {t("Sources", "المصادر")}
+            <ChevronDown size={11} className={open ? "open" : ""} />
+          </button>
+        )}
+      </div>
+      {open && (
+        <div className="chat-sources" data-testid="canopus-sources">
+          {!quoted && quotes}
+          {answer.evidenceIds.length > 0 && (
+            <p dir="ltr">
+              {t("Records", "السجلات")}: {answer.evidenceIds.join(", ")}
+            </p>
+          )}
+          {answer.model && (
+            <p dir="ltr">
+              {t("Written by", "كتبه")} {answer.model}{" "}
+              {t("from this case's records", "من سجلات هذه الحالة")}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
 /**
- * The conversation about the open case. Canopus's answer, the agents' own recorded messages
- * and what the rules allow are three different things and are drawn as three: the answer is
- * labelled as Canopus's (or as built from the records when no model text was used), quotes are
- * source material with role and time, and an offer only opens the existing confirmation path.
+ * The conversation about the open case, as a plain chat: the operator's messages on one side,
+ * Canopus's answers on the other in readable paragraphs. An agent's own recorded message is
+ * shown only when asked for, quoted and labelled; records and the model are under "Sources";
+ * an action appears only when the rules allow it now, and only opens the existing confirmation.
  */
 export function CanopusAskThread({ c }: { c: OperationalCase }) {
-  const { t, preferences } = usePreferences();
+  const { t } = usePreferences();
   const turns = useTurns(c.id);
+  const end = useRef<HTMLDivElement>(null);
+  const last = turns.at(-1);
+  useEffect(() => {
+    end.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+  }, [turns.length, last?.answer, last?.error]);
   if (!turns.length) return null;
-  const arabic = preferences.language === "ar";
   return (
-    <section className="ask-thread" data-testid="canopus-ask-thread">
+    <section className="chat-thread" data-testid="canopus-ask-thread">
       {turns.map((turn) => (
-        <div key={turn.id} className="ask-turn">
-          <p className="ask-question">{turn.question}</p>
+        <div key={turn.id} className="chat-turn">
+          <p className="chat-question">{turn.question}</p>
           {!turn.answer && !turn.error && (
-            <p className="ask-waiting" role="status">
-              <Spinner className="size-3" />
-              {t(
-                "Canopus is reading this case's records…",
-                "كانوبس يقرأ سجلات هذه الحالة…",
-              )}
+            <p className="chat-typing ask-waiting" role="status">
+              <i />
+              <i />
+              <i />
+              <span>{t("Reading the case…", "يقرأ الحالة…")}</span>
             </p>
           )}
           {turn.error && (
-            <p className="ask-error" role="alert">
+            <p className="chat-error ask-error" role="alert">
               {turn.error}
             </p>
           )}
-          {turn.answer && (
-            <>
-              <article
-                className={`narration-bubble ${turn.answer.kind === "canopus_answer" ? "narration-canopus_summary" : "narration-system_event"}`}
-                data-testid="canopus-answer"
-                data-kind={turn.answer.kind}
-              >
-                <header>
-                  <span className="narration-kind">
-                    {turn.answer.kind === "canopus_answer" ? (
-                      <Sparkles size={11} />
-                    ) : (
-                      <Cpu size={11} />
-                    )}
-                    {turn.answer.kind === "canopus_answer"
-                      ? t("Canopus answer", "إجابة كانوبس")
-                      : t(
-                          "Answer from the records · no model text",
-                          "إجابة من السجلات · بلا نص من النموذج",
-                        )}
-                    {turn.answer.model && (
-                      <i dir="ltr"> · {turn.answer.model}</i>
-                    )}
-                  </span>
-                  <time>{clock(turn.answer.answeredAt)}</time>
-                </header>
-                <p dir={arabic && turn.answer.textAr ? "rtl" : "ltr"}>
-                  {(arabic && turn.answer.textAr) || turn.answer.text}
-                </p>
-                <footer>
-                  <span className="narration-state">
-                    {t("Case state", "حالة الحالة")}:{" "}
-                    {turn.answer.workflowState
-                      .replaceAll("_", " ")
-                      .toLowerCase()}
-                  </span>
-                  {(turn.answer.evidenceIds.length > 0 ||
-                    turn.answer.graphNodeIds.length > 0) && (
-                    <button
-                      type="button"
-                      disabled={!turn.answer.graphNodeIds.length}
-                      title={turn.answer.evidenceIds.join(", ")}
-                      onClick={() =>
-                        highlightInGraph(c.id, turn.answer!.graphNodeIds)
-                      }
-                    >
-                      <Network size={11} />
-                      {turn.answer.graphNodeIds.length
-                        ? t(
-                            `Show ${turn.answer.graphNodeIds.length} records in the graph`,
-                            `إظهار ${turn.answer.graphNodeIds.length} سجلاً في الرسم`,
-                          )
-                        : t(
-                            `${turn.answer.evidenceIds.length} references`,
-                            `${turn.answer.evidenceIds.length} مرجعاً`,
-                          )}
-                    </button>
-                  )}
-                </footer>
-              </article>
-              {turn.answer.quotes.map((quote) => (
-                <article
-                  key={quote.recordId}
-                  className="narration-bubble narration-agent_output"
-                  data-testid="canopus-quote"
-                >
-                  <header>
-                    <span className="narration-kind">
-                      <Quote size={11} />
-                      {quote.role === "reviewer"
-                        ? t("Reviewer's own words", "كلام المراجع نفسه")
-                        : t("Investigator's own words", "كلام المحقق نفسه")}
-                      <i>
-                        {" "}
-                        ·{" "}
-                        {t(
-                          "recorded message, not rewritten",
-                          "رسالة مسجلة، لم تُعد صياغتها",
-                        )}
-                      </i>
-                    </span>
-                    <time>{clock(quote.occurredAt)}</time>
-                  </header>
-                  {quote.title && <b>{quote.title}</b>}
-                  <p dir="ltr">{quote.text}</p>
-                  <footer>
-                    <span dir="ltr">{quote.recordId}</span>
-                  </footer>
-                </article>
-              ))}
-              {turn.answer.offers.length > 0 && (
-                <ul className="ask-offers" data-testid="canopus-offers">
-                  {turn.answer.offers.map((offer, index) => (
-                    <Offer key={`${offer.type}-${index}`} c={c} offer={offer} />
-                  ))}
-                </ul>
-              )}
-            </>
-          )}
+          {turn.answer && <Answer c={c} turn={turn} />}
         </div>
       ))}
+      <div ref={end} />
     </section>
   );
 }
 
 const SUGGESTED: [string, string][] = [
-  ["What did the reviewer say?", "ماذا قال المراجع؟"],
-  ["What evidence is missing?", "ما الأدلة الناقصة؟"],
-  [
-    "Why is the case in this state, and what happens next?",
-    "لماذا الحالة في هذا الوضع وما الخطوة التالية؟",
-  ],
-  [
-    "Show me the investigator's original message.",
-    "اعرض رسالة المحقق الأصلية.",
-  ],
+  ["What happened to this shipment?", "ماذا حدث لهذه الشحنة؟"],
+  ["What is Suhail waiting for?", "ماذا ينتظر سهيل؟"],
+  ["Who needs to act next?", "من يجب أن يتصرف بعد ذلك؟"],
 ];
 
 export function CanopusAskComposer({ c }: { c: OperationalCase }) {
@@ -309,16 +315,11 @@ export function CanopusAskComposer({ c }: { c: OperationalCase }) {
       });
   };
   return (
-    <div className="ask-composer" data-testid="canopus-ask">
+    <div className="chat-composer-area" data-testid="canopus-ask">
       {turns.length === 0 && (
-        <div className="ask-suggested">
+        <div className="chat-suggested">
           {SUGGESTED.map(([en, ar]) => (
-            <button
-              key={en}
-              type="button"
-              disabled={waiting}
-              onClick={() => ask(t(en, ar))}
-            >
+            <button key={en} type="button" disabled={waiting} onClick={() => ask(t(en, ar))}>
               {t(en, ar)}
             </button>
           ))}
@@ -331,14 +332,8 @@ export function CanopusAskComposer({ c }: { c: OperationalCase }) {
         }}
       >
         <input
-          aria-label={t(
-            "Ask Canopus about this case",
-            "اسأل كانوبس عن هذه الحالة",
-          )}
-          placeholder={t(
-            `Ask about ${c.shipment.id}…`,
-            `اسأل عن ${c.shipment.id}…`,
-          )}
+          aria-label={t("Ask Canopus about this case", "اسأل كانوبس عن هذه الحالة")}
+          placeholder={t(`Ask about ${c.shipment.id}…`, `اسأل عن ${c.shipment.id}…`)}
           maxLength={500}
           value={draft}
           disabled={waiting}
@@ -350,15 +345,9 @@ export function CanopusAskComposer({ c }: { c: OperationalCase }) {
           disabled={waiting || !draft.trim()}
           aria-label={t("Send question", "إرسال السؤال")}
         >
-          {waiting ? <Spinner className="size-3" /> : <ArrowUp size={14} />}
+          <ArrowUp size={14} />
         </Button>
       </form>
-      <p className="chat-readonly">
-        {t(
-          "Canopus reads this case's records and performs no action. Agents' messages are quoted, not rewritten.",
-          "يقرأ كانوبس سجلات هذه الحالة ولا ينفذ أي إجراء. رسائل الوكلاء تُقتبس ولا تُعاد صياغتها.",
-        )}
-      </p>
     </div>
   );
 }

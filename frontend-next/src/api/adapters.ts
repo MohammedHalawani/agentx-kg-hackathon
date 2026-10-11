@@ -7,6 +7,7 @@ import type {
   ApiPipelineEvent,
   ApiCanopusAnswer,
   ApiNarrationEvent,
+  ApiStageFact,
   ApiPipelineState,
   ApiQueueCase,
   ApiRouteSegment,
@@ -1061,6 +1062,8 @@ export function applyDetail(
           : null,
       verificationDeadline: execution?.deadline_at ?? null,
       expectedResponseAt: execution?.expected_response_at ?? null,
+      brief: detail.brief ?? null,
+      stageFacts: stageFactsOf(detail.pipeline?.stage_facts),
       narration: {
         runId: detail.narration?.run_id ?? null,
         status: detail.narration?.status ?? "idle",
@@ -1118,6 +1121,18 @@ function timingOf(detail: ApiCaseDetail) {
   };
 }
 
+/** The backend's stage facts on the rail: the latest round's fact per step. */
+function stageFactsOf(facts: ApiStageFact[] | undefined) {
+  const out: Record<number, { en: string; ar: string | null; status: string }> = {};
+  for (const fact of [...(facts ?? [])].sort(
+    (a, b) => (a.iteration ?? 0) - (b.iteration ?? 0) || (a.sequence ?? 0) - (b.sequence ?? 0),
+  )) {
+    const index = fact.stage === "outcome" ? 7 : STAGE_INDEX[fact.stage];
+    if (index === undefined || !fact.fact_en) continue;
+    out[index] = { en: fact.fact_en, ar: fact.fact_ar ?? null, status: fact.status ?? "done" };
+  }
+  return out;
+}
 /** The ask endpoint's answer, as the panel shows it. */
 export function canopusAnswer(answer: ApiCanopusAnswer): CanopusAnswer {
   return {
@@ -1135,7 +1150,9 @@ export function canopusAnswer(answer: ApiCanopusAnswer): CanopusAnswer {
       occurredAt: quote.occurred_at ?? null,
       title: quote.title_en ?? null,
     })),
-    offers: (answer.offers ?? []).map((offer) => ({
+    offers: (answer.offers ?? [])
+      .filter((offer) => offer.allowed === true)
+      .map((offer) => ({
       type: offer.type,
       allowed: offer.allowed === true,
       ruleId: offer.rule_id ?? null,
@@ -1147,6 +1164,19 @@ export function canopusAnswer(answer: ApiCanopusAnswer): CanopusAnswer {
           ? { path: offer.confirm.path, body: offer.confirm.body }
           : null,
     })),
+    unavailable: [
+      // Today's shape lists refused offers among the offers; the new one separates them.
+      ...(answer.unavailable_offers ?? []).map((offer) => ({
+        reason: offer.reason_en ?? "",
+        reasonAr: offer.reason_ar ?? null,
+      })),
+      ...(answer.offers ?? [])
+        .filter((offer) => offer.allowed !== true && offer.reason)
+        .map((offer) => ({
+          reason: `${offer.label_en ?? humanize(offer.type)}: ${offer.reason}`,
+          reasonAr: null,
+        })),
+    ].filter((item) => item.reason),
     model: answer.model ?? null,
   };
 }

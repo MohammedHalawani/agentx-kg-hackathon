@@ -1,3 +1,4 @@
+import type { ApiBrief } from "@/api/contracts";
 export type CaseStatus =
   | "queued"
   | "investigating"
@@ -73,6 +74,8 @@ export interface CanopusAnswer {
     title: string | null;
   }[];
   offers: CanopusOffer[];
+  /** What the rules do not allow now, in plain words; shown only when asked. */
+  unavailable: { reason: string; reasonAr: string | null }[];
   model: string | null;
 }
 /** One stored narration message of a run, as the backend wrote it. */
@@ -345,6 +348,10 @@ export interface BackendCaseState {
     verifiedAt: string | null;
   };
   /** Until when the verifier waits for evidence of the executed action. */
+  /** The backend's one assessment of the case, composed from its records (API shape). */
+  brief?: ApiBrief | null;
+  /** Per pipeline step: the backend's short fact for its latest round. */
+  stageFacts?: Record<number, { en: string; ar: string | null; status: string }>;
   /** The run's stored narration, oldest first; empty until the backend narrates a run. */
   narration?: { runId: string | null; status: string; events: NarrationEvent[] };
   /** The backend's statement of why the case is unresolved and what it needs next. */

@@ -100,8 +100,15 @@ function Navigation() {
   const { cases, backend: fromBackend, connection } = useOperations();
   // Connected build: always the backend, so lab-only branches are removed at build time.
   const backend = !LAB_BUILD || fromBackend;
-  const { setOpenMobile, isMobile } = useSidebar();
+  const { setOpenMobile, isMobile, setOpen } = useSidebar();
   const location = useLocation();
+  // Opening a case gives the case, map and graph the room: the sidebar folds to its icons.
+  // It is folded once per case opened; the operator can expand it again at any time.
+  const onCase = backend && location.pathname.startsWith("/cases/");
+  const casePath = onCase ? location.pathname : "";
+  useEffect(() => {
+    if (casePath && !isMobile) setOpen(false);
+  }, [casePath, isMobile, setOpen]);
   const [workspace, setWorkspace] = useState(false);
   const [help, setHelp] = useState(false);
   const attention = cases.filter((c) => c.status === "human_review").length;
@@ -771,7 +778,10 @@ export function AppShell() {
           </span>
           <span>
             {backend
-              ? t("Suhail backend", "خادم سهيل")
+              ? t(
+                  "Simulated operations · demonstration data, not SPL systems",
+                  "عمليات محاكاة · بيانات تجريبية، ليست أنظمة سبل",
+                )
               : t(
                   "Synthetic data · local simulation",
                   "بيانات اصطناعية · محاكاة محلية",
