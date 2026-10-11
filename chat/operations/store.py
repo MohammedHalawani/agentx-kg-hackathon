@@ -73,6 +73,21 @@ MAX_SYMPTOM_REINVESTIGATIONS = 2
 REINVESTIGABLE_STATES = frozenset(("RECOMMENDATION_READY", "AWAITING_APPROVAL", "HUMAN_REVIEW", "NEEDS_EVIDENCE", "ESCALATED"))
 
 
+# A curated demo session (off unless set): comma-separated shipment ids, public (SYN-) or internal (DEMO-) form. The
+# monitor then opens cases only for these shipments. Every other shipment is still ingested and stays visible to the
+# investigator's tools as evidence; it just never becomes a case, so the queue holds the curated cases only and the
+# automatic-investigation worker spends no model calls on the rest.
+DEMO_SHIPMENTS_ENV = "SUHAIL_DEMO_SHIPMENTS"
+
+
+def demo_shipments(value=None):
+    """The curated shipment ids in storage form, or None when the option is not set (every shipment is monitored)."""
+    from operations.identifiers import storage_value
+    text = os.environ.get(DEMO_SHIPMENTS_ENV, "") if value is None else value
+    ids = frozenset(storage_value(part.strip()) for part in str(text).split(",") if part.strip())
+    return ids or None
+
+
 def monitor_enqueue(queue, shipment_ids):
     """Bounded, ordered, de-duplicated shipments awaiting an expected-vs-actual check."""
     out = list(queue)
@@ -156,7 +171,7 @@ def identity(kind, *parts):
 
 def temporal_properties(props):
     fields = UTC_FIELDS | {"initial_as_of", "cursor_time", "claim_at", "observed_at", "source_occurred_at",
-                           "outcome_checked_as_of", "deadline_at", "closed_at", "session_started_at", "last_processed_at", "executed_at"}
+                           "outcome_checked_as_of", "deadline_at", "expected_response_at", "closed_at", "session_started_at", "last_processed_at", "executed_at"}
     return {key: instant(value) if key in fields and isinstance(value, str) else value for key, value in props.items()}
 
 
@@ -182,6 +197,7 @@ class OperationsStore:
         # (None: SUHAIL_MODEL_CALL_CAP, default 12). Both are recorded with every run.
         self.disabled_tools = tuple(t for t in os.environ.get("SUHAIL_DISABLED_TOOLS", "").replace(" ", "").split(",") if t)
         self.model_call_cap = None
+        self.demo_shipments = demo_shipments()   # None, or the only shipments the monitor may open cases for
         self._subscribers={}
         self._subscribers_lock=threading.RLock()
 
@@ -332,7 +348,9 @@ class OperationsStore:
                        "last_workflow_state": control.get("last_workflow_state"), "last_processed_at": control.get("last_processed_at")},
             "session": {"case_source": "monitor", "session_id": control.get("session_id"),
                         "started_at": control.get("session_started_at"), "monitor_pending": len(control.get("monitor_queue") or []),
-                        "monitor_checked": control.get("monitor_checked", 0), "monitor_opened": control.get("monitor_opened", 0)},
+                        "monitor_checked": control.get("monitor_checked", 0), "monitor_opened": control.get("monitor_opened", 0),
+                        # SUHAIL_DEMO_SHIPMENTS: whether the monitor is limited to a curated list, and how many it lists.
+                        "demo_shipments": {"enabled": self.demo_shipments is not None, "count": len(self.demo_shipments or ())}},
             "simulator": {"state": control["simulator_state"], "speed": control["speed"], "replay_mode":control.get("replay_mode","timeline"), "event_count": control["event_count"],
                           "cursor": {"time": control["cursor_time"], "id": control["cursor_id"]}, "end_at": control["end_at"]},
             "development_reset": {"enabled": development_reset_enabled(),
@@ -503,6 +521,11 @@ class OperationsStore:
             c=self._control(tx,lock=True)
             queue=list(c.get("monitor_queue") or [])
             if not queue:return None,c["as_of"]
+            if self.demo_shipments is not None:
+                # A curated session: shipments outside the list leave the queue unchecked and never become cases.
+                listed=[sid for sid in queue if sid in self.demo_shipments]
+                c["monitor_queue"]=listed[limit:];self._put(tx,"OpsControl",c,update=True)
+                return listed[:limit],c["as_of"]
             c["monitor_queue"]=queue[limit:];self._put(tx,"OpsControl",c,update=True)
             return queue[:limit],c["as_of"]
         batch,clock=self._execute(take,write=True)
@@ -876,7 +899,13 @@ class OperationsStore:
                 except Exception as error:receipt={"acknowledged":False,"behaviour":f"The execution adapter failed ({type(error).__name__}); nothing was confirmed as sent."};mode="adapter_error"
             else:
                 receipt={"acknowledged":False,"behaviour":"No execution adapter is configured; nothing was sent."};mode="no_adapter"
-            def record(tx,execution=execution,receipt=receipt,mode=mode):
+            # When the field's answer, if one comes, is expected to have reached Suhail: the adapter's schedule for this
+            # kind of request only. It says nothing about whether an answer will come or what it will be.
+            expected=None
+            if receipt.get("acknowledged") is not False and hasattr(self.adapter,"expected_response_at"):
+                try:expected=self.adapter.expected_response_at(execution,clock)
+                except Exception:expected=None
+            def record(tx,execution=execution,receipt=receipt,mode=mode,expected=expected):
                 c=self._control(tx,lock=True);when=c["as_of"]
                 current=self._get(tx,"OpsExecution",execution["entity_id"])
                 case=self._case(tx,current["case_id"])
@@ -884,6 +913,7 @@ class OperationsStore:
                 acknowledged=receipt.get("acknowledged") is not False
                 current.update(status="ACKNOWLEDGED" if acknowledged else "NOT_ACKNOWLEDGED",receipt_ref=f"{mode}:{execution['entity_id']}",
                                mode=mode,executed_at=when,occurred_at=when,deadline_at=deadline if acknowledged else None,
+                               expected_response_at=expected if acknowledged else None,
                                adapter_result_json=canonical(receipt))
                 self._put(tx,"OpsExecution",current,update=True)
                 if not acknowledged:

@@ -11,6 +11,7 @@ returns them) and are accepted back in that form. Nothing served holds truth lab
 | `SUHAIL_OPERATIONS_DATABASE` | the world database, `shipments-v2-world-<name>` (never chosen implicitly) |
 | `SUHAIL_SIM_STATE_ROOT` | the root of that export's private **physical** state (`<root>/<dataset_id>/development/parcels.jsonl` ...). With it the world operational simulator is the execution adapter. Without it there is no adapter: an authorized action is recorded as not acknowledged and the case goes to a person |
 | `SUHAIL_DEV_RESET=1` | only if the UI may reset the session |
+| `SUHAIL_DEMO_SHIPMENTS` | optional, a curated session: comma-separated shipment ids (public `SYN-SHP-...` or internal `DEMO-SHP-...`). The monitor then opens cases **only** for these shipments. Everything else is still ingested and stays visible to the investigator's tools as evidence (cross-shipment queries work as usual); it just never becomes a case, so the queue holds the curated cases only and the automatic worker spends no model calls on the rest. Unset: every shipment is monitored. Read when the server starts. `GET /worker/status` → `session.demo_shipments` is `{"enabled": true, "count": <ids listed>}` (`{"enabled": false, "count": 0}` when unset) |
 
 Recommended for the live demo (all four are read by the backend process; unset, each keeps the evaluated behaviour):
 
@@ -23,6 +24,46 @@ Recommended for the live demo (all four are read by the backend process; unset, 
 
 These are demo settings: the frozen evaluation ran with none of them. Details and the `latency` block
 (`GET /cases/{case_id}` → `run.result.latency`) are in `docs/api/investigation-run.md` sections 3a and 4a.
+
+### Live-demo start sequence
+
+1. Environment of the backend process, then start it:
+
+   ```
+   SUHAIL_OPERATIONS_DATABASE=shipments-v2-world-<name>
+   SUHAIL_SIM_STATE_ROOT=<root of that export's physical state>
+   SUHAIL_DEMO_SHIPMENTS=SYN-SHP-000064,SYN-SHP-000133        (the curated cases)
+   SUHAIL_TOOL_BATCH=3
+   SUHAIL_PREFETCH_OVERVIEW=1
+   SUHAIL_INVALID_OUTPUT_REPAIR=1
+   SUHAIL_MODEL_CALL_CAP=20
+   ```
+
+   Check `GET /worker/status`: `execution.adapter` is `world_operational_simulator`, `session.demo_shipments.enabled`
+   is `true` with the expected `count`, `database` is the world database.
+2. `POST /simulation/start` with `{"speed": 60, "replay_mode": "timeline"}`.
+3. `POST /worker/start`: automatic investigation of the open cases, oldest first (FIFO, one at a time).
+
+Why speed 60. The speed is simulated seconds per real second, so at 60 one simulated minute passes each second. The
+simulator answers a request after a fixed number of simulated minutes for the request to reach the field
+(`operations.world_simulation.DELAY`) plus the answering device's upload lag (20 to 90 simulated seconds); the
+execution and verification workers each add up to 2 real seconds:
+
+| Action | Request reaches the field after | Answer and verification at speed 60, about |
+| --- | --- | --- |
+| `REQUEST_DEVICE_SYNC` | 10 min | 15 s |
+| `REQUEST_ADDITIONAL_EVIDENCE` | 30 min | 35 s |
+| `REQUEST_RESCAN` | 45 min | 50 s |
+| `REQUEST_REWEIGH`, `REQUEST_HUB_CHECK` | 60 min | 65 s |
+| `INITIATE_CUSTODY_RECONCILIATION` | 90 min | 95 s |
+| `REQUEST_ADDRESS_CONFIRMATION` | 120 min, then the recipient takes 10 to 120 min | 2 to 4 min |
+| `PRIORITIZE_NEXT_SESSION`, `REROUTE_TO_CONFIRMED_DESTINATION` | 15 / 30 min, answered in the depot's next delivery session | minutes (up to a simulated day: about 24 min) |
+| `RETURN_TO_SENDER` | 60 min, received about a simulated day later | about 27 min |
+
+At 600 the same answers arrive in 1 to 10 seconds, too fast to watch, and the clock runs ten simulated minutes a second;
+at 10 a rescan takes four and a half minutes. The verification deadline (72 simulated hours) is 72 real minutes at
+speed 60. While a case is being investigated the clock keeps running: pause the simulation
+(`POST /simulation/pause`) to hold the world still while talking over a case, and start it again to let the answer arrive.
 
 Never set a truth-label root for the server. `GET /worker/status` → `execution.adapter` says which adapter is attached:
 `world_operational_simulator`, or `none`.
@@ -70,7 +111,7 @@ few seconds while the simulation runs). A case's `workflow_state` is the stage:
 | `review` | the current run's final review: `verdict`, `model_verdict`, `reason_code`, `feedback` |
 | `run.result` | the whole run record: `investigation_log` (rounds, tool calls), `authority` (`rule_id`, `risk_class`, `action_type`, `closure`, `reason`), `pipeline_events`; see `docs/api/investigation-run.md` |
 | `recommendation` | `action_type`, `risk_class`, `approvable`, `approval_rule`, `approval_reason`, `approval_context_stale` |
-| `executions[]` | `action_type`, `authority` (`AUTO_POLICY` or `OPERATOR_APPROVAL`), `status` (`AUTHORIZED`, `EXECUTING`, `ACKNOWLEDGED`, `NOT_ACKNOWLEDGED`, `REFUSED`), `mode`, `executed_at`, `deadline_at`, `adapter_result_json` (the receipt) |
+| `executions[]` | `action_type`, `authority` (`AUTO_POLICY` or `OPERATOR_APPROVAL`), `status` (`AUTHORIZED`, `EXECUTING`, `ACKNOWLEDGED`, `NOT_ACKNOWLEDGED`, `REFUSED`), `mode`, `executed_at`, `expected_response_at`, `deadline_at`, `adapter_result_json` (the receipt) |
 | `outcome` | the latest outcome: `verification_status` (`VERIFIED`, `HUMAN_VERIFIED`, `HUMAN_FINDING`), `success`, `outcome_type`, `exception_cleared`, `remaining_symptoms`, `reason`, `evidence_ids`, `verifier_id`, `source` |
 
 Live stages of a running investigation: `GET /cases/{case_id}/events` (server-sent events, event name `pipeline`, data
@@ -105,6 +146,20 @@ After an automatic authorization or an approval the case is `AWAITING_OUTCOME`. 
    `outcome.success` and `outcome.exception_cleared`. A verified action whose exception remains
    (`remaining_symptoms` not empty), a failed check, or silence until `deadline_at` (72 simulated hours) sends the case
    to `HUMAN_REVIEW`.
+
+What to show while a case is `AWAITING_OUTCOME` (all times are on the simulation clock, `GET /simulation/status` → `as_of`;
+divide a simulated interval by `simulator.speed` for real seconds):
+
+| Field | Show |
+| --- | --- |
+| `executions[0].status`, `adapter_result_json.behaviour` | "Request sent": who received it. Not a result |
+| `executions[0].executed_at` | when it was sent |
+| `executions[0].expected_response_at` | "Answer expected by <time>" with a countdown against `as_of`. The simulator's schedule for this **type** of request (time to reach the field plus the upload lag, or the recipient's time to answer). It is the same whatever the field will answer and when it will not answer at all, so it reveals nothing about the result; say "expected", not "will arrive". `null` for `PRIORITIZE_NEXT_SESSION`, `REROUTE_TO_CONFIRMED_DESTINATION` and `RETURN_TO_SENDER` (answered in the depot's next delivery session or after a return journey: show "in the next delivery session" / "after the return journey") and for an execution that was not acknowledged |
+| `executions[0].deadline_at` | "Goes to a person if nothing confirms it by <time>" (72 simulated hours after execution) |
+| `outcome` | absent until the verifier has judged evidence recorded after the execution; then the result |
+
+Once `as_of` is past `expected_response_at` with no `outcome`, show "no answer yet; waiting until the deadline": silence
+is a possible answer and only the deadline turns it into a human review.
 
 An operator may ask the verifier to check now: `POST /cases/{case_id}/outcomes` with
 `{"expected_version": 9, "idempotency_key": "ui-verify-0009"}`. There is no field for success: nobody can declare it.

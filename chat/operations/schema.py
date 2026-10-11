@@ -39,7 +39,7 @@ FIELDS = {
                   "reason_code"},
     "OpsDecision": {"case_id", "recommendation_id", "decision", "actor_id", "expected_version", "idempotency_key", "source"},
     "OpsExecution": {"case_id", "decision_id", "action_code", "receipt_ref", "status", "mode",
-                     "action_type", "authority", "expected_result", "deadline_at", "idempotency_key", "target_device",
+                     "action_type", "authority", "expected_result", "deadline_at", "expected_response_at", "idempotency_key", "target_device",
                      "expected_evidence_json", "adapter_result_json", "executed_at", "closure", "case_opened_at",
                      "decided_risk", "permission_rule", "approval_context_json", "recommendation_id", "run_id"},
     "OpsOutcome": {"case_id", "execution_id", "action_code", "action_type", "success", "outcome_type", "evidence_ids",

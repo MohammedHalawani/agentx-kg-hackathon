@@ -57,6 +57,12 @@ UNDELIVERABLE = "The request could not be delivered: no known recipient system f
 DELAY = {"REQUEST_DEVICE_SYNC": 10, "REQUEST_RESCAN": 45, "REQUEST_REWEIGH": 60, "REQUEST_HUB_CHECK": 60,
          "INITIATE_CUSTODY_RECONCILIATION": 90, "REQUEST_ADDRESS_CONFIRMATION": 120, "PRIORITIZE_NEXT_SESSION": 15,
          "REQUEST_ADDITIONAL_EVIDENCE": 30, "REROUTE_TO_CONFIRMED_DESTINATION": 30, "RETURN_TO_SENDER": 60}
+# Minutes after a request reaches the field by which its answer, if one comes, has normally reached Suhail: the device
+# upload lag (20 to 90 s), or the recipient's time to answer (10 to 120 min). A fixed schedule per request type, so the
+# expected time shown with an execution is the same whatever the field will answer, and when it will not answer at all.
+# Requests answered in a depot's next delivery session, or by a return journey, have no fixed time (None).
+RESPONSE_ALLOWANCE = {"REQUEST_DEVICE_SYNC": 1, "REQUEST_ADDITIONAL_EVIDENCE": 1, "REQUEST_RESCAN": 2, "REQUEST_REWEIGH": 2,
+                      "REQUEST_HUB_CHECK": 2, "INITIATE_CUSTODY_RECONCILIATION": 2, "REQUEST_ADDRESS_CONFIRMATION": 121}
 ADDRESS_TOLERANCE_M = 150.0     # A recipient who lives further than this from the address in force is not found there.
 RETURN_TRANSIT_HOURS = 26       # A parcel sent back reaches its origin facility about a day later (2 h within one site).
 AVAILABILITY = {"HOME": .96, "IRREGULAR": .82}
@@ -142,6 +148,14 @@ class WorldOperationalSimulator:
         self.answered = {}    # execution key -> receipt (a re-dispatch after a restart answers once)
 
     # ------------------------------------------------------------------ entry
+    def expected_response_at(self, execution, now):
+        """When an answer to this kind of request, if one comes, is expected to have reached Suhail (simulation clock),
+        or None when the request type has no fixed time. From the request type alone: never from the physical state."""
+        action = execution.get("action_type")
+        if action not in DELAY or action not in RESPONSE_ALLOWANCE:
+            return None
+        return iso(instant(now) + timedelta(minutes=DELAY[action] + RESPONSE_ALLOWANCE[action]))
+
     def respond(self, execution, now):
         """Schedule the field's answer to an executed action; return the receipt (which says nothing about the answer)."""
         action = execution["action_type"]
