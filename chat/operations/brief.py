@@ -140,6 +140,31 @@ def evidence_label(node_id, nodes):
             "device_id": props.get("device_ref") or props.get("device_id"), "in_graph": True}
 
 
+HUMAN_FINDINGS = {
+    "parcel_located": ("the parcel was located", "عُثر على الطرد"),
+    "delivered_confirmed_by_person": ("the delivery is confirmed from the recorded proof", "التسليم مؤكَّد من الدليل المسجَّل"),
+    "returned_to_depot": ("the parcel is back at the depot", "عاد الطرد إلى المستودع"),
+    "parcel_not_found": ("the parcel was not found", "لم يُعثر على الطرد"),
+    "data_corrected": ("the record was corrected", "صُحِّح السجل"),
+}
+
+
+def human_finding(outcome):
+    """A person's recorded finding that did not close the case: what was recorded and what still stands, or None.
+    The finding is on record; the case stays with a person until nothing remains."""
+    if outcome.get("verification_status") != "HUMAN_FINDING":
+        return None
+    found_en, found_ar = HUMAN_FINDINGS.get(outcome.get("outcome_type"), ("a finding", "نتيجة"))
+    remaining = [_label(SYMPTOMS, code) for code in outcome.get("remaining_symptoms") or []]
+    still_en = _join([en[0].lower() + en[1:] for en, _ in remaining])
+    still_ar = "، ".join(ar or en for en, ar in remaining)
+    return {"outcome_type": outcome.get("outcome_type"), "remaining_symptoms": list(outcome.get("remaining_symptoms") or []),
+            "text_en": f"A person recorded a finding: {found_en}. The case is not resolved and stays with a person"
+                       + (f", because this still stands: {still_en}." if still_en else "."),
+            "text_ar": f"سجّل شخص نتيجة: {found_ar}. لم تُعالَج الحالة وتبقى لدى شخص" + (f"، لأن ما يلي ما زال قائمًا: {still_ar}." if still_ar else "."),
+            "short_en": "Finding recorded, not resolved", "short_ar": "سُجِّلت نتيجة دون معالجة"}
+
+
 def _place(facility, nodes):
     """A facility as an operator reads it: its display name with its id, or the id alone."""
     name = ((nodes.get(facility) or {}).get("properties") or {}).get("display_name")
@@ -314,7 +339,8 @@ def stage_facts(events, verification=None):
         facts.append({**base, "status": state, "fact_en": fact, "fact_ar": fact_ar})
     facts += list(running.values())
     if verification:
-        status = {"verified_resolved": "done", "awaiting_evidence": "running", "not_applicable": "not_reached"}.get(verification["status"], "rejected")
+        status = {"verified_resolved": "done", "awaiting_evidence": "running", "not_applicable": "not_reached",
+                  "human_finding_not_resolved": "rejected"}.get(verification["status"], "rejected")
         facts.append({"stage": "outcome", "iteration": None, "sequence": None, "status": status, "fact_en": verification["short_en"], "fact_ar": verification["short_ar"]})
     return facts
 
@@ -427,6 +453,10 @@ def build(detail):
     else:
         verification = {"status": "not_applicable", "text_en": "No request has been sent, so there is nothing to verify.",
                         "text_ar": "لم يُرسل أي طلب، فلا يوجد ما يُتحقق منه.", "short_en": "Nothing sent", "short_ar": "لم يُرسل شيء"}
+    recorded = None if resolved else human_finding(outcome)
+    if recorded:
+        verification = {"status": "human_finding_not_resolved", "remaining_symptoms": recorded["remaining_symptoms"],
+                        **{k: recorded[k] for k in ("text_en", "text_ar", "short_en", "short_ar")}}
     verification.update(outcome_type=outcome.get("outcome_type"), verified_at=outcome.get("verified_at"), verifier_reason=outcome.get("reason"))
 
     lines = [{"key": "problem", "label_en": "Problem", "label_ar": "المشكلة", "text_en": _join([s["label_en"] for s in symptoms]) + "." if symptoms else happened_en,
@@ -455,6 +485,8 @@ def build(detail):
     lines.append({"key": "action", "label_en": "Action taken", "label_ar": "الإجراء المتخذ", "text_en": action_en, "text_ar": action_ar})
     status_en = verification["text_en"] if resolved or waiting == "awaiting_new_evidence" else (step.get("text_en") or WAITING[waiting][0] + ".")
     status_ar = verification["text_ar"] if resolved or waiting == "awaiting_new_evidence" else (step.get("text_ar") or WAITING[waiting][1] + ".")
+    if recorded:
+        status_en, status_ar = recorded["text_en"], recorded["text_ar"]
     clock_paused = (detail.get("clock") or {}).get("state") == "paused" if detail.get("clock") else None
     stalled = bool(clock_paused) and waiting in ("awaiting_new_evidence", "awaiting_operational_action")
     if stalled:
