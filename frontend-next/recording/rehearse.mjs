@@ -50,6 +50,16 @@ await check("eight pipeline steps", async () => {
   const count = await page.locator(".pipeline-step").count();
   if (count !== 8) throw new Error(`${count} steps`);
 });
+await check("steps carry the backend's own state for pacing", async () => {
+  const count = await page.locator(".pipeline-step[data-reported]").count();
+  if (count !== 8) throw new Error(`${count} steps marked`);
+});
+await check("the rail can be held back and released", async () => {
+  await fire("suhail:rail", { cap: 2 });
+  await page.locator(".pipeline-step").nth(3).and(page.locator(".state-queued")).waitFor({ timeout: 4000 });
+  await fire("suhail:rail", { cap: null });
+  await page.waitForTimeout(300);
+});
 await check("a finished step carries a state", () => visible(page.locator(".pipeline-step").first().and(page.locator(".state-completed, .state-waiting, .state-failed"))));
 for (const name of ["Map focus", "Graph focus", "Balanced view"])
   await check(`view button ${name}`, async () => {

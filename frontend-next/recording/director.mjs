@@ -237,9 +237,10 @@ const leave = async () => {
   await post("/simulation/pause").catch(() => {});
 };
 const row = () => page.getByTestId(`data-row-${caseId}`);
+/** The cases that existed before the clock was started; the showcase case is a new one. */
+let before = new Set();
 async function findCase() {
-  const before = new Set((await api("/cases/queue?scope=all&limit=100")).items.map((item) => item.case_id));
-  for (let tries = 0; tries < 120; tries++) {
+  for (let tries = 0; tries < 60; tries++) {
     const found = (await api("/cases/queue?scope=all&limit=100")).items.find(
       (item) => item.shipment_id === MAP.shipment_id && !before.has(item.case_id),
     );
@@ -261,11 +262,11 @@ async function operations() {
   await page.locator(".environment-badge[data-dataset=synthetic]").waitFor({ timeout: 90000 });
   await page.mouse.move(pointer.x, pointer.y);
   await pause(1500);
+  before = new Set((await api("/cases/queue?scope=all&limit=100")).items.map((item) => item.case_id));
   // Backstage: the simulated clock starts at the speed the fixture was prepared for.
   await post("/simulation/start", { speed: Number(arg("speed", 60)), replay_mode: "timeline" });
   startedAt = new Date().toISOString();
   note(`clock started at ${startedAt}`);
-  await page.getByTestId("clock-control").filter({ hasText: /running/i }).waitFor({ timeout: 20000 });
   await click(page.getByRole("switch", { name: "Automatic investigation" }), { settle: 900 });
   note("Auto on, clock running");
 }
