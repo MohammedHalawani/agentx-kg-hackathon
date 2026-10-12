@@ -36,14 +36,14 @@ const TAIL = flag("tail"); // rehearsal of the closing part on an existing case;
 const QUESTION =
   arg("ask") ??
   (VIDEO === "A"
-    ? "What happened to this shipment, and how did Suhail resolve it?"
-    : "What new evidence arrived, what was confirmed, and what still needs a person?");
+    ? "What happened here, and how was it resolved?"
+    : "What new evidence arrived, and what still needs a person?");
 if (/:802[01]\b/.test(BASE)) throw new Error("the director runs on the staging backend only");
 mkdirSync(OUT, { recursive: true });
 
 const STEPS = ["Collect", "Graph", "Diagnose", "Precedent", "Recommend", "Review", "Disposition", "Outcome"];
 /** How long each step stays on screen once it is shown as finished (reading pace). */
-const BEAT = { Collect: 2000, Graph: 2200, Diagnose: 2000, Precedent: 2000, Recommend: 2200, Review: 2000, Disposition: 2200, Outcome: 2800 };
+const BEAT = { Collect: 1900, Graph: 2000, Diagnose: 2000, Precedent: 1900, Recommend: 2000, Review: 1900, Disposition: 1500, Outcome: 2400 };
 const cueOf = (index) => (MAP.stages ?? []).find((item) => item.stage === STEPS[index]) ?? {};
 const list = (value) => (value == null ? [] : Array.isArray(value) ? value : [value]);
 const log = [];
@@ -119,7 +119,7 @@ const cap = (count) => fire("suhail:rail", { cap: count });
 const pointer = { x: 1500, y: 620 };
 async function glide(x, y, ms) {
   const distance = Math.hypot(x - pointer.x, y - pointer.y);
-  const duration = ms ?? Math.min(1100, 380 + distance * 0.75);
+  const duration = ms ?? Math.min(820, 300 + distance * 0.6);
   const steps = Math.max(12, Math.round(duration / 16));
   const from = { ...pointer };
   for (let step = 1; step <= steps; step++) {
@@ -162,15 +162,15 @@ async function scrollTo(locator, block = "center", ms = 1400) {
   await pause(350);
 }
 /** Move to the control like a person, rest on it, press it. Scrolls slowly first if it is out of view. */
-async function click(locator, { settle = 550 } = {}) {
+async function click(locator, { settle = 380 } = {}) {
   await locator.waitFor({ timeout: 30000 });
   let box = await locator.boundingBox();
-  if (!box || box.y < 70 || box.y + box.height > 1040) {
+  if (!box || box.y < 0 || box.y + box.height > 1080) {
     await scrollTo(locator);
     box = await locator.boundingBox();
   }
   await glide(box.x + box.width / 2, box.y + box.height / 2);
-  await pause(320);
+  await pause(230);
   await page.mouse.down();
   await pause(90);
   await page.mouse.up();
@@ -179,7 +179,7 @@ async function click(locator, { settle = 550 } = {}) {
 const type = async (text, delay = 26) => page.keyboard.type(text, { delay });
 const mode = async (label) => {
   const button = page.getByRole("button", { name: label === "Balanced" ? "Balanced view" : label, exact: true });
-  if ((await button.getAttribute("aria-pressed")) !== "true") await click(button, { settle: 900 });
+  if ((await button.getAttribute("aria-pressed")) !== "true") await click(button, { settle: 500 });
 };
 /** Wait until the backend itself has reported a step (the page marks it, whatever the rail shows). */
 const reported = (index, states = "completed|waiting|failed") =>
@@ -192,22 +192,21 @@ const reported = (index, states = "completed|waiting|failed") =>
 /** One step: shown as finished on the rail, its records lit, held to be read. */
 async function play(index, live = {}) {
   const cue = { ...cueOf(index), ...live };
-  const modes = VIDEO === "A" && index === 2 ? list(cue.mode).filter((name) => name !== "Balanced") : [];
   const selects = list(cue.select);
   await cap(index + 1);
-  note(`step ${STEPS[index]} shown: ${cue.highlight?.length ?? 0} records lit, select ${selects.join(" then ") || "none"}`);
-  await pause(350);
+  note(`step ${STEPS[index]} shown: ${cue.highlight?.length ?? 0} records lit`);
+  await pause(150);
+  // The selected record centres the map on it; the lit records show its relationships.
   if (selects[0]) await fire("suhail:select", { id: selects[0] });
   if (cue.highlight?.length) await fire("suhail:graph-highlight", { caseId, ids: cue.highlight });
   await pause(cue.hold_ms ?? BEAT[STEPS[index]]);
-  // Diagnose in video A: the place on the map, then the relationships, then back.
-  for (const [beat, name] of modes.entries()) {
-    await mode(name);
-    if (selects[beat]) await fire("suhail:select", { id: selects[beat] });
-    if (cue.highlight?.length) await fire("suhail:graph-highlight", { caseId, ids: cue.highlight });
-    await pause(beat === 0 ? 1200 : 1800);
-  }
-  if (modes.length) await mode("Balanced");
+}
+/** While the model is diagnosing: the journey on the map, then the relationships in the graph. */
+async function views() {
+  await mode("Map focus");
+  await pause(1200);
+  await mode("Graph focus");
+  await pause(1500);
 }
 const settle = async (test, seconds) => {
   let current = await api(`/cases/${caseId}`);
@@ -241,11 +240,11 @@ const row = () => page.getByTestId(`data-row-${caseId}`);
 let before = new Set();
 async function findCase() {
   for (let tries = 0; tries < 60; tries++) {
+    if (tries) await pause(500);
     const found = (await api("/cases/queue?scope=all&limit=100")).items.find(
       (item) => item.shipment_id === MAP.shipment_id && !before.has(item.case_id),
     );
     if (found) return found.case_id;
-    await pause(1000);
   }
   throw new Error(`${MAP.shipment_id} did not open a case`);
 }
@@ -253,50 +252,55 @@ async function openCase() {
   await click(row(), { settle: 300 });
   await page.getByRole("heading", { level: 1 }).waitFor();
   await page.getByTestId("knowledge-graph").locator(".entity-node").first().waitFor({ timeout: 90000 });
-  await pause(1400);
+  await pause(900);
   note("case opened");
 }
 async function operations() {
-  await page.goto(`${BASE}/app/operations`);
+  // Before filming: the case page's code is loaded once, so opening a case later shows no blank frame.
+  await page.goto(`${BASE}/app/investigation`);
+  await page.waitForTimeout(2500);
+  await page.getByRole("link", { name: "Operations", exact: true }).first().click();
+  await page.locator(".environment-badge[data-dataset=synthetic]").waitFor({ timeout: 90000 });
+  await page.waitForTimeout(1200);
   await startFilm();
   await waiting(page.locator(".environment-badge[data-dataset=synthetic]").waitFor({ timeout: 90000 }), 0);
   await page.mouse.move(pointer.x, pointer.y);
-  await pause(1500);
+  await pause(1300);
   before = new Set((await api("/cases/queue?scope=all&limit=100")).items.map((item) => item.case_id));
   // Backstage: the simulated clock starts at the speed the fixture was prepared for.
   await post("/simulation/start", { speed: Number(arg("speed", 60)), replay_mode: "timeline" });
   startedAt = new Date().toISOString();
   note(`clock started at ${startedAt}`);
-  await click(page.getByRole("switch", { name: "Automatic investigation" }), { settle: 900 });
+  await click(page.getByRole("switch", { name: "Automatic investigation" }), { settle: 600 });
   note("Auto on, clock running");
 }
 async function canopus() {
-  await click(page.getByRole("button", { name: "Open Canopus assistant" }), { settle: 800 });
+  await click(page.getByRole("button", { name: "Open Canopus assistant" }), { settle: 600 });
   const panel = page.locator(".canopus-window");
-  await click(panel.getByRole("button", { name: "Expand conversation workspace" }), { settle: 700 });
+  await click(panel.getByRole("button", { name: "Expand conversation workspace" }), { settle: 500 });
   await click(panel.getByRole("textbox", { name: "Ask Canopus about this case" }), { settle: 250 });
-  await type(QUESTION, 24);
-  await pause(350);
+  await type(QUESTION, 12);
+  await pause(250);
   await click(panel.getByRole("button", { name: "Send question" }), { settle: 200 });
   note("question sent");
   await waiting(panel.getByTestId("canopus-answer").waitFor({ timeout: 150000 }), 0.6);
   note(`answer: ${(await panel.getByTestId("canopus-answer").locator(".chat-prose").innerText()).replace(/\s+/g, " ")}`);
-  await pause(Number(arg("answer-hold", 4500)));
+  await pause(Number(arg("answer-hold", 4000)));
   await click(panel.getByRole("button", { name: "Minimize Canopus conversation" }), { settle: 400 });
-  await glide(1180, 150, 700);
-  await pause(2200);
+  await glide(1180, 150, 600);
+  await pause(1800);
 }
 /** Video B: the newly arrived delivery records in the graph, the stored photograph, the operator's finding. */
 async function proofAndFinding(detail) {
   await mode("Graph focus");
   await fire("suhail:graph-highlight", { caseId, ids: MAP.proof_nodes ?? [MAP.photo_node] });
   await fire("suhail:select", { id: MAP.photo_node });
-  await pause(2400);
+  await pause(2000);
   // The stored photograph sits in the record's inspector, below the workspace: a slow scroll.
   const thumbnail = page.getByTestId("evidence-photo");
   await scrollTo(thumbnail, "center", 1700);
   await click(thumbnail, { settle: 400 });
-  await pause(4300);
+  await pause(4000);
   await click(page.getByTestId("photo-modal").getByRole("button", { name: /close/i }), { settle: 600 });
   const finding = page.getByRole("button", { name: "Record a person's finding" }).first();
   if (flag("finding") && !detail.outcome && (await finding.count())) {
@@ -326,7 +330,7 @@ async function proofAndFinding(detail) {
   }
   await cap(null);
   await scrollTo(page.getByRole("heading", { level: 1 }), "start", 1700);
-  await pause(1800);
+  await pause(1200);
   return detail;
 }
 
@@ -344,12 +348,14 @@ try {
   } else if (VIDEO === "A") {
     // ---- Video A: custody discrepancy, investigated and resolved -----------------------------
     await operations();
-    caseId = await findCase();
+    caseId = await waiting(findCase());
     await waiting(row().waitFor({ timeout: 120000 }));
-    await pause(1800);
+    await pause(1300);
     await openCase();
     for (let index = 0; index <= 5; index++) {
-      await waiting(reported(index), index === 2 ? 2.4 : 0.4);
+      // The diagnosis takes the model a while: the views are shown during that real wait.
+      if (index === 2) await views();
+      await waiting(reported(index));
       await play(index);
     }
     await waiting(reported(6, "completed|waiting|failed|running"));
@@ -391,19 +397,19 @@ try {
               confirmation: "Check scan recorded",
             };
         await fire("suhail:phone", { step: 1, ...phone });
-        await pause(3000);
-        await fire("suhail:phone", { step: 2 });
         await pause(2400);
+        await fire("suhail:phone", { step: 2 });
+        await pause(2100);
         if (toDriver) {
           await fire("suhail:phone", { step: 3 });
-          await pause(1100);
+          await pause(900);
         }
         await fire("suhail:phone", { step: 4 });
-        await pause(1800);
+        await pause(1500);
         detail = await waiting(outcome, 0.2);
-        await pause(700);
+        await pause(400);
         await fire("suhail:phone", { step: 0 });
-        await pause(1100);
+        await pause(900);
       } else {
         detail = await waiting(outcome);
       }
@@ -412,8 +418,9 @@ try {
         await waiting(reported(7));
         // The record that arrived in THIS take (its id differs from the reference run's).
         const arrived = detail.outcome.evidence_ids ?? [];
+        await mode("Balanced");
         await play(7, arrived.length
-          ? { select: arrived[0], highlight: [...(cueOf(7).highlight ?? []).filter((id) => !/-SIM-/.test(id)), ...arrived] }
+          ? { select: null, highlight: [...(cueOf(7).highlight ?? []).filter((id) => !/-SIM-/.test(id)), ...arrived] }
           : {});
       }
     }
@@ -422,14 +429,14 @@ try {
   } else {
     // ---- Video B: late delivery proof, re-examined, left with a person -----------------------
     await operations();
-    caseId = await findCase();
+    caseId = await waiting(findCase());
     await waiting(row().waitFor({ timeout: 120000 }));
-    await pause(2200);
+    await pause(1500);
     // The first investigation runs while the queue is on screen; it ends with a person.
     let detail = await waiting(settle(running, 300), 1.0);
     note(`first investigation ended in ${detail.workflow_state}`);
-    await glide(760, 420, 900);
-    await pause(2400);
+    await glide(760, 420, 800);
+    await pause(1700);
     const firstRun = detail.last_run_id;
     // Backstage: the build clone's record of the first investigation, then simulated time runs
     // to the next morning, when the driver's phone uploads its records and Suhail reopens the
@@ -459,16 +466,16 @@ try {
       await post("/simulation/start", { speed: 1, replay_mode: "timeline" }).catch(() => {});
       return current;
     })(), 0.3);
-    await pause(1600);
+    await pause(1200);
     await openCase();
     for (let index = 0; index <= 5; index++) {
-      await waiting(reported(index), index === 2 ? 2.2 : 0.4);
+      await waiting(reported(index), index === 2 ? 1.5 : 0.4);
       await play(index);
     }
     await waiting(reported(6, "completed|waiting|failed|running"));
     detail = await waiting(settle(running, 300));
     note(`second investigation ended in ${detail.workflow_state}`);
-    await play(6);
+    await play(6, { hold_ms: 2000 });
     detail = await proofAndFinding(detail);
     await canopus();
   }
@@ -494,5 +501,11 @@ frames.forEach(([name, at], index) => {
 if (frames.length) lines.push(`file 'frames-${VIDEO}/${frames.at(-1)[0]}'`);
 writeFileSync(join(OUT, `suhail-video-${VIDEO}-frames.txt`), `${lines.join("\n")}\n`);
 writeFileSync(join(OUT, `suhail-video-${VIDEO}-timeline.txt`), `${log.join("\n")}\n`);
-writeFileSync(join(OUT, `suhail-video-${VIDEO}-idle.json`), JSON.stringify(idle));
+// The film begins with its first frame, not with the page: times are shifted to the film's own clock.
+const filmStart = frames[0]?.[1] ?? 0;
+writeFileSync(
+  join(OUT, `suhail-video-${VIDEO}-idle.json`),
+  JSON.stringify(idle.map(([from, to]) => [+(from - filmStart).toFixed(2), +(to - filmStart).toFixed(2)]).filter(([, to]) => to > 0)),
+);
+writeFileSync(join(OUT, `suhail-video-${VIDEO}-film-start.txt`), String(filmStart));
 console.log(`recorded ${frames.length} frames over ${ended.toFixed(1)} s`);
