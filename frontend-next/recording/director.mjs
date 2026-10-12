@@ -286,7 +286,7 @@ if (detail.outcome)
 // The record that arrived in THIS take (its id differs from the reference run's).
 const arrived = detail.outcome?.evidence_ids ?? [];
 const outcomeCue = cueOf(7);
-await play(7, arrived.length
+if (detail.outcome) await play(7, arrived.length
   ? { select: arrived[0], highlight: [...(outcomeCue.highlight ?? []).filter((id) => !/-SIM-/.test(id)), ...arrived] }
   : {});
 const settled = (d) => /OPEN|INVESTIGATING|RECOMMENDATION_READY/.test(d.workflow_state);
