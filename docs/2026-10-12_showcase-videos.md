@@ -3,105 +3,109 @@
 12 October 2026. Both videos are recordings of Suhail's own interface on a synthetic logistics
 world. Nothing in them is SPL operational data, and no message left the simulation.
 
-## Video A: custody discrepancy, resolved (final)
+**The final files are `suhail-video-A-v2.mp4` and `suhail-video-B-v2.mp4`.** Every other video
+file in the folder (`suhail-video-A.mp4`, `suhail-video-A-take1.mp4`, `suhail-video-B.mp4`,
+`suhail-video-B-take1.mp4`, `suhail-video-B-take1-60s.mp4`) is an earlier, rejected version.
 
-- File: `suhail-video-A.mp4` (same recording as `suhail-video-A-take1.mp4`), 63 s, 1920×1080.
-- Shipment: SYN-SHP-000304 (Riyadh to Khobar). Recorded 12 Oct 2026, 02:22 UTC, branch commit `2d8e2ea`.
+Neither video has captions, subtitles, narration or any text added to the picture.
+
+## Staged in both videos
+
+- A curated shipment in a seeded synthetic world. The script moves the pointer and clicks.
+- The simulated clock is started at 60× and moved forward off screen ("Skip to next event").
+- **The eight pipeline steps are shown at reading pace.** In recording mode the rail shows one
+  more finished step only when the script allows it, about every two seconds, and never before
+  the backend has reported that step. The backend itself finishes some steps faster than that,
+  so the rail runs up to a few seconds behind it. In the product the rail follows the backend
+  directly.
+- Which records light up at each step and the Map focus / Graph focus views come from a list of
+  the case's own graph records. Every lit record is a node of that case's graph.
+- Waiting is removed, and some still moments are shortened, to stay under 60 seconds. Nothing
+  is reordered or sped up.
+
+## Video A: custody discrepancy, verified resolution
+
+- File: `suhail-video-A-v2.mp4`, 59.7 s, 1920×1080. Shipment SYN-SHP-000304 (Riyadh to Khobar),
+  case SYN-OPS-CASE-0e2e71c42dc052dccff3392b, recorded 12 Oct 2026 at 09:02 UTC.
 
 Genuinely executed by Suhail's backend during the take:
 - the monitor opened the case ("a handover of the parcel was not confirmed by the receiving side");
-- the GPT-OSS investigation (suspected cause: a gap in the custody chain, high confidence, after
-  7 checks), 5 verified precedents, the independent review (accepted);
-- the policy released a custody reconciliation request automatically; it was recorded for "the
-  facility holding the parcel (the request names no specific recipient)" and executed by the
-  simulator;
-- later the depot SYN-DEPOT-KHB-01 recorded the parcel in its custody, and the verifier resolved
-  the case: "Resolved: warehouse custody confirmed."
+- the GPT-OSS investigation (a gap in the custody chain), the precedent lookup and the
+  independent review, which accepted the finding;
+- the policy released a custody reconciliation request automatically. It was recorded for the
+  driver's app device SYN-DEV-APP-DRV-KHB-01-02 and executed by the simulator;
+- later the depot SYN-DEPOT-KHB-01 recorded the parcel in its custody and the verifier resolved
+  the case: warehouse custody confirmed;
 - the Canopus answer was generated in the take from the case's records.
 
-Staged for the recording:
-- a curated shipment in a seeded world; scripted clicks (Auto on, opening the case, the question);
-- the simulated clock was started at 60× and moved forward twice ("Skip to next event") off screen;
-- which records light up, the selected record and the Balanced / Map / Graph views were applied by
-  the recording script after each step finished, from a map of the case's own graph records;
-- **the phone is a picture**, drawn by the page in recording mode. It visualises the recorded
-  request to the facility's device ("Custody check required" … "Check scan recorded"). No
-  notification was sent to a driver or to anyone, and Suhail has no messaging integration;
-- 98.6 s of waiting were removed in 5 cuts (raw take 162.5 s). Nothing was reordered or sped up.
+Staged, in addition to the list above:
+- **the phone is a picture**, drawn by the page in recording mode only. It visualises the
+  request recorded for the driver's app device: the notification, the three options and the
+  choice "Scan package into warehouse". No notification was sent to a driver or to anyone;
+  Suhail has no messaging integration. The driver's choice is not a backend record: what the
+  backend recorded is the depot's custody record that arrived afterwards.
+- 80 s were removed in 12 cuts (raw take 139.5 s): five waits (the queue, the review, the
+  skipped time, the Canopus answer) and seven trims of 0.5 to 1 s inside still moments.
 
 How to describe it accurately:
 - Suhail found an unconfirmed custody handover, investigated it with the graph, had the finding
   independently reviewed, issued an authorised request in simulation, and closed the case only
   after later evidence was verified.
-- Do not say a driver was notified, or that the phone is a product feature.
-- Outcomes vary between runs: in three other runs the same shipment went through an operator's
-  approval once, to the driver's app device once, and to a person (unresolved) once on an aged world.
-- The investigation in the video took about 25 s of real time; the depot's answer arrives about
-  90 simulated minutes later.
+- Do not say a driver was notified or replied, or that the phone is a product feature.
+- Outcomes vary between runs of the same shipment. Of the runs made for this video, some
+  resolved automatically, one needed an operator's approval, and two went to a person unresolved.
 
-## Video B: late delivery proof, responsible escalation (final)
+## Video B: late delivery proof, responsible escalation
 
-- File: `suhail-video-B.mp4`, 65 s, 1920×1080. Earlier cuts of the same take, kept beside it:
-  `suhail-video-B-take1.mp4` (73 s) and `suhail-video-B-take1-60s.mp4` (63 s); both show the
-  closing page before two wording fixes and are superseded.
-- Shipment: SYN-SHP-000443 (Riyadh to Tabuk). Recorded 12 Oct 2026, 07:26 UTC.
+- File: `suhail-video-B-v2.mp4`, 59.7 s, 1920×1080. Shipment SYN-SHP-000443 (Riyadh to Tabuk),
+  case SYN-OPS-CASE-1d9d834dc3aaf712e44342aa, recorded 12 Oct 2026 at 09:58 UTC.
 
 Genuinely executed by Suhail's backend during the take:
-- the monitor opened the case (an expected step of the journey overdue); the first GPT-OSS
-  investigation suggested a custody gap, the independent review did not accept it, and the case
-  went to a person with nothing sent;
-- simulated time ran to the next morning, when the driver's phone uploaded its records: the
-  delivery attempt, the recipient's passed code, the handover, the delivery proof and the
-  photograph entered the case's graph, and Suhail reopened the case by itself;
-- the second investigation first suspected late device records and proposed a device sync; the
-  reviewer asked for a revision; it then concluded a conflict with the dispatch manifest, the
-  review accepted it, and it proposed a manifest review by a person. Suhail may not act on it alone;
-- the operator recorded "Delivery confirmed by a person" through the normal dialog, citing the
-  delivery proof record. The backend stored it as a person's finding (not as Suhail's automatic
-  verification) and kept the case open: "The case is not resolved and stays with a person, because
-  this still stands: the dispatch manifest and the custody records disagree and the delivery
-  session ended with this parcel unaccounted for."
-- the Canopus answer was generated by the model from the case's records (see the closing
-  sequence below for when).
+- the monitor opened the case and Suhail investigated it while the queue was on screen. That
+  first investigation ended with a person and nothing was sent;
+- simulated time ran to the next morning. The driver's phone uploaded its records: the delivery
+  attempt, the recipient's passed code, the handover, the delivery proof and the photograph
+  entered the case's graph, and Suhail reopened the case by itself;
+- Auto started the second investigation by itself. It concluded a conflict with the dispatch
+  manifest, the independent review accepted that, and it proposed a manifest review by a person.
+  This second investigation is the one whose eight steps are shown;
+- the closing status line is served by the backend from the case's records: "Delivery evidence
+  and the recipient's code received. The recorded proof supports delivery. Manifest discrepancy
+  remains. A journey step is still overdue. Delivery session not reconciled. Human review required."
+- the Canopus answer was generated in the take.
 
-Staged for the recording:
-- a curated shipment in a seeded world; scripted clicks (Auto on, opening the case, Investigate
-  now, opening the photograph, the operator's finding and its typed text, the question);
-- off screen: the clock started at 60×, Auto paused, and time moved forward ("Skip", up to 24 hours);
-- highlights, selected records and views were applied by the script from a list of the
-  shipment's own graph records;
+Staged, in addition to the list above:
+- the film stays on the queue during the first investigation and opens the case only for the
+  second one, so the pipeline is seen once. Auto started that second investigation by itself a
+  few seconds after the case page was opened; that wait is removed;
 - the photograph is an illustration supplied for this synthetic shipment and served from the
-  photo record's stored image; it is not a photograph of a real delivery;
-- **the three-line caption** ("Delivery evidence verified. Manifest discrepancy remains. Human
-  review required.") was drawn in the edit. It is not part of the application;
-- **the closing sequence** (the last 17 s: the case page with the delivery records lit, the
-  Canopus question and answer, the caption) was filmed about fifteen minutes after the take, on
-  the same case in the state the take left it. Between the take and this sequence two served
-  sentences were corrected in the backend (the "Next best action" line, and what Canopus is told
-  about a person's finding) and the interface's Outcome step was fixed to show the recorded
-  finding. No case record changed; asking Canopus writes nothing to the case. The question asked
-  was "What new evidence arrived, what was confirmed, and what still needs a person?";
-- waiting and holds were removed in cuts (raw take 219.7 s, closing sequence 26.5 s). Nothing
-  was reordered or sped up, apart from the closing sequence being a later recording as stated.
+  photo record's stored image. It is not a photograph of a real delivery;
+- 243 s of waiting were removed in 7 cuts (raw take 321 s: the first investigation, the skipped
+  day, the second investigation's waits, the Canopus answer), then a further 17.9 s in ten trims
+  of still moments, including one blank frame while the case page loaded.
 
 How to describe it accurately:
-- Suhail flagged an overdue shipment, investigated, was challenged by its own reviewer, received
-  new evidence, re-examined the case by itself, and correctly left the remaining manifest
-  conflict to a person. It did not resolve the case and the video does not say it did.
-- "Verified" in the caption means: a person confirmed the delivery against a proof record that
-  passed the system's corroboration check. It is not Suhail's automatic outcome verification.
-- Do not say Suhail requested the device sync: in this take it proposed one, the reviewer sent
-  it back, and nothing was sent. The phone's records arrived on their own the next morning.
-- The photograph is shown near its native size (350 px).
+- Suhail flagged an overdue shipment, investigated, received new evidence, re-examined the case
+  by itself, and correctly left the remaining manifest conflict to a person. The case is not
+  resolved and the video does not say it is.
+- No operator finding is recorded in this video, and no request was sent by Suhail. The phone's
+  records arrived on their own the next morning.
+- "The recorded proof supports delivery" means the proof record passed the system's
+  corroboration check (a delivered attempt with the recipient's passed code and a handover). It
+  is not Suhail's automatic outcome verification, and the photograph plays no part in that check.
 
 ## Rerun
 
 See `frontend-next/recording/README.md`: seed, `rehearse.mjs`, `director.mjs`, `finish.mjs`.
+A take depends on the model, so the same shipment can end differently between runs; a wrong
+ending means a reseed and another take.
 
-## Cut lists of the delivered files (seconds of the raw take, removed)
+## Cut lists of the delivered files (seconds of the film, removed)
 
-- Video A: only the waits the director marked: 9.44-10.21, 20.09-23.65, 36.29-37.16, 46.66-116.92, 129.86-153.02.
-- Video B, main take: marked waits 21.15-24.25, 42.02-126.54, 135.78-172.14, 207.65-210.48, plus
-  0-2.4, 8.2-9.8, 16.6-19.0, 25.8-27.3, 29.5-33.2, 34.0-36.4, 39.5-42.0, 126.9-128.3,
-  131.5-135.8, 188.0-190.5, 191.5-194.5, and everything after 199.3 (replaced by the closing sequence).
-- Video B, closing sequence (26.5 s raw): kept 0-1.0, 3.2-8.55, 12.38-16.0, 17.3-24.5; caption from 11.7 s of the kept film.
+- Video A (raw film 139.5 s): waits 3.65-8.73, 9.53-11.11, 37.34-42.53, 51.82-110.93,
+  125.9-130.33; trims 0-0.5, 8.73-9.53, 22.58-23.08, 25.28-25.78, 46.38-46.88, 114.08-114.88,
+  138.18-139.18.
+- Video B (raw film 321.0 s): waits 3.65-9.24, 10.04-11.12, 13.62-49.24, 56.49-231.98,
+  236.56-249.44, 255.69-264.52, 306.73-310.65, giving 77.6 s; then, in seconds of that 77.6 s
+  film, trims 0-0.6, 9.5-13.3, 16.6-17.7, 34.3-37.3, 54.3-56.3, 58.6-59.8, 61.3-63.0,
+  69.5-71.3, 74.3-76.8, and the last 0.4 s.
