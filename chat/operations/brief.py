@@ -140,6 +140,50 @@ def evidence_label(node_id, nodes):
             "device_id": props.get("device_ref") or props.get("device_id"), "in_graph": True}
 
 
+def _place(facility, nodes):
+    """A facility as an operator reads it: its display name with its id, or the id alone."""
+    name = ((nodes.get(facility) or {}).get("properties") or {}).get("display_name")
+    return f"{name} ({facility})" if name else str(facility)
+
+
+def resolution(outcome, nodes):
+    """What the verifier confirmed, named from the evidence the verified outcome itself cites:
+    {"kind", "text_en", "text_ar", "short_en", "short_ar", "facility_id"}. Custody confirmed at a facility, a parcel
+    located by a facility's scan, or a delivery whose proof carries the recipient's passed authentication; anything else is the general sentence. A photo
+    or a position alone never makes a delivery "verified" here: only the authenticated proof the verifier accepted."""
+    cited = [nodes[i] for i in outcome.get("evidence_ids") or [] if i in nodes]
+    custody = [n for n in cited if n.get("kind") == "CustodyEvent"]
+    props = lambda n: n.get("properties") or {}
+    if outcome.get("outcome_type") == "custody_reconciled":
+        facility = next((props(n).get("to_id") or props(n).get("facility_id") for n in custody), None)
+        where_en = f"{_place(facility, nodes)} recorded the parcel in its custody after the request" if facility else             "A facility recorded the parcel in its custody after the request"
+        return {"kind": "custody_confirmed", "facility_id": facility,
+                "text_en": f"Resolved: warehouse custody confirmed. {where_en}, and the verifier confirmed it.",
+                "text_ar": "تمت المعالجة: تأكدت حيازة المستودع. سجّلت المنشأة الطرد في حيازتها بعد الطلب وأكد المدقق ذلك.",
+                "short_en": "Verified: warehouse custody confirmed", "short_ar": "تم التحقق: تأكدت حيازة المستودع"}
+    if outcome.get("outcome_type") == "parcel_located":
+        facility = next((props(n).get("facility_id") for n in cited if n.get("kind") == "ScanEvent" and props(n).get("facility_id")), None)
+        where_en = f"{_place(facility, nodes)} scanned the parcel after the request" if facility else "A facility scanned the parcel after the request"
+        return {"kind": "parcel_located", "facility_id": facility,
+                "text_en": f"Resolved: parcel located at the warehouse. {where_en}, and the verifier confirmed it.",
+                "text_ar": "تمت المعالجة: عُثر على الطرد في المستودع. مسحت المنشأة الطرد بعد الطلب وأكد المدقق ذلك.",
+                "short_en": "Verified: parcel located at the warehouse", "short_ar": "تم التحقق: الطرد موجود في المستودع"}
+    for event in custody:
+        if props(event).get("event_type") != "DELIVERED":
+            continue
+        proof = nodes.get(props(event).get("proof_id")) or {}
+        authentication = nodes.get(props(proof).get("authentication_id")) or {}
+        if proof.get("kind") == "DeliveryProof" and props(authentication).get("result") == "PASS":
+            return {"kind": "delivery_verified", "facility_id": None,
+                    "text_en": "Resolved: delivery status verified. The delivery record, confirmed by the recipient's code, reached Suhail "
+                               "after the request, and the verifier confirmed it.",
+                    "text_ar": "تمت المعالجة: تم التحقق من حالة التسليم. وصل سجل التسليم المؤكَّد برمز المستلم إلى سهيل بعد الطلب وأكده المدقق.",
+                    "short_en": "Verified: delivery status confirmed", "short_ar": "تم التحقق: تأكدت حالة التسليم"}
+    return {"kind": "problem_cleared", "facility_id": None,
+            "text_en": "Resolved: the verifier confirmed from later evidence that the problem is cleared.",
+            "text_ar": "تمت المعالجة: أكد المدقق من أدلة لاحقة زوال المشكلة.", "short_en": "Verified: problem cleared", "short_ar": "تم التحقق: زالت المشكلة"}
+
+
 def action_explanation(execution, outcome, nodes):
     """What was sent, to whom (as far as the record says), what evidence is awaited and until when. Always simulated."""
     action = execution.get("action_type")
@@ -150,8 +194,11 @@ def action_explanation(execution, outcome, nodes):
     node = nodes.get(device) if device else None
     facility = ((node or {}).get("properties") or {}).get("facility_id")
     if device:
+        # A facility's device stands for the facility: the request goes to the people there, so the facility is named.
         recipient = {"known": True, "kind": "device", "id": device, "facility_id": facility,
-                     "label_en": f"device {device}" + (f" at {facility}" if facility else ""), "label_ar": f"الجهاز {device}"}
+                     "facility_name": ((nodes.get(facility) or {}).get("properties") or {}).get("display_name") if facility else None,
+                     "label_en": (f"{_place(facility, nodes)}, through its device {device}" if facility else f"device {device}"),
+                     "label_ar": f"الجهاز {device}"}
     else:
         recipient = {"known": False, "kind": None, "id": None, "facility_id": None,
                      "label_en": "the facility holding the parcel (the request names no specific recipient)",
@@ -354,8 +401,9 @@ def build(detail):
     actions = [action_explanation(e, outcome, nodes) for e in detail.get("executions") or []]
     latest = actions[0] if actions else None
     if resolved:
-        verification = {"status": "verified_resolved", "text_en": "Resolved: the verifier confirmed from later evidence that the problem is cleared.",
-                        "text_ar": "تمت المعالجة: أكد المدقق من أدلة لاحقة زوال المشكلة.", "short_en": "Verified: problem cleared", "short_ar": "تم التحقق: زالت المشكلة"}
+        confirmed = resolution(outcome, nodes)
+        verification = {"status": "verified_resolved", "resolution": confirmed["kind"], "facility_id": confirmed["facility_id"],
+                        **{k: confirmed[k] for k in ("text_en", "text_ar", "short_en", "short_ar")}}
     elif latest and latest["status"] == "not_delivered" and not latest["outcome"]:
         verification = {"status": "not_delivered", "text_en": "The request could not be delivered, so there is nothing to verify.",
                         "text_ar": "تعذّر تسليم الطلب، فلا يوجد ما يُتحقق منه.", "short_en": "Request not delivered", "short_ar": "تعذّر تسليم الطلب"}
