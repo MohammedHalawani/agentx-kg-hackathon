@@ -334,6 +334,35 @@ if (VIDEO === "B" && MAP.photo_node) {
     await page.getByRole("heading", { level: 1 }).scrollIntoViewIfNeeded();
     await mode("balanced");
   }
+  const finding = page.getByRole("button", { name: "Record a person's finding" });
+  if (process.argv.includes("--finding") && !detail.outcome && hasPhoto(detail) && (await finding.count())) {
+    // The operator's own step, through the normal control. The backend records it as a
+    // person's finding and decides the case's state itself; the film shows what it serves.
+    await click(finding.first());
+    const dialog = page.getByRole("dialog");
+    await pause(900);
+    await dialog.getByLabel("Human outcome type").click();
+    await pause(500);
+    await click(page.getByRole("option", { name: "Delivery confirmed by a person" }));
+    await dialog.locator("#human-finding").pressSequentially(
+      MAP.human_finding ?? "Proof photograph and recipient code checked against the delivery record: delivered.",
+      { delay: 14 },
+    );
+    const boxes = dialog.locator(".human-evidence label");
+    const proof = boxes.filter({ hasText: /PROOF|ATT-|HANDOFF|AUTH/ });
+    await click(((await proof.count()) ? proof : boxes).first());
+    await pause(700);
+    await click(dialog.getByRole("button", { name: "Record finding" }));
+    await pause(2500);
+    const refused = await dialog.getByRole("alert").innerText().catch(() => "");
+    if (refused) {
+      note(`the backend refused the finding: ${refused}`);
+      await click(dialog.getByRole("button", { name: "Cancel" }));
+    }
+    detail = await api(`/cases/${caseId}`);
+    note(`after the person's finding: ${detail.workflow_state}; ${detail.brief?.lines?.find((line) => line.key === "status")?.text_en ?? ""}`);
+    await pause(1500);
+  }
 }
 await pause(2600);
 
