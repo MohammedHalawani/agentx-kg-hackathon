@@ -401,6 +401,12 @@ const DETAIL_KEYS = [
  */
 function mediaOf(node: ApiEvidenceNode): string | undefined {
   const p = node.properties;
+  // The backend's stored image for a record: media = {url, content_type, ...} on the node.
+  const stored = ((node as { media?: unknown }).media ?? p.media) as
+    | { url?: unknown }
+    | undefined;
+  const url = text(stored?.url);
+  if (/^(\/|https?:\/\/)/.test(url)) return url;
   for (const key of ["media_url", "image_url", "photo_url", "media_ref"]) {
     const value = text(p[key]);
     if (/^(\/|https?:\/\/)/.test(value)) return value;
