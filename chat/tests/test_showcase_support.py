@@ -93,6 +93,42 @@ class HumanFindingTests(unittest.TestCase):
         self.assertIsNone(brief.human_finding({}))
 
 
+class DeliveryEvidenceStatusTests(unittest.TestCase):
+    ATTEMPT = {"id": "T1", "kind": "DeliveryAttempt", "properties": {"disposition": "DELIVERED"}}
+    HANDOVER = {"id": "H1", "kind": "HandoffEvidence", "properties": {}}
+    LATE = {"id": "P1", "kind": "DeliveryProof", "properties": {"attempt_id": "T1", "authentication_id": "A1", "handoff_id": "H1",
+                                                              "occurred_at": "2026-09-19T05:50:00+00:00", "recorded_at": "2026-09-20T05:31:00+00:00"}}
+
+    def case(self, state, nodes, symptoms=("MANIFEST_CUSTODY_CONFLICT", "SESSION_END_UNRECONCILED")):
+        from tests.test_canopus import detail
+        case = detail(state)
+        case.update(opened_at="2026-09-19T08:45:00+00:00", symptom_codes=list(symptoms))
+        case["evidence"] = {"nodes": list(nodes)}
+        b = brief.build(case)
+        return b, next(line["text_en"] for line in b["lines"] if line["key"] == "status")
+
+    def test_a_case_with_a_person_says_what_arrived_what_it_supports_and_what_still_stands(self):
+        b, status = self.case("ESCALATED", [self.LATE, self.ATTEMPT, PASSED, self.HANDOVER, PHOTO])
+        self.assertEqual(status, "Delivery evidence and the recipient's code received. The recorded proof supports delivery. Manifest discrepancy remains. "
+                                 "Delivery session not reconciled. Human review required.")
+        self.assertFalse(b["resolved"])
+        for word in ("resolved", "verified", "confirmed", "closed"):
+            self.assertNotIn(word, status.lower())
+        self.assertTrue(next(line["text_ar"] for line in b["lines"] if line["key"] == "status"))
+        self.assertIn("Human review required.", self.case("HUMAN_REVIEW", [self.LATE, self.ATTEMPT, PASSED, self.HANDOVER])[1])
+
+    def test_incomplete_or_earlier_evidence_leaves_the_usual_status(self):
+        failed = {**PASSED, "properties": {"result": "FAIL"}}
+        attempted = {**self.ATTEMPT, "properties": {"disposition": "FAILED"}}
+        early = {**self.LATE, "properties": {**self.LATE["properties"], "recorded_at": "2026-09-19T05:51:00+00:00"}}
+        for nodes in ([self.LATE, self.ATTEMPT, failed, self.HANDOVER], [self.LATE, attempted, PASSED, self.HANDOVER], [self.LATE, self.ATTEMPT, PASSED],
+                      [early, self.ATTEMPT, PASSED, self.HANDOVER], [PHOTO, PASSED, self.ATTEMPT, self.HANDOVER]):
+            self.assertNotIn("supports delivery", self.case("ESCALATED", nodes)[1])
+        # Only for a case that is with a person: no other state takes this line.
+        for state in ("OPEN", "INVESTIGATING", "AWAITING_OUTCOME", "NEEDS_EVIDENCE"):
+            self.assertNotIn("supports delivery", self.case(state, [self.LATE, self.ATTEMPT, PASSED, self.HANDOVER])[1], state)
+
+
 class CanopusFactsTests(unittest.TestCase):
     def test_delivery_evidence_is_described_from_the_records_and_never_called_verified(self):
         from operations import canopus

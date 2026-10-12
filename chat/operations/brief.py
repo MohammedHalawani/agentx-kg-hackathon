@@ -175,6 +175,32 @@ def human_finding(outcome):
             "short_en": "Finding recorded, not resolved", "short_ar": "سُجِّلت نتيجة دون معالجة"}
 
 
+def late_delivery_evidence(detail, nodes):
+    """True when the case's graph holds a complete delivery record that reached Suhail after the case opened: a
+    delivery proof bound to a delivered attempt, with the recipient's passed code and a handover record. Read from the
+    records' own fields. It says the evidence supports delivery; it is not the verifier's decision."""
+    opened = str(detail.get("opened_at") or "")
+    props = lambda node: (node or {}).get("properties") or {}
+    for node in nodes.values():
+        p = props(node)
+        if node.get("kind") != "DeliveryProof" or not opened or str(p.get("recorded_at") or "") <= opened:
+            continue
+        if (props(nodes.get(p.get("attempt_id"))).get("disposition") == "DELIVERED" and props(nodes.get(p.get("authentication_id"))).get("result") == "PASS"
+                and p.get("handoff_id") in nodes):
+            return True
+    return False
+
+
+def with_a_person_after_delivery_evidence(codes):
+    """The status of a case that is with a person while complete delivery evidence has arrived: what was received, what
+    it supports, each problem that still stands, and that a person must review. Never reads as resolved."""
+    standing = [STILL_STANDS.get(code) or tuple(f"Still stands: {t}" if i == 0 else f"ما زال قائمًا: {t or code}" for i, t in enumerate(_label(SYMPTOMS, code)))
+                for code in codes]
+    return (" ".join(part + "." for part in ["Delivery evidence and the recipient's code received", "The recorded proof supports delivery",
+                                             *(en for en, _ in standing), "Human review required"]),
+            " ".join(part + "." for part in ["وصل دليل التسليم ورمز المستلم", "الدليل المسجَّل يدعم التسليم", *(ar for _, ar in standing), "تلزم مراجعة شخص"]))
+
+
 def _place(facility, nodes):
     """A facility as an operator reads it: its display name with its id, or the id alone."""
     name = ((nodes.get(facility) or {}).get("properties") or {}).get("display_name")
@@ -497,6 +523,8 @@ def build(detail):
     status_ar = verification["text_ar"] if resolved or waiting == "awaiting_new_evidence" else (step.get("text_ar") or WAITING[waiting][1] + ".")
     if recorded:
         status_en, status_ar = recorded["text_en"], recorded["text_ar"]
+    elif state in ("ESCALATED", "HUMAN_REVIEW") and late_delivery_evidence(detail, nodes):
+        status_en, status_ar = with_a_person_after_delivery_evidence(codes)
     clock_paused = (detail.get("clock") or {}).get("state") == "paused" if detail.get("clock") else None
     stalled = bool(clock_paused) and waiting in ("awaiting_new_evidence", "awaiting_operational_action")
     if stalled:
