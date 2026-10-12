@@ -118,9 +118,8 @@ overlay added for the recording, above the served status line. What each part re
 by a person against a proof that passed the system's corroboration check; it was not verified automatically by the
 outcome verifier, and the photograph played no part in the check. "Manifest discrepancy remains" is one of the two
 problems the served line names (the other is the delivery session ending unreconciled). "Human review required" is
-the case's state. The served status line reads: "A person recorded a finding: the delivery is confirmed from the
-recorded proof. The case is not resolved and stays with a person, because this still stands: the dispatch manifest
-and the custody records disagree and the delivery session ended with this parcel unaccounted for."
+the case's state. The served status line reads: "Delivery confirmed by a person from the recorded proof. Manifest
+discrepancy remains. Delivery session not reconciled. Human review required."
 
 What did not happen, so it must not be claimed: Suhail did not issue a device sync, did not resolve the case, and
 in two earlier genuine takes of the same shipment the first investigation was rejected twice by the reviewer (a
