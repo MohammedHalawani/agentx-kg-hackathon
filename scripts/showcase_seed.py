@@ -24,7 +24,7 @@ from world_demo_session import ApiError, Failed, Http, export_session, instant, 
 VIDEOS = {
     "A": {"shipment": "SYN-SHP-000304", "ready_at": "2026-09-16T07:20:00+00:00",
           "shipments": "SYN-SHP-000304,SYN-SHP-000269,SYN-SHP-000121,SYN-SHP-000599"},
-    "B": {"shipment": "SYN-SHP-000443", "ready_at": "2026-09-19T08:20:00+00:00",
+    "B": {"shipment": "SYN-SHP-000443", "ready_at": "2026-09-19T08:38:00+00:00",
           "shipments": "SYN-SHP-000443,SYN-SHP-000050,SYN-SHP-000042,SYN-SHP-000460"},
 }
 COARSE_MARGIN = timedelta(hours=2, minutes=20)   # The fast pre-roll stops this long before ready_at (it overshoots by up to ~1.5 h).
