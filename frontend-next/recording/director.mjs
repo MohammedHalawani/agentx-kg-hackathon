@@ -174,33 +174,43 @@ for (let tries = 0; !(detail.executions ?? []).length && tries < 90; tries++) {
 }
 note(`execution ${detail.executions?.[0]?.status ?? "none"}`);
 await play(6);
+/**
+ * Backstage: simulated time moves until the awaited answer arrives. The backend refuses a skip
+ * while any investigation is running (Auto keeps working the queue), so it is asked again.
+ */
+async function bringOutcome() {
+  for (let tries = 0; tries < 60; tries++) {
+    const current = await api(`/cases/${caseId}`);
+    if (current.outcome || !/AWAITING_OUTCOME|ACTION_INITIATED/.test(current.workflow_state)) return current;
+    const response = await post("/simulation/skip", {});
+    const body = await response.json().catch(() => ({}));
+    note(`skip ${response.status}: ${JSON.stringify(body).slice(0, 140)}`);
+    if (response.status !== 200) await pause(4000);
+  }
+  return api(`/cases/${caseId}`);
+}
+const outcome = bringOutcome();
 if (VIDEO === "A" && MAP.phone) {
   const { title, body, options, confirmation } = MAP.phone;
   const chosen = Math.max(0, typeof MAP.phone.chosen === "number" ? MAP.phone.chosen : options.indexOf(MAP.phone.chosen));
   await fire("suhail:phone", { step: 1, title: title.replace(/^Suhail\s*[—-]\s*/, ""), body, options, chosen, confirmation });
-  await pause(3600);
+  await pause(3400);
   await fire("suhail:phone", { step: 2 });
   await pause(2600);
   await fire("suhail:phone", { step: 3 });
   await pause(1100);
   await fire("suhail:phone", { step: 4 });
-  // Backstage, while the confirmation shows: simulated time moves so the staged scan arrives.
-  const skipped = post("/simulation/skip", {}).then((response) => response.json().catch(() => ({})));
-  await pause(2600);
+  await pause(2200);
+  detail = await waiting(outcome);
+  await pause(500);
   await fire("suhail:phone", { step: 0 });
-  note(`skip: ${JSON.stringify(await skipped).slice(0, 160)}`);
+  await pause(900);
 } else {
-  const skipped = await post("/simulation/skip", {}).then((response) => response.json().catch(() => ({})));
-  note(`skip: ${JSON.stringify(skipped).slice(0, 160)}`);
+  detail = await waiting(outcome);
 }
 // ---- 8. Outcome ---------------------------------------------------------------------------
-for (let tries = 0; tries < 8; tries++) {
-  detail = await api(`/cases/${caseId}`);
-  if (detail.outcome || detail.workflow_state !== "AWAITING_OUTCOME") break;
-  await post("/simulation/skip", {});
-}
 note(`outcome ${detail.outcome ? `${detail.outcome.verification_status} success ${detail.outcome.success}` : "none"}; state ${detail.workflow_state}`);
-await page.locator(".pipeline-step").nth(7).and(page.locator(".state-completed, .state-waiting")).waitFor({ timeout: 120000 });
+await waiting(page.locator(".pipeline-step").nth(7).and(page.locator(".state-completed, .state-waiting")).waitFor({ timeout: 120000 }));
 // The record that arrived in THIS take (its id differs from the reference run's).
 const arrived = detail.outcome?.evidence_ids ?? [];
 const outcomeCue = cueOf(7);
@@ -234,7 +244,7 @@ await waiting(panel.getByTestId("canopus-answer").waitFor({ timeout: 150000 }));
 note(`answer: ${(await panel.getByTestId("canopus-answer").locator(".chat-prose").innerText()).replace(/\s+/g, " ")}`);
 await pause(6500);
 await click(panel.getByRole("button", { name: "Minimize Canopus conversation" }));
-await pause(1400);
+await pause(3200);
 note("end of take");
 
 // ---- Leave the backend as it should be: Auto off, clock paused ----------------------------
