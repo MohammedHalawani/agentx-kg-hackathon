@@ -35,6 +35,20 @@ class NextStepTests(unittest.TestCase):
             self.assertNotIn("to finish", step["text_en"])
         self.assertIn("to finish", next_step(case("INVESTIGATING"))["text_en"])
 
+    def test_an_escalated_case_is_not_called_an_unaccepted_investigation_when_it_is_not_one(self):
+        rejected = case("ESCALATED")
+        self.assertEqual(step_code(rejected), "REVIEW_UNACCEPTED_INVESTIGATION")
+        self.assertNotIn("re-analyse", next_step(rejected)["text_en"])                # Re-analysis is not offered in this state.
+        accepted = case("ESCALATED", verdict="ACCEPT")
+        accepted["review"]["verdict"] = "accept"
+        self.assertEqual(step_code(accepted), "INVESTIGATE_AND_RECORD_FINDING")      # Accepted, and reserved for a person by policy.
+        finding = {"execution_id": None, "verification_status": "HUMAN_FINDING", "success": False, "outcome_type": "delivered_confirmed_by_person"}
+        for base in (case("ESCALATED", outcome=finding), {**accepted, "outcome": finding}):
+            step = next_step(base)
+            self.assertEqual((step["code"], step["actor"], step["resolved"]), ("REVIEW_WHAT_STILL_STANDS", "operator", False))
+            self.assertIn("A person's finding is on record, but the case is not resolved", step["text_en"])
+            self.assertNotIn("did not accept", step["text_en"])
+
     def test_approval_is_offered_only_when_the_recorded_approval_check_allows_it(self):
         self.assertEqual(step_code(case("AWAITING_APPROVAL", approvable=True)), "APPROVE_OR_REJECT")
         self.assertEqual(step_code(case("AWAITING_APPROVAL", approvable=False)), "INVESTIGATE_AND_RECORD_FINDING")

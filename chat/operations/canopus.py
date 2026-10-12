@@ -40,7 +40,9 @@ SYSTEM_PROMPT = (
     "rule ids, no words in capitals with underscores, no state names in capitals, no record ids. You may name the shipment, a facility or a "
     "device by its identifier; refer to any other record by describing it ('the sorter scan at 20:23'). A suspected cause is a hypothesis unless "
     "suspected_cause.status is 'accepted': say 'the investigation suggests' and, when the review did not accept it, say so plainly and why. "
-    "Requests are simulated: say so when you describe one being sent. Never say the case is resolved, fixed or closed unless `resolved` is "
+    "Requests are simulated: say so when you describe one being sent. When `a_person_recorded` or `delivery_evidence_on_record` is "
+    "present and the operator asks what happened or where the case stands, include it: what evidence is on record, what a person recorded, "
+    "and what still stands. Never say the case is resolved, fixed or closed unless `resolved` is "
     "true. You cannot perform, approve or authorize anything: when asked to act, say what the operator can do now from "
     "`what_the_operator_can_do_now`, or that it is not possible and why from `what_is_not_possible_now`. When, and only when, the operator "
     "asks for an agent's original message or exact words, put the ids of the matching `quotes` entries in quote_ids (prefer `conclusion` and "
@@ -141,6 +143,27 @@ def _clip(text, limit=500):
     return text if len(text) <= limit else text[:limit] + "…"
 
 
+def delivery_evidence(detail):
+    """One sentence on the delivery evidence in the case's graph, from the records' own fields, or None when there is no
+    delivery proof. It says what is recorded; it does not say the delivery is verified."""
+    nodes = {n.get("id"): n for n in (detail.get("evidence") or {}).get("nodes") or []}
+    for node in nodes.values():
+        if node.get("kind") != "DeliveryProof":
+            continue
+        p = node.get("properties") or {}
+        code = (nodes.get(p.get("authentication_id")) or {}).get("properties") or {}
+        parts = ["a delivery proof" + (f" made at {str(p.get('occurred_at'))[:16].replace('T', ' ')} UTC" if p.get("occurred_at") else "")]
+        if code.get("result"):
+            parts.append("the recipient's code " + ("passed" if code["result"] == "PASS" else "did not pass"))
+        if p.get("handoff_id") in nodes:
+            parts.append("a handover record")
+        if any(n.get("kind") == "PhotoEvidence" for n in nodes.values()):
+            parts.append("a delivery photo record")
+        late = bool(node.get("after_investigation")) or bool(p.get("recorded_at") and p.get("occurred_at") and str(p["recorded_at"])[:10] > str(p["occurred_at"])[:10])
+        return "On record: " + ", ".join(parts) + (". These records reached Suhail late, after the case was opened." if late else ".")
+    return None
+
+
 def context_of(detail, quotes, offers):
     """The recorded facts the model is given for one question: the case brief first, in operator language."""
     b = detail.get("brief") or {}
@@ -155,6 +178,9 @@ def context_of(detail, quotes, offers):
                            "recipient": (a.get("recipient") or {}).get("label_en"), "waiting_for": (a.get("awaiting") or {}).get("text_en"),
                            "deadline": a.get("deadline_at"), "explanation": a.get("text_en")} for a in b.get("actions") or []],
         "verification": (b.get("verification") or {}).get("text_en"),
+        # A person's recorded finding that did not close the case, and delivery evidence on record: stated by code.
+        "a_person_recorded": (b.get("verification") or {}).get("text_en") if (b.get("verification") or {}).get("status") == "human_finding_not_resolved" else None,
+        "delivery_evidence_on_record": delivery_evidence(detail),
         "next_step": (b.get("next_step") or {}).get("text_en"), "who_acts_next": (b.get("next_step") or {}).get("actor"),
         "missing_evidence": ((detail.get("next_step") or {}).get("missing_evidence") or [])[:5],
         "evidence": [{"description": e.get("label_en"), "shown_in_graph": e.get("in_graph")} for e in b.get("evidence") or []],

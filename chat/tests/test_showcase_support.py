@@ -89,6 +89,19 @@ class HumanFindingTests(unittest.TestCase):
         self.assertIsNone(brief.human_finding({}))
 
 
+class CanopusFactsTests(unittest.TestCase):
+    def test_delivery_evidence_is_described_from_the_records_and_never_called_verified(self):
+        from operations import canopus
+        handover = {"id": "H1", "kind": "HandoffEvidence", "properties": {}}
+        proof = {"id": "P1", "kind": "DeliveryProof", "after_investigation": True,
+                 "properties": {"authentication_id": "A1", "handoff_id": "H1", "occurred_at": "2026-09-19T05:50:00+00:00", "recorded_at": "2026-09-20T05:31:00+00:00"}}
+        text = canopus.delivery_evidence({"evidence": {"nodes": [proof, PASSED, handover, PHOTO]}})
+        self.assertEqual(text, "On record: a delivery proof made at 2026-09-19 05:50 UTC, the recipient's code passed, a handover record, "
+                               "a delivery photo record. These records reached Suhail late, after the case was opened.")
+        self.assertNotIn("verified", text)
+        self.assertIsNone(canopus.delivery_evidence({"evidence": {"nodes": [PHOTO, PASSED]}}))       # No proof record, nothing to describe.
+
+
 class MediaTests(unittest.TestCase):
     def test_a_photo_record_gets_an_image_only_when_a_file_is_named_after_its_public_id(self):
         with tempfile.TemporaryDirectory() as folder:

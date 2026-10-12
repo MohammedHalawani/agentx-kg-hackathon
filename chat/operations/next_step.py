@@ -29,8 +29,11 @@ STEPS = {
                     "not closed. Review the verified result and the reviewer's objection, then record a finding. Approving {action} again would only repeat it.",
         "نُفِّذ الإجراء {action} وتم التحقق منه بشكل مستقل، لكن المراجع لم يقبل نتيجة التحقيق، لذا لم تُغلق الحالة. راجع النتيجة المتحقق منها واعتراض المراجع ثم سجّل ما توصلت إليه. الموافقة على {action} مرة أخرى ستكرره فقط."),
     "REVIEW_UNACCEPTED_INVESTIGATION": (
-        "operator", "The independent reviewer did not accept the investigation. Read its objection and the unaccepted findings, then re-analyse the case or investigate and record a finding.",
-        "لم يقبل المراجع المستقل نتيجة التحقيق. اقرأ اعتراضه والنتائج غير المقبولة، ثم أعد تحليل الحالة أو حقق وسجّل ما توصلت إليه."),
+        "operator", "The independent reviewer did not accept the investigation. Read its objection and the unaccepted findings, then investigate and record a finding.",
+        "لم يقبل المراجع المستقل نتيجة التحقيق. اقرأ اعتراضه والنتائج غير المقبولة، ثم حقق وسجّل ما توصلت إليه."),
+    "REVIEW_WHAT_STILL_STANDS": (
+        "operator", "A person's finding is on record, but the case is not resolved. Review what still stands, then record a correction or a further finding.",
+        "سُجِّلت نتيجة شخص، لكن الحالة لم تُعالَج. راجع ما زال قائمًا ثم سجّل تصحيحًا أو نتيجة أخرى."),
     "PROVIDE_EVIDENCE_OR_REANALYSE": ("operator", "There is no grounded recommendation yet. Add or wait for evidence, then re-analyse the case.",
                                       "لا توجد توصية مدعومة بالأدلة بعد. أضف أدلة أو انتظر وصولها، ثم أعد تحليل الحالة."),
 }
@@ -48,6 +51,13 @@ def step_code(detail):
     if state == "AWAITING_APPROVAL":
         return "APPROVE_OR_REJECT" if recommendation.get("approvable") else "INVESTIGATE_AND_RECORD_FINDING"
     if state == "ESCALATED":
+        # A case is also here after a person's finding that left something standing, and after an investigation the
+        # review accepted but the policy reserved for a person: neither is an unaccepted investigation.
+        if (detail.get("outcome") or {}).get("verification_status") == "HUMAN_FINDING":
+            return "REVIEW_WHAT_STILL_STANDS"
+        review = detail.get("review") or {}
+        if review.get("verdict") == "accept" and review.get("model_verdict") == "ACCEPT":
+            return "INVESTIGATE_AND_RECORD_FINDING"
         return "REVIEW_UNACCEPTED_INVESTIGATION"
     if state == "NEEDS_EVIDENCE":
         return "PROVIDE_EVIDENCE_OR_REANALYSE"

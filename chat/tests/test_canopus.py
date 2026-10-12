@@ -143,7 +143,8 @@ class AnswerTests(unittest.TestCase):
         case = payload["case"]
         self.assertEqual(sorted(case), sorted(["shipment_id", "resolved", "what_the_case_is_waiting_for", "assessment", "what_happened", "suspected_cause",
                                                "review", "what_policy_permits", "requests_sent", "verification", "next_step", "who_acts_next",
-                                               "missing_evidence", "evidence", "quotes", "what_the_operator_can_do_now", "what_is_not_possible_now"]))
+                                               "missing_evidence", "evidence", "quotes", "what_the_operator_can_do_now", "what_is_not_possible_now",
+                                               "a_person_recorded", "delivery_evidence_on_record"]))
         self.assertEqual(sorted(case["assessment"]), sorted(["Problem", "Finding", "Review", "Action taken", "Current status"]))
         self.assertEqual((case["resolved"], case["suspected_cause"]["status"], case["review"]["status"]), (False, "hypothesis_not_accepted", "challenged"))
         self.assertEqual(case["review"]["reason_original"], "A transient read error was not ruled out.")
