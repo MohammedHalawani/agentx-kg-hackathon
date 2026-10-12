@@ -37,7 +37,7 @@ const QUESTION =
   arg("ask") ??
   (VIDEO === "A"
     ? "What happened here, and how was it resolved?"
-    : "What new evidence arrived, and what still needs a person?");
+    : "What changed, and what still needs a person?");
 if (/:802[01]\b/.test(BASE)) throw new Error("the director runs on the staging backend only");
 mkdirSync(OUT, { recursive: true });
 
@@ -63,14 +63,26 @@ const waiting = async (promise, keep = 0.4) => {
   if (to - from > keep + 1.2) idle.push([+(from + keep).toFixed(2), +(to - 0.4).toFixed(2)]);
   return value;
 };
-const api = async (path) => (await fetch(BASE + path)).json();
+/** A read from the backend; a dropped connection is tried again. */
+const api = async (path) => {
+  for (let tries = 0; ; tries++)
+    try {
+      return await (await fetch(BASE + path)).json();
+    } catch (error) {
+      if (tries >= 4) throw error;
+      await new Promise((done) => setTimeout(done, 800));
+    }
+};
 const token = async () => (await api("/operations/session")).token;
-const post = async (path, body) =>
-  fetch(BASE + path, {
-    method: "POST",
-    headers: { "X-Operations-Token": await token(), "Content-Type": "application/json" },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+const post = async (path, body) => {
+  const headers = { "X-Operations-Token": await token(), "Content-Type": "application/json" };
+  try {
+    return await fetch(BASE + path, { method: "POST", headers, body: body ? JSON.stringify(body) : undefined });
+  } catch (error) {
+    // A dropped connection reads as a refusal; the callers ask again.
+    return new Response(JSON.stringify({ detail: String(error.message) }), { status: 599 });
+  }
+};
 
 const browser = await chromium.launch({ channel: "chrome", args: ["--hide-scrollbars"] });
 const context = await browser.newContext({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
@@ -301,16 +313,23 @@ async function canopus() {
 }
 /** Video B: the newly arrived delivery records in the graph, the stored photograph, the operator's finding. */
 async function proofAndFinding(detail) {
+  const proofNode = (MAP.proof_nodes ?? []).find((id) => /PROOF/.test(id)) ?? MAP.photo_node;
+  const lightProof = async () => {
+    // The delivery proof with the records around it: attempt, recipient code, handover, photo.
+    await fire("suhail:select", { id: proofNode });
+    await fire("suhail:graph-highlight", { caseId, ids: MAP.proof_nodes ?? [MAP.photo_node] });
+  };
   await mode("Graph focus");
-  await fire("suhail:graph-highlight", { caseId, ids: MAP.proof_nodes ?? [MAP.photo_node] });
+  await lightProof();
+  await pause(2200);
+  // The photo record; its stored photograph sits in the record's inspector, below the workspace.
   await fire("suhail:select", { id: MAP.photo_node });
-  await pause(2000);
-  // The stored photograph sits in the record's inspector, below the workspace: a slow scroll.
+  await pause(500);
   const thumbnail = page.getByTestId("evidence-photo");
-  await scrollTo(thumbnail, "center", 1700);
+  await scrollTo(thumbnail, "center", 1600);
   await click(thumbnail, { settle: 400 });
-  await pause(4000);
-  await click(page.getByTestId("photo-modal").getByRole("button", { name: /close/i }), { settle: 600 });
+  await pause(3600);
+  await click(page.getByTestId("photo-modal").getByRole("button", { name: /close/i }), { settle: 500 });
   const finding = page.getByRole("button", { name: "Record a person's finding" }).first();
   if (flag("finding") && !detail.outcome && (await finding.count())) {
     // The operator's own step, through the normal control. The backend records it as a person's
@@ -338,8 +357,9 @@ async function proofAndFinding(detail) {
     }
   }
   await cap(null);
-  await scrollTo(page.getByRole("heading", { level: 1 }), "start", 1700);
-  await pause(2000);
+  await lightProof();
+  await scrollTo(page.getByRole("heading", { level: 1 }), "start", 1600);
+  await pause(1200);
   return detail;
 }
 
@@ -437,20 +457,38 @@ try {
   } else {
     // ---- Video B: late delivery proof, re-examined, left with a person -----------------------
     await operations();
-    caseId = await waiting(findCase());
-    await waiting(row().waitFor({ timeout: 120000 }));
-    await pause(1500);
-    // The first investigation runs while the queue is on screen; it ends with a person.
-    let detail = await waiting(settle(running, 300), 1.0);
-    note(`first investigation ended in ${detail.workflow_state}`);
-    await glide(760, 420, 800);
-    await pause(1700);
+    let detail;
+    if (arg("resume")) {
+      // The first investigation of this case already ran in this world (an interrupted take):
+      // the film starts with the case already with a person, while another case enters the queue.
+      caseId = arg("resume");
+      await waiting((async () => {
+        for (let tries = 0; tries < 60; tries++) {
+          const fresh = (await api("/cases/queue?scope=all&limit=100")).items.find((item) => !before.has(item.case_id));
+          if (fresh) return page.getByTestId(`data-row-${fresh.case_id}`).waitFor({ timeout: 60000 });
+          await pause(500);
+        }
+      })());
+      await pause(1500);
+      detail = await api(`/cases/${caseId}`);
+      note(`resumed: the case is ${detail.workflow_state} from the earlier first investigation`);
+    } else {
+      caseId = await waiting(findCase());
+      await waiting(row().waitFor({ timeout: 120000 }));
+      await pause(1100);
+      // The first investigation runs while the queue is on screen; it ends with a person.
+      detail = await waiting(settle(running, 300), 1.0);
+      note(`first investigation ended in ${detail.workflow_state}`);
+    }
+    const at = await row().boundingBox();
+    await glide(at ? at.x + 420 : 760, at ? at.y + at.height / 2 : 420, 800);
+    await pause(1300);
     const firstRun = detail.last_run_id;
     // Backstage: the build clone's record of the first investigation, then simulated time runs
     // to the next morning, when the driver's phone uploads its records and Suhail reopens the
     // case. Auto stays on, so Suhail starts the second investigation by itself.
     detail = await waiting((async () => {
-      if (arg("first-map"))
+      if (arg("first-map") && !arg("resume"))
         try {
           execSync(arg("first-map").replace("STARTED", startedAt), { stdio: "ignore", timeout: 120000 });
           note("first investigation's evidence map saved");
@@ -474,7 +512,7 @@ try {
       await post("/simulation/start", { speed: 1, replay_mode: "timeline" }).catch(() => {});
       return current;
     })(), 0.3);
-    await pause(1200);
+    await pause(700);
     await openCase();
     for (let index = 0; index <= 5; index++) {
       await waiting(reported(index), index === 2 ? 1.5 : 0.4);
@@ -483,7 +521,7 @@ try {
     await waiting(reported(6, "completed|waiting|failed|running"));
     detail = await waiting(settle(running, 300));
     note(`second investigation ended in ${detail.workflow_state}`);
-    await play(6, { hold_ms: 2000 });
+    await play(6, { hold_ms: 1600 });
     detail = await proofAndFinding(detail);
     await canopus();
   }
