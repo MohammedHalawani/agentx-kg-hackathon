@@ -19,7 +19,7 @@ const arg = (name, fallback) => {
 };
 const VIDEO = arg("video", "A").toUpperCase();
 const OUT = resolve(arg("out", join(here, "out")));
-const raw = join(OUT, `suhail-video-${VIDEO}-raw.webm`);
+const raw = join(OUT, `suhail-video-${VIDEO}-frames.txt`);
 const idleFile = join(OUT, `suhail-video-${VIDEO}-idle.json`);
 const cuts = [
   ...(process.argv.includes("--keep-idle") || !existsSync(idleFile)
@@ -44,9 +44,10 @@ const select = keep.map(([from, to]) => `between(t,${from},${to})`).join("+");
 const target = join(OUT, `suhail-video-${VIDEO}.mp4`);
 execFileSync(
   ffmpeg,
-  ["-y", "-i", raw, "-vf", `select='${select}',setpts=N/FRAME_RATE/TB,fps=30,format=yuv420p`,
-   "-an", "-c:v", "libx264", "-preset", "slow", "-crf", "17", "-movflags", "+faststart", target],
-  { stdio: ["ignore", "ignore", "inherit"] },
+  ["-y", "-f", "concat", "-safe", "0", "-i", raw, "-vf",
+   `fps=30,select='${select}',setpts=N/FRAME_RATE/TB,scale=1920:1080:flags=lanczos,format=yuv420p`,
+   "-loglevel", "error", "-an", "-c:v", "libx264", "-preset", "slow", "-crf", "17", "-movflags", "+faststart", target],
+  { stdio: ["ignore", "ignore", "inherit"], cwd: OUT },
 );
 const removed = cuts.reduce((sum, [from, to]) => sum + (to - from), 0);
 console.log(`${target}: removed ${removed.toFixed(1)} s of waiting in ${cuts.length} cuts`);
