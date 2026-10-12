@@ -349,14 +349,20 @@ if (VIDEO === "B" && MAP.photo_node) {
       { delay: 14 },
     );
     const boxes = dialog.locator(".human-evidence label");
-    const proof = boxes.filter({ hasText: /PROOF|ATT-|HANDOFF|AUTH/ });
-    await click(((await proof.count()) ? proof : boxes).first());
-    await pause(700);
-    await click(dialog.getByRole("button", { name: "Record finding" }));
-    await pause(2500);
-    const refused = await dialog.getByRole("alert").innerText().catch(() => "");
+    // Only the delivery proof itself is cited; without it in the list nothing is recorded.
+    const proof = boxes.filter({ hasText: /PROOF/ });
+    let refused = "";
+    if (await proof.count()) {
+      await click(proof.first());
+      await pause(700);
+      await click(dialog.getByRole("button", { name: "Record finding" }));
+      await pause(2500);
+      refused = await dialog.getByRole("alert").innerText({ timeout: 1500 }).catch(() => "");
+    } else {
+      refused = "the delivery proof is not offered in the dialog's evidence list";
+    }
     if (refused) {
-      note(`the backend refused the finding: ${refused}`);
+      note(`the finding was not recorded: ${refused}`);
       await click(dialog.getByRole("button", { name: "Cancel" }));
     }
     detail = await api(`/cases/${caseId}`);
