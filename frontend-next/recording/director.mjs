@@ -33,10 +33,11 @@ if (/:802[01]\b/.test(BASE)) throw new Error("the director runs on the staging b
 mkdirSync(OUT, { recursive: true });
 
 const STEPS = ["Collect", "Graph", "Diagnose", "Precedent", "Recommend", "Review", "Disposition", "Outcome"];
-const STAGE_OF = { extract: 0, retrieve: 1, classify: 2, retrieve_context: 3, recommend: 4, review: 5, writeback: 6, escalate: 6, disposition: 6, outcome: 7 };
-/** The evidence map's cue for a rail step: {highlight[], select, mode, hold_ms}. */
-const cueOf = (index) =>
-  (MAP.stages ?? []).filter((item) => (STAGE_OF[item.stage] ?? item.index) === index).at(-1) ?? {};
+/** How long each step's cue stays on screen (pacing only; the map may override with hold_ms). */
+const HOLD = { Collect: 1600, Graph: 3600, Diagnose: 3000, Precedent: 1500, Recommend: 2400, Review: 2000, Disposition: 2200, Outcome: 4200 };
+/** The evidence map's cue for a rail step: {highlight[], select, mode, fact}. */
+const cueOf = (index) => (MAP.stages ?? []).find((item) => item.stage === STEPS[index]) ?? {};
+const list = (value) => (value == null ? [] : Array.isArray(value) ? value : [value]);
 const log = [];
 let t0 = Date.now();
 /** Stretches of the take that are only waiting, in seconds of video; finish.mjs removes them. */
@@ -81,7 +82,7 @@ async function click(locator) {
   await locator.click();
 }
 const mode = async (name) => {
-  const label = { balanced: "Balanced", map: "Map focus", graph: "Graph focus" }[name];
+  const label = { balanced: "Balanced", map: "Map focus", graph: "Graph focus" }[name] ?? name;
   if (!label) return;
   const button = page.getByRole("button", { name: label, exact: true });
   if ((await button.getAttribute("aria-pressed")) !== "true") await click(button);
@@ -95,30 +96,43 @@ const reached = (index, states = "running|completed|waiting|failed") =>
     .waitFor({ timeout: 6 * 60 * 1000 });
 
 /** One step's cue: lit records, the selected record (which centres the map), the view. */
-async function play(index) {
-  const cue = cueOf(index);
-  note(`cue ${STEPS[index]}: mode ${cue.mode ?? "keep"}, ${cue.highlight?.length ?? 0} records, select ${cue.select ?? "none"}`);
-  if (cue.mode) await mode(cue.mode);
-  if (cue.select) await fire("suhail:select", { id: cue.select });
-  if (cue.highlight?.length)
-    await fire("suhail:graph-highlight", { caseId: MAP.case_id, ids: cue.highlight });
-  await pause(cue.hold_ms ?? 2200);
+async function play(index, live = {}) {
+  const cue = { ...cueOf(index), ...live };
+  const modes = list(cue.mode);
+  const selects = list(cue.select);
+  const hold = cue.hold_ms ?? HOLD[STEPS[index]] ?? 2200;
+  note(`cue ${STEPS[index]}: ${modes.join(" then ") || "keep view"}, ${cue.highlight?.length ?? 0} records, select ${selects.join(" then ") || "none"}`);
+  // A step with two views (Diagnose: the place on the map, then the relationships) plays both.
+  const beats = Math.max(modes.length, 1);
+  for (let beat = 0; beat < beats; beat++) {
+    if (modes[beat]) await mode(modes[beat]);
+    const pick = selects[beat] ?? (beat === 0 ? selects[0] : undefined);
+    if (pick) await fire("suhail:select", { id: pick });
+    if (cue.highlight?.length)
+      await fire("suhail:graph-highlight", { caseId: MAP.case_id, ids: cue.highlight });
+    await pause(beats > 1 ? Math.round(hold * (beat === 0 ? 0.8 : 1.4)) : hold);
+  }
+  if (beats > 1) await mode("Balanced");
 }
 
 // ---- 0. Operations: sidebar open, Auto on, cases arriving ---------------------------------
 await page.goto(`${BASE}/app/operations?director=1`);
 await page.locator(".environment-badge[data-dataset=synthetic]").waitFor({ timeout: 90000 });
 await pause(1800);
-const clock = page.getByTestId("clock-control");
-if (/paused/i.test(await clock.innerText())) await click(clock);
-await pause(600);
+// Backstage: the simulated clock starts at the speed the fixture was prepared for.
+await post("/simulation/start", { speed: Number(arg("speed", 60)), replay_mode: "timeline" });
+await page.getByTestId("clock-control").filter({ hasText: /running/i }).waitFor({ timeout: 20000 });
+await pause(900);
 await click(page.getByRole("switch", { name: "Automatic investigation" }));
 note("Auto on, clock running");
 // The showcase case, as soon as the monitor has opened it.
-let caseId = MAP.case_id;
+const before = new Set(
+  (await api("/cases/queue?scope=all&limit=100")).items.map((item) => item.case_id),
+);
+let caseId;
 for (let tries = 0; !caseId && tries < 120; tries++) {
   const row = (await api("/cases/queue?scope=all&limit=100")).items.find(
-    (item) => item.shipment_id === MAP.shipment_id,
+    (item) => item.shipment_id === MAP.shipment_id && !before.has(item.case_id),
   );
   caseId = row?.case_id;
   if (!caseId) await pause(1500);
@@ -161,7 +175,9 @@ for (let tries = 0; !(detail.executions ?? []).length && tries < 90; tries++) {
 note(`execution ${detail.executions?.[0]?.status ?? "none"}`);
 await play(6);
 if (VIDEO === "A" && MAP.phone) {
-  await fire("suhail:phone", { step: 1, ...MAP.phone });
+  const { title, body, options, confirmation } = MAP.phone;
+  const chosen = Math.max(0, typeof MAP.phone.chosen === "number" ? MAP.phone.chosen : options.indexOf(MAP.phone.chosen));
+  await fire("suhail:phone", { step: 1, title: title.replace(/^Suhail\s*[—-]\s*/, ""), body, options, chosen, confirmation });
   await pause(3600);
   await fire("suhail:phone", { step: 2 });
   await pause(2600);
@@ -185,7 +201,12 @@ for (let tries = 0; tries < 8; tries++) {
 }
 note(`outcome ${detail.outcome ? `${detail.outcome.verification_status} success ${detail.outcome.success}` : "none"}; state ${detail.workflow_state}`);
 await page.locator(".pipeline-step").nth(7).and(page.locator(".state-completed, .state-waiting")).waitFor({ timeout: 120000 });
-await play(7);
+// The record that arrived in THIS take (its id differs from the reference run's).
+const arrived = detail.outcome?.evidence_ids ?? [];
+const outcomeCue = cueOf(7);
+await play(7, arrived.length
+  ? { select: arrived[0], highlight: [...(outcomeCue.highlight ?? []).filter((id) => !/-SIM-/.test(id)), ...arrived] }
+  : {});
 if (VIDEO === "B" && MAP.photo_node) {
   // The key moment: from the shipment to the stored proof photograph, enlarged, then back.
   await mode("graph");
