@@ -141,11 +141,22 @@ def evidence_label(node_id, nodes):
 
 
 HUMAN_FINDINGS = {
-    "parcel_located": ("the parcel was located", "عُثر على الطرد"),
-    "delivered_confirmed_by_person": ("the delivery is confirmed from the recorded proof", "التسليم مؤكَّد من الدليل المسجَّل"),
-    "returned_to_depot": ("the parcel is back at the depot", "عاد الطرد إلى المستودع"),
-    "parcel_not_found": ("the parcel was not found", "لم يُعثر على الطرد"),
-    "data_corrected": ("the record was corrected", "صُحِّح السجل"),
+    "parcel_located": ("Parcel located by a person", "عثر شخص على الطرد"),
+    "delivered_confirmed_by_person": ("Delivery confirmed by a person from the recorded proof", "أكد شخص التسليم من الدليل المسجَّل"),
+    "returned_to_depot": ("Return to the depot confirmed by a person", "أكد شخص عودة الطرد إلى المستودع"),
+    "parcel_not_found": ("Parcel not found by a person", "لم يعثر شخص على الطرد"),
+    "data_corrected": ("Record corrected by a person", "صحّح شخص السجل"),
+}
+# What still stands after a person's finding, in a few words each (the Problem line states each in full).
+STILL_STANDS = {
+    "MANIFEST_CUSTODY_CONFLICT": ("Manifest discrepancy remains", "ما زال تعارض بيان الإرسال قائمًا"),
+    "SESSION_END_UNRECONCILED": ("Delivery session not reconciled", "جلسة التوزيع لم تُسوَّ"),
+    "MILESTONE_OVERDUE": ("A journey step is still overdue", "ما زالت خطوة في الرحلة متأخرة"),
+    "CUSTODY_TRANSFER_UNCONFIRMED": ("A handover is still unconfirmed", "ما زال تسليم غير مؤكَّد"),
+    "DELIVERY_PROOF_INCOMPLETE": ("Delivery proof still incomplete", "ما زال دليل التسليم غير مكتمل"),
+    "RECIPIENT_REPORTED_NOT_RECEIVED": ("Recipient's non-receipt report still open", "ما زال بلاغ المستلم بعدم الاستلام مفتوحًا"),
+    "CUSTODY_REPORTS_CONFLICT": ("Custody records still conflict", "ما زالت سجلات الحيازة متعارضة"),
+    "DELIVERY_ATTEMPT_FAILED": ("A failed delivery attempt is still open", "ما زالت محاولة تسليم فاشلة مفتوحة"),
 }
 
 
@@ -154,14 +165,13 @@ def human_finding(outcome):
     The finding is on record; the case stays with a person until nothing remains."""
     if outcome.get("verification_status") != "HUMAN_FINDING":
         return None
-    found_en, found_ar = HUMAN_FINDINGS.get(outcome.get("outcome_type"), ("a finding", "نتيجة"))
-    remaining = [_label(SYMPTOMS, code) for code in outcome.get("remaining_symptoms") or []]
-    still_en = _join([en[0].lower() + en[1:] for en, _ in remaining])
-    still_ar = "، ".join(ar or en for en, ar in remaining)
+    found_en, found_ar = HUMAN_FINDINGS.get(outcome.get("outcome_type"), ("Finding recorded by a person", "سجّل شخص نتيجة"))
+    # Every standing problem is named, each in a few words; one the table does not know keeps its full sentence.
+    remaining = [STILL_STANDS.get(code) or tuple(f"Still stands: {t}" if i == 0 else f"ما زال قائمًا: {t or code}" for i, t in enumerate(_label(SYMPTOMS, code)))
+                 for code in outcome.get("remaining_symptoms") or []]
     return {"outcome_type": outcome.get("outcome_type"), "remaining_symptoms": list(outcome.get("remaining_symptoms") or []),
-            "text_en": f"A person recorded a finding: {found_en}. The case is not resolved and stays with a person"
-                       + (f", because this still stands: {still_en}." if still_en else "."),
-            "text_ar": f"سجّل شخص نتيجة: {found_ar}. لم تُعالَج الحالة وتبقى لدى شخص" + (f"، لأن ما يلي ما زال قائمًا: {still_ar}." if still_ar else "."),
+            "text_en": " ".join(part + "." for part in [found_en, *(en for en, _ in remaining), "Human review required"]),
+            "text_ar": " ".join(part + "." for part in [found_ar, *(ar for _, ar in remaining), "تلزم مراجعة شخص"]),
             "short_en": "Finding recorded, not resolved", "short_ar": "سُجِّلت نتيجة دون معالجة"}
 
 

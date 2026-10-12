@@ -76,10 +76,14 @@ class HumanFindingTests(unittest.TestCase):
         status = next(line["text_en"] for line in b["lines"] if line["key"] == "status")
         self.assertFalse(b["resolved"])
         self.assertEqual(b["verification"]["status"], "human_finding_not_resolved")
-        self.assertIn("A person recorded a finding: the delivery is confirmed from the recorded proof.", status)
-        self.assertIn("The case is not resolved and stays with a person, because this still stands: the dispatch manifest and the custody records disagree "
-                      "and the delivery session ended with this parcel unaccounted for.", status)
+        self.assertEqual(status, "Delivery confirmed by a person from the recorded proof. Manifest discrepancy remains. Delivery session not reconciled. "
+                                 "Human review required.")
         self.assertNotIn("Resolved", status)
+        self.assertNotIn("verified", status.lower())                               # A person confirmed it; the verifier did not.
+        problem = next(line["text_en"] for line in b["lines"] if line["key"] == "problem")
+        self.assertTrue(problem)                                                    # The problems stay stated in full in the assessment.
+        unknown = brief.human_finding({**self.OUTCOME, "remaining_symptoms": ["OVERDUE_AT_FACILITY"]})
+        self.assertIn("Still stands: The parcel has stayed at a facility longer than planned.", unknown["text_en"])
         self.assertEqual(b["_stage_outcome"]["short_en"], "Finding recorded, not resolved")
         self.assertTrue(next(line["text_ar"] for line in b["lines"] if line["key"] == "status"))
 
