@@ -301,6 +301,82 @@ for (const name of [
   });
 }
 
+test("Recording hooks exist only in director mode; a stored photograph opens from its record", async ({
+  page,
+}) => {
+  const stub = await stubBackend(page);
+  const phone = {
+    step: 1,
+    title: "Custody confirmation required",
+    body: "Your route has ended, but shipment SH-001 has no delivery confirmation or warehouse return scan. Please confirm its status.",
+    options: ["Scan package into warehouse", "Provide delivery confirmation", "Report package missing"],
+    chosen: 0,
+    confirmation: "Warehouse scan recorded",
+  };
+  const cue = (type: string, detail: unknown) =>
+    page.evaluate(
+      ([name, data]) => window.dispatchEvent(new CustomEvent(name as string, { detail: data })),
+      [type, detail],
+    );
+  // The normal product: the cue does nothing and nothing of the phone exists.
+  await page.goto(`/app/cases/${CASE_A}`);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(SHIP_A);
+  await cue("suhail:phone", phone);
+  await page.waitForTimeout(400);
+  await expect(page.locator(".director-phone")).toHaveCount(0);
+  // A record that carries a stored image shows it, and it enlarges on click.
+  const pixel = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+    "base64",
+  );
+  await page.route("**/media/proof.png", (route) =>
+    route.fulfill({ status: 200, contentType: "image/png", body: pixel }),
+  );
+  const custody = `${SHIP_A}-CUST-02-01`;
+  stub.state.detailA = {
+    ...stub.state.detailA,
+    evidence: {
+      ...stub.state.detailA.evidence,
+      nodes: stub.state.detailA.evidence.nodes.map((node) =>
+        node.id === custody
+          ? { ...node, properties: { ...node.properties, media_url: "/media/proof.png" } }
+          : node,
+      ),
+    },
+  };
+  // Director mode, for the recording script only.
+  await page.goto(`/app/cases/${CASE_A}?director=1`);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(SHIP_A);
+  await expect(page.getByTestId("knowledge-graph").locator(".entity-node").first()).toBeVisible();
+  await cue("suhail:select", { id: custody });
+  await page.getByTestId("evidence-photo").click();
+  await expect(page.getByTestId("photo-modal").locator("img")).toHaveAttribute(
+    "src",
+    "/media/proof.png",
+  );
+  await cue("suhail:select", { photo: false });
+  await expect(page.getByTestId("photo-modal")).toHaveCount(0);
+  await cue("suhail:phone", phone);
+  const overlay = page.locator(".director-phone");
+  await expect(overlay).toHaveClass(/in/);
+  await expect(overlay).toContainText("Custody confirmation required");
+  await page.waitForTimeout(1500);
+  await page.screenshot({ path: "screenshots/graph/phone-1.png" });
+  await cue("suhail:phone", { step: 2 });
+  await expect(overlay).toContainText("Provide delivery confirmation");
+  await cue("suhail:phone", { step: 3 });
+  await page.waitForTimeout(700);
+  await page.screenshot({ path: "screenshots/graph/phone-3.png" });
+  await cue("suhail:phone", { step: 4 });
+  await expect(overlay).toContainText("Warehouse scan recorded");
+  await page.waitForTimeout(700);
+  await page.screenshot({ path: "screenshots/graph/phone-4.png" });
+  await cue("suhail:phone", { step: 0 });
+  await expect(overlay).toHaveCount(0, { timeout: 5000 });
+  // It asked the backend for nothing: the phone is a picture, not a request.
+  expect(stub.posts).toHaveLength(0);
+});
+
 test("Canopus is a plain chat about the open case: answers first, sources and agent quotes on request", async ({
   page,
 }) => {

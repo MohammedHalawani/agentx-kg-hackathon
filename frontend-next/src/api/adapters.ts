@@ -395,6 +395,18 @@ const DETAIL_KEYS = [
   "success",
   "decision",
 ];
+/**
+ * An image the backend stores with a record, when it serves one this page can load: a path on
+ * the same origin or an http(s) URL. A reference of another scheme is not an image to show.
+ */
+function mediaOf(node: ApiEvidenceNode): string | undefined {
+  const p = node.properties;
+  for (const key of ["media_url", "image_url", "photo_url", "media_ref"]) {
+    const value = text(p[key]);
+    if (/^(\/|https?:\/\/)/.test(value)) return value;
+  }
+  return undefined;
+}
 function nodeDetail(node: ApiEvidenceNode) {
   const p = node.properties;
   const facts = DETAIL_KEYS.filter((key) => text(p[key]) !== "").map(
@@ -841,6 +853,7 @@ export function applyDetail(
     occurredAt: text(node.properties.occurred_at) || undefined,
     sourceKind: node.kind,
     cited: cited.has(node.id) || undefined,
+    media: mediaOf(node),
   }));
   const allEdges = [...edges, ...ledger.edges];
   const relationships: GraphRelationship[] = allEdges

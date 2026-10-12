@@ -56,6 +56,8 @@ import { dateTimeLabel, secondsLabel, timeLabel } from "@/lib/dates";
 import { InvestigatorFindings } from "@/components/investigator-findings";
 import { InvestigationRecord } from "@/components/investigation-record";
 import { NextStep } from "@/components/next-step";
+import { DIRECTOR } from "@/director";
+import { PhoneOverlay } from "@/director/phone-overlay";
 import { ClockNotice } from "@/components/clock-notice";
 import {
   AssessmentAnswers,
@@ -111,6 +113,8 @@ export function InvestigationPage() {
   );
   const [relationship, setRelationship] = useState<string | null>(null);
   const [previewStage, setPreviewStage] = useState<number | null>(null);
+  // A stored photograph of the selected record, enlarged.
+  const [photo, setPhoto] = useState<string | null>(null);
   // The narration message whose cited records are lit in the graph.
   const [narrated, setNarrated] = useState<{
     id: string | null;
@@ -189,9 +193,25 @@ export function InvestigationPage() {
       const detail = (event as CustomEvent<{ caseId: string }>).detail;
       if (detail?.caseId === caseId) setVerdict("approved");
     };
+    // Recording only: the script selects a record (which also centres the map on it), opens
+    // or closes a stored photograph, and clears the selection.
+    const pick = (event: Event) => {
+      const detail = (
+        event as CustomEvent<{ id?: string | null; photo?: boolean }>
+      ).detail;
+      if (!DIRECTOR) return;
+      if (detail?.id) select(detail.id);
+      else if (detail && "id" in detail) {
+        setSelected(null);
+        setRelationship(null);
+      }
+      if (detail?.photo === false) setPhoto(null);
+    };
+    window.addEventListener("suhail:select", pick);
     window.addEventListener("suhail:graph-highlight", show);
     window.addEventListener("suhail:authorize", authorize);
     return () => {
+      window.removeEventListener("suhail:select", pick);
       window.removeEventListener("suhail:graph-highlight", show);
       window.removeEventListener("suhail:authorize", authorize);
     };
@@ -1193,6 +1213,23 @@ export function InvestigationPage() {
                 "اختر علامة أو عقدة أو علاقة.",
               )}
           </p>
+          {entity?.media && !edge && (
+            <button
+              type="button"
+              className="inspector-photo"
+              data-testid="evidence-photo"
+              onClick={() => setPhoto(entity.media!)}
+              title={t("Open the stored photograph", "افتح الصورة المخزنة")}
+            >
+              <img src={entity.media} alt={entity.label} />
+              <span>
+                {t(
+                  "Stored photograph · click to enlarge",
+                  "صورة مخزنة · انقر للتكبير",
+                )}
+              </span>
+            </button>
+          )}
         </div>
         {evidence && (
           <span className="inspector-time">
@@ -1478,6 +1515,27 @@ export function InvestigationPage() {
           </ScrollArea>
         </SheetContent>
       </Sheet>
+      {photo && (
+        <div
+          className="photo-modal"
+          role="dialog"
+          aria-label={t("Stored photograph", "صورة مخزنة")}
+          data-testid="photo-modal"
+          onClick={() => setPhoto(null)}
+        >
+          <figure onClick={(event) => event.stopPropagation()}>
+            <img src={photo} alt={entity?.label ?? ""} />
+            <figcaption>
+              <b>{entity?.label}</b>
+              <span dir="ltr">{entity?.id}</span>
+              <button type="button" onClick={() => setPhoto(null)}>
+                {t("Close", "إغلاق")}
+              </button>
+            </figcaption>
+          </figure>
+        </div>
+      )}
+      {DIRECTOR && <PhoneOverlay />}
       <HumanOutcomeDialog
         c={humanOutcome ? c : null}
         onClose={() => setHumanOutcome(false)}

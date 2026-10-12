@@ -1655,3 +1655,323 @@
 .canopus-transcript[hidden] {
   display: none;
 }
+
+/* A stored photograph of a record: a thumbnail in the inspector, enlarged on click. */
+.inspector-photo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 4px 10px 4px 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  cursor: zoom-in;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.inspector-photo img {
+  width: 72px;
+  height: 54px;
+  object-fit: cover;
+  border-radius: 5px;
+}
+.photo-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, #0b0d12 62%, transparent);
+  animation: photo-fade 220ms ease both;
+}
+.photo-modal figure {
+  margin: 0;
+  max-width: min(760px, 86vw);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--card);
+  box-shadow: 0 24px 80px #00000055;
+  animation: photo-rise 260ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+.photo-modal img {
+  display: block;
+  width: 100%;
+  max-height: 68vh;
+  object-fit: contain;
+  background: #111;
+}
+.photo-modal figcaption {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  font-size: 12px;
+}
+.photo-modal figcaption span {
+  flex: 1;
+  color: var(--muted-foreground);
+  font-size: 10.5px;
+}
+.photo-modal figcaption button {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 12px;
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 11px;
+  cursor: pointer;
+}
+@keyframes photo-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes photo-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+}
+
+/* Recording only: the phone that visualises a simulated request to a worker. */
+.director-phone {
+  position: fixed;
+  top: 50%;
+  right: 56px;
+  z-index: 70;
+  width: 320px;
+  transform: translate(140%, -50%) rotate(4deg);
+  transition: transform 620ms cubic-bezier(0.2, 0.8, 0.25, 1);
+  filter: drop-shadow(0 30px 60px #00000055);
+  pointer-events: none;
+}
+.director-phone.in {
+  transform: translate(0, -50%) rotate(0deg);
+}
+.phone-body {
+  position: relative;
+  padding: 11px;
+  border-radius: 52px;
+  background: linear-gradient(145deg, #3a3d45, #0f1014 55%, #2a2c33);
+  box-shadow:
+    inset 0 0 0 1.5px #5b5f6a,
+    inset 0 0 0 4px #17181c;
+}
+.phone-island {
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  z-index: 2;
+  width: 96px;
+  height: 27px;
+  border-radius: 20px;
+  background: #000;
+  transform: translateX(-50%);
+}
+.phone-screen {
+  position: relative;
+  height: 640px;
+  border-radius: 42px;
+  overflow: hidden;
+  background: linear-gradient(170deg, #2b2350 0%, #151a33 48%, #0d1220 100%);
+  color: #fff;
+  font-family: -apple-system, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+}
+.phone-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 17px 28px 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.phone-signal {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+}
+.phone-signal i {
+  width: 3px;
+  background: #fff;
+  border-radius: 1px;
+}
+.phone-signal i:nth-child(1) {
+  height: 5px;
+}
+.phone-signal i:nth-child(2) {
+  height: 7px;
+}
+.phone-signal i:nth-child(3) {
+  height: 9px;
+}
+.phone-signal b {
+  width: 22px;
+  height: 10px;
+  margin-inline-start: 5px;
+  border: 1px solid #ffffffaa;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #fff 70%, transparent 70%);
+}
+.phone-clock {
+  margin-top: 54px;
+  text-align: center;
+  font-size: 76px;
+  font-weight: 300;
+  letter-spacing: -2px;
+  line-height: 1;
+}
+.phone-notification {
+  display: flex;
+  gap: 10px;
+  margin: 46px 12px 0;
+  padding: 12px 13px;
+  border-radius: 22px;
+  background: #ffffff2b;
+  backdrop-filter: blur(22px);
+  animation: phone-drop 520ms cubic-bezier(0.2, 0.9, 0.3, 1.1) 380ms both;
+}
+.phone-notification img {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: #fff;
+  padding: 4px;
+  flex: none;
+}
+.phone-notification b {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.8;
+}
+.phone-notification small {
+  font-weight: 400;
+}
+.phone-notification strong {
+  display: block;
+  margin-top: 1px;
+  font-size: 14px;
+  font-weight: 650;
+}
+.phone-notification p {
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.35;
+  opacity: 0.95;
+}
+@keyframes phone-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-26px) scale(0.96);
+  }
+}
+.phone-app {
+  position: absolute;
+  inset: 52px 0 0;
+  padding: 18px 16px 0;
+  border-radius: 26px 26px 0 0;
+  background: #f5f5f8;
+  color: #1c1e26;
+  animation: phone-sheet 420ms cubic-bezier(0.2, 0.8, 0.25, 1) both;
+}
+@keyframes phone-sheet {
+  from {
+    transform: translateY(40%);
+    opacity: 0;
+  }
+}
+.phone-app header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e3ea;
+}
+.phone-app header img {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: #fff;
+  padding: 4px;
+  box-shadow: 0 0 0 1px #e2e3ea;
+}
+.phone-app header b {
+  display: block;
+  font-size: 15px;
+}
+.phone-app header small {
+  font-size: 11.5px;
+  color: #6e7386;
+}
+.phone-message {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border-top-left-radius: 5px;
+  background: #fff;
+  box-shadow: 0 1px 2px #1c1e2612;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.phone-options {
+  display: grid;
+  gap: 9px;
+  margin-top: 16px;
+}
+.phone-options span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 13px 10px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 0 0 1px #dfe1ea;
+  font-size: 14px;
+  font-weight: 550;
+  color: #4a3f8f;
+  transition:
+    background 220ms ease,
+    color 220ms ease,
+    transform 220ms ease;
+}
+.phone-options span.pressed {
+  background: #7b61c5;
+  color: #fff;
+  box-shadow: 0 6px 18px #7b61c555;
+  transform: scale(0.97);
+}
+.phone-confirmed {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  margin-top: 74px;
+  animation: phone-drop 420ms ease both;
+}
+.phone-confirmed span {
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: #3d9462;
+  color: #fff;
+  box-shadow: 0 0 0 10px #3d946222;
+}
+.phone-confirmed b {
+  font-size: 16px;
+  text-align: center;
+}
+.phone-home {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  width: 118px;
+  height: 5px;
+  border-radius: 3px;
+  background: #ffffffb0;
+  transform: translateX(-50%);
+  mix-blend-mode: difference;
+}

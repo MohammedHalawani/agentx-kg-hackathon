@@ -122,6 +122,8 @@ export interface GraphNode {
   sourceKind?: string;
   /** Backend evidence: a record the diagnosis, recommendation, rule checks or outcome cite. */
   cited?: boolean;
+  /** Backend evidence: an image stored with the record (e.g. a proof-of-delivery photo). */
+  media?: string;
 }
 export interface GraphRelationship {
   id: string;
