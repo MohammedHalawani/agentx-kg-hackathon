@@ -289,20 +289,63 @@ const outcomeCue = cueOf(7);
 await play(7, arrived.length
   ? { select: arrived[0], highlight: [...(outcomeCue.highlight ?? []).filter((id) => !/-SIM-/.test(id)), ...arrived] }
   : {});
+const settled = (d) => /OPEN|INVESTIGATING|RECOMMENDATION_READY/.test(d.workflow_state);
+const hasPhoto = (d) => (d.evidence?.nodes ?? []).some((node) => node.id === MAP.photo_node);
 if (VIDEO === "B" && MAP.photo_node) {
-  // The key moment: from the shipment to the stored proof photograph, enlarged, then back.
-  await mode("graph");
-  await fire("suhail:select", { id: MAP.photo_node });
-  await pause(2200);
-  // The stored photograph sits in the record's inspector, below the workspace.
-  await page.getByTestId("evidence-photo").scrollIntoViewIfNeeded();
-  await pause(900);
-  await click(page.getByTestId("evidence-photo"));
-  await pause(5200);
-  await fire("suhail:select", { photo: false });
-  await pause(700);
-  await page.getByRole("heading", { level: 1 }).scrollIntoViewIfNeeded();
-  await mode("balanced");
+  if (!hasPhoto(detail)) {
+    // The case is with a person and the phone's records have not arrived: simulated time moves
+    // (backstage) until the device's upload is in the case's graph, and Suhail re-examines it.
+    detail = await waiting((async () => {
+      for (let tries = 0; tries < 40; tries++) {
+        const current = await api(`/cases/${caseId}`);
+        if (hasPhoto(current)) return current;
+        const response = await post("/simulation/skip", {});
+        note(`skip ${response.status}: ${JSON.stringify(await response.json().catch(() => ({}))).slice(0, 140)}`);
+        if (response.status !== 200) await pause(4000);
+      }
+      return api(`/cases/${caseId}`);
+    })());
+    detail = await waiting(settle(settled, 300));
+    note(`after the device upload: ${detail.workflow_state}; photo ${hasPhoto(detail) ? "in the graph" : "absent"}`);
+    await pause(1500);
+  }
+  if (hasPhoto(detail)) {
+    // The key moment: from the shipment to the stored proof photograph, enlarged, then back.
+    await mode("graph");
+    await fire("suhail:graph-highlight", { caseId, ids: MAP.proof_nodes ?? [MAP.photo_node] });
+    await fire("suhail:select", { id: MAP.photo_node });
+    await pause(2200);
+    await page.getByTestId("evidence-photo").scrollIntoViewIfNeeded();
+    await pause(900);
+    await click(page.getByTestId("evidence-photo"));
+    await pause(5200);
+    await fire("suhail:select", { photo: false });
+    await pause(700);
+    await page.getByRole("heading", { level: 1 }).scrollIntoViewIfNeeded();
+    await mode("balanced");
+  }
+  const finding = page.getByRole("button", { name: "Record a person's finding" });
+  if (!detail.outcome && hasPhoto(detail) && (await finding.count())) {
+    // The operator's own step, through the normal control: the delivery is confirmed by a person.
+    await click(finding.first());
+    const dialog = page.getByRole("dialog");
+    await pause(900);
+    await dialog.getByLabel("Human outcome type").click();
+    await pause(500);
+    await click(page.getByRole("option", { name: "Delivery confirmed by a person" }));
+    await dialog.locator("#human-finding").pressSequentially(
+      MAP.human_finding ?? "Proof photograph and recipient code checked against the delivery record: delivered.",
+      { delay: 14 },
+    );
+    const boxes = dialog.locator(".human-evidence label");
+    const proof = boxes.filter({ hasText: /PROOF|ATT-|HANDOFF|AUTH/ });
+    await click(((await proof.count()) ? proof : boxes).first());
+    await pause(700);
+    await click(dialog.getByRole("button", { name: "Record finding" }));
+    await dialog.waitFor({ state: "hidden", timeout: 30000 });
+    detail = await api(`/cases/${caseId}`);
+    note(`person's finding recorded; state ${detail.workflow_state}`);
+  }
 }
 await pause(2600);
 
