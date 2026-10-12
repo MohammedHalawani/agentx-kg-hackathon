@@ -65,6 +65,30 @@ class ResolutionTests(unittest.TestCase):
         self.assertNotIn("driver", action["text_en"].lower())                    # The recorded recipient is the depot, nobody else.
 
 
+class HumanFindingTests(unittest.TestCase):
+    OUTCOME = {"verification_status": "HUMAN_FINDING", "success": False, "outcome_type": "delivered_confirmed_by_person", "execution_id": None,
+               "exception_cleared": False, "remaining_symptoms": ["MANIFEST_CUSTODY_CONFLICT", "SESSION_END_UNRECONCILED"], "reason": "Proof checked."}
+
+    def test_a_recorded_finding_that_leaves_something_standing_is_never_called_resolved(self):
+        from tests.test_canopus import detail
+        case = detail("ESCALATED", outcome=dict(self.OUTCOME))
+        b = brief.build(case)
+        status = next(line["text_en"] for line in b["lines"] if line["key"] == "status")
+        self.assertFalse(b["resolved"])
+        self.assertEqual(b["verification"]["status"], "human_finding_not_resolved")
+        self.assertIn("A person recorded a finding: the delivery is confirmed from the recorded proof.", status)
+        self.assertIn("The case is not resolved and stays with a person, because this still stands: the dispatch manifest and the custody records disagree "
+                      "and the delivery session ended with this parcel unaccounted for.", status)
+        self.assertNotIn("Resolved", status)
+        self.assertEqual(b["_stage_outcome"]["short_en"], "Finding recorded, not resolved")
+        self.assertTrue(next(line["text_ar"] for line in b["lines"] if line["key"] == "status"))
+
+    def test_other_outcomes_are_not_a_persons_finding(self):
+        self.assertIsNone(brief.human_finding({"verification_status": "VERIFIED", "outcome_type": "barcode_corrected"}))
+        self.assertIsNone(brief.human_finding({"verification_status": "HUMAN_VERIFIED", "outcome_type": "delivered_confirmed_by_person"}))
+        self.assertIsNone(brief.human_finding({}))
+
+
 class MediaTests(unittest.TestCase):
     def test_a_photo_record_gets_an_image_only_when_a_file_is_named_after_its_public_id(self):
         with tempfile.TemporaryDirectory() as folder:
