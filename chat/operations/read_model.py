@@ -531,6 +531,8 @@ class OperationsReader:
         # The investigation saw a snapshot; the evidence shown follows the live clock. Mark the difference.
         snapshot=next((e.get("evidence_as_of") for e in events if e.get("evidence_as_of")),None)
         nodes=(detail.get("evidence") or {}).get("nodes",[])
+        from operations.media import attach
+        attach(nodes)      # An illustration attached to a photo record for demonstration, when a file exists for it.
         if snapshot:
             for node in nodes:
                 recorded=node["properties"].get("recorded_at")

@@ -240,6 +240,16 @@ def explore(cursor: str|None=Query(None,max_length=2048),limit: PageLimit=25,
 def case_detail(case_id: str):return invoke(get_runtime().reader.case_detail,case_id)
 
 
+@router.get("/media/evidence/{node_id}")
+def evidence_media(node_id: str):
+    """The image file attached to a photo evidence record for demonstration (operations.media), when there is one."""
+    from fastapi.responses import FileResponse
+    from operations.media import TYPES,media_file
+    path=media_file(node_id)
+    if path is None:raise HTTPException(404,"No image is attached to this record")
+    return FileResponse(path,media_type=TYPES[path.suffix.lower()],headers={"Cache-Control":"no-store"})
+
+
 @router.get("/cases/{case_id}/narration")
 def case_narration(case_id: str,run_id: str|None=Query(None,min_length=1,max_length=160)):
     """The stored Canopus narration of a run of this case (its current run by default). Read-only."""
