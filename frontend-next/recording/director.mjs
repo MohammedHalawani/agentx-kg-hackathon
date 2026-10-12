@@ -176,7 +176,13 @@ async function click(locator, { settle = 380 } = {}) {
   await page.mouse.up();
   await pause(settle);
 }
-const type = async (text, delay = 26) => page.keyboard.type(text, { delay });
+/** Types like a quick typist: a few characters at a time. */
+const type = async (text, gap = 70) => {
+  for (let at = 0; at < text.length; at += 3) {
+    await page.keyboard.insertText(text.slice(at, at + 3));
+    await pause(gap);
+  }
+};
 const mode = async (label) => {
   const button = page.getByRole("button", { name: label === "Balanced" ? "Balanced view" : label, exact: true });
   if ((await button.getAttribute("aria-pressed")) !== "true") await click(button, { settle: 500 });
@@ -204,9 +210,9 @@ async function play(index, live = {}) {
 /** While the model is diagnosing: the journey on the map, then the relationships in the graph. */
 async function views() {
   await mode("Map focus");
-  await pause(1200);
+  await pause(1000);
   await mode("Graph focus");
-  await pause(1500);
+  await pause(1200);
 }
 const settle = async (test, seconds) => {
   let current = await api(`/cases/${caseId}`);
@@ -265,7 +271,7 @@ async function operations() {
   await startFilm();
   await waiting(page.locator(".environment-badge[data-dataset=synthetic]").waitFor({ timeout: 90000 }), 0);
   await page.mouse.move(pointer.x, pointer.y);
-  await pause(1300);
+  await pause(900);
   before = new Set((await api("/cases/queue?scope=all&limit=100")).items.map((item) => item.case_id));
   // Backstage: the simulated clock starts at the speed the fixture was prepared for.
   await post("/simulation/start", { speed: Number(arg("speed", 60)), replay_mode: "timeline" });
@@ -278,17 +284,19 @@ async function canopus() {
   await click(page.getByRole("button", { name: "Open Canopus assistant" }), { settle: 600 });
   const panel = page.locator(".canopus-window");
   await click(panel.getByRole("button", { name: "Expand conversation workspace" }), { settle: 500 });
-  await click(panel.getByRole("textbox", { name: "Ask Canopus about this case" }), { settle: 250 });
-  await type(QUESTION, 12);
+  const box = panel.getByRole("textbox", { name: "Ask Canopus about this case" });
+  // The question box usually has the caret already; it is clicked only when it does not.
+  if (!(await box.evaluate((element) => element === document.activeElement))) await click(box, { settle: 200 });
+  await type(QUESTION);
   await pause(250);
   await click(panel.getByRole("button", { name: "Send question" }), { settle: 200 });
   note("question sent");
   await waiting(panel.getByTestId("canopus-answer").waitFor({ timeout: 150000 }), 0.6);
   note(`answer: ${(await panel.getByTestId("canopus-answer").locator(".chat-prose").innerText()).replace(/\s+/g, " ")}`);
-  await pause(Number(arg("answer-hold", 4000)));
+  await pause(Number(arg("answer-hold", 3600)));
   await click(panel.getByRole("button", { name: "Minimize Canopus conversation" }), { settle: 400 });
   await glide(1180, 150, 600);
-  await pause(1800);
+  await pause(1500);
 }
 /** Video B: the newly arrived delivery records in the graph, the stored photograph, the operator's finding. */
 async function proofAndFinding(detail) {
@@ -312,7 +320,7 @@ async function proofAndFinding(detail) {
     await click(dialog.getByLabel("Human outcome type"), { settle: 500 });
     await click(page.getByRole("option", { name: "Delivery confirmed by a person" }), { settle: 500 });
     await click(dialog.locator("#human-finding"), { settle: 250 });
-    await type(MAP.human_finding ?? "Proof photo and recipient code match the delivery record.", 22);
+    await type(MAP.human_finding ?? "Proof photo and recipient code match the delivery record.");
     // Only the delivery proof itself is cited.
     const proof = dialog.locator(".human-evidence label").filter({ hasText: /PROOF/ });
     if (!(await proof.count())) throw new Error("the delivery proof is not offered in the finding dialog");
@@ -418,7 +426,6 @@ try {
         await waiting(reported(7));
         // The record that arrived in THIS take (its id differs from the reference run's).
         const arrived = detail.outcome.evidence_ids ?? [];
-        await mode("Balanced");
         await play(7, arrived.length
           ? { select: null, highlight: [...(cueOf(7).highlight ?? []).filter((id) => !/-SIM-/.test(id)), ...arrived] }
           : {});
