@@ -38,7 +38,16 @@ const STAGE_OF = { extract: 0, retrieve: 1, classify: 2, retrieve_context: 3, re
 const cueOf = (index) =>
   (MAP.stages ?? []).filter((item) => (STAGE_OF[item.stage] ?? item.index) === index).at(-1) ?? {};
 const log = [];
-const t0 = Date.now();
+let t0 = Date.now();
+/** Stretches of the take that are only waiting, in seconds of video; finish.mjs removes them. */
+const idle = [];
+const waiting = async (promise) => {
+  const from = (Date.now() - t0) / 1000;
+  const value = await promise;
+  const to = (Date.now() - t0) / 1000;
+  if (to - from > 2) idle.push([+(from + 0.6).toFixed(2), +(to - 0.5).toFixed(2)]);
+  return value;
+};
 const note = (text) => {
   const line = `+${((Date.now() - t0) / 1000).toFixed(1)}s ${text}`;
   log.push(line);
@@ -60,6 +69,7 @@ const context = await browser.newContext({
   recordVideo: { dir: OUT, size: { width: 1920, height: 1080 } },
 });
 const page = await context.newPage();
+t0 = Date.now(); // the video starts with the page
 const pause = (ms) => page.waitForTimeout(ms);
 const fire = (type, detail) =>
   page.evaluate(([name, data]) => window.dispatchEvent(new CustomEvent(name, { detail: data })), [type, detail]);
@@ -115,7 +125,7 @@ for (let tries = 0; !caseId && tries < 120; tries++) {
 }
 if (!caseId) throw new Error(`${MAP.shipment_id} did not open a case`);
 MAP.case_id = caseId;
-await page.getByTestId(`data-row-${caseId}`).waitFor({ timeout: 120000 });
+await waiting(page.getByTestId(`data-row-${caseId}`).waitFor({ timeout: 120000 }));
 await pause(MAP.queue_hold_ms ?? 2600);
 await click(page.getByTestId(`data-row-${caseId}`));
 await page.getByRole("heading", { level: 1 }).waitFor();
@@ -124,12 +134,12 @@ note("case opened");
 
 // ---- 1–6. The investigation, step by step as the backend reports it ------------------------
 for (let index = 0; index <= 5; index++) {
-  await reached(index);
+  await waiting(reached(index));
   note(`${STEPS[index]} reported`);
   await play(index);
 }
 // ---- 7. Disposition -----------------------------------------------------------------------
-await reached(6);
+await waiting(reached(6));
 note("Disposition reported");
 let detail = await api(`/cases/${caseId}`);
 for (let tries = 0; /INVESTIGATING|RECOMMENDATION_READY/.test(detail.workflow_state) && tries < 90; tries++) {
@@ -199,7 +209,7 @@ await box.pressSequentially(QUESTION, { delay: 28 });
 await pause(400);
 await panel.getByRole("button", { name: "Send question" }).click();
 note("question sent (the wait for the answer is trimmed afterwards)");
-await panel.getByTestId("canopus-answer").waitFor({ timeout: 150000 });
+await waiting(panel.getByTestId("canopus-answer").waitFor({ timeout: 150000 }));
 note(`answer: ${(await panel.getByTestId("canopus-answer").locator(".chat-prose").innerText()).replace(/\s+/g, " ")}`);
 await pause(6500);
 await click(panel.getByRole("button", { name: "Minimize Canopus conversation" }));

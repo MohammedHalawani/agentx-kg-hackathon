@@ -1687,7 +1687,7 @@
 }
 .photo-modal figure {
   margin: 0;
-  max-width: min(760px, 86vw);
+  max-width: min(620px, 86vw);
   border-radius: 14px;
   overflow: hidden;
   background: var(--card);
