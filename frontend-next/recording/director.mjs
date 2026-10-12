@@ -296,7 +296,8 @@ async function canopus() {
   await pause(Number(arg("answer-hold", 3600)));
   await click(panel.getByRole("button", { name: "Minimize Canopus conversation" }), { settle: 400 });
   await glide(1180, 150, 600);
-  await pause(1500);
+  // The closing page stays long enough to read its status line.
+  await pause(VIDEO === "B" ? 2600 : 1500);
 }
 /** Video B: the newly arrived delivery records in the graph, the stored photograph, the operator's finding. */
 async function proofAndFinding(detail) {
@@ -338,7 +339,7 @@ async function proofAndFinding(detail) {
   }
   await cap(null);
   await scrollTo(page.getByRole("heading", { level: 1 }), "start", 1700);
-  await pause(1200);
+  await pause(2000);
   return detail;
 }
 
