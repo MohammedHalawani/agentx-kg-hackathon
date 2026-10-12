@@ -4,10 +4,10 @@ Two recordings of the Suhail application were prepared on the isolated test back
 `shipments-v2-world-ux-test`, synthetic world `SYN-SUHAIL-WORLD-1`). Everything in them is synthetic data. Nothing in
 them is SPL operational activity, and no message, request or notification left the simulation.
 
-The recordings: `suhail-video-A.mp4` (63 seconds, driver custody anomaly) and `suhail-video-B.mp4` (65 seconds,
-delivery proof arriving late). The last 17 seconds of Video B (the final page, the Canopus answer and the closing
-caption) were filmed about fifteen minutes after the take, on the same case, once two corrections to the served text
-had been deployed; the case's records were not changed in between.
+The final recordings: `suhail-video-A-v2.mp4` (59.7 seconds, driver custody anomaly) and `suhail-video-B-v2.mp4`
+(59.7 seconds, delivery proof arriving late). Neither has captions or overlay text. Waiting time was cut in editing
+(for Video B, 243 seconds of waiting in seven cuts and 17.9 seconds trimmed inside still moments); nothing was
+reordered or sped up. Earlier files without "v2" in the name are rejected versions.
 
 ## What ran for real in both recordings
 
@@ -53,9 +53,13 @@ What the records say. The depot SYN-DEPOT-KHB-01 was the last corroborated holde
 being loaded onto that vehicle and no delivery proof, because the driver's phone was offline and had not uploaded its
 records. The monitor opened the case as an unconfirmed custody handover.
 
-The recorded take (case SYN-OPS-CASE-368798e1b3f18838c5ad2087) followed the same automatic path as the reference
-run below and ended "Resolved: warehouse custody confirmed". Its request was recorded with no named device ("the
-facility holding the parcel"), so the phone visual in that take stands for a request to the depot, not to a driver.
+The final recording, `suhail-video-A-v2.mp4` (59.7 seconds, case SYN-OPS-CASE-0e2e71c42dc052dccff3392b, taken
+2026-10-12 09:02 UTC), followed the same automatic path as the reference run below and ended "Resolved: warehouse
+custody confirmed". Its request was recorded against the driver's app device SYN-DEV-APP-DRV-KHB-01-02, so the phone
+visual shows a notification to the driver and the choice "Scan package into warehouse". That choice and the phone
+are staged: in the simulation the answer came from the depot, which scanned the parcel and recorded it in its
+custody. An earlier recording (case SYN-OPS-CASE-368798e1b3f18838c5ad2087, same path, no named device) was rejected
+for its presentation, not for its records.
 
 What Suhail did, in the reference run (take 2). The investigation concluded a gap in the custody chain and the
 review accepted it; it proposed a custody reconciliation request; the policy allowed it automatically; the request
@@ -78,7 +82,9 @@ request has actually been sent):
   the parcel").
 - Take 2 (reference): custody reconciliation, automatic, recorded against the driver's app device
   SYN-DEV-APP-DRV-KHB-01-02.
-- Recorded take: custody reconciliation, automatic, recorded with no named device.
+- First recording (rejected for presentation): custody reconciliation, automatic, recorded with no named device.
+- Final recording: custody reconciliation, automatic, recorded against the driver's app device
+  SYN-DEV-APP-DRV-KHB-01-02.
 
 In every run the answer in the simulation came from the depot. A notification to the driver is therefore a visual of
 a request Suhail recorded against the driver's app device; it is not a delivered message and not a driver's reply.
@@ -95,31 +101,32 @@ Suhail. In the system the parcel had not even been loaded for delivery, while th
 already said delivered. Separately, a revision of the dispatch manifest dropped the loaded parcel. The monitor opened
 the case when the loading step passed its deadline.
 
-What Suhail did, in the recorded take (session SYN-OPS-SESSION-9535e85dce2441fed0b83ba1, case
-SYN-OPS-CASE-1a195686b65702ca2b84b91a). All of it ran for real:
+What Suhail did, in the final recording (case SYN-OPS-CASE-1d9d834dc3aaf712e44342aa, taken 2026-10-12 09:58 UTC,
+Auto on throughout). All of it ran for real:
 
 1. First investigation: ended with a person, nothing sent.
-2. The simulated clock was skipped to the next morning (two uses of "Skip to next event"). The phone reconnected by
-   itself and its records arrived: the delivery attempt, the recipient's passed code, the handover, the proof and the
-   photo record. Suhail sent no device sync; no request of any kind went out in this take.
-3. Suhail reopened the case by itself on the new evidence. The second investigation (started with "Investigate
-   now") first suspected late device records and proposed a device sync; the reviewer asked for a revision; it then
+2. The simulated clock ran to the next morning (cut from the film). The phone reconnected by itself and its records
+   arrived: the delivery attempt, the recipient's passed code, the handover, the proof and the photo record. Suhail
+   sent no device sync; no request of any kind went out in this take.
+3. Suhail reopened the case by itself on the new evidence and Auto started the second investigation by itself. It
    concluded a conflict with the dispatch manifest, the review accepted it, and it proposed a manifest review by a
    person. The policy sent the case to a person.
-4. The operator opened the photograph from the photo record, then recorded a finding through the page: delivery
-   confirmed, citing the delivery proof. The system accepted the finding because the cited proof passed its
-   corroboration check (bound to a delivered attempt at the address in force, with the recipient's passed code and
-   the handover). The finding is stored as a person's finding that does not close the case
-   (SYN-OPS-OUTCOME-54d385b4d0b785aca61485ad): the manifest disagreement and the unreconciled delivery session still
-   stand, so the case stays with a person.
+4. The delivery proof record SYN-SHP-000443-PROOF-001 was selected in the graph, with the shipment, the package,
+   the attempt, the recipient's code, the handover and the photo lit around it; the photo record was selected only
+   to open the stored photograph; the proof was selected again for the closing page. The film uses the graph focus
+   only (no map focus). The Canopus question asked was "What changed, and what still needs a person?".
 
-The closing caption, "Delivery evidence verified. Manifest discrepancy remains. Human review required.", is an
-overlay added for the recording, above the served status line. What each part rests on: "verified" means confirmed
-by a person against a proof that passed the system's corroboration check; it was not verified automatically by the
-outcome verifier, and the photograph played no part in the check. "Manifest discrepancy remains" is one of the two
-problems the served line names (the other is the delivery session ending unreconciled). "Human review required" is
-the case's state. The served status line reads: "Delivery confirmed by a person from the recorded proof. Manifest
-discrepancy remains. Delivery session not reconciled. Human review required."
+No operator finding was recorded in this recording. The ending is the page's own status line, built by code from
+the case's records: "Delivery evidence and the recipient's code received. The recorded proof supports delivery.
+Manifest discrepancy remains. A journey step is still overdue. Delivery session not reconciled. Human review
+required." "Supports delivery" means the graph holds a delivery proof that arrived after the case opened, bound to a
+delivered attempt, with the recipient's passed code and a handover record. It is not a verification: the outcome
+verifier decided nothing in this case, and the case is not resolved. In the recording Canopus says the proof records
+"confirm that the parcel was delivered"; that wording is the model's, and the served status says "supports".
+
+In an earlier, rejected recording of the same shipment (case SYN-OPS-CASE-1a195686b65702ca2b84b91a) the operator
+also recorded a finding, "delivery confirmed", citing the proof. The system accepted it as a person's finding that
+does not close the case, because the manifest disagreement and the unreconciled session still stood.
 
 What did not happen, so it must not be claimed: Suhail did not issue a device sync, did not resolve the case, and
 in two earlier genuine takes of the same shipment the first investigation was rejected twice by the reviewer (a
@@ -129,8 +136,8 @@ shipment in this world whose delivery proof and photo are held on an offline pho
 
 ## Known limits that matter when describing Suhail
 
-- The model's choice varies between runs of the same case. For SYN-SHP-000304: three runs proposed custody
-  reconciliation (automatic, resolved; the recorded take is one of them) and one proposed a facility check (held
+- The model's choice varies between runs of the same case. For SYN-SHP-000304: four runs proposed custody
+  reconciliation (automatic, resolved; both recordings are among them) and one proposed a facility check (held
   for an operator's approval, then resolved).
 - The investigator has not yet diagnosed late device records at a case's opening and sent a device sync by itself
   in any run; it reached that diagnosis for SYN-SHP-000443 only after the records had arrived.
