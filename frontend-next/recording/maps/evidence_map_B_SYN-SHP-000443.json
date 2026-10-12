@@ -1,0 +1,128 @@
+{
+ "schema": "suhail-showcase-evidence-map-1",
+ "video": "B",
+ "shipment_id": "SYN-SHP-000443",
+ "synthetic": true,
+ "source": "ids of the shipment's own graph records, read from a stored GET /cases/{id} of an earlier genuine run; chosen by the UI thread",
+ "stages": [
+  {
+   "stage": "Collect",
+   "highlight": [
+    "SYN-SHP-000443",
+    "SYN-SHP-000443-PKG-01",
+    "SYN-SHP-000443-CUST-008",
+    "SYN-DEPOT-TUU-01",
+    "SYN-SHP-000443-STATUS-004"
+   ],
+   "select": "SYN-SHP-000443-CUST-008",
+   "mode": "Balanced"
+  },
+  {
+   "stage": "Graph",
+   "highlight": [
+    "SYN-SHP-000443",
+    "SYN-SHP-000443-PKG-01",
+    "SYN-SHP-000443-CUST-001",
+    "SYN-SHP-000443-CUST-002",
+    "SYN-SHP-000443-CUST-003",
+    "SYN-SHP-000443-CUST-004",
+    "SYN-SHP-000443-CUST-005",
+    "SYN-SHP-000443-CUST-006",
+    "SYN-SHP-000443-CUST-007",
+    "SYN-SHP-000443-CUST-008",
+    "SYN-RR-TUU-01-0919-1",
+    "SYN-DRV-TUU-01-02",
+    "SYN-VEH-PRIVATE-TUU-01-02",
+    "SYN-SHP-000443-ASSIGN-004"
+   ],
+   "select": "SYN-SHP-000443-CUST-008",
+   "mode": "Balanced"
+  },
+  {
+   "stage": "Diagnose",
+   "highlight": [
+    "SYN-SHP-000443",
+    "SYN-SHP-000443-PKG-01",
+    "SYN-SHP-000443-CUST-008",
+    "SYN-DEPOT-TUU-01",
+    "SYN-SHP-000443-STATUS-004",
+    "SYN-RR-TUU-01-0919-1",
+    "SYN-DRV-TUU-01-02",
+    "SYN-VEH-PRIVATE-TUU-01-02",
+    "SYN-SHP-000443-ASSIGN-004",
+    "SYN-SHP-000443-SESSION-0919",
+    "SYN-SHP-000443-MANIFEST-TUU-01-0919-1-V1",
+    "SYN-SHP-000443-MANIFEST-TUU-01-0919-1-V2",
+    "SYN-SHP-000443-RECON-001"
+   ],
+   "select": [
+    "SYN-SHP-000443-CUST-008",
+    "SYN-SHP-000443-RECON-001"
+   ],
+   "mode": [
+    "Map focus",
+    "Graph focus"
+   ]
+  },
+  {
+   "stage": "Precedent",
+   "highlight": [
+    "SYN-SHP-000443"
+   ],
+   "select": null,
+   "mode": "Balanced"
+  },
+  {
+   "stage": "Recommend",
+   "highlight": [
+    "SYN-SHP-000443-RECON-001",
+    "SYN-SHP-000443-CUST-008",
+    "SYN-DEPOT-TUU-01",
+    "SYN-SHP-000443-SESSION-0919",
+    "SYN-DRV-TUU-01-02"
+   ],
+   "select": "SYN-SHP-000443-RECON-001",
+   "mode": "Balanced"
+  },
+  {
+   "stage": "Review",
+   "highlight": [
+    "SYN-SHP-000443-RECON-001",
+    "SYN-SHP-000443-CUST-008",
+    "SYN-DEPOT-TUU-01",
+    "SYN-SHP-000443-SESSION-0919",
+    "SYN-DRV-TUU-01-02"
+   ],
+   "select": "SYN-SHP-000443-RECON-001",
+   "mode": "Balanced"
+  },
+  {
+   "stage": "Disposition",
+   "highlight": [
+    "SYN-SHP-000443-RECON-001",
+    "SYN-SHP-000443-CUST-008",
+    "SYN-DEPOT-TUU-01",
+    "SYN-SHP-000443-SESSION-0919",
+    "SYN-DRV-TUU-01-02"
+   ],
+   "select": "SYN-SHP-000443-RECON-001",
+   "mode": "Balanced"
+  },
+  {
+   "stage": "Outcome",
+   "highlight": [],
+   "select": null,
+   "mode": "Balanced"
+  }
+ ],
+ "photo_node": "SYN-SHP-000443-PHOTO-001",
+ "proof_nodes": [
+  "SYN-SHP-000443",
+  "SYN-SHP-000443-PKG-01",
+  "SYN-SHP-000443-ATT-001",
+  "SYN-SHP-000443-AUTH-001",
+  "SYN-SHP-000443-HANDOFF-001",
+  "SYN-SHP-000443-PROOF-001",
+  "SYN-SHP-000443-PHOTO-001"
+ ]
+}
