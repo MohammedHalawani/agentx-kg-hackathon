@@ -1696,7 +1696,8 @@
 }
 .photo-modal img {
   display: block;
-  width: 100%;
+  /* A small stored picture is shown at up to about twice its size, never across the screen. */
+  width: min(620px, 86vw);
   max-height: 68vh;
   object-fit: contain;
   background: #111;

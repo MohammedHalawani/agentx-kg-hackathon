@@ -123,6 +123,19 @@ export function InvestigationPage() {
     id: null,
     ids: [],
   });
+  // Recording only: how many pipeline steps the rail may show as finished. The recording script
+  // raises it one step at a time, after the backend has reported that step, so each step can be
+  // read; the rail never shows a step ahead of the backend. Unlimited outside a paced recording.
+  const [railCap, setRailCap] = useState<number>(() => {
+    try {
+      return DIRECTOR &&
+        window.sessionStorage.getItem("suhail-director-rail") === "paced"
+        ? 0
+        : Infinity;
+    } catch {
+      return Infinity;
+    }
+  });
   const [split, setSplit] = useState(50);
   const [verdict, setVerdict] = useState<AuthorityDecision["verdict"] | null>(
     null,
@@ -200,17 +213,27 @@ export function InvestigationPage() {
         event as CustomEvent<{ id?: string | null; photo?: boolean }>
       ).detail;
       if (!DIRECTOR) return;
-      if (detail?.id) select(detail.id);
-      else if (detail && "id" in detail) {
+      // State setters only: this listener can outlive the render it was created in.
+      if (detail?.id) {
+        setSelected(detail.id);
+        setRelationship(null);
+      } else if (detail && "id" in detail) {
         setSelected(null);
         setRelationship(null);
       }
       if (detail?.photo === false) setPhoto(null);
     };
+    const rail = (event: Event) => {
+      if (!DIRECTOR) return;
+      const cap = (event as CustomEvent<{ cap?: number | null }>).detail?.cap;
+      setRailCap(typeof cap === "number" ? cap : Infinity);
+    };
+    window.addEventListener("suhail:rail", rail);
     window.addEventListener("suhail:select", pick);
     window.addEventListener("suhail:graph-highlight", show);
     window.addEventListener("suhail:authorize", authorize);
     return () => {
+      window.removeEventListener("suhail:rail", rail);
       window.removeEventListener("suhail:select", pick);
       window.removeEventListener("suhail:graph-highlight", show);
       window.removeEventListener("suhail:authorize", authorize);
@@ -351,6 +374,13 @@ export function InvestigationPage() {
   }
   /** Where a pipeline step stands, from the backend's recorded run and outcome. */
   const stageState = (i: number): StageState => {
+    const reported = reportedState(i);
+    if (!Number.isFinite(railCap) || i < railCap) return reported;
+    // Paced recording: the step at the cap is shown as in progress once the backend has
+    // started it, and later steps wait their turn.
+    return i === railCap && reported !== "queued" ? "running" : "queued";
+  };
+  const reportedState = (i: number): StageState => {
     if (!c.run) return "queued";
     const recorded = c.backend?.stageStatus?.[i];
     // A step the backend recorded as failed or degraded did not produce its result.
@@ -792,6 +822,7 @@ export function InvestigationPage() {
                 variant="ghost"
                 key={s.label}
                 className={`pipeline-step state-${state} ${stage === i ? "selected" : ""} ${explanation || short ? "explained" : ""}`}
+                data-reported={DIRECTOR ? reportedState(i) : undefined}
                 aria-pressed={stage === i}
                 aria-label={`${i === 6 && c.backend ? "Disposition" : s.label} · ${state}`}
                 title={explanation?.text || s.detail || undefined}
