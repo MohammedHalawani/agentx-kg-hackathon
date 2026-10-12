@@ -39,6 +39,54 @@ How to describe it accurately:
 - The investigation in the video took about 25 s of real time; the depot's answer arrives about
   90 simulated minutes later.
 
+## Video B: late delivery proof, responsible escalation (first take)
+
+- File: `suhail-video-B-take1.mp4`, 73 s, 1920×1080.
+- Shipment: SYN-SHP-000443 (Riyadh to Tabuk). Recorded 12 Oct 2026, 07:26 UTC.
+
+Genuinely executed by Suhail's backend during the take:
+- the monitor opened the case (an expected step of the journey overdue); the first GPT-OSS
+  investigation suggested a custody gap, the independent review did not accept it, and the case
+  went to a person with nothing sent;
+- simulated time ran to the next morning, when the driver's phone uploaded its records: the
+  delivery attempt, the recipient's passed code, the handover, the delivery proof and the
+  photograph entered the case's graph, and Suhail reopened the case by itself;
+- the second investigation first suspected late device records and proposed a device sync; the
+  reviewer asked for a revision; it then concluded a conflict with the dispatch manifest, the
+  review accepted it, and it proposed a manifest review by a person. Suhail may not act on it alone;
+- the operator recorded "Delivery confirmed by a person" through the normal dialog, citing the
+  delivery proof record. The backend stored it as a person's finding (not as Suhail's automatic
+  verification) and kept the case open: "The case is not resolved and stays with a person, because
+  this still stands: the dispatch manifest and the custody records disagree and the delivery
+  session ended with this parcel unaccounted for."
+- the Canopus answer was generated in the take.
+
+Staged for the recording:
+- a curated shipment in a seeded world; scripted clicks (Auto on, opening the case, Investigate
+  now, opening the photograph, the operator's finding and its typed text, the question);
+- off screen: the clock started at 60×, Auto paused, and time moved forward ("Skip", up to 24 hours);
+- highlights, selected records and views were applied by the script from a list of the
+  shipment's own graph records;
+- the photograph is an illustration supplied for this synthetic shipment and served from the
+  photo record's stored image; it is not a photograph of a real delivery;
+- **the three-line caption** ("Delivery evidence verified. Manifest discrepancy remains. Human
+  review required.") was drawn in the edit. It is not part of the application;
+- **the closing shot** shows the same case page, captured about ten minutes after the take with
+  the delivery records lit in the graph. Nothing ran in the backend for it;
+- 154 s of waiting and holds were removed in 14 cuts (raw take 219.7 s). Nothing was reordered
+  or sped up.
+
+How to describe it accurately:
+- Suhail flagged an overdue shipment, investigated, was challenged by its own reviewer, received
+  new evidence, re-examined the case by itself, and correctly left the remaining manifest
+  conflict to a person. It did not resolve the case and the video does not say it did.
+- "Verified" in the caption means: a person confirmed the delivery against a proof record that
+  passed the system's corroboration check. It is not Suhail's automatic outcome verification.
+- Do not say Suhail requested the device sync: in this take it proposed one, the reviewer sent
+  it back, and nothing was sent. The phone's records arrived on their own the next morning.
+- Known flaw on screen: after the finding, the "Next best action" line still says the reviewer
+  did not accept the investigation, and the Outcome step shows "Queued".
+
 ## Rerun
 
 See `frontend-next/recording/README.md`: seed, `rehearse.mjs`, `director.mjs`, `finish.mjs`.
