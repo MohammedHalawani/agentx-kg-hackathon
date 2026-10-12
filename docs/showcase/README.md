@@ -4,6 +4,11 @@ Two recordings of the Suhail application were prepared on the isolated test back
 `shipments-v2-world-ux-test`, synthetic world `SYN-SUHAIL-WORLD-1`). Everything in them is synthetic data. Nothing in
 them is SPL operational activity, and no message, request or notification left the simulation.
 
+The recordings: `suhail-video-A.mp4` (63 seconds, driver custody anomaly) and `suhail-video-B.mp4` (65 seconds,
+delivery proof arriving late). The last 17 seconds of Video B (the final page, the Canopus answer and the closing
+caption) were filmed about fifteen minutes after the take, on the same case, once two corrections to the served text
+had been deployed; the case's records were not changed in between.
+
 ## What ran for real in both recordings
 
 - The shipments are ordinary shipments of the synthetic world, chosen because their own records tell the story. No
