@@ -357,6 +357,14 @@ export function InvestigationPage() {
     if (i <= c.run.stage && (recorded === "DEGRADED" || recorded === "FAILED"))
       return "failed";
     if (c.status === "resolved" || i < c.run.stage) return "completed";
+    // An outcome on record that did not resolve the case (a person's finding, an unanswered
+    // request): the Outcome step has a result and waits on someone, it is not still queued.
+    if (
+      i === 7 &&
+      !!c.backend?.verification &&
+      c.backend.verification.result !== "confirmed"
+    )
+      return "waiting";
     if (i !== c.run.stage) return "queued";
     // The authorized request could not be delivered: a genuine failure of the step.
     if (i === 6 && !!c.backend && !!c.execution && !c.execution.successful)
