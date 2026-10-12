@@ -97,3 +97,11 @@ How to describe it accurately:
 ## Rerun
 
 See `frontend-next/recording/README.md`: seed, `rehearse.mjs`, `director.mjs`, `finish.mjs`.
+
+## Cut lists of the delivered files (seconds of the raw take, removed)
+
+- Video A: only the waits the director marked: 9.44-10.21, 20.09-23.65, 36.29-37.16, 46.66-116.92, 129.86-153.02.
+- Video B, main take: marked waits 21.15-24.25, 42.02-126.54, 135.78-172.14, 207.65-210.48, plus
+  0-2.4, 8.2-9.8, 16.6-19.0, 25.8-27.3, 29.5-33.2, 34.0-36.4, 39.5-42.0, 126.9-128.3,
+  131.5-135.8, 188.0-190.5, 191.5-194.5, and everything after 199.3 (replaced by the closing sequence).
+- Video B, closing sequence (26.5 s raw): kept 0-1.0, 3.2-8.55, 12.38-16.0, 17.3-24.5; caption from 11.7 s of the kept film.
