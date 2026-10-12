@@ -45,8 +45,33 @@ await cdp.send("Page.startScreencast", { format: "jpeg", quality: 93, maxWidth: 
 await page.waitForTimeout(700);
 await fire("suhail:graph-highlight", { caseId, ids: MAP.proof_nodes ?? [] });
 if (MAP.proof_nodes?.length) await fire("suhail:select", { id: MAP.proof_nodes.find((id) => /PROOF/.test(id)) ?? MAP.proof_nodes[0] });
+const marks = {};
+const mark = (name) => (marks[name] = +((Date.now() - t0) / 1000).toFixed(2));
+if (arg("ask")) {
+  // A question to Canopus on the case as it stands. Asking writes nothing to the case.
+  await page.waitForTimeout(3000);
+  await page.getByRole("button", { name: "Open Canopus assistant" }).click();
+  const panel = page.locator(".canopus-window");
+  await page.waitForTimeout(500);
+  await panel.getByRole("button", { name: "Expand conversation workspace" }).click();
+  const box = panel.getByRole("textbox", { name: "Ask Canopus about this case" });
+  await box.click();
+  await box.pressSequentially(arg("ask"), { delay: 22 });
+  await page.waitForTimeout(350);
+  await panel.getByRole("button", { name: "Send question" }).click();
+  mark("asked");
+  await panel.getByTestId("canopus-answer").waitFor({ timeout: 150000 });
+  mark("answered");
+  marks.answer = (await panel.getByTestId("canopus-answer").locator(".chat-prose").innerText()).replace(/\s+/g, " ");
+  await page.waitForTimeout(Number(arg("answer-hold", 5500)));
+  await panel.getByRole("button", { name: "Minimize Canopus conversation" }).click();
+  mark("closed");
+  await page.mouse.move(960, 200, { steps: 10 });
+}
 await page.waitForTimeout(Number(arg("hold", 8000)));
 const ended = (Date.now() - t0) / 1000;
+writeFileSync(join(OUT, `suhail-video-${VIDEO}-end-marks.json`), JSON.stringify({ ...marks, ended }, null, 1));
+console.log(JSON.stringify(marks));
 await browser.close();
 const lines = ["ffconcat version 1.0"];
 frames.forEach(([name, at], index) => {
