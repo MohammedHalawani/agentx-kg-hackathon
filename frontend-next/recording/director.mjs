@@ -68,6 +68,8 @@ const context = await browser.newContext({
   viewport: { width: 1920, height: 1080 },
   deviceScaleFactor: 1,
 });
+// Recording mode for every page of this browser, whichever page loads first.
+await context.addInitScript(() => window.sessionStorage.setItem("suhail-director", "1"));
 const page = await context.newPage();
 t0 = Date.now(); // the video starts with the page
 // The picture: the browser's own screencast, one JPEG per painted frame with its time, encoded
@@ -240,14 +242,34 @@ async function bringOutcome() {
 }
 const outcome = sent ? bringOutcome() : Promise.resolve(detail);
 if (sent && VIDEO === "A" && MAP.phone) {
-  const { title, body, options, confirmation } = MAP.phone;
-  const chosen = Math.max(0, typeof MAP.phone.chosen === "number" ? MAP.phone.chosen : options.indexOf(MAP.phone.chosen));
-  await fire("suhail:phone", { step: 1, title: title.replace(/^Suhail\s*[—-]\s*/, ""), body, options, chosen, confirmation });
+  // The phone shows the request this take actually recorded, to the recipient it recorded.
+  const action = detail.brief?.actions?.at(-1) ?? {};
+  const toDriver = action.recipient?.kind === "device" && /APP-DRV/.test(action.recipient?.id ?? "");
+  note(`request recorded for ${action.recipient?.label_en ?? "an unnamed recipient"}; phone shows ${toDriver ? "the driver's app" : "the facility's device"}`);
+  const { options, confirmation } = MAP.phone;
+  const phone = toDriver
+    ? {
+        title: MAP.phone.title.replace(/^Suhail\s*[—-]\s*/, ""),
+        body: MAP.phone.body,
+        options,
+        chosen: Math.max(0, typeof MAP.phone.chosen === "number" ? MAP.phone.chosen : options.indexOf(MAP.phone.chosen)),
+        confirmation,
+      }
+    : {
+        title: "Custody check required",
+        body: `Shipment ${MAP.shipment_id}: ${detail.recommendation?.action_en ?? action.label_en ?? ""}`,
+        options: [],
+        chosen: 0,
+        confirmation: "Check scan recorded",
+      };
+  await fire("suhail:phone", { step: 1, ...phone });
   await pause(3000);
   await fire("suhail:phone", { step: 2 });
   await pause(2300);
-  await fire("suhail:phone", { step: 3 });
-  await pause(900);
+  if (toDriver) {
+    await fire("suhail:phone", { step: 3 });
+    await pause(900);
+  }
   await fire("suhail:phone", { step: 4 });
   await pause(1900);
   detail = await waiting(outcome);
