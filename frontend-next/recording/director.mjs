@@ -259,7 +259,7 @@ async function openCase() {
 async function operations() {
   await page.goto(`${BASE}/app/operations`);
   await startFilm();
-  await page.locator(".environment-badge[data-dataset=synthetic]").waitFor({ timeout: 90000 });
+  await waiting(page.locator(".environment-badge[data-dataset=synthetic]").waitFor({ timeout: 90000 }), 0);
   await page.mouse.move(pointer.x, pointer.y);
   await pause(1500);
   before = new Set((await api("/cases/queue?scope=all&limit=100")).items.map((item) => item.case_id));
