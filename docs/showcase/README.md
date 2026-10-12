@@ -48,6 +48,10 @@ What the records say. The depot SYN-DEPOT-KHB-01 was the last corroborated holde
 being loaded onto that vehicle and no delivery proof, because the driver's phone was offline and had not uploaded its
 records. The monitor opened the case as an unconfirmed custody handover.
 
+The recorded take (case SYN-OPS-CASE-368798e1b3f18838c5ad2087) followed the same automatic path as the reference
+run below and ended "Resolved: warehouse custody confirmed". Its request was recorded with no named device ("the
+facility holding the parcel"), so the phone visual in that take stands for a request to the depot, not to a driver.
+
 What Suhail did, in the reference run (take 2). The investigation concluded a gap in the custody chain and the
 review accepted it; it proposed a custody reconciliation request; the policy allowed it automatically; the request
 was recorded against the device the investigation cited (the driver's app device); the depot checked, scanned the
@@ -69,6 +73,7 @@ request has actually been sent):
   the parcel").
 - Take 2 (reference): custody reconciliation, automatic, recorded against the driver's app device
   SYN-DEV-APP-DRV-KHB-01-02.
+- Recorded take: custody reconciliation, automatic, recorded with no named device.
 
 In every run the answer in the simulation came from the depot. A notification to the driver is therefore a visual of
 a request Suhail recorded against the driver's app device; it is not a delivered message and not a driver's reply.
@@ -79,12 +84,52 @@ this case is the depot.
 
 ## Video B: delivery proof arriving late, shipment SYN-SHP-000443
 
-See the section added after the Video B runs.
+What the records say. The parcel was delivered on 19 September at 05:50 UTC with the recipient's code, a handover
+record and a photo record, but the driver's phone (SYN-DEV-APP-DRV-TUU-01-02) was offline, so none of that reached
+Suhail. In the system the parcel had not even been loaded for delivery, while the depot's own reconciliation record
+already said delivered. Separately, a revision of the dispatch manifest dropped the loaded parcel. The monitor opened
+the case when the loading step passed its deadline.
+
+What Suhail did, in the recorded take (session SYN-OPS-SESSION-9535e85dce2441fed0b83ba1, case
+SYN-OPS-CASE-1a195686b65702ca2b84b91a). All of it ran for real:
+
+1. First investigation: ended with a person, nothing sent.
+2. The simulated clock was skipped to the next morning (two uses of "Skip to next event"). The phone reconnected by
+   itself and its records arrived: the delivery attempt, the recipient's passed code, the handover, the proof and the
+   photo record. Suhail sent no device sync; no request of any kind went out in this take.
+3. Suhail reopened the case by itself on the new evidence. The second investigation (started with "Investigate
+   now") first suspected late device records and proposed a device sync; the reviewer asked for a revision; it then
+   concluded a conflict with the dispatch manifest, the review accepted it, and it proposed a manifest review by a
+   person. The policy sent the case to a person.
+4. The operator opened the photograph from the photo record, then recorded a finding through the page: delivery
+   confirmed, citing the delivery proof. The system accepted the finding because the cited proof passed its
+   corroboration check (bound to a delivered attempt at the address in force, with the recipient's passed code and
+   the handover). The finding is stored as a person's finding that does not close the case
+   (SYN-OPS-OUTCOME-54d385b4d0b785aca61485ad): the manifest disagreement and the unreconciled delivery session still
+   stand, so the case stays with a person.
+
+The closing caption, "Delivery evidence verified. Manifest discrepancy remains. Human review required.", is an
+overlay added for the recording, above the served status line. What each part rests on: "verified" means confirmed
+by a person against a proof that passed the system's corroboration check; it was not verified automatically by the
+outcome verifier, and the photograph played no part in the check. "Manifest discrepancy remains" is one of the two
+problems the served line names (the other is the delivery session ending unreconciled). "Human review required" is
+the case's state. The served status line reads: "A person recorded a finding: the delivery is confirmed from the
+recorded proof. The case is not resolved and stays with a person, because this still stands: the dispatch manifest
+and the custody records disagree and the delivery session ended with this parcel unaccounted for."
+
+What did not happen, so it must not be claimed: Suhail did not issue a device sync, did not resolve the case, and
+in two earlier genuine takes of the same shipment the first investigation was rejected twice by the reviewer (a
+custody gap was suspected, not late device records). No operator action exists to send a device sync on a case that
+is with a person in this state. This shipment was chosen before its manifest problem was noticed; it is the only
+shipment in this world whose delivery proof and photo are held on an offline phone.
 
 ## Known limits that matter when describing Suhail
 
-- The model's choice varies between runs of the same case. For SYN-SHP-000304: two runs proposed custody
-  reconciliation (automatic), one proposed a facility check (needs approval).
+- The model's choice varies between runs of the same case. For SYN-SHP-000304: three runs proposed custody
+  reconciliation (automatic, resolved; the recorded take is one of them) and one proposed a facility check (held
+  for an operator's approval, then resolved).
+- The investigator has not yet diagnosed late device records at a case's opening and sent a device sync by itself
+  in any run; it reached that diagnosis for SYN-SHP-000443 only after the records had arrived.
 - A parcel whose last corroborated holder is a contractor or independent driver is never acted on automatically
   (rule AUTH-04): the first candidate for Video A, SYN-SHP-000174, was investigated and went to a person for that
   reason. A delivery session that ends with a parcel unaccounted for is also reserved for a person.
