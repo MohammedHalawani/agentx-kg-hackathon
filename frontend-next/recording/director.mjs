@@ -15,6 +15,7 @@
  *    scripted. Waiting time is paced here and may be trimmed afterwards.
  */
 import { chromium } from "playwright";
+import { execSync } from "node:child_process";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -150,6 +151,7 @@ const leave = async () => {
   await post("/simulation/pause").catch(() => {});
 };
 let caseId = arg("case");
+let startedAt = new Date().toISOString();
 try {
 if (caseId) {
   // Rehearsal on a case that is already open: no Operations opening.
@@ -166,7 +168,8 @@ await page.locator(".environment-badge[data-dataset=synthetic]").waitFor({ timeo
 await pause(1800);
 // Backstage: the simulated clock starts at the speed the fixture was prepared for.
 await post("/simulation/start", { speed: Number(arg("speed", 60)), replay_mode: "timeline" });
-note(`clock started at ${new Date().toISOString()}`);
+startedAt = new Date().toISOString();
+note(`clock started at ${startedAt}`);
 await page.getByTestId("clock-control").filter({ hasText: /running/i }).waitFor({ timeout: 20000 });
 await pause(900);
 await click(page.getByRole("switch", { name: "Automatic investigation" }));
@@ -298,6 +301,14 @@ if (VIDEO === "B" && MAP.photo_node) {
     // uploads. Suhail then reopens the case by itself.
     await post("/worker/pause");
     detail = await waiting((async () => {
+      // The build clone's record of the first investigation, before time moves (off screen).
+      if (arg("first-map"))
+        try {
+          execSync(arg("first-map").replace("STARTED", startedAt), { stdio: "ignore", timeout: 120000 });
+          note("first investigation's evidence map saved");
+        } catch (error) {
+          note(`first evidence map not saved: ${String(error.message).slice(0, 120)}`);
+        }
       for (let tries = 0; tries < 40; tries++) {
         const current = await api(`/cases/${caseId}`);
         if (hasPhoto(current)) return current;
