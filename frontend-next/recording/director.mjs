@@ -293,11 +293,15 @@ if (VIDEO === "B" && MAP.photo_node) {
   // The key moment: from the shipment to the stored proof photograph, enlarged, then back.
   await mode("graph");
   await fire("suhail:select", { id: MAP.photo_node });
-  await pause(1800);
+  await pause(2200);
+  // The stored photograph sits in the record's inspector, below the workspace.
+  await page.getByTestId("evidence-photo").scrollIntoViewIfNeeded();
+  await pause(900);
   await click(page.getByTestId("evidence-photo"));
-  await pause(4200);
+  await pause(5200);
   await fire("suhail:select", { photo: false });
   await pause(700);
+  await page.getByRole("heading", { level: 1 }).scrollIntoViewIfNeeded();
   await mode("balanced");
 }
 await pause(2600);
