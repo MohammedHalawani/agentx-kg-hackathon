@@ -34,11 +34,25 @@ FIELDS = {
                 "diagnosis_available", "rule_signal_codes",
                 # AUTH-27: the verified outcome of an action that ran under a reviewer's doubt, while the case waits for
                 # its reassessment (cleared by that run).
-                "reassess_outcome_id"},
+                "reassess_outcome_id",
+                # V3 ownership of a running investigation (operations.claims). claim_id, claim_at (the simulation clock
+                # at the grant), last_run_id, as_of and state_version keep their meaning. worker_id names the owner;
+                # claim_epoch counts every change of ownership and never goes back; claim_wall_at, lease_expires_at and
+                # lease_heartbeat_at are wall-clock UTC (the simulation clock can pause or run fast, a lease cannot);
+                # claim_as_of is the evidence cutoff of the claimed run, which later ingestion does not move.
+                # claim_recoveries counts automatic recoveries (an expired lease, a failed worker) since the last
+                # finished investigation.
+                "worker_id", "claim_epoch", "claim_wall_at", "claim_as_of", "lease_expires_at", "lease_heartbeat_at",
+                "claim_recoveries"},
     "OpsAudit": {"case_id", "event_type", "actor_id", "decision", "result", "from_state", "to_state", "run_id",
                  "stage", "stage_status", "sequence", "wall_recorded_at"},
     "OpsEventReceipt": {"source_event_id", "event_kind", "source_occurred_at", "case_id"},
-    "OpsRun": {"case_id", "mode", "result_json", "iteration", "status", "context_hash"},
+    "OpsRun": {"case_id", "mode", "result_json", "iteration", "status", "context_hash",
+               # The claim a run was made under, kept after the case releases it: what a late write of that run is checked
+               # against. updated_wall_at is the wall time of the last accepted progress event (never a heartbeat);
+               # end_reason says who ended the run (operations.claims.END_*).
+               "worker_id", "claim_id", "claim_epoch", "claim_wall_at", "claim_as_of", "updated_wall_at", "finished_wall_at",
+               "active_stage", "end_reason"},
     "OpsRecommendation": {"case_id", "run_id", "action_code", "action", "action_en", "action_ar", "evidence_ids", "status", "requires_approval",
                           "action_type", "risk_class", "authority_reason", "agent_mode", "target_json", "approval_context_json",
                           "execution_id"},
@@ -61,6 +75,8 @@ FIELDS = {
     "OpsCommand": {"case_id", "idempotency_key", "request_hash", "result_json", "command_type"},
     "OpsRiskFlag": {"active", "certainty", "promise_at", "latest_estimate_at", "earliest_estimate_at", "evidence_ids", "checked_at"},
 }
+# Wall-clock UTC times of a claim and its run. Stored as temporal values like every other ledger time.
+WALL_FIELDS = ("claim_wall_at", "lease_expires_at", "lease_heartbeat_at", "updated_wall_at", "finished_wall_at")
 RELATIONSHIPS = frozenset(("OPS_ABOUT", "OPS_HAS_RUN", "OPS_PROPOSES", "OPS_REVIEWED_BY", "OPS_HAS_DECISION",
                          "OPS_INITIATES", "OPS_HAS_OUTCOME", "OPS_HAS_AUDIT", "OPS_HAS_RECEIPT", "OPS_CITES", "OPS_NOTIFIED"))
 SCHEMA = {
@@ -91,7 +107,7 @@ def validate_node(labels, props, world):
                 or props.get("holdout_group") != owner):
             raise ValueError("Operations ownership must bind a development shipment")
     for key in ("recorded_at", "occurred_at", "as_of", "initial_as_of", "end_at", "opened_at", "verified_at",
-                "observed_at", "source_occurred_at", "cursor_time", "claim_at"):
+                "observed_at", "source_occurred_at", "cursor_time", "claim_at", *WALL_FIELDS, "claim_as_of"):
         if props.get(key) is not None:
             if not isinstance(props[key], datetime) and not hasattr(props[key], "to_native"):
                 raise ValueError("Operations timestamps require temporal properties")

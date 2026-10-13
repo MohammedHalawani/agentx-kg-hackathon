@@ -24,7 +24,8 @@ from functools import lru_cache
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from llm.pipeline._llm import final_text, message_text, model
+from llm.pipeline._llm import final_text, invoke, message_text, model
+from operations import provider_gate
 
 log = logging.getLogger("llm.translate")
 
@@ -87,7 +88,10 @@ def to_arabic(text: str) -> str:
         return text
 
     try:
-        resp = model().invoke([SystemMessage(SYSTEM), HumanMessage(USER.format(text=source))])
+        # Through the shared invocation, so a translation counts against the same limit on provider calls in flight
+        # as every other call. The model, the messages and the absence of a deadline are as they were.
+        with provider_gate.scope(role="translation"):
+            resp = invoke([SystemMessage(SYSTEM), HumanMessage(USER.format(text=source))], client=model(), entry="translate")
         out = message_text(getattr(resp, "content", None))
     except Exception as exc:
         log.warning("translation call failed (%s); keeping the original text", type(exc).__name__)

@@ -52,6 +52,10 @@ class Tx:
                     if p.get("force") or v.get("outcome_checked_as_of") is None or v["as_of"]>v["outcome_checked_as_of"] or e["deadline_at"]<=p["clock"]:
                         out.append({"case":copy.deepcopy(v),"execution":copy.deepcopy(e)})
             return Result(sorted(out,key=lambda r:str(r["case"]["as_of"]))[:p["limit"]])
+        if q.startswith("MATCH(c:OpsEntity:OpsCase {dataset_id:$dataset,split:'development',workflow_state:'INVESTIGATING'})"):
+            rows=sorted((copy.deepcopy(v) for k,v in self.ledger.values() if k=="OpsCase" and v["workflow_state"]=="INVESTIGATING"),
+                        key=lambda v:v["entity_id"])
+            return Result([{"props":r} for r in rows])
         if q.startswith("MATCH(e:OpsEntity:OpsExecution {dataset_id:$dataset,status:'"):
             status=q.split("status:'")[1].split("'")[0]
             rows=sorted((copy.deepcopy(v) for k,v in self.ledger.values() if k=="OpsExecution" and v.get("status")==status),
@@ -164,6 +168,52 @@ def agent_investigator(verdicts=("ACCEPT",),cause="BARCODE_MISMATCH",action="REQ
 class Acknowledging:
     """A field system that accepts every request and reports nothing back."""
     def respond(self,execution,now):return {"acknowledged":True,"behaviour":"Request accepted."}
+
+
+class WallClock:
+    """A store's wall clock in a test (store.wall): it moves only when the test says so."""
+    def __init__(self):
+        from datetime import datetime, timezone
+        self.now=datetime(2026,10,13,12,0,0,tzinfo=timezone.utc)
+    def __call__(self):return self.now
+    def advance(self,seconds):
+        self.now+=timedelta(seconds=seconds);return self.now
+
+
+class live_claim:
+    """An investigation in progress for the length of a `with` block: the store's own claim on a case (the oldest
+    eligible one, or `case_id`), granted to `worker_id` through the real claim path, so the case, its run, the worker,
+    the epoch and the unexpired lease all agree. The investigation is held where its first evidence read would be.
+    The block's value is the claimed case as granted. On leaving, the worker gives the claim up (if it still has it)
+    and its investigation ends without a result."""
+    def __init__(self,store,case_id=None,worker_id="investigation-1"):
+        self.store,self.case_id,self.worker_id=store,case_id,worker_id
+        self.entered,self.release,self.box=threading.Event(),threading.Event(),{}
+    def __enter__(self):
+        store=self.store;self.reader=store._reader();self.evidence,self.hold=self.reader.evidence,store._hold
+        def held(*args,**kwargs):
+            if threading.current_thread() is self.thread and not self.entered.is_set():
+                self.entered.set();self.release.wait(60)
+            return self.evidence(*args,**kwargs)
+        def holding(claimed):
+            self.box["claimed"]=claimed;return self.hold(claimed)
+        def investigate():
+            try:self.box["result"]=store.process_one(case_id=self.case_id,manual=True,worker_id=self.worker_id)
+            except Exception as error:self.box["error"]=error
+        self.thread=threading.Thread(target=investigate,name="suhail-"+self.worker_id,daemon=True)
+        self.reader.evidence,store._hold=held,holding
+        self.thread.start()
+        while not self.entered.wait(0.01):
+            if not self.thread.is_alive():
+                self.__exit__(None,None,None)
+                raise AssertionError(f"No case was claimed for the test: {self.box}")
+        return self.box["claimed"]
+    def __exit__(self,*exc):
+        try:self.store.release_claims({self.worker_id})
+        finally:
+            self.release.set();self.thread.join(60)
+            self.reader.evidence,self.store._hold=self.evidence,self.hold
+        return False
 
 
 class StoreTests(unittest.TestCase):
