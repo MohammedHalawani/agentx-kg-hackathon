@@ -1066,14 +1066,14 @@ export function InvestigationPage() {
                   {t(authority[0], authority[1])}
                 </Badge>
               </div>
-              {c.backend?.detailLoaded && (
-                <EvidenceChronology
-                  c={c}
-                  selected={selected}
-                  onSelect={select}
-                />
-              )}
             </>
+          )}
+          {c.backend?.detailLoaded && (
+            <EvidenceChronology
+              c={c}
+              selected={selected}
+              onSelect={select}
+            />
           )}
           {queuedForCapacity && (
             <p className="context-assigned" data-testid="investigation-queued">

@@ -27,6 +27,7 @@ export interface Stub {
     online: boolean;
     queue: ApiQueueCase[];
     detailA: ApiCaseDetail;
+    detailV3: ApiCaseDetail;
     worker: string;
     clock: string;
     dualWorker: boolean;
@@ -44,6 +45,7 @@ export async function stubBackend(page: Page): Promise<Stub> {
       online: true,
       queue: structuredClone(queueRows),
       detailA: detailA(),
+      detailV3: detailV3Route(),
       worker: "paused",
       clock: "paused",
       dualWorker: false,
@@ -205,7 +207,7 @@ export async function stubBackend(page: Page): Promise<Stub> {
       if (path === "/schema") return json(route, schema);
       if (path === `/cases/${CASE_A}`) return json(route, stub.state.detailA);
       if (path === `/cases/${CASE_B}`) return json(route, detailB());
-      if (path === `/cases/${CASE_V3}`) return json(route, detailV3Route());
+      if (path === `/cases/${CASE_V3}`) return json(route, stub.state.detailV3);
       if (path === `/cases/${CASE_C}`) {
         return json(route, {
           ...detailA(),
