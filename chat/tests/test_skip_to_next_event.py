@@ -5,6 +5,8 @@ import unittest
 
 from dataset_v2.contracts import instant
 from operations.lifecycle import OperationsConflict
+from operations.schema import public_value
+from tests.test_operations_store import WallClock, live_claim
 from tests.test_world_simulation import Scenario, at
 from tests.world_live import seed_case, symptoms_at
 
@@ -71,11 +73,56 @@ class SkipTests(unittest.TestCase):
         for hours in (0, 169, 1.5, "3", None):
             with self.assertRaises(OperationsConflict):
                 s.store.skip_to_next_event(max_hours=hours)
-        from operations.store import CONTROL_ID
-        s.driver.ledger[CONTROL_ID][1]["worker_claim"] = case_id
-        with self.assertRaises(OperationsConflict):
-            s.store.skip_to_next_event()
+        # An investigation in progress is a live claim: the store's own grant on an OPEN peer case, with its run, worker,
+        # epoch and unexpired lease (operations.claims). The case awaiting its outcome is not touched by any of it.
+        peer = self.peer(s)
+        with live_claim(s.store, peer) as claimed:
+            case = next(public_value(c) for c in s.kind("OpsCase") if c["entity_id"] == peer)
+            run = next(public_value(r) for r in s.kind("OpsRun") if r["entity_id"] == claimed["last_run_id"])
+            self.assertEqual((case["workflow_state"], run["status"]), ("INVESTIGATING", "RUNNING"))
+            self.assertEqual([case[k] for k in ("claim_id", "claim_epoch", "worker_id", "last_run_id")],
+                             [claimed["claim_id"], 1, "investigation-1", run["entity_id"]])
+            self.assertEqual([run[k] for k in ("claim_id", "claim_epoch", "worker_id")], [claimed["claim_id"], 1, "investigation-1"])
+            self.assertGreater(instant(case["lease_expires_at"]), s.store.wall())
+            with self.assertRaises(OperationsConflict) as refused:
+                s.store.skip_to_next_event()
+            self.assertIn("investigation is running", str(refused.exception))
+            self.assertEqual([a["case_id"] for a in s.store.status()["worker"]["active_cases"]], [peer])     # the claim is untouched
         self.assertEqual(s.case(case_id)["workflow_state"], "AWAITING_OUTCOME")
+
+    def peer(self, s, sid=WRONG_LABEL):
+        """An OPEN case on another shipment, opened as the monitor opens one: what an investigation can be claiming
+        while the first case awaits its outcome."""
+        def write(tx):
+            control = s.store._control(tx, lock=True)
+            symptoms = sorted(symptoms_at(s.live, sid, s.live.clock)) or ["BARCODE_READ_DIFFERS"]
+            return s.store._open_monitored_case(tx, sid, symptoms, control["as_of"], control.get("session_id"))
+        return s.store._execute(write, write=True)
+
+    def test_a_leftover_flag_of_the_earlier_ledger_format_does_not_refuse_a_skip(self):
+        """The single flag on the control record is not a claim: nothing is being investigated, so time may be skipped."""
+        from operations.store import CONTROL_ID
+        s, case_id = self.seeded(MISREAD)
+        s.driver.ledger[CONTROL_ID][1]["worker_claim"] = case_id
+        result = s.store.skip_to_next_event(max_hours=1)
+        self.assertIn(result["reason"], ("outcome_decided", "case_opened", "limit_reached", "end_of_timeline"))
+        self.assertIsNone(s.driver.ledger[CONTROL_ID][1].get("worker_claim"))     # and the stale flag is cleared
+        self.assertEqual(s.store.status()["worker"]["active_count"], 0)
+
+    def test_an_expired_claim_does_not_refuse_a_skip_and_is_recovered_first(self):
+        """A claim whose lease ran out is not a running investigation: it is requeued, then the skip goes ahead."""
+        s, case_id = self.seeded(MISREAD)
+        peer = self.peer(s)
+        clock = s.store.wall = WallClock()
+        with live_claim(s.store, peer) as claimed:
+            clock.advance(181)                                      # past the 180 s lease, with no renewal
+            result = s.store.skip_to_next_event(max_hours=1)
+            self.assertIn(result["reason"], ("outcome_decided", "case_opened", "limit_reached", "end_of_timeline"))
+            self.assertIn("CLAIM_EXPIRED", s.audits(peer))
+            run = next(public_value(r) for r in s.kind("OpsRun") if r["entity_id"] == claimed["last_run_id"])
+            self.assertEqual((run["status"], run["end_reason"]), ("ABORTED", "LEASE_EXPIRED"))
+        self.assertNotEqual(s.case(peer)["workflow_state"], "INVESTIGATING")
+        self.assertEqual(s.store.status()["worker"]["active_count"], 0)
 
 
 if __name__ == "__main__":

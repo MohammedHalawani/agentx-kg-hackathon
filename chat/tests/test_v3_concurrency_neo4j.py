@@ -4,20 +4,23 @@ tests.test_v3_concurrency shows the claim rules on an in-memory ledger that lets
 assumption about the database, not evidence. These tests replace the assumption: each client is its own Neo4j driver
 (its own connections and transactions) with its own store, and they race for the same records in a real database.
 
-Target: ONLY `shipments-v2-world-v3-ci-20261013`, provisioned by the integrator with a COMPLETE synthetic V2 import.
-The tests never create, replace or drop a database, never touch V2 evidence, and write only this database's operations
-ledger (which they reset, with the development reset, as the other integration tests do).
+Target: ONLY `shipments-v2-world-v3-ci-20261013`, the database the integrator created for these tests. The tests never
+create, replace or drop a database. The first run loads the race fixture into the empty target: the unit tests' small
+synthetic mechanism world (tests.world_fixture, dataset DEMO-SUHAIL-WORLD-TEST), through the guarded V2 loader, with its
+feed pending. Later runs reuse it. A target that holds anything else is refused, never overwritten. After that the tests
+write only the operations ledger of that database (which they reset, with the development reset, as the other
+integration tests do).
 
-To run (after provisioning, with the server's settings in the environment or the worktree's .env):
+To run (with the server's settings in the worktree's ignored .env):
 
     SUHAIL_V3_RACE_TESTS=1  SUHAIL_V3_CI_DATABASE=shipments-v2-world-v3-ci-20261013
 
 Without SUHAIL_V3_RACE_TESTS=1 the race tests are SKIPPED, and a skip is an outstanding gate, not a pass. With it, the
 tests FAIL (they do not skip, and do not fall back to any other database) unless the named database is exactly the
-target, is not one of the configured protected databases, exists on the server, and holds a COMPLETE synthetic import.
-GuardTests checks those refusals and needs no database.
+target, the worktree's own operations-database setting (when set) names the same target, the target is not one of the
+configured protected databases, and it is online on the server. GuardTests checks those refusals and needs no database.
 
-No model: investigations here run on rules only, or with the scripted investigator of the unit tests.
+No model: investigations here run on rules only.
 """
 import json
 import os
@@ -29,18 +32,22 @@ from datetime import datetime, timedelta, timezone
 TARGET = "shipments-v2-world-v3-ci-20261013"
 OPT_IN_ENV = "SUHAIL_V3_RACE_TESTS"
 DATABASE_ENV = "SUHAIL_V3_CI_DATABASE"
+OPERATIONS_ENV = "SUHAIL_OPERATIONS_DATABASE"     # the worktree's own setting; when set it must name the same target
 WORKERS = ("investigation-1", "investigation-2")
 ROUNDS = 8
 
 
-def refusal(named, protected, on_server=None, marker=None):
+def refusal(named, protected, on_server=None, operations=None, marker=None, fixture_hash=None):
     """Why the race tests must not run against `named`, or None. named: SUHAIL_V3_CI_DATABASE. protected: the
     databases configured for anything else. on_server: {name: status} from the server, when it was asked.
-    marker: the target's import marker row, when it was read."""
+    operations: the worktree's SUHAIL_OPERATIONS_DATABASE, when set. marker: the target's import marker row when it has
+    one ({} for an empty target); fixture_hash: the manifest hash of the race fixture it may hold."""
     if not named:
         return f"{DATABASE_ENV} is not set; these tests name their database explicitly and have no default"
     if named != TARGET:
         return f"{DATABASE_ENV} names {named!r}; only {TARGET!r} may be used, and no other database is ever a fallback"
+    if operations and operations != TARGET:
+        return f"{OPERATIONS_ENV} names {operations!r}, not {TARGET!r}; every setting of this harness must name the same target"
     if TARGET.lower() in {str(name).lower() for name in protected if name}:
         return f"{TARGET!r} is configured as a database of the application; refusing to use it for race tests"
     if on_server is not None:
@@ -48,16 +55,44 @@ def refusal(named, protected, on_server=None, marker=None):
             return f"{TARGET!r} does not exist on the server: it has not been provisioned (the tests never create it)"
         if str(on_server[TARGET]).lower() != "online":
             return f"{TARGET!r} is {on_server[TARGET]!r}, not online"
-    if marker is not None:
-        if marker.get("state") != "COMPLETE":
-            return f"{TARGET!r} does not hold a COMPLETE import"
-        try:
-            manifest = json.loads(marker.get("manifest") or "{}")
-        except ValueError:
-            return f"{TARGET!r} has an unreadable import manifest"
-        if manifest.get("synthetic") is not True or not str(manifest.get("dataset_id", "")).startswith("DEMO-"):
-            return f"{TARGET!r} does not hold a synthetic DEMO dataset"
+    if marker:
+        if marker.get("hash") != fixture_hash:
+            return f"{TARGET!r} holds an import that is not the race fixture; it is never replaced or added to"
+        if marker.get("state") not in ("COMPLETE", "LOADING"):
+            return f"{TARGET!r} has an import marker in an unknown state"
     return None
+
+
+def ensure_fixture(driver):
+    """Put the race fixture in the target, once: the small synthetic mechanism world of the unit tests, imported through
+    the guarded V2 loader with its feed pending and the world's indexes. An empty target is loaded; a target that already
+    holds exactly this import is reused; any other content was refused before this is called. Returns the manifest."""
+    import config
+    from dataset_v2.contracts import digest
+    from dataset_v2.live_bundle import load_feed
+    from dataset_v2.load import Bundle, apply_bundle
+    from tests.world_fixture import small_world
+    from world.export import create_indexes
+    fixture = small_world()
+    manifest = fixture.imported.manifest()
+    bundle = Bundle(fixture.imported, manifest, digest(manifest), {})
+    with driver.session(database=TARGET, default_access_mode="READ") as session:
+        row = session.run("MATCH (m:_V2Import) RETURN m.state AS state, m.manifest_hash AS hash").single()
+        nodes = session.run("MATCH (n) RETURN count(n) AS n").single()["n"]
+    marker = dict(row) if row else {}
+    reason = refusal(TARGET, (), marker=marker, fixture_hash=bundle.manifest_hash)
+    if reason is None and not marker and nodes:
+        reason = f"{TARGET!r} is not empty and has no import marker; it is never replaced or added to"
+    if reason:
+        raise AssertionError("V3 race tests refused: " + reason)
+    if marker.get("state") != "COMPLETE":
+        report = apply_bundle(driver, bundle, uri=config.NEO4J_URI, database=TARGET,
+                              protected=(config.NEO4J_DATABASE, config.SHIPMENT_DATABASE, config.CHAT_DATABASE))
+        if report["status"] not in ("imported", "resumed", "identical_replay"):
+            raise AssertionError(f"V3 race tests: the fixture import did not complete ({report['status']})")
+    load_feed(driver, TARGET, bundle, fixture.items)          # idempotent: one pending item per message
+    create_indexes(driver, TARGET)
+    return manifest
 
 
 class GuardTests(unittest.TestCase):
@@ -73,15 +108,22 @@ class GuardTests(unittest.TestCase):
         self.assertIn("configured", refusal(TARGET, ("neo4j", TARGET)))
         self.assertIn("configured", refusal(TARGET, (TARGET.upper(),)))
 
-    def test_a_missing_offline_or_incomplete_target_is_refused(self):
-        ok = {"state": "COMPLETE", "manifest": json.dumps({"synthetic": True, "dataset_id": "DEMO-SUHAIL-WORLD-V3-20261013"})}
-        self.assertIsNone(refusal(TARGET, (), {TARGET: "online", "neo4j": "online"}, ok))
+    def test_a_missing_or_offline_target_or_one_holding_another_import_is_refused(self):
+        online = {TARGET: "online", "neo4j": "online"}
+        self.assertIsNone(refusal(TARGET, (), online))
+        self.assertIsNone(refusal(TARGET, (), online, marker={}, fixture_hash="abc"))                        # empty: may be loaded
+        self.assertIsNone(refusal(TARGET, (), online, marker={"state": "COMPLETE", "hash": "abc"}, fixture_hash="abc"))
+        self.assertIsNone(refusal(TARGET, (), online, marker={"state": "LOADING", "hash": "abc"}, fixture_hash="abc"))   # resumed
         self.assertIn("not been provisioned", refusal(TARGET, (), {"neo4j": "online", "shipments-v2-demo-ci-test": "online"}))
         self.assertIn("not online", refusal(TARGET, (), {TARGET: "offline"}))
-        self.assertIn("COMPLETE", refusal(TARGET, (), {TARGET: "online"}, {"state": "LOADING", "manifest": ok["manifest"]}))
-        self.assertIn("synthetic", refusal(TARGET, (), {TARGET: "online"}, {"state": "COMPLETE", "manifest": json.dumps({"synthetic": False, "dataset_id": "DEMO-X"})}))
-        self.assertIn("synthetic", refusal(TARGET, (), {TARGET: "online"}, {"state": "COMPLETE", "manifest": json.dumps({"synthetic": True, "dataset_id": "REAL-X"})}))
-        self.assertIn("unreadable", refusal(TARGET, (), {TARGET: "online"}, {"state": "COMPLETE", "manifest": "{"}))
+        self.assertIn("never replaced", refusal(TARGET, (), online, marker={"state": "COMPLETE", "hash": "other"}, fixture_hash="abc"))
+        self.assertIn("unknown state", refusal(TARGET, (), online, marker={"state": "BROKEN", "hash": "abc"}, fixture_hash="abc"))
+
+    def test_the_worktree_s_operations_setting_must_name_the_same_target(self):
+        self.assertIsNone(refusal(TARGET, (), operations=TARGET))
+        self.assertIsNone(refusal(TARGET, (), operations=None))
+        for other in ("shipments-v2-world-v3-20261013", "shipments-v2-demo", "shipments-v2-demo-ci-test"):
+            self.assertIn("same target", refusal(TARGET, (), operations=other), other)
 
     def test_the_target_is_a_world_database_the_operations_layer_already_allows(self):
         from operations.datasets import OPERATIONS_DATABASES, SCRATCH_DATABASES, is_world_database, operations_database_allowed
@@ -145,26 +187,20 @@ class RaceTests(unittest.TestCase):
         import config
         from neo4j import GraphDatabase
         protected = (config.NEO4J_DATABASE, config.SHIPMENT_DATABASE, config.CHAT_DATABASE)
-        named = os.environ.get(DATABASE_ENV)
-        reason = refusal(named, protected)
+        named, operations = os.environ.get(DATABASE_ENV), os.environ.get(OPERATIONS_ENV)
+        reason = refusal(named, protected, operations=operations)          # before any connection is made
         if reason:
             raise AssertionError("V3 race tests refused: " + reason)
         probe = GraphDatabase.driver(config.NEO4J_URI, auth=(config.NEO4J_USERNAME, config.NEO4J_PASSWORD))
         try:
             with probe.session(database="system", default_access_mode="READ") as session:
                 on_server = {row["name"]: row["currentStatus"] for row in session.run("SHOW DATABASES YIELD name, currentStatus")}
-            reason = refusal(named, protected, on_server)
+            reason = refusal(named, protected, on_server, operations)
             if reason:
                 raise AssertionError("V3 race tests refused: " + reason)
-            with probe.session(database=TARGET, default_access_mode="READ") as session:
-                rows = list(session.run("MATCH (m:_V2Import) RETURN m.state AS state, m.manifest_json AS manifest"))
-            marker = dict(rows[0]) if len(rows) == 1 else {"state": None}
-            reason = refusal(named, protected, on_server, marker)
-            if reason:
-                raise AssertionError("V3 race tests refused: " + reason)
+            cls.manifest = ensure_fixture(probe)
         finally:
             probe.close()
-        cls.manifest = json.loads(marker["manifest"])
         cls.clients = []
 
     @classmethod

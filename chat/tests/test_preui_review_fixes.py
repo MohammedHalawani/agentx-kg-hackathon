@@ -17,12 +17,13 @@ import os
 import unittest
 from unittest import mock
 
-from dataset_v2.contracts import Config
+from dataset_v2.contracts import Config, instant
 from dataset_v2.generate import generate
 from operations.lifecycle import OperationsConflict
+from operations.schema import public_value
 from operations.store import DEV_RESET_ENV, MONITOR_SUMMARY, MONITOR_SUMMARY_PENDING, symptom_status
 from tests import test_operations_store as _store
-from tests.test_operations_store import Acknowledging, agent_investigator, approval_policy
+from tests.test_operations_store import Acknowledging, WallClock, agent_investigator, approval_policy, live_claim
 from tests.test_operations_read_model import make_reader
 
 
@@ -472,17 +473,52 @@ class LiveResetTests(_Base):
 
     def test_an_active_worker_refuses_the_reset_before_ingestion_is_touched_and_is_audited(self):
         store, driver = self.live_store()
-        def claim(tx):
-            next(v for k, v in tx.ledger.values() if k == "OpsControl")["worker_claim"] = "DEMO-OPS-CASE-X"
-        driver.execute_write(claim)
         cases = len(self.kind(driver, "OpsCase"))
-        with self.assertRaises(OperationsConflict) as refused:
+        # An investigation in progress is a live claim: the store's own grant on a case, with its run, worker, epoch
+        # and unexpired lease (operations.claims). A flag on the control record is not one (tested apart, below).
+        with live_claim(store) as claimed:
+            case = public_value(next(v for v in self.kind(driver, "OpsCase") if v["entity_id"] == claimed["entity_id"]))
+            run = public_value(next(v for v in self.kind(driver, "OpsRun") if v["entity_id"] == claimed["last_run_id"]))
+            self.assertEqual((case["workflow_state"], run["status"]), ("INVESTIGATING", "RUNNING"))
+            self.assertEqual([case[k] for k in ("claim_id", "claim_epoch", "worker_id")], [run[k] for k in ("claim_id", "claim_epoch", "worker_id")])
+            self.assertEqual((case["claim_epoch"], case["worker_id"], case["last_run_id"]), (1, "investigation-1", run["entity_id"]))
+            self.assertGreater(instant(case["lease_expires_at"]), store.wall())
+            with self.assertRaises(OperationsConflict) as refused:
+                self.reset(store)
+            self.assertIn("Pause auto-triage", str(refused.exception))
+            self.assertEqual(store.gateway.calls, [])  # The ingestion ledger was not reset.
+            self.assertEqual(len(self.kind(driver, "OpsCase")), cases)
+            last = json.loads(self.control(driver)["reset_audit_json"])[-1]
+            self.assertEqual((last["result"], last["reason"], last["active_case_id"]),
+                             ("REFUSED", "investigation worker active", claimed["entity_id"]))
+            self.assertEqual(last["active_case_ids"], [claimed["entity_id"]])
+            still = public_value(next(v for v in self.kind(driver, "OpsCase") if v["entity_id"] == claimed["entity_id"]))
+            self.assertEqual([still[k] for k in ("workflow_state", "claim_id", "claim_epoch")], ["INVESTIGATING", claimed["claim_id"], 1])
+        self.assertEqual(store.gateway.calls, [])
+
+    def test_a_leftover_flag_of_the_earlier_ledger_format_does_not_refuse_a_reset(self):
+        """The single flag on the control record is not a claim: with nothing being investigated the reset goes ahead."""
+        store, driver = self.live_store()
+        def stale(tx):
+            next(v for k, v in tx.ledger.values() if k == "OpsControl")["worker_claim"] = "DEMO-OPS-CASE-X"
+        driver.execute_write(stale)
+        self.reset(store)
+        self.assertEqual(len(store.gateway.calls), 1)          # ingestion was reset once
+        self.assertEqual(self.kind(driver, "OpsCase"), [])
+        self.assertEqual(json.loads(self.control(driver)["reset_audit_json"])[-1]["result"], "PERFORMED")
+        self.assertIsNone(self.control(driver).get("worker_claim"))
+
+    def test_an_expired_claim_does_not_refuse_a_reset(self):
+        """A claim whose lease ran out is not a running investigation; what its worker still tries to write is refused."""
+        store, driver = self.live_store()
+        clock = store.wall = WallClock()
+        with live_claim(store) as claimed:
+            clock.advance(181)                                  # past the 180 s lease, with no renewal
             self.reset(store)
-        self.assertIn("Pause auto-triage", str(refused.exception))
-        self.assertEqual(store.gateway.calls, [])  # The ingestion ledger was not reset.
-        self.assertEqual(len(self.kind(driver, "OpsCase")), cases)
-        last = json.loads(self.control(driver)["reset_audit_json"])[-1]
-        self.assertEqual((last["result"], last["reason"], last["active_case_id"]), ("REFUSED", "investigation worker active", "DEMO-OPS-CASE-X"))
+            self.assertEqual(store.gateway.calls, [None])
+            self.assertEqual(self.kind(driver, "OpsCase"), [])
+            self.assertEqual(json.loads(self.control(driver)["reset_audit_json"])[-1]["result"], "PERFORMED")
+        self.assertEqual((self.kind(driver, "OpsCase"), self.kind(driver, "OpsRun")), ([], []))     # the old worker wrote nothing after it
 
     def test_a_confirmed_live_reset_resets_ingestion_once_after_the_claim_check(self):
         store, driver = self.live_store()

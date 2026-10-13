@@ -34,7 +34,7 @@ from operations.reasoning import public_evidence
 from operations.schema import FIELDS, public_value
 from operations.store import CONTROL_ID, OperationsStore
 from tests import test_investigator as ti
-from tests.test_operations_store import Driver, Reader, approval_policy, development_reset
+from tests.test_operations_store import Driver, Reader, WallClock, approval_policy, development_reset, live_claim
 from tests.test_stage_event_batching import ManualTimer
 
 WORKERS = ("investigation-1", "investigation-2")
@@ -48,20 +48,6 @@ def world():
     if WORLD is None:
         WORLD = generate(Config(total=90))
     return WORLD
-
-
-class WallClock:
-    """The store's wall clock in a test: it moves only when the test says so."""
-
-    def __init__(self):
-        self.now = datetime(2026, 10, 13, 12, 0, 0, tzinfo=timezone.utc)
-
-    def __call__(self):
-        return self.now
-
-    def advance(self, seconds):
-        self.now += timedelta(seconds=seconds)
-        return self.now
 
 
 class Hooked(ti.FakeInvestigator):
