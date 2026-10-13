@@ -1,5 +1,8 @@
 // Read-only browser walkthrough of the running V3 app: navigation and inspection only, no control is pressed
 // that changes a case. Every request the pages make is recorded; any that is not a GET is reported.
+// Needs the V3 backend on port 8023 (scripts\v3_backend.ps1). Run from frontend-next, with its Playwright:
+//   $env:NODE_PATH = (Resolve-Path node_modules); node ..\scripts\v3_walkthrough.cjs
+// Screenshots and walkthrough.json go to artifacts\v3\walkthrough (ignored by Git).
 const { chromium } = require("@playwright/test");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -50,7 +53,18 @@ const OUT = process.env.V3_OUT || "C:\\Projects\\suhail-v3-integration\\artifact
       map_paths: await page.locator(".leaflet-overlay-pane path").count(),
       map_legend: ["Confirmed custody", "Expected route", "Vehicle only"].filter((label) => main.includes(label)),
       gps_disclaimer: main.includes("Vehicle GPS proves vehicle movement, not parcel custody."),
-      chronology_present: await page.getByTestId("evidence-chronology").count(),
+      chronology: await page.evaluate(() => {
+        const list = document.querySelector('[data-testid="evidence-chronology"]');
+        if (!list) return { present: false };
+        const items = [...list.querySelectorAll("li")];
+        const range = list.querySelector('[data-testid="route-evidence-range"]');
+        const box = list.getBoundingClientRect();
+        return { present: true, visible: box.width > 0 && box.height > 0, items: items.length,
+          with_receipt_time: items.filter((li) => li.querySelector(".chronology-receipt")).length,
+          range: range ? range.textContent : null, mismatch_flag: /may disagree/.test(range ? range.textContent : ""),
+          first: items.slice(0, 2).map((li) => li.textContent), last: items.slice(-1).map((li) => li.textContent) };
+      }),
+      has_brief: main.includes("CASE ASSESSMENT"),
       says_delivered: /\bdelivered\b/i.test(main), says_traffic: /traffic/i.test(main),
       screenshots: [await shot(`${String(index).padStart(2, "0")}-${sid}-case`)],
     };
