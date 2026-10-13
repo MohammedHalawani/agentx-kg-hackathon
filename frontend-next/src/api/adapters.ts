@@ -325,6 +325,14 @@ const OBSERVATION_RANK: Record<string, number> = {
   // Mechanism-world records: messages to and from customers and their delivery reports.
   CommunicationEvent: 1,
 };
+/** Parcel- and handoff-related source records outrank vehicle telemetry in the bounded graph. */
+const PARCEL_SOURCE_KINDS = new Set<string>([
+  ...Object.entries(OBSERVATION_RANK)
+    .filter(([, rank]) => rank < OBSERVATION_RANK.GPSObservation)
+    .map(([kind]) => kind),
+  "StatusEvent",
+]);
+const GRAPH_GPS_RANK = 11;
 /** How many of a case's recorded nodes the graph draws (cited evidence first). The total is always stated. */
 export const GRAPH_LIMIT = 96;
 
@@ -1049,8 +1057,11 @@ export function applyDetail(
     if (cited.has(node.id)) return 3;
     if (citedContext.has(node.id) && node.kind !== "CustodyEvent" && node.kind !== "ScanEvent")
       return 3.5;
-    if (located.has(node.id)) return 4;
+    if (PARCEL_SOURCE_KINDS.has(node.kind)) return 4;
+    if (located.has(node.id) && node.kind === "GPSObservation") return GRAPH_GPS_RANK;
+    if (located.has(node.id)) return 4.5;
     if (kind !== "observation") return 5;
+    if (node.kind === "GPSObservation") return GRAPH_GPS_RANK;
     return 6 + (OBSERVATION_RANK[node.kind] ?? 6);
   };
   const ordered = [...candidates].sort(

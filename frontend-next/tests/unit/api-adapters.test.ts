@@ -406,6 +406,116 @@ describe("V3 route evidence and pipeline fencing", () => {
     expect(c.route.vehicleSegments.length).toBeGreaterThan(1);
   });
 
+  it("keeps parcel source records ahead of vehicle GPS inside the graph bound", () => {
+    const route = detailV3Route();
+    const proofId = "SYN-SHP-000051-PROOF-001";
+    const authId = "SYN-SHP-000051-AUTH-001";
+    const scanId = "SYN-SHP-000051-SCAN-010";
+    const parcelNodes = [
+      {
+        id: proofId,
+        kind: "DeliveryProof",
+        properties: {
+          occurred_at: "2026-09-15T07:07:33+00:00",
+          recorded_at: "2026-09-15T07:08:24+00:00",
+          shipment_id: "SYN-SHP-000051",
+        },
+      },
+      {
+        id: authId,
+        kind: "AuthenticationEvidence",
+        properties: {
+          occurred_at: "2026-09-15T07:07:33+00:00",
+          recorded_at: "2026-09-15T07:08:24+00:00",
+          status: "PASS",
+          method: "SYNTHETIC_OTP",
+        },
+      },
+      {
+        id: scanId,
+        kind: "ScanEvent",
+        properties: {
+          occurred_at: "2026-09-15T07:07:33+00:00",
+          recorded_at: "2026-09-15T07:08:24+00:00",
+          observation_type: "DELIVERED",
+        },
+      },
+    ];
+    const fillerGps = Array.from({ length: 120 }, (_, i) => ({
+      id: `SYN-GPS-FILL-${String(i).padStart(3, "0")}`,
+      kind: "GPSObservation",
+      properties: {
+        occurred_at: `2026-09-14T${String(i % 24).padStart(2, "0")}:${String(i % 60).padStart(2, "0")}:00+00:00`,
+        recorded_at: `2026-09-14T${String(i % 24).padStart(2, "0")}:${String(i % 60).padStart(2, "0")}:05+00:00`,
+        lat: 21.4 + i * 0.001,
+        lng: 39.1,
+      },
+    }));
+    const fillerObs = fillerGps.map((n, i) => ({
+      evidence_id: n.id,
+      entity_id: n.id,
+      lat: 21.4 + i * 0.001,
+      lng: 39.1,
+      occurred_at: n.properties.occurred_at,
+      recorded_at: n.properties.recorded_at,
+      source_ref: "telematics",
+      vehicle_id: "SYN-VEH-FM-JED-003",
+      position_scope: "VEHICLE_ONLY",
+      classification: "observed_vehicle",
+      route_run_id: null,
+      trip_id: null,
+      accuracy_m: 10,
+      speed_kmh: 40,
+      source_event_id: null,
+      ingested_at: null,
+    }));
+    const base = caseFromQueue({
+      case_id: route.case_id,
+      shipment_id: route.shipment_id,
+      issue_summary: "",
+      priority: "low",
+      workflow_state: "OPEN",
+      state_version: 1,
+    });
+    const crowded = applyDetail(base, {
+      ...route,
+      evidence: {
+        nodes: [...route.evidence!.nodes, ...parcelNodes, ...fillerGps],
+        edges: route.evidence!.edges,
+      },
+      route_evidence: {
+        ...route.route_evidence!,
+        observations: [...route.route_evidence!.observations, ...fillerObs],
+      },
+      pipeline: {
+        events: [
+          {
+            sequence: 3,
+            stage: "classify",
+            status: "COMPLETED",
+            output: { evidence_ids: [authId] },
+          },
+        ],
+        status: "REVIEWED",
+      },
+    });
+    const ids = new Set(crowded.nodes.map((n) => n.id));
+    expect(crowded.nodes.length).toBeLessThanOrEqual(GRAPH_LIMIT);
+    for (const id of [
+      proofId,
+      authId,
+      scanId,
+      "SYN-SHP-000051-CUST-008",
+    ])
+      expect(ids.has(id), id).toBe(true);
+    expect(crowded.nodes.some((n) => n.id.startsWith("SYN-GPS-FILL"))).toBe(
+      true,
+    );
+    expect(
+      crowded.nodes.filter((n) => n.id.startsWith("SYN-GPS-FILL")).length,
+    ).toBeLessThan(120);
+  });
+
   it("ignores stale pipeline events but accepts a new run", () => {
     const base = caseFromQueue({
       case_id: "SYN-X",
