@@ -1,0 +1,48 @@
+/* Suhail identity applied to the official Nova neutral theme tokens. */
+:root {
+  --background: #f9fafc;
+  --foreground: #2c3040;
+  --primary: #7b61c5;
+  --brand-purple: #7b61c5;
+  --primary-foreground: #ffffff;
+  --accent: #f1ecfa;
+  --accent-foreground: #7b61c5;
+  --border: #e8eaf0;
+  --input: #e8eaf0;
+  --ring: #a18bda;
+  --muted: #f4f5f8;
+  --muted-foreground: #7d8395;
+  --sidebar: #ffffff;
+  --success: #698e7a;
+  --success-soft: #edf5ef;
+  --warning: #a58a55;
+  --warning-soft: #fbf4e6;
+  --danger: #b67880;
+  --danger-soft: #faf0f1;
+  --info: #7299ae;
+  --info-soft: #edf3f7;
+}
+.dark {
+  --background: #141720;
+  --foreground: #e4e6ef;
+  --card: #1b202c;
+  --popover: #1b202c;
+  --primary: #b69ceb;
+  --primary-foreground: #221932;
+  --accent: #322b42;
+  --accent-foreground: #c5aff2;
+  --border: #2e3444;
+  --input: #343b4d;
+  --ring: #9d83d1;
+  --muted: #252b39;
+  --muted-foreground: #9ba4ba;
+  --sidebar: #1a1e29;
+  --success: #92b49f;
+  --success-soft: #25392f;
+  --warning: #c8ac75;
+  --warning-soft: #3b3326;
+  --danger: #d09aa1;
+  --danger-soft: #3c2930;
+  --info: #97b6cd;
+  --info-soft: #29394a;
+}

@@ -1,0 +1,112 @@
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ShieldCheck,
+  XCircle,
+} from "lucide-react";
+import { Marker, MarkerContent, MarkerIcon } from "@/components/ui/marker";
+import { Spinner } from "@/components/ui/spinner";
+import { useOperations } from "@/state/operations";
+import { usePreferences } from "@/state/preferences";
+import { stages, type OperationalCase } from "@/domain/types";
+import { secondsLabel, timeLabel } from "@/lib/dates";
+const LAB_BUILD = import.meta.env.VITE_SUHAIL_DATA === "lab";
+
+/** The case activity survives in Canopus without a second floating chat dock. */
+export function CaseActivityMarkers({ c }: { c: OperationalCase }) {
+  const { events, backend: fromBackend } = useOperations();
+  // Connected build: always the backend, so lab-only branches are removed at build time.
+  const backend = !LAB_BUILD || fromBackend;
+  const { t } = usePreferences();
+  const active = ["investigating", "executing", "verifying"].includes(c.status);
+  const waiting = ["human_review", "needs_evidence"].includes(c.status);
+  const recent = events
+    .filter((e) => e.caseId === c.id)
+    .sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp))
+    .slice(0, 2)
+    .reverse();
+  return (
+    <div className="case-conversation-markers">
+      {(waiting ? [] : recent).map((event) => (
+        <Marker key={event.id} className="conversation-marker">
+          <MarkerIcon>
+            {event.kind === "verification" &&
+            c.outcome?.successful === false ? (
+              <XCircle className="text-destructive size-3" />
+            ) : (
+              <CheckCircle2 className="text-success size-3" />
+            )}
+          </MarkerIcon>
+          <MarkerContent>
+            {event.title}
+            <small>
+              {timeLabel(event.timestamp)} ·{" "}
+              {LAB_BUILD && event.simulated
+                ? t("simulated", "محاكاة")
+                : t("backend", "الخادم")}
+            </small>
+          </MarkerContent>
+        </Marker>
+      ))}
+      <Marker
+        role={active ? "status" : undefined}
+        className="conversation-marker"
+      >
+        <MarkerIcon>
+          {active ? (
+            <Spinner className="size-3" />
+          ) : waiting ? (
+            <AlertTriangle className="text-warning size-3" />
+          ) : c.status === "escalated" ? (
+            <XCircle className="text-destructive size-3" />
+          ) : (
+            <ShieldCheck className="size-3" />
+          )}
+        </MarkerIcon>
+        <MarkerContent>
+          {c.status === "human_review"
+            ? t("Awaiting human decision", "بانتظار قرار بشري")
+            : c.status === "needs_evidence"
+              ? t("Additional evidence requested", "طُلبت أدلة إضافية")
+              : c.status === "resolved"
+                ? t(
+                    "Outcome independently verified",
+                    "تم التحقق المستقل من النتيجة",
+                  )
+                : c.status === "verifying"
+                  ? t(
+                      "Outcome verification pending",
+                      "بانتظار التحقق من النتيجة",
+                    )
+                  : c.status === "escalated"
+                    ? t(
+                        "Recovery needs manual follow-up",
+                        "تحتاج المعالجة متابعة بشرية",
+                      )
+                    : c.run
+                      ? c.backend
+                        ? (c.backend.stageDetail[c.run.stage] ??
+                          t(
+                            stages[c.run.stage].label,
+                            stages[c.run.stage].arabic,
+                          ))
+                        : stages[c.run.stage].detail
+                      : backend
+                        ? t("Queued for investigation", "في انتظار التحقيق")
+                        : t(
+                            "Ready for a simulated investigation",
+                            "جاهز لتحقيق محاكى",
+                          )}
+          {c.status === "investigating" &&
+            c.run &&
+            c.backend?.stageElapsed?.[c.run.stage] !== undefined && (
+              <small>
+                {secondsLabel(c.backend.stageElapsed[c.run.stage])}{" "}
+                {t("into the investigation", "منذ بدء التحقيق")}
+              </small>
+            )}
+        </MarkerContent>
+      </Marker>
+    </div>
+  );
+}

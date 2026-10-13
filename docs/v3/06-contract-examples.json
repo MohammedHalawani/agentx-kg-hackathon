@@ -1,0 +1,231 @@
+{
+  "contract_version": "suhail-v3-1",
+  "status": "approved_frozen",
+  "examples_are_synthetic": true,
+  "id_boundary": {
+    "storage_prefix": "DEMO-",
+    "http_prefix": "SYN-",
+    "conversion_module": "chat/operations/identifiers.py"
+  },
+  "worker_status_http_example": {
+    "synthetic": true,
+    "as_of": "2026-09-15T11:00:00+03:00",
+    "database": "shipments-v2-world-v3-20261013",
+    "worker": {
+      "state": "running",
+      "concurrency": 2,
+      "active_count": 2,
+      "processed_count": 0,
+      "active_case_id": null,
+      "active_shipment_id": null,
+      "last_case_id": null,
+      "active_cases": [
+        {
+          "case_id": "SYN-OPS-CASE-EXAMPLE-A",
+          "shipment_id": "SYN-SHP-EXAMPLE-A",
+          "worker_id": "investigation-1",
+          "claim_id": "SYN-OPS-CLAIM-EXAMPLE-A-1",
+          "claim_epoch": 1,
+          "workflow_state": "INVESTIGATING",
+          "run_id": "SYN-OPS-RUN-EXAMPLE-A-1",
+          "run_status": "RUNNING",
+          "active_stage": "classify",
+          "started_at": "2026-10-13T15:00:00+03:00",
+          "updated_at": "2026-10-13T15:00:15+03:00",
+          "lease_expires_at": "2026-10-13T15:03:15+03:00",
+          "as_of": "2026-09-15T11:00:00+03:00",
+          "state_version": 2,
+          "final_result": null
+        },
+        {
+          "case_id": "SYN-OPS-CASE-EXAMPLE-B",
+          "shipment_id": "SYN-SHP-EXAMPLE-B",
+          "worker_id": "investigation-2",
+          "claim_id": "SYN-OPS-CLAIM-EXAMPLE-B-1",
+          "claim_epoch": 1,
+          "workflow_state": "INVESTIGATING",
+          "run_id": "SYN-OPS-RUN-EXAMPLE-B-1",
+          "run_status": "RUNNING",
+          "active_stage": "review",
+          "started_at": "2026-10-13T15:00:01+03:00",
+          "updated_at": "2026-10-13T15:00:16+03:00",
+          "lease_expires_at": "2026-10-13T15:03:16+03:00",
+          "as_of": "2026-09-15T11:00:00+03:00",
+          "state_version": 2,
+          "final_result": null
+        }
+      ]
+    }
+  },
+  "finalized_case_status_http_example": {
+    "case_id": "SYN-OPS-CASE-EXAMPLE-A",
+    "shipment_id": "SYN-SHP-EXAMPLE-A",
+    "worker_id": "investigation-1",
+    "claim_id": "SYN-OPS-CLAIM-EXAMPLE-A-1",
+    "claim_epoch": 1,
+    "workflow_state": "HUMAN_REVIEW",
+    "run_id": "SYN-OPS-RUN-EXAMPLE-A-1",
+    "run_status": "REVIEWED",
+    "active_stage": null,
+    "started_at": "2026-10-13T15:00:00+03:00",
+    "updated_at": "2026-10-13T15:00:40+03:00",
+    "lease_expires_at": null,
+    "as_of": "2026-09-15T11:00:00+03:00",
+    "state_version": 3,
+    "final_result": {
+      "workflow_state": "HUMAN_REVIEW",
+      "review_verdict": "human_review",
+      "model_verdict": "HUMAN_REVIEW",
+      "outcome_verification_status": null
+    }
+  },
+  "route_evidence_http_example": {
+    "schema": "route-evidence-v3-1",
+    "shipment_id": "SYN-SHP-EXAMPLE-A",
+    "as_of": "2026-09-15T11:00:00+03:00",
+    "contexts": [
+      {
+        "route_run_id": "SYN-RUN-EXAMPLE-1",
+        "trip_id": null,
+        "assignment_id": "SYN-ASSIGN-EXAMPLE-A",
+        "vehicle_id": "SYN-VEH-EXAMPLE-1",
+        "device_id": "SYN-DEV-APP-EXAMPLE-1",
+        "valid_from": "2026-09-15T08:00:00+03:00",
+        "valid_to": "2026-09-15T20:00:00+03:00",
+        "plan_source_ids": [
+          "SYN-ROUTE-SEG-EXAMPLE-1"
+        ],
+        "custody_source_ids": [
+          "SYN-CUSTODY-LOAD-EXAMPLE-A"
+        ]
+      }
+    ],
+    "observations": [
+      {
+        "entity_id": "SYN-GPS-EXAMPLE-1",
+        "evidence_id": "SYN-GPS-EXAMPLE-1",
+        "vehicle_id": "SYN-VEH-EXAMPLE-1",
+        "route_run_id": "SYN-RUN-EXAMPLE-1",
+        "trip_id": null,
+        "lat": 24.7136,
+        "lng": 46.6753,
+        "accuracy_m": 15.0,
+        "speed_kmh": 0.0,
+        "occurred_at": "2026-09-15T10:50:00+03:00",
+        "recorded_at": "2026-09-15T10:50:20+03:00",
+        "ingested_at": "2026-09-15T10:50:21+03:00",
+        "source_ref": "telematics",
+        "position_scope": "VEHICLE_ONLY",
+        "classification": "observed_vehicle",
+        "source_event_id": null
+      }
+    ],
+    "summary": {
+      "points_returned": 1,
+      "sampled": false,
+      "first_observed_at": "2026-09-15T10:50:00+03:00",
+      "last_observed_at": "2026-09-15T10:50:00+03:00",
+      "stationary_intervals": [],
+      "timing_comparisons": [],
+      "input_evidence_ids": [
+        "SYN-GPS-EXAMPLE-1"
+      ],
+      "note": "One vehicle observation does not establish a stop interval or parcel custody."
+    },
+    "source_nodes": [
+      {
+        "id": "SYN-GPS-EXAMPLE-1",
+        "kind": "GPSObservation",
+        "properties": {
+          "entity_id": "SYN-GPS-EXAMPLE-1",
+          "vehicle_id": "SYN-VEH-EXAMPLE-1",
+          "route_run_id": "SYN-RUN-EXAMPLE-1",
+          "lat": 24.7136,
+          "lng": 46.6753,
+          "accuracy_m": 15.0,
+          "speed_kmh": 0.0,
+          "occurred_at": "2026-09-15T10:50:00+03:00",
+          "recorded_at": "2026-09-15T10:50:20+03:00",
+          "source_ref": "telematics",
+          "position_scope": "VEHICLE_ONLY"
+        }
+      }
+    ],
+    "source_relationships": [],
+    "truncated": {
+      "contexts": false,
+      "observations": false,
+      "source_relationships": false
+    }
+  },
+  "route_layers_http_extension_example": {
+    "layers": {
+      "vehicle_path": [
+        {
+          "entity_id": "SYN-GPS-EXAMPLE-1",
+          "evidence_id": "SYN-GPS-EXAMPLE-1",
+          "vehicle_id": "SYN-VEH-EXAMPLE-1",
+          "route_run_id": "SYN-RUN-EXAMPLE-1",
+          "trip_id": null,
+          "lat": 24.7136,
+          "lng": 46.6753,
+          "accuracy_m": 15.0,
+          "occurred_at": "2026-09-15T10:50:00+03:00",
+          "recorded_at": "2026-09-15T10:50:20+03:00",
+          "source_ref": "telematics",
+          "source": "vehicle_telemetry_only",
+          "position_scope": "VEHICLE_ONLY"
+        }
+      ]
+    },
+    "truncated": {
+      "vehicle_path": false
+    }
+  },
+  "runtime_fixture_manifest_storage_example": {
+    "schema": "v3-runtime-fixtures-1",
+    "dataset_id": "DEMO-SUHAIL-WORLD-V3-20261013",
+    "seed": 11,
+    "fixture_id": "DEMO-V3-FIXTURE-001",
+    "shipment_ids": [
+      "DEMO-SHP-EXAMPLE-A",
+      "DEMO-SHP-EXAMPLE-B"
+    ],
+    "source_record_ids": [
+      "DEMO-SCAN-EXAMPLE-LATE-A"
+    ],
+    "replay_cutoffs": [
+      "2026-09-15T10:00:00+03:00",
+      "2026-09-15T12:00:00+03:00"
+    ],
+    "example_only": true,
+    "content_hashes": {
+      "example_source_record_ids_sha256": "37938ee1a16868b09d2cb1e5376294b6cf776059c7ad029b60fb49c6f2e8953a"
+    }
+  },
+  "design_test_fixture_example_not_for_runtime_import": {
+    "fixture_id": "DEMO-V3-FIXTURE-001",
+    "scenario_family": "buffered_device_receipt",
+    "source_record_id": "DEMO-SCAN-EXAMPLE-LATE-A",
+    "occurred_at": "2026-09-15T09:30:00+03:00",
+    "recorded_at": "2026-09-15T11:30:00+03:00",
+    "expected_temporal_behavior": [
+      {
+        "as_of": "2026-09-15T10:00:00+03:00",
+        "record_visible": false
+      },
+      {
+        "as_of": "2026-09-15T12:00:00+03:00",
+        "record_visible": true
+      }
+    ],
+    "allowed_operational_outcomes": [
+      "NEEDS_EVIDENCE",
+      "HUMAN_REVIEW",
+      "AWAITING_OUTCOME"
+    ],
+    "expected_answer_artifact_handling": "External test-only output; never imported, served or read by the investigator."
+  },
+  "approval_date": "2026-10-13",
+  "implementation_dispatch": "User distributes Claude, Composer and separate Sol High handoffs after bootstrap checkpoint; no subagents launched here."
+}

@@ -1,0 +1,1978 @@
+/* Connected-product additions only. Built from the existing brand tokens; nothing here restyles the lab design. */
+.backend-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 24px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--warning-soft);
+  color: var(--foreground);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.backend-notice svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--warning);
+}
+@media (max-width: 600px) {
+  .backend-notice {
+    margin: 0 12px;
+  }
+}
+
+/* Case assessment: the investigator's findings and labelled rule checks. */
+.finding {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.finding > b {
+  font-weight: 500;
+  text-transform: capitalize;
+}
+.finding > .finding-status + b {
+  margin-inline-start: 6px;
+  vertical-align: middle;
+}
+.finding p {
+  margin-top: 6px;
+  color: var(--muted-foreground);
+}
+.finding ul {
+  margin: 6px 0 0;
+  padding-inline-start: 18px;
+  color: var(--muted-foreground);
+  list-style: disc;
+}
+.finding-status {
+  font-size: 10px;
+}
+.finding-supported {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.finding-refuted {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.finding-uncertain {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.finding-evidence {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.finding-evidence small {
+  color: var(--muted-foreground);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.finding-evidence button {
+  height: 22px;
+  padding: 0 7px;
+  font-size: 10px;
+  direction: ltr;
+}
+.finding-meta {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  line-height: 1.5;
+}
+.finding-meta b {
+  color: var(--foreground);
+  font-weight: 500;
+  text-transform: capitalize;
+}
+.finding-caution {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--warning-soft);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.finding-caution svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--warning);
+}
+
+/* The investigator's evidence queries, in the order they were made. */
+.investigation-steps {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.investigation-steps li {
+  display: flex;
+  gap: 10px;
+  padding: 9px 0;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.investigation-steps .step-index {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-size: 10px;
+  font-weight: 600;
+  display: grid;
+  place-items: center;
+}
+.investigation-steps li.failed .step-index {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.investigation-steps b {
+  font-weight: 500;
+  text-transform: capitalize;
+  margin-inline-end: 6px;
+}
+.investigation-steps p {
+  margin-top: 2px;
+  color: var(--muted-foreground);
+}
+.investigation-steps small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted-foreground);
+  font-size: 10px;
+  word-break: break-word;
+}
+.finding-cross {
+  background: var(--info-soft);
+  color: var(--info);
+  gap: 3px;
+}
+.human-evidence {
+  max-height: 150px;
+  overflow-y: auto;
+  margin: 8px 0;
+}
+.human-evidence small {
+  display: block;
+  color: var(--muted-foreground);
+  font-size: 10px;
+}
+
+[data-testid="review-rounds"] .finding > b {
+  text-transform: none;
+}
+
+/* Side sheets: let the scroll area shrink inside the sheet's column so long, real content
+   scrolls instead of being clipped below the fold. */
+.case-details-sheet [data-slot="scroll-area"],
+.decision-detail-sheet [data-slot="scroll-area"],
+.audit-detail-sheet [data-slot="scroll-area"] {
+  min-height: 0;
+}
+
+/* The connected product's logo: the full mark when the sidebar is open, the star alone when it
+   is collapsed. Proportions kept, nothing beside it, legible on both themes. */
+.brand-header:has(.brand-logo) {
+  padding: 16px 22px 6px !important;
+}
+.brand.brand-logo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 46px;
+}
+.brand.brand-logo img {
+  display: block;
+  height: auto;
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+.brand.brand-logo .brand-full {
+  /* Fitted, never stretched: bounded by height and by the sidebar's width. */
+  width: auto;
+  max-height: 46px;
+  max-width: 100%;
+  object-fit: contain;
+}
+.brand.brand-logo .brand-star {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 26px;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.6);
+  pointer-events: none;
+}
+.dark .brand.brand-logo img {
+  /* The assets are black ink on transparency; inverted they read as white ink, with no box. */
+  filter: invert(1);
+}
+[data-state="collapsed"] .brand-header:has(.brand-logo) {
+  padding: 16px 0 6px !important;
+  align-items: center;
+}
+[data-state="collapsed"] .brand.brand-logo {
+  width: 100%;
+  justify-content: center;
+}
+[data-state="collapsed"] .brand.brand-logo .brand-full {
+  opacity: 0;
+  max-width: 0;
+  transform: scale(0.6);
+}
+[data-state="collapsed"] .brand.brand-logo .brand-star {
+  opacity: 1;
+  width: 26px;
+  height: auto;
+  object-fit: contain;
+  transform: translate(-50%, -50%) scale(1);
+}
+.workspace-selector[hidden] {
+  display: none;
+}
+
+/* Long identifiers and query arguments must wrap inside the assessment sheet, never widen it. */
+.detail-section,
+.detail-section > div,
+.investigation-steps li > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Knowledge graph: a focused, shipment-centred picture of real records. */
+.evidence-split {
+  --evidence-height: 560px;
+}
+.graph-panel .entity-node {
+  width: 112px;
+  gap: 6px;
+  --node: var(--primary);
+  --node-soft: var(--accent);
+  color: var(--node);
+}
+.graph-panel .node-circle {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  /* Opaque, so relationship lines end at the circle's edge. */
+  background: color-mix(in srgb, var(--node-soft) 100%, var(--card));
+  border: 1.6px solid color-mix(in srgb, var(--node) 55%, transparent);
+  box-shadow: 0 1px 3px #1926380f;
+}
+.graph-panel .node-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 11px;
+  line-height: 1.25;
+  max-width: 112px;
+  padding: 1px 5px 2px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  color: var(--foreground);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.graph-panel .node-label small {
+  font-size: 9px;
+  color: var(--muted-foreground);
+}
+.graph-panel .entity-node .react-flow__handle {
+  top: 22px;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+}
+.graph-panel .category-shipment .node-circle {
+  width: 58px;
+  height: 58px;
+  margin-top: -7px;
+  background: var(--primary);
+  color: var(--primary-foreground, #fff);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--primary) 14%, transparent);
+}
+.graph-panel .category-shipment .node-label {
+  font-weight: 600;
+  font-size: 12px;
+}
+.graph-panel .category-package {
+  --node: #7b61c5;
+  --node-soft: var(--accent);
+}
+.graph-panel .category-custody {
+  --node: #3f7fb8;
+  --node-soft: #e8f1fa;
+}
+.graph-panel .category-scan {
+  --node: #2f9a94;
+  --node-soft: #e4f4f2;
+}
+.graph-panel .category-status,
+.graph-panel .category-attempt,
+.graph-panel .category-proof,
+.graph-panel .category-message,
+.graph-panel .category-position {
+  --node: #6b7488;
+  --node-soft: #eef0f4;
+}
+.graph-panel .category-device {
+  --node: #c0558f;
+  --node-soft: #fbeaf3;
+}
+.graph-panel .category-facility {
+  --node: #3d9462;
+  --node-soft: #e7f4ec;
+}
+.graph-panel .category-vehicle,
+.graph-panel .category-transport {
+  --node: #c58a2b;
+  --node-soft: #fbf2df;
+}
+.graph-panel .category-person,
+.graph-panel .category-organisation {
+  --node: #c96a45;
+  --node-soft: #fbece5;
+}
+.graph-panel .category-recommendation,
+.graph-panel .category-outcome {
+  --node: #5b54c9;
+  --node-soft: #ebeafb;
+}
+.graph-panel .category-recommendation .node-circle {
+  border-style: dashed;
+}
+.dark .graph-panel .category-custody { --node: #7fb4e6; --node-soft: #1f3247; }
+.dark .graph-panel .category-scan { --node: #6fd0c9; --node-soft: #1c3836; }
+.dark .graph-panel .category-status,
+.dark .graph-panel .category-attempt,
+.dark .graph-panel .category-proof,
+.dark .graph-panel .category-message,
+.dark .graph-panel .category-position { --node: #aab2c5; --node-soft: #2a2f3c; }
+.dark .graph-panel .category-device { --node: #ec8fc0; --node-soft: #40243a; }
+.dark .graph-panel .category-facility { --node: #7fcf9f; --node-soft: #213a2c; }
+.dark .graph-panel .category-vehicle,
+.dark .graph-panel .category-transport { --node: #e6b869; --node-soft: #3d3220; }
+.dark .graph-panel .category-person,
+.dark .graph-panel .category-organisation { --node: #eb9a7a; --node-soft: #41291f; }
+.dark .graph-panel .category-recommendation,
+.dark .graph-panel .category-outcome { --node: #a09af0; --node-soft: #2a2950; }
+.dark .graph-panel .category-package { --node: #b5a2ea; }
+/* The cited evidence path stands out; the selection stands out more. */
+.graph-panel .evidence-path .node-circle {
+  box-shadow: 0 0 0 3px var(--card), 0 0 0 5.5px #8b6ccb;
+}
+.graph-panel .evidence-selected .node-circle {
+  box-shadow: 0 0 0 3px var(--card), 0 0 0 7px var(--primary);
+  border-color: var(--primary);
+}
+.graph-panel .evidence-focus .node-label {
+  color: var(--primary);
+}
+.graph-panel .entity-node.dimmed {
+  opacity: 0.16;
+}
+.graph-panel .node-more {
+  position: absolute;
+  top: -7px;
+  right: -12px;
+  min-width: 22px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted-foreground);
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 15px;
+  cursor: pointer;
+}
+.graph-panel .node-more:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+.graph-legend {
+  gap: 11px;
+}
+.graph-legend .dot {
+  width: 7px;
+  height: 7px;
+}
+.category-dot-shipment { background: var(--primary); }
+.category-dot-custody { background: #3f7fb8; }
+.category-dot-scan { background: #2f9a94; }
+.category-dot-status { background: #6b7488; }
+.category-dot-device { background: #c0558f; }
+.category-dot-facility { background: #3d9462; }
+.category-dot-vehicle { background: #c58a2b; }
+.category-dot-person { background: #c96a45; }
+.category-dot-outcome { background: #5b54c9; }
+.graph-legend .dot.ring {
+  background: transparent;
+  box-shadow: 0 0 0 2px #8b6ccb;
+}
+
+/* The pipeline card's final output: the next best action (the backend's next_step record). */
+.next-step {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.next-step-action {
+  border-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+.next-step-action > div {
+  flex: 1;
+  min-width: 0;
+}
+.next-step-recommended {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.next-step-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  background: var(--card);
+  color: var(--muted-foreground);
+  font-size: 10px;
+  cursor: pointer;
+}
+.next-step-toggle svg.open {
+  transform: rotate(180deg);
+}
+.next-step-facts {
+  margin-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+.next-step-facts .next-step-note {
+  grid-column: 1 / -1;
+  margin-top: 0;
+}
+.pipeline-step.state-waiting .stage-explain {
+  color: var(--foreground);
+}
+.brand.brand-logo {
+  justify-content: center;
+  width: 100%;
+}
+.next-step small {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+  letter-spacing: 0.7px;
+  color: var(--muted-foreground);
+  margin-bottom: 4px;
+}
+.next-step-action {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--primary);
+}
+.next-step-action p {
+  color: var(--foreground);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+.next-step-facts {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1.2fr;
+  gap: 22px;
+  padding-top: 12px;
+}
+.next-step-facts p,
+.next-step-facts li {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+.next-step-facts p + p {
+  margin-top: 5px;
+  color: var(--muted-foreground);
+}
+.next-step-facts ul {
+  margin: 0;
+  padding-inline-start: 15px;
+  list-style: disc;
+}
+.next-step-facts b {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.next-step-rule {
+  font-size: 10px;
+  color: var(--muted-foreground);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0 5px;
+  white-space: nowrap;
+}
+.next-step-note {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 10px;
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+@media (max-width: 1100px) {
+  .next-step-facts {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+/* Pipeline explanation layer: one short sentence under each step that has run or is running. */
+.pipeline-stages:has(.explained) {
+  align-items: stretch;
+  gap: 8px;
+}
+.pipeline-stages:has(.explained) > button {
+  height: auto;
+  min-height: 76px;
+  align-items: flex-start;
+  padding: 8px 8px 9px;
+  white-space: normal;
+  min-width: 0;
+}
+.pipeline-stages:has(.explained) > button > span:last-child {
+  min-width: 0;
+  flex: 1;
+}
+.pipeline-stages:has(.explained) > button:not(:last-child)::after {
+  top: 17px;
+}
+.stage-explain {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  margin-top: 5px;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 9.5px;
+  line-height: 1.35;
+  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
+}
+.pipeline-step.state-running .stage-explain {
+  color: var(--primary);
+}
+.pipeline-step.state-failed .stage-explain {
+  color: var(--danger);
+}
+.pipeline-step.selected .stage-explain {
+  color: var(--foreground);
+}
+@media (max-width: 1100px) {
+  .stage-explain {
+    display: none;
+  }
+}
+
+/* Canopus narration: stored messages of the run, attached to the pipeline. */
+.stage-explain.narrated {
+  color: var(--foreground);
+}
+.stage-explain.narrated-canopus_summary::before {
+  content: "✦ ";
+  color: var(--primary);
+}
+.pipeline-step.explained:has(.narrated) .stage-explain {
+  -webkit-line-clamp: 2;
+}
+.narration-strip {
+  margin-top: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+.narration-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.narration-toggle {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px 2px;
+  background: none;
+  border: 0;
+  color: var(--primary);
+  font-size: 11px;
+  cursor: pointer;
+  text-align: start;
+}
+.narration-toggle b {
+  font-weight: 600;
+  color: var(--foreground);
+}
+.narration-toggle > span {
+  color: var(--muted-foreground);
+  font-size: 10px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.narration-strip svg.open {
+  transform: rotate(180deg);
+}
+.narration-head > button:not(.narration-toggle) {
+  height: 26px;
+  font-size: 10px;
+  padding: 0 9px;
+}
+.narration-body {
+  margin-top: 8px;
+  max-height: 330px;
+  overflow-y: auto;
+  padding-inline-end: 4px;
+}
+.narration-empty {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.narration-bubbles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 10px;
+}
+.narration-bubble {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  border-start-start-radius: 3px;
+  padding: 10px 12px 9px;
+  background: var(--card);
+  font-size: 12px;
+  line-height: 1.5;
+  min-width: 0;
+  animation: narration-in 240ms ease both;
+}
+@keyframes narration-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+}
+.narration-bubble.active {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 14%, transparent);
+}
+.narration-bubble header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: 9.5px;
+  color: var(--muted-foreground);
+}
+.narration-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+.narration-kind i {
+  font-style: normal;
+  font-weight: 400;
+}
+.narration-bubble b {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.narration-bubble p {
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+.narration-canopus_summary {
+  background: color-mix(in srgb, var(--accent) 55%, var(--card));
+  border-color: color-mix(in srgb, var(--primary) 30%, var(--border));
+}
+.narration-canopus_summary .narration-kind {
+  color: var(--primary);
+}
+.narration-agent_output p {
+  font-style: italic;
+  border-inline-start: 2px solid var(--border);
+  padding-inline-start: 8px;
+}
+.narration-agent_output .narration-kind {
+  color: #2f9a94;
+}
+.narration-system_event {
+  background: color-mix(in srgb, var(--muted) 45%, var(--card));
+}
+.narration-bubble footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 7px;
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+.narration-bubble footer button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 1px 8px;
+  background: var(--card);
+  color: var(--primary);
+  font-size: 10px;
+  cursor: pointer;
+}
+.narration-bubble footer button:disabled {
+  color: var(--muted-foreground);
+  cursor: default;
+}
+.narration-state {
+  text-transform: capitalize;
+}
+.narration-checks {
+  margin-bottom: 10px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 11px;
+}
+.narration-checks > button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  background: none;
+  border: 0;
+  color: #2f9a94;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: start;
+}
+.narration-checks > button span {
+  flex: 1;
+  color: var(--muted-foreground);
+  font-weight: 400;
+  text-transform: capitalize;
+}
+.narration-checks ol {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.narration-checks li button {
+  display: grid;
+  grid-template-columns: 150px 1fr auto;
+  gap: 10px;
+  width: 100%;
+  padding: 3px 6px;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  font-size: 11px;
+  text-align: start;
+  cursor: pointer;
+  color: var(--foreground);
+}
+.narration-checks li button:disabled {
+  cursor: default;
+}
+.narration-checks li b {
+  text-transform: capitalize;
+  font-weight: 500;
+}
+.narration-checks li span {
+  color: var(--muted-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.narration-checks li i {
+  font-style: normal;
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+.narration-checks li.active button,
+.narration-checks li button:hover:not(:disabled) {
+  background: var(--accent);
+}
+.narration-list {
+  display: grid;
+  gap: 8px;
+  padding: 10px 0;
+}
+.narration-list summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--primary);
+}
+.narration-list summary::-webkit-details-marker {
+  display: none;
+}
+.narration-list summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.narration-list summary span {
+  font-weight: 400;
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+
+/* Canopus questions about the open case. */
+.ask-thread {
+  display: grid;
+  gap: 14px;
+  padding: 6px 0 10px;
+}
+.ask-turn {
+  display: grid;
+  gap: 8px;
+}
+.ask-question {
+  justify-self: end;
+  max-width: 85%;
+  padding: 7px 11px;
+  border-radius: 12px;
+  border-end-end-radius: 3px;
+  background: var(--primary);
+  color: var(--primary-foreground, #fff);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.ask-waiting,
+.ask-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.ask-error {
+  color: var(--danger);
+}
+.ask-offers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.ask-offer {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--primary);
+}
+.ask-offer > span {
+  flex: 1;
+  color: var(--muted-foreground);
+  min-width: 0;
+}
+.ask-offer b {
+  display: block;
+  color: var(--foreground);
+  font-weight: 600;
+}
+.ask-offer i {
+  font-style: normal;
+  font-size: 10px;
+}
+.ask-offer em {
+  display: block;
+  font-style: normal;
+  color: var(--danger);
+}
+.ask-offer.refused {
+  color: var(--muted-foreground);
+  background: color-mix(in srgb, var(--muted) 40%, transparent);
+}
+.ask-offer button {
+  height: 26px;
+  font-size: 10px;
+  padding: 0 9px;
+  flex: none;
+}
+.ask-composer form {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px 4px 4px 12px;
+  background: var(--card);
+}
+.ask-composer input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: 13px;
+  color: var(--foreground);
+  height: 30px;
+}
+.ask-composer form button {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+}
+.ask-suggested {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.ask-suggested button {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  background: var(--card);
+  font-size: 11px;
+  color: var(--foreground);
+  cursor: pointer;
+}
+.ask-suggested button:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.canopus-compose-area[hidden] {
+  display: none;
+}
+
+/* The simulated clock's Start / Pause control beside Auto. */
+.clock-control {
+  height: 32px;
+  font-size: 11px;
+  gap: 5px;
+  white-space: nowrap;
+}
+.clock-control[aria-pressed="true"] {
+  color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+}
+
+/* ---------------------------------------------------------------------------------------
+   Calmer operator experience (connected product). Softer neutral surfaces, fewer boxes, a
+   connected pipeline, a plain chat. Scoped to connected-mode classes.
+   --------------------------------------------------------------------------------------- */
+:root:has(.environment-badge[data-dataset]) {
+  --background: #eef0f3;
+  --card: #f8f9fb;
+  --muted: #eceef2;
+  --border: #dfe2e8;
+  --sidebar: #f4f5f8;
+}
+.dark:has(.environment-badge[data-dataset]) {
+  --background: #16181d;
+  --card: #1d2026;
+  --muted: #262a32;
+  --border: #2c3038;
+  --sidebar: #191b20;
+}
+/* Fewer boxes: sections inside a card are separated by space, not by nested borders. */
+.pipeline.surface {
+  padding: 16px 20px 14px;
+  margin-bottom: 14px;
+}
+.case-workspace .visualization {
+  border-color: transparent;
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+/* The pipeline as one connected process. */
+.pipeline-stages.connected {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 0;
+  align-items: start;
+  padding-top: 2px;
+}
+.pipeline-stages.connected::before,
+.pipeline-stages.connected::after {
+  content: "";
+  position: absolute;
+  top: 17px;
+  inset-inline-start: 6.25%;
+  height: 2px;
+  border-radius: 2px;
+}
+.pipeline-stages.connected::before {
+  width: 87.5%;
+  background: var(--border);
+}
+.pipeline-stages.connected::after {
+  /* How far the case has come, from the backend's recorded step. */
+  width: calc(87.5% * var(--progress, 0));
+  max-width: 87.5%;
+  background: var(--primary);
+  transition: width 500ms ease;
+}
+.pipeline-stages.connected > button {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  height: auto;
+  min-height: 0;
+  padding: 4px 6px 8px;
+  text-align: center;
+  white-space: normal;
+  background: transparent;
+  border-radius: 8px;
+}
+.pipeline-stages.connected > button::after {
+  display: none;
+}
+.pipeline-stages.connected > button > span:last-child {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 550;
+  color: var(--foreground);
+  min-width: 0;
+  width: 100%;
+}
+.pipeline-stages.connected .stage-number {
+  width: 28px;
+  height: 28px;
+  font-size: 10px;
+  background: var(--card);
+  border: 2px solid var(--border);
+  color: var(--muted-foreground);
+  transition:
+    background 300ms ease,
+    border-color 300ms ease,
+    box-shadow 300ms ease;
+}
+.pipeline-stages.connected .state-completed .stage-number {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+}
+.pipeline-stages.connected .state-running .stage-number {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--card);
+  /* A pulse only while the backend reports this step as running. */
+  animation: stage-pulse 1.6s ease-in-out infinite;
+}
+@keyframes stage-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 35%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--primary) 0%, transparent);
+  }
+}
+.pipeline-stages.connected .state-waiting .stage-number {
+  background: var(--warning-soft);
+  border-color: var(--warning);
+  color: var(--warning);
+}
+.pipeline-stages.connected .state-failed .stage-number {
+  background: var(--danger-soft);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.pipeline-stages.connected > button.selected {
+  background: color-mix(in srgb, var(--accent) 60%, transparent);
+}
+.pipeline-stages.connected .stage-explain {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  margin-top: 3px;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--muted-foreground);
+  text-align: center;
+}
+.pipeline-stages.connected .state-waiting .stage-explain,
+.pipeline-stages.connected .state-running .stage-explain {
+  color: var(--foreground);
+}
+.pipeline-stages.connected small {
+  margin-top: 2px;
+  font-size: 9px;
+}
+.pipeline-stages.connected .stage-time {
+  opacity: 0.7;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pipeline-stages.connected .state-running .stage-number {
+    animation: none;
+  }
+}
+.pipeline-stage-summary {
+  margin-top: 8px;
+  padding-top: 9px;
+  font-size: 11px;
+}
+.narration-strip {
+  margin-top: 8px;
+  padding-top: 6px;
+}
+.narration-toggle b {
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+
+/* The case assessment in the case column. */
+.case-context.with-assessment {
+  width: 290px;
+}
+.case-assessment {
+  margin-top: 8px;
+}
+.assessment-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 11px;
+  font-weight: 550;
+  line-height: 1.3;
+}
+.assessment-state.resolved {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.case-assessment dl {
+  margin: 12px 0 0;
+  display: grid;
+  gap: 11px;
+}
+.assessment-line dt {
+  font-size: 9.5px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  margin-bottom: 2px;
+}
+.assessment-line dd {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+.assessment-line.line-problem dd {
+  font-weight: 550;
+}
+.assessment-pending {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 11px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
+  color: var(--primary);
+}
+.assessment-pending p {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--foreground);
+}
+.assessment-pending p.muted,
+.assessment-details .muted {
+  color: var(--muted-foreground);
+  font-size: 11px;
+  margin-top: 4px;
+}
+.assessment-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 12px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  cursor: pointer;
+}
+.assessment-toggle svg.open {
+  transform: rotate(180deg);
+}
+.assessment-details {
+  margin-top: 8px;
+  display: grid;
+  gap: 12px;
+}
+.assessment-details h4 {
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  margin-bottom: 3px;
+}
+.assessment-details p,
+.assessment-details li {
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.assessment-details ul {
+  margin: 0;
+  padding-inline-start: 15px;
+  list-style: disc;
+}
+.assessment-details li button {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--primary);
+  font-size: 12px;
+  text-align: start;
+  cursor: pointer;
+}
+.assessment-details blockquote {
+  margin: 6px 0 0;
+  padding-inline-start: 9px;
+  border-inline-start: 2px solid var(--border);
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+.assessment-details blockquote small {
+  display: block;
+  font-size: 9.5px;
+  margin-bottom: 2px;
+}
+.assessment-details .technical {
+  font-size: 10px;
+}
+
+/* The evidence inspector: one quiet line until something is selected. */
+.evidence-inspector.idle {
+  padding: 7px 14px;
+  background: transparent;
+  border-style: dashed;
+  color: var(--muted-foreground);
+}
+.evidence-inspector.idle b {
+  font-weight: 400;
+  color: var(--muted-foreground);
+}
+.evidence-inspector.idle p,
+.evidence-inspector.idle > button,
+.evidence-inspector.idle .inspector-icon {
+  display: none;
+}
+
+/* The collapsed sidebar's operator circle keeps its shape. */
+[data-state="collapsed"] .operator-button {
+  justify-content: center;
+  padding-inline: 0 !important;
+}
+[data-state="collapsed"] .operator-button > svg {
+  display: none;
+}
+.avatar {
+  aspect-ratio: 1;
+  min-width: 28px;
+}
+
+/* Canopus as a plain chat. */
+.chat-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 0 8px;
+}
+.chat-turn {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.chat-question {
+  align-self: flex-end;
+  max-width: 82%;
+  padding: 8px 13px;
+  border-radius: 16px;
+  border-end-end-radius: 5px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.chat-answer {
+  align-self: flex-start;
+  max-width: 92%;
+  padding: 10px 14px 8px;
+  border-radius: 16px;
+  border-end-start-radius: 5px;
+  background: var(--muted);
+  color: var(--foreground);
+}
+.chat-prose p,
+.chat-prose li {
+  font-size: 13.5px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.chat-prose p + p,
+.chat-prose ul {
+  margin-top: 7px;
+}
+.chat-prose ul {
+  padding-inline-start: 18px;
+  list-style: disc;
+}
+.chat-quote {
+  margin: 9px 0 0;
+  padding: 2px 0 2px 11px;
+  border-inline-start: 3px solid color-mix(in srgb, var(--primary) 45%, var(--border));
+}
+.chat-quote small {
+  display: block;
+  font-size: 10.5px;
+  color: var(--muted-foreground);
+  margin-bottom: 2px;
+}
+.chat-quote p {
+  font-size: 12.5px;
+  line-height: 1.55;
+  font-style: italic;
+}
+.chat-why-not {
+  margin: 8px 0 0;
+  padding-inline-start: 18px;
+  list-style: disc;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+.chat-offers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.chat-offers button {
+  height: 28px;
+  font-size: 11.5px;
+}
+.chat-note {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.chat-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 7px;
+  font-size: 10.5px;
+  color: var(--muted-foreground);
+}
+.chat-meta > span {
+  flex: 1;
+}
+.chat-meta button {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--muted-foreground);
+  font-size: 10.5px;
+  cursor: pointer;
+}
+.chat-meta button:hover {
+  color: var(--primary);
+}
+.chat-meta svg.open {
+  transform: rotate(180deg);
+}
+.chat-sources {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 5px;
+}
+.chat-sources > p {
+  font-size: 10.5px;
+  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
+}
+.chat-typing {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: var(--muted);
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+}
+.chat-typing i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--muted-foreground);
+  animation: chat-dot 1.1s ease-in-out infinite;
+}
+.chat-typing i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.chat-typing i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.chat-typing span {
+  margin-inline-start: 6px;
+}
+@keyframes chat-dot {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.chat-error {
+  align-self: flex-start;
+  font-size: 12px;
+  color: var(--danger);
+}
+.chat-composer-area form {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 4px 4px 15px;
+  background: var(--card);
+}
+.chat-composer-area form:focus-within {
+  border-color: var(--primary);
+}
+.chat-composer-area input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: 13.5px;
+  color: var(--foreground);
+  height: 32px;
+}
+.chat-composer-area form button {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+.chat-suggested {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.chat-suggested button {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 11px;
+  background: var(--card);
+  font-size: 11.5px;
+  color: var(--foreground);
+  cursor: pointer;
+}
+.chat-suggested button:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+/* The disclosure stays, quietly. */
+.simulation-note {
+  opacity: 0.85;
+}
+
+/* The full assessment as plain answers; the technical record folded beneath. */
+.assessment-answers {
+  display: grid;
+  gap: 16px;
+  margin: 18px 0 22px;
+}
+.assessment-answers dt {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 4px;
+}
+.assessment-answers dd {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+.assessment-answers ul {
+  margin: 0;
+  padding-inline-start: 17px;
+  list-style: disc;
+}
+.assessment-answers li button {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--primary);
+  font-size: 13px;
+  text-align: start;
+  cursor: pointer;
+}
+.assessment-tag {
+  display: inline-block;
+  margin-inline-end: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 10.5px;
+  font-weight: 550;
+  vertical-align: 1px;
+}
+.assessment-tag.accepted {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.assessment-reason {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.technical-record > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+}
+.technical-record > summary::-webkit-details-marker {
+  display: none;
+}
+.technical-record[open] > summary {
+  margin-bottom: 14px;
+}
+
+/* A waiting case with the clock paused: say so, with the way out beside it. */
+.clock-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.clock-notice p {
+  flex: 1;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--foreground);
+}
+.clock-notice button {
+  height: 28px;
+  font-size: 11.5px;
+  flex: none;
+}
+
+/* The chat scrolls inside the panel, between its header and the anchored input. */
+.canopus-transcript.chat-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 16px 10px;
+}
+.canopus-transcript[hidden] {
+  display: none;
+}
+
+/* A stored photograph of a record: a thumbnail in the inspector, enlarged on click. */
+.inspector-photo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 4px 10px 4px 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  cursor: zoom-in;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.inspector-photo img {
+  width: 72px;
+  height: 54px;
+  object-fit: cover;
+  border-radius: 5px;
+}
+.photo-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, #0b0d12 62%, transparent);
+  animation: photo-fade 220ms ease both;
+}
+.photo-modal figure {
+  margin: 0;
+  max-width: min(620px, 86vw);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--card);
+  box-shadow: 0 24px 80px #00000055;
+  animation: photo-rise 260ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+.photo-modal img {
+  display: block;
+  /* A small stored picture is shown at up to about twice its size, never across the screen. */
+  width: min(620px, 86vw);
+  max-height: 68vh;
+  object-fit: contain;
+  background: #111;
+}
+.photo-modal figcaption {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  font-size: 12px;
+}
+.photo-modal figcaption span {
+  flex: 1;
+  color: var(--muted-foreground);
+  font-size: 10.5px;
+}
+.photo-modal figcaption button {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 12px;
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 11px;
+  cursor: pointer;
+}
+@keyframes photo-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes photo-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+}
+
+/* Recording only: the phone that visualises a simulated request to a worker. */
+.director-phone {
+  position: fixed;
+  top: 50%;
+  right: 56px;
+  z-index: 70;
+  width: 320px;
+  transform: translate(140%, -50%) rotate(4deg);
+  transition: transform 620ms cubic-bezier(0.2, 0.8, 0.25, 1);
+  filter: drop-shadow(0 30px 60px #00000055);
+  pointer-events: none;
+}
+.director-phone.in {
+  transform: translate(0, -50%) rotate(0deg);
+}
+.phone-body {
+  position: relative;
+  padding: 11px;
+  border-radius: 52px;
+  background: linear-gradient(145deg, #3a3d45, #0f1014 55%, #2a2c33);
+  box-shadow:
+    inset 0 0 0 1.5px #5b5f6a,
+    inset 0 0 0 4px #17181c;
+}
+.phone-island {
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  z-index: 2;
+  width: 96px;
+  height: 27px;
+  border-radius: 20px;
+  background: #000;
+  transform: translateX(-50%);
+}
+.phone-screen {
+  position: relative;
+  height: 640px;
+  border-radius: 42px;
+  overflow: hidden;
+  background: linear-gradient(170deg, #2b2350 0%, #151a33 48%, #0d1220 100%);
+  color: #fff;
+  font-family: -apple-system, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+}
+.phone-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 17px 28px 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.phone-signal {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+}
+.phone-signal i {
+  width: 3px;
+  background: #fff;
+  border-radius: 1px;
+}
+.phone-signal i:nth-child(1) {
+  height: 5px;
+}
+.phone-signal i:nth-child(2) {
+  height: 7px;
+}
+.phone-signal i:nth-child(3) {
+  height: 9px;
+}
+.phone-signal b {
+  width: 22px;
+  height: 10px;
+  margin-inline-start: 5px;
+  border: 1px solid #ffffffaa;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #fff 70%, transparent 70%);
+}
+.phone-clock {
+  margin-top: 54px;
+  text-align: center;
+  font-size: 76px;
+  font-weight: 300;
+  letter-spacing: -2px;
+  line-height: 1;
+}
+.phone-notification {
+  display: flex;
+  gap: 10px;
+  margin: 46px 12px 0;
+  padding: 12px 13px;
+  border-radius: 22px;
+  background: #ffffff2b;
+  backdrop-filter: blur(22px);
+  animation: phone-drop 520ms cubic-bezier(0.2, 0.9, 0.3, 1.1) 380ms both;
+}
+.phone-notification img {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: #fff;
+  padding: 4px;
+  flex: none;
+}
+.phone-notification b {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.8;
+}
+.phone-notification small {
+  font-weight: 400;
+}
+.phone-notification strong {
+  display: block;
+  margin-top: 1px;
+  font-size: 14px;
+  font-weight: 650;
+}
+.phone-notification p {
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.35;
+  opacity: 0.95;
+}
+@keyframes phone-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-26px) scale(0.96);
+  }
+}
+.phone-app {
+  position: absolute;
+  inset: 52px 0 0;
+  padding: 18px 16px 0;
+  border-radius: 26px 26px 0 0;
+  background: #f5f5f8;
+  color: #1c1e26;
+  animation: phone-sheet 420ms cubic-bezier(0.2, 0.8, 0.25, 1) both;
+}
+@keyframes phone-sheet {
+  from {
+    transform: translateY(40%);
+    opacity: 0;
+  }
+}
+.phone-app header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e3ea;
+}
+.phone-app header img {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: #fff;
+  padding: 4px;
+  box-shadow: 0 0 0 1px #e2e3ea;
+}
+.phone-app header b {
+  display: block;
+  font-size: 15px;
+}
+.phone-app header small {
+  font-size: 11.5px;
+  color: #6e7386;
+}
+.phone-message {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border-top-left-radius: 5px;
+  background: #fff;
+  box-shadow: 0 1px 2px #1c1e2612;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.phone-options {
+  display: grid;
+  gap: 9px;
+  margin-top: 16px;
+}
+.phone-options span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 13px 10px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 0 0 1px #dfe1ea;
+  font-size: 14px;
+  font-weight: 550;
+  color: #4a3f8f;
+  transition:
+    background 220ms ease,
+    color 220ms ease,
+    transform 220ms ease;
+}
+.phone-options span.pressed {
+  background: #7b61c5;
+  color: #fff;
+  box-shadow: 0 6px 18px #7b61c555;
+  transform: scale(0.97);
+}
+.phone-confirmed {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  margin-top: 74px;
+  animation: phone-drop 420ms ease both;
+}
+.phone-confirmed span {
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: #3d9462;
+  color: #fff;
+  box-shadow: 0 0 0 10px #3d946222;
+}
+.phone-confirmed b {
+  font-size: 16px;
+  text-align: center;
+}
+.phone-home {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  width: 118px;
+  height: 5px;
+  border-radius: 3px;
+  background: #ffffffb0;
+  transform: translateX(-50%);
+  mix-blend-mode: difference;
+}

@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.cache/
+*.tsbuildinfo
+test-results/
+playwright-report/
+*.log
+dist-lab/
+dist-8022/
+dist-8022-new/
+recording/out/

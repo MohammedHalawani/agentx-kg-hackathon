@@ -1,0 +1,1448 @@
+import type {
+  ApiAuditEvent,
+  ApiCaseDetail,
+  ApiEvidenceNode,
+  ApiExploreItem,
+  ApiLayerPoint,
+  ApiPipelineEvent,
+  ApiCanopusAnswer,
+  ApiNarrationEvent,
+  ApiStageFact,
+  ApiPipelineState,
+  ApiQueueCase,
+  ApiRouteSegment,
+  WorkflowState,
+} from "@/api/contracts";
+import type {
+  AuditKind,
+  AuthorityDecision,
+  BackendCaseState,
+  CaseStatus,
+  EvidenceObservation,
+  Facility,
+  CanopusAnswer,
+  GraphNode,
+  NarrationEvent,
+  GraphRelationship,
+  InvestigationStageEvent,
+  OperationalCase,
+  Priority,
+  Recommendation,
+} from "@/domain/types";
+
+/**
+ * Pure mappings from backend payloads to the screens' view model. Nothing here decides a
+ * diagnosis, an authority, an execution result or an outcome: those are copied from the
+ * backend or left absent. Where the backend serves nothing, the view model says so.
+ */
+
+/** Backend pipeline stage -> the UI's eight-step rail. The outcome gate (7) is not a graph node. */
+export const STAGE_INDEX: Record<string, number> = {
+  extract: 0,
+  retrieve: 1,
+  classify: 2,
+  retrieve_context: 3,
+  recommend: 4,
+  review: 5,
+  writeback: 6,
+  escalate: 6,
+};
+
+const STATUS: Record<WorkflowState, CaseStatus> = {
+  OPEN: "queued",
+  REOPENED: "queued",
+  INVESTIGATING: "investigating",
+  NEEDS_EVIDENCE: "needs_evidence",
+  REJECTED: "needs_evidence",
+  RECOMMENDATION_READY: "human_review",
+  AWAITING_APPROVAL: "human_review",
+  HUMAN_REVIEW: "human_review",
+  ACTION_INITIATED: "executing",
+  AWAITING_OUTCOME: "verifying",
+  ESCALATED: "escalated",
+  RESOLVED: "resolved",
+};
+export function statusOf(workflow: string): CaseStatus {
+  return STATUS[workflow as WorkflowState] ?? "queued";
+}
+
+/** The backend lifecycle (chat/operations/lifecycle.py). The backend re-checks every request. */
+const DECISION_SOURCES = {
+  reject: ["AWAITING_APPROVAL", "HUMAN_REVIEW", "RECOMMENDATION_READY"],
+  escalate: [
+    "OPEN",
+    "AWAITING_APPROVAL",
+    "HUMAN_REVIEW",
+    "NEEDS_EVIDENCE",
+    "RECOMMENDATION_READY",
+  ],
+};
+function allowedFor(
+  workflow: string,
+  approvable: boolean,
+): BackendCaseState["allowed"] {
+  return {
+    investigate: workflow === "OPEN" || workflow === "REOPENED",
+    approve: approvable,
+    reject: DECISION_SOURCES.reject.includes(workflow),
+    escalate: DECISION_SOURCES.escalate.includes(workflow),
+    verify: workflow === "AWAITING_OUTCOME",
+    humanOutcome: [
+      "HUMAN_REVIEW",
+      "ESCALATED",
+      "NEEDS_EVIDENCE",
+      "AWAITING_APPROVAL",
+    ].includes(workflow),
+  };
+}
+
+export function humanize(code: string | null | undefined) {
+  if (!code) return "";
+  const text = code.replaceAll("_", " ").toLowerCase();
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+const shortId = (id: string) => id.replace(/^SYN-/, "");
+const text = (value: unknown) =>
+  value === null || value === undefined || value === "None" ? "" : String(value);
+const number = (value: unknown) => {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+function riyadhTime(timestamp: string | null | undefined) {
+  if (!timestamp) return "—";
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleString("en-GB", {
+    timeZone: "Asia/Riyadh",
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+function priorityOf(value: string | undefined): Priority {
+  return value === "high" || value === "medium" || value === "low"
+    ? value
+    : "unknown";
+}
+
+const ABSENT_DIAGNOSIS: Record<string, string> = {
+  not_investigated:
+    "Not investigated yet. The monitor opened this case from observed symptoms; no cause has been established.",
+  investigation_in_progress:
+    "An investigation is running now. No diagnosis is shown until the independent reviewer accepts it.",
+  reinvestigation_pending:
+    "Queued for re-investigation. The earlier run is superseded and is not shown as the current diagnosis.",
+  investigation_incomplete:
+    "The investigation did not complete. No diagnosis is available.",
+  investigation_unavailable:
+    "The investigator did not produce a valid conclusion. No diagnosis is available.",
+  no_agent_investigation:
+    "This run used deterministic rule checks only. Rule signals are not a diagnosis.",
+  review_not_accepted:
+    "The independent reviewer did not accept the investigation. Its findings are not presented as what happened.",
+  no_operations_ledger: "No operations ledger is available for this case.",
+  not_a_case: "This shipment has no investigation case.",
+};
+export function absentDiagnosis(reason: string | null | undefined) {
+  return (
+    ABSENT_DIAGNOSIS[reason ?? "not_investigated"] ??
+    "No accepted diagnosis is available."
+  );
+}
+
+const NO_RECOMMENDATION: Recommendation = {
+  title: "No recommendation yet",
+  detail:
+    "The backend has not recorded a reviewed recommendation for this case.",
+  authority: "evidence",
+  risk: "medium",
+  expectedOutcome:
+    "A case resolves only when the independent verifier confirms the outcome from evidence recorded after the action.",
+  available: false,
+};
+
+function issueOf(row: ApiQueueCase) {
+  if (row.diagnosis_available) {
+    const cause = row.category ?? row.cause_codes?.[0];
+    if (cause) return humanize(cause);
+  }
+  const symptoms = row.symptom_codes ?? [];
+  if (symptoms.length)
+    return `${humanize(symptoms[0])}${symptoms.length > 1 ? ` +${symptoms.length - 1}` : ""}`;
+  return "Exception detected";
+}
+
+function emptyBackend(row: ApiQueueCase): BackendCaseState {
+  return {
+    caseId: row.case_id,
+    shipmentId: row.shipment_id,
+    workflowState: row.workflow_state,
+    stateVersion: row.state_version ?? 0,
+    operationalStatus: row.operational_status ?? null,
+    symptomCodes: row.symptom_codes ?? [],
+    causeCodes: row.diagnosis_available ? (row.cause_codes ?? []) : [],
+    diagnosisAvailable: row.diagnosis_available === true,
+    diagnosisReason: row.diagnosis_available ? null : "not_loaded",
+    detailLoaded: false,
+    allowed: allowedFor(row.workflow_state, false),
+    stageDetail: {},
+    stageEvidence: {},
+    pipelineStatus: "UNKNOWN",
+    investigationAsOf: null,
+    evidenceAfterInvestigation: 0,
+    asOf: row.as_of ?? undefined,
+  };
+}
+
+/**
+ * A queue row as a case. Evidence, graph, route, recommendation and outcome stay empty until
+ * the case detail is loaded; a loaded detail of the same version is kept.
+ */
+export function caseFromQueue(
+  row: ApiQueueCase,
+  previous?: OperationalCase,
+  explore?: ApiExploreItem,
+): OperationalCase {
+  const keep =
+    previous?.backend?.detailLoaded &&
+    previous.backend.stateVersion === (row.state_version ?? 0)
+      ? previous
+      : undefined;
+  const origin =
+    explore?.origin_city ?? previous?.shipment.origin ?? "";
+  const destination =
+    row.city ??
+    explore?.destination_city ??
+    previous?.shipment.destination ??
+    "";
+  const base: OperationalCase = {
+    id: row.case_id,
+    shipment: {
+      id: row.shipment_id,
+      packageId: previous?.shipment.packageId ?? "",
+      origin: origin || "—",
+      destination: destination || "—",
+      customer: "",
+      service: previous?.shipment.service ?? "",
+      weight: previous?.shipment.weight ?? null,
+      promisedAt: previous?.shipment.promisedAt ?? "",
+    },
+    scenario: "normal",
+    issue: issueOf(row),
+    summary: row.issue_summary,
+    diagnosis: row.diagnosis_available
+      ? row.issue_summary
+      : "No accepted diagnosis is shown for this case yet.",
+    priority: priorityOf(row.priority),
+    status: statusOf(row.workflow_state),
+    openedAt: row.opened_at ?? row.as_of ?? "",
+    evidence: previous?.evidence ?? [],
+    nodes: previous?.nodes ?? [],
+    relationships: previous?.relationships ?? [],
+    route: previous?.route ?? { expected: [], actual: [], vehicle: [] },
+    recommendation: previous?.recommendation ?? NO_RECOMMENDATION,
+    run: previous?.run,
+    execution: previous?.execution,
+    outcome: previous?.outcome,
+    backend: {
+      ...(previous?.backend ?? emptyBackend(row)),
+      workflowState: row.workflow_state,
+      operationalStatus: row.operational_status ?? null,
+      symptomCodes: row.symptom_codes ?? [],
+      diagnosisAvailable: row.diagnosis_available === true,
+      causeCodes: row.diagnosis_available ? (row.cause_codes ?? []) : [],
+      // A version the browser has not loaded yet: the detail is refetched by the service.
+      detailLoaded: !!keep,
+      stateVersion: keep ? keep.backend!.stateVersion : (row.state_version ?? 0),
+      allowed: keep
+        ? keep.backend!.allowed
+        : allowedFor(row.workflow_state, false),
+    },
+  };
+  if (keep) {
+    // The loaded detail's own diagnosis describes the case; the queue row's one-line summary
+    // (the leading hypothesis's assessment) must not replace it between polls.
+    base.diagnosis = keep.diagnosis;
+    if (row.diagnosis_available && keep.backend?.diagnosisAvailable) {
+      base.summary = keep.summary;
+      base.issue = keep.issue;
+    }
+  }
+  return base;
+}
+
+/** A case reached by a direct link before (or without) its queue row. */
+export function placeholderCase(caseId: string): OperationalCase {
+  return caseFromQueue({
+    case_id: caseId,
+    shipment_id: "",
+    issue_summary: "",
+    priority: "unknown",
+    workflow_state: "OPEN",
+    state_version: -1,
+  });
+}
+
+const FACILITY_KINDS = new Set([
+  "Hub",
+  "SortingCenter",
+  "DeliveryDepot",
+  "Branch",
+  "FulfillmentWarehouse",
+  "OrganizationWarehouse",
+]);
+const OBSERVATION_RANK: Record<string, number> = {
+  CustodyEvent: 0,
+  DeliveryAttempt: 1,
+  DeliveryProof: 1,
+  RecipientReport: 1,
+  DepotReconciliation: 1,
+  HandoffEvidence: 2,
+  Manifest: 2,
+  StatusEvent: 3,
+  ScanEvent: 4,
+  ContactAttempt: 4,
+  AuthenticationEvidence: 5,
+  SignatureEvidence: 5,
+  PhotoEvidence: 5,
+  GPSObservation: 6,
+  TrafficObservation: 6,
+  LocationPin: 6,
+  // Mechanism-world records: messages to and from customers and their delivery reports.
+  CommunicationEvent: 1,
+};
+/** How many of a case's recorded nodes the graph draws (cited evidence first). The total is always stated. */
+export const GRAPH_LIMIT = 96;
+
+function graphKind(kind: string): GraphNode["kind"] | null {
+  if (kind === "Shipment") return "shipment";
+  if (kind === "Package") return "package";
+  if (FACILITY_KINDS.has(kind)) return "facility";
+  if (kind === "Vehicle") return "vehicle";
+  // Mechanism-world transport records several shipments share (plan data, not custody).
+  if (kind === "Container" || kind === "Trip") return "vehicle";
+  if (kind === "Driver") return "driver";
+  if (kind === "Provider" || kind === "Organization") return "contractor";
+  if (kind in OBSERVATION_RANK) return "observation";
+  // Scanners and driver apps are where observations come from; drawn with the observations.
+  if (kind === "Device") return "observation";
+  if (kind === "OpsRecommendation") return "recommendation";
+  // The case's own ledger records: they tie the recommendation and outcome to the shipment.
+  if (["OpsCase", "OpsRun", "OpsReview", "OpsExecution"].includes(kind))
+    return "recommendation";
+  if (kind === "OpsOutcome") return "outcome";
+  return null;
+}
+function nodeLabel(node: ApiEvidenceNode) {
+  const p = node.properties;
+  const kind = node.kind;
+  if (kind === "Shipment") return text(p.tracking_id) || shortId(node.id);
+  if (kind === "Package") return shortId(node.id).split("-").slice(-2).join("-");
+  if (kind === "Provider") return text(p.name) || shortId(node.id);
+  if (kind === "CustodyEvent") return `Custody · ${humanize(text(p.event_type))}`;
+  if (kind === "ScanEvent")
+    return `Scan · ${humanize(text(p.observation_type))}`;
+  if (kind === "DeliveryAttempt")
+    return `Attempt · ${humanize(text(p.disposition))}`;
+  if (kind === "StatusEvent") return `Status · ${humanize(text(p.status))}`;
+  if (kind === "GPSObservation") return "Vehicle GPS";
+  if (kind === "Container" || kind === "Trip")
+    return `${kind} · ${shortId(node.id).split("-").slice(-2).join("-")}`;
+  if (kind === "CommunicationEvent")
+    return `Message · ${humanize(text(p.channel) || text(p.direction)) || "recorded"}`;
+  if (kind === "Device")
+    return `Device · ${humanize(text(p.device_kind)) || shortId(node.id)}`;
+  if (kind === "OpsRecommendation")
+    return text(p.action_en) || text(p.action) || "Recommendation";
+  if (kind === "OpsOutcome")
+    return `Outcome · ${humanize(text(p.verification_status)) || "recorded"}`;
+  if (kind === "OpsCase")
+    return `Case · ${humanize(text(p.workflow_state)) || "recorded"}`;
+  if (kind === "OpsRun") return "Investigation run";
+  if (kind === "OpsReview")
+    return `Review · ${humanize(text(p.verdict)) || "recorded"}`;
+  if (kind === "OpsExecution")
+    return `Execution · ${humanize(text(p.status)) || "recorded"}`;
+  if (graphKind(kind) === "observation")
+    return kind.replace(/([a-z])([A-Z])/g, "$1 $2");
+  return shortId(node.id);
+}
+const DETAIL_KEYS = [
+  "event_type",
+  "observation_type",
+  "disposition",
+  "failed_reason",
+  "status",
+  "source_quality",
+  "position_scope",
+  "facility_id",
+  "from_id",
+  "to_id",
+  "vehicle_id",
+  "driver_id",
+  "provider_id",
+  "device_ref",
+  "city",
+  "ownership",
+  "vehicle_class",
+  "employment",
+  "provider_type",
+  "device_kind",
+  "report_code",
+  "result",
+  "verification_status",
+  "success",
+  "decision",
+];
+/**
+ * An image the backend stores with a record, when it serves one this page can load: a path on
+ * the same origin or an http(s) URL. A reference of another scheme is not an image to show.
+ */
+function mediaOf(node: ApiEvidenceNode): string | undefined {
+  const p = node.properties;
+  // The backend's stored image for a record: media = {url, content_type, ...} on the node.
+  const stored = ((node as { media?: unknown }).media ?? p.media) as
+    | { url?: unknown }
+    | undefined;
+  const url = text(stored?.url);
+  if (/^(\/|https?:\/\/)/.test(url)) return url;
+  for (const key of ["media_url", "image_url", "photo_url", "media_ref"]) {
+    const value = text(p[key]);
+    if (/^(\/|https?:\/\/)/.test(value)) return value;
+  }
+  return undefined;
+}
+function nodeDetail(node: ApiEvidenceNode) {
+  const p = node.properties;
+  const facts = DETAIL_KEYS.filter((key) => text(p[key]) !== "").map(
+    (key) => `${key.replaceAll("_", " ")}: ${text(p[key])}`,
+  );
+  const when = text(p.occurred_at);
+  return [
+    `${node.kind} ${node.id}`,
+    when ? `occurred ${riyadhTime(when)} AST` : "",
+    ...facts,
+    node.after_investigation
+      ? "recorded after the investigation's evidence snapshot"
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function isSegment(
+  item: ApiLayerPoint | ApiRouteSegment,
+): item is ApiRouteSegment {
+  return "points" in item;
+}
+const position = (point: ApiLayerPoint): [number, number] => [
+  point.lat,
+  point.lng,
+];
+
+function stageSummary(event: ApiPipelineEvent): string {
+  const out = event.output ?? {};
+  // Rule output and deterministic guards are named as such, never as an agent's finding.
+  const rules = out.agent === "evidence_rules";
+  if (out.kind === "invalid_output_repair")
+    // The backend's own live state; nothing is concluded while it asks again.
+    return `Model reply invalid, retrying (${out.role ?? "model"}${out.attempt ? `, attempt ${out.attempt}` : ""}). No diagnosis is substituted.`;
+  if (out.kind === "forced_final_turn")
+    return "Turn budget exhausted; the investigator is asked once to conclude from the evidence already retrieved.";
+  if (out.kind === "tool_call" && out.tool)
+    // One evidence query of the investigator, as it happened.
+    return `Investigator queried ${humanize(out.tool).toLowerCase()}${out.purpose ? `: ${out.purpose}` : ""}`;
+  switch (event.stage) {
+    case "extract":
+      return out.evidence_ids
+        ? `Collected ${out.evidence_ids.length} evidence items visible at the snapshot.`
+        : `Evidence collection ${event.status.toLowerCase()}.`;
+    case "retrieve":
+      return out.nodes !== undefined
+        ? `Graph context retrieved: ${out.nodes} nodes, ${out.relationships ?? 0} relationships.`
+        : `Graph retrieval ${event.status.toLowerCase()}.`;
+    case "classify": {
+      const first = out.diagnoses?.[0];
+      const summary = first?.summary_en ?? first?.summary;
+      return summary
+        ? `${rules ? "Rule check, not a diagnosis · " : ""}${humanize(first?.code)}: ${summary}`
+        : out.diagnoses
+          ? `${out.diagnoses.length} hypotheses recorded.`
+          : `Hypothesis stage ${event.status.toLowerCase()}.`;
+    }
+    case "retrieve_context":
+      return out.verified_precedents !== undefined
+        ? `${out.verified_precedents} verified precedents retrieved.`
+        : `Precedent retrieval ${event.status.toLowerCase()}.`;
+    case "recommend":
+      return out.proposal?.action_en || out.proposal?.action
+        ? `${rules ? "Rule-derived proposal · " : ""}${out.proposal.action_en ?? out.proposal.action}`
+        : `Recommendation stage ${event.status.toLowerCase()}.`;
+    case "review":
+      return out.verdict
+        ? `${out.agent === "deterministic_guard" ? "Deterministic evidence guard (no model review)" : "Reviewer verdict"}: ${out.verdict}${out.feedback ? `. ${out.feedback}` : ""}`
+        : `Review ${event.status.toLowerCase()}.`;
+    default:
+      return out.workflow_state
+        ? `Recorded. Case state: ${humanize(out.workflow_state)}.`
+        : `${humanize(String(event.stage))} ${event.status.toLowerCase()}.`;
+  }
+}
+
+/** Recorded pipeline events as the UI rail's furthest stage and per-stage texts. */
+export function pipelineView(events: ApiPipelineEvent[]) {
+  const stageDetail: Record<number, string> = {};
+  const stageEvidence: Record<number, string[]> = {};
+  const stageElapsed: Record<number, number> = {};
+  const stageStatus: Record<number, string> = {};
+  let repairing: string | null = null;
+  let stage = -1;
+  for (const event of [...events].sort((a, b) => a.sequence - b.sequence)) {
+    const index = STAGE_INDEX[event.stage];
+    if (index === undefined) continue;
+    stage = Math.max(stage, index);
+    stageDetail[index] = stageSummary(event);
+    stageStatus[index] = event.status;
+    if (typeof event.elapsed_seconds === "number")
+      stageElapsed[index] = event.elapsed_seconds;
+    // A repair is live only until the stage's next event (its closing event follows).
+    repairing =
+      event.output?.kind === "invalid_output_repair"
+        ? (event.output.role ?? "model")
+        : null;
+    if (event.output?.evidence_ids?.length)
+      stageEvidence[index] = event.output.evidence_ids;
+  }
+  return { stage, stageDetail, stageEvidence, stageElapsed, stageStatus, repairing };
+}
+
+const VERDICTS: Record<string, AuthorityDecision["verdict"]> = {
+  approve: "approved",
+  reject: "rejected",
+  escalate: "escalated",
+  request_evidence: "evidence_requested",
+  reopen: "reopened",
+};
+export const DECISION_BY_VERDICT: Record<string, string> = {
+  approved: "approve",
+  rejected: "reject",
+  escalated: "escalate",
+};
+export function verdictOf(decision: string | null | undefined) {
+  return VERDICTS[decision ?? ""] ?? null;
+}
+
+function recommendationOf(detail: ApiCaseDetail): Recommendation {
+  const r = detail.recommendation;
+  if (!r) return NO_RECOMMENDATION;
+  const risk = r.risk_class ?? "";
+  return {
+    title: r.action_en ?? r.action ?? humanize(r.action_type) ?? "Recommendation",
+    detail:
+      r.summary_en ??
+      r.authority_reason ??
+      (r.action_type ? `Action type: ${humanize(r.action_type)}.` : ""),
+    authority:
+      risk === "AUTO"
+        ? "automatic"
+        : risk === "APPROVAL_REQUIRED"
+          ? "operator"
+          : "evidence",
+    risk: risk === "AUTO" ? "low" : "medium",
+    expectedOutcome: NO_RECOMMENDATION.expectedOutcome,
+    available: true,
+  };
+}
+
+/** The run record's per-round log, as the screens list it. Absent for a rules-only run. */
+function investigationLogOf(
+  detail: ApiCaseDetail,
+): BackendCaseState["investigationLog"] {
+  const result = detail.run?.result;
+  const log = result?.investigation_log;
+  if (!result || !log) return undefined;
+  const index = log.evidence_index ?? {};
+  const beyond = (ids: string[] | undefined) =>
+    (ids ?? []).filter((id) =>
+      ["other_shipment", "shared"].includes(index[id]?.scope ?? ""),
+    ).length;
+  const purposes = new Map(
+    (result.investigation?.steps ?? []).map((step) => [
+      `${step.round ?? 0}|${step.tool}|${JSON.stringify(step.args ?? {})}`,
+      step.purpose ?? "",
+    ]),
+  );
+  const rounds = log.rounds ?? [];
+  const last = rounds.at(-1);
+  return {
+    mode: result.mode ?? "",
+    modelCallsUsed: log.model_calls_used ?? null,
+    modelCallCap: log.model_call_cap ?? null,
+    capReached: log.cap_reached === true,
+    steps: rounds.flatMap((round) =>
+      (round.tool_calls ?? []).map((call) => ({
+        round: round.round,
+        tool: call.tool,
+        purpose:
+          call.purpose ??
+          purposes.get(
+            `${round.round}|${call.tool}|${JSON.stringify(call.args ?? {})}`,
+          ) ??
+          "",
+        args: Object.entries(call.args ?? {})
+          .map(([key, value]) => `${key}: ${String(value).replace(/^SYN-/, "")}`)
+          .join(", "),
+        records: call.evidence_ids?.length ?? 0,
+        beyondShipment: beyond(call.evidence_ids),
+        failure: call.failure ?? null,
+      })),
+    ),
+    reviews: rounds
+      .filter((round) => round.review)
+      .map((round) => ({
+        round: round.round,
+        verdict: round.review!.model_verdict ?? round.review!.verdict ?? "",
+        feedback: round.review!.feedback ?? "",
+        unsupportedClaims: round.review!.unsupported_claims ?? [],
+        unaddressedContradictions:
+          round.review!.unaddressed_contradictions ?? [],
+        alternativesTested: round.review!.alternatives_tested ?? null,
+        byModel: !!round.review!.model_verdict && round.review!.degraded !== true,
+      })),
+    citations: last?.citation_validity
+      ? {
+          cited: last.citation_validity.cited ?? 0,
+          valid: last.citation_validity.valid ?? 0,
+        }
+      : null,
+    failedChecks: (last?.fact_checks ?? [])
+      .filter((check) => !check.passed)
+      .map((check) => humanize(check.check)),
+    nextEvidenceStep: result.investigation?.next_evidence_step ?? null,
+    degradedKinds: (result.degraded ?? []).map(
+      (item) =>
+        item.kind === "snapshot_superseded" || item.role === "snapshot"
+          ? "snapshot_changed"
+          : (item.kind ?? ""),
+    ),
+    rejectedReplies: [
+      ...new Set(
+        (result.latency?.model?.turns ?? [])
+          .map((turn) => turn.invalid_kind)
+          .filter((kind): kind is string => !!kind)
+          .map((kind) => humanize(kind).toLowerCase()),
+      ),
+    ],
+    degraded: (result.degraded ?? []).map((item) => {
+      const who = item.role === "reviewer" ? "reviewer" : "investigator";
+      if (item.kind === "snapshot_superseded" || item.role === "snapshot")
+        // Not a model failure: the evidence moved while the investigation ran.
+        return "Evidence changed during the investigation, so its conclusion rests on a superseded snapshot. A person must review the latest evidence.";
+      if (item.kind === "turn_budget_exhausted")
+        return `The ${who} reached no valid conclusion within its turn budget. No diagnosis was substituted. A person has this case.`;
+      if (item.kind === "invalid_model_output")
+        return `The ${who}'s reply from the model was not valid, so nothing from it was used and no diagnosis was substituted. A person has this case.`;
+      if (item.kind === "model_unavailable")
+        return `The model did not answer for the ${who}, so no diagnosis was substituted. A person has this case.`;
+      if (item.kind === "model_call_cap")
+        return `The ${who} reached the model-call cap before finishing. No diagnosis was substituted. A person has this case.`;
+      return `${humanize(item.role)}: ${humanize(item.kind)}. A person has this case.`;
+    }),
+  };
+}
+
+/** The investigator's findings: accepted ones, or (labelled) ones the reviewer did not accept. */
+function investigationOf(
+  detail: ApiCaseDetail,
+): BackendCaseState["investigation"] {
+  const d = detail.diagnosis;
+  if (!d) return undefined;
+  const hypotheses = (list: typeof d.hypotheses | undefined) =>
+    (list ?? []).map((h) => ({
+      cause: h.cause,
+      status: h.status,
+      assessment: h.assessment ?? null,
+      supporting: h.supporting_evidence_ids ?? [],
+      contradicting: h.contradicting_evidence_ids ?? [],
+    }));
+  if (d.available)
+    return {
+      accepted: true,
+      primaryCause: d.primary_cause,
+      confidence: d.confidence,
+      summary: d.summary,
+      toolCalls: d.tool_calls ?? 0,
+      forcedFinalTurn: d.forced_final_turn === true,
+      requiresPhysicalCheck: d.requires_physical_check === true,
+      snapshotSuperseded: d.snapshot_superseded === true,
+      hypotheses: hypotheses(d.hypotheses),
+      missingEvidence: d.missing_evidence ?? [],
+    };
+  const u = d.unaccepted_investigation;
+  if (!u) return undefined;
+  return {
+    accepted: false,
+    primaryCause: u.primary_cause,
+    confidence: u.confidence,
+    summary: u.summary,
+    toolCalls: u.tool_calls ?? 0,
+    forcedFinalTurn: u.forced_final_turn === true,
+    requiresPhysicalCheck: u.requires_physical_check === true,
+    snapshotSuperseded: u.snapshot_superseded === true,
+    hypotheses: hypotheses(u.hypotheses),
+    missingEvidence: u.missing_evidence ?? [],
+  };
+}
+
+/** GET /cases/{id} merged into the case. Stored workflow, review, execution and outcome are authoritative. */
+export function applyDetail(
+  base: OperationalCase,
+  detail: ApiCaseDetail,
+): OperationalCase {
+  const nodes = detail.evidence?.nodes ?? [];
+  const edges = detail.evidence?.edges ?? [];
+  const ledger = detail.ledger_graph ?? { nodes: [], edges: [] };
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const nameOf = (id: string | undefined) => {
+    const node = id ? byId.get(id) : undefined;
+    if (!node) return id ? shortId(id) : "—";
+    // A delivered custody point is placed at its bound delivery proof, not at a facility.
+    if (node.kind === "DeliveryProof") return "Delivery proof location";
+    return (
+      text(node.properties.name).replace(/ synthetic facility$/, "") ||
+      shortId(node.id)
+    );
+  };
+  const layers = detail.route_layers?.layers ?? {};
+
+  // Map observations: only what the backend located. Vehicle GPS never stands in for custody.
+  const evidence: EvidenceObservation[] = [];
+  const seen = new Set<string>();
+  const push = (item: EvidenceObservation) => {
+    if (seen.has(item.id)) return;
+    seen.add(item.id);
+    evidence.push(item);
+  };
+  for (const point of layers.custody_points ?? []) {
+    const id = point.evidence_id ?? `${point.entity_id}@${point.occurred_at}`;
+    const event = byId.get(id);
+    push({
+      id,
+      label: event ? nodeLabel(event) : "Custody observation",
+      kind: "custody",
+      location: position(point),
+      time: riyadhTime(point.occurred_at),
+      occurredAt: point.occurred_at ?? undefined,
+      detail:
+        `Corroborated custody at ${nameOf(point.entity_id)}.` +
+        (event ? ` ${nodeDetail(event)}` : ""),
+      confidence: "confirmed",
+      facility: nameOf(point.entity_id),
+    });
+  }
+  for (const point of layers.delivery_attempts ?? []) {
+    const id = point.evidence_id ?? `attempt@${point.occurred_at}`;
+    const event = byId.get(id);
+    push({
+      id,
+      label: `Delivery attempt · ${humanize(point.disposition) || "recorded"}`,
+      kind: "delivery",
+      location: position(point),
+      time: riyadhTime(point.occurred_at),
+      occurredAt: point.occurred_at ?? undefined,
+      detail:
+        "Shown at the attempt's address reference, not a parcel or vehicle position. A recorded attempt is not proof of delivery." +
+        (event ? ` ${nodeDetail(event)}` : ""),
+      confidence: "missing",
+      facility: "Address reference",
+    });
+  }
+  for (const point of (layers.vehicle_path ?? []).slice(-6)) {
+    const id = point.evidence_id ?? `gps@${point.occurred_at}`;
+    push({
+      id,
+      label: "Vehicle GPS",
+      kind: "gps",
+      location: position(point),
+      time: riyadhTime(point.occurred_at),
+      occurredAt: point.occurred_at ?? undefined,
+      detail: `Vehicle telemetry for ${point.vehicle_id ? shortId(point.vehicle_id) : "the assigned vehicle"}. It shows where the vehicle was, not where the parcel is.`,
+      confidence: "vehicle_only",
+      facility: point.vehicle_id ? shortId(point.vehicle_id) : "Vehicle",
+    });
+  }
+  const expected = (layers.expected_route ?? [])
+    .filter(isSegment)
+    .sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0))
+    .flatMap((segment) => segment.points);
+  const planned = expected.at(-1);
+  if (planned && !evidence.some((e) => e.kind === "custody" && e.location[0] === planned.lat && e.location[1] === planned.lng))
+    push({
+      id: `planned:${planned.entity_id ?? "destination"}`,
+      label: "Planned destination",
+      kind: "facility",
+      location: position(planned),
+      time: "—",
+      detail:
+        "The end of the planned route. No custody observation is recorded here.",
+      confidence: "missing",
+      facility: nameOf(planned.entity_id),
+    });
+  evidence.sort((a, b) =>
+    (a.occurredAt ?? "9999").localeCompare(b.occurredAt ?? "9999"),
+  );
+  for (const item of evidence)
+    if (byId.get(item.id)?.after_investigation) item.afterInvestigation = true;
+
+  // Graph: real nodes and relationships, bounded for display. Cited evidence is always kept.
+  const pipeline = pipelineView(detail.pipeline?.events ?? []);
+  // Citations that must survive the bound: what the diagnosis, recommendation, review and
+  // outcome point at. The collection stages (extract, retrieve) list everything they read,
+  // so they are not citations.
+  const cited = new Set<string>([
+    ...Object.entries(pipeline.stageEvidence)
+      .filter(([stage]) => Number(stage) >= 2)
+      .flatMap(([, ids]) => ids),
+    ...(detail.rule_signals?.signals ?? []).flatMap(
+      (signal) => signal.evidence_ids ?? [],
+    ),
+    ...(detail.recommendation?.evidence_ids ?? []),
+    ...(detail.outcome?.evidence_ids ?? []),
+    ...[
+      ...(detail.diagnosis?.hypotheses ?? []),
+      ...(detail.diagnosis?.unaccepted_investigation?.hypotheses ?? []),
+    ].flatMap((h) => [
+      ...(h.supporting_evidence_ids ?? []),
+      ...(h.contradicting_evidence_ids ?? []),
+    ]),
+  ]);
+  const located = new Set(evidence.map((e) => e.id));
+  const candidates = [...nodes, ...ledger.nodes]
+    .map((node) => ({ node, kind: graphKind(node.kind) }))
+    .filter((item): item is { node: ApiEvidenceNode; kind: GraphNode["kind"] } =>
+      item.kind !== null,
+    );
+  // What the cited records point at (their facility, device, vehicle, holder): kept with them,
+  // so a cited scan is drawn with where and by what it was recorded.
+  const citedContext = new Set<string>();
+  for (const edge of [...edges, ...ledger.edges]) {
+    if (cited.has(edge.start)) citedContext.add(edge.end);
+    if (cited.has(edge.end)) citedContext.add(edge.start);
+  }
+  const rank = ({ node, kind }: (typeof candidates)[number]) => {
+    if (kind === "shipment") return 0;
+    if (kind === "package") return 1;
+    if (kind === "recommendation" || kind === "outcome") return 2;
+    if (cited.has(node.id)) return 3;
+    if (citedContext.has(node.id) && node.kind !== "CustodyEvent" && node.kind !== "ScanEvent")
+      return 3.5;
+    if (located.has(node.id)) return 4;
+    if (kind !== "observation") return 5;
+    return 6 + (OBSERVATION_RANK[node.kind] ?? 6);
+  };
+  const ordered = [...candidates].sort(
+    (a, b) =>
+      rank(a) - rank(b) ||
+      text(b.node.properties.occurred_at).localeCompare(
+        text(a.node.properties.occurred_at),
+      ),
+  );
+  const shown = ordered.slice(0, GRAPH_LIMIT);
+  const shownIds = new Set(shown.map((item) => item.node.id));
+  const graphNodes: GraphNode[] = shown.map(({ node, kind }) => ({
+    id: node.id,
+    label: nodeLabel(node),
+    kind,
+    detail: nodeDetail(node),
+    evidenceId: located.has(node.id) ? node.id : undefined,
+    occurredAt: text(node.properties.occurred_at) || undefined,
+    sourceKind: node.kind,
+    cited: cited.has(node.id) || undefined,
+    media: mediaOf(node),
+  }));
+  const allEdges = [...edges, ...ledger.edges];
+  const relationships: GraphRelationship[] = allEdges
+    .filter((edge) => shownIds.has(edge.start) && shownIds.has(edge.end))
+    .map((edge) => ({
+      id: edge.id,
+      source: edge.start,
+      target: edge.end,
+      label: edge.kind,
+      detail: `${shortId(edge.start)} ${edge.kind} ${shortId(edge.end)}`,
+    }));
+
+  const shipmentNode = nodes.find((node) => node.kind === "Shipment");
+  const packageNode = nodes.find((node) => node.kind === "Package");
+  const service = nodes.find((node) => node.kind === "ServiceLevel");
+
+  const workflow = detail.workflow_state;
+  const diagnosis = detail.diagnosis;
+  const recommendation = recommendationOf(detail);
+  const execution = (detail.executions ?? []).find(
+    (item) => item.current_cycle !== false,
+  );
+  const outcome =
+    detail.outcome &&
+    detail.outcome.current_cycle !== false &&
+    detail.outcome.invalidated !== true
+      ? detail.outcome
+      : null;
+  const verified =
+    !!outcome &&
+    ["VERIFIED", "HUMAN_VERIFIED"].includes(outcome.verification_status ?? "");
+  const cleared =
+    verified && outcome!.success === true && outcome!.exception_cleared !== false;
+  const verification: BackendCaseState["verification"] = outcome
+    ? {
+        result:
+          outcome.verification_status === "HUMAN_FINDING"
+            ? "finding"
+            : cleared
+              ? "confirmed"
+              : outcome.success === true
+                ? "exception_remains"
+                : outcome.outcome_type === "no_confirming_evidence"
+                  ? "unanswered"
+                  : "failed",
+        status: outcome.verification_status ?? "",
+        byPerson: /HUMAN/.test(outcome.verification_status ?? ""),
+        reason: outcome.reason ?? "",
+        remainingSymptoms: outcome.remaining_symptoms ?? [],
+        verifiedAt: outcome.verified_at ?? outcome.recorded_at ?? null,
+      }
+    : undefined;
+  const approvable = detail.recommendation?.approvable === true;
+  // Furthest recorded step; execution and the verified outcome extend the rail past the graph.
+  const stage = verified || workflow === "AWAITING_OUTCOME"
+    ? 7
+    : execution
+      ? Math.max(pipeline.stage, 6)
+      : pipeline.stage;
+
+  return {
+    ...base,
+    shipment: {
+      ...base.shipment,
+      id: detail.shipment_id,
+      packageId: packageNode ? packageNode.id : base.shipment.packageId,
+      origin:
+        text(shipmentNode?.properties.origin_city) || base.shipment.origin,
+      destination:
+        text(shipmentNode?.properties.destination_city) ||
+        base.shipment.destination,
+      service:
+        text(service?.properties.name) ||
+        text(shipmentNode?.properties.flow_type) ||
+        base.shipment.service,
+      weight: number(packageNode?.properties.weight_kg),
+    },
+    priority:
+      priorityOf(detail.priority) === "unknown"
+        ? base.priority
+        : priorityOf(detail.priority),
+    status: statusOf(workflow),
+    // With an accepted diagnosis the case is described by it; otherwise by what the monitor observed.
+    issue: diagnosis?.available && diagnosis.primary_cause
+      ? humanize(diagnosis.primary_cause)
+      : base.issue,
+    summary:
+      diagnosis?.available && diagnosis.summary
+        ? diagnosis.summary
+        : base.summary,
+    diagnosis: diagnosis?.available
+      ? (diagnosis.summary ?? humanize(diagnosis.primary_cause))
+      : absentDiagnosis(diagnosis?.reason),
+    evidence,
+    nodes: graphNodes,
+    relationships,
+    route: {
+      expected: expected.map(position),
+      actual: (layers.actual_route ?? []).map(position),
+      vehicle: (layers.vehicle_path ?? []).map(position),
+    },
+    recommendation,
+    run:
+      detail.run || stage >= 0
+        ? {
+            id: detail.run?.entity_id ?? detail.last_run_id ?? "",
+            stage: Math.max(stage, 0),
+            startedAt: detail.run?.recorded_at ?? "",
+            completedAt:
+              detail.pipeline?.status && detail.pipeline.status !== "RUNNING"
+                ? (detail.run?.recorded_at ?? undefined)
+                : undefined,
+          }
+        : undefined,
+    execution: execution
+      ? {
+          id: execution.receipt_ref ?? execution.entity_id ?? "",
+          action: humanize(execution.action_type),
+          timestamp:
+            execution.executed_at ??
+            execution.occurred_at ??
+            execution.recorded_at ??
+            "",
+          successful: !/FAIL|REFUS|TIMEOUT|ERROR|NOT_ACK/i.test(execution.status ?? ""),
+          detail: `${/NOT_ACK/i.test(execution.status ?? "") ? "The request could not be delivered, so nothing was carried out and there is nothing to verify. " : ""}Execution ${humanize(execution.status) || "recorded"}${execution.authority ? ` under ${humanize(execution.authority)}` : ""}${execution.receipt_ref ? ` · receipt ${execution.receipt_ref}` : ""}. A receipt is not an outcome.`,
+        }
+      : undefined,
+    outcome:
+      verified && outcome
+        ? {
+            id: outcome.outcome_id ?? outcome.entity_id ?? "",
+            timestamp: outcome.verified_at ?? outcome.recorded_at ?? "",
+            successful:
+              outcome.success === true && outcome.exception_cleared !== false,
+            evidenceIds: outcome.evidence_ids ?? [],
+            detail:
+              outcome.reason ??
+              `${humanize(outcome.verification_status)}${outcome.outcome_type ? ` · ${humanize(outcome.outcome_type)}` : ""}${outcome.remaining_symptoms?.length ? ` · remaining: ${outcome.remaining_symptoms.map(humanize).join(", ")}` : ""}`,
+          }
+        : undefined,
+    backend: {
+      ...(base.backend ?? emptyBackend({
+        case_id: detail.case_id,
+        shipment_id: detail.shipment_id,
+        issue_summary: "",
+        priority: "unknown",
+        workflow_state: workflow,
+      })),
+      caseId: detail.case_id,
+      shipmentId: detail.shipment_id,
+      workflowState: workflow,
+      stateVersion: detail.state_version,
+      operationalStatus:
+        detail.operational_status ?? base.backend?.operationalStatus ?? null,
+      diagnosisAvailable: diagnosis?.available === true,
+      diagnosisReason: diagnosis?.available ? null : (diagnosis?.reason ?? null),
+      detailLoaded: true,
+      detailError: undefined,
+      allowed: {
+        ...allowedFor(workflow, approvable),
+        // With no recommended action there is nothing to reject.
+        ...(detail.recommendation?.action_type ? {} : { reject: false }),
+      },
+      approvalRule: detail.recommendation?.approval_rule,
+      approvalReason: detail.recommendation?.approval_reason,
+      stageDetail: pipeline.stageDetail,
+      stageEvidence: pipeline.stageEvidence,
+      stageElapsed: pipeline.stageElapsed,
+      stageStatus: pipeline.stageStatus,
+      repairing: workflow === "INVESTIGATING" ? pipeline.repairing : null,
+      timing: timingOf(detail),
+      pipelineStatus: detail.pipeline?.status ?? "UNKNOWN",
+      supersededRunId: detail.previous_run?.entity_id ?? null,
+      investigationAsOf: detail.pipeline?.investigation_as_of ?? null,
+      evidenceAfterInvestigation:
+        detail.pipeline?.evidence_after_investigation ?? 0,
+      graphTotals: {
+        nodes: nodes.length + ledger.nodes.length,
+        relationships: allEdges.length,
+        shown: graphNodes.length,
+      },
+      review: detail.review
+        ? {
+            verdict: detail.review.verdict ?? null,
+            reasonCode: detail.review.reason_code ?? null,
+            summary: detail.review.summary_en ?? detail.review.feedback ?? null,
+            byModel:
+              !!detail.review.model_verdict &&
+              detail.review.mode !== "deterministic_evidence_guard",
+          }
+        : undefined,
+      investigation: investigationOf(detail),
+      investigationLog: investigationLogOf(detail),
+      authority: detail.run?.result?.authority?.risk_class
+        ? {
+            riskClass: detail.run.result.authority.risk_class,
+            ruleId: detail.run.result.authority.rule_id ?? "",
+            reason: detail.run.result.authority.reason ?? "",
+            closure: detail.run.result.authority.closure ?? null,
+          }
+        : undefined,
+      ruleSignals: detail.rule_signals
+        ? {
+            asOf: detail.rule_signals.as_of,
+            signals: (detail.rule_signals.signals ?? []).map((signal) => ({
+              code: signal.code,
+              summary: signal.summary_en ?? "",
+              evidenceIds: signal.evidence_ids ?? [],
+            })),
+          }
+        : undefined,
+      riskClass: detail.recommendation?.risk_class ?? null,
+      actionType: detail.recommendation?.action_type ?? null,
+      outcomeStatus: detail.outcome?.verification_status ?? null,
+      verification,
+      earlierOutcome:
+        detail.outcome && detail.outcome.current_cycle === false
+          ? { reason: detail.outcome.reason ?? "", success: detail.outcome.success === true }
+          : null,
+      verificationDeadline: execution?.deadline_at ?? null,
+      expectedResponseAt: execution?.expected_response_at ?? null,
+      brief: detail.brief ?? null,
+      stageFacts: stageFactsOf(detail.pipeline?.stage_facts),
+      narration: {
+        runId: detail.narration?.run_id ?? null,
+        status: detail.narration?.status ?? "idle",
+        events: (detail.narration?.events ?? [])
+          .map(narrationEvent)
+          .sort((a, b) => a.sequence - b.sequence),
+      },
+      nextStep: detail.next_step
+        ? {
+            code: detail.next_step.code,
+            actor: detail.next_step.actor,
+            text: detail.next_step.text_en ?? "",
+            textAr: detail.next_step.text_ar ?? "",
+            resolved: detail.next_step.resolved === true,
+            blockedBy: detail.next_step.blocked_by?.rule_id
+              ? {
+                  ruleId: detail.next_step.blocked_by.rule_id,
+                  reason: detail.next_step.blocked_by.reason ?? "",
+                  reviewVerdict: detail.next_step.blocked_by.review_verdict ?? null,
+                  reviewFeedback: detail.next_step.blocked_by.review_feedback ?? null,
+                }
+              : null,
+            missingEvidence: detail.next_step.missing_evidence ?? [],
+            attempted: (detail.next_step.attempted ?? []).map((item) => ({
+              actionType: item.action_type ?? "",
+              authority: item.authority ?? "",
+              status: item.status ?? "",
+              verificationStatus: item.verification_status ?? null,
+              success: item.success ?? null,
+              exceptionCleared: item.exception_cleared ?? null,
+              reason: item.reason ?? null,
+            })),
+          }
+        : null,
+      asOf: detail.as_of,
+    },
+  };
+}
+
+/** The finished run's timings as the backend measured them; absent until the run has finished. */
+function timingOf(detail: ApiCaseDetail) {
+  const latency = detail.run?.result?.latency;
+  if (!latency || typeof latency.total_seconds !== "number") return undefined;
+  const stageSeconds: Record<number, number> = {};
+  for (const [name, seconds] of Object.entries(latency.stages ?? {})) {
+    const index = STAGE_INDEX[name];
+    if (index !== undefined && typeof seconds === "number")
+      stageSeconds[index] = (stageSeconds[index] ?? 0) + seconds;
+  }
+  return {
+    totalSeconds: latency.total_seconds,
+    firstConclusionSeconds: latency.first_conclusion_seconds ?? null,
+    modelSeconds: latency.model?.seconds ?? null,
+    stageSeconds,
+  };
+}
+
+/** The backend's stage facts on the rail: the latest round's fact per step. */
+function stageFactsOf(facts: ApiStageFact[] | undefined) {
+  const out: Record<number, { en: string; ar: string | null; status: string }> = {};
+  for (const fact of [...(facts ?? [])].sort(
+    (a, b) => (a.iteration ?? 0) - (b.iteration ?? 0) || (a.sequence ?? 0) - (b.sequence ?? 0),
+  )) {
+    const index = fact.stage === "outcome" ? 7 : STAGE_INDEX[fact.stage];
+    if (index === undefined || !fact.fact_en) continue;
+    out[index] = { en: fact.fact_en, ar: fact.fact_ar ?? null, status: fact.status ?? "done" };
+  }
+  return out;
+}
+/** The ask endpoint's answer, as the panel shows it. */
+export function canopusAnswer(answer: ApiCanopusAnswer): CanopusAnswer {
+  return {
+    kind: answer.kind === "canopus_answer" ? "canopus_answer" : "record_answer",
+    text: answer.answer_en ?? "",
+    textAr: answer.answer_ar ?? null,
+    workflowState: answer.workflow_state,
+    answeredAt: answer.answered_at ?? null,
+    evidenceIds: answer.evidence_ids ?? [],
+    graphNodeIds: answer.graph_node_ids ?? [],
+    quotes: (answer.quotes ?? []).map((quote) => ({
+      role: quote.role,
+      text: quote.text,
+      recordId: quote.record_id,
+      occurredAt: quote.occurred_at ?? null,
+      title: quote.title_en ?? null,
+    })),
+    offers: (answer.offers ?? [])
+      .filter((offer) => offer.allowed === true)
+      .map((offer) => ({
+      type: offer.type,
+      allowed: offer.allowed === true,
+      ruleId: offer.rule_id ?? null,
+      reason: offer.reason ?? "",
+      label: offer.label_en ?? humanize(offer.type),
+      labelAr: offer.label_ar ?? null,
+      confirm:
+        offer.confirm?.path && offer.confirm.body
+          ? { path: offer.confirm.path, body: offer.confirm.body }
+          : null,
+    })),
+    unavailable: [
+      // Today's shape lists refused offers among the offers; the new one separates them.
+      ...(answer.unavailable_offers ?? []).map((offer) => ({
+        reason: offer.reason_en ?? "",
+        reasonAr: offer.reason_ar ?? null,
+      })),
+      ...(answer.offers ?? [])
+        .filter((offer) => offer.allowed !== true && offer.reason)
+        .map((offer) => ({
+          reason: `${offer.label_en ?? humanize(offer.type)}: ${offer.reason}`,
+          reasonAr: null,
+        })),
+    ]
+      .filter((item) => item.reason)
+      // The same reason for several actions is said once.
+      .filter(
+        (item, index, all) => all.findIndex((other) => other.reason === item.reason) === index,
+      ),
+    model: answer.model ?? null,
+  };
+}
+/** A stored narration message, placed on the rail's step. */
+export function narrationEvent(event: ApiNarrationEvent): NarrationEvent {
+  // The rail's Outcome step is the interface's own: verification and reassessment belong there.
+  const stage =
+    event.phase === "verification" || event.phase === "reassessment"
+      ? 7
+      : (STAGE_INDEX[event.stage] ?? 6);
+  return {
+    id: event.id,
+    sequence: event.sequence,
+    stage,
+    phase: event.phase ?? "",
+    kind: event.kind,
+    title: event.title_en ?? "",
+    titleAr: event.title_ar ?? null,
+    text: event.text_en ?? "",
+    textAr: event.text_ar ?? null,
+    evidenceIds: event.evidence_ids ?? [],
+    graphNodeIds: event.graph_node_ids ?? [],
+    occurredAt: event.occurred_at ?? null,
+    scenarioTime: event.scenario_time ?? null,
+    model: event.model ?? null,
+    fallback: event.fallback === true,
+    outcomeState: event.outcome_state ?? null,
+  };
+}
+/** One narration message from the live stream, appended once (the list is append-only). */
+export function applyNarration(
+  base: OperationalCase,
+  event: ApiNarrationEvent,
+): OperationalCase {
+  if (!base.backend) return base;
+  const current = base.backend.narration ?? { runId: null, status: "narrating", events: [] };
+  // A message of another run than the one on screen starts that run's list.
+  const sameRun = !event.run_id || !current.runId || current.runId === event.run_id;
+  const events = sameRun ? current.events : [];
+  if (events.some((item) => item.id === event.id)) return base;
+  return {
+    ...base,
+    backend: {
+      ...base.backend,
+      narration: {
+        runId: event.run_id ?? current.runId,
+        status: current.status === "complete" && sameRun ? "complete" : "narrating",
+        events: [...events, narrationEvent(event)].sort((a, b) => a.sequence - b.sequence),
+      },
+    },
+  };
+}
+
+/** A live pipeline stream frame applied to the case's rail. Evidence is refetched separately. */
+export function applyPipeline(
+  base: OperationalCase,
+  state: ApiPipelineState,
+): OperationalCase {
+  if (!base.backend) return base;
+  const view = pipelineView(state.events);
+  const queued = state.status === "QUEUED" && !state.events.length;
+  return {
+    ...base,
+    status: statusOf(state.workflow_state),
+    run: queued
+      ? undefined
+      : {
+          id: state.run_id ?? base.run?.id ?? "",
+          startedAt: base.run?.startedAt ?? "",
+          stage: Math.max(view.stage, 0),
+          completedAt: base.run?.completedAt,
+        },
+    backend: {
+      ...base.backend,
+      workflowState: state.workflow_state,
+      pipelineStatus: state.status,
+      supersededRunId: queued ? (state.previous_run_id ?? null) : null,
+      stageDetail: queued ? {} : { ...base.backend.stageDetail, ...view.stageDetail },
+      stageEvidence: queued
+        ? {}
+        : { ...base.backend.stageEvidence, ...view.stageEvidence },
+      stageElapsed: queued
+        ? {}
+        : { ...base.backend.stageElapsed, ...view.stageElapsed },
+      stageStatus: queued
+        ? {}
+        : { ...base.backend.stageStatus, ...view.stageStatus },
+      repairing: state.workflow_state === "INVESTIGATING" ? view.repairing : null,
+      allowed: allowedFor(
+        state.workflow_state,
+        // Approval eligibility is only known from the case detail.
+        state.state_version === base.backend.stateVersion
+          ? base.backend.allowed.approve
+          : false,
+      ),
+    },
+  };
+}
+
+const AUDIT_KIND: Record<string, AuditKind> = {
+  CASE_OPENED: "intake",
+  CASE_CLAIMED: "investigation",
+  ANALYSIS_STARTED: "investigation",
+  CLAIM_RELEASED: "investigation",
+  REANALYSIS_REQUESTED: "investigation",
+  AFL_RETRY: "investigation",
+  CLASSIFICATION: "investigation",
+  EVIDENCE_RETRIEVED: "evidence",
+  SIMULATION_EVENT: "evidence",
+  RECOMMENDATION: "recommendation",
+  RECOMMENDATION_READY: "recommendation",
+  REVIEW_VERDICT: "policy",
+  APPROVAL_CONTEXT_CHECKED: "policy",
+  APPROVAL_CONTEXT_STALE: "policy",
+  APPROVAL_REFUSED: "policy",
+  OPERATOR_DECISION: "decision",
+  CASE_REOPENED: "decision",
+  HUMAN_OUTCOME_RECORDED: "decision",
+  // The deterministic authority policy's own records: never an operator's decision.
+  AUTHORITY_DECISION: "policy",
+  ACTION_AUTHORIZED: "policy",
+  EXECUTION_CONTEXT_CHECKED: "policy",
+  EXECUTION_REFUSED: "policy",
+  ACTION_EXECUTED: "execution",
+  ACTION_NOT_ACKNOWLEDGED: "execution",
+  NOTIFICATION_QUEUED: "execution",
+  OUTCOME_FAILED: "verification",
+  OUTCOME_VERIFIED_EXCEPTION_REMAINS: "verification",
+  OUTCOME_VERIFIED_HUMAN_CLOSURE: "verification",
+  OTHER_OPEN_CASES: "verification",
+  SYMPTOMS_UPDATED: "intake",
+  SNAPSHOT_SUPERSEDED: "investigation",
+  MODEL_DEGRADED: "investigation",
+  ACTION_INITIATED: "execution",
+  EXECUTION_REQUESTED: "execution",
+  EXECUTION_ACKNOWLEDGED: "execution",
+  NOTIFICATION_RESULT: "execution",
+  VERIFICATION_REQUESTED: "verification",
+  OUTCOME_OBSERVED: "verification",
+  OUTCOME_VERIFIED: "verification",
+  CASE_RESOLVED: "resolution",
+};
+const STAGE_KIND: AuditKind[] = [
+  "evidence",
+  "evidence",
+  "investigation",
+  "investigation",
+  "recommendation",
+  "policy",
+  "investigation",
+  "verification",
+];
+function auditKind(row: ApiAuditEvent): AuditKind {
+  if (row.event_type === "PIPELINE_STAGE" && row.stage)
+    return STAGE_KIND[STAGE_INDEX[row.stage] ?? 2] ?? "investigation";
+  const known = AUDIT_KIND[row.event_type];
+  if (known) return known;
+  if (/OUTCOME|VERIF/.test(row.event_type)) return "verification";
+  if (/EXECUT|ACTION/.test(row.event_type)) return "execution";
+  if (/APPROV|REVIEW|AUTH/.test(row.event_type)) return "policy";
+  // Only an operator's own record is a decision.
+  if (/DECISION/.test(row.event_type) && /OPERATOR/.test(row.actor))
+    return "decision";
+  return "investigation";
+}
+/** The role is read from the recorded actor, never guessed from the kind of event. */
+function actorRole(row: ApiAuditEvent): InvestigationStageEvent["actorRole"] {
+  const actor = row.actor.toUpperCase();
+  if (actor.includes("OPERATOR")) return "operator";
+  if (actor.includes("AUTHORITY-POLICY")) return "policy";
+  if (actor.includes("OUTCOME-VERIFIER")) return "verifier";
+  if (actor.includes("REVIEWER")) return "reviewer";
+  if (actor.includes("INVESTIGATOR")) return "investigator";
+  // Workers record model-backed stages with the model's name; the review stage is the reviewer's.
+  if (row.model) return row.stage === "review" ? "reviewer" : "investigator";
+  return "system";
+}
+export function auditEvent(row: ApiAuditEvent): InvestigationStageEvent {
+  const kind = auditKind(row);
+  const stage = row.stage ? STAGE_INDEX[row.stage] : undefined;
+  return {
+    id: row.id,
+    // Events without a case (replayed observations) keep their shipment identity.
+    caseId: row.case_id ?? "",
+    shipmentId: row.shipment_id,
+    timestamp: row.timestamp,
+    evidenceTimestamp: row.scenario_time ?? undefined,
+    actorRole: actorRole(row),
+    kind,
+    title:
+      row.event_type === "PIPELINE_STAGE"
+        ? `${humanize(row.stage)} · ${humanize(row.stage_status) || "recorded"}`
+        : row.event_type === "SNAPSHOT_KEPT"
+          ? // The backend kept the run: nothing material changed.
+            "New records arrived · the finding still stands"
+        : `${humanize(row.event_type)}${row.decision ? ` · ${humanize(row.decision)}` : ""}`,
+    detail:
+      row.result ||
+      (row.from_state || row.to_state
+        ? `${humanize(row.from_state) || "—"} → ${humanize(row.to_state) || "—"}`
+        : "No further detail was recorded for this event."),
+    actor: `${row.actor}${row.model ? ` · ${row.model}` : ""}`,
+    stage,
+    simulated: false,
+    eventType: row.event_type,
+  };
+}
+export function decisionFromAudit(
+  row: ApiAuditEvent,
+  action: string,
+): AuthorityDecision | null {
+  const verdict = verdictOf(row.decision);
+  if (row.event_type !== "OPERATOR_DECISION" || !verdict || !row.case_id)
+    return null;
+  return {
+    caseId: row.case_id,
+    action,
+    verdict,
+    actor: row.actor,
+    timestamp: row.timestamp,
+    reason: "",
+  };
+}
+
+/** Facilities the backend located in the loaded evidence (never a fixture network). */
+export function facilitiesOf(detail: ApiCaseDetail): Facility[] {
+  return (detail.evidence?.nodes ?? [])
+    .filter((node) => FACILITY_KINDS.has(node.kind))
+    .map((node) => {
+      const lat = number(node.properties.lat);
+      const lng = number(node.properties.lng);
+      return lat === null || lng === null
+        ? null
+        : {
+            id: node.id,
+            name:
+              text(node.properties.name).replace(/ synthetic facility$/, "") ||
+              shortId(node.id),
+            city: text(node.properties.city),
+            type: node.kind.replace(/([a-z])([A-Z])/g, "$1 $2"),
+            location: [lat, lng] as [number, number],
+          };
+    })
+    .filter((item): item is Facility => item !== null);
+}
