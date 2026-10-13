@@ -52,6 +52,10 @@ class Tx:
                     if p.get("force") or v.get("outcome_checked_as_of") is None or v["as_of"]>v["outcome_checked_as_of"] or e["deadline_at"]<=p["clock"]:
                         out.append({"case":copy.deepcopy(v),"execution":copy.deepcopy(e)})
             return Result(sorted(out,key=lambda r:str(r["case"]["as_of"]))[:p["limit"]])
+        if q.startswith("MATCH(c:OpsEntity:OpsCase {dataset_id:$dataset,split:'development',workflow_state:'INVESTIGATING'})"):
+            rows=sorted((copy.deepcopy(v) for k,v in self.ledger.values() if k=="OpsCase" and v["workflow_state"]=="INVESTIGATING"),
+                        key=lambda v:v["entity_id"])
+            return Result([{"props":r} for r in rows])
         if q.startswith("MATCH(e:OpsEntity:OpsExecution {dataset_id:$dataset,status:'"):
             status=q.split("status:'")[1].split("'")[0]
             rows=sorted((copy.deepcopy(v) for k,v in self.ledger.values() if k=="OpsExecution" and v.get("status")==status),

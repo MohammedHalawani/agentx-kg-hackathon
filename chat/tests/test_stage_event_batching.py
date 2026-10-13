@@ -310,7 +310,11 @@ class StoreTests(tm._Base):
         recorded = json.loads(run["result_json"])["pipeline_events"]
         self.assertEqual([e["sequence"] for e in recorded], [a["sequence"] for a in audits])
         self.assertEqual(run["status"], "FAILED")
-        self.assertEqual(store.status()["worker"]["state"], "paused")
+        # Only this claim is given up: the case is queued again and automatic investigation is not paused for it.
+        case = self.stored(driver, run["case_id"])
+        self.assertEqual((case["workflow_state"], case.get("claim_id"), run["end_reason"]), ("OPEN", None, "WORKER_FAILED"))
+        self.assertEqual(len(self.audit(driver, "CLAIM_FAILED")), 1)
+        self.assertEqual(store.status()["worker"]["active_count"], 0)
         self.assertEqual(ManualTimer.live(), [])
 
     def test_a_failure_while_writing_the_last_events_is_raised_and_the_first_error_is_never_hidden(self):
@@ -327,7 +331,8 @@ class StoreTests(tm._Base):
         with approval_policy(), self.assertRaises(RuntimeError) as raised:
             store.process_one(manual=True)
         self.assertEqual(str(raised.exception), "database away")       # raised where it happened: before the commit
-        self.assertEqual(store.status()["worker"]["state"], "paused")
+        self.assertEqual(store.status()["worker"]["active_count"], 0)  # the claim was given up; nothing else is paused
+        self.assertEqual(len(self.audit(driver, "CLAIM_FAILED")), 1)
         self.assertEqual(self.kind(driver, "OpsRecommendation"), [])   # nothing was committed past events that were not written
 
         def during(store, driver):

@@ -10,8 +10,9 @@ import threading
 
 from dataset_v2.contracts import Config, canonical, digest, instant, UTC_FIELDS
 from dataset_v2.load import target_guard
-from operations.schema import SCHEMA, FIELDS, COMMON, public_value
+from operations.schema import SCHEMA, FIELDS, COMMON, WALL_FIELDS, public_value
 from operations.lifecycle import OperationsConflict, decision_state, require_version, require_actor
+from operations import claims, provider_gate
 from operations.diagnosis import case_diagnosis, investigation_status
 from operations.simulator import SPEEDS, EVENT_KINDS
 from operations.worker import analyze
@@ -329,7 +330,8 @@ def identity(kind, *parts):
 
 def temporal_properties(props):
     fields = UTC_FIELDS | {"initial_as_of", "cursor_time", "claim_at", "observed_at", "source_occurred_at",
-                           "outcome_checked_as_of", "investigated_as_of", "evidence_checked_as_of", "quiet_until", "deadline_at", "expected_response_at", "closed_at", "session_started_at", "last_processed_at", "executed_at"}
+                           "outcome_checked_as_of", "investigated_as_of", "evidence_checked_as_of", "quiet_until", "deadline_at", "expected_response_at", "closed_at", "session_started_at", "last_processed_at", "executed_at",
+                           "claim_as_of", *WALL_FIELDS}
     return {key: instant(value) if key in fields and isinstance(value, str) else value for key, value in props.items()}
 
 
@@ -363,6 +365,19 @@ class OperationsStore:
         self.stage_flush_seconds = None
         self.stage_timer = threading.Timer
         self.demo_shipments = demo_shipments()   # None, or the only shipments the monitor may open cases for
+        # Investigation claims (operations.claims): how many cases may be investigated at once (1 or 2;
+        # SUHAIL_INVESTIGATION_WORKERS), a claim's wall-clock lease and how often its owner renews it (None:
+        # SUHAIL_CLAIM_LEASE_SECONDS and SUHAIL_CLAIM_HEARTBEAT_SECONDS, default 180 s and 15 s), the wall clock (tests
+        # give their own) and whether each claim renews itself on a thread (tests renew by hand).
+        self.capacity = claims.investigation_workers()
+        self.lease_seconds = None
+        self.heartbeat_seconds = None
+        self.wall = claims.wall_now
+        self.claim_heartbeats = True
+        # The claims this process holds, by case: used only to signal their workers (a pause, a stop). Ownership is
+        # always read from the ledger.
+        self._claims = {}
+        self._claims_lock = threading.Lock()
         self._subscribers={}
         self._subscribers_lock=threading.RLock()
         # Canopus narration (operations.narration.Narrator), attached by the server when SUHAIL_NARRATION is set. The
@@ -501,6 +516,8 @@ class OperationsStore:
             # shipment's whole evidence window (including later evidence) and are never loaded as live work.
         self._execute(initialize_tx, write=True)
         self.recover_executions()
+        # Only claims whose lease has run out: a claim still within its lease may belong to a worker that is alive.
+        self.recover_claims()
         return self.status()
 
     def clock(self):
@@ -513,11 +530,20 @@ class OperationsStore:
         return self.reader
 
     def status(self):
-        control = self._execute(lambda tx: self._control(tx))
+        def read(tx):
+            control = self._control(tx)
+            return control, [self._investigation_status(tx, case) for case in self._live_claims(tx, self._wall())]
+        control, active = self._execute(read)
+        # active_cases is the authority: the claims that are live now (their lease has not expired), oldest first.
+        # concurrency is how many there may be, active_count how many there are. The single ids of the earlier format
+        # are filled only while exactly one case is being investigated.
+        active.sort(key=lambda item: (instant(item["started_at"]), item["case_id"]))
+        single = active[0] if len(active) == 1 else {}
         return {"synthetic": True, "demo": True, "as_of": control["as_of"],
-            "worker": {"state": control["worker_state"], "concurrency": 1, "processed_count": control["processed_count"],
-                       "active_case_id": control.get("worker_claim"),
-                       "active_shipment_id": control.get("claim_shipment_id") if control.get("worker_claim") else None,
+            "worker": {"state": control["worker_state"], "concurrency": self.capacity, "active_count": len(active),
+                       "processed_count": control["processed_count"],
+                       "active_case_id": single.get("case_id"), "active_shipment_id": single.get("shipment_id"),
+                       "active_cases": active,
                        # Most recent completed claim, so the live panel can show its recorded stages after the run.
                        "last_case_id": control.get("last_case_id"), "last_shipment_id": control.get("last_shipment_id"),
                        "last_workflow_state": control.get("last_workflow_state"), "last_processed_at": control.get("last_processed_at")},
@@ -545,20 +571,26 @@ class OperationsStore:
             raise OperationsConflict("Simulation speed must be 1, 10, 60, 300, 600 or 3600")
         if replay_mode is not None and (component!="simulator" or replay_mode not in {"timeline","compressed"}):
             raise OperationsConflict("Replay mode must be timeline or compressed")
+        revoked = []
         def control_tx(tx):
+            del revoked[:]      # the driver may run this again after a transient failure
             c = self._control(tx, lock=True)
             c[component + "_state"] = "running" if action == "start" else "paused"
             if speed is not None: c["speed"] = speed
             if replay_mode is not None:c["replay_mode"]=replay_mode
-            if action == "pause" and component == "worker" and c.get("worker_claim"):
-                case = self._case(tx, c["worker_claim"])
-                if case["workflow_state"] == "INVESTIGATING":
-                    case.update(workflow_state="OPEN", state_version=case["state_version"] + 1, claim_id=None, claim_at=None)
-                    self._put(tx, "OpsCase", without_diagnosis(case, pending=True), update=True)
-                    self._audit(tx, case, "CLAIM_RELEASED", c["as_of"], actor=actor_id)
-                c.update(worker_claim=None, claim_at=None)
+            if action == "pause" and component == "worker":
+                # A deliberate, global stop: every running investigation loses its case here, whoever holds it. What
+                # those workers still compute is refused when they try to write it (operations.claims).
+                now = self._wall()
+                self._recover_expired(tx, c, now)
+                for case in self._investigating(tx):
+                    self._end_claim(tx, case, c["as_of"], now, reason=claims.END_PAUSED, event="CLAIM_RELEASED", actor=actor_id,
+                                    recovery=False, result="Automatic investigation was paused; the investigation in progress was "
+                                                           "stopped and the case is queued again.")
+                    revoked.append(case["entity_id"])
             self._put(tx, "OpsControl", c, update=True)
         self._execute(control_tx, write=True)
+        self._signal(revoked)
         if action == "step":
             if component == "worker": self.process_one(manual=True)
             else: self.tick(step=True)
@@ -586,8 +618,9 @@ class OperationsStore:
         require_actor(actor_id)
         if type(max_hours) is not int or not 1 <= max_hours <= self.SKIP_MAX_HOURS:
             raise OperationsConflict(f"A skip is limited to between 1 and {self.SKIP_MAX_HOURS} simulated hours")
+        self.recover_claims()      # a claim whose lease ran out is not a running investigation
         status = self.status()
-        if status["worker"].get("active_case_id"):
+        if status["worker"].get("active_count"):      # every live claim, not only the first
             raise OperationsConflict("An investigation is running; wait for it to finish before skipping time")
         speed = status["simulator"]["speed"]
         started = instant(status["as_of"])
@@ -931,10 +964,14 @@ class OperationsStore:
         def reset_tx(tx):
             # The control lock is held from here to the commit: no worker can claim a case between the check below and
             # the deletions, and the live ingestion ledger is reset only after that check, under the same lock.
-            c=self._control(tx,lock=True)
-            if c.get("worker_claim"):
+            c=self._control(tx,lock=True);now=self._wall()
+            # Every live claim is checked, case by case; one whose lease ran out is requeued first and does not count.
+            self._recover_expired(tx,c,now)
+            active=[case["entity_id"] for case in self._live_claims(tx,now)]
+            if active:
                 entry={"result":"REFUSED","actor_id":actor_id,"wall_recorded_at":datetime.now(timezone.utc).isoformat(),
-                       "reason":"investigation worker active","clock":c["as_of"],"session_id":c.get("session_id"),"active_case_id":c["worker_claim"]}
+                       "reason":"investigation worker active","clock":c["as_of"],"session_id":c.get("session_id"),
+                       "active_case_id":active[0],"active_case_ids":active}
                 c["reset_audit_json"]=canonical([*json.loads(c.get("reset_audit_json") or "[]"),entry][-RESET_AUDIT_LIMIT:])
                 self._put(tx,"OpsControl",c,update=True)
                 return "worker_active"  # Committed: the refusal is audited and nothing was deleted.
@@ -1194,10 +1231,14 @@ class OperationsStore:
                 current=self._get(tx,"OpsExecution",execution["entity_id"]);case=self._case(tx,current["case_id"]);old=case["workflow_state"]
                 check=self._dispatch_check(tx,case,current,when)
                 if check["allowed"]:
-                    self._audit(tx,case,"EXECUTION_CONTEXT_CHECKED",when,actor="SUHAIL-AUTHORITY-POLICY",key=current["entity_id"],
-                                result=canonical({"rule_id":check["rule"],"decided_risk":check["risk"],"execution_id":current["entity_id"],
-                                                  "context":{k:check["current"].get(k) for k in CONTEXT_KEYS},
-                                                  "routine_new_records":check["routine_new_records"]}))
+                    # An execution recovered after a restart is checked again on a case that may not have moved since
+                    # its first check. That check is on record already (same execution, same case version): writing it
+                    # a second time would collide with it and the execution could never be dispatched again.
+                    if not self._get(tx,"OpsAudit",identity("audit",case["entity_id"],"EXECUTION_CONTEXT_CHECKED",case["state_version"],current["entity_id"])):
+                        self._audit(tx,case,"EXECUTION_CONTEXT_CHECKED",when,actor="SUHAIL-AUTHORITY-POLICY",key=current["entity_id"],
+                                    result=canonical({"rule_id":check["rule"],"decided_risk":check["risk"],"execution_id":current["entity_id"],
+                                                      "context":{k:check["current"].get(k) for k in CONTEXT_KEYS},
+                                                      "routine_new_records":check["routine_new_records"]}))
                     return True
                 current.update(status="REFUSED",permission_rule=check["rule"]);self._put(tx,"OpsExecution",current,update=True)
                 if check["requeue"]:
@@ -1289,10 +1330,191 @@ class OperationsStore:
                                                    config=self.config,allowance=DETECTION_ALLOWANCE_SECONDS)
         return reasons,arrived
 
-    def process_one(self, case_id=None, *, manual=False):
+    # ------------------------------------------------------------------ investigation claims (operations.claims)
+    def _wall(self):
+        return self.wall().astimezone(timezone.utc)
+
+    def _investigating(self,tx):
+        rows=tx.run("MATCH(c:OpsEntity:OpsCase {dataset_id:$dataset,split:'development',workflow_state:'INVESTIGATING'}) "
+                    "RETURN properties(c) AS props ORDER BY c.entity_id",dataset=self.dataset_id)
+        return [public_value(row["props"]) for row in rows]
+
+    def _live_claims(self,tx,now):
+        """The cases owned right now: INVESTIGATING under a claim whose lease has not expired."""
+        return [case for case in self._investigating(tx) if claims.live(case,now)]
+
+    def _owned(self,tx,claimed,now):
+        """The claimed case as it is now, while `claimed` still owns it (same worker, token, epoch and run, lease not
+        expired). Otherwise ClaimLost, and the transaction writes nothing."""
+        case=self._get(tx,"OpsCase",claimed["entity_id"])
+        reason=claims.lost(case,claimed,now)
+        if reason:raise claims.ClaimLost(reason)
+        return case
+
+    def _close_run(self,tx,case,reason,now,*,failed=False):
+        """Close the run of a claim that ends without a committed result. A run that was already closed stays as it is."""
+        run=self._get(tx,"OpsRun",case.get("last_run_id") or "")
+        if not run or run.get("end_reason"):return
+        run.update(status="FAILED" if failed or run.get("status")=="FAILED" else "ABORTED",end_reason=reason,
+                   finished_wall_at=now.isoformat(),active_stage=None)
+        self._put(tx,"OpsRun",run,update=True)
+
+    def _end_claim(self,tx,case,when,now,*,reason,event,actor,result,recovery,failed=False):
+        """Take a case from its owner without a result: its run is closed, ownership moves on and the case is queued
+        again. recovery: the investigation was lost (an expired lease, a failed worker) rather than stopped on purpose;
+        after claims.MAX_RECOVERIES losses in a row the case goes to a person instead, with no diagnosis, review or
+        outcome recorded for it."""
+        self._close_run(tx,case,reason,now,failed=failed)
+        old=case["workflow_state"];lost=(case.get("claim_recoveries") or 0)+(1 if recovery else 0)
+        person=recovery and lost>=claims.MAX_RECOVERIES
+        claims.release(case)
+        case.update(workflow_state="HUMAN_REVIEW" if person else "OPEN",state_version=case["state_version"]+1,claim_recoveries=lost)
+        if person:case["recommendation_id"]=None
+        self._put(tx,"OpsCase",without_diagnosis(case,pending=not person),update=True)
+        self._audit(tx,case,event,when,actor=actor,old=old,key=reason,result=result)
+        if person:
+            self._audit(tx,case,"CLAIM_RECOVERY_LIMIT",when,actor="SUHAIL-CLAIM-RECOVERY",old=old,key=reason,
+                        result=f"The investigation of this case was lost {lost} times in a row; it is not queued again automatically. "
+                               "A person takes it; no diagnosis, review or outcome was recorded.")
+        return case
+
+    def _recover_expired(self,tx,control,now):
+        """Requeue every case whose claim was not renewed in time. Runs under the control lock, before any decision that
+        counts live claims. A claim that is still within its lease is never touched."""
+        recovered=[]
+        for case in self._investigating(tx):
+            if not claims.expired(case,now):continue
+            result=(f"The claim held by {case.get('worker_id') or 'an earlier worker'} was not renewed"
+                    +(f" before its lease ended at {case['lease_expires_at']}" if case.get("lease_expires_at") else " and has no lease on record")
+                    +"; its investigation was abandoned and nothing from it is used.")
+            self._end_claim(tx,case,control["as_of"],now,reason=claims.END_EXPIRED,event="CLAIM_EXPIRED",actor="SUHAIL-CLAIM-RECOVERY",
+                            recovery=True,result=result)
+            recovered.append(case["entity_id"])
+        if control.get("worker_claim"):
+            # The single flag of the earlier ledger format. It excludes nothing now; ownership is on the cases.
+            control.update(worker_claim=None,claim_at=None,claim_shipment_id=None);self._put(tx,"OpsControl",control,update=True)
+        return recovered
+
+    def recover_claims(self):
+        """Requeue the cases whose claim has expired: a worker that died, or a process that was stopped mid-run.
+        Returns their ids. Safe to call at any time and from any worker."""
+        def recover(tx):
+            control=self._control(tx,lock=True)
+            return self._recover_expired(tx,control,self._wall())
+        return self._execute(recover,write=True)
+
+    def renew_claim(self,claimed):
+        """The owner's heartbeat: extend its lease. Only the two lease times change: not the case version, its evidence
+        cutoff, its counters or any progress event. Raises ClaimLost when the case is no longer this claim's."""
+        def renew(tx):
+            self._control(tx,lock=True);now=self._wall()
+            case=self._owned(tx,claimed,now)
+            case.update(lease_heartbeat_at=now.isoformat(),lease_expires_at=claims.expires_at(now,claims.lease_seconds(self.lease_seconds)))
+            self._put(tx,"OpsCase",case,update=True)
+            return case["lease_expires_at"]
+        return self._execute(renew,write=True)
+
+    def _hold(self,claimed):
+        handle=claims.Handle(claimed)
+        with self._claims_lock:self._claims[claimed["entity_id"]]=handle
+        if self.claim_heartbeats:
+            handle.start(self.renew_claim,claims.heartbeat_seconds(claims.lease_seconds(self.lease_seconds),self.heartbeat_seconds))
+        return handle
+
+    def _drop(self,handle):
+        handle.stop()
+        with self._claims_lock:
+            if self._claims.get(handle.claimed["entity_id"]) is handle:del self._claims[handle.claimed["entity_id"]]
+
+    def _signal(self,case_ids):
+        """Tell the workers of these cases, in this process, that their claim is gone. It only ends their waits early."""
+        with self._claims_lock:
+            for case_id in case_ids:
+                if case_id in self._claims:self._claims[case_id].cancelled.set()
+
+    def _fail_claim(self,claimed,error):
+        """The owner's investigation raised: give up this claim only. Its peer, and automatic investigation as a whole,
+        go on. If even this cannot be written, the lease runs out and the case is recovered then."""
+        def fail(tx):
+            control=self._control(tx,lock=True);now=self._wall()
+            case=self._owned(tx,claimed,now)
+            self._end_claim(tx,case,control["as_of"],now,reason=claims.END_FAILED,event="CLAIM_FAILED",actor="SUHAIL-INVESTIGATION-WORKER",
+                            recovery=True,failed=True,
+                            result=f"The investigation by {claimed['worker_id']} stopped on an internal error ({type(error).__name__}); "
+                                   "nothing from it was recorded as a result.")
+        try:self._execute(fail,write=True)
+        except claims.ClaimLost:pass      # Already taken from this worker: nothing of its own is left to release.
+        except Exception as second:
+            log.warning("The failed claim on %s could not be released (%s); its lease will expire",claimed["entity_id"],type(second).__name__)
+
+    def release_claims(self,worker_ids):
+        """The worker pool is stopping: give up the claims this process holds for these workers, each by its own
+        identity, so a peer's claim is never touched. Returns the cases released."""
+        with self._claims_lock:handles=[h for h in self._claims.values() if h.claimed.get("worker_id") in worker_ids]
+        released=[]
+        for handle in handles:
+            handle.cancelled.set()
+            def give_up(tx,claimed=handle.claimed):
+                control=self._control(tx,lock=True);now=self._wall()
+                case=self._owned(tx,claimed,now)
+                self._end_claim(tx,case,control["as_of"],now,reason=claims.END_STOPPED,event="CLAIM_RELEASED",actor="SUHAIL-INVESTIGATION-WORKER",
+                                recovery=False,result="The investigation worker was stopped; the case is queued again.")
+                return case["entity_id"]
+            try:released.append(self._execute(give_up,write=True))
+            except claims.ClaimLost:pass
+        return released
+
+    def _investigation_status(self,tx,case):
+        """InvestigationStatusV3 (docs/v3/08-interface-reference.md) of a case: who investigates it or last did, where
+        that run stands, and a bounded summary once it is final. Wall times are the claim's; as_of is the run's fixed
+        evidence cutoff. No model text, no evidence contents."""
+        queued=case["workflow_state"] in ("OPEN","REOPENED")
+        run=None if queued or not case.get("last_run_id") else self._get(tx,"OpsRun",case["last_run_id"])
+        status={"case_id":case["entity_id"],"shipment_id":case["shipment_id"],"worker_id":None,"claim_id":None,
+                "claim_epoch":case.get("claim_epoch") or 0,"workflow_state":case["workflow_state"],"run_id":None,"run_status":"QUEUED",
+                "active_stage":None,"started_at":None,"updated_at":None,"lease_expires_at":None,
+                # Queued: the cutoff a new run would start from is not fixed yet; this is the case's pending one.
+                "as_of":case["as_of"],"state_version":case["state_version"],"final_result":None}
+        if not run:return status
+        running=run.get("status")=="RUNNING"
+        owner=running and case["workflow_state"]=="INVESTIGATING" and case.get("claim_id")==run.get("claim_id")
+        # The latest accepted status or progress of this run. A lease renewal is neither and never moves it.
+        moments=[t for t in (run.get("updated_wall_at"),run.get("finished_wall_at")) if t]
+        status.update(worker_id=run.get("worker_id"),claim_id=run.get("claim_id"),run_id=run["entity_id"],run_status=run.get("status") or "QUEUED",
+                      claim_epoch=run.get("claim_epoch") if run.get("claim_epoch") is not None else status["claim_epoch"],
+                      active_stage=run.get("active_stage") if running else None,started_at=run.get("claim_wall_at"),
+                      updated_at=max(moments,key=instant) if moments else None,
+                      lease_expires_at=case.get("lease_expires_at") if owner else None,
+                      as_of=run.get("claim_as_of") or case.get("investigated_as_of") or case["as_of"])
+        if not running:
+            review=json.loads(run.get("result_json") or "{}").get("review") or {}
+            outcomes=[public_value(r["props"]) for r in tx.run("MATCH(n:OpsEntity:OpsOutcome {case_id:$case_id,dataset_id:$dataset}) "
+                      "RETURN properties(n) AS props ORDER BY n.recorded_at DESC,n.entity_id DESC LIMIT 20",
+                      case_id=case["entity_id"],dataset=self.dataset_id)]
+            outcome=next((o for o in outcomes if o.get("run_id")==run["entity_id"] and not o.get("invalidated")),None)
+            # A reviewed run is not a verified outcome: the last field is filled only by a recorded verification.
+            status["final_result"]={"workflow_state":case["workflow_state"],"review_verdict":review.get("verdict"),
+                                    "model_verdict":review.get("model_verdict"),
+                                    "outcome_verification_status":(outcome or {}).get("verification_status")}
+        return status
+
+    def process_one(self, case_id=None, *, manual=False, worker_id=None):
+        """Claim the oldest eligible case and investigate it; every entry point (an investigation loop, a manual step, a
+        named case, a re-analysis) claims the same way and counts against the same capacity. worker_id names the owner
+        (an investigation loop's name); without one the request is its own owner. Returns the writeback's result, or
+        {"processed": False, "reason": ...} when nothing was claimed (worker_paused, capacity, none_eligible) or the
+        claim was taken away during the run (claim_lost)."""
+        owner=worker_id or claims.operator_worker()
+        refused={}
         def claim(tx):
             control=self._control(tx,lock=True)
-            if control.get("worker_claim") or (control["worker_state"]!="running" and not manual and case_id is None):return None
+            if control["worker_state"]!="running" and not manual and case_id is None:
+                refused["reason"]="worker_paused";return None
+            now=self._wall()
+            self._recover_expired(tx,control,now)
+            # Capacity is counted here, under the lock every grant takes: two requests can never both see a free place.
+            if len(self._live_claims(tx,now))>=self.capacity:
+                refused["reason"]="capacity";return None
             rows=list(tx.run("MATCH(c:OpsCase {dataset_id:$dataset,split:'development'}) "
                 "WHERE c.workflow_state IN ['OPEN','REOPENED'] AND c.opened_at <= $clock "
                 # The quiet interval after a case's previous run: the automatic worker passes over it until then. It runs
@@ -1302,22 +1524,35 @@ class OperationsStore:
                 "AND ($id IS NULL OR c.entity_id=$id) RETURN properties(c) AS props ORDER BY c.opened_at,c.entity_id LIMIT 1",
                 dataset=self.dataset_id,clock=instant(control["as_of"]),id=case_id,
                 explicit=bool(manual or case_id is not None or control.get("simulator_state")!="running")))
-            if not rows:return None
+            if not rows:
+                refused["reason"]="none_eligible";return None
             case=public_value(rows[0]["props"]); token=identity("claim",case["entity_id"],case["state_version"])
+            run_id=identity("run",case["entity_id"],token);wall=now.isoformat()
+            # claim_at and as_of are the simulation clock (what evidence the run may see); the lease is wall-clock time.
+            # claim_as_of keeps the run's cutoff when later ingestion moves the case's own as_of.
             case.update(workflow_state="INVESTIGATING",state_version=case["state_version"]+1,claim_id=token,claim_at=control["as_of"],as_of=control['as_of'],
-                        last_run_id=identity("run",case["entity_id"],token))
-            control.update(worker_claim=case["entity_id"],claim_at=control["as_of"],claim_shipment_id=case["shipment_id"])
-            self._put(tx,"OpsCase",case,update=True);self._put(tx,"OpsControl",control,update=True)
-            self._audit(tx,case,"CASE_CLAIMED",case["as_of"])
+                        last_run_id=run_id,worker_id=owner,claim_epoch=(case.get("claim_epoch") or 0)+1,claim_wall_at=wall,
+                        claim_as_of=control["as_of"],lease_heartbeat_at=wall,
+                        lease_expires_at=claims.expires_at(now,claims.lease_seconds(self.lease_seconds)))
+            self._put(tx,"OpsCase",case,update=True)
+            # The run exists from the grant, with the claim it was made under: every later write of it is checked
+            # against that, and a claim that is lost before its first event still has a run to close.
+            self._put(tx,"OpsRun",{"entity_id":run_id,"shipment_id":case["shipment_id"],"case_id":case["entity_id"],
+                "recorded_at":case["as_of"],"mode":"deterministic_evidence_rules","result_json":canonical({"pipeline_events":[]}),
+                "iteration":0,"status":"RUNNING","worker_id":owner,"claim_id":token,"claim_epoch":case["claim_epoch"],
+                "claim_wall_at":wall,"claim_as_of":case["as_of"],"updated_wall_at":wall})
+            self._link(tx,"OPS_HAS_RUN",case["entity_id"],run_id,case["shipment_id"],case["as_of"])
+            self._audit(tx,case,"CASE_CLAIMED",case["as_of"],result=f"Claimed by {owner} (claim {case['claim_epoch']}).")
             return case
         case=self._execute(claim,write=True)
-        if not case:return {"processed":False,"outcome":None}
+        if not case:return {"processed":False,"outcome":None,"reason":refused.get("reason")}
         self._reader()
         reassess={}
         def finish(tx,analysis):
-            control=self._control(tx,lock=True);current=self._case(tx,case["entity_id"])
-            if current.get("claim_id")!=case["claim_id"] or current["workflow_state"]!="INVESTIGATING":
-                raise OperationsConflict("Worker claim was released or superseded")
+            control=self._control(tx,lock=True);now=self._wall()
+            # The result, its recommendation and reviews, and any action it authorizes are written only by the worker
+            # that still owns the case, within its lease. A worker that lost it writes nothing here.
+            current=self._owned(tx,case,now)
             # The case record moved during the run. Only a material change supersedes the snapshot (a changed symptom
             # set, a record that replaces or contradicts what the conclusion rests on, or a change to the case that
             # evidence ingestion does not account for); routine new records do not, and the run is kept as the
@@ -1327,11 +1562,12 @@ class OperationsStore:
             stale=bool(material)
             quiet_until=self._quiet_until(control["as_of"])
             if stale and (current.get("snapshot_refreshes") or 0)<MAX_SNAPSHOT_REFRESHES:
-                current.update(workflow_state="OPEN",state_version=current["state_version"]+1,claim_id=None,claim_at=None,
+                self._close_run(tx,current,claims.END_SNAPSHOT,now)
+                claims.release(current,revoked=False)
+                current.update(workflow_state="OPEN",state_version=current["state_version"]+1,
                                snapshot_refreshes=(current.get("snapshot_refreshes") or 0)+1,quiet_until=quiet_until)
                 without_diagnosis(current,pending=True)
-                control.update(worker_claim=None,claim_at=None)
-                self._put(tx,"OpsCase",current,update=True);self._put(tx,"OpsControl",control,update=True)
+                self._put(tx,"OpsCase",current,update=True)
                 self._audit(tx,current,"CLAIM_RELEASED",control["as_of"],result="Evidence snapshot changed during analysis; re-investigating with the new evidence. "
                             "Material change: "+materiality.describe(material)+".")
                 return {"processed":False,"case_id":current["entity_id"],"reason":"snapshot_changed","workflow_state":"OPEN",
@@ -1359,9 +1595,12 @@ class OperationsStore:
             resolved_by_reassessment=None
             if reassessing:
                 resolved_by_reassessment,analysis=self._reassessment_result(tx,current,analysis,reassess,stale,when)
+            # The run is final from this commit: REVIEWED, closed by its owner. Events its worker emits after this (the
+            # last stage's end) are appended to it and change nothing else (_record_stages).
             self._put(tx,"OpsRun",{"entity_id":run_id,"shipment_id":case["shipment_id"],"case_id":case["entity_id"],
-                "recorded_at":when,"mode":analysis["mode"],"result_json":canonical(analysis),"iteration":len(analysis["trace"]),
-                "status":"RUNNING","context_hash":analysis["context_hash"]},update=True)
+                "recorded_at":case["as_of"],"mode":analysis["mode"],"result_json":canonical(analysis),"iteration":len(analysis["trace"]),
+                "status":"REVIEWED","context_hash":analysis["context_hash"],"end_reason":claims.END_FINISHED,
+                "finished_wall_at":now.isoformat(),"active_stage":None},update=True)
             self._link(tx,"OPS_HAS_RUN",case["entity_id"],run_id,case["shipment_id"],when)
             recommendation_id=None
             if analysis["proposal"]:
@@ -1437,8 +1676,9 @@ class OperationsStore:
                             result=canonical({k:authority.get(k) for k in ("rule_id","risk_class","action_type","closure","reason","inputs")}))
             # Records up to now were checked against this run; later ones are checked by the monitor. The quiet interval
             # starts when the run finishes.
+            claims.release(current,revoked=False)
             current.update(workflow_state=analysis["result"]["workflow_state"],state_version=current["state_version"]+1,
-                last_run_id=run_id,recommendation_id=recommendation_id,claim_id=None,claim_at=None,
+                last_run_id=run_id,recommendation_id=recommendation_id,claim_recoveries=0,
                 investigated_as_of=case["as_of"],evidence_checked_as_of=when,quiet_until=quiet_until)
             if resolved_by_reassessment:
                 current.update(is_terminal=True,closed_at=when,verified_outcome_id=resolved_by_reassessment)
@@ -1480,7 +1720,11 @@ class OperationsStore:
                 for kind,identifier in (("OpsRecommendation",recommendation_id),*([("OpsExecution",execution_id)] if auto else [])):
                     record=self._get(tx,kind,identifier);record["approval_context_json"]=canonical(context)
                     self._put(tx,kind,record,update=True)
-            control.update(worker_claim=None,claim_at=None,processed_count=control["processed_count"]+1,
+            # What was decided here is what the run keeps, including a destination this writeback itself overrode (a
+            # refused automatic execution).
+            self._put(tx,"OpsRun",{"entity_id":run_id,"shipment_id":case["shipment_id"],"case_id":case["entity_id"],
+                                   "result_json":canonical(analysis)},update=True)
+            control.update(processed_count=control["processed_count"]+1,
                            last_case_id=current["entity_id"],last_shipment_id=current["shipment_id"],
                            last_workflow_state=current["workflow_state"],last_processed_at=when)
             self._put(tx,"OpsControl",control,update=True)
@@ -1491,6 +1735,7 @@ class OperationsStore:
         # is committed, after the run, and on every failure path.
         stages=StageBuffer(lambda batch,events:self._record_stages(case,batch,events),stage_flush_seconds(self.stage_flush_seconds),
                            timer=self.stage_timer)
+        committed={}
         def commit(analysis):
             stages.flush()
             if case.get("reassess_outcome_id"):
@@ -1502,23 +1747,48 @@ class OperationsStore:
                                            detection_allowance_seconds=DETECTION_ALLOWANCE_SECONDS)
                 reassess.update(outcome_id=case["reassess_outcome_id"],fresh=sorted(monitor_finding(assessment)["symptoms"]),
                                 delivered=delivery_corroborated(assessment))
-            return self._execute(lambda tx:finish(tx,analysis),write=True)
+            committed["result"]=self._execute(lambda tx:finish(tx,analysis),write=True)
+            return committed["result"]
+        handle=self._hold(case)
         try:
-            analysis,result=investigate(case["shipment_id"],case["as_of"],self.config,self.reader.evidence,
-                lambda sid,codes:self.reader.precedents(sid,codes,as_of=case['as_of']),
-                commit=commit,on_event=stages.add,
-                agents=self.agents,live_session=True,symptoms=case.get("symptom_codes") or [],
-                heartbeats=getattr(self.reader,"heartbeats",None),
-                # The read model's fixed cross-shipment queries (None for a reader without them: tools then say UNKNOWN).
-                port=getattr(self.reader,"fetch",None),disabled_tools=self.disabled_tools,call_cap=self.model_call_cap)
-            stages.close()   # The last stage's own events, before the run is saved as finished.
-            analysis["writeback"]=result
-            self._save_run_trace(case,analysis)
+            try:
+                # Every model call of this investigation is labelled with its claim for the provider log, and stops
+                # waiting for a provider slot as soon as the claim is known to be gone (operations.provider_gate).
+                with provider_gate.scope(cancel=handle.cancelled,case_id=case["entity_id"],run_id=case["last_run_id"],worker_id=owner):
+                    analysis,result=investigate(case["shipment_id"],case["as_of"],self.config,self.reader.evidence,
+                        lambda sid,codes:self.reader.precedents(sid,codes,as_of=case['as_of']),
+                        commit=commit,on_event=stages.add,
+                        agents=self.agents,live_session=True,symptoms=case.get("symptom_codes") or [],
+                        heartbeats=getattr(self.reader,"heartbeats",None),
+                        # The read model's fixed cross-shipment queries (None for a reader without them: tools then say UNKNOWN).
+                        port=getattr(self.reader,"fetch",None),disabled_tools=self.disabled_tools,call_cap=self.model_call_cap)
+            except Exception as error:
+                stages.close(quiet=True)   # Whatever was emitted before the failure is on record; its error never hides this one.
+                if "result" in committed:
+                    # The result was committed and stands; only the worker's last events or its trace failed after it.
+                    log.warning("Case %s: the run was committed, then its worker failed (%s); the committed result stands",
+                                case["entity_id"],type(error).__name__)
+                    return committed["result"]
+                if isinstance(error,claims.ClaimLost):
+                    # The case was taken from this worker during the run (a pause, an expired lease). Nothing of the
+                    # run was written past that point, and there is nothing of its own left to release.
+                    log.warning("Case %s: %s lost its claim (%s); its result was discarded",case["entity_id"],owner,error.reason)
+                    return {"processed":False,"case_id":case["entity_id"],"reason":"claim_lost","outcome":None}
+                # This claim only: the case is queued again (or handed to a person after repeated losses). The other
+                # worker, and automatic investigation as a whole, are not paused.
+                self._fail_claim(case,error)
+                raise
+            # After the commit the claim is released, so these last writes can fail only for their own reasons; they
+            # never undo or fail a committed investigation.
+            try:
+                stages.close()   # The last stage's own events, appended to the run its worker just closed.
+                analysis["writeback"]=result
+                self._save_run_trace(case,analysis)
+            except Exception as error:
+                log.warning("Case %s: the committed run's last events or trace were not saved (%s)",case["entity_id"],type(error).__name__)
             return result
-        except Exception:
-            stages.close(quiet=True)   # Whatever was emitted before the failure is on record; its error never hides this one.
-            self.control("worker","pause")
-            raise
+        finally:
+            self._drop(handle)
 
     def _record_stage(self,claimed,event,events):
         """One progress event, written at once."""
@@ -1527,19 +1797,31 @@ class OperationsStore:
     def _record_stages(self,claimed,batch,events):
         """Write a batch of consecutive progress events of the claimed run, in order, in one transaction: the run record
         (its pipeline_events are `events`, every event up to the last of the batch) and one PIPELINE_STAGE audit entry
-        per event, exactly as each would have been written alone. Subscribers are then sent the state once."""
+        per event, exactly as each would have been written alone. Subscribers are then sent the state once.
+
+        Accepted from the worker that owns the case, within its lease (operations.claims). One more case is accepted: the
+        events a worker emits after committing its own result (the last stage's end), while that run is still the case's
+        current one. Those are appended to the closed run and change nothing else: not its status (a REVIEWED run never
+        goes back to RUNNING), its result, its authority decision or the case. Anything else raises ClaimLost, before a
+        single event is written or sent to a subscriber."""
         last=batch[-1]
         def record(tx):
-            self._control(tx,lock=True)
-            case=self._case(tx,claimed["entity_id"])
+            self._control(tx,lock=True);now=self._wall()
             run_id=claimed["last_run_id"]
-            if case.get("last_run_id")!=run_id:raise OperationsConflict("Investigation was superseded")
+            case=self._get(tx,"OpsCase",claimed["entity_id"])
             current=self._get(tx,"OpsRun",run_id)
+            reason=claims.lost(case,claimed,now)
+            closed=bool(reason) and bool(case) and case.get("last_run_id")==run_id and claims.closed_by_owner(current,claimed)
+            if reason and not closed:raise claims.ClaimLost(reason)
             trace=json.loads(current["result_json"]) if current else {}
             trace["pipeline_events"]=events
-            self._put(tx,"OpsRun",{"entity_id":run_id,"shipment_id":case["shipment_id"],"case_id":case["entity_id"],
-                "recorded_at":claimed["as_of"],"mode":"deterministic_evidence_rules","result_json":canonical(trace),
-                "iteration":last["iteration"],"status":"FAILED" if last["status"]=="FAILED" else "RUNNING"},update=True)
+            status=current["status"] if closed else ("FAILED" if last["status"]=="FAILED" else "RUNNING")
+            run={"entity_id":run_id,"shipment_id":case["shipment_id"],"case_id":case["entity_id"],"result_json":canonical(trace),
+                 "updated_wall_at":now.isoformat()}
+            if not closed:
+                run.update(recorded_at=claimed["as_of"],mode="deterministic_evidence_rules",iteration=last["iteration"],status=status,
+                           active_stage=last["stage"] if status=="RUNNING" else None)
+            self._put(tx,"OpsRun",run,update=True)
             self._link(tx,"OPS_HAS_RUN",case["entity_id"],run_id,case["shipment_id"],claimed["as_of"])
             for event in batch:
                 audit_id=run_id.replace("-RUN-","-STAGE-")+f'-{event["sequence"]:04d}'
@@ -1550,21 +1832,27 @@ class OperationsStore:
                     "to_state":case["workflow_state"],"result":event["stage"]+": "+event["status"]})
                 self._link(tx,"OPS_HAS_AUDIT",case["entity_id"],audit_id,case["shipment_id"],claimed["as_of"])
             return {'run_id':run_id,'events':events,'workflow_state':case['workflow_state'],
-                    'state_version':case['state_version'],'status':'FAILED' if last['status']=='FAILED' else 'RUNNING'}
+                    'state_version':case['state_version'],'status':status}
         state=self._execute(record,write=True)
         self._publish_pipeline(claimed['entity_id'],state)
         if self.narrator is not None:self.narrator.request(claimed['entity_id'])
 
     def _save_run_trace(self,case,analysis):
+        """Complete the stored trace of a run its own worker committed (timings, the investigation log, the writeback's
+        receipt). The run's status and what the writeback decided are already final and are kept; a run that was taken
+        from this worker, or is no longer the case's current one, is left alone (ClaimLost)."""
         def save(tx):
             self._control(tx,lock=True)
+            current=self._get(tx,"OpsCase",case["entity_id"])
             run=self._get(tx,"OpsRun",case["last_run_id"])
+            if not current or current.get("last_run_id")!=case["last_run_id"] or not claims.closed_by_owner(run,case):
+                raise claims.ClaimLost("run_closed")
             # The writeback may have overridden the authority decision and destination (a superseded snapshot,
             # a refused automatic execution); the stored run keeps what was actually decided.
             decided=json.loads(run.get("result_json") or "{}") if analysis['writeback'].get('processed') else {}
             kept={k:decided[k] for k in ("authority","result","degraded") if k in decided}
-            run.update(result_json=canonical({**analysis,**kept}),status="REVIEWED" if analysis['writeback'].get('processed') else "ABORTED")
-            self._put(tx,"OpsRun",run,update=True)
+            self._put(tx,"OpsRun",{"entity_id":run["entity_id"],"shipment_id":run["shipment_id"],"case_id":run["case_id"],
+                                   "result_json":canonical({**analysis,**kept})},update=True)
         self._execute(save,write=True)
         with self._subscribers_lock:
             subscribed=bool(self._subscribers.get(case['entity_id']))
@@ -2070,6 +2358,8 @@ class OperationsStore:
                 "as_of":case["as_of"],"recommendation_id":case.get("recommendation_id"),"last_run_id":case.get("last_run_id"),
                 "recommendation":recommendation,"review":reviews[0] if reviews else None,"outcome":outcomes[0] if outcomes else None,
                 "decisions":linked("OpsDecision"),"executions":executions,"run":current,"previous_run":previous,
+                # Who investigates the case or last did, and where that run stands (InvestigationStatusV3).
+                "investigation_status":self._investigation_status(tx,case),
                 # The current run's accepted agent investigation, or explicitly absent; never rule output.
                 "diagnosis":diagnosis,"synthetic":True}
         return self._execute(read)
