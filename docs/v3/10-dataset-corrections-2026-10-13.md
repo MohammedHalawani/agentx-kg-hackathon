@@ -37,18 +37,22 @@ relationship scope (reachable only through relationships the evidence context al
 **Regression test.** `test_v3_scenarios.py::test_delivering_provider_reaches_packet_like_the_live_envelope`
 (only provider records that delivered a visible record are added; no node is lost; domain provider is never replaced).
 
-### Open: the live gateway overwrites the domain provider (not changed here)
+### Resolved at source: the live gateway overwrote the domain provider
 
-`operations/ingestion.py` builds the node as `{**props, **envelope}` and the envelope's `provider_id` replaces a
-payload `provider_id`. In the feed this hits 201 of 628 records that carry their own provider: 72 `Manifest`
+`operations/ingestion.py` built the node as `{**props, **envelope}`, so the envelope's `provider_id` replaced a payload
+`provider_id`. In the feed this hit 201 of 628 records that carry their own provider: 72 `Manifest`
 (`DEMO-PROV-LMC-01` → `DEMO-PROV-SPL`), 49 `RouteRun` (30 `DEMO-PROV-INDEP-01`, 19 `DEMO-PROV-LMC-01`) and 80 `Trip`
-(`DEMO-PROV-3PL-01`). For the curated set the only visible effect is `DEMO-SHP-000226` at the final snapshot: the live
-view has no `DEMO-PROV-LMC-01` node (the manifest and route run that named it now say `DEMO-PROV-SPL`), so the
-`OPERATED_BY` and `WORKS_FOR` relationships of that vehicle and driver are not returned. The corrected packet keeps the
-payload's provider, so this one snapshot still differs from the live read model by that node and two relationships.
-This is a live ingestion defect (provider identity of a delivered record is misstated), not a packet defect, and the
-graph was not changed to make the fixture match. A fix needs a non-colliding envelope key plus a repair or reimport of
-the affected nodes and therefore a coordinator decision.
+(`DEMO-PROV-3PL-01`). For the curated set the only visible effect was `DEMO-SHP-000226` at the final snapshot: the live
+view had no `DEMO-PROV-LMC-01` node, so the `OPERATED_BY` and `WORKS_FOR` relationships of that vehicle and driver were
+not returned.
+
+Fix (approved Option A): the gateway now keeps a record's own `provider_id` and lets the delivering channel fill it
+only when the payload has none (`228e57c`, regression test `test_ingestion_provider_precedence.py`). The 201 stored
+nodes were restored by `scripts/repair_provider_overwrite.py` (`0c2fb15`): property-only, one transaction, guarded per
+node by channel provider, payload hash and feed id, rolled back unless exactly the planned nodes changed, restricted to
+`shipments-v2-world-v3-20261013`. Result: 201 needed repair, 201 written, 201 repaired and every other property
+unchanged; a second apply wrote 0. No relationship change was needed (`Trip` `OPERATED_BY` edges are built from the
+payload and were already correct). No reimport or replay.
 
 ## 3. `DEMO-SHP-000051`
 
@@ -100,12 +104,15 @@ All 24 corrected-set snapshots (8 shipments × before/after receipt/final) compa
 | GPS observation IDs equal | 24/24 |
 | Whole route summary equal (first, last, count, intervals) | 24/24 |
 | first ≤ last and equal to the observations' chronological extremes | 24/24 |
-| Node IDs equal | 23/24 |
-| Relationship IDs equal | 23/24 |
+| Node IDs equal | 24/24 (23/24 before the repair; only `DEMO-SHP-000226` final differed) |
+| Relationship IDs equal | 24/24 (23/24 before the repair) |
 | All observation and node times at or before the snapshot cutoff | 24/24 |
 | Receipt visible only at the "after" cutoff | 24/24 |
 | Every cited source ID resolves in the live graph under the cutoff | 24/24 |
 | Forbidden private-answer keys in packets | none |
 
-The one difference is `DEMO-SHP-000226` at the final clock (see the open item above). The seven previously wrong
-summaries were exactly the seven final snapshots, as reported.
+After the repair the 24 live snapshots changed in one place only: `DEMO-SHP-000226` at the final clock gained
+`DEMO-PROV-LMC-01` and its two relationships, the intended effect. Reference and temporal integrity gates still pass
+(0 unresolved references, 0 temporal violations), counts are unchanged (68,413 nodes, 101,104 relationships, 40,284
+ingested records, 40,452 feed items, 7 operations cases). The seven previously wrong summaries were exactly the seven
+final snapshots, as reported. The corrected packets (`corrected-r1`) are frozen; see `freeze-record.json` there.
