@@ -26,6 +26,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_litellm import ChatLiteLLM
 
 import config
+from operations import provider_gate
 
 log = logging.getLogger("pipeline.llm")
 
@@ -122,12 +123,23 @@ def _content_text(block: Any) -> str:
     return value if isinstance(value, str) else ""
 
 
-@lru_cache(maxsize=1)
+_model_lock = threading.Lock()
+
+
 def model() -> ChatLiteLLM:
     """One shared, memoized chat model for every pipeline stage - same construction
     chat/llm/agent.py uses, minus streaming (no stage streams; the pipeline reports
     per-stage, not per-token). temperature=0 because every stage is a judgement that should
-    be reproducible for the same input, not a creative generation."""
+    be reproducible for the same input, not a creative generation.
+
+    Built once, under a lock: two investigations that start together get the same client, never two. The client holds
+    configuration only; each call's messages, parameters and callbacks are its own."""
+    with _model_lock:
+        return _build_model()
+
+
+@lru_cache(maxsize=1)
+def _build_model() -> ChatLiteLLM:
     return ChatLiteLLM(
         model=config.LLM_MODEL,
         api_key=config.LLM_API_KEY,
@@ -137,6 +149,9 @@ def model() -> ChatLiteLLM:
         request_timeout=config.LLM_TIMEOUT_SECONDS,
         max_retries=0,
     )
+
+
+model.cache_clear = _build_model.cache_clear      # as when model() itself was the cached function
 
 
 # The wall-clock limit of ONE live model call (an investigator turn, a reviewer call, the no-tools baseline's call).
@@ -168,29 +183,64 @@ def call_timeout() -> float:
     return max(CALL_TIMEOUT_BOUNDS[0], min(value, CALL_TIMEOUT_BOUNDS[1]))
 
 
-def invoke(messages, *, deadline: float | None = None):
+class ProviderCapacityTimeout(ModelCallTimeout):
+    """No provider slot came free for this call (operations.provider_gate): the limit on calls in flight was reached and
+    stayed reached for as long as the call may wait, or the caller's claim was cancelled while it waited. The provider
+    was not called. A TimeoutError like ModelCallTimeout, so every caller treats it as the provider failure it is."""
+
+
+def invoke(messages, *, deadline: float | None = None, client=None, entry: str = "invoke"):
     """One provider call. With `deadline` (seconds) the call is abandoned when it has not returned by then and
     ModelCallTimeout is raised; without it this is model().invoke(messages), bounded only by the HTTP client.
+    client: the chat model to call (default: the shared model()). entry: which function made the call, for the log.
 
     The call runs on its own thread so the wait can end at the deadline whatever the HTTP client is doing. The same
     number is also given to the client as its own timeout, so an abandoned call's connection is dropped by the client
     at its next quiet period rather than at request_timeout. An abandoned call cannot be cancelled: if the provider
-    still answers, the answer is discarded (the provider's own call count still includes it, as it does a failed call)."""
+    still answers, the answer is discarded (the provider's own call count still includes it, as it does a failed call).
+
+    Every call, with or without a deadline, first takes a slot of the process's provider gate
+    (SUHAIL_PROVIDER_MAX_INFLIGHT) and holds it until the underlying call has ended. An abandoned call therefore keeps
+    its slot after its caller has given up, and a retry cannot start beside it: it waits for a slot, for at most its own
+    deadline (the default call timeout when it has none), and raises ProviderCapacityTimeout when none comes free."""
+    chat = model() if client is None else client
+    labels, cancel = provider_gate.current()
+    if not labels.get("role"):
+        # The investigation path makes the investigator's turns through invoke and its review through ask_json.
+        labels["role"] = ("investigator" if entry == "invoke" else "reviewer") if labels.get("run_id") else entry
+    try:
+        permit = provider_gate.shared().acquire(call_timeout() if deadline is None else deadline, cancel=cancel, labels=labels)
+    except provider_gate.CapacityUnavailable as error:
+        raise ProviderCapacityTimeout(f"no provider slot for the call ({error.reason})") from None
     if deadline is None:
-        return model().invoke(messages)
+        try:
+            response = chat.invoke(messages)
+        except BaseException as error:
+            permit.release(type(error).__name__)
+            raise
+        permit.release()
+        return response
     outcome = {}
     context = contextvars.copy_context()      # callbacks and tracing of the calling thread apply to the call
 
     def call():
+        result = "ok"
         try:
-            outcome["response"] = context.run(model().invoke, messages, timeout=deadline)
+            outcome["response"] = context.run(chat.invoke, messages, timeout=deadline)
         except BaseException as error:        # delivered to the caller below, on its own thread
-            outcome["error"] = error
+            outcome["error"], result = error, type(error).__name__
+        finally:
+            permit.release(result)            # only here: when the underlying call has ended, however late
 
     thread = threading.Thread(target=call, name="model-call", daemon=True)
-    thread.start()
+    try:
+        thread.start()
+    except BaseException:
+        permit.release("not_started")
+        raise
     thread.join(deadline)
     if thread.is_alive():
+        permit.abandon()                      # the slot stays taken until the provider call itself ends
         log.warning("Model call abandoned after %.0f s (%s)", deadline, CALL_TIMEOUT_ENV)
         raise ModelCallTimeout(f"model call exceeded {deadline:g} s")
     if "error" in outcome:
@@ -254,7 +304,7 @@ def ask_json(system: str, user: str, default: dict[str, Any], *, deadline: float
     logged warning) when the model returns something unparseable. The default is always a
     complete, valid shape for the caller's stage, so a downstream node never has to guard
     against half-populated state. deadline: the call's wall-clock limit in seconds (see invoke)."""
-    resp = invoke([SystemMessage(system), HumanMessage(user)], deadline=deadline)
+    resp = invoke([SystemMessage(system), HumanMessage(user)], deadline=deadline, entry="ask_json")
     from operations.latency import note_usage   # token counts for the caller's timing record; measurement only
     note_usage(resp)
     raw = message_text(getattr(resp, "content", None))
