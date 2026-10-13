@@ -178,7 +178,10 @@ class Gateway:
                     "ingest_lag_seconds": int((recorded - instant(occurred_at)).total_seconds())}
         labels = ":".join(("V2Entity", kind, "LiveIngested", *ALIASES.get(kind, ())))
         self._last_kind = kind
-        tx.run(f"CREATE (n:{labels}) SET n=$props", props=_neo({**props, **envelope})).consume()
+        node = {**props, **envelope}
+        if props.get("provider_id") is not None:
+            node["provider_id"] = props["provider_id"]  # the record's own provider outranks the delivering channel
+        tx.run(f"CREATE (n:{labels}) SET n=$props", props=_neo(node)).consume()
         self._edges(tx, kind, entity_id, props, sid, split, recorded)
         return "INGESTED", entity_id, sid, None
 
