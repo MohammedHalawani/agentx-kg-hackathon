@@ -988,6 +988,58 @@ class WorkerPoolTests(Base):
         self.assertEqual(provider_gate.current(), ({}, None))
 
 
+def run_mock_batch(test, workers, cases=4, latency=0.5):
+    """The same fixed batch through the real store with `workers` investigation loops. The investigator is the scripted
+    double; it takes `latency` seconds where its model calls would be. Returns what was measured: cases completed, errors,
+    the most investigations in progress at once, and wall time. Mock only: it shows that the loops overlap and that the
+    capacity holds, not how long a model takes or how well it diagnoses."""
+    store, driver = test.make(cases=cases, capacity=workers)
+    store.control("worker", "start")
+    inside, peak, lock, errors = [0], [0], threading.Lock(), []
+
+    def model_time(tools):
+        with lock:
+            inside[0] += 1
+            peak[0] = max(peak[0], inside[0])
+        time.sleep(latency)
+        with lock:
+            inside[0] -= 1
+    store.agents = Hooked(always=model_time)
+    queued = len(test.kind(driver, "OpsCase"))
+
+    def loop(name):
+        while True:
+            try:
+                result = store.process_one(worker_id=name)
+            except Exception as error:
+                errors.append(type(error).__name__)
+                return
+            if not result.get("processed") and result.get("reason") == "none_eligible":
+                return
+    threads = [threading.Thread(target=loop, args=(name,), name=name) for name in WORKERS[:workers]]
+    started = time.monotonic()
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(120)
+    return {"workers": workers, "queued": queued, "completed": store.status()["worker"]["processed_count"], "errors": errors,
+            "peak_investigations": peak[0], "wall_seconds": round(time.monotonic() - started, 3), "latency_seconds": latency,
+            "runs_by_worker": {name: sum(r["worker_id"] == name for r in test.kind(driver, "OpsRun")) for name in WORKERS[:workers]},
+            "mock_only": True}
+
+
+class BatchHarnessTests(Base):
+    def test_a_fixed_mock_batch_overlaps_with_two_workers_and_never_with_one(self):
+        one, two = run_mock_batch(self, 1), run_mock_batch(self, 2)
+        print("\nMOCK BATCH (not a model measurement)", json.dumps([one, two]))
+        self.assertEqual((one["errors"], two["errors"]), ([], []))
+        self.assertGreaterEqual(one["queued"], 4)
+        self.assertEqual((one["completed"], two["completed"]), (one["queued"], one["queued"]))     # the same batch, all of it
+        self.assertEqual((one["peak_investigations"], two["peak_investigations"]), (1, 2))
+        self.assertTrue(all(count > 0 for count in two["runs_by_worker"].values()), two)            # both loops took cases
+        self.assertLess(two["wall_seconds"], one["wall_seconds"])
+
+
 class ExecutionTests(Base):
     def approved(self, adapter):
         store, driver = self.make()

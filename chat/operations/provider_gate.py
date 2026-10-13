@@ -9,6 +9,7 @@ provider call has really ended:
     fails as a provider failure if the slot does not come free in time. Capacity is never exceeded to make room for it.
   - Waiting is bounded (the caller's own deadline), ends early when the caller's claim is cancelled, and happens on the
     calling thread: no thread is created to wait, and at most MAX_WAITERS callers wait at once (more are refused at once).
+    Waiting callers are served in the order they asked.
   - A permit is released exactly once, whatever the call does.
 
 This is a limit inside one process. It says nothing about other clients of the same provider account, and overlapping
@@ -106,23 +107,31 @@ class ProviderGate:
     def __init__(self, limit=None, *, max_waiters=MAX_WAITERS, clock=time.monotonic):
         self.limit, self.max_waiters, self.clock = max_inflight(limit), max_waiters, clock
         self.condition = threading.Condition()
-        self.inflight = self.waiting = self.peak = self.granted = self.released = self.refused = 0
+        self.inflight = self.peak = self.granted = self.released = self.refused = 0
+        self.queue = deque()                    # the callers waiting, in the order they asked
         self.sequence = itertools.count(1)
         self.recent = deque(maxlen=RECENT)      # the last calls, for measurement: ids and times only
 
+    @property
+    def waiting(self):
+        return len(self.queue)
+
     def acquire(self, wait, *, cancel=None, labels=None):
-        """Take a slot, waiting at most `wait` seconds on the calling thread. Raises CapacityUnavailable."""
+        """Take a slot, waiting at most `wait` seconds on the calling thread. Raises CapacityUnavailable.
+        Waiting callers are served in the order they asked, so a caller that calls again at once (an investigation's
+        next turn) cannot keep another (narration, an operator's question) waiting behind it indefinitely."""
         asked = self.clock()
         with self.condition:
             try:
                 if cancel is not None and cancel.is_set():
                     raise CapacityUnavailable("cancelled")
-                if self.inflight >= self.limit:
-                    if self.waiting >= self.max_waiters:
+                if self.inflight >= self.limit or self.queue:
+                    if len(self.queue) >= self.max_waiters:
                         raise CapacityUnavailable("queue_full")
-                    self.waiting += 1
+                    ticket = object()
+                    self.queue.append(ticket)
                     try:
-                        while self.inflight >= self.limit:
+                        while self.inflight >= self.limit or self.queue[0] is not ticket:
                             remaining = wait - (self.clock() - asked)
                             if cancel is not None and cancel.is_set():
                                 raise CapacityUnavailable("cancelled")
@@ -130,7 +139,8 @@ class ProviderGate:
                                 raise CapacityUnavailable("timeout")
                             self.condition.wait(min(remaining, POLL_SECONDS))
                     finally:
-                        self.waiting -= 1
+                        self.queue.remove(ticket)
+                        self.condition.notify_all()     # whoever is first now looks again
             except CapacityUnavailable as error:
                 self.refused += 1
                 log.warning("provider call refused reason=%s %s inflight=%d/%d waiting=%d", error.reason, self._ids(labels),
@@ -154,7 +164,7 @@ class ProviderGate:
             self.released += 1
             record.update(finished_at=datetime.now(timezone.utc).isoformat(), seconds=round(self.clock() - record["started"], 3),
                           outcome=outcome)
-            self.condition.notify()
+            self.condition.notify_all()
         log.info("provider call end request=%s %s outcome=%s seconds=%.3f answer_discarded=%s at=%s", record["request_id"],
                  self._ids(record), outcome, record["seconds"], record["abandoned"], record["finished_at"])
 

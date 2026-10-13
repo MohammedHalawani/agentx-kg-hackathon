@@ -384,6 +384,7 @@ class OperationsStore:
         # store only tells it which case changed; it reads and writes through narration_sources / narration_append.
         self.narrator=None
         self._narration_dirty=set()
+        self._narration_lock=threading.Lock()
 
     def _execute(self, callback, *, write=False):
         with self.driver.session(database=self.database, default_access_mode="WRITE" if write else "READ") as session:
@@ -393,7 +394,9 @@ class OperationsStore:
             result=session.execute_write(guarded) if write else session.execute_read(guarded)
         if write and self.narrator is not None and self._narration_dirty:
             # After the commit: the cases whose audit trail just grew are narrated on the narrator's own thread.
-            dirty,self._narration_dirty=self._narration_dirty,set()
+            # Several workers write at once; the set is handed over under a lock so none of them changes it mid-read.
+            with self._narration_lock:
+                dirty,self._narration_dirty=self._narration_dirty,set()
             for case_id in dirty:self.narrator.request(case_id)
         return result
 
@@ -467,7 +470,8 @@ class OperationsStore:
             "event_type": event_type, "occurred_at": when, "recorded_at": when, "wall_recorded_at":datetime.now(timezone.utc).isoformat(), "actor_id": actor, "decision": decision,
             "result": result[:1000], "from_state": old, "to_state": case["workflow_state"]})
         self._link(tx, "OPS_HAS_AUDIT", case["entity_id"], audit_id, case["shipment_id"], when)
-        if self.narrator is not None:self._narration_dirty.add(case["entity_id"])
+        if self.narrator is not None:
+            with self._narration_lock:self._narration_dirty.add(case["entity_id"])
 
     def _invalidate_outcomes(self,tx,case):
         rows=tx.run("MATCH(n:OpsEntity:OpsOutcome {case_id:$case_id,dataset_id:$dataset}) RETURN properties(n) AS props ORDER BY n.recorded_at DESC,n.entity_id DESC LIMIT 20",
@@ -537,7 +541,8 @@ class OperationsStore:
         # active_cases is the authority: the claims that are live now (their lease has not expired), oldest first.
         # concurrency is how many there may be, active_count how many there are. The single ids of the earlier format
         # are filled only while exactly one case is being investigated.
-        active.sort(key=lambda item: (instant(item["started_at"]), item["case_id"]))
+        # (Wall times are stored and served in one UTC form, so their text orders as they do.)
+        active.sort(key=lambda item: (item["started_at"] or "", item["case_id"]))
         single = active[0] if len(active) == 1 else {}
         return {"synthetic": True, "demo": True, "as_of": control["as_of"],
             "worker": {"state": control["worker_state"], "concurrency": self.capacity, "active_count": len(active),

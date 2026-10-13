@@ -260,6 +260,41 @@ class WaitingTests(Gated):
         self.assertEqual((provider.peak, snapshot["peak_inflight"], snapshot["waiting"], snapshot["inflight"]), (1, 1, 0, 0))
         self.assertEqual((snapshot["granted"], snapshot["released"], snapshot["refused"]), (3, 3, 1))
 
+    def test_waiting_callers_are_served_in_the_order_they_asked(self):
+        provider = self.use(MockProvider("hang", default=0.01), deadline=30)
+        held = self.background(lambda: _llm.invoke(["holder"], deadline=30))
+        self.until(lambda: self.gate.snapshot()["inflight"] == 1)
+        waiters = []
+        for index in range(4):
+            waiters.append(self.background(lambda index=index: _llm.invoke([f"w{index}"], deadline=30)))
+            self.until(lambda: self.gate.snapshot()["waiting"] == index + 1)        # each is in line before the next one asks
+        provider.release.set()
+        for box in (held, *waiters):
+            box["thread"].join(15)
+        self.assertEqual([b.get("error") for b in waiters], [None] * 4)
+        self.assertEqual([c["messages"][0] for c in provider.calls], ["holder", "w0", "w1", "w2", "w3"])     # nobody jumped the line
+        self.assertEqual(provider.peak, 1)
+        # A caller that arrives when a slot is free but others are still in line waits its turn too.
+        gate = ProviderGate(1)
+        first = gate.acquire(1)
+        order = []
+
+        def queued(name):
+            permit = gate.acquire(5)
+            order.append(name)
+            time.sleep(0.02)
+            permit.release()
+        earlier = threading.Thread(target=queued, args=("earlier",))
+        earlier.start()
+        self.until(lambda: gate.waiting == 1)
+        later = threading.Thread(target=queued, args=("later",))
+        later.start()
+        self.until(lambda: gate.waiting == 2)
+        first.release()
+        earlier.join(5)
+        later.join(5)
+        self.assertEqual(order, ["earlier", "later"])
+
     def test_a_wait_that_runs_out_is_a_timeout_and_the_gate_itself_refuses_by_reason(self):
         gate = ProviderGate(1)
         first = gate.acquire(1)
