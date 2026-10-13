@@ -255,26 +255,42 @@ export function RouteMap({
               pathOptions={{ color: "#8b6ccb", weight: 4, opacity: 0.85 }}
             />
           )}
-          {layers.vehicle && (
-            <Polyline
-              positions={c.route.vehicle}
-              pathOptions={{
-                color: "#5a97b9",
-                weight: 2,
-                dashArray: "3 7",
-                opacity: stage === 2 ? 1 : 0.7,
-              }}
-            />
-          )}
+          {layers.vehicle &&
+            (c.route.vehicleSegments.length
+              ? c.route.vehicleSegments.map((segment, index) => (
+                  <Polyline
+                    key={`${segment.vehicleId}-${index}`}
+                    positions={segment.points}
+                    pathOptions={{
+                      color: "#5a97b9",
+                      weight: 2,
+                      dashArray: "3 7",
+                      opacity: stage === 2 ? 1 : 0.7,
+                    }}
+                  />
+                ))
+              : (
+                  <Polyline
+                    positions={c.route.vehicle}
+                    pathOptions={{
+                      color: "#5a97b9",
+                      weight: 2,
+                      dashArray: "3 7",
+                      opacity: stage === 2 ? 1 : 0.7,
+                    }}
+                  />
+                ))}
           {c.evidence
-            .filter((e) =>
-              e.kind === "gps"
-                ? layers.vehicle
-                : e.kind === "facility"
-                  ? layers.facilities
-                  : e.kind === "delivery"
-                    ? layers.attempts
-                    : layers.actual,
+            .filter(
+              (e) =>
+                e.selectable !== false &&
+                (e.kind === "gps"
+                  ? layers.vehicle
+                  : e.kind === "facility"
+                    ? layers.facilities
+                    : e.kind === "delivery"
+                      ? layers.attempts
+                      : layers.actual),
             )
             .map((e, i) => (
               <Marker

@@ -426,6 +426,7 @@ export function makeCase(
         [25.903, 49.127],
         [26.4207, 50.0888],
       ],
+      vehicleSegments: [],
       actual: [
         [24.7136, 46.6753],
         [24.846, 46.807],
@@ -860,6 +861,7 @@ function reroute(
       .filter((e) => e.confidence === "confirmed")
       .map((e) => e.location),
     vehicle: [start, [(start[0] + end[0]) / 2, (start[1] + end[1]) / 2], end],
+    vehicleSegments: [],
   };
   return c;
 }

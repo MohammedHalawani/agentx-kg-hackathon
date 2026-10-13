@@ -1,0 +1,930 @@
+{
+  "as_of": "2026-10-01T21:00:00+00:00",
+  "contexts": [
+    {
+      "assignment_id": "SYN-SHP-000051-ASSIGN-002",
+      "custody_source_ids": [
+        "SYN-SHP-000051-CUST-005",
+        "SYN-SHP-000051-CUST-006"
+      ],
+      "device_id": null,
+      "plan_source_ids": [
+        "SYN-SHP-000051-ASSIGN-002",
+        "SYN-TRIP-FD-JED-01-0915-0454"
+      ],
+      "route_run_id": null,
+      "trip_id": "SYN-TRIP-FD-JED-01-0915-0454",
+      "valid_from": "2026-09-15T01:54:00+00:00",
+      "valid_to": "2026-09-15T02:59:12+00:00",
+      "vehicle_id": "SYN-VEH-FD-JED-004"
+    },
+    {
+      "assignment_id": "SYN-SHP-000051-ASSIGN-001",
+      "custody_source_ids": [
+        "SYN-SHP-000051-CUST-002",
+        "SYN-SHP-000051-CUST-003"
+      ],
+      "device_id": null,
+      "plan_source_ids": [
+        "SYN-SHP-000051-ASSIGN-001",
+        "SYN-TRIP-FM-JED-0914-1330"
+      ],
+      "route_run_id": null,
+      "trip_id": "SYN-TRIP-FM-JED-0914-1330",
+      "valid_from": "2026-09-14T10:30:00+00:00",
+      "valid_to": "2026-09-14T14:04:04+00:00",
+      "vehicle_id": "SYN-VEH-FM-JED-003"
+    },
+    {
+      "assignment_id": "SYN-SHP-000051-ASSIGN-003",
+      "custody_source_ids": [
+        "SYN-SHP-000051-CUST-007",
+        "SYN-SHP-000051-CUST-008"
+      ],
+      "device_id": "SYN-DEV-APP-DRV-JED-01-01",
+      "plan_source_ids": [
+        "SYN-RR-JED-01-0915-1",
+        "SYN-SHP-000051-ASSIGN-003"
+      ],
+      "route_run_id": "SYN-RR-JED-01-0915-1",
+      "trip_id": null,
+      "valid_from": "2026-09-15T05:00:00+00:00",
+      "valid_to": "2026-09-15T18:00:00+00:00",
+      "vehicle_id": "SYN-VEH-JED-01-01"
+    }
+  ],
+  "observations": [
+    {
+      "accuracy_m": 22.9,
+      "classification": "observed_vehicle",
+      "entity_id": "SYN-GPS-FM-JED-003-20260914T110413",
+      "evidence_id": "SYN-GPS-FM-JED-003-20260914T110413",
+      "ingested_at": null,
+      "lat": 21.48658,
+      "lng": 39.19047,
+      "occurred_at": "2026-09-14T11:04:13+00:00",
+      "position_scope": "VEHICLE_ONLY",
+      "recorded_at": "2026-09-14T11:05:31+00:00",
+      "route_run_id": null,
+      "source_event_id": null,
+      "source_ref": "telematics",
+      "speed_kmh": 87.6,
+      "trip_id": "SYN-TRIP-FM-JED-0914-1330",
+      "vehicle_id": "SYN-VEH-FM-JED-003"
+    },
+    {
+      "accuracy_m": 13.5,
+      "classification": "observed_vehicle",
+      "entity_id": "SYN-GPS-FM-JED-003-20260914T113413",
+      "evidence_id": "SYN-GPS-FM-JED-003-20260914T113413",
+      "ingested_at": null,
+      "lat": 21.47691,
+      "lng": 39.19721,
+      "occurred_at": "2026-09-14T11:34:13+00:00",
+      "position_scope": "VEHICLE_ONLY",
+      "recorded_at": "2026-09-14T11:35:00+00:00",
+      "route_run_id": null,
+      "source_event_id": null,
+      "source_ref": "telematics",
+      "speed_kmh": 89.9,
+      "trip_id": "SYN-TRIP-FM-JED-0914-1330",
+      "vehicle_id": "SYN-VEH-FM-JED-003"
+    },
+    {
+      "accuracy_m": 17.5,
+      "classification": "observed_vehicle",
+      "entity_id": "SYN-GPS-FM-JED-003-20260914T120413",
+      "evidence_id": "SYN-GPS-FM-JED-003-20260914T120413",
+      "ingested_at": null,
+      "lat": 21.46728,
+      "lng": 39.204,
+      "occurred_at": "2026-09-14T12:04:13+00:00",
+      "position_scope": "VEHICLE_ONLY",
+      "recorded_at": "2026-09-14T12:04:47+00:00",
+      "route_run_id": null,
+      "source_event_id": null,
+      "source_ref": "telematics",
+      "speed_kmh": 94.3,
+      "trip_id": "SYN-TRIP-FM-JED-0914-1330",
+      "vehicle_id": "SYN-VEH-FM-JED-003"
+    },
+    {
+      "accuracy_m": 19.9,
+      "classification": "observed_vehicle",
+      "entity_id": "SYN-GPS-FM-JED-003-20260914T123413",
+      "evidence_id": "SYN-GPS-FM-JED-003-20260914T123413",
+      "ingested_at": null,
+      "lat": 21.45815,
+      "lng": 39.2119,
+      "occurred_at": "2026-09-14T12:34:13+00:00",
+      "position_scope": "VEHICLE_ONLY",
+      "recorded_at": "2026-09-14T12:35:16+00:00",
+      "route_run_id": null,
+      "source_event_id": null,
+      "source_ref": "telematics",
+      "speed_kmh": 56.7,
+      "trip_id": "SYN-TRIP-FM-JED-0914-1330",
+      "vehicle_id": "SYN-VEH-FM-JED-003"
+    },
+    {
+      "accuracy_m": 20.5,
+      "classification": "observed_vehicle",
+      "entity_id": "SYN-GPS-FM-JED-003-20260914T130413",
+      "evidence_id": "SYN-GPS-FM-JED-003-20260914T130413",
+      "ingested_at": null,
+      "lat": 21.44804,
+      "lng": 39.21903,
+      "occurred_at": "2026-09-14T13:04:13+00:00",
+      "position_scope": "VEHICLE_ONLY",
+      "recorded_at": "2026-09-14T13:05:48+00:00",
+      "route_run_id": null,
+      "source_event_id": null,
+      "source_ref": "telematics",
+      "speed_kmh": 85.4,
+      "trip_id": "SYN-TRIP-FM-JED-0914-1330",
+      "vehicle_id": "SYN-VEH-FM-JED-003"
+    },
+    {
+      "accuracy_m": 18.7,
+      "classification": "observed_vehicle",
+      "entity_id": "SYN-GPS-FM-JED-003-20260914T133413",
+      "evidence_id": "SYN-GPS-FM-JED-003-20260914T133413",
+      "ingested_at": null,
+      "lat": 21.43777,
+      "lng": 39.22598,
+      "occurred_at": "2026-09-14T13:34:13+00:00",
+      "position_scope": "VEHICLE_ONLY",
+      "recorded_at": "2026-09-14T13:35:32+00:00",
+      "route_run_id": null,
+      "source_event_id": null,
+      "source_ref": "telematics",
+      "speed_kmh": 72.5,
+      "trip_id": "SYN-TRIP-FM-JED-0914-1330",
+      "vehicle_id": "SYN-VEH-FM-JED-003"
+    },
+    {
+      "accuracy_m": 18.1,
+      "classification": "observed_vehicle",
+      "entity_id": "SYN-GPS-JED-01-01-20260915T055015",
+      "evidence_id": "SYN-GPS-JED-01-01-20260915T055015",
+      "ingested_at": null,
+      "lat": 21.50335,
+      "lng": 39.2017,
+      "occurred_at": "2026-09-15T05:50:15+00:00",
+      "position_scope": "VEHICLE_ONLY",
+      "recorded_at": "2026-09-15T05:51:01+00:00",
+      "route_run_id": "SYN-RR-JED-01-0915-1",
+      "source_event_id": null,
+      "source_ref": "telematics",
+      "speed_kmh": 33.5,
+      "trip_id": null,
+      "vehicle_id": "SYN-VEH-JED-01-01"
+    },
+    {
+      "accuracy_m": 11.4,
+      "classification": "observed_vehicle",
+      "entity_id": "SYN-GPS-JED-01-01-20260915T062015",
+      "evidence_id": "SYN-GPS-JED-01-01-20260915T062015",
+      "ingested_at": null,
+      "lat": 21.56453,
+      "lng": 39.20691,
+      "occurred_at": "2026-09-15T06:20:15+00:00",
+      "position_scope": "VEHICLE_ONLY",
+      "recorded_at": "2026-09-15T06:20:41+00:00",
+      "route_run_id": "SYN-RR-JED-01-0915-1",
+      "source_event_id": null,
+      "source_ref": "telematics",
+      "speed_kmh": 17.3,
+      "trip_id": null,
+      "vehicle_id": "SYN-VEH-JED-01-01"
+    },
+    {
+      "accuracy_m": 21.2,
+      "classification": "observed_vehicle",
+      "entity_id": "SYN-GPS-JED-01-01-20260915T065015",
+      "evidence_id": "SYN-GPS-JED-01-01-20260915T065015",
+      "ingested_at": null,
+      "lat": 21.58854,
+      "lng": 39.17499,
+      "occurred_at": "2026-09-15T06:50:15+00:00",
+      "position_scope": "VEHICLE_ONLY",
+      "recorded_at": "2026-09-15T06:52:13+00:00",
+      "route_run_id": "SYN-RR-JED-01-0915-1",
+      "source_event_id": null,
+      "source_ref": "telematics",
+      "speed_kmh": 7.9,
+      "trip_id": null,
+      "vehicle_id": "SYN-VEH-JED-01-01"
+    },
+    {
+      "accuracy_m": 6.2,
+      "classification": "observed_vehicle",
+      "entity_id": "SYN-GPS-JED-01-01-20260915T072015",
+      "evidence_id": "SYN-GPS-JED-01-01-20260915T072015",
+      "ingested_at": null,
+      "lat": 21.58495,
+      "lng": 39.14283,
+      "occurred_at": "2026-09-15T07:20:15+00:00",
+      "position_scope": "VEHICLE_ONLY",
+      "recorded_at": "2026-09-15T07:21:53+00:00",
+      "route_run_id": "SYN-RR-JED-01-0915-1",
+      "source_event_id": null,
+      "source_ref": "telematics",
+      "speed_kmh": 6.7,
+      "trip_id": null,
+      "vehicle_id": "SYN-VEH-JED-01-01"
+    },
+    {
+      "accuracy_m": 18.9,
+      "classification": "observed_vehicle",
+      "entity_id": "SYN-GPS-JED-01-01-20260915T075015",
+      "evidence_id": "SYN-GPS-JED-01-01-20260915T075015",
+      "ingested_at": null,
+      "lat": 21.60703,
+      "lng": 39.15248,
+      "occurred_at": "2026-09-15T07:50:15+00:00",
+      "position_scope": "VEHICLE_ONLY",
+      "recorded_at": "2026-09-15T07:51:51+00:00",
+      "route_run_id": "SYN-RR-JED-01-0915-1",
+      "source_event_id": null,
+      "source_ref": "telematics",
+      "speed_kmh": 1.6,
+      "trip_id": null,
+      "vehicle_id": "SYN-VEH-JED-01-01"
+    },
+    {
+      "accuracy_m": 6.3,
+      "classification": "observed_vehicle",
+      "entity_id": "SYN-GPS-JED-01-01-20260915T082015",
+      "evidence_id": "SYN-GPS-JED-01-01-20260915T082015",
+      "ingested_at": null,
+      "lat": 21.54054,
+      "lng": 39.19248,
+      "occurred_at": "2026-09-15T08:20:15+00:00",
+      "position_scope": "VEHICLE_ONLY",
+      "recorded_at": "2026-09-15T08:21:02+00:00",
+      "route_run_id": "SYN-RR-JED-01-0915-1",
+      "source_event_id": null,
+      "source_ref": "telematics",
+      "speed_kmh": 26.7,
+      "trip_id": null,
+      "vehicle_id": "SYN-VEH-JED-01-01"
+    }
+  ],
+  "schema": "route-evidence-v3-1",
+  "shipment_id": "SYN-SHP-000051",
+  "source_nodes": [
+    {
+      "id": "SYN-GPS-FM-JED-003-20260914T110413",
+      "kind": "GPSObservation",
+      "properties": {
+        "accuracy_m": 22.9,
+        "entity_id": "SYN-GPS-FM-JED-003-20260914T110413",
+        "lat": 21.48658,
+        "lng": 39.19047,
+        "occurred_at": "2026-09-14T11:04:13+00:00",
+        "position_scope": "VEHICLE_ONLY",
+        "recorded_at": "2026-09-14T11:05:31+00:00",
+        "source_ref": "telematics",
+        "speed_kmh": 87.6,
+        "trip_id": "SYN-TRIP-FM-JED-0914-1330",
+        "vehicle_id": "SYN-VEH-FM-JED-003"
+      }
+    },
+    {
+      "id": "SYN-GPS-FM-JED-003-20260914T113413",
+      "kind": "GPSObservation",
+      "properties": {
+        "accuracy_m": 13.5,
+        "entity_id": "SYN-GPS-FM-JED-003-20260914T113413",
+        "lat": 21.47691,
+        "lng": 39.19721,
+        "occurred_at": "2026-09-14T11:34:13+00:00",
+        "position_scope": "VEHICLE_ONLY",
+        "recorded_at": "2026-09-14T11:35:00+00:00",
+        "source_ref": "telematics",
+        "speed_kmh": 89.9,
+        "trip_id": "SYN-TRIP-FM-JED-0914-1330",
+        "vehicle_id": "SYN-VEH-FM-JED-003"
+      }
+    },
+    {
+      "id": "SYN-GPS-FM-JED-003-20260914T120413",
+      "kind": "GPSObservation",
+      "properties": {
+        "accuracy_m": 17.5,
+        "entity_id": "SYN-GPS-FM-JED-003-20260914T120413",
+        "lat": 21.46728,
+        "lng": 39.204,
+        "occurred_at": "2026-09-14T12:04:13+00:00",
+        "position_scope": "VEHICLE_ONLY",
+        "recorded_at": "2026-09-14T12:04:47+00:00",
+        "source_ref": "telematics",
+        "speed_kmh": 94.3,
+        "trip_id": "SYN-TRIP-FM-JED-0914-1330",
+        "vehicle_id": "SYN-VEH-FM-JED-003"
+      }
+    },
+    {
+      "id": "SYN-GPS-FM-JED-003-20260914T123413",
+      "kind": "GPSObservation",
+      "properties": {
+        "accuracy_m": 19.9,
+        "entity_id": "SYN-GPS-FM-JED-003-20260914T123413",
+        "lat": 21.45815,
+        "lng": 39.2119,
+        "occurred_at": "2026-09-14T12:34:13+00:00",
+        "position_scope": "VEHICLE_ONLY",
+        "recorded_at": "2026-09-14T12:35:16+00:00",
+        "source_ref": "telematics",
+        "speed_kmh": 56.7,
+        "trip_id": "SYN-TRIP-FM-JED-0914-1330",
+        "vehicle_id": "SYN-VEH-FM-JED-003"
+      }
+    },
+    {
+      "id": "SYN-GPS-FM-JED-003-20260914T130413",
+      "kind": "GPSObservation",
+      "properties": {
+        "accuracy_m": 20.5,
+        "entity_id": "SYN-GPS-FM-JED-003-20260914T130413",
+        "lat": 21.44804,
+        "lng": 39.21903,
+        "occurred_at": "2026-09-14T13:04:13+00:00",
+        "position_scope": "VEHICLE_ONLY",
+        "recorded_at": "2026-09-14T13:05:48+00:00",
+        "source_ref": "telematics",
+        "speed_kmh": 85.4,
+        "trip_id": "SYN-TRIP-FM-JED-0914-1330",
+        "vehicle_id": "SYN-VEH-FM-JED-003"
+      }
+    },
+    {
+      "id": "SYN-GPS-FM-JED-003-20260914T133413",
+      "kind": "GPSObservation",
+      "properties": {
+        "accuracy_m": 18.7,
+        "entity_id": "SYN-GPS-FM-JED-003-20260914T133413",
+        "lat": 21.43777,
+        "lng": 39.22598,
+        "occurred_at": "2026-09-14T13:34:13+00:00",
+        "position_scope": "VEHICLE_ONLY",
+        "recorded_at": "2026-09-14T13:35:32+00:00",
+        "source_ref": "telematics",
+        "speed_kmh": 72.5,
+        "trip_id": "SYN-TRIP-FM-JED-0914-1330",
+        "vehicle_id": "SYN-VEH-FM-JED-003"
+      }
+    },
+    {
+      "id": "SYN-GPS-JED-01-01-20260915T055015",
+      "kind": "GPSObservation",
+      "properties": {
+        "accuracy_m": 18.1,
+        "entity_id": "SYN-GPS-JED-01-01-20260915T055015",
+        "lat": 21.50335,
+        "lng": 39.2017,
+        "occurred_at": "2026-09-15T05:50:15+00:00",
+        "position_scope": "VEHICLE_ONLY",
+        "recorded_at": "2026-09-15T05:51:01+00:00",
+        "route_run_id": "SYN-RR-JED-01-0915-1",
+        "source_ref": "telematics",
+        "speed_kmh": 33.5,
+        "vehicle_id": "SYN-VEH-JED-01-01"
+      }
+    },
+    {
+      "id": "SYN-GPS-JED-01-01-20260915T062015",
+      "kind": "GPSObservation",
+      "properties": {
+        "accuracy_m": 11.4,
+        "entity_id": "SYN-GPS-JED-01-01-20260915T062015",
+        "lat": 21.56453,
+        "lng": 39.20691,
+        "occurred_at": "2026-09-15T06:20:15+00:00",
+        "position_scope": "VEHICLE_ONLY",
+        "recorded_at": "2026-09-15T06:20:41+00:00",
+        "route_run_id": "SYN-RR-JED-01-0915-1",
+        "source_ref": "telematics",
+        "speed_kmh": 17.3,
+        "vehicle_id": "SYN-VEH-JED-01-01"
+      }
+    },
+    {
+      "id": "SYN-GPS-JED-01-01-20260915T065015",
+      "kind": "GPSObservation",
+      "properties": {
+        "accuracy_m": 21.2,
+        "entity_id": "SYN-GPS-JED-01-01-20260915T065015",
+        "lat": 21.58854,
+        "lng": 39.17499,
+        "occurred_at": "2026-09-15T06:50:15+00:00",
+        "position_scope": "VEHICLE_ONLY",
+        "recorded_at": "2026-09-15T06:52:13+00:00",
+        "route_run_id": "SYN-RR-JED-01-0915-1",
+        "source_ref": "telematics",
+        "speed_kmh": 7.9,
+        "vehicle_id": "SYN-VEH-JED-01-01"
+      }
+    },
+    {
+      "id": "SYN-GPS-JED-01-01-20260915T072015",
+      "kind": "GPSObservation",
+      "properties": {
+        "accuracy_m": 6.2,
+        "entity_id": "SYN-GPS-JED-01-01-20260915T072015",
+        "lat": 21.58495,
+        "lng": 39.14283,
+        "occurred_at": "2026-09-15T07:20:15+00:00",
+        "position_scope": "VEHICLE_ONLY",
+        "recorded_at": "2026-09-15T07:21:53+00:00",
+        "route_run_id": "SYN-RR-JED-01-0915-1",
+        "source_ref": "telematics",
+        "speed_kmh": 6.7,
+        "vehicle_id": "SYN-VEH-JED-01-01"
+      }
+    },
+    {
+      "id": "SYN-GPS-JED-01-01-20260915T075015",
+      "kind": "GPSObservation",
+      "properties": {
+        "accuracy_m": 18.9,
+        "entity_id": "SYN-GPS-JED-01-01-20260915T075015",
+        "lat": 21.60703,
+        "lng": 39.15248,
+        "occurred_at": "2026-09-15T07:50:15+00:00",
+        "position_scope": "VEHICLE_ONLY",
+        "recorded_at": "2026-09-15T07:51:51+00:00",
+        "route_run_id": "SYN-RR-JED-01-0915-1",
+        "source_ref": "telematics",
+        "speed_kmh": 1.6,
+        "vehicle_id": "SYN-VEH-JED-01-01"
+      }
+    },
+    {
+      "id": "SYN-GPS-JED-01-01-20260915T082015",
+      "kind": "GPSObservation",
+      "properties": {
+        "accuracy_m": 6.3,
+        "entity_id": "SYN-GPS-JED-01-01-20260915T082015",
+        "lat": 21.54054,
+        "lng": 39.19248,
+        "occurred_at": "2026-09-15T08:20:15+00:00",
+        "position_scope": "VEHICLE_ONLY",
+        "recorded_at": "2026-09-15T08:21:02+00:00",
+        "route_run_id": "SYN-RR-JED-01-0915-1",
+        "source_ref": "telematics",
+        "speed_kmh": 26.7,
+        "vehicle_id": "SYN-VEH-JED-01-01"
+      }
+    },
+    {
+      "id": "SYN-RR-JED-01-0915-1",
+      "kind": "RouteRun",
+      "properties": {
+        "dataset_id": "SYN-SUHAIL-WORLD-V3-20261013",
+        "depot_id": "SYN-DEPOT-JED-01",
+        "device_ref": "SYN-DEV-APP-DRV-JED-01-01",
+        "driver_id": "SYN-DRV-JED-01-01",
+        "end_at": "2026-09-15T17:00:00+00:00",
+        "entity_id": "SYN-RR-JED-01-0915-1",
+        "occurred_at": "2026-09-15T04:11:59+00:00",
+        "planned_stops": 9,
+        "provenance": "SYNTHETIC_ASSUMPTION",
+        "provider_id": "SYN-PROV-SPL",
+        "recorded_at": "2026-09-15T04:12:50+00:00",
+        "schema_version": "suhail-v2.1",
+        "service_date": "2026-09-15",
+        "source_ref": "dispatch:route-plan",
+        "start_at": "2026-09-15T05:00:00+00:00",
+        "synthetic": true,
+        "vehicle_id": "SYN-VEH-JED-01-01"
+      }
+    },
+    {
+      "id": "SYN-SHP-000051-ASSIGN-001",
+      "kind": "VehicleAssignment",
+      "properties": {
+        "dataset_id": "SYN-SUHAIL-WORLD-V3-20261013",
+        "driver_id": "SYN-DRV-FM-JED-015",
+        "entity_id": "SYN-SHP-000051-ASSIGN-001",
+        "mode": "local_transfer",
+        "occurred_at": "2026-09-14T11:14:16+00:00",
+        "package_ids": [
+          "SYN-SHP-000051-PKG-01"
+        ],
+        "provenance": "SYNTHETIC_ASSUMPTION",
+        "recorded_at": "2026-09-14T11:16:13+00:00",
+        "schema_version": "suhail-v2.1",
+        "segment_id": null,
+        "shipment_id": "SYN-SHP-000051",
+        "source_ref": "tms:assignment",
+        "synthetic": true,
+        "trip_id": "SYN-TRIP-FM-JED-0914-1330",
+        "valid_from": "2026-09-14T10:30:00+00:00",
+        "valid_to": "2026-09-14T14:04:04+00:00",
+        "vehicle_id": "SYN-VEH-FM-JED-003",
+        "volume_m3": 0.00309246,
+        "weight_kg": 0.66
+      }
+    },
+    {
+      "id": "SYN-SHP-000051-ASSIGN-002",
+      "kind": "VehicleAssignment",
+      "properties": {
+        "dataset_id": "SYN-SUHAIL-WORLD-V3-20261013",
+        "driver_id": "SYN-DRV-FD-JED-004",
+        "entity_id": "SYN-SHP-000051-ASSIGN-002",
+        "mode": "local_transfer",
+        "occurred_at": "2026-09-14T14:11:29+00:00",
+        "package_ids": [
+          "SYN-SHP-000051-PKG-01"
+        ],
+        "provenance": "SYNTHETIC_ASSUMPTION",
+        "recorded_at": "2026-09-14T14:12:41+00:00",
+        "schema_version": "suhail-v2.1",
+        "segment_id": "SYN-SHP-000051-SEG-03",
+        "shipment_id": "SYN-SHP-000051",
+        "source_ref": "tms:assignment",
+        "synthetic": true,
+        "trip_id": "SYN-TRIP-FD-JED-01-0915-0454",
+        "valid_from": "2026-09-15T01:54:00+00:00",
+        "valid_to": "2026-09-15T02:59:12+00:00",
+        "vehicle_id": "SYN-VEH-FD-JED-004",
+        "volume_m3": 0.00309246,
+        "weight_kg": 0.66
+      }
+    },
+    {
+      "id": "SYN-SHP-000051-ASSIGN-003",
+      "kind": "VehicleAssignment",
+      "properties": {
+        "dataset_id": "SYN-SUHAIL-WORLD-V3-20261013",
+        "driver_id": "SYN-DRV-JED-01-01",
+        "entity_id": "SYN-SHP-000051-ASSIGN-003",
+        "mode": "last_mile",
+        "occurred_at": "2026-09-15T04:19:00+00:00",
+        "package_ids": [
+          "SYN-SHP-000051-PKG-01"
+        ],
+        "provenance": "SYNTHETIC_ASSUMPTION",
+        "recorded_at": "2026-09-15T04:19:48+00:00",
+        "route_run_id": "SYN-RR-JED-01-0915-1",
+        "schema_version": "suhail-v2.1",
+        "session_id": "SYN-SHP-000051-SESSION-0915",
+        "shipment_id": "SYN-SHP-000051",
+        "source_ref": "dispatch:route-plan",
+        "synthetic": true,
+        "valid_from": "2026-09-15T05:00:00+00:00",
+        "valid_to": "2026-09-15T18:00:00+00:00",
+        "vehicle_id": "SYN-VEH-JED-01-01",
+        "volume_m3": 0.00309246,
+        "weight_kg": 0.66
+      }
+    },
+    {
+      "id": "SYN-SHP-000051-CUST-002",
+      "kind": "CustodyEvent",
+      "properties": {
+        "assignment_id": "SYN-SHP-000051-ASSIGN-001",
+        "dataset_id": "SYN-SUHAIL-WORLD-V3-20261013",
+        "entity_id": "SYN-SHP-000051-CUST-002",
+        "event_type": "LOADED",
+        "facility_id": "SYN-ORGWH-JED-02",
+        "from_id": "SYN-ORGWH-JED-02",
+        "occurred_at": "2026-09-14T11:44:16+00:00",
+        "package_id": "SYN-SHP-000051-PKG-01",
+        "proof_id": null,
+        "provenance": "SYNTHETIC_ASSUMPTION",
+        "received_acknowledgments": 2,
+        "recorded_at": "2026-09-14T11:45:13+00:00",
+        "required_acknowledgments": 2,
+        "route_run_id": null,
+        "schema_version": "suhail-v2.1",
+        "shipment_id": "SYN-SHP-000051",
+        "source_event_id": "SYN-SHP-000051-SCAN-002",
+        "source_quality": "CORROBORATED",
+        "source_ref": "driver-app",
+        "synthetic": true,
+        "to_id": "SYN-VEH-FM-JED-003",
+        "trip_id": "SYN-TRIP-FM-JED-0914-1330",
+        "vehicle_id": "SYN-VEH-FM-JED-003"
+      }
+    },
+    {
+      "id": "SYN-SHP-000051-CUST-003",
+      "kind": "CustodyEvent",
+      "properties": {
+        "assignment_id": "SYN-SHP-000051-ASSIGN-001",
+        "dataset_id": "SYN-SUHAIL-WORLD-V3-20261013",
+        "entity_id": "SYN-SHP-000051-CUST-003",
+        "event_type": "RECEIVED",
+        "facility_id": "SYN-SORT-JED-01",
+        "from_id": "SYN-VEH-FM-JED-003",
+        "occurred_at": "2026-09-14T14:09:29+00:00",
+        "package_id": "SYN-SHP-000051-PKG-01",
+        "proof_id": null,
+        "provenance": "SYNTHETIC_ASSUMPTION",
+        "received_acknowledgments": 2,
+        "recorded_at": "2026-09-14T14:10:11+00:00",
+        "required_acknowledgments": 2,
+        "route_run_id": null,
+        "schema_version": "suhail-v2.1",
+        "shipment_id": "SYN-SHP-000051",
+        "source_event_id": "SYN-SHP-000051-SCAN-003",
+        "source_quality": "CORROBORATED",
+        "source_ref": "spl-core:sorter",
+        "synthetic": true,
+        "to_id": "SYN-SORT-JED-01",
+        "trip_id": "SYN-TRIP-FM-JED-0914-1330",
+        "vehicle_id": "SYN-VEH-FM-JED-003"
+      }
+    },
+    {
+      "id": "SYN-SHP-000051-CUST-005",
+      "kind": "CustodyEvent",
+      "properties": {
+        "assignment_id": "SYN-SHP-000051-ASSIGN-002",
+        "dataset_id": "SYN-SUHAIL-WORLD-V3-20261013",
+        "entity_id": "SYN-SHP-000051-CUST-005",
+        "event_type": "LOADED",
+        "facility_id": "SYN-HUB-JED-01",
+        "from_id": "SYN-HUB-JED-01",
+        "occurred_at": "2026-09-15T03:17:28+00:00",
+        "package_id": "SYN-SHP-000051-PKG-01",
+        "proof_id": null,
+        "provenance": "SYNTHETIC_ASSUMPTION",
+        "received_acknowledgments": 2,
+        "recorded_at": "2026-09-15T03:18:21+00:00",
+        "required_acknowledgments": 2,
+        "route_run_id": null,
+        "schema_version": "suhail-v2.1",
+        "shipment_id": "SYN-SHP-000051",
+        "source_event_id": "SYN-SHP-000051-SCAN-007",
+        "source_quality": "CORROBORATED",
+        "source_ref": "spl-core:handheld",
+        "synthetic": true,
+        "to_id": "SYN-VEH-FD-JED-004",
+        "trip_id": "SYN-TRIP-FD-JED-01-0915-0454",
+        "vehicle_id": "SYN-VEH-FD-JED-004"
+      }
+    },
+    {
+      "id": "SYN-SHP-000051-CUST-006",
+      "kind": "CustodyEvent",
+      "properties": {
+        "assignment_id": "SYN-SHP-000051-ASSIGN-002",
+        "dataset_id": "SYN-SUHAIL-WORLD-V3-20261013",
+        "entity_id": "SYN-SHP-000051-CUST-006",
+        "event_type": "RECEIVED",
+        "facility_id": "SYN-DEPOT-JED-01",
+        "from_id": "SYN-VEH-FD-JED-004",
+        "occurred_at": "2026-09-15T04:29:38+00:00",
+        "package_id": "SYN-SHP-000051-PKG-01",
+        "proof_id": null,
+        "provenance": "SYNTHETIC_ASSUMPTION",
+        "received_acknowledgments": 2,
+        "recorded_at": "2026-09-15T04:30:29+00:00",
+        "required_acknowledgments": 2,
+        "route_run_id": null,
+        "schema_version": "suhail-v2.1",
+        "shipment_id": "SYN-SHP-000051",
+        "source_event_id": "SYN-SHP-000051-SCAN-008",
+        "source_quality": "CORROBORATED",
+        "source_ref": "spl-core:handheld",
+        "synthetic": true,
+        "to_id": "SYN-DEPOT-JED-01",
+        "trip_id": "SYN-TRIP-FD-JED-01-0915-0454",
+        "vehicle_id": "SYN-VEH-FD-JED-004"
+      }
+    },
+    {
+      "id": "SYN-SHP-000051-CUST-007",
+      "kind": "CustodyEvent",
+      "properties": {
+        "assignment_id": "SYN-SHP-000051-ASSIGN-003",
+        "dataset_id": "SYN-SUHAIL-WORLD-V3-20261013",
+        "entity_id": "SYN-SHP-000051-CUST-007",
+        "event_type": "LOADED",
+        "facility_id": "SYN-DEPOT-JED-01",
+        "from_id": "SYN-DEPOT-JED-01",
+        "occurred_at": "2026-09-15T05:13:32+00:00",
+        "package_id": "SYN-SHP-000051-PKG-01",
+        "proof_id": null,
+        "provenance": "SYNTHETIC_ASSUMPTION",
+        "received_acknowledgments": 2,
+        "recorded_at": "2026-09-15T05:17:42+00:00",
+        "required_acknowledgments": 2,
+        "route_run_id": "SYN-RR-JED-01-0915-1",
+        "schema_version": "suhail-v2.1",
+        "shipment_id": "SYN-SHP-000051",
+        "source_event_id": "SYN-SHP-000051-SCAN-009",
+        "source_quality": "CORROBORATED",
+        "source_ref": "driver-app",
+        "synthetic": true,
+        "to_id": "SYN-VEH-JED-01-01",
+        "trip_id": null,
+        "vehicle_id": "SYN-VEH-JED-01-01"
+      }
+    },
+    {
+      "id": "SYN-SHP-000051-CUST-008",
+      "kind": "CustodyEvent",
+      "properties": {
+        "assignment_id": "SYN-SHP-000051-ASSIGN-003",
+        "dataset_id": "SYN-SUHAIL-WORLD-V3-20261013",
+        "entity_id": "SYN-SHP-000051-CUST-008",
+        "event_type": "DELIVERED",
+        "facility_id": null,
+        "from_id": "SYN-VEH-JED-01-01",
+        "occurred_at": "2026-09-15T07:07:33+00:00",
+        "package_id": "SYN-SHP-000051-PKG-01",
+        "proof_id": "SYN-SHP-000051-PROOF-001",
+        "provenance": "SYNTHETIC_ASSUMPTION",
+        "received_acknowledgments": 2,
+        "recorded_at": "2026-09-15T07:09:25+00:00",
+        "required_acknowledgments": 2,
+        "route_run_id": "SYN-RR-JED-01-0915-1",
+        "schema_version": "suhail-v2.1",
+        "shipment_id": "SYN-SHP-000051",
+        "source_event_id": "SYN-SHP-000051-SCAN-010",
+        "source_quality": "CORROBORATED",
+        "source_ref": "driver-app",
+        "synthetic": true,
+        "to_id": "SYN-SHP-000051-RECIPIENT",
+        "trip_id": null,
+        "vehicle_id": "SYN-VEH-JED-01-01"
+      }
+    },
+    {
+      "id": "SYN-TRIP-FD-JED-01-0915-0454",
+      "kind": "Trip",
+      "properties": {
+        "cutoff_at": "2026-09-15T01:09:00+00:00",
+        "dataset_id": "SYN-SUHAIL-WORLD-V3-20261013",
+        "distance_km": 12.6,
+        "driver_id": "SYN-DRV-FD-JED-004",
+        "end_at": "2026-09-15T02:29:12+00:00",
+        "entity_id": "SYN-TRIP-FD-JED-01-0915-0454",
+        "from_facility_id": "SYN-HUB-JED-01",
+        "lane_id": "SYN-LANE-FD-JED-01",
+        "occurred_at": "2026-09-12T01:54:00+00:00",
+        "provenance": "SYNTHETIC_ASSUMPTION",
+        "provider_id": "SYN-PROV-SPL",
+        "recorded_at": "2026-09-12T01:54:00+00:00",
+        "schema_version": "suhail-v2.1",
+        "source_ref": "tms:schedule",
+        "start_at": "2026-09-15T01:54:00+00:00",
+        "synthetic": true,
+        "to_facility_id": "SYN-DEPOT-JED-01",
+        "trip_type": "FEEDER",
+        "vehicle_id": "SYN-VEH-FD-JED-004"
+      }
+    },
+    {
+      "id": "SYN-TRIP-FM-JED-0914-1330",
+      "kind": "Trip",
+      "properties": {
+        "cutoff_at": "2026-09-14T10:29:00+00:00",
+        "dataset_id": "SYN-SUHAIL-WORLD-V3-20261013",
+        "distance_km": 11.9,
+        "driver_id": "SYN-DRV-FM-JED-015",
+        "end_at": "2026-09-14T13:34:04+00:00",
+        "entity_id": "SYN-TRIP-FM-JED-0914-1330",
+        "from_facility_id": "SYN-BRANCH-JED-01",
+        "lane_id": "SYN-LANE-FM-JED",
+        "occurred_at": "2026-09-11T10:30:00+00:00",
+        "provenance": "SYNTHETIC_ASSUMPTION",
+        "provider_id": "SYN-PROV-SPL",
+        "recorded_at": "2026-09-11T10:30:00+00:00",
+        "schema_version": "suhail-v2.1",
+        "source_ref": "tms:schedule",
+        "start_at": "2026-09-14T10:30:00+00:00",
+        "synthetic": true,
+        "to_facility_id": "SYN-SORT-JED-01",
+        "trip_type": "FIRST_MILE",
+        "vehicle_id": "SYN-VEH-FM-JED-003"
+      }
+    }
+  ],
+  "source_relationships": [
+    {
+      "end": "SYN-RR-JED-01-0915-1",
+      "id": "SYN-EDGE-08b991821565e2f16809e154",
+      "kind": "ON_ROUTE_RUN",
+      "properties": {
+        "edge_id": "SYN-EDGE-08b991821565e2f16809e154",
+        "recorded_at": "2026-09-15T07:09:25+00:00"
+      },
+      "start": "SYN-SHP-000051-CUST-008"
+    },
+    {
+      "end": "SYN-TRIP-FM-JED-0914-1330",
+      "id": "SYN-EDGE-14e5224ae5204e2d2e136ad6",
+      "kind": "ON_TRIP",
+      "properties": {
+        "edge_id": "SYN-EDGE-14e5224ae5204e2d2e136ad6",
+        "recorded_at": "2026-09-14T11:16:13+00:00"
+      },
+      "start": "SYN-SHP-000051-ASSIGN-001"
+    },
+    {
+      "end": "SYN-TRIP-FD-JED-01-0915-0454",
+      "id": "SYN-EDGE-53f529eafc0becf87c687ed6",
+      "kind": "ON_TRIP",
+      "properties": {
+        "edge_id": "SYN-EDGE-53f529eafc0becf87c687ed6",
+        "recorded_at": "2026-09-15T03:18:21+00:00"
+      },
+      "start": "SYN-SHP-000051-CUST-005"
+    },
+    {
+      "end": "SYN-TRIP-FM-JED-0914-1330",
+      "id": "SYN-EDGE-67bdd511d97326fffd59d2d1",
+      "kind": "ON_TRIP",
+      "properties": {
+        "edge_id": "SYN-EDGE-67bdd511d97326fffd59d2d1",
+        "recorded_at": "2026-09-14T14:10:11+00:00"
+      },
+      "start": "SYN-SHP-000051-CUST-003"
+    },
+    {
+      "end": "SYN-TRIP-FD-JED-01-0915-0454",
+      "id": "SYN-EDGE-95c7aadf6310def2bdd2d445",
+      "kind": "ON_TRIP",
+      "properties": {
+        "edge_id": "SYN-EDGE-95c7aadf6310def2bdd2d445",
+        "recorded_at": "2026-09-15T04:30:29+00:00"
+      },
+      "start": "SYN-SHP-000051-CUST-006"
+    },
+    {
+      "end": "SYN-RR-JED-01-0915-1",
+      "id": "SYN-EDGE-b69b815b7ba9f1fe55380f5c",
+      "kind": "ON_ROUTE_RUN",
+      "properties": {
+        "edge_id": "SYN-EDGE-b69b815b7ba9f1fe55380f5c",
+        "recorded_at": "2026-09-15T04:19:48+00:00"
+      },
+      "start": "SYN-SHP-000051-ASSIGN-003"
+    },
+    {
+      "end": "SYN-TRIP-FM-JED-0914-1330",
+      "id": "SYN-EDGE-cd49c0bccfc8695ee381de29",
+      "kind": "ON_TRIP",
+      "properties": {
+        "edge_id": "SYN-EDGE-cd49c0bccfc8695ee381de29",
+        "recorded_at": "2026-09-14T11:45:13+00:00"
+      },
+      "start": "SYN-SHP-000051-CUST-002"
+    },
+    {
+      "end": "SYN-RR-JED-01-0915-1",
+      "id": "SYN-EDGE-d587b16b93562eef7bf55f93",
+      "kind": "ON_ROUTE_RUN",
+      "properties": {
+        "edge_id": "SYN-EDGE-d587b16b93562eef7bf55f93",
+        "recorded_at": "2026-09-15T05:17:42+00:00"
+      },
+      "start": "SYN-SHP-000051-CUST-007"
+    },
+    {
+      "end": "SYN-TRIP-FD-JED-01-0915-0454",
+      "id": "SYN-EDGE-ec7d23c51f41c294c44983e2",
+      "kind": "ON_TRIP",
+      "properties": {
+        "edge_id": "SYN-EDGE-ec7d23c51f41c294c44983e2",
+        "recorded_at": "2026-09-14T14:12:41+00:00"
+      },
+      "start": "SYN-SHP-000051-ASSIGN-002"
+    }
+  ],
+  "summary": {
+    "first_observed_at": "2026-09-14T11:04:13+00:00",
+    "input_evidence_ids": [
+      "SYN-GPS-FM-JED-003-20260914T110413",
+      "SYN-GPS-FM-JED-003-20260914T113413",
+      "SYN-GPS-FM-JED-003-20260914T120413",
+      "SYN-GPS-FM-JED-003-20260914T123413",
+      "SYN-GPS-FM-JED-003-20260914T130413",
+      "SYN-GPS-FM-JED-003-20260914T133413",
+      "SYN-GPS-JED-01-01-20260915T055015",
+      "SYN-GPS-JED-01-01-20260915T062015",
+      "SYN-GPS-JED-01-01-20260915T065015",
+      "SYN-GPS-JED-01-01-20260915T072015",
+      "SYN-GPS-JED-01-01-20260915T075015",
+      "SYN-GPS-JED-01-01-20260915T082015"
+    ],
+    "last_observed_at": "2026-09-15T08:20:15+00:00",
+    "note": "Vehicle observations only; gaps do not establish continuous stopping or parcel custody.",
+    "points_returned": 12,
+    "sampled": false,
+    "stationary_intervals": [],
+    "timing_comparisons": []
+  },
+  "truncated": {
+    "contexts": false,
+    "observations": false,
+    "source_relationships": false
+  }
+}

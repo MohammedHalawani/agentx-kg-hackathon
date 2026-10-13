@@ -41,6 +41,16 @@ export interface EvidenceObservation {
   facility: string;
   /** Backend evidence: the ISO time the observation occurred (dataset clock). */
   occurredAt?: string;
+  /** When the record was received/visible (receipt time), if the backend served it. */
+  recordedAt?: string;
+  accuracyM?: number | null;
+  speedKmh?: number | null;
+  sourceRef?: string;
+  vehicleId?: string;
+  routeRunId?: string | null;
+  tripId?: string | null;
+  /** False when the backend point has no evidence id (not selectable as a source). */
+  selectable?: boolean;
   /** Backend evidence: recorded after the investigation's evidence snapshot, so it did not see it. */
   afterInvestigation?: boolean;
 }
@@ -132,10 +142,48 @@ export interface GraphRelationship {
   label: string;
   detail: string;
 }
+export interface RouteVehicleSegment {
+  vehicleId: string;
+  routeRunId?: string | null;
+  tripId?: string | null;
+  points: [number, number][];
+}
 export interface RouteEvidence {
   expected: [number, number][];
   actual: [number, number][];
   vehicle: [number, number][];
+  /** Observed GPS grouped by vehicle/context; paths are not joined across vehicles. */
+  vehicleSegments: RouteVehicleSegment[];
+  truncated?: Record<string, boolean>;
+}
+export interface InvestigationStatus {
+  caseId: string;
+  shipmentId: string;
+  workerId: string | null;
+  runId: string | null;
+  runStatus: string;
+  activeStage: string | null;
+  workflowState: string;
+  startedAt: string | null;
+  updatedAt: string | null;
+  leaseExpiresAt: string | null;
+  asOf: string | null;
+  stateVersion: number;
+}
+export interface RouteEvidenceView {
+  schema: string;
+  asOf: string;
+  sampled: boolean;
+  pointsReturned: number;
+  /** Chronological extrema from returned observations (UI truth for timelines). */
+  firstObservedAt: string | null;
+  lastObservedAt: string | null;
+  /** Backend summary fields when served; may disagree with observations until data is corrected. */
+  summaryFirstObservedAt: string | null;
+  summaryLastObservedAt: string | null;
+  summaryNote: string | null;
+  summaryMismatch: boolean;
+  truncated: Record<string, boolean>;
 }
 export interface Recommendation {
   title: string;
@@ -245,6 +293,9 @@ export interface BackendCaseState {
     stageSeconds: Record<number, number>;
   };
   pipelineStatus: string;
+  /** Investigation waiting for worker capacity; backend queued the case without failing it. */
+  investigationQueued?: boolean;
+  routeEvidence?: RouteEvidenceView;
   /** Set while a re-investigation is queued: the earlier run, which is no longer current. */
   supersededRunId?: string | null;
   investigationAsOf: string | null;
@@ -448,6 +499,9 @@ export interface BackendConnection {
   worker?: {
     state: string;
     activeCaseId: string | null;
+    activeCases: InvestigationStatus[];
+    activeCount: number;
+    concurrency: number;
     processedCount: number;
     lastCaseId: string | null;
   };

@@ -78,7 +78,7 @@ test("Investigation shows recorded evidence, keeps GPS apart from custody, and r
   // Map: two confirmed custody points, bounded vehicle telemetry, one recorded attempt.
   const map = page.getByTestId("route-map");
   await expect(map.locator(".evidence-marker.confirmed")).toHaveCount(2);
-  await expect(map.locator(".evidence-marker.vehicle_only")).toHaveCount(6);
+  await expect(map.locator(".evidence-marker.vehicle_only")).toHaveCount(9);
   await expect(page.locator(".case-context")).toContainText("SYN-DEPOT-DMM-01");
   await expect(page.locator(".case-context")).toContainText(
     "Request depot reconciliation scan",

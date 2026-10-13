@@ -11,12 +11,17 @@ import type {
   ApiPipelineState,
   ApiQueueCase,
   ApiRouteSegment,
+  ApiInvestigationStatusV3,
+  ApiRouteEvidenceObservation,
+  ApiRouteEvidenceV3,
+  ApiWorkerStatus,
   WorkflowState,
 } from "@/api/contracts";
 import type {
   AuditKind,
   AuthorityDecision,
   BackendCaseState,
+  BackendConnection,
   CaseStatus,
   EvidenceObservation,
   Facility,
@@ -25,9 +30,12 @@ import type {
   NarrationEvent,
   GraphRelationship,
   InvestigationStageEvent,
+  InvestigationStatus,
   OperationalCase,
   Priority,
   Recommendation,
+  RouteEvidenceView,
+  RouteVehicleSegment,
 } from "@/domain/types";
 
 /**
@@ -240,7 +248,12 @@ export function caseFromQueue(
     evidence: previous?.evidence ?? [],
     nodes: previous?.nodes ?? [],
     relationships: previous?.relationships ?? [],
-    route: previous?.route ?? { expected: [], actual: [], vehicle: [] },
+    route: previous?.route ?? {
+      expected: [],
+      actual: [],
+      vehicle: [],
+      vehicleSegments: [],
+    },
     recommendation: previous?.recommendation ?? NO_RECOMMENDATION,
     run: previous?.run,
     execution: previous?.execution,
@@ -695,13 +708,214 @@ function investigationOf(
   };
 }
 
+export function investigationStatusOf(
+  row: ApiInvestigationStatusV3,
+): InvestigationStatus {
+  return {
+    caseId: row.case_id,
+    shipmentId: row.shipment_id,
+    workerId: row.worker_id,
+    runId: row.run_id,
+    runStatus: row.run_status,
+    activeStage: row.active_stage,
+    workflowState: row.workflow_state,
+    startedAt: row.started_at,
+    updatedAt: row.updated_at,
+    leaseExpiresAt: row.lease_expires_at,
+    asOf: row.as_of,
+    stateVersion: row.state_version,
+  };
+}
+
+/** Maps worker status onto the connection view, preferring V3 active_cases when present. */
+export function workerConnectionOf(
+  status: ApiWorkerStatus,
+): NonNullable<BackendConnection["worker"]> {
+  const w = status.worker;
+  const activeCases = (w.active_cases ?? []).map(investigationStatusOf);
+  const legacy = w.active_case_id ?? null;
+  return {
+    state: w.state,
+    activeCaseId:
+      legacy ?? (activeCases.length === 1 ? activeCases[0].caseId : null),
+    activeCases,
+    activeCount: w.active_count ?? activeCases.length,
+    concurrency: w.concurrency,
+    processedCount: w.processed_count ?? 0,
+    lastCaseId: w.last_case_id ?? null,
+  };
+}
+
+function chronologyExtrema(
+  observations: { occurred_at: string }[],
+): { first: string | null; last: string | null } {
+  if (!observations.length) return { first: null, last: null };
+  const sorted = [...observations].sort((a, b) =>
+    a.occurred_at.localeCompare(b.occurred_at),
+  );
+  return {
+    first: sorted[0]?.occurred_at ?? null,
+    last: sorted.at(-1)?.occurred_at ?? null,
+  };
+}
+
+function routeEvidenceViewOf(
+  route: ApiRouteEvidenceV3 | null | undefined,
+): RouteEvidenceView | undefined {
+  if (!route?.schema) return undefined;
+  const { first, last } = chronologyExtrema(route.observations ?? []);
+  const summaryFirst = route.summary?.first_observed_at ?? null;
+  const summaryLast = route.summary?.last_observed_at ?? null;
+  const summaryMismatch =
+    (!!summaryFirst &&
+      !!first &&
+      summaryFirst !== first &&
+      Date.parse(summaryFirst) !== Date.parse(first)) ||
+    (!!summaryLast &&
+      !!last &&
+      summaryLast !== last &&
+      Date.parse(summaryLast) !== Date.parse(last));
+  return {
+    schema: route.schema,
+    asOf: route.as_of,
+    sampled: route.summary?.sampled === true,
+    pointsReturned: route.summary?.points_returned ?? route.observations.length,
+    firstObservedAt: first,
+    lastObservedAt: last,
+    summaryFirstObservedAt: summaryFirst,
+    summaryLastObservedAt: summaryLast,
+    summaryNote: route.summary?.note ?? null,
+    summaryMismatch,
+    truncated: route.truncated ?? {},
+  };
+}
+
+function segmentKey(point: {
+  vehicle_id?: string | null;
+  route_run_id?: string | null;
+  trip_id?: string | null;
+}) {
+  return `${point.vehicle_id ?? ""}|${point.route_run_id ?? ""}|${point.trip_id ?? ""}`;
+}
+
+function vehicleSegmentsFromPoints(
+  points: {
+    lat: number;
+    lng: number;
+    vehicle_id?: string | null;
+    route_run_id?: string | null;
+    trip_id?: string | null;
+    occurred_at?: string | null;
+  }[],
+): RouteVehicleSegment[] {
+  const groups = new Map<string, RouteVehicleSegment>();
+  const ordered = [...points].sort((a, b) =>
+    (a.occurred_at ?? "").localeCompare(b.occurred_at ?? ""),
+  );
+  for (const point of ordered) {
+    if (!Number.isFinite(point.lat) || !Number.isFinite(point.lng)) continue;
+    const key = segmentKey(point);
+    const existing = groups.get(key) ?? {
+      vehicleId: point.vehicle_id ?? "—",
+      routeRunId: point.route_run_id ?? null,
+      tripId: point.trip_id ?? null,
+      points: [],
+    };
+    existing.points.push([point.lat, point.lng]);
+    groups.set(key, existing);
+  }
+  return [...groups.values()];
+}
+
+/** Reject stale pipeline frames from an earlier run without blocking a new legitimate run. */
+export function shouldApplyPipeline(
+  base: OperationalCase,
+  state: ApiPipelineState,
+): boolean {
+  if (!base.backend) return true;
+  const incoming = state.run_id ?? null;
+  const current = base.run?.id ?? null;
+  const superseded = base.backend.supersededRunId ?? null;
+  if (state.status === "QUEUED" && !state.events.length) return true;
+  if (!incoming) return true;
+  if (superseded && incoming === superseded) return false;
+  if (!current) {
+    if (state.state_version >= base.backend.stateVersion) return true;
+    return false;
+  }
+  if (incoming === current) return true;
+  if (state.state_version > base.backend.stateVersion) return true;
+  if (state.previous_run_id && incoming !== state.previous_run_id) return true;
+  return false;
+}
+
+function gpsObservation(
+  point: ApiRouteEvidenceObservation | ApiLayerPoint,
+): EvidenceObservation | null {
+  const id = point.evidence_id?.trim();
+  if (!id) return null;
+  const vehicleId =
+    "vehicle_id" in point && point.vehicle_id ? String(point.vehicle_id) : "";
+  const recordedAt =
+    "recorded_at" in point && point.recorded_at ? String(point.recorded_at) : undefined;
+  const occurredAt = point.occurred_at ?? undefined;
+  const accuracy =
+    "accuracy_m" in point ? number(point.accuracy_m) : null;
+  const speed = "speed_kmh" in point ? number(point.speed_kmh) : null;
+  const sourceRef =
+    "source_ref" in point && point.source_ref
+      ? String(point.source_ref)
+      : "source" in point && point.source
+        ? String(point.source)
+        : undefined;
+  return {
+    id,
+    label: "Vehicle GPS",
+    kind: "gps",
+    location: position(point),
+    time: riyadhTime(occurredAt),
+    occurredAt,
+    recordedAt,
+    accuracyM: accuracy,
+    speedKmh: speed,
+    sourceRef,
+    vehicleId: vehicleId || undefined,
+    routeRunId:
+      "route_run_id" in point ? (point.route_run_id ?? null) : undefined,
+    tripId: "trip_id" in point ? (point.trip_id ?? null) : undefined,
+    selectable: true,
+    detail:
+      `Vehicle telemetry${vehicleId ? ` for ${shortId(vehicleId)}` : ""}. ` +
+      (recordedAt
+        ? `Occurred ${riyadhTime(occurredAt)} · received ${riyadhTime(recordedAt)}. `
+        : "") +
+      (accuracy != null ? `Accuracy ±${accuracy} m. ` : "") +
+      "Shows where the vehicle was, not where the parcel is.",
+    confidence: "vehicle_only",
+    facility: vehicleId ? shortId(vehicleId) : "Vehicle",
+  };
+}
+
 /** GET /cases/{id} merged into the case. Stored workflow, review, execution and outcome are authoritative. */
 export function applyDetail(
   base: OperationalCase,
   detail: ApiCaseDetail,
 ): OperationalCase {
-  const nodes = detail.evidence?.nodes ?? [];
-  const edges = detail.evidence?.edges ?? [];
+  const routeEvidenceBlock = detail.route_evidence ?? null;
+  const nodes = [...(detail.evidence?.nodes ?? [])];
+  const edges = [...(detail.evidence?.edges ?? [])];
+  const seenNode = new Set(nodes.map((node) => node.id));
+  for (const node of routeEvidenceBlock?.source_nodes ?? []) {
+    if (seenNode.has(node.id)) continue;
+    seenNode.add(node.id);
+    nodes.push(node);
+  }
+  const seenEdge = new Set(edges.map((edge) => edge.id));
+  for (const edge of routeEvidenceBlock?.source_relationships ?? []) {
+    if (seenEdge.has(edge.id)) continue;
+    seenEdge.add(edge.id);
+    edges.push(edge);
+  }
   const ledger = detail.ledger_graph ?? { nodes: [], edges: [] };
   const byId = new Map(nodes.map((node) => [node.id, node]));
   const nameOf = (id: string | undefined) => {
@@ -758,19 +972,17 @@ export function applyDetail(
       facility: "Address reference",
     });
   }
-  for (const point of (layers.vehicle_path ?? []).slice(-6)) {
-    const id = point.evidence_id ?? `gps@${point.occurred_at}`;
-    push({
-      id,
-      label: "Vehicle GPS",
-      kind: "gps",
-      location: position(point),
-      time: riyadhTime(point.occurred_at),
-      occurredAt: point.occurred_at ?? undefined,
-      detail: `Vehicle telemetry for ${point.vehicle_id ? shortId(point.vehicle_id) : "the assigned vehicle"}. It shows where the vehicle was, not where the parcel is.`,
-      confidence: "vehicle_only",
-      facility: point.vehicle_id ? shortId(point.vehicle_id) : "Vehicle",
-    });
+  const gpsSeen = new Set<string>();
+  const pushGps = (item: EvidenceObservation | null) => {
+    if (!item || gpsSeen.has(item.id)) return;
+    gpsSeen.add(item.id);
+    push(item);
+  };
+  for (const obs of routeEvidenceBlock?.observations ?? []) {
+    pushGps(gpsObservation(obs));
+  }
+  for (const point of layers.vehicle_path ?? []) {
+    pushGps(gpsObservation(point));
   }
   const expected = (layers.expected_route ?? [])
     .filter(isSegment)
@@ -956,11 +1168,26 @@ export function applyDetail(
     evidence,
     nodes: graphNodes,
     relationships,
-    route: {
-      expected: expected.map(position),
-      actual: (layers.actual_route ?? []).map(position),
-      vehicle: (layers.vehicle_path ?? []).map(position),
-    },
+    route: (() => {
+      const pathPoints = [
+        ...(routeEvidenceBlock?.observations ?? []),
+        ...(layers.vehicle_path ?? []),
+      ];
+      const segments = vehicleSegmentsFromPoints(pathPoints);
+      const vehicleFlat = segments.flatMap((segment) => segment.points);
+      return {
+        expected: expected.map(position),
+        actual: (layers.actual_route ?? []).map(position),
+        vehicle: vehicleFlat.length
+          ? vehicleFlat
+          : (layers.vehicle_path ?? []).map(position),
+        vehicleSegments: segments,
+        truncated: {
+          ...(detail.route_layers?.truncated ?? {}),
+          ...(routeEvidenceBlock?.truncated ?? {}),
+        },
+      };
+    })(),
     recommendation,
     run:
       detail.run || stage >= 0
@@ -1041,6 +1268,7 @@ export function applyDetail(
         relationships: allEdges.length,
         shown: graphNodes.length,
       },
+      routeEvidence: routeEvidenceViewOf(routeEvidenceBlock),
       review: detail.review
         ? {
             verdict: detail.review.verdict ?? null,
@@ -1260,6 +1488,7 @@ export function applyPipeline(
   state: ApiPipelineState,
 ): OperationalCase {
   if (!base.backend) return base;
+  if (!shouldApplyPipeline(base, state)) return base;
   const view = pipelineView(state.events);
   const queued = state.status === "QUEUED" && !state.events.length;
   return {

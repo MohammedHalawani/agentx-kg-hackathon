@@ -8,6 +8,7 @@ import {
   caseFromQueue,
   decisionFromAudit,
   pipelineView,
+  shouldApplyPipeline,
   statusOf,
 } from "@/api/adapters";
 import { controls, displayId, operationalOf } from "@/domain/case-view";
@@ -20,6 +21,7 @@ import {
   exploreItems,
   pipelineEvents,
   queueRows,
+  detailV3Route,
 } from "../fixtures/backend";
 
 describe("backend queue rows", () => {
@@ -72,7 +74,7 @@ describe("backend case detail", () => {
     expect(custody).toHaveLength(2);
     expect(custody.every((e) => e.confidence === "confirmed")).toBe(true);
     // Vehicle telemetry is bounded and is never a confirmed parcel observation.
-    expect(gps).toHaveLength(6);
+    expect(gps).toHaveLength(9);
     expect(gps.every((e) => e.confidence === "vehicle_only")).toBe(true);
     // A recorded attempt is not proof of delivery.
     expect(attempts).toHaveLength(1);
@@ -382,6 +384,63 @@ describe("backend case detail", () => {
     expect(newer.backend?.detailLoaded).toBe(false);
     // Approval eligibility is only known from the reloaded detail.
     expect(controls(newer).approve).toBe(false);
+  });
+});
+
+describe("V3 route evidence and pipeline fencing", () => {
+  it("requires evidence ids for GPS selection and chronology from observations", () => {
+    const base = caseFromQueue({
+      case_id: detailV3Route().case_id,
+      shipment_id: detailV3Route().shipment_id,
+      issue_summary: "",
+      priority: "low",
+      workflow_state: "OPEN",
+      state_version: 1,
+    });
+    const c = applyDetail(base, detailV3Route());
+    expect(c.evidence.some((e) => e.id.startsWith("gps@"))).toBe(false);
+    expect(c.evidence.filter((e) => e.kind === "gps").length).toBeGreaterThan(0);
+    expect(c.backend?.routeEvidence?.firstObservedAt).toBe(
+      "2026-09-14T11:04:13+00:00",
+    );
+    expect(c.route.vehicleSegments.length).toBeGreaterThan(1);
+  });
+
+  it("ignores stale pipeline events but accepts a new run", () => {
+    const base = caseFromQueue({
+      case_id: "SYN-X",
+      shipment_id: "SYN-S",
+      issue_summary: "",
+      priority: "low",
+      workflow_state: "INVESTIGATING",
+      state_version: 2,
+    });
+    const withRun = applyPipeline(base, {
+      workflow_state: "INVESTIGATING",
+      state_version: 2,
+      run_id: "SYN-RUN-2",
+      status: "RUNNING",
+      events: [],
+    });
+    expect(
+      shouldApplyPipeline(withRun, {
+        workflow_state: "INVESTIGATING",
+        state_version: 2,
+        run_id: "SYN-RUN-1",
+        status: "RUNNING",
+        events: [],
+      }),
+    ).toBe(false);
+    expect(
+      shouldApplyPipeline(withRun, {
+        workflow_state: "INVESTIGATING",
+        state_version: 3,
+        run_id: "SYN-RUN-3",
+        status: "RUNNING",
+        events: [],
+        previous_run_id: "SYN-RUN-2",
+      }),
+    ).toBe(true);
   });
 });
 

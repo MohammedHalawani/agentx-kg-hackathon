@@ -4094,6 +4094,62 @@ a {
     font-size: 8px;
   }
 }
+.evidence-chronology {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.chronology-item {
+  width: 100%;
+  text-align: start;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: transparent;
+  cursor: pointer;
+}
+.chronology-item.selected {
+  border-color: var(--primary);
+}
+.chronology-time {
+  display: block;
+  font-size: 11px;
+  opacity: 0.85;
+}
+.chronology-label {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+}
+.chronology-receipt {
+  display: block;
+  font-size: 11px;
+  opacity: 0.75;
+}
+.active-investigations {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+.active-investigation-card {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  text-decoration: none;
+  color: inherit;
+}
+.active-investigation-card small {
+  display: block;
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 10px;
+}
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

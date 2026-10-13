@@ -26,6 +26,7 @@ import {
   humanize,
   placeholderCase,
   verdictOf,
+  workerConnectionOf,
 } from "@/api/adapters";
 import { cityLocations, moreCityLocations } from "@/domain/geo";
 import type {
@@ -106,6 +107,15 @@ export class ApiOperationsService implements OperationsService {
     string,
     {
       count: number;
+      stream?: EventStream;
+      retry?: ReturnType<typeof setTimeout>;
+      attempt: number;
+    }
+  >();
+  /** Pipeline streams for worker-active cases when no screen holds them open. */
+  private activeStreams = new Map<
+    string,
+    {
       stream?: EventStream;
       retry?: ReturnType<typeof setTimeout>;
       attempt: number;
@@ -357,6 +367,7 @@ export class ApiOperationsService implements OperationsService {
           String,
         );
       this.automatic = status.worker.state === "running";
+      const worker = workerConnectionOf(status);
       this.connect({
         state: "online",
         error: undefined,
@@ -364,12 +375,7 @@ export class ApiOperationsService implements OperationsService {
         asOf: status.as_of,
         database: status.database,
         synthetic: status.synthetic !== false,
-        worker: {
-          state: status.worker.state,
-          activeCaseId: status.worker.active_case_id ?? null,
-          processedCount: status.worker.processed_count ?? 0,
-          lastCaseId: status.worker.last_case_id ?? null,
-        },
+        worker,
         clock: status.simulator
           ? {
               running: status.simulator.state === "running",
@@ -393,17 +399,22 @@ export class ApiOperationsService implements OperationsService {
         .slice(-RESOLVED_DETAILS)
         .map((row) => row.case_id);
       const wanted = new Set([...stale, ...this.watchers.keys(), ...resolved]);
-      // The case the worker holds is re-read every poll so its recorded stages stay current.
-      const active = status.worker.active_case_id;
+      const activeIds =
+        worker.activeCases.length > 0
+          ? worker.activeCases.map((row) => row.caseId)
+          : worker.activeCaseId
+            ? [worker.activeCaseId]
+            : [];
+      this.syncActiveStreams(activeIds);
       await Promise.all([
         ...[...wanted]
           .filter(
-            (id) => id !== active && !this.cases.get(id)?.backend?.detailLoaded,
+            (id) =>
+              !activeIds.includes(id) &&
+              !this.cases.get(id)?.backend?.detailLoaded,
           )
           .map((id) => this.loadDetail(id).catch(() => undefined)),
-        ...(active && this.cases.has(active)
-          ? [this.loadDetail(active, true).catch(() => undefined)]
-          : []),
+        ...activeIds.map((id) => this.loadDetail(id, true).catch(() => undefined)),
       ]);
       if (this.audit.size) void this.loadAudit();
     } catch (error) {
@@ -421,6 +432,7 @@ export class ApiOperationsService implements OperationsService {
     const load = this.client
       .get<ApiCaseDetail>(`/cases/${encodeURIComponent(id)}`)
       .then((detail) => {
+        if (detail.case_id !== id) return;
         const base = this.cases.get(id) ?? placeholderCase(id);
         // An unchanged detail (the worker's case is re-read every poll) changes nothing.
         const signature = JSON.stringify(detail);
@@ -488,9 +500,42 @@ export class ApiOperationsService implements OperationsService {
       this.watchers.delete(id);
     };
   };
+  private syncActiveStreams(activeIds: string[]) {
+    const keep = new Set(activeIds);
+    for (const id of [...this.activeStreams.keys()]) {
+      if (keep.has(id) || this.watchers.has(id)) continue;
+      const entry = this.activeStreams.get(id);
+      entry?.stream?.close();
+      if (entry?.retry) clearTimeout(entry.retry);
+      this.activeStreams.delete(id);
+    }
+    for (const id of activeIds) {
+      if (this.watchers.has(id)) continue;
+      if (!this.activeStreams.has(id))
+        this.activeStreams.set(id, { attempt: 0 });
+      this.followPipeline(id, this.activeStreams);
+    }
+  }
+
   private follow(id: string) {
     const watcher = this.watchers.get(id);
-    // Only cases a screen holds open are streamed; the active case is otherwise polled.
+    if (!watcher || watcher.stream) return;
+    this.followPipeline(id, this.watchers);
+  }
+
+  private followPipeline(
+    id: string,
+    bucket: Map<
+      string,
+      {
+        count?: number;
+        stream?: EventStream;
+        retry?: ReturnType<typeof setTimeout>;
+        attempt: number;
+      }
+    >,
+  ) {
+    const watcher = bucket.get(id);
     if (!watcher || watcher.stream) return;
     let stream: EventStream;
     try {
@@ -504,11 +549,16 @@ export class ApiOperationsService implements OperationsService {
     const reconnect = () => {
       stream.close();
       if (watcher.stream === stream) watcher.stream = undefined;
-      if (!this.watchers.has(id) || !this.started) return;
-      // Backoff: 1s, 2s, 4s ... capped at 15s. The next snapshot replaces, never replays.
+      const stillWanted =
+        this.started &&
+        (this.watchers.has(id) || this.activeStreams.has(id));
+      if (!stillWanted) return;
       const delay = Math.min(15000, 1000 * 2 ** Math.min(watcher.attempt, 4));
       watcher.attempt += 1;
-      watcher.retry = setTimeout(() => this.follow(id), delay);
+      watcher.retry = setTimeout(
+        () => this.followPipeline(id, bucket),
+        delay,
+      );
     };
     stream.addEventListener("pipeline", (event) => {
       watcher.attempt = 0;
@@ -655,12 +705,29 @@ export class ApiOperationsService implements OperationsService {
       )
       .then((result) => {
         // The backend answers 200 even when it did not run the investigation.
-        if (result && result.processed === false)
+        if (result && result.processed === false) {
+          const reason = result.reason ?? "";
+          if (/capacity|concurr|worker_busy|queue/i.test(reason)) {
+            const current = this.cases.get(id);
+            if (current?.backend) {
+              this.put({
+                ...current,
+                backend: {
+                  ...current.backend,
+                  investigationQueued: true,
+                  pipelineStatus: "QUEUED",
+                },
+              });
+              this.commit();
+            }
+            return;
+          }
           throw new Error(
-            result.reason === "snapshot_changed"
+            reason === "snapshot_changed"
               ? "New evidence arrived during the investigation, so the backend queued the case again."
               : "The backend did not start this investigation: another investigation is running, or the case is no longer queued.",
           );
+        }
       });
     // "Started" is what the backend reports, never a guess: wait until the request settles
     // or the backend shows the case out of the queue, whichever comes first.

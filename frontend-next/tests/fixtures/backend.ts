@@ -10,13 +10,26 @@ import type {
   ApiPage,
   ApiPipelineEvent,
   ApiQueueCase,
+  ApiRouteEvidenceV3,
   ApiWorkerStatus,
 } from "@/api/contracts";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const v3RouteWire = JSON.parse(
+  readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), "v3-route-evidence.wire.json"),
+    "utf8",
+  ),
+) as Omit<ApiRouteEvidenceV3, "schema" | "shipment_id">;
 
 export const CASE_A = "SYN-CASE-0001";
 export const CASE_B = "SYN-CASE-0002";
 export const CASE_C = "SYN-CASE-0003";
+export const CASE_V3 = "SYN-CASE-V3-ROUTE";
 export const SHIP_A = "SYN-SHP-000101";
+export const SHIP_V3 = "SYN-SHP-000051";
 
 export function page<T>(items: T[], next: string | null = null): ApiPage<T> {
   return {
@@ -168,8 +181,12 @@ export function detailA(overrides: Partial<ApiCaseDetail> = {}): ApiCaseDetail {
     lng: 50.0 + index * 0.01,
     evidence_id: `${SHIP_A}-GPS-${index}`,
     occurred_at: `2026-09-03T0${index}:10:00+00:00`,
+    recorded_at: `2026-09-03T0${index}:12:00+00:00`,
     source: "vehicle_telemetry_only",
+    source_ref: "telematics",
+    accuracy_m: 12,
     vehicle_id: "SYN-VEH-LMV-DMM-0001",
+    position_scope: "VEHICLE_ONLY",
   }));
   return {
     case_id: CASE_A,
@@ -547,6 +564,122 @@ export const auditRows: ApiAuditEvent[] = [
     result: "Buffered scans from the named device arrived after the request.",
   },
 ];
+function v3RouteEvidence(): ApiRouteEvidenceV3 {
+  return {
+    schema: "route-evidence-v3-1",
+    shipment_id: SHIP_V3,
+    ...v3RouteWire,
+  };
+}
+
+/** Deterministic route/GPS fixture (SHA256 in composer-phase-b-handoff). */
+export function detailV3Route(
+  overrides: Partial<ApiCaseDetail> = {},
+): ApiCaseDetail {
+  const route = v3RouteEvidence();
+  return {
+    case_id: CASE_V3,
+    shipment_id: SHIP_V3,
+    workflow_state: "OPEN",
+    state_version: 1,
+    priority: "low",
+    operational_status: "ON_TIME",
+    as_of: route.as_of,
+    synthetic: true,
+    evidence: {
+      nodes: route.source_nodes,
+      edges: route.source_relationships,
+    },
+    route_evidence: route,
+    route_layers: {
+      layers: {
+        expected_route: [],
+        vehicle_path: route.observations.map((obs) => ({
+          lat: obs.lat,
+          lng: obs.lng,
+          evidence_id: obs.evidence_id,
+          occurred_at: obs.occurred_at,
+          recorded_at: obs.recorded_at,
+          vehicle_id: obs.vehicle_id,
+          route_run_id: obs.route_run_id,
+          trip_id: obs.trip_id,
+          accuracy_m: obs.accuracy_m,
+          source_ref: obs.source_ref,
+          position_scope: obs.position_scope,
+          source: "vehicle_telemetry_only",
+        })),
+      },
+    },
+    diagnosis: {
+      available: false,
+      reason: "not_investigated",
+      source: null,
+      run_id: null,
+      as_of: null,
+      investigated_at: null,
+      primary_cause: null,
+      confidence: null,
+      summary: null,
+      hypotheses: [],
+      missing_evidence: [],
+      requires_physical_check: false,
+      tool_calls: 0,
+      snapshot_superseded: false,
+    },
+    pipeline: { events: [], status: "UNKNOWN" },
+    recommendation: null,
+    ...overrides,
+  };
+}
+
+export const workerStatusDual: ApiWorkerStatus = {
+  ...workerStatus,
+  worker: {
+    ...workerStatus.worker,
+    state: "running",
+    concurrency: 2,
+    active_count: 2,
+    active_case_id: null,
+    active_shipment_id: null,
+    active_cases: [
+      {
+        case_id: CASE_A,
+        shipment_id: SHIP_A,
+        worker_id: "investigation-1",
+        claim_id: "SYN-CLAIM-A",
+        claim_epoch: 1,
+        workflow_state: "INVESTIGATING",
+        run_id: "SYN-RUN-1",
+        run_status: "RUNNING",
+        active_stage: "review",
+        started_at: "2026-09-03T14:00:00+00:00",
+        updated_at: "2026-09-03T14:00:30+00:00",
+        lease_expires_at: "2026-09-03T14:03:30+00:00",
+        as_of: "2026-09-03T14:00:00+00:00",
+        state_version: 7,
+        final_result: null,
+      },
+      {
+        case_id: CASE_C,
+        shipment_id: "SYN-SHP-000103",
+        worker_id: "investigation-2",
+        claim_id: "SYN-CLAIM-C",
+        claim_epoch: 1,
+        workflow_state: "INVESTIGATING",
+        run_id: "SYN-RUN-C",
+        run_status: "RUNNING",
+        active_stage: "classify",
+        started_at: "2026-09-03T14:00:01+00:00",
+        updated_at: "2026-09-03T14:00:20+00:00",
+        lease_expires_at: "2026-09-03T14:03:20+00:00",
+        as_of: "2026-09-03T14:00:00+00:00",
+        state_version: 1,
+        final_result: null,
+      },
+    ],
+  },
+};
+
 export const session = {
   token: "test-token-0123456789",
   mode: "synthetic_local_operations",

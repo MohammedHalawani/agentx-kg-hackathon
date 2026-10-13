@@ -2,10 +2,13 @@ import type { Page, Route } from "@playwright/test";
 import {
   CASE_A,
   CASE_B,
+  CASE_C,
+  CASE_V3,
   SHIP_A,
   auditRows,
   detailA,
   detailB,
+  detailV3Route,
   exploreItems,
   page as pageOf,
   pipelineEvents,
@@ -13,6 +16,7 @@ import {
   schema,
   session,
   workerStatus,
+  workerStatusDual,
 } from "../fixtures/backend";
 import type { ApiCaseDetail, ApiQueueCase } from "../../src/api/contracts";
 
@@ -25,6 +29,7 @@ export interface Stub {
     detailA: ApiCaseDetail;
     worker: string;
     clock: string;
+    dualWorker: boolean;
   };
 }
 
@@ -41,6 +46,7 @@ export async function stubBackend(page: Page): Promise<Stub> {
       detailA: detailA(),
       worker: "paused",
       clock: "paused",
+      dualWorker: false,
     },
   };
   const json = (route: Route, body: unknown, status = 200) =>
@@ -185,30 +191,65 @@ export async function stubBackend(page: Page): Promise<Stub> {
         return json(route, { detail: "Not found" }, 404);
       }
       if (path === "/operations/session") return json(route, session);
-      if (path === "/worker/status")
+      if (path === "/worker/status") {
+        const dual = stub.state.dualWorker ? workerStatusDual : workerStatus;
         return json(route, {
-          ...workerStatus,
-          worker: { ...workerStatus.worker, state: stub.state.worker },
+          ...dual,
+          worker: { ...dual.worker, state: stub.state.worker },
           simulator: { state: stub.state.clock, speed: 60 },
         });
+      }
       if (path === "/cases/queue") return json(route, pageOf(stub.state.queue));
       if (path === "/explore") return json(route, pageOf(exploreItems));
       if (path === "/audit") return json(route, pageOf(auditRows));
       if (path === "/schema") return json(route, schema);
       if (path === `/cases/${CASE_A}`) return json(route, stub.state.detailA);
       if (path === `/cases/${CASE_B}`) return json(route, detailB());
-      if (path === `/cases/${CASE_A}/events`)
+      if (path === `/cases/${CASE_V3}`) return json(route, detailV3Route());
+      if (path === `/cases/${CASE_C}`) {
+        return json(route, {
+          ...detailA(),
+          case_id: CASE_C,
+          shipment_id: "SYN-SHP-000103",
+          workflow_state: "INVESTIGATING",
+          state_version: 1,
+          pipeline: {
+            events: pipelineEvents.slice(0, 2),
+            status: "RUNNING",
+          },
+          run: {
+            entity_id: "SYN-RUN-C",
+            recorded_at: "2026-09-03T14:00:00+00:00",
+            status: "RUNNING",
+          },
+        });
+      }
+      if (path.endsWith("/events")) {
+        const caseId = path.split("/")[2];
+        const runId =
+          caseId === CASE_C
+            ? "SYN-RUN-C"
+            : caseId === CASE_A
+              ? "SYN-RUN-1"
+              : "SYN-RUN-1";
+        const detail =
+          caseId === CASE_C
+            ? { workflow_state: "INVESTIGATING", state_version: 1 }
+            : {
+                workflow_state: stub.state.detailA.workflow_state,
+                state_version: stub.state.detailA.state_version,
+              };
         return route.fulfill({
           status: 200,
           contentType: "text/event-stream",
           body: `event: pipeline\ndata: ${JSON.stringify({
-            workflow_state: stub.state.detailA.workflow_state,
-            state_version: stub.state.detailA.state_version,
-            run_id: "SYN-RUN-1",
-            status: "REVIEWED",
-            events: pipelineEvents,
+            ...detail,
+            run_id: runId,
+            status: caseId === CASE_A ? "REVIEWED" : "RUNNING",
+            events: caseId === CASE_C ? pipelineEvents.slice(0, 2) : pipelineEvents,
           })}\n\n`,
         });
+      }
       return json(
         route,
         { detail: "Operational case or shipment not found" },
