@@ -111,10 +111,101 @@ export interface ApiLayerPoint {
   entity_id?: string;
   evidence_id?: string;
   occurred_at?: string | null;
+  recorded_at?: string | null;
+  ingested_at?: string | null;
   source?: string;
+  source_ref?: string;
+  accuracy_m?: number | null;
+  speed_kmh?: number | null;
+  route_run_id?: string | null;
+  trip_id?: string | null;
+  position_scope?: string;
   vehicle_id?: string;
   package_id?: string;
   disposition?: string;
+}
+export type ApiRunStatus =
+  | "QUEUED"
+  | "RUNNING"
+  | "REVIEWED"
+  | "ABORTED"
+  | "FAILED";
+export interface ApiInvestigationFinalResult {
+  workflow_state: WorkflowState;
+  review_verdict: string | null;
+  model_verdict: string | null;
+  outcome_verification_status: string | null;
+}
+/** V3 worker/case investigation projection (suhail-v3-1). */
+export interface ApiInvestigationStatusV3 {
+  case_id: string;
+  shipment_id: string;
+  worker_id: string | null;
+  claim_id: string | null;
+  claim_epoch: number;
+  workflow_state: WorkflowState;
+  run_id: string | null;
+  run_status: ApiRunStatus;
+  active_stage: string | null;
+  started_at: string | null;
+  updated_at: string | null;
+  lease_expires_at: string | null;
+  as_of: string | null;
+  state_version: number;
+  final_result: ApiInvestigationFinalResult | null;
+}
+export interface ApiRouteEvidenceObservation {
+  entity_id: string;
+  evidence_id: string;
+  vehicle_id: string;
+  route_run_id: string | null;
+  trip_id: string | null;
+  lat: number;
+  lng: number;
+  accuracy_m: number | null;
+  speed_kmh: number | null;
+  occurred_at: string;
+  recorded_at: string;
+  ingested_at?: string | null;
+  source_ref: string;
+  position_scope: string;
+  classification: string;
+  source_event_id: string | null;
+}
+export interface ApiRouteEvidenceContext {
+  route_run_id: string | null;
+  trip_id: string | null;
+  assignment_id: string | null;
+  vehicle_id: string | null;
+  device_id: string | null;
+  valid_from: string | null;
+  valid_to: string | null;
+  plan_source_ids: string[];
+  custody_source_ids: string[];
+}
+export interface ApiRouteEvidenceV3 {
+  schema: "route-evidence-v3-1";
+  shipment_id: string;
+  as_of: string;
+  contexts: ApiRouteEvidenceContext[];
+  observations: ApiRouteEvidenceObservation[];
+  summary: {
+    points_returned: number;
+    sampled: boolean;
+    first_observed_at: string | null;
+    last_observed_at: string | null;
+    stationary_intervals: unknown[];
+    timing_comparisons: unknown[];
+    input_evidence_ids: string[];
+    note?: string | null;
+  };
+  source_nodes: ApiEvidenceNode[];
+  source_relationships: ApiEvidenceEdge[];
+  truncated: {
+    contexts?: boolean;
+    observations?: boolean;
+    source_relationships?: boolean;
+  };
 }
 export interface ApiRouteSegment {
   segment_id: string;
@@ -549,6 +640,8 @@ export interface ApiCaseDetail {
     };
     truncated?: Record<string, boolean>;
   };
+  route_evidence?: ApiRouteEvidenceV3 | null;
+  investigation_status?: ApiInvestigationStatusV3 | null;
 }
 export interface ApiToolCall {
   round?: number;
@@ -623,11 +716,13 @@ export interface ApiWorkerStatus {
   worker: {
     state: string;
     concurrency: number;
+    active_count?: number;
     processed_count?: number;
     active_case_id?: string | null;
     active_shipment_id?: string | null;
     last_case_id?: string | null;
     last_workflow_state?: string | null;
+    active_cases?: ApiInvestigationStatusV3[];
   };
   session?: {
     monitor_pending?: number;

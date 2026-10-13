@@ -50,6 +50,7 @@ import {
   searchText,
 } from "@/domain/case-view";
 import { useCanopusScreen } from "@/state/canopus";
+import { humanize } from "@/api/adapters";
 const LAB_BUILD = import.meta.env.VITE_SUHAIL_DATA === "lab";
 
 export function OperationsPage() {
@@ -83,12 +84,25 @@ export function OperationsPage() {
   const resolved = cases.filter(
     (c) => c.status === "resolved" && c.outcome?.successful,
   );
-  // Backend: the case the investigation worker holds now. Lab: the one simulated run.
+  const activeClaims = connection?.worker?.activeCases ?? [];
+  // Backend: active V3 claims, else legacy single id. Lab: the one simulated run.
   const running = backend
-    ? cases.find((c) => c.id === connection?.worker?.activeCaseId)
+    ? activeClaims.length
+      ? cases.find((c) => c.id === activeClaims[0].caseId)
+      : connection?.worker?.activeCaseId
+        ? cases.find((c) => c.id === connection?.worker?.activeCaseId)
+        : undefined
     : cases.find((c) =>
         ["investigating", "executing", "verifying"].includes(c.status),
       );
+  const activeCards = backend
+    ? activeClaims.slice(0, 2).map((claim) => ({
+        claim,
+        c: cases.find((item) => item.id === claim.caseId),
+      }))
+    : running
+      ? [{ claim: null, c: running }]
+      : [];
   const human = active.filter((c) =>
     ["human_review", "needs_evidence", "escalated"].includes(c.status),
   );
@@ -551,9 +565,14 @@ export function OperationsPage() {
               <span
                 className={automatic || running ? "live-dot" : "paused-dot"}
               />
-              {running
-                ? `${displayId(running)} · ${t(stages[running.run?.stage ?? 0].label, stages[running.run?.stage ?? 0].arabic)}`
-                : automatic
+              {activeCards.length > 1
+                ? t(
+                    `${activeCards.length} active investigations`,
+                    `${activeCards.length} تحقيقات نشطة`,
+                  )
+                : running
+                  ? `${displayId(running)} · ${t(stages[running.run?.stage ?? 0].label, stages[running.run?.stage ?? 0].arabic)}`
+                  : automatic
                   ? t(
                       "Picking the oldest eligible case",
                       "اختيار أقدم حالة مؤهلة",
@@ -577,12 +596,46 @@ export function OperationsPage() {
               "Monitoring active · mandatory review and outcome verification remain enforced.",
               "المراقبة نشطة · تبقى المراجعة والتحقق الإلزاميان مفروضين.",
             )}
-            {running && !automatic && (
+            {activeCards.length > 0 && !automatic && (
               <span>
-                {t("Current case continues.", "تستمر الحالة الحالية.")}
+                {t(
+                  "Active investigations continue in parallel.",
+                  "تستمر التحقيقات النشطة بالتوازي.",
+                )}
               </span>
             )}
           </div>
+          {activeCards.length > 0 && (
+            <div
+              className="active-investigations"
+              data-testid="active-investigations"
+            >
+              {activeCards.map(({ claim, c: row }) =>
+                row ? (
+                  <Link
+                    key={row.id}
+                    className="active-investigation-card"
+                    to={`/cases/${row.id}`}
+                  >
+                    <small>
+                      {claim?.runStatus === "QUEUED"
+                        ? t("QUEUED FOR WORKER", "في انتظار العامل")
+                        : t("INVESTIGATING", "قيد التحقيق")}
+                    </small>
+                    <b>{displayId(row)}</b>
+                    <span className="cell-secondary">
+                      {claim?.activeStage
+                        ? humanize(claim.activeStage)
+                        : t(
+                            stages[row.run?.stage ?? 0].label,
+                            stages[row.run?.stage ?? 0].arabic,
+                          )}
+                    </span>
+                  </Link>
+                ) : null,
+              )}
+            </div>
+          )}
           <DataTable
             columns={columns}
             data={filtered}

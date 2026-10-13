@@ -55,6 +55,7 @@ import { StatusBadge, PriorityLabel, EmptyState } from "@/components/shared";
 import { dateTimeLabel, secondsLabel, timeLabel } from "@/lib/dates";
 import { InvestigatorFindings } from "@/components/investigator-findings";
 import { InvestigationRecord } from "@/components/investigation-record";
+import { EvidenceChronology } from "@/components/evidence-chronology";
 import { NextStep } from "@/components/next-step";
 import { DIRECTOR } from "@/director";
 import { PhoneOverlay } from "@/director/phone-overlay";
@@ -322,10 +323,17 @@ export function InvestigationPage() {
       ["investigating", "executing", "verifying"].includes(c.status),
     );
   const can = controls(c);
-  // The backend investigates one case at a time.
+  const workerClaims = connection?.worker?.activeCases ?? [];
+  const claimForCase = workerClaims.find((row) => row.caseId === c.id);
+  // Legacy single-worker backends only: another case holds the sole active id.
   const busyElsewhere =
+    backend &&
+    workerClaims.length <= 1 &&
     !!connection?.worker?.activeCaseId &&
     connection.worker.activeCaseId !== c.id;
+  const queuedForCapacity =
+    c.backend?.investigationQueued === true ||
+    claimForCase?.runStatus === "QUEUED";
   const authority = authorityLabel(c);
   const lastCustody = c.evidence
     .filter((e) => e.confidence === "confirmed" && e.kind !== "gps")
@@ -1058,7 +1066,22 @@ export function InvestigationPage() {
                   {t(authority[0], authority[1])}
                 </Badge>
               </div>
+              {c.backend?.detailLoaded && (
+                <EvidenceChronology
+                  c={c}
+                  selected={selected}
+                  onSelect={select}
+                />
+              )}
             </>
+          )}
+          {queuedForCapacity && (
+            <p className="context-assigned" data-testid="investigation-queued">
+              {t(
+                "Queued for an investigation worker; capacity is in use elsewhere.",
+                "في انتظار عامل تحقيق؛ السعة مستخدمة في مكان آخر.",
+              )}
+            </p>
           )}
           <div className="context-actions">
             {c.status === "human_review" ? (
