@@ -17,7 +17,7 @@ from tests.test_stage2_datasets import WORLD_CONFIG
 from tests.world_fixture import MemoryPort, small_world
 
 AS_OF = "2026-09-20T12:00:00+00:00"
-SAMPLE = {"ref": "DEMO-DEV-HH-DEPOT-RUH-N", "shipment_id": "DEMO-SHP-000001", "text": "OP-1", "from_at": "2026-09-19T12:00:00+00:00",
+SAMPLE = {"ref": "DEMO-DEV-HH-DEPOT-RUH-N", "vehicle_id": "DEMO-VEH-FM-RUH-001", "shipment_id": "DEMO-SHP-000001", "text": "OP-1", "from_at": "2026-09-19T12:00:00+00:00",
           "to_at": "2026-09-20T12:00:00+00:00", "late_seconds": 3600, "allowance": 900, "shipment_ids": ["DEMO-SHP-000001", "DEMO-SHP-000002"]}
 
 

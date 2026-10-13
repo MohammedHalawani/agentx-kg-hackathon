@@ -55,6 +55,14 @@ def _in_window(label, prop, time, *, limit=200, order=None):
                  ids=("ref",), times=("from_at", "to_at"), limit=limit)
 
 
+def _vehicle_positions(prop, *, order="n.occurred_at, n.entity_id", limit=161):
+    """A route/trip, actual vehicle and visible assignment interval; no free-form Cypher."""
+    return Query(f"MATCH (n:V2Entity:GPSObservation) WHERE n.{prop} = $ref AND n.vehicle_id = $vehicle_id "
+                 f"AND n.occurred_at >= $from_at AND n.occurred_at <= $to_at AND {in_scope('n')} AND {visible('n')} "
+                 f"RETURN properties(n) AS props ORDER BY {order} LIMIT $limit",
+                 ids=("ref", "vehicle_id"), times=("from_at", "to_at"), limit=limit)
+
+
 _LATE = "n.recorded_at >= n.occurred_at + duration({seconds:$late_seconds})"
 _OVERDUE = (f"MATCH (m:V2Entity:ExpectedMilestone) WHERE m.location_id = $ref AND {in_scope('m')} AND m.recorded_at <= $as_of "
             "AND m.shipment_id <> $shipment_id AND m.latest_at >= $from_at "
@@ -128,15 +136,16 @@ QUERIES = {
     "route_run_scans": _by_reference("ScanEvent", "route_run_id", limit=300),
     "route_run_reconciliations": _by_reference("DepotReconciliation", "route_run_id", limit=200),
     "route_run_manifests": _by_reference("Manifest", "route_manifest_ref", order="n.version, n.entity_id", limit=200),
-    "route_run_positions": _by_reference("GPSObservation", "route_run_id", limit=161),
-    "route_run_positions_tail": _by_reference("GPSObservation", "route_run_id", order="n.occurred_at DESC, n.entity_id DESC", limit=1),
-    "route_run_positions_window": _in_window("GPSObservation", "route_run_id", "occurred_at", limit=16),
+    "route_run_positions": _vehicle_positions("route_run_id"),
+    "route_run_positions_tail": _vehicle_positions("route_run_id", order="n.occurred_at DESC, n.entity_id DESC", limit=1),
+    "route_run_positions_window": _vehicle_positions("route_run_id", limit=16),
     # ------------------------------------------------------------------ one container, one trip
     "container_scans": _by_reference("ScanEvent", "container_id", limit=300),
     "trip_events": _by_reference("TripEvent", "trip_id", limit=40),
-    "trip_positions": _by_reference("GPSObservation", "trip_id", limit=161),
-    "trip_positions_tail": _by_reference("GPSObservation", "trip_id", order="n.occurred_at DESC, n.entity_id DESC", limit=1),
-    "trip_positions_window": _in_window("GPSObservation", "trip_id", "occurred_at", limit=16),
+    "trip_positions": _by_reference("GPSObservation", "trip_id", limit=160),
+    "trip_evidence_positions": _vehicle_positions("trip_id"),
+    "trip_evidence_positions_tail": _vehicle_positions("trip_id", order="n.occurred_at DESC, n.entity_id DESC", limit=1),
+    "trip_evidence_positions_window": _vehicle_positions("trip_id", limit=16),
     "trip_custody": _by_reference("CustodyEvent", "trip_id", limit=MAX_LIMIT),
     "trip_containers": Query(f"MATCH (n:V2Entity:ScanEvent) WHERE n.trip_id = $ref AND n.container_id IS NOT NULL AND {in_scope('n')} AND {visible('n')} "
                              "RETURN n.container_id AS container_id, count(DISTINCT n.package_id) AS parcels, count(DISTINCT n.shipment_id) AS shipments, "

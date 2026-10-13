@@ -89,11 +89,17 @@ def build_route_evidence(context, fetch, *, max_points=160, max_runs=4):
     more = False
     for bound in contexts:
         ref = bound["route_run_id"] or bound["trip_id"]
-        query = "route_run_positions" if bound["route_run_id"] else "trip_positions"
-        rows = fetch(query, ref=ref, limit=max_points + 1)
+        query = "route_run_positions" if bound["route_run_id"] else "trip_evidence_positions"
+        from_at = _at(bound["valid_from"])
+        to_at = min(_at(bound["valid_to"]), cutoff)
+        if from_at > to_at:
+            continue
+        parameters = {"ref": ref, "vehicle_id": bound["vehicle_id"],
+                      "from_at": from_at.isoformat(), "to_at": to_at.isoformat()}
+        rows = fetch(query, **parameters, limit=max_points + 1)
         if len(rows) > max_points:
             more = True
-            rows = [*rows, *fetch(query + "_tail", ref=ref, limit=1)]
+            rows = [*rows, *fetch(query + "_tail", **parameters, limit=1)]
             events = sorted((r for r in owned if r["kind"] in {"CustodyEvent", "DeliveryAttempt"}
                              and r["properties"].get("route_run_id") == bound["route_run_id"]
                              and r["properties"].get("trip_id") == bound["trip_id"]
@@ -106,7 +112,7 @@ def build_route_evidence(context, fetch, *, max_points=160, max_runs=4):
                 low = max(_at(bound["valid_from"]), when - timedelta(minutes=30))
                 high = min(_at(bound["valid_to"]), cutoff, when + timedelta(minutes=30))
                 if low <= high:
-                    rows.extend(fetch(query + "_window", ref=ref, from_at=low.isoformat(),
+                    rows.extend(fetch(query + "_window", ref=ref, vehicle_id=bound["vehicle_id"], from_at=low.isoformat(),
                                       to_at=high.isoformat(), limit=16))
         for row in rows:
             p = row.get("props", {})
