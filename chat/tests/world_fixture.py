@@ -242,6 +242,24 @@ class MemoryPort:
     def _route_run_manifests(self, ref, as_of, limit):
         return self._by_reference("Manifest", "route_manifest_ref", ref, as_of, limit, order=lambda n: (n.properties.get("version"), n.id))
 
+    def _vehicle_positions(self, prop, ref, vehicle_id, from_at, to_at, as_of, limit, reverse=False):
+        rows = self._rows("GPSObservation", as_of,
+                          lambda p: p.get(prop) == ref and p.get("vehicle_id") == vehicle_id
+                          and from_at <= _at(p["occurred_at"]) <= to_at,
+                          order=self._time_id(), limit=len(self.kinds["GPSObservation"]))
+        if reverse:
+            rows.reverse()
+        return rows[:limit]
+
+    def _route_run_positions(self, ref, vehicle_id, from_at, to_at, as_of, limit):
+        return self._vehicle_positions("route_run_id", ref, vehicle_id, from_at, to_at, as_of, limit)
+
+    def _route_run_positions_tail(self, ref, vehicle_id, from_at, to_at, as_of, limit):
+        return self._vehicle_positions("route_run_id", ref, vehicle_id, from_at, to_at, as_of, limit, reverse=True)
+
+    def _route_run_positions_window(self, ref, vehicle_id, from_at, to_at, as_of, limit):
+        return self._vehicle_positions("route_run_id", ref, vehicle_id, from_at, to_at, as_of, limit)
+
     def _container_scans(self, ref, as_of, limit):
         return self._by_reference("ScanEvent", "container_id", ref, as_of, limit)
 
@@ -250,6 +268,15 @@ class MemoryPort:
 
     def _trip_positions(self, ref, as_of, limit):
         return self._by_reference("GPSObservation", "trip_id", ref, as_of, limit)
+
+    def _trip_evidence_positions(self, ref, vehicle_id, from_at, to_at, as_of, limit):
+        return self._vehicle_positions("trip_id", ref, vehicle_id, from_at, to_at, as_of, limit)
+
+    def _trip_evidence_positions_tail(self, ref, vehicle_id, from_at, to_at, as_of, limit):
+        return self._vehicle_positions("trip_id", ref, vehicle_id, from_at, to_at, as_of, limit, reverse=True)
+
+    def _trip_evidence_positions_window(self, ref, vehicle_id, from_at, to_at, as_of, limit):
+        return self._vehicle_positions("trip_id", ref, vehicle_id, from_at, to_at, as_of, limit)
 
     def _trip_custody(self, ref, as_of, limit):
         return self._by_reference("CustodyEvent", "trip_id", ref, as_of, limit)
