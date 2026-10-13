@@ -110,7 +110,8 @@ Any catalogue mismatch will be classified per Phase C prompt (evidence vs UI vs 
 | Field | Value |
 |---|---|
 | Phase C deliverables | `evidence-first.md`, `case-audit-matrix.csv`, `case-audit-report.md` |
-| UI commit (this phase) | *(see git SHA after QA doc commit)* |
+| Phase C QA commit | `ba5979b89e43cebf5a3e9015cdb9f4312b3d313b` |
+| Phase B UI baseline | `273a21d` |
 | Data defects filed | **None** blocking packet integrity after r2 |
 | UI defects filed | **None** requiring code change in this pass |
 | **READY TO MERGE** | **NO** — pending authored catalogue comparison, 226 + V2 REVIEW rows, and integrated live signoff outside this worktree |
