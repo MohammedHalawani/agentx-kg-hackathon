@@ -128,10 +128,15 @@ QUERIES = {
     "route_run_scans": _by_reference("ScanEvent", "route_run_id", limit=300),
     "route_run_reconciliations": _by_reference("DepotReconciliation", "route_run_id", limit=200),
     "route_run_manifests": _by_reference("Manifest", "route_manifest_ref", order="n.version, n.entity_id", limit=200),
+    "route_run_positions": _by_reference("GPSObservation", "route_run_id", limit=161),
+    "route_run_positions_tail": _by_reference("GPSObservation", "route_run_id", order="n.occurred_at DESC, n.entity_id DESC", limit=1),
+    "route_run_positions_window": _in_window("GPSObservation", "route_run_id", "occurred_at", limit=16),
     # ------------------------------------------------------------------ one container, one trip
     "container_scans": _by_reference("ScanEvent", "container_id", limit=300),
     "trip_events": _by_reference("TripEvent", "trip_id", limit=40),
-    "trip_positions": _by_reference("GPSObservation", "trip_id", limit=160),
+    "trip_positions": _by_reference("GPSObservation", "trip_id", limit=161),
+    "trip_positions_tail": _by_reference("GPSObservation", "trip_id", order="n.occurred_at DESC, n.entity_id DESC", limit=1),
+    "trip_positions_window": _in_window("GPSObservation", "trip_id", "occurred_at", limit=16),
     "trip_custody": _by_reference("CustodyEvent", "trip_id", limit=MAX_LIMIT),
     "trip_containers": Query(f"MATCH (n:V2Entity:ScanEvent) WHERE n.trip_id = $ref AND n.container_id IS NOT NULL AND {in_scope('n')} AND {visible('n')} "
                              "RETURN n.container_id AS container_id, count(DISTINCT n.package_id) AS parcels, count(DISTINCT n.shipment_id) AS shipments, "

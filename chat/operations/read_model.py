@@ -13,6 +13,7 @@ from operations.datasets import pairing_error, read_database_allowed
 from operations.diagnosis import absent_diagnosis
 from operations.pagination import LIMITS, fingerprint, encode_cursor, decode_cursor
 from operations.reasoning import public_evidence, route_layers, triage
+from operations.route_evidence import build_route_evidence
 from operations.store import MONITOR_SUMMARY, SYMPTOM_STATUS
 
 CASE_STATES = frozenset(("OPEN", "INVESTIGATING", "NEEDS_EVIDENCE", "RECOMMENDATION_READY", "AWAITING_APPROVAL",
@@ -498,10 +499,14 @@ class OperationsReader:
 
     def shipment_detail(self, shipment_id, as_of=None):
         evidence = self.evidence(shipment_id, as_of)
+        route = build_route_evidence(evidence, lambda name, **params: self.fetch(name, as_of=evidence["as_of"], **params))
+        layers = route_layers(evidence, self.config)
+        layers["layers"]["vehicle_path"] = [{**point, "source": "vehicle_telemetry_only"} for point in route["observations"]]
+        layers["truncated"]["vehicle_path"] = route["truncated"]["observations"]
         # A shipment view has no investigation of its own: the diagnosis is explicitly absent, never filled from rules.
         return {"shipment_id": shipment_id, "as_of": evidence["as_of"], "synthetic": True,
                 "evidence": evidence, "diagnosis": absent_diagnosis("not_a_case"),
-                "rule_signals": self.rule_signals(evidence), "route_layers": route_layers(evidence, self.config)}
+                "rule_signals": self.rule_signals(evidence), "route_layers": layers, "route_evidence": route}
 
     def case_detail(self, case_id):
         if not isinstance(case_id, str) or len(case_id)>160:
@@ -519,7 +524,7 @@ class OperationsReader:
             # a proposal and cannot silently replace an existing human decision.
             for key in ("workflow_state","state_version","priority","operational_status","recommendation_id",
                         "last_run_id","recommendation","review","outcome","decisions","executions","run","previous_run","diagnosis",
-                        "symptom_codes","opened_at"):
+                         "symptom_codes","opened_at","investigation_status"):
                 if key in ledger:
                     detail[key]=ledger[key]
             detail["investigated_at"]=(ledger.get("run") or {}).get("recorded_at")

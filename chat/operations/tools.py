@@ -32,7 +32,7 @@ OVERDUE_ALLOWANCE_SECONDS = 900
 FACILITY_KINDS = ("Branch", "Hub", "SortingCenter", "DeliveryDepot", "FulfillmentWarehouse", "OrganizationWarehouse")
 ENVELOPE = frozenset(("dataset_id", "schema_version", "synthetic", "provenance", "split", "holdout_group", "source_ref", "raw_payload_hash",
                       "feed_id", "feed_origin", "ingested_at", "ingest_lag_seconds"))
-CROSS_SHIPMENT_TOOLS = ("same_device_activity", "same_route_run", "container_and_trip", "facility_window")
+CROSS_SHIPMENT_TOOLS = ("same_device_activity", "same_route_run", "route_observations", "container_and_trip", "facility_window")
 NO_PORT = "UNKNOWN: evidence beyond this shipment's own records is not available in this deployment."
 TELEMETRY_SEMANTICS = ("REPORTING: heartbeats keep arriving. SILENT: heartbeats stopped before the window's end with no log-out, at hours "
                        "when this device was reporting on previous days. QUIET_AS_ON_PREVIOUS_DAYS: it stopped without a log-out at about "
@@ -129,6 +129,8 @@ class InvestigationTools:
                                  "observation at it or its facility is overdue."),
         "same_route_run": ({"route_run_id": "required"}, "The other parcels on a delivery route run and their outcomes so far (delivered with proof, "
                                                         "failed, returned, no outcome), load confirmations, the driver app's reporting state, manifest versions."),
+        "route_observations": ({}, "Bounded vehicle-only GPS observations for this shipment's visible assigned route runs and trips; "
+                                 "stationary samples do not establish parcel custody or the cause of a stop."),
         "container_and_trip": ({"container_id": "one of the two", "trip_id": "one of the two"},
                                "A container: its other parcels and where each was last recorded. A trip: schedule, carrier status messages, "
                                "vehicle positions summary, containers and parcels on it and whether they were received."),
@@ -808,7 +810,7 @@ class InvestigationTools:
         gps = [{"gps_id": g.id, "vehicle_id": g.properties.get("vehicle_id"), "lat": g.properties.get("lat"), "lng": g.properties.get("lng"),
                 "position_scope": g.properties.get("position_scope"), **self._times(g.properties), "_ids": [g.id]} for g in self._kind("GPSObservation")]
         return {"assignments": rows or "NONE: no vehicle or route assignment is on record at this time", "manifests": manifests,
-                "vehicle_gps": gps or "NONE in this shipment's own records; vehicle positions of a trip are in container_and_trip",
+                "vehicle_gps": gps or "NONE in this shipment's own records; assigned vehicle positions are in route_observations",
                 "note": "Vehicle GPS is the vehicle's position only; it never establishes where a parcel is. An assignment or a manifest line "
                         "is a plan, not custody.", "evidence_ids": []}
 
@@ -1194,6 +1196,36 @@ class InvestigationTools:
                 "note": "This shipment's parcels come first, then parcels without an outcome, failed, returned, delivered. An outcome is what the "
                         "records show so far; a record still held back by a device is not visible.",
                 "evidence_ids": [route_run_id, summary["computed_id"], *tids, *mine]}
+
+    def _route_observations(self):
+        from operations.route_evidence import build_route_evidence
+
+        evidence = build_route_evidence(self.context, self._fetch)
+        points = evidence["observations"]
+        if len(points) > 12:
+            indices = {round(i * (len(points) - 1) / 11) for i in range(12)}
+            points = [point for i, point in enumerate(points) if i in indices]
+        shown = []
+        for point in points:
+            source = next((n for n in evidence["source_nodes"] if n["id"] == point["evidence_id"]), None)
+            if source is None:
+                continue
+            self._remember(source["properties"], "GPSObservation", scope="shared_vehicle_telemetry")
+            shown.append({"evidence_id": point["evidence_id"], "vehicle_id": point["vehicle_id"],
+                          "route_run_id": point["route_run_id"], "trip_id": point["trip_id"],
+                          "lat": point["lat"], "lng": point["lng"], "accuracy_m": point["accuracy_m"],
+                          "speed_kmh": point["speed_kmh"], "occurred_at": point["occurred_at"],
+                          "recorded_at": point["recorded_at"], "source_ref": point["source_ref"],
+                          "position_scope": "VEHICLE_ONLY", "_ids": [point["evidence_id"]]})
+        summary_id = self._compute("route_observation_count", [p["evidence_id"] for p in shown],
+                                   displayed_points=len(shown), available_points=evidence["summary"]["points_returned"])
+        return {"as_of": self.as_of, "vehicle_observations": shown,
+                "factual_summary": [{"computed_id": summary_id, "displayed_points": len(shown),
+                                     "available_points": evidence["summary"]["points_returned"], "_ids": [summary_id]}],
+                "points_available": evidence["summary"]["points_returned"],
+                "sampled_for_tool": len(evidence["observations"]) > len(shown),
+                "retrieval_truncated": evidence["truncated"]["observations"],
+                "note": "Vehicle position only. Neither stationary samples nor a plan proves parcel custody or delivery."}
 
     def _container_and_trip(self, container_id=None, trip_id=None):
         if not container_id and not trip_id:

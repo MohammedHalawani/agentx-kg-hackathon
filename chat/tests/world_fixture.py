@@ -242,6 +242,18 @@ class MemoryPort:
     def _route_run_manifests(self, ref, as_of, limit):
         return self._by_reference("Manifest", "route_manifest_ref", ref, as_of, limit, order=lambda n: (n.properties.get("version"), n.id))
 
+    def _route_run_positions(self, ref, as_of, limit):
+        return self._by_reference("GPSObservation", "route_run_id", ref, as_of, limit)
+
+    def _route_run_positions_tail(self, ref, as_of, limit):
+        return self._by_reference("GPSObservation", "route_run_id", ref, as_of, limit,
+                                  order=lambda n: (-_at(n.properties["occurred_at"]).timestamp(), n.id))
+
+    def _route_run_positions_window(self, ref, from_at, to_at, as_of, limit):
+        return self._rows("GPSObservation", as_of,
+                          lambda p: p.get("route_run_id") == ref and from_at <= _at(p["occurred_at"]) <= to_at,
+                          order=self._time_id(), limit=limit)
+
     def _container_scans(self, ref, as_of, limit):
         return self._by_reference("ScanEvent", "container_id", ref, as_of, limit)
 
@@ -250,6 +262,15 @@ class MemoryPort:
 
     def _trip_positions(self, ref, as_of, limit):
         return self._by_reference("GPSObservation", "trip_id", ref, as_of, limit)
+
+    def _trip_positions_tail(self, ref, as_of, limit):
+        return self._by_reference("GPSObservation", "trip_id", ref, as_of, limit,
+                                  order=lambda n: (-_at(n.properties["occurred_at"]).timestamp(), n.id))
+
+    def _trip_positions_window(self, ref, from_at, to_at, as_of, limit):
+        return self._rows("GPSObservation", as_of,
+                          lambda p: p.get("trip_id") == ref and from_at <= _at(p["occurred_at"]) <= to_at,
+                          order=self._time_id(), limit=limit)
 
     def _trip_custody(self, ref, as_of, limit):
         return self._by_reference("CustodyEvent", "trip_id", ref, as_of, limit)
