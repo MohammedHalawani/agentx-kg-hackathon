@@ -2,11 +2,13 @@
 from collections import defaultdict
 import unittest
 
+from dataset_v2.context import CONTEXT, OBSERVATIONS
 from dataset_v2.contracts import instant
 from operations.route_evidence import build_route_evidence
 from tests.world_fixture import MemoryPort, small_world
 from operations.reasoning import public_evidence
-from world.v3_scenarios import CASES, DATASET_ID, ROUTE_SCHEMA, SEED, assert_label_free, config
+from world.v3_scenarios import (CASES, DATASET_ID, ROUTE_SCHEMA, SEED, _gateway_world, _route, assert_label_free,
+                                config, delivery_providers)
 
 
 class V3ProfileTests(unittest.TestCase):
@@ -52,6 +54,41 @@ class V3ProfileTests(unittest.TestCase):
         self.assertTrue(self.owned(photo, "PhotoEvidence"))
         self.assertTrue(any(n.properties.get("result") == "FAIL" for n in self.owned(photo, "AuthenticationEvidence")))
         self.assertTrue(self.owned(photo, "RecipientReport"))
+
+    def test_delivering_provider_reaches_packet_like_the_live_envelope(self):
+        """The gateway stamps each record with its delivering provider; offline packets must hydrate the same shared record."""
+        imported, items = self.fixture.imported, self.fixture.items
+        gateway = _gateway_world(imported, items)
+        delivered_by = delivery_providers(items)
+        fed = [key for key in gateway.nodes if key in delivered_by and key not in imported.nodes]
+        self.assertTrue(fed)
+        changed = 0
+        for key in fed:
+            domain = self.world.nodes[key].properties.get("provider_id")   # decoded payload only
+            actual = gateway.nodes[key].properties.get("provider_id")
+            if domain is None:
+                self.assertEqual(actual, delivered_by[key], key)
+                changed += 1
+            else:
+                self.assertEqual(actual, domain, key)    # the record's own provider is never replaced
+        self.assertGreater(changed, 0)
+        # Packet scope: re-attaching the envelope may add a delivering provider record to a visible record's
+        # context, and nothing else. Compare against the same world decoded without envelopes.
+        added = set()
+        for sid in ("DEMO-SHP-000129", "DEMO-SHP-000226"):
+            cutoff = gateway.config.as_of
+            before, _, _ = _route(self.world, sid, cutoff)
+            after, _, _ = _route(gateway, sid, cutoff)
+            kinds = {n["id"]: n["kind"] for n in after["nodes"]}
+            new = {n["id"] for n in after["nodes"]} - {n["id"] for n in before["nodes"]}
+            self.assertFalse({n["id"] for n in before["nodes"]} - {n["id"] for n in after["nodes"]}, sid)
+            self.assertTrue(all(kinds[key] == "Provider" for key in new), sid)
+            visible = {delivered_by[n.id] for n in gateway.nodes.values()
+                       if n.properties.get("holdout_group") == sid and n.id in delivered_by
+                       and n.kind in CONTEXT | OBSERVATIONS and instant(n.properties["recorded_at"]) <= instant(cutoff)}
+            self.assertLessEqual(new, visible, sid)    # only providers that delivered a visible record
+            added |= new
+        self.assertIn("DEMO-PROV-SPL", added)
 
     def test_vehicle_context_and_ordinary_single_stationary_sample(self):
         sid = "DEMO-SHP-000051"

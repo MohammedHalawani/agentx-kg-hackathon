@@ -83,12 +83,30 @@ def assert_label_free(value):
             assert_label_free(item)
 
 
+def delivery_providers(items):
+    """Provider that delivered each first-delivered record (the feed envelope's ``provider_id``)."""
+    providers = {}
+    for item in items:
+        providers.setdefault(item["source_event_id"], item["provider_id"])
+    return providers
+
+
 def _gateway_world(imported, items):
-    """Decode feed with its gateway receipt times and materialize only gateway-defined edges."""
+    """Decode feed with its gateway receipt times and materialize only gateway-defined edges.
+
+    ``operations.ingestion`` stamps each ingested record with its delivery envelope, including the
+    delivering ``provider_id``, and the read model hydrates every shared record that a visible
+    record references. ``dataset_v2.feed.reconstitute`` decodes payloads only, so the delivering
+    provider is re-attached here. A payload that already names its own ``provider_id`` keeps that
+    domain value: replacing it with the channel provider would misstate the record.
+    """
     from operations.ingestion import EDGE_RULES
     world = reconstitute(imported, items)
+    delivered_by = delivery_providers(items)
     for key in sorted(set(world.nodes) - set(imported.nodes)):
         node = world.nodes[key]
+        if delivered_by.get(key):
+            node.properties.setdefault("provider_id", delivered_by[key])
         sid = node.properties.get("holdout_group")
         for rule_kind, prop, rel, outward in EDGE_RULES:
             if rule_kind != node.kind:
@@ -150,10 +168,10 @@ def _cutoffs(world, sid):
     return p["entity_id"], before.isoformat(), after.isoformat()
 
 
-def write_fixture(world):
-    DATA_ROOT.mkdir(parents=True, exist_ok=True)
-    schema_file = DATA_ROOT / "route-evidence.schema.json"
-    fixture_file = DATA_ROOT / "route-evidence.fixture.json"
+def write_fixture(world, root=DATA_ROOT):
+    root.mkdir(parents=True, exist_ok=True)
+    schema_file = root / "route-evidence.schema.json"
+    fixture_file = root / "route-evidence.fixture.json"
     _, route, _ = _route(world, CASES[0], world.config.as_of)
     if not route["observations"] or len(route["observations"]) > 160:
         raise ValueError("Fixture must contain valid bounded vehicle observations")
@@ -163,9 +181,9 @@ def write_fixture(world):
             "fixture": str(fixture_file), "fixture_sha256": _sha(fixture_file)}
 
 
-def write_neutral_packets(world, bundle_manifest_sha256):
+def write_neutral_packets(world, bundle_manifest_sha256, root=DATA_ROOT):
     from operations.tools import InvestigationTools
-    packets = DATA_ROOT / "neutral-packets"
+    packets = root / "neutral-packets"
     packets.mkdir(parents=True, exist_ok=True)
     records = []
     for sid in CASES:
@@ -236,6 +254,9 @@ def export():
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=("fixture", "export", "validate", "packets"))
+    parser.add_argument("--output-root", type=Path, default=DATA_ROOT,
+                        help="packets only: directory for the regenerated packets, route fixture and runtime manifest; "
+                             "use a new directory to leave the originals untouched")
     args = parser.parse_args(argv)
     if args.command == "fixture":
         build = build_world(config())
@@ -247,10 +268,11 @@ def main(argv=None):
         from world.export import read_world_bundle
         loaded, items = read_world_bundle(BUNDLE)
         world = _gateway_world(loaded.world, items)
-        fixture = write_fixture(world)
+        root = args.output_root
+        fixture = write_fixture(world, root)
         bundle_hash = _sha(BUNDLE / "manifest.json")
-        packets = write_neutral_packets(world, bundle_hash)
-        runtime = DATA_ROOT / "runtime-fixtures.json"
+        packets = write_neutral_packets(world, bundle_hash, root)
+        runtime = root / "runtime-fixtures.json"
         runtime_value = _manifest(world, packets, bundle_hash)
         assert_label_free(runtime_value)
         _json(runtime, runtime_value)

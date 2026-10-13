@@ -4,6 +4,7 @@ import json
 import unittest
 from datetime import datetime, timedelta, timezone
 
+from dataset_v2.contracts import instant
 from operations.route_evidence import build_route_evidence
 from operations.tools import InvestigationTools, MAX_RESULT_CHARS
 from tests.world_fixture import MemoryPort, small_world
@@ -76,6 +77,41 @@ class RouteEvidenceTests(unittest.TestCase):
         self.assertEqual(result["summary"]["timing_comparisons"], [])
         self.assertEqual(result["source_relationships"], [])
         self.assertTrue(all(p["position_scope"] == "VEHICLE_ONLY" for p in result["observations"]))
+
+    def test_summary_spans_chronological_extremes_across_vehicle_contexts(self):
+        """List order is vehicle-grouped; the summary interval must still be first <= last in time."""
+        trip, trip_vehicle = "DEMO-TRIP-V3-1", "DEMO-VEH-V3-0"   # sorts before VEH-V3-1 but runs later
+        c = context(T1)
+        c["nodes"] = [n for n in c["nodes"] if n["kind"] != "VehicleAssignment"] + [
+            node(trip, "Trip", vehicle_id=trip_vehicle),
+            node("DEMO-ASSIGN-V3-RUN", "VehicleAssignment", shipment_id=SID, route_run_id=RUN, vehicle_id=VEH,
+                 valid_from="2026-09-19T08:00:00+00:00", valid_to="2026-09-19T10:00:00+00:00"),
+            node("DEMO-ASSIGN-V3-TRIP", "VehicleAssignment", shipment_id=SID, trip_id=trip, vehicle_id=trip_vehicle,
+                 valid_from="2026-09-19T10:00:00+00:00", valid_to="2026-09-19T18:00:00+00:00")]
+        rows = {"route_run_positions": [self.early,
+                                        position("DEMO-GPS-V3-RUN-2", "2026-09-19T09:30:00+00:00", "2026-09-19T09:31:00+00:00")],
+                "trip_evidence_positions": [
+                    position("DEMO-GPS-V3-TRIP-1", "2026-09-19T10:30:00+00:00", "2026-09-19T10:31:00+00:00",
+                             vehicle_id=trip_vehicle, route_run_id=None, trip_id=trip),
+                    position("DEMO-GPS-V3-TRIP-2", "2026-09-19T11:45:00+00:00", "2026-09-19T11:46:00+00:00",
+                             vehicle_id=trip_vehicle, route_run_id=None, trip_id=trip)]}
+        calls = []
+        def fetch(name, **params):
+            calls.append(name)
+            return [copy.deepcopy(r) for r in rows[name] if r["props"]["vehicle_id"] == params["vehicle_id"]]
+        result = build_route_evidence(c, fetch)
+        listed = [p["evidence_id"] for p in result["observations"]]
+        # Deterministic vehicle-grouped listing and source IDs are unchanged ...
+        self.assertEqual(listed, ["DEMO-GPS-V3-TRIP-1", "DEMO-GPS-V3-TRIP-2", "DEMO-GPS-V3-1", "DEMO-GPS-V3-RUN-2"])
+        self.assertEqual(result["summary"]["input_evidence_ids"], listed)
+        self.assertEqual(sorted(calls), ["route_run_positions", "trip_evidence_positions"])
+        # ... but the interval spans the actual earliest and latest returned observations.
+        self.assertEqual(result["summary"]["first_observed_at"], "2026-09-19T09:00:00+00:00")
+        self.assertEqual(result["summary"]["last_observed_at"], "2026-09-19T11:45:00+00:00")
+        self.assertLessEqual(instant(result["summary"]["first_observed_at"]), instant(result["summary"]["last_observed_at"]))
+        stamps = [instant(p["occurred_at"]) for p in result["observations"]]
+        self.assertEqual(instant(result["summary"]["first_observed_at"]), min(stamps))
+        self.assertEqual(instant(result["summary"]["last_observed_at"]), max(stamps))
 
     def test_unbound_run_is_not_queried(self):
         c = context(T1)

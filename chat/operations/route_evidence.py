@@ -185,11 +185,15 @@ def build_route_evidence(context, fetch, *, max_points=160, max_runs=4):
                               "trip_id": a["trip_id"], "first_observed_at": a["occurred_at"],
                               "last_observed_at": b["occurred_at"], "threshold_kmh": 3,
                               "gap_limit_seconds": 300, "input_evidence_ids": [a["evidence_id"], b["evidence_id"]]})
+    # ``observations`` stays grouped by vehicle/context (interval pairing above depends on that
+    # adjacency), so list position is not time order across contexts. The summary spans the
+    # chronological extremes of the returned points.
+    chronological = sorted(observations, key=lambda p: (_at(p["occurred_at"]), p["evidence_id"]))
     return {"schema": "route-evidence-v3-1", "shipment_id": sid, "as_of": as_of,
             "contexts": contexts, "observations": observations,
             "summary": {"points_returned": len(observations), "sampled": more,
-                        "first_observed_at": observations[0]["occurred_at"] if observations else None,
-                        "last_observed_at": observations[-1]["occurred_at"] if observations else None,
+                        "first_observed_at": chronological[0]["occurred_at"] if chronological else None,
+                        "last_observed_at": chronological[-1]["occurred_at"] if chronological else None,
                         "stationary_intervals": intervals[:4], "timing_comparisons": [],
                         "input_evidence_ids": [p["evidence_id"] for p in observations],
                         "note": "Vehicle observations only; gaps do not establish continuous stopping or parcel custody."},
