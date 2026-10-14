@@ -21,6 +21,32 @@ All 136 titles and evidence/response descriptions are retained verbatim in `case
 | 11 | Q01 Weight differs from declaration | Scale error versus declaration error or real integrity discrepancy. | REQUEST_REWEIGH | Independent calibrated package-bound measurement within policy tolerances. | not extended |
 | 12 | R01 Customer says not delivered; valid proof exists | Carrier proof and recipient nonreceipt are attributed competing evidence. | DELIVERY_DISPUTE_REVIEW | Authorized human finding with policy-required evidence; no automatic dismissal. | not extended |
 
+## How far each priority scenario actually goes
+
+Four separate levels. A scenario at one level is not implied to reach the next.
+
+- **Classified**: catalogued with alternatives and a mapped action. All 12.
+- **Source evidence**: the frozen world contains the relevant source kinds (`source-inventory.json`) and bounded tools can read them. Recorded as `partial` for all 12 by the original V3.2 author; no curated shipment is claimed to prove any of them.
+- **Action support**: an action code with an authority rule and a verifier rule for its effect. All 12 (DELIVERY_DISPUTE_REVIEW is a human-authority action with no automatic verifier).
+- **Verified end to end**: request, synthetic operational responses, actual verifier and closure code run in the controlled in-memory store (`offline-evaluation.json` case traces). Not the frozen world, not Neo4j, not a live model.
+
+| Priority | Case | Verified end to end | What the trace shows |
+|---|---|---|---|
+| 1 | S03 Barcode misread | **Yes, resolved** | Independent matching rescan from a different device → action VERIFIED → case VERIFIED_RESOLVED. |
+| 2 | S04 Wrong label on parcel | Negative path only | Rescan still differs → VERIFIED_FAILURE → case stays UNRESOLVED. No resolution path is claimed. |
+| 3 | C03 Driver returns, one parcel not scanned back | No | Action and verifier exist; no trace. |
+| 4 | C04 Handover between drivers unrecorded | Action verified, case **not** resolved | New corroborated stock check verifies the request; the unconfirmed original handover remains, so the case stays UNRESOLVED (HUMAN_REVIEW). |
+| 5 | D02 Records created offline, uploaded later | **Yes, resolved** | Original records from the targeted device arrive after the request → VERIFIED → VERIFIED_RESOLVED. Healthy-device, GPS-only and wrong-device variants stay pending. |
+| 6 | D11 Same device affects many shipments | No | Per-shipment verification only; incident deduplication deferred. |
+| 7 | P01 Delivered, tracking says in transit | No | |
+| 8 | P11 Proof belongs to another shipment | No | |
+| 9 | W04 Wrong container | No | |
+| 10 | G08 Vehicle near address, no delivery evidence | No | Verifier never accepts proximity. |
+| 11 | Q01 Weight differs from declaration | No | Reweigh verifier exists; no trace. |
+| 12 | R01 Not delivered; valid proof exists | Authority check only | Verifier probe: a serious nonreceipt report blocks a rescan success; DELIVERY_DISPUTE_REVIEW is HUMAN_REVIEW and cannot auto-execute. |
+
+Totals: 136 catalogued, 12 classified priorities, 2 verified resolved end to end (S03, D02), 2 more traced to a safe unresolved end (S04, C04), 0 exercised on a real database, 0 measured with a live model.
+
 ## Complete coverage matrix
 
 | Case | Catalogued | Source support | Investigatable | Action support | V3.2 end-to-end |

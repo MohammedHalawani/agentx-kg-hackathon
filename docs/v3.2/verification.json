@@ -1,0 +1,394 @@
+{
+  "schema": "suhail-v32-verification-1",
+  "date": "2026-10-14",
+  "branch": "codex/v3-2-case-intelligence",
+  "worktree": "C:\\Projects\\suhail-v3-2-case-intelligence",
+  "exact_base": "7287e44ad99c9a8b90aac7543e8218c1302aa31a",
+  "tested_implementation_commit": "1ef8164438566274360446d8bdd01222951d4e55",
+  "final_document_commit": "See final completion SHA / git rev-parse HEAD; the final commit adds only handoff artifacts.",
+  "base_contract": "suhail-v3-1",
+  "additive_action_contract": "suhail-action-1",
+  "ready_for_independent_review": true,
+  "ready_to_merge": false,
+  "v31_base_status": "V3.1 independently reviewed (READY TO MERGE YES) and fast-forwarded locally into v3/integration at 7287e44 on 2026-10-14; not pushed.",
+  "merge_gates": [
+    "Independent V3.2 review.",
+    "Real Neo4j execution of the new V3.2 write paths and the 4 race tests on a separately authorized disposable database.",
+    "Composer consumer implementation and appropriate new status UI checks.",
+    "Separately authorized isolated V3.2 database/response-feed integration; no protected database writes.",
+    "Trusted pricing configuration/provider-limit validation before separately authorized billable use."
+  ],
+  "changed_files": [
+    ".env.example",
+    ".gitignore",
+    "backend/operations_api.py",
+    "chat/llm/pipeline/_llm.py",
+    "chat/operations/action_lifecycle.py",
+    "chat/operations/call_ledger.py",
+    "chat/operations/case_intelligence.py",
+    "chat/operations/graph.py",
+    "chat/operations/inference_safety.py",
+    "chat/operations/investigator.py",
+    "chat/operations/outcome_engine.py",
+    "chat/operations/read_model.py",
+    "chat/operations/schema.py",
+    "chat/operations/store.py",
+    "chat/scripts/evaluate_gpt_oss_v1.py",
+    "chat/tests/test_afl_state_machine.py",
+    "chat/tests/test_call_ledger.py",
+    "chat/tests/test_evidence_integrity.py",
+    "chat/tests/test_gpt_oss_evaluator.py",
+    "chat/tests/test_llm_safety.py",
+    "chat/tests/test_model_call_timeout.py",
+    "chat/tests/test_operations_api.py",
+    "chat/tests/test_operations_store.py",
+    "chat/tests/test_provider_transport.py",
+    "chat/tests/test_v32_action_store.py",
+    "chat/tests/test_v32_actions.py",
+    "chat/tests/test_v32_case_intelligence.py",
+    "chat/tests/test_v32_inference_safety.py",
+    "chat/tests/test_v3_provider_gate.py",
+    "docs/v3.2/action-status.examples.json",
+    "docs/v3.2/case-taxonomy.json",
+    "docs/v3.2/composer-handoff.md",
+    "docs/v3.2/coverage-matrix.md",
+    "docs/v3.2/engineering-handoff.md",
+    "docs/v3.2/offline-evaluation.json",
+    "docs/v3.2/reproduce-offline.ps1",
+    "docs/v3.2/source-inventory.json",
+    "docs/v3.2/verification.json",
+    "scripts/v32_offline_evaluation.py"
+  ],
+  "python": {
+    "tests_run": 921,
+    "passed": 896,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 25,
+    "seconds": 1454.141,
+    "successful": true,
+    "failures": [],
+    "skip_details": [
+      {
+        "test": "test_misread_label_rescan_succeeds (test_execution_neo4j.ExecutionNeo4jTests.test_misread_label_rescan_succeeds)",
+        "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+      },
+      {
+        "test": "test_offline_device_sync_resolves_from_the_late_upload_without_a_human (test_execution_neo4j.ExecutionNeo4jTests.test_offline_device_sync_resolves_from_the_late_upload_without_a_human)",
+        "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+      },
+      {
+        "test": "test_wrong_label_rescan_fails_verification_and_stays_unresolved (test_execution_neo4j.ExecutionNeo4jTests.test_wrong_label_rescan_fails_verification_and_stays_unresolved)",
+        "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+      },
+      {
+        "test": "test_1_only_delivered_messages_are_ingested_with_provenance (test_live_ingestion_neo4j.LiveIngestionNeo4jTests.test_1_only_delivered_messages_are_ingested_with_provenance)",
+        "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+      },
+      {
+        "test": "test_2_retransmissions_are_duplicates_and_reingest_is_idempotent (test_live_ingestion_neo4j.LiveIngestionNeo4jTests.test_2_retransmissions_are_duplicates_and_reingest_is_idempotent)",
+        "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+      },
+      {
+        "test": "test_3_late_upload_is_invisible_until_ingested_then_visible_as_late (test_live_ingestion_neo4j.LiveIngestionNeo4jTests.test_3_late_upload_is_invisible_until_ingested_then_visible_as_late)",
+        "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+      },
+      {
+        "test": "test_4_conflicting_retransmission_is_kept_apart_and_unknown_payload_rejected (test_live_ingestion_neo4j.LiveIngestionNeo4jTests.test_4_conflicting_retransmission_is_kept_apart_and_unknown_payload_rejected)",
+        "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+      },
+      {
+        "test": "test_5_reset_returns_every_provider_message_to_pending (test_live_ingestion_neo4j.LiveIngestionNeo4jTests.test_5_reset_returns_every_provider_message_to_pending)",
+        "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+      },
+      {
+        "test": "test_1_monitor_detection_against_truth (test_live_runtime_neo4j.LiveRuntimeNeo4jTests.test_1_monitor_detection_against_truth)",
+        "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+      },
+      {
+        "test": "test_2_slow_investigation_does_not_block_ingestion_or_monitoring (test_live_runtime_neo4j.LiveRuntimeNeo4jTests.test_2_slow_investigation_does_not_block_ingestion_or_monitoring)",
+        "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+      },
+      {
+        "test": "test_cases_open_from_ingested_evidence_and_are_investigated_within_the_budget (test_stage2_pilot.WorldPilotNeo4jTests.test_cases_open_from_ingested_evidence_and_are_investigated_within_the_budget)",
+        "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+      },
+      {
+        "test": "test_every_catalogue_query_returns_the_same_rows_from_neo4j_as_from_the_reference (test_stage2_pilot.WorldPilotNeo4jTests.test_every_catalogue_query_returns_the_same_rows_from_neo4j_as_from_the_reference)",
+        "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+      },
+      {
+        "test": "test_every_tool_query_ran_on_the_server_and_every_citation_is_valid (test_stage2_pilot.WorldPilotNeo4jTests.test_every_tool_query_ran_on_the_server_and_every_citation_is_valid)",
+        "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+      },
+      {
+        "test": "test_the_run_record_is_served_and_nothing_resolves_without_a_simulator (test_stage2_pilot.WorldPilotNeo4jTests.test_the_run_record_is_served_and_nothing_resolves_without_a_simulator)",
+        "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+      },
+      {
+        "test": "test_the_scorer_gives_each_case_a_verdict_from_the_runs_own_ingestion (test_stage2_pilot.WorldPilotNeo4jTests.test_the_scorer_gives_each_case_a_verdict_from_the_runs_own_ingestion)",
+        "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+      },
+      {
+        "test": "test_the_time_correct_check_passes (test_stage2_pilot.WorldPilotNeo4jTests.test_the_time_correct_check_passes)",
+        "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+      },
+      {
+        "test": "test_score_and_report (test_stage3_wiring.Stage3WiringNeo4jTests.test_score_and_report)",
+        "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+      },
+      {
+        "test": "test_selected_cases_open_in_the_run_and_only_they_are_investigated (test_stage3_wiring.Stage3WiringNeo4jTests.test_selected_cases_open_in_the_run_and_only_they_are_investigated)",
+        "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+      },
+      {
+        "test": "test_the_agent_arm_reads_the_run_record_back_and_the_ledger_holds_the_stores_own_count (test_stage3_wiring.Stage3WiringNeo4jTests.test_the_agent_arm_reads_the_run_record_back_and_the_ledger_holds_the_stores_own_count)",
+        "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+      },
+      {
+        "test": "test_the_dry_run_drives_the_replay_and_investigates_nothing (test_stage3_wiring.Stage3WiringNeo4jTests.test_the_dry_run_drives_the_replay_and_investigates_nothing)",
+        "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+      },
+      {
+        "test": "test_the_five_surfaces_are_captured_and_the_provenance_names_the_run (test_stage3_wiring.Stage3WiringNeo4jTests.test_the_five_surfaces_are_captured_and_the_provenance_names_the_run)",
+        "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+      },
+      {
+        "test": "test_an_expired_claim_is_recovered_once_and_taken_once_and_its_old_owner_is_refused (test_v3_concurrency_neo4j.RaceTests.test_an_expired_claim_is_recovered_once_and_taken_once_and_its_old_owner_is_refused)",
+        "reason": "OUTSTANDING GATE, not a pass: set SUHAIL_V3_RACE_TESTS=1 and SUHAIL_V3_CI_DATABASE=shipments-v2-world-v3-ci-20261013 once the integrator has provisioned it"
+      },
+      {
+        "test": "test_two_clients_claim_two_different_cases_and_investigate_them_together (test_v3_concurrency_neo4j.RaceTests.test_two_clients_claim_two_different_cases_and_investigate_them_together)",
+        "reason": "OUTSTANDING GATE, not a pass: set SUHAIL_V3_RACE_TESTS=1 and SUHAIL_V3_CI_DATABASE=shipments-v2-world-v3-ci-20261013 once the integrator has provisioned it"
+      },
+      {
+        "test": "test_two_clients_racing_for_one_case_grant_it_exactly_once (test_v3_concurrency_neo4j.RaceTests.test_two_clients_racing_for_one_case_grant_it_exactly_once)",
+        "reason": "OUTSTANDING GATE, not a pass: set SUHAIL_V3_RACE_TESTS=1 and SUHAIL_V3_CI_DATABASE=shipments-v2-world-v3-ci-20261013 once the integrator has provisioned it"
+      },
+      {
+        "test": "test_with_capacity_one_two_racing_clients_never_both_hold_a_case (test_v3_concurrency_neo4j.RaceTests.test_with_capacity_one_two_racing_clients_never_both_hold_a_case)",
+        "reason": "OUTSTANDING GATE, not a pass: set SUHAIL_V3_RACE_TESTS=1 and SUHAIL_V3_CI_DATABASE=shipments-v2-world-v3-ci-20261013 once the integrator has provisioned it"
+      }
+    ]
+  },
+  "selected_regression_modules_from_complete_run": {
+    "test_provider_transport": {
+      "passed": 4,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "test_reviewer_evidence": {
+      "passed": 10,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "test_identifier_boundary": {
+      "passed": 3,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "test_stage2_investigation": {
+      "passed": 14,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "test_v32_inference_safety": {
+      "passed": 8,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "test_v32_actions": {
+      "passed": 8,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "test_v32_action_store": {
+      "passed": 12,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "test_v32_case_intelligence": {
+      "passed": 4,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "controlled_evaluation": {
+    "test_results": {
+      "passed": 24,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "scripted_quality": {
+      "probes": 5,
+      "correct_classifications": 5,
+      "valid_citations": 5,
+      "alternatives_addressed": 4,
+      "abstentions": 1,
+      "unnecessary_human_escalations": 0
+    },
+    "safety": {
+      "actual_verifier_probes": 26,
+      "negative_or_ambiguous_verifier_probes": 23,
+      "false_action_successes": 0,
+      "end_to_end_traces": 7,
+      "negative_or_unresolved_case_traces": 5,
+      "false_case_resolutions": 0,
+      "verified_case_resolutions": 2
+    },
+    "live_model_accuracy": "NOT MEASURED; scripted fixtures do not establish live GPT-OSS diagnosis/reviewer accuracy."
+  },
+  "frontend": {
+    "unit": {
+      "passed": 57,
+      "failed": 0,
+      "skipped": 0,
+      "files": 5,
+      "command": "npm test"
+    },
+    "typecheck": {
+      "result": "passed",
+      "command": "npm run typecheck"
+    },
+    "browser": {
+      "passed": 21,
+      "failed": 0,
+      "skipped": 0,
+      "browser": "Chrome",
+      "command": "npm run test:e2e",
+      "scope": "Unchanged frontend, scripted backend; compatibility checks, not an implemented V3.2 UI."
+    },
+    "build": "passed via Playwright webServer",
+    "dependency_install": "npm ci --offline; lockfile unchanged",
+    "screenshots": "12 changed tracked outputs and 3 new outputs preserved under artifacts/v3.2/browser-screenshots; source screenshots restored."
+  },
+  "production_safeguards": {
+    "output_limit": "Configurable, default 2048, hard ceiling 8192; forwarded to real HTTP transport.",
+    "aggregate_budget": "Durable exclusive-file/atomic-replace call, conservative token and configured-tariff cost reservations before admission.",
+    "unknown_usage": "Crash/failure/missing usage keeps maximum; abandoned requests retain maximum; provider limit breach blocks future dispatch.",
+    "deadline": "One monotonic deadline covers budget admission, provider waiting and inference; undispatched cleanup cannot add another wait or leak capacity.",
+    "retries": "No hidden SDK retries; explicit attempts remain in canonical shared-session accounting.",
+    "provider_and_worker_fencing": "Existing implementation/selection unchanged; provider cap remains 1."
+  },
+  "workflows": {
+    "barcode": "Actual independent rescan verifies and resolves only after clearance; mismatch/foreign/stale/conflicting source remains unresolved.",
+    "device_sync": "Actual expected original records from the target device, received after dispatch, verify and resolve only after clearance; GPS/heartbeat alone cannot.",
+    "custody": "New corroborated stock evidence verifies the request; an unconfirmed original handover is retained, so the case remains unresolved under existing policy."
+  },
+  "coverage": {
+    "catalogued": 136,
+    "families": 12,
+    "priorities": 12,
+    "note": "Other eight priority scenarios are documented/partly source-supported, not newly complete V3.2 vertical slices."
+  },
+  "four_v31_corrections": {
+    "hidden_sdk_retries": "preserved; real loopback 503/429/timeout one-request tests passed",
+    "bounded_independent_review_evidence": "preserved, including source/provenance/cutoff and fail-closed contradiction validation",
+    "demo_syn_identifier_consistency": "preserved; new response endpoint maps IDs and nested lifecycle references stay structured",
+    "canonical_model_call_accounting": "preserved; shared final snapshot and explicit attempt accounting regressions passed"
+  },
+  "private_evaluation_boundary": "Expected answers remain in tests and offline evaluation artifacts; new runtime guidance imports neither and contains no preferred real-case diagnoses.",
+  "protection": {
+    "protected_checkouts": [
+      {
+        "path": "C:/Projects/demo",
+        "head": "4cd43045a1db284e83cd5702d63acf7950492492",
+        "clean": true
+      },
+      {
+        "path": "C:/Projects/suhail-v3-integration",
+        "head": "7287e44ad99c9a8b90aac7543e8218c1302aa31a",
+        "clean": true
+      },
+      {
+        "path": "C:/Projects/suhail-v3-1-corrective",
+        "head": "7287e44ad99c9a8b90aac7543e8218c1302aa31a",
+        "clean": true
+      }
+    ],
+    "videos": [
+      {
+        "path": "C:\\Projects\\demo\\.ui-integration\\showcase-videos\\suhail-video-A-v2.mp4",
+        "sha256": "d756c96697e87ba8c0897fcb92b8cb1e4762d31c47390325550c46f7594b6833",
+        "unchanged": true
+      },
+      {
+        "path": "C:\\Projects\\demo\\.ui-integration\\showcase-videos\\suhail-video-B-v2.mp4",
+        "sha256": "fde09ee573128b8d1f6ddd828766daae0bbe409999d879d0a870eb0dac7d9072",
+        "unchanged": true
+      }
+    ],
+    "frozen_manifest_sha256": "538d9fffe7c23cb9637be959e7c5ac0f83c76b3fab5c67b8e377e071d687e2b6",
+    "unchanged_policy_fencing_model_launcher_frontend_contract_locks": [
+      "chat/operations/authority.py",
+      "chat/operations/provider_gate.py",
+      "chat/operations/claims.py",
+      "chat/operations/workers.py",
+      "chat/config.py",
+      "scripts/v3_backend.ps1",
+      "chat/uv.lock",
+      "frontend-next/package-lock.json",
+      "frontend-next/src",
+      "docs/v3/06-contract-examples.json",
+      "docs/v3/08-interface-reference.md"
+    ],
+    "database_writes": 0,
+    "paid_inference": 0,
+    "external_logistics_requests": 0,
+    "port_8022_changes": 0,
+    "merged": false,
+    "pushed": false,
+    "deployed": false
+  },
+  "remaining_risks": [
+    "Missing/changed pricing configuration blocks inference by design. Rates must be trusted upper bounds and all processes must share the intended persistent ledger.",
+    "A provider violating advertised limits/tariffs can overrun its reservation; the recorded breach blocks further requests.",
+    "Live investigator/reviewer accuracy is unmeasured; no billable inference was authorized or run.",
+    "Real Neo4j write/race gates remain skipped, not passed. No new database/import was performed.",
+    "Composer UI, real field authentication/integrations and incident-wide request deduplication remain outside this backend batch."
+  ],
+  "artifacts": {
+    "raw_directory": "artifacts/v3.2",
+    "full_offline_log_sha256": "16b5224d0428dfe851a5853f67ebfd28121ad4786b09fd20f0693c6588373283",
+    "tested_python_source_sha256": {
+      "backend/operations_api.py": "071e612a60b32fdadf555ccac0722177fc917782bbb4828d5e2137da128989d7",
+      "chat/llm/pipeline/_llm.py": "39951b11c60a010c769b397c105b95dcf5270c1f6a9bde5553c7d1209ea3e46f",
+      "chat/operations/action_lifecycle.py": "d11951741880f5d18270e3f14926e10f8186317c8b5d82dd6eaa70f48045afa6",
+      "chat/operations/call_ledger.py": "789da76b9c1624ebbb7eabaee61410818935a7e1924a495e3829883f4e079592",
+      "chat/operations/case_intelligence.py": "ae57fcb1f633dfd99198a1970655d9ad2a253eb924e6c9eecf76dd64751274fb",
+      "chat/operations/graph.py": "ec2c4922d354bee726c5de902aa34045000e341585aaf0dc8dc8fdaf9b97c08e",
+      "chat/operations/inference_safety.py": "4c020db4c2e5cb23e8e151a057229c924183d6d77c13f97266c28a446cce1a31",
+      "chat/operations/investigator.py": "663e7bb27fc3e5f9d321fbf64e68d5f5dc5a1d4bdbfb46ed6be2d0065603bb74",
+      "chat/operations/outcome_engine.py": "60eb213641ca8d7acf946a0371d6272754b6f2f6d1d00908cf69eb95148c1cb1",
+      "chat/operations/read_model.py": "5c33b7e13cf503d60db2520f12c46bfe74464ceb81c6451b833abb40b8c2218b",
+      "chat/operations/schema.py": "c451d89517102ff1e0fe20e7e4ff0d8a72d5e8e7ebdb543f54ef2bc321f2d823",
+      "chat/operations/store.py": "b1149f3931e18aa799752e8256e928d940a1e3767c1d6c96ddaded4c39a55fb4",
+      "chat/scripts/evaluate_gpt_oss_v1.py": "d5002db102d351ca4ee84a9fa1befb62816e294a544d741f9bdbc4073aada1fc",
+      "chat/tests/test_afl_state_machine.py": "0323c76d1949d2b138e4b1ca108dbf239e2202a244f47a3ea1bbf94abcda2b3e",
+      "chat/tests/test_call_ledger.py": "d5ab1158ca50d246e2df68e5f2cb8199d16207932a5ffe81c41f39836df6b78a",
+      "chat/tests/test_evidence_integrity.py": "598498a84bae5149fbb4e6bb00163accc37f1ec4f1c411e083bdc31348a91fef",
+      "chat/tests/test_gpt_oss_evaluator.py": "8bd9bf1738dacbf0c8f2524bfdd8d9ad74f365cd1937053f548063ad5b2890c9",
+      "chat/tests/test_llm_safety.py": "3f98fa55ac479994ab9ed6312959f050dd0d2dbcff851c6b3bf95b750deff7c7",
+      "chat/tests/test_model_call_timeout.py": "78ee800a5337d354c1b0c6c8e7bc0babd8d4dcf25202d265cc712217423faca9",
+      "chat/tests/test_operations_api.py": "14c78f13734c0d3a7f16d884061955ae5989afb6f1f58734cf8c6414797df1bf",
+      "chat/tests/test_operations_store.py": "8be8b1bb4aed80161a895810743bbe998de86b05bc7ec2da328b478ef065fe35",
+      "chat/tests/test_provider_transport.py": "93d560a887c20b926cf6f4114476cbd1d997f14b19b4b7ccd5142706d63bca41",
+      "chat/tests/test_v32_action_store.py": "c4353551a48365526b9e1d983eef1c341897c7fd890f19833a219263ebfefb68",
+      "chat/tests/test_v32_actions.py": "3c84c02418ad75caab2ac409b2fdfa7e87757dc7aaa2715732de504f4da65dd1",
+      "chat/tests/test_v32_case_intelligence.py": "8468ec789dbaff6484afa6b92cc581a17fef07811af267bdd55afd7159e82429",
+      "chat/tests/test_v32_inference_safety.py": "fc2386525e19b9503adfca4c166409d5fab6d3712733bdd75720258b62c942f6",
+      "chat/tests/test_v3_provider_gate.py": "ab97da6fc9c1007f0678d9f26cfd36b74206b4f9b40bb6531ee5e7e970ad458e",
+      "scripts/v32_offline_evaluation.py": "6dfabb146d5ccaab270c922e335a2e16133cf28a72d11ff90c94d07ab7f8ac94"
+    },
+    "aborted_runs": "Retained as full-offline-attempt-*.log; never counted as passed gates."
+  }
+}

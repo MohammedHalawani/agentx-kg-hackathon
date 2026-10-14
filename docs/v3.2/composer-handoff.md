@@ -1,6 +1,6 @@
 # Composer handoff — additive action lifecycle
 
-Backend branch: `codex/v3-2-case-intelligence`, worktree `C:\Projects\suhail-v3-2-case-intelligence`, based exactly on V3.1 `7287e44ad99c9a8b90aac7543e8218c1302aa31a`. Final commit and gate results are supplied in the engineering handoff. No frontend components were changed.
+Backend branch: `codex/v3-2-case-intelligence`, worktree `C:\Projects\suhail-v3-2-case-intelligence`, based exactly on V3.1 `7287e44ad99c9a8b90aac7543e8218c1302aa31a`, which is also the current local `v3/integration` HEAD. Final commit and gate results are in `engineering-handoff.md` and `verification.json`. No frontend file was changed.
 
 The frozen `suhail-v3-1` interface remains. The additive action sub-contract is **`suhail-action-1`**. No case-state or reviewer-verdict renames are required. Real examples from controlled store/verifier executions are in `action-status.examples.json`; they are synthetic examples, not an importable frozen dataset or instructions to alter real cases.
 
@@ -45,6 +45,29 @@ type ActionLifecycle = {
 ```
 
 Keep the axes separate. Operational axes retain the reported task facts; verification and case closure are later independent determinations. A transport receipt is not an employee acknowledgement, an accepted task is not an execution result, and an evidence receipt is not a verified result. `VERIFIED_SUCCESS` means the action's evidential effect was verified; the case can remain unresolved. Case closure is authoritative only through the verified outcome and `action_status.resolution`.
+
+## Display field map
+
+Every item Composer needs maps to a field that already exists in `GET /cases/{case_id}`. Only `action_status` and each execution's `action_lifecycle` are new. Where no backend field exists, the cell says so; do not invent one.
+
+| Display | Source field | Notes |
+|---|---|---|
+| Case family | none in the API | `case-taxonomy.json` is a catalogue, not a classifier. If a family chip is wanted, map `diagnosis.primary_cause` or `symptom_codes` through a static frontend table and label it as a grouping, never as a diagnosis. Otherwise omit it. |
+| Symptoms | `symptom_codes`; `rule_signals.signals[]` | Rule signals are deterministic checks (`is_diagnosis: false`). Show them as symptoms, not findings. |
+| Investigation finding | `diagnosis.primary_cause`, `summary`, `confidence`, `missing_evidence`, `requires_physical_check`, `as_of` | Only when `diagnosis.available` and the review accepted it. Otherwise `diagnosis.unaccepted_investigation` stays under the existing unaccepted presentation. |
+| Competing explanations | `diagnosis.hypotheses[]` (`cause`, `status` supported/refuted/uncertain, `assessment`, `supporting_evidence_ids`, `contradicting_evidence_ids`) | Show refuted and uncertain alternatives too; they are part of the finding. |
+| Reviewer verdict | `review.verdict`, `review.reason_code`, `review.feedback`; `diagnosis.review.accepted` | REVISE is not ACCEPT. `model_verdict` is the model's own label and can differ from the enforced `verdict`. |
+| Proposed action | `recommendation.action_type`, `summary_en`/`summary_ar`, `risk_class`, `authority_reason` | A proposal, not an authorization. |
+| Authorized action | `action_status.actions[].authorization`, `dispatch`; `decisions[]` for a person's approval | `REFUSED` means nothing was sent. |
+| Awaiting acknowledgement | `actions[].state == "AWAITING_ACKNOWLEDGEMENT"` | |
+| Operational responses | `actions[].acknowledgement`, `acceptance`, `execution`, `events[]` | Each event carries `source_ref` and `synthetic: true`. `late: true` events are audit history only. |
+| Evidence received | `events[]` with `kind == "EVIDENCE_RECEIVED"` and its `evidence_ids` | Receipt is not verification. |
+| Verification result | `actions[].verification`; `outcome.verification_status`, `success`, `rule_id`, `reason`, `evidence_ids`, `remaining_symptoms`, `exception_cleared`, `verifier_id` | `VERIFIED_SUCCESS` is about the action's effect. The case can still be open. |
+| Verified resolved | `action_status.resolution == "VERIFIED_RESOLVED"` | The only green state. |
+| Still unresolved | `resolution` in `UNRESOLVED`, `OPERATIONAL_WORK_PENDING`, `INVESTIGATION_PENDING` | Show `remaining_symptoms` and the next evidence step. |
+| Human decision required | `action_status.human_decision_required == true` (resolution `HUMAN_DECISION_REQUIRED`) | Use this flag, not `workflow_state == "HUMAN_REVIEW"` alone. A person doing a rescan is operational work, not a human decision. |
+
+`action-status.examples.json` holds seven real traces from the controlled store: two verified resolved, five unresolved (continued mismatch, concurrent contradictory evidence, custody verified with handover still uncertain, rejected/duplicate/late response, foreign evidence then expiry).
 
 ## Presentation and source access
 
@@ -93,3 +116,5 @@ This endpoint requires both `SUHAIL_SYNTHETIC_ACTION_RESPONSES=1` and the explic
 Use the examples and scripted backend fixtures while a separately provisioned V3.2 mutable database is pending. Test acknowledgement, acceptance without evidence, valid evidence, wrong/foreign evidence, rejection, duplicate responses, timeout, late responses, a verified action with an unresolved case, and a genuine dispute. Never show green resolution from response acceptance. Keep synthetic labels visible. No real employee/device authorization or carrier integration is implemented.
 
 Do not run the protected V3 launcher or attach this development build to the frozen V3/V2 databases. The existing launcher intentionally targets the protected integration checkout and is unchanged. Backend source-kind/temporal verification and private evaluation answers remain outside frontend ownership. Request dataset defects through their owner; do not rewrite cases to obtain a preferred result.
+
+Retain Composer Phase C before integration signoff, in the same Composer thread/worktree: a **60-minute manual QA budget** for the eight curated development cases and the two original video cases as read-only references where evidence is available. Reconstruct chronology and shipment/custody/device/route relationships from actual source IDs and receipt cutoffs; compare graph, map, timeline and accessible source evidence. Record competing explanations and action/verification limits before consulting isolated expectations, then produce a concise pass/review/fail matrix. Include the new pending, unresolved and verified action presentations. Dataset defects return to Sol for separately approved correction; UI defects remain Composer's. Do not alter the frozen dataset, manufacture evidence or run a live model campaign.

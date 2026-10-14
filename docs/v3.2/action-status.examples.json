@@ -1,0 +1,814 @@
+{
+  "base_contract": "suhail-v3-1",
+  "action_contract": "suhail-action-1",
+  "synthetic": true,
+  "source": "Actual controlled in-memory OperationsStore/verifier executions; not frozen-dataset imports.",
+  "cases": [
+    {
+      "workflow": "barcode-continued-mismatch",
+      "case_id": "SYN-OPS-CASE-fc9bd58ac6df9fbe1ea5d2c2",
+      "shipment_id": "SYN-SHP-000077",
+      "synthetic": true,
+      "workflow_state": "HUMAN_REVIEW",
+      "outcome": {
+        "dataset_id": "SYN-SUHAIL-V2-FOUNDATION",
+        "synthetic": true,
+        "split": "development",
+        "holdout_group": "SYN-SHP-000077",
+        "provenance": "SYNTHETIC_ASSUMPTION",
+        "entity_id": "SYN-OPS-OUTCOME-0a7281ccd109d5ba1a86aec4",
+        "shipment_id": "SYN-SHP-000077",
+        "case_id": "SYN-OPS-CASE-fc9bd58ac6df9fbe1ea5d2c2",
+        "run_id": "SYN-OPS-RUN-be0e9be2d99e7f25bc1acef2",
+        "execution_id": "SYN-OPS-EXECUTION-5efb317813c3e6e5c602ddb8",
+        "action_code": "BARCODE_MISMATCH",
+        "action_type": "REQUEST_RESCAN",
+        "success": false,
+        "outcome_type": "barcode_still_differs",
+        "evidence_ids": [
+          "SYN-RESPONSE-SCAN-0",
+          "SYN-RESPONSE-SCAN-1"
+        ],
+        "verification_status": "VERIFIED",
+        "verified_at": "2026-10-21T00:30:00+00:00",
+        "verifier_id": "SUHAIL-OUTCOME-VERIFIER",
+        "invalidated": false,
+        "observed_at": "2026-10-21T00:30:00+00:00",
+        "reason": "A readable rescan after the request still differs from the manifest barcode.",
+        "rule_id": "verify-request-rescan-barcode-still-differs",
+        "expected_effect": "Request a package rescan at the current facility.",
+        "exception_cleared": false,
+        "remaining_symptoms": [],
+        "source": "evidence_verifier",
+        "trusted_precedent": true,
+        "recorded_at": "2026-10-21T00:30:00+00:00",
+        "occurred_at": "2026-10-21T00:30:00+00:00",
+        "outcome_id": "SYN-OPS-OUTCOME-0a7281ccd109d5ba1a86aec4",
+        "current_cycle": true
+      },
+      "action_status": {
+        "version": "suhail-action-1",
+        "resolution": "UNRESOLVED",
+        "human_decision_required": false,
+        "actions": [
+          {
+            "acceptance": "ACCEPTED",
+            "acknowledgement": "ACKNOWLEDGED",
+            "authorization": "AUTHORIZED",
+            "created_at": "2026-10-21T00:00:00+00:00",
+            "dispatch": "SENT",
+            "dispatched_at": "2026-10-21T00:00:00+00:00",
+            "events": [
+              {
+                "evidence_ids": [],
+                "id": "dispatch",
+                "kind": "DISPATCHED",
+                "occurred_at": "2026-10-21T00:00:00+00:00",
+                "recorded_at": "2026-10-21T00:00:00+00:00",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [],
+                "id": "ack",
+                "kind": "ACKNOWLEDGED",
+                "late": false,
+                "occurred_at": "2026-10-21T00:00:00+00:00",
+                "recorded_at": "2026-10-21T00:00:00+00:00",
+                "request_hash": "345702dbfee6a00964fa5a0a3c4bffaa79f5557c4c8571876543f2b982827994",
+                "source_ref": "synthetic:controlled-field-response",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [],
+                "id": "accepted",
+                "kind": "ACCEPTED",
+                "late": false,
+                "occurred_at": "2026-10-21T00:00:00+00:00",
+                "recorded_at": "2026-10-21T00:00:00+00:00",
+                "request_hash": "69bdb1f100af0f3e93266df3ee4a44f8f31de1491b97573811cec955baf7cc75",
+                "source_ref": "synthetic:controlled-field-response",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [
+                  "SYN-RESPONSE-SCAN-0",
+                  "SYN-RESPONSE-SCAN-1"
+                ],
+                "id": "wrong-label-evidence",
+                "kind": "EVIDENCE_RECEIVED",
+                "late": false,
+                "occurred_at": "2026-10-21T00:30:00+00:00",
+                "recorded_at": "2026-10-21T00:30:00+00:00",
+                "request_hash": "5c60fd4335f54a03e6d508ee3cf2292a3dd93e5a7eb4a753658a5c3b6134c43e",
+                "source_ref": "synthetic:controlled-field-response",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [
+                  "SYN-RESPONSE-SCAN-0",
+                  "SYN-RESPONSE-SCAN-1"
+                ],
+                "id": "verification-5",
+                "kind": "UNRESOLVED",
+                "occurred_at": "2026-10-21T00:30:00+00:00",
+                "recorded_at": "2026-10-21T00:30:00+00:00",
+                "rule_id": "verify-request-rescan-barcode-still-differs",
+                "synthetic": true
+              }
+            ],
+            "execution": "PENDING",
+            "requires_response_events": true,
+            "resolved": false,
+            "revision": 5,
+            "state": "UNRESOLVED",
+            "verification": "VERIFIED_FAILURE",
+            "version": "suhail-action-1",
+            "execution_id": "SYN-OPS-EXECUTION-5efb317813c3e6e5c602ddb8",
+            "action_type": "REQUEST_RESCAN",
+            "operational_label": "UNRESOLVED",
+            "synthetic": true
+          }
+        ],
+        "synthetic": true
+      }
+    },
+    {
+      "workflow": "barcode-independent-rescan",
+      "case_id": "SYN-OPS-CASE-fc9bd58ac6df9fbe1ea5d2c2",
+      "shipment_id": "SYN-SHP-000077",
+      "synthetic": true,
+      "workflow_state": "RESOLVED",
+      "outcome": {
+        "dataset_id": "SYN-SUHAIL-V2-FOUNDATION",
+        "synthetic": true,
+        "split": "development",
+        "holdout_group": "SYN-SHP-000077",
+        "provenance": "SYNTHETIC_ASSUMPTION",
+        "entity_id": "SYN-OPS-OUTCOME-0a7281ccd109d5ba1a86aec4",
+        "shipment_id": "SYN-SHP-000077",
+        "case_id": "SYN-OPS-CASE-fc9bd58ac6df9fbe1ea5d2c2",
+        "run_id": "SYN-OPS-RUN-be0e9be2d99e7f25bc1acef2",
+        "execution_id": "SYN-OPS-EXECUTION-5efb317813c3e6e5c602ddb8",
+        "action_code": "BARCODE_MISMATCH",
+        "action_type": "REQUEST_RESCAN",
+        "success": true,
+        "outcome_type": "barcode_corrected",
+        "evidence_ids": [
+          "SYN-RESPONSE-SCAN-0",
+          "SYN-RESPONSE-SCAN-1"
+        ],
+        "verification_status": "VERIFIED",
+        "verified_at": "2026-10-21T00:30:00+00:00",
+        "verifier_id": "SUHAIL-OUTCOME-VERIFIER",
+        "invalidated": false,
+        "observed_at": "2026-10-21T00:30:00+00:00",
+        "reason": "A readable rescan after the request matches the manifest barcode for every package.",
+        "rule_id": "verify-request-rescan-barcode-corrected",
+        "expected_effect": "Request a package rescan at the current facility.",
+        "exception_cleared": true,
+        "remaining_symptoms": [],
+        "source": "evidence_verifier",
+        "trusted_precedent": true,
+        "recorded_at": "2026-10-21T00:30:00+00:00",
+        "occurred_at": "2026-10-21T00:30:00+00:00",
+        "outcome_id": "SYN-OPS-OUTCOME-0a7281ccd109d5ba1a86aec4",
+        "current_cycle": true
+      },
+      "action_status": {
+        "version": "suhail-action-1",
+        "resolution": "VERIFIED_RESOLVED",
+        "human_decision_required": false,
+        "actions": [
+          {
+            "acceptance": "ACCEPTED",
+            "acknowledgement": "ACKNOWLEDGED",
+            "authorization": "AUTHORIZED",
+            "created_at": "2026-10-21T00:00:00+00:00",
+            "dispatch": "SENT",
+            "dispatched_at": "2026-10-21T00:00:00+00:00",
+            "events": [
+              {
+                "evidence_ids": [],
+                "id": "dispatch",
+                "kind": "DISPATCHED",
+                "occurred_at": "2026-10-21T00:00:00+00:00",
+                "recorded_at": "2026-10-21T00:00:00+00:00",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [],
+                "id": "response-0",
+                "kind": "ACKNOWLEDGED",
+                "late": false,
+                "occurred_at": "2026-10-21T00:00:00+00:00",
+                "recorded_at": "2026-10-21T00:00:00+00:00",
+                "request_hash": "d91296afa2c8d2e3597602d6df44f2b7534619d4568a10c16b63d2f16124f78c",
+                "source_ref": "synthetic:controlled-field-response",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [],
+                "id": "response-1",
+                "kind": "ACCEPTED",
+                "late": false,
+                "occurred_at": "2026-10-21T00:00:00+00:00",
+                "recorded_at": "2026-10-21T00:00:00+00:00",
+                "request_hash": "fb861f0b1110f65dd0079e84b2d67a0e95f756f2fe04b699c9160176cf9f6fa1",
+                "source_ref": "synthetic:controlled-field-response",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [],
+                "id": "response-2",
+                "kind": "STARTED",
+                "late": false,
+                "occurred_at": "2026-10-21T00:00:00+00:00",
+                "recorded_at": "2026-10-21T00:00:00+00:00",
+                "request_hash": "973b7b80d26cf0d2f2dc01cd3dfdcfc22a70f87c9707ad0677adce1dc73967df",
+                "source_ref": "synthetic:controlled-field-response",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [
+                  "SYN-RESPONSE-SCAN-0",
+                  "SYN-RESPONSE-SCAN-1"
+                ],
+                "id": "new-evidence",
+                "kind": "EVIDENCE_RECEIVED",
+                "late": false,
+                "occurred_at": "2026-10-21T00:30:00+00:00",
+                "recorded_at": "2026-10-21T00:30:00+00:00",
+                "request_hash": "3a9f71804360b9083a08302e91c66d00bf52d414a46b9c0a41b42c16cb1afa52",
+                "source_ref": "synthetic:controlled-field-response",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [
+                  "SYN-RESPONSE-SCAN-0",
+                  "SYN-RESPONSE-SCAN-1"
+                ],
+                "id": "verification-6",
+                "kind": "VERIFIED",
+                "occurred_at": "2026-10-21T00:30:00+00:00",
+                "recorded_at": "2026-10-21T00:30:00+00:00",
+                "rule_id": "verify-request-rescan-barcode-corrected",
+                "synthetic": true
+              }
+            ],
+            "execution": "EXECUTING",
+            "requires_response_events": true,
+            "resolved": true,
+            "revision": 6,
+            "state": "VERIFIED",
+            "verification": "VERIFIED_SUCCESS",
+            "version": "suhail-action-1",
+            "execution_id": "SYN-OPS-EXECUTION-5efb317813c3e6e5c602ddb8",
+            "action_type": "REQUEST_RESCAN",
+            "operational_label": "VERIFIED",
+            "synthetic": true
+          }
+        ],
+        "synthetic": true
+      }
+    },
+    {
+      "workflow": "concurrent-contradictory-evidence",
+      "case_id": "SYN-OPS-CASE-fc9bd58ac6df9fbe1ea5d2c2",
+      "shipment_id": "SYN-SHP-000077",
+      "synthetic": true,
+      "workflow_state": "HUMAN_REVIEW",
+      "outcome": {
+        "dataset_id": "SYN-SUHAIL-V2-FOUNDATION",
+        "synthetic": true,
+        "split": "development",
+        "holdout_group": "SYN-SHP-000077",
+        "provenance": "SYNTHETIC_ASSUMPTION",
+        "entity_id": "SYN-OPS-OUTCOME-0a7281ccd109d5ba1a86aec4",
+        "shipment_id": "SYN-SHP-000077",
+        "case_id": "SYN-OPS-CASE-fc9bd58ac6df9fbe1ea5d2c2",
+        "run_id": "SYN-OPS-RUN-be0e9be2d99e7f25bc1acef2",
+        "execution_id": "SYN-OPS-EXECUTION-5efb317813c3e6e5c602ddb8",
+        "action_code": "BARCODE_MISMATCH",
+        "action_type": "REQUEST_RESCAN",
+        "success": false,
+        "outcome_type": "barcode_still_differs",
+        "evidence_ids": [
+          "SYN-CONCURRENT-CONTRADICTION"
+        ],
+        "verification_status": "VERIFIED",
+        "verified_at": "2026-10-21T00:30:00+00:00",
+        "verifier_id": "SUHAIL-OUTCOME-VERIFIER",
+        "invalidated": false,
+        "observed_at": "2026-10-21T00:30:00+00:00",
+        "reason": "A readable rescan after the request still differs from the manifest barcode.",
+        "rule_id": "verify-request-rescan-barcode-still-differs",
+        "expected_effect": "Request a package rescan at the current facility.",
+        "exception_cleared": false,
+        "remaining_symptoms": [],
+        "source": "evidence_verifier",
+        "trusted_precedent": true,
+        "recorded_at": "2026-10-21T00:30:00+00:00",
+        "occurred_at": "2026-10-21T00:30:00+00:00",
+        "outcome_id": "SYN-OPS-OUTCOME-0a7281ccd109d5ba1a86aec4",
+        "current_cycle": true
+      },
+      "action_status": {
+        "version": "suhail-action-1",
+        "resolution": "UNRESOLVED",
+        "human_decision_required": false,
+        "actions": [
+          {
+            "acceptance": "ACCEPTED",
+            "acknowledgement": "ACKNOWLEDGED",
+            "authorization": "AUTHORIZED",
+            "created_at": "2026-10-21T00:00:00+00:00",
+            "dispatch": "SENT",
+            "dispatched_at": "2026-10-21T00:00:00+00:00",
+            "events": [
+              {
+                "evidence_ids": [],
+                "id": "dispatch",
+                "kind": "DISPATCHED",
+                "occurred_at": "2026-10-21T00:00:00+00:00",
+                "recorded_at": "2026-10-21T00:00:00+00:00",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [],
+                "id": "ack",
+                "kind": "ACKNOWLEDGED",
+                "late": false,
+                "occurred_at": "2026-10-21T00:00:00+00:00",
+                "recorded_at": "2026-10-21T00:00:00+00:00",
+                "request_hash": "345702dbfee6a00964fa5a0a3c4bffaa79f5557c4c8571876543f2b982827994",
+                "source_ref": "synthetic:controlled-field-response",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [],
+                "id": "accepted",
+                "kind": "ACCEPTED",
+                "late": false,
+                "occurred_at": "2026-10-21T00:00:00+00:00",
+                "recorded_at": "2026-10-21T00:00:00+00:00",
+                "request_hash": "69bdb1f100af0f3e93266df3ee4a44f8f31de1491b97573811cec955baf7cc75",
+                "source_ref": "synthetic:controlled-field-response",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [
+                  "SYN-RESPONSE-SCAN-0",
+                  "SYN-RESPONSE-SCAN-1"
+                ],
+                "id": "new-source",
+                "kind": "EVIDENCE_RECEIVED",
+                "late": false,
+                "occurred_at": "2026-10-21T00:30:00+00:00",
+                "recorded_at": "2026-10-21T00:30:00+00:00",
+                "request_hash": "b32abb88dd292f3ff5bf4c453420b92663f20497c00dc34a0fd7194ea7990ee4",
+                "source_ref": "synthetic:controlled-field-response",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [
+                  "SYN-CONCURRENT-CONTRADICTION"
+                ],
+                "id": "verification-5",
+                "kind": "UNRESOLVED",
+                "occurred_at": "2026-10-21T00:30:00+00:00",
+                "recorded_at": "2026-10-21T00:30:00+00:00",
+                "rule_id": "verify-request-rescan-barcode-still-differs",
+                "synthetic": true
+              }
+            ],
+            "execution": "PENDING",
+            "requires_response_events": true,
+            "resolved": false,
+            "revision": 5,
+            "state": "UNRESOLVED",
+            "verification": "VERIFIED_FAILURE",
+            "version": "suhail-action-1",
+            "execution_id": "SYN-OPS-EXECUTION-5efb317813c3e6e5c602ddb8",
+            "action_type": "REQUEST_RESCAN",
+            "operational_label": "UNRESOLVED",
+            "synthetic": true
+          }
+        ],
+        "synthetic": true
+      }
+    },
+    {
+      "workflow": "custody-confirmed-original-handover-uncertain",
+      "case_id": "SYN-OPS-CASE-6d77c338dd8d11c47f24fd7c",
+      "shipment_id": "SYN-SHP-000007",
+      "synthetic": true,
+      "workflow_state": "HUMAN_REVIEW",
+      "outcome": {
+        "dataset_id": "SYN-SUHAIL-V2-FOUNDATION",
+        "synthetic": true,
+        "split": "development",
+        "holdout_group": "SYN-SHP-000007",
+        "provenance": "SYNTHETIC_ASSUMPTION",
+        "entity_id": "SYN-OPS-OUTCOME-5ed693bebdb17b32b99fe6a7",
+        "shipment_id": "SYN-SHP-000007",
+        "case_id": "SYN-OPS-CASE-6d77c338dd8d11c47f24fd7c",
+        "run_id": "SYN-OPS-RUN-f9c1f1fe56bcdefacdda4480",
+        "execution_id": "SYN-OPS-EXECUTION-1595e9b76502cfeb5938cb3d",
+        "action_code": "CUSTODY_GAP",
+        "action_type": "INITIATE_CUSTODY_RECONCILIATION",
+        "success": true,
+        "outcome_type": "custody_reconciled",
+        "evidence_ids": [
+          "SYN-RESPONSE-CUSTODY-0",
+          "SYN-RESPONSE-CUSTODY-1"
+        ],
+        "verification_status": "VERIFIED",
+        "verified_at": "2026-10-21T00:30:00+00:00",
+        "verifier_id": "SUHAIL-OUTCOME-VERIFIER",
+        "invalidated": false,
+        "observed_at": "2026-10-21T00:30:00+00:00",
+        "reason": "Corroborated custody at a facility was recorded for every package after the request.",
+        "rule_id": "verify-initiate-custody-reconciliation-custody-reconciled",
+        "expected_effect": "Reconcile package custody from the last corroborated holder.",
+        "exception_cleared": false,
+        "remaining_symptoms": [
+          "CUSTODY_TRANSFER_UNCONFIRMED",
+          "MILESTONE_OVERDUE"
+        ],
+        "source": "evidence_verifier",
+        "trusted_precedent": true,
+        "recorded_at": "2026-10-21T00:30:00+00:00",
+        "occurred_at": "2026-10-21T00:30:00+00:00",
+        "outcome_id": "SYN-OPS-OUTCOME-5ed693bebdb17b32b99fe6a7",
+        "current_cycle": true
+      },
+      "action_status": {
+        "version": "suhail-action-1",
+        "resolution": "UNRESOLVED",
+        "human_decision_required": false,
+        "actions": [
+          {
+            "acceptance": "ACCEPTED",
+            "acknowledgement": "ACKNOWLEDGED",
+            "authorization": "AUTHORIZED",
+            "created_at": "2026-10-21T00:00:00+00:00",
+            "dispatch": "SENT",
+            "dispatched_at": "2026-10-21T00:00:00+00:00",
+            "events": [
+              {
+                "evidence_ids": [],
+                "id": "dispatch",
+                "kind": "DISPATCHED",
+                "occurred_at": "2026-10-21T00:00:00+00:00",
+                "recorded_at": "2026-10-21T00:00:00+00:00",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [],
+                "id": "ack",
+                "kind": "ACKNOWLEDGED",
+                "late": false,
+                "occurred_at": "2026-10-21T00:00:00+00:00",
+                "recorded_at": "2026-10-21T00:00:00+00:00",
+                "request_hash": "345702dbfee6a00964fa5a0a3c4bffaa79f5557c4c8571876543f2b982827994",
+                "source_ref": "synthetic:controlled-field-response",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [],
+                "id": "accepted",
+                "kind": "ACCEPTED",
+                "late": false,
+                "occurred_at": "2026-10-21T00:00:00+00:00",
+                "recorded_at": "2026-10-21T00:00:00+00:00",
+                "request_hash": "69bdb1f100af0f3e93266df3ee4a44f8f31de1491b97573811cec955baf7cc75",
+                "source_ref": "synthetic:controlled-field-response",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [],
+                "id": "search",
+                "kind": "STARTED",
+                "late": false,
+                "occurred_at": "2026-10-21T00:00:00+00:00",
+                "recorded_at": "2026-10-21T00:00:00+00:00",
+                "request_hash": "506063410fe97195817ac00fce744cb76799fac03b9d07b8d8361573a38777e3",
+                "source_ref": "synthetic:controlled-field-response",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [
+                  "SYN-RESPONSE-SCAN-0",
+                  "SYN-RESPONSE-SCAN-1",
+                  "SYN-RESPONSE-CUSTODY-0",
+                  "SYN-RESPONSE-CUSTODY-1"
+                ],
+                "id": "new-corroborated-stock-check",
+                "kind": "EVIDENCE_RECEIVED",
+                "late": false,
+                "occurred_at": "2026-10-21T00:30:00+00:00",
+                "recorded_at": "2026-10-21T00:30:00+00:00",
+                "request_hash": "07160d446ccfb10764fdce657aa6a6773cf18ee71130195566ed48810679dff9",
+                "source_ref": "synthetic:controlled-field-response",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [
+                  "SYN-RESPONSE-CUSTODY-0",
+                  "SYN-RESPONSE-CUSTODY-1"
+                ],
+                "id": "verification-6",
+                "kind": "VERIFIED",
+                "occurred_at": "2026-10-21T00:30:00+00:00",
+                "recorded_at": "2026-10-21T00:30:00+00:00",
+                "rule_id": "verify-initiate-custody-reconciliation-custody-reconciled",
+                "synthetic": true
+              }
+            ],
+            "execution": "EXECUTING",
+            "requires_response_events": true,
+            "resolved": false,
+            "revision": 6,
+            "state": "VERIFIED",
+            "verification": "VERIFIED_SUCCESS",
+            "version": "suhail-action-1",
+            "execution_id": "SYN-OPS-EXECUTION-1595e9b76502cfeb5938cb3d",
+            "action_type": "INITIATE_CUSTODY_RECONCILIATION",
+            "operational_label": "VERIFIED",
+            "synthetic": true
+          }
+        ],
+        "synthetic": true
+      }
+    },
+    {
+      "workflow": "rejected-duplicate-late-response",
+      "case_id": "SYN-OPS-CASE-fc9bd58ac6df9fbe1ea5d2c2",
+      "shipment_id": "SYN-SHP-000077",
+      "synthetic": true,
+      "workflow_state": "NEEDS_EVIDENCE",
+      "outcome": null,
+      "action_status": {
+        "version": "suhail-action-1",
+        "resolution": "UNRESOLVED",
+        "human_decision_required": false,
+        "actions": [
+          {
+            "acceptance": "REJECTED",
+            "acknowledgement": "PENDING",
+            "authorization": "AUTHORIZED",
+            "created_at": "2026-10-21T00:00:00+00:00",
+            "dispatch": "SENT",
+            "dispatched_at": "2026-10-21T00:00:00+00:00",
+            "events": [
+              {
+                "evidence_ids": [],
+                "id": "dispatch",
+                "kind": "DISPATCHED",
+                "occurred_at": "2026-10-21T00:00:00+00:00",
+                "recorded_at": "2026-10-21T00:00:00+00:00",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [],
+                "id": "rejected",
+                "kind": "REJECTED",
+                "late": false,
+                "occurred_at": "2026-10-21T00:00:00+00:00",
+                "recorded_at": "2026-10-21T00:00:00+00:00",
+                "request_hash": "d6abf2443de3809a49fb7e1e10619130939ecfa09341e4e61a958b2ee0e08443",
+                "source_ref": "synthetic:controlled-field-response",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [],
+                "id": "late-ack",
+                "kind": "ACKNOWLEDGED",
+                "late": true,
+                "occurred_at": "2026-10-25T00:00:00+00:00",
+                "recorded_at": "2026-10-25T00:00:00+00:00",
+                "request_hash": "3471510c1a8d95c8fa46ba42ff6344ae078c14245aa5ec9bdf47c9c1265b34fc",
+                "source_ref": "synthetic:controlled-field-response",
+                "synthetic": true
+              }
+            ],
+            "execution": "PENDING",
+            "requires_response_events": true,
+            "revision": 3,
+            "state": "REJECTED",
+            "verification": "NOT_REQUESTED",
+            "version": "suhail-action-1",
+            "execution_id": "SYN-OPS-EXECUTION-5efb317813c3e6e5c602ddb8",
+            "action_type": "REQUEST_RESCAN",
+            "operational_label": "REJECTED",
+            "synthetic": true
+          }
+        ],
+        "synthetic": true
+      }
+    },
+    {
+      "workflow": "foreign-evidence-and-expiry",
+      "case_id": "SYN-OPS-CASE-fc9bd58ac6df9fbe1ea5d2c2",
+      "shipment_id": "SYN-SHP-000077",
+      "synthetic": true,
+      "workflow_state": "NEEDS_EVIDENCE",
+      "outcome": null,
+      "action_status": {
+        "version": "suhail-action-1",
+        "resolution": "UNRESOLVED",
+        "human_decision_required": false,
+        "actions": [
+          {
+            "acceptance": "ACCEPTED",
+            "acknowledgement": "ACKNOWLEDGED",
+            "authorization": "AUTHORIZED",
+            "created_at": "2026-10-21T00:00:00+00:00",
+            "dispatch": "SENT",
+            "dispatched_at": "2026-10-21T00:00:00+00:00",
+            "events": [
+              {
+                "evidence_ids": [],
+                "id": "dispatch",
+                "kind": "DISPATCHED",
+                "occurred_at": "2026-10-21T00:00:00+00:00",
+                "recorded_at": "2026-10-21T00:00:00+00:00",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [],
+                "id": "ack",
+                "kind": "ACKNOWLEDGED",
+                "late": false,
+                "occurred_at": "2026-10-21T00:00:00+00:00",
+                "recorded_at": "2026-10-21T00:00:00+00:00",
+                "request_hash": "345702dbfee6a00964fa5a0a3c4bffaa79f5557c4c8571876543f2b982827994",
+                "source_ref": "synthetic:controlled-field-response",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [],
+                "id": "accepted",
+                "kind": "ACCEPTED",
+                "late": false,
+                "occurred_at": "2026-10-21T00:00:00+00:00",
+                "recorded_at": "2026-10-21T00:00:00+00:00",
+                "request_hash": "69bdb1f100af0f3e93266df3ee4a44f8f31de1491b97573811cec955baf7cc75",
+                "source_ref": "synthetic:controlled-field-response",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [],
+                "id": "verification-4",
+                "kind": "EXPIRED",
+                "occurred_at": "2026-10-25T00:30:00+00:00",
+                "recorded_at": "2026-10-25T00:30:00+00:00",
+                "rule_id": null,
+                "synthetic": true
+              }
+            ],
+            "execution": "EXPIRED",
+            "requires_response_events": true,
+            "revision": 4,
+            "state": "EXPIRED",
+            "verification": "NOT_REQUESTED",
+            "version": "suhail-action-1",
+            "execution_id": "SYN-OPS-EXECUTION-5efb317813c3e6e5c602ddb8",
+            "action_type": "REQUEST_RESCAN",
+            "operational_label": "EXPIRED",
+            "synthetic": true
+          }
+        ],
+        "synthetic": true
+      }
+    },
+    {
+      "workflow": "targeted-buffered-upload",
+      "case_id": "SYN-OPS-CASE-6d77c338dd8d11c47f24fd7c",
+      "shipment_id": "SYN-SHP-000007",
+      "synthetic": true,
+      "workflow_state": "RESOLVED",
+      "outcome": {
+        "dataset_id": "SYN-SUHAIL-V2-FOUNDATION",
+        "synthetic": true,
+        "split": "development",
+        "holdout_group": "SYN-SHP-000007",
+        "provenance": "SYNTHETIC_ASSUMPTION",
+        "entity_id": "SYN-OPS-OUTCOME-5ed693bebdb17b32b99fe6a7",
+        "shipment_id": "SYN-SHP-000007",
+        "case_id": "SYN-OPS-CASE-6d77c338dd8d11c47f24fd7c",
+        "run_id": "SYN-OPS-RUN-f9c1f1fe56bcdefacdda4480",
+        "execution_id": "SYN-OPS-EXECUTION-1595e9b76502cfeb5938cb3d",
+        "action_code": "DELAYED_SYNC",
+        "action_type": "REQUEST_DEVICE_SYNC",
+        "success": true,
+        "outcome_type": "delayed_upload_received",
+        "evidence_ids": [
+          "SYN-SHP-000007-CUST-01-01",
+          "SYN-SHP-000007-RAW-CUST-01-01"
+        ],
+        "verification_status": "VERIFIED",
+        "verified_at": "2026-10-21T00:30:00+00:00",
+        "verifier_id": "SUHAIL-OUTCOME-VERIFIER",
+        "invalidated": false,
+        "observed_at": "2026-10-21T00:30:00+00:00",
+        "reason": "The missing observations arrived as late uploads from the target device; they occurred before the request.",
+        "rule_id": "verify-request-device-sync-delayed-upload-received",
+        "expected_effect": "Ask the device to upload its buffered scans; the late-arriving records confirm the missing observations.",
+        "exception_cleared": true,
+        "remaining_symptoms": [],
+        "source": "evidence_verifier",
+        "trusted_precedent": true,
+        "recorded_at": "2026-10-21T00:30:00+00:00",
+        "occurred_at": "2026-10-21T00:30:00+00:00",
+        "outcome_id": "SYN-OPS-OUTCOME-5ed693bebdb17b32b99fe6a7",
+        "current_cycle": true
+      },
+      "action_status": {
+        "version": "suhail-action-1",
+        "resolution": "VERIFIED_RESOLVED",
+        "human_decision_required": false,
+        "actions": [
+          {
+            "acceptance": "ACCEPTED",
+            "acknowledgement": "ACKNOWLEDGED",
+            "authorization": "AUTHORIZED",
+            "created_at": "2026-10-21T00:00:00+00:00",
+            "dispatch": "SENT",
+            "dispatched_at": "2026-10-21T00:00:00+00:00",
+            "events": [
+              {
+                "evidence_ids": [],
+                "id": "dispatch",
+                "kind": "DISPATCHED",
+                "occurred_at": "2026-10-21T00:00:00+00:00",
+                "recorded_at": "2026-10-21T00:00:00+00:00",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [],
+                "id": "ack",
+                "kind": "ACKNOWLEDGED",
+                "late": false,
+                "occurred_at": "2026-10-21T00:00:00+00:00",
+                "recorded_at": "2026-10-21T00:00:00+00:00",
+                "request_hash": "345702dbfee6a00964fa5a0a3c4bffaa79f5557c4c8571876543f2b982827994",
+                "source_ref": "synthetic:controlled-field-response",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [],
+                "id": "accepted",
+                "kind": "ACCEPTED",
+                "late": false,
+                "occurred_at": "2026-10-21T00:00:00+00:00",
+                "recorded_at": "2026-10-21T00:00:00+00:00",
+                "request_hash": "69bdb1f100af0f3e93266df3ee4a44f8f31de1491b97573811cec955baf7cc75",
+                "source_ref": "synthetic:controlled-field-response",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [
+                  "SYN-SHP-000007-RAW-CUST-01-01",
+                  "SYN-SHP-000007-CUST-01-01"
+                ],
+                "id": "uploaded-original-records",
+                "kind": "EVIDENCE_RECEIVED",
+                "late": false,
+                "occurred_at": "2026-10-21T00:30:00+00:00",
+                "recorded_at": "2026-10-21T00:30:00+00:00",
+                "request_hash": "9ce10c5851d1f15d5f3a037d0d14186e7cbad2a43cfad0e75120d6f867a0d93a",
+                "source_ref": "synthetic:controlled-field-response",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [
+                  "SYN-SHP-000007-CUST-01-01",
+                  "SYN-SHP-000007-RAW-CUST-01-01"
+                ],
+                "id": "verification-5",
+                "kind": "VERIFIED",
+                "occurred_at": "2026-10-21T00:30:00+00:00",
+                "recorded_at": "2026-10-21T00:30:00+00:00",
+                "rule_id": "verify-request-device-sync-delayed-upload-received",
+                "synthetic": true
+              }
+            ],
+            "execution": "PENDING",
+            "requires_response_events": true,
+            "resolved": true,
+            "revision": 5,
+            "state": "VERIFIED",
+            "verification": "VERIFIED_SUCCESS",
+            "version": "suhail-action-1",
+            "execution_id": "SYN-OPS-EXECUTION-1595e9b76502cfeb5938cb3d",
+            "action_type": "REQUEST_DEVICE_SYNC",
+            "operational_label": "VERIFIED",
+            "synthetic": true
+          }
+        ],
+        "synthetic": true
+      }
+    }
+  ]
+}

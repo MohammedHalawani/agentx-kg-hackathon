@@ -4,7 +4,7 @@
   "mode": "offline scripted roles; real production validators/authority/verifier/closure",
   "live_model_quality": "NOT MEASURED: no billable inference. Classification/reviewer scores below measure scripted fixtures only.",
   "tests": {
-    "passed": 20,
+    "passed": 24,
     "failed": 0,
     "errors": 0,
     "skipped": 0

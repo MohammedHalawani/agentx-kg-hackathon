@@ -1,0 +1,337 @@
+{
+  "source": "Frozen bundle nodes.jsonl, read only; kind availability does not prove a scenario.",
+  "manifest_sha256": "538d9fffe7c23cb9637be959e7c5ac0f83c76b3fab5c67b8e377e071d687e2b6",
+  "counts_by_kind": {
+    "ActionExecution": 21,
+    "Address": 211,
+    "AddressVersion": 216,
+    "AnalysisRun": 21,
+    "AuditEvent": 84,
+    "AuthenticationEvidence": 23,
+    "Branch": 13,
+    "Case": 24,
+    "City": 13,
+    "CommunicationEvent": 111,
+    "ContactAttempt": 5,
+    "Container": 69,
+    "CustodyEvent": 1207,
+    "Customer": 242,
+    "DeliveryAttempt": 84,
+    "DeliveryDepot": 14,
+    "DeliveryInstruction": 44,
+    "DeliveryProof": 78,
+    "DeliverySession": 47,
+    "DepotReconciliation": 84,
+    "Device": 161,
+    "DeviceHeartbeat": 12923,
+    "Driver": 92,
+    "Exception": 27,
+    "ExpectedMilestone": 1980,
+    "FacilityThroughput": 1293,
+    "FulfillmentWarehouse": 3,
+    "GPSObservation": 921,
+    "HandlingRequirement": 2,
+    "HandoffEvidence": 78,
+    "Hub": 3,
+    "InventoryRecord": 65,
+    "JourneyPlan": 211,
+    "Lane": 33,
+    "LocationPin": 185,
+    "Manifest": 59,
+    "Notification": 21,
+    "OperatorDecision": 21,
+    "Organization": 37,
+    "OrganizationWarehouse": 10,
+    "Outcome": 21,
+    "Package": 312,
+    "PhotoEvidence": 78,
+    "Policy": 1,
+    "Provider": 5,
+    "RecipientReport": 12,
+    "Recommendation": 21,
+    "Resolution": 21,
+    "Review": 21,
+    "Route": 211,
+    "RouteMilestone": 1980,
+    "RouteRun": 18,
+    "RouteSegment": 992,
+    "ScanEvent": 1606,
+    "ServiceLevel": 2,
+    "Shipment": 211,
+    "ShipmentType": 2,
+    "SignatureEvidence": 48,
+    "SortingCenter": 3,
+    "StatusEvent": 579,
+    "TrafficEvent": 19,
+    "Trip": 432,
+    "TripEvent": 392,
+    "Vehicle": 97,
+    "VehicleAssignment": 304,
+    "VehicleType": 5
+  },
+  "example_source_ids": {
+    "ActionExecution": [
+      "DEMO-SHP-000007-HISTORY-EXEC",
+      "DEMO-SHP-000016-HISTORY-EXEC"
+    ],
+    "Address": [
+      "DEMO-SHP-000002-ADDRESS",
+      "DEMO-SHP-000003-ADDRESS"
+    ],
+    "AddressVersion": [
+      "DEMO-SHP-000002-ADDR-01",
+      "DEMO-SHP-000003-ADDR-01"
+    ],
+    "AnalysisRun": [
+      "DEMO-SHP-000007-HISTORY-RUN",
+      "DEMO-SHP-000016-HISTORY-RUN"
+    ],
+    "AuditEvent": [
+      "DEMO-SHP-000007-HISTORY-AUDIT-0",
+      "DEMO-SHP-000007-HISTORY-AUDIT-1"
+    ],
+    "AuthenticationEvidence": [
+      "DEMO-SHP-000007-AUTH-001",
+      "DEMO-SHP-000009-AUTH-001"
+    ],
+    "Branch": [
+      "DEMO-BRANCH-AHB-01",
+      "DEMO-BRANCH-DHA-01"
+    ],
+    "Case": [
+      "DEMO-CASE-05a8c1824dd6d221a22db8ad",
+      "DEMO-CASE-0e269b7023cbfed4df2b9801"
+    ],
+    "City": [
+      "DEMO-CITY-AHB",
+      "DEMO-CITY-DHA"
+    ],
+    "CommunicationEvent": [
+      "DEMO-SHP-000007-COMM-001",
+      "DEMO-SHP-000007-COMM-002"
+    ],
+    "ContactAttempt": [
+      "DEMO-SHP-000073-CONTACT-001",
+      "DEMO-SHP-000116-CONTACT-001"
+    ],
+    "Container": [
+      "DEMO-CTR-DMM-00001",
+      "DEMO-CTR-DMM-00002"
+    ],
+    "CustodyEvent": [
+      "DEMO-SHP-000002-CUST-001",
+      "DEMO-SHP-000002-CUST-002"
+    ],
+    "Customer": [
+      "DEMO-SHP-000003-RECIPIENT",
+      "DEMO-SHP-000003-SENDER"
+    ],
+    "DeliveryAttempt": [
+      "DEMO-SHP-000007-ATT-001",
+      "DEMO-SHP-000009-ATT-001"
+    ],
+    "DeliveryDepot": [
+      "DEMO-DEPOT-AHB-01",
+      "DEMO-DEPOT-DHA-01"
+    ],
+    "DeliveryInstruction": [
+      "DEMO-SHP-000003-INSTRUCTION",
+      "DEMO-SHP-000007-INSTRUCTION"
+    ],
+    "DeliveryProof": [
+      "DEMO-SHP-000007-PROOF-001",
+      "DEMO-SHP-000009-PROOF-001"
+    ],
+    "DeliverySession": [
+      "DEMO-SHP-000007-SESSION-0913",
+      "DEMO-SHP-000009-SESSION-0912"
+    ],
+    "DepotReconciliation": [
+      "DEMO-SHP-000007-RECON-001",
+      "DEMO-SHP-000009-RECON-001"
+    ],
+    "Device": [
+      "DEMO-DEV-APP-DRV-AHB-01-01",
+      "DEMO-DEV-APP-DRV-AHB-01-02"
+    ],
+    "DeviceHeartbeat": [
+      "DEMO-DEV-APP-DRV-DMM-01-05-HB-20260912T045000",
+      "DEMO-DEV-APP-DRV-DMM-01-05-HB-20260912T050500"
+    ],
+    "Driver": [
+      "DEMO-DRV-AHB-01-01",
+      "DEMO-DRV-AHB-01-02"
+    ],
+    "Exception": [
+      "DEMO-EXCEPTION-045c9a5d17563bd9cce75cc3",
+      "DEMO-EXCEPTION-0c20594c645ff4f6744045dd"
+    ],
+    "ExpectedMilestone": [
+      "DEMO-SHP-000002-EM-01-01",
+      "DEMO-SHP-000002-EM-01-02"
+    ],
+    "FacilityThroughput": [
+      "DEMO-TP-DEPOT-AHB-01-20260910T02",
+      "DEMO-TP-DEPOT-AHB-01-20260910T03"
+    ],
+    "FulfillmentWarehouse": [
+      "DEMO-FULFILL-DMM-01",
+      "DEMO-FULFILL-JED-01"
+    ],
+    "GPSObservation": [
+      "DEMO-GPS-FD-DMM-001-20260911T100730",
+      "DEMO-GPS-FD-DMM-001-20260911T103730"
+    ],
+    "HandlingRequirement": [
+      "DEMO-HANDLING-BULKY",
+      "DEMO-HANDLING-SMALL"
+    ],
+    "HandoffEvidence": [
+      "DEMO-SHP-000007-HANDOFF-001",
+      "DEMO-SHP-000009-HANDOFF-001"
+    ],
+    "Hub": [
+      "DEMO-HUB-DMM-01",
+      "DEMO-HUB-JED-01"
+    ],
+    "InventoryRecord": [
+      "DEMO-SHP-000007-INVENTORY-01",
+      "DEMO-SHP-000011-INVENTORY-01"
+    ],
+    "JourneyPlan": [
+      "DEMO-SHP-000002-JOURNEY",
+      "DEMO-SHP-000003-JOURNEY"
+    ],
+    "Lane": [
+      "DEMO-LANE-FD-AHB-01",
+      "DEMO-LANE-FD-DHA-01"
+    ],
+    "LocationPin": [
+      "DEMO-SHP-000003-PIN-01",
+      "DEMO-SHP-000004-PIN-01"
+    ],
+    "Manifest": [
+      "DEMO-SHP-000007-MANIFEST-MED-01-0913-1-V1",
+      "DEMO-SHP-000007-MANIFEST-MED-01-0913-1-V2"
+    ],
+    "Notification": [
+      "DEMO-SHP-000007-HISTORY-NOTIFY",
+      "DEMO-SHP-000016-HISTORY-NOTIFY"
+    ],
+    "OperatorDecision": [
+      "DEMO-SHP-000007-HISTORY-DECISION",
+      "DEMO-SHP-000016-HISTORY-DECISION"
+    ],
+    "Organization": [
+      "DEMO-ORG-AHB-B1",
+      "DEMO-ORG-AHB-B2"
+    ],
+    "OrganizationWarehouse": [
+      "DEMO-ORGWH-DMM-01",
+      "DEMO-ORGWH-DMM-02"
+    ],
+    "Outcome": [
+      "DEMO-SHP-000007-HISTORY-OUT",
+      "DEMO-SHP-000016-HISTORY-OUT"
+    ],
+    "Package": [
+      "DEMO-SHP-000002-PKG-01",
+      "DEMO-SHP-000002-PKG-02"
+    ],
+    "PhotoEvidence": [
+      "DEMO-SHP-000007-PHOTO-001",
+      "DEMO-SHP-000009-PHOTO-001"
+    ],
+    "Policy": [
+      "DEMO-POLICY-W1"
+    ],
+    "Provider": [
+      "DEMO-PROV-3PL-01",
+      "DEMO-PROV-INDEP-01"
+    ],
+    "RecipientReport": [
+      "DEMO-SHP-000046-REPORT-001",
+      "DEMO-SHP-000073-REPORT-001"
+    ],
+    "Recommendation": [
+      "DEMO-SHP-000007-HISTORY-REC",
+      "DEMO-SHP-000016-HISTORY-REC"
+    ],
+    "Resolution": [
+      "DEMO-SHP-000007-HISTORY-RES",
+      "DEMO-SHP-000016-HISTORY-RES"
+    ],
+    "Review": [
+      "DEMO-SHP-000007-HISTORY-REVIEW",
+      "DEMO-SHP-000016-HISTORY-REVIEW"
+    ],
+    "Route": [
+      "DEMO-SHP-000002-ROUTE",
+      "DEMO-SHP-000003-ROUTE"
+    ],
+    "RouteMilestone": [
+      "DEMO-SHP-000002-RM-01-01",
+      "DEMO-SHP-000002-RM-01-02"
+    ],
+    "RouteRun": [
+      "DEMO-RR-DMM-01-0912-1",
+      "DEMO-RR-DMM-01-0913-1"
+    ],
+    "RouteSegment": [
+      "DEMO-SHP-000002-SEG-01",
+      "DEMO-SHP-000002-SEG-02"
+    ],
+    "ScanEvent": [
+      "DEMO-SHP-000002-SCAN-001",
+      "DEMO-SHP-000002-SCAN-002"
+    ],
+    "ServiceLevel": [
+      "DEMO-SERVICE-EXPRESS",
+      "DEMO-SERVICE-STANDARD"
+    ],
+    "Shipment": [
+      "DEMO-SHP-000002",
+      "DEMO-SHP-000003"
+    ],
+    "ShipmentType": [
+      "DEMO-STYPE-BULKY",
+      "DEMO-STYPE-SMALL"
+    ],
+    "SignatureEvidence": [
+      "DEMO-SHP-000009-SIGN-001",
+      "DEMO-SHP-000009-SIGN-002"
+    ],
+    "SortingCenter": [
+      "DEMO-SORT-DMM-01",
+      "DEMO-SORT-JED-01"
+    ],
+    "StatusEvent": [
+      "DEMO-SHP-000002-STATUS-001",
+      "DEMO-SHP-000002-STATUS-002"
+    ],
+    "TrafficEvent": [
+      "DEMO-TRAFFIC-DMM-001",
+      "DEMO-TRAFFIC-DMM-002"
+    ],
+    "Trip": [
+      "DEMO-TRIP-FD-AHB-01-0909-2034",
+      "DEMO-TRIP-FD-AHB-01-0910-2034"
+    ],
+    "TripEvent": [
+      "DEMO-TRIP-FD-AHB-01-0909-2034-EV-01",
+      "DEMO-TRIP-FD-AHB-01-0910-2034-EV-01"
+    ],
+    "Vehicle": [
+      "DEMO-VEH-AHB-01-01",
+      "DEMO-VEH-DHA-01-01"
+    ],
+    "VehicleAssignment": [
+      "DEMO-SHP-000002-ASSIGN-001",
+      "DEMO-SHP-000002-ASSIGN-002"
+    ],
+    "VehicleType": [
+      "DEMO-VTYPE-FEEDER",
+      "DEMO-VTYPE-FM-VAN"
+    ]
+  }
+}

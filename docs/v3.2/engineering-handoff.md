@@ -1,7 +1,7 @@
 # V3.2 engineering handoff
 
 Branch `codex/v3-2-case-intelligence`, worktree `C:\Projects\suhail-v3-2-case-intelligence`.
-Exact base: `7287e44ad99c9a8b90aac7543e8218c1302aa31a`. Protected integration remains `765cb4033e6f0238d7cf758e20a89b54cfe6a0bf`. No merge, push, deployment, paid inference, real operational requests or Neo4j writes are part of this implementation.
+Exact base: `7287e44ad99c9a8b90aac7543e8218c1302aa31a`. V3.1 passed independent review and, with Fahad's approval, `v3/integration` was fast-forwarded locally from `765cb4033e6f0238d7cf758e20a89b54cfe6a0bf` to that same `7287e44` on 2026-10-14 (not pushed). This branch therefore sits directly on the current integration HEAD. No merge, push, deployment, paid inference, real operational requests or Neo4j writes are part of this implementation.
 
 ## Implemented
 
@@ -9,11 +9,17 @@ Production inference now reserves calls, a conservative input/output token bound
 
 One deadline covers budget admission, provider waiting and inference. The transport receives the remaining interval, capped by its existing HTTP timeout; caller timeout leaves the provider permit held until the underlying call ends. SDK retries remain disabled and explicit application attempts retain the canonical shared session counters. Output limits apply at client construction and each dispatch. Existing offline AFL/evaluator doubles forward the new transport arguments; evaluator-wrapper changes preserve output/timeout limits and inner retry suppression. No campaign was initiated.
 
+The first complete gate exposed one intermittent Windows sharing violation in the unchanged legacy campaign ledger's atomic replacement. A bounded one-second retry now keeps its existing lock/sealed temporary document; persistent failure leaves the old reservation intact and raises. Fault-injection tests cover both recovery and fail-closed persistence without changing its cap/counting policy. Initial gate: 889 passed, 0 failed, 1 error, 25 skipped. The complete rerun on implementation commit `1ef8164` supersedes it: 921 run, 896 passed, 0 failed, 0 errors, 25 skipped (see Final gate).
+
 The evidence-first public guide strengthens identity, custody, delayed receipt, shared-device, delivery-proof, route and weight investigations and independent source comparison. It contains no case IDs, preferred conclusions or evaluation answers. The complete user playbook is retained as 136 catalogue entries in 12 families. Twelve prioritized scenarios and five distinct coverage levels are in `coverage-matrix.md`; catalogue/source-kind availability is not presented as reliable model diagnosis.
 
 OpsExecution now keeps independent authorization, dispatch, acknowledgement, acceptance, execution, verification and resolution facts through the additive `suhail-action-1` contract. Synthetic responses are explicit opt-in, local-authority protected, bounded, idempotent and source-bound. They cannot declare success or create evidence. Rejection, failed work and expiry are operationally unresolved; they do not automatically imply a policy decision. Genuine reviewer/authority floors retain human judgment. The old case states and frozen `suhail-v3-1` contract stay intact.
 
 The existing verifier gains stricter source/package/facility/device/deadline checks for the new response protocol. Independent rescans must use a different evidenced device and match identity at a directed location. Synchronization requires the expected original custody observations and scan sources from the targeted device. Custody reconciliation requires newly corroborated, package-bound stock evidence at a directed facility. Vehicle GPS verifies none of these actions. Verification writes recheck the case version, response revision and clock to avoid committing a stale verdict after concurrent evidence changes. Authority, sensitive-action floors and exception-clearance policy are unchanged.
+
+Responses from superseded investigation cycles remain late audit history and cannot cancel a queued re-analysis. Outcome selection excludes executions belonging to older runs before applying its limit; an old action cannot certify or crowd out the current cycle. Dispatch refusals are reflected in the new authorization/dispatch axes. Current policy-floor symptoms still require human judgment; a completed verified human decision is no longer presented as pending.
+
+Expiry also rechecks the current investigation and response state under the transaction lock. A stale expiry selection cannot cancel a newer investigation or discard evidence received exactly at its deadline; the next verifier read evaluates that evidence independently.
 
 ## Three workflows and actual outcomes
 
@@ -23,7 +29,7 @@ The existing verifier gains stricter source/package/facility/device/deadline che
 
 These execute the real store, authority rechecks, verifier and closure code on the existing transactional in-memory Neo4j port. Their initial accepted investigation is scripted to isolate request/response/verifier behavior. `offline-evaluation.json` includes actual rule IDs, source IDs and lifecycle histories. A serious recipient dispute also retains deterministic human authority; valid-looking proof does not erase nonreceipt.
 
-The controlled evaluation reports 26 verifier probes (23 negative/ambiguous), zero false action successes, seven complete store traces (five unresolved/safety boundaries), zero false case resolutions and two verified resolutions. These include a concurrent-source-change test that prevents a stale success from committing. Five scripted classification/citation probes, four substantive alternatives, one correct abstention and the independent wrong-interpretation rejection exercise the offline harness. **They are not live GPT-OSS accuracy measurements.** Full regression/frontend totals are finalized in `verification.json` after the gate.
+The controlled evaluation reports 26 verifier probes (23 negative/ambiguous), zero false action successes, seven complete store traces (five unresolved/safety boundaries), zero false case resolutions and two verified resolutions. These include a concurrent-source-change test that prevents a stale success from committing. Five scripted classification/citation probes, four substantive alternatives, one correct abstention and the independent wrong-interpretation rejection exercise the offline harness. **They are not live GPT-OSS accuracy measurements.** Full regression/frontend totals are in `verification.json` and summarized below.
 
 ## Configuration and reproduction
 
@@ -31,13 +37,22 @@ The controlled evaluation reports 26 verifier probes (23 negative/ambiguous), ze
 
 The default ignored path is `.runtime/inference-budget.json`. Restart does not reset it. A policy change, corrupt ledger or abandoned lock refuses work; operator reconciliation is required. Do not delete reservations, remove a live lock, silently rotate the budget or release an abandoned permit to make a retry pass. Spend caps are conservative; a provider violating output limits/tariffs cannot be retroactively prevented from charging, but detected over-limit usage blocks further dispatch.
 
-Run `scripts/v32_offline_evaluation.py` with the existing locked Python environment. It sets offline database/model endpoints and placeholder credentials, never imports expected answers into runtime code, and exports its results. Full unittest discovery must run from `chat` with both `chat` and `chat/tests` on PYTHONPATH and without `-t .`; explicitly disable `SUHAIL_NEO4J_TESTS` and `SUHAIL_V3_RACE_TESTS`. Use a temporary ledger and explicit test-only pricing/caps for the loopback tests. The complete run configuration and raw logs are retained in ignored `artifacts/v3.2`.
+Run `scripts/v32_offline_evaluation.py` with the existing locked Python environment. It sets offline database/model endpoints and placeholder credentials, never imports expected answers into runtime code, and exports its results. `docs/v3.2/reproduce-offline.ps1` supplies the complete offline configuration, temporary ledger, test-only arithmetic rates/caps and corrected discovery. Full discovery runs from `chat` with both `chat` and `chat/tests` on PYTHONPATH and without `-t .`; real Neo4j writes/races stay disabled. The actual run configuration and raw logs are retained in ignored `artifacts/v3.2`.
+
+## Final gate (implementation commit `1ef8164438566274360446d8bdd01222951d4e55`)
+
+- Full Python offline regression (`artifacts/v3.2/run_tests.py`, same configuration as `reproduce-offline.ps1`), started 22:35:47 local one second after the commit and completed 23:00: **921 run, 896 passed, 0 failed, 0 errors, 25 skipped** in 1454 s. The 25 skips are 21 `SUHAIL_NEO4J_TESTS` V2-database tests and 4 `SUHAIL_V3_RACE_TESTS` real two-client race tests. Both stay disabled by instruction; they are outstanding gates, not passes. Earlier aborted/incomplete attempts are retained as `full-offline-attempt-*.log` and were never counted.
+- Controlled evaluation (`scripts/v32_offline_evaluation.py`): 24/24 tests; 26 verifier probes (23 negative/ambiguous), 0 false action successes; 7 store traces, 2 verified resolutions (barcode independent rescan, targeted buffered upload), 5 unresolved safety traces, 0 false case resolutions.
+- Action-store suite after the expiry fence: 12/12.
+- Frontend (unchanged `frontend-next`; no file under it differs from `7287e44`): typecheck pass, 57/57 unit, 21/21 Chrome browser tests against the scripted in-page backend. These show the unchanged UI still accepts the additive fields; they do not test a V3.2 UI.
+- Protection recheck after the V3.1 merge: `fhd` clean at `4cd4304`, integration clean at `7287e44`, both video hashes and the frozen world manifest unchanged, policy/gate/claims/workers/config/launcher/lockfile/frontend source/V3 contract files identical to the base. Database writes, paid inference and external logistics requests: none.
 
 ## Integration gates and next actions
 
-- Await Claude Opus's independent V3.1 integration review. If it identifies a blocker, stop at a safe V3.2 commit and reconcile the base; this branch must not be merged over an unresolved V3.1 blocker.
+- V3.1 independent review: done (READY TO MERGE YES); merged locally into `v3/integration` at `7287e44`. No base reconciliation is needed.
+- Real Neo4j execution of the new write paths (`action_lifecycle_json`, expiry/verification fences under the transaction lock, run-scoped outcome selection) is untested. Every V3.2 store test runs on the in-memory transactional port. Running them, and the 4 race tests, against a disposable V3.2 database needs Fahad's separate authorization.
 - Independently review V3.2 budget durability, price assumptions, deadline handling, response idempotency/source checks, stale-verdict fences and human/closure boundaries. This offline branch is a review candidate, not a new live-production certification.
-- Composer implements the additive consumer and pending/unresolved/verified/human distinctions from `composer-handoff.md`. Current browser checks validate compatibility of the unchanged frontend, not an implemented V3.2 interface.
+- Composer implements the additive consumer and pending/unresolved/verified/human distinctions from `composer-handoff.md`, then retains the 60-minute independent Phase C source/storyline QA in the existing Composer thread/worktree. Current browser checks validate compatibility of the unchanged frontend, not an implemented V3.2 interface.
 - Before live database integration, separately provision/validate an isolated V3.2 mutable world target and synthetic response feed. Do not run this build on the protected integration, V2 databases or frozen V3 dataset. No new database/import/race gate is claimed here; disabled live tests remain skips.
 - Live investigator/reviewer quality remains unmeasured. The other eight priority scenarios have bounded tools/policy support documented, not newly completed resolution vertical slices. Shared-incident request deduplication, real field authentication/integration, broad dataset generation, new provider/BGE-M3 work and paid evaluation remain outside this batch.
 
