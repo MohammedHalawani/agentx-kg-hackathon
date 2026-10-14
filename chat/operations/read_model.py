@@ -524,7 +524,7 @@ class OperationsReader:
             # a proposal and cannot silently replace an existing human decision.
             for key in ("workflow_state","state_version","priority","operational_status","recommendation_id",
                         "last_run_id","recommendation","review","outcome","decisions","executions","run","previous_run","diagnosis",
-                         "symptom_codes","opened_at","investigation_status"):
+                         "symptom_codes","opened_at","investigation_status","action_status"):
                 if key in ledger:
                     detail[key]=ledger[key]
             detail["investigated_at"]=(ledger.get("run") or {}).get("recorded_at")

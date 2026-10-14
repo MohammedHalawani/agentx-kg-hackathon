@@ -216,6 +216,9 @@ or, when the evidence supports a conclusion (or you must stop):
 """
 
 
+from operations.case_intelligence import EVIDENCE_GUIDE, REVIEW_GUIDE
+
+
 def prefetch_enabled():
     return os.environ.get(PREFETCH_ENV, "").strip() == "1"
 
@@ -241,6 +244,7 @@ def repair_event(role, error, session=None):
 
 
 CONCLUDE_SHAPE = SYSTEM[SYSTEM.index('{"action":"conclude"'):].strip()
+SYSTEM += "\n" + EVIDENCE_GUIDE
 REVIEW_SHAPE = ('{"verdict":"ACCEPT|REVISE|INSUFFICIENT_EVIDENCE|HUMAN_REVIEW|ESCALATE","feedback":"<one to three sentences>",'
                 '"unsupported_claims":["..."],"unaddressed_contradictions":["<evidence id>"],"alternatives_tested":"yes|no"}')
 
@@ -672,6 +676,8 @@ Vehicle GPS never proves parcel location. Never blame a person.
 Respond with exactly one JSON object: {"verdict":"ACCEPT|REVISE|INSUFFICIENT_EVIDENCE|HUMAN_REVIEW|ESCALATE",
 "feedback":"<one to three sentences>","unsupported_claims":["..."],"unaddressed_contradictions":["<evidence id>"],
 "alternatives_tested":"yes|no"}"""
+
+REVIEWER_SYSTEM += "\n" + REVIEW_GUIDE
 
 CONCLUSION_FIELDS = ("hypotheses", "primary_cause", "confidence", "missing_evidence", "next_evidence_step", "recommended_action",
                      "requires_physical_check", "summary")

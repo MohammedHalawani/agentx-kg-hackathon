@@ -119,6 +119,9 @@ class OperationsRuntime:
         self.reader.store=self.store
         self.store.initialize()
         self.simulator=attach_simulator(self.store,self.reader,manifest)
+        if os.environ.get("SUHAIL_SYNTHETIC_ACTION_RESPONSES","").strip()=="1":
+            from operations.action_lifecycle import SyntheticActionAdapter
+            self.simulator=self.store.adapter=SyntheticActionAdapter()
         if os.environ.get("SUHAIL_NARRATION","").strip().lower() in ("1","true","on","yes"):
             # Canopus narration of each run, on its own thread, from recorded events only (operations.narration).
             from operations.narration import Narrator
@@ -485,6 +488,23 @@ class VerificationRequest(StrictBody):
     """No success flag exists: only the independent verifier decides whether an action worked."""
     expected_version: int=Field(ge=0)
     idempotency_key: str=Field(min_length=8,max_length=128,pattern=r"^[A-Za-z0-9_-]+$")
+
+
+class ActionResponseBody(StrictBody):
+    execution_id: str=Field(min_length=1,max_length=160)
+    expected_revision: int=Field(ge=0)
+    response_id: str=Field(min_length=1,max_length=128,pattern=r"^[A-Za-z0-9_-]+$")
+    kind: Literal["ACKNOWLEDGED","ACCEPTED","STARTED","EVIDENCE_RECEIVED","REJECTED","FAILED"]
+    occurred_at: str=Field(min_length=20,max_length=40)
+    evidence_ids: list[str]=Field(default_factory=list,max_length=100)
+    source_ref: str=Field(min_length=11,max_length=200,pattern=r"^synthetic:")
+
+
+@router.post("/cases/{case_id}/action-responses")
+def action_response(case_id: str,request: Request,body: ActionResponseBody):
+    """Opt-in synthetic response. There is deliberately no success/resolution field."""
+    actor=authority.authorize(request)
+    return invoke(get_runtime().store.record_action_response,case_id=case_id,actor_id=actor["actor_id"],**body.model_dump())
 
 
 @router.post("/cases/{case_id}/outcomes")

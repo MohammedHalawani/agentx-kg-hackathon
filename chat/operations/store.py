@@ -1025,6 +1025,7 @@ class OperationsStore:
         """Verify automatically executed actions from evidence that arrived after them (live sessions only)."""
         from operations.outcome_engine import evaluate, EVIDENCE_ACTIONS
         from operations.reasoning import evidence_world
+        from operations import action_lifecycle
         def due(tx):
             c=self._control(tx)
             rows=tx.run("MATCH(c:OpsEntity:OpsCase {dataset_id:$dataset,split:'development',workflow_state:'AWAITING_OUTCOME'}) "
@@ -1038,6 +1039,15 @@ class OperationsStore:
         results=[]
         from dataset_v2.derive import assess_shipment
         for case,execution in items:
+            lifecycle=action_lifecycle.load(execution)
+            if lifecycle and lifecycle.get("requires_response_events"):
+                if lifecycle["state"]!="EVIDENCE_RECEIVED":
+                    if instant(clock)>=instant(execution["deadline_at"]):
+                        self._expire_action(execution["entity_id"])
+                    continue
+                execution["action_protocol"]=action_lifecycle.VERSION
+                execution["action_target"]=json.loads(execution.get("action_target_json") or "{}")
+                execution["expected_evidence"]=json.loads(execution.get("expected_evidence_json") or "[]")
             context=self._reader().evidence(case["shipment_id"],clock)
             world=evidence_world(context,self.config)
             verdict=evaluate(world,case["shipment_id"],execution,context["as_of"])
@@ -1051,7 +1061,12 @@ class OperationsStore:
             def record(tx,case=case,execution=execution,verdict=verdict,fresh=fresh,delivered=delivered):
                 from operations.authority import HUMAN_FLOOR_SYMPTOMS, OPEN_DISPUTE_SYMPTOMS, DISPUTES_CLEARED_BY_ACTION
                 c=self._control(tx,lock=True);current=self._case(tx,case["entity_id"]);when=c["as_of"]
-                if current["workflow_state"]!="AWAITING_OUTCOME":return None
+                if (current["workflow_state"]!="AWAITING_OUTCOME" or current["state_version"]!=case["state_version"] or
+                    instant(when)!=instant(clock)):return None  # Re-read after concurrent evidence/clock changes.
+                latest_execution=self._get(tx,"OpsExecution",execution["entity_id"])
+                if lifecycle and lifecycle.get("requires_response_events"):
+                    latest_state=action_lifecycle.load(latest_execution)
+                    if not latest_state or latest_state["revision"]!=lifecycle["revision"] or latest_state["state"]!="EVIDENCE_RECEIVED":return None
                 if verdict["status"]=="pending":
                     current["outcome_checked_as_of"]=current["as_of"];self._put(tx,"OpsCase",current,update=True);return None
                 success=verdict["status"]=="success";outcome_id=identity("outcome","auto",execution["entity_id"],when)
@@ -1125,10 +1140,76 @@ class OperationsStore:
                     self._put(tx,"OpsCase",current,update=True)
                     self._audit(tx,current,"OUTCOME_FAILED",when,actor="SUHAIL-OUTCOME-VERIFIER",old=old,
                                 result=f"{execution['action_type']} not confirmed: {verdict['reason']} Routed to {destination}.")
+                stored=self._get(tx,"OpsExecution",execution["entity_id"])
+                state=action_lifecycle.load(stored)
+                if state:
+                    stored["action_lifecycle_json"]=canonical(action_lifecycle.verification(state,verdict,when,
+                                                                resolved=current["workflow_state"]=="RESOLVED"))
+                    self._put(tx,"OpsExecution",stored,update=True)
                 return {"case_id":current["entity_id"],"workflow_state":current["workflow_state"]}
             result=self._execute(record,write=True)
             if result:results.append(result)
         return results
+
+    def _expire_action(self,execution_id):
+        from operations import action_lifecycle
+        def expire(tx):
+            control=self._control(tx,lock=True);when=control["as_of"]
+            execution=self._get(tx,"OpsExecution",execution_id)
+            state=action_lifecycle.load(execution)
+            if not state or state["state"] in action_lifecycle.TERMINAL or instant(when)<instant(execution["deadline_at"]):return
+            case=self._case(tx,execution["case_id"])
+            execution["action_lifecycle_json"]=canonical(action_lifecycle.verification(state,
+                {"status":"pending","deadline_at":execution["deadline_at"]},when))
+            execution["status"]="RESPONSE_EXPIRED"
+            self._put(tx,"OpsExecution",execution,update=True)
+            if not case.get("is_terminal"):
+                case.update(workflow_state="NEEDS_EVIDENCE",state_version=case["state_version"]+1)
+                self._put(tx,"OpsCase",case,update=True)
+            self._audit(tx,case,"ACTION_RESPONSE_EXPIRED",when,actor="SUHAIL-EXECUTION-ADAPTER",key=execution_id,
+                        result="Synthetic operational response expired. No outcome or resolution is asserted.")
+        self._execute(expire,write=True)
+
+    def record_action_response(self,case_id,execution_id,*,actor_id,expected_revision,response_id,kind,occurred_at,evidence_ids,source_ref):
+        """Simulation-only operational response, never a success/authority input."""
+        from operations import action_lifecycle
+        from operations.reasoning import evidence_world
+        require_actor(actor_id)
+        if (os.environ.get("SUHAIL_SYNTHETIC_ACTION_RESPONSES")!="1" or
+            not isinstance(self.adapter,action_lifecycle.SyntheticActionAdapter)):
+            raise OperationsConflict("Synthetic response transport is not explicitly enabled")
+        event={"response_id":response_id,"kind":kind,"occurred_at":occurred_at,"evidence_ids":evidence_ids,"source_ref":source_ref}
+        def record(tx):
+            control=self._control(tx,lock=True);when=control["as_of"]
+            case=self._case(tx,case_id);execution=self._get(tx,"OpsExecution",execution_id)
+            if (not execution or execution["case_id"]!=case_id or execution["shipment_id"]!=case["shipment_id"] or
+                not execution.get("receipt_ref") or execution.get("mode")!=self.adapter.name):
+                raise OperationsConflict("Response must refer to this case's dispatched synthetic request")
+            state=action_lifecycle.load(execution)
+            updated,replay=action_lifecycle.respond(state,event,now=when,deadline=execution["deadline_at"],revision=expected_revision)
+            if replay:return {"action_lifecycle":action_lifecycle.view(execution),"idempotent":True}
+            world=evidence_world(self._reader().evidence(case["shipment_id"],when),self.config)
+            for ref in evidence_ids:
+                node=world.nodes.get(ref)
+                if (node is None or node.properties.get("shipment_id")!=case["shipment_id"] or
+                    not node.properties.get("source_ref") or not node.properties.get("recorded_at") or
+                    not instant(execution["occurred_at"])<instant(node.properties["recorded_at"])<=instant(when)):
+                    raise OperationsConflict("Response evidence must be visible, own, source-backed and received after dispatch")
+            execution["action_lifecycle_json"]=canonical(updated)
+            if updated["state"] in ("FAILED","REJECTED"):
+                execution["status"]="RESPONSE_"+updated["state"]
+                if not case.get("is_terminal"):
+                    case.update(workflow_state="NEEDS_EVIDENCE",state_version=case["state_version"]+1)
+                    self._put(tx,"OpsCase",case,update=True)
+            elif kind=="EVIDENCE_RECEIVED" and not updated["events"][-1]["late"]:
+                case.update(outcome_checked_as_of=None,state_version=case["state_version"]+1)
+                self._put(tx,"OpsCase",case,update=True)
+            self._put(tx,"OpsExecution",execution,update=True)
+            self._audit(tx,case,"ACTION_RESPONSE_RECEIVED",when,actor=actor_id,key=f"{execution_id}:{response_id}",
+                        result=canonical({"execution_id":execution_id,"kind":kind,"source_ref":source_ref,
+                                          "evidence_ids":evidence_ids,"late":updated["events"][-1]["late"],"synthetic":True}))
+            return {"action_lifecycle":action_lifecycle.view(execution),"idempotent":False}
+        return self._execute(record,write=True)
 
     def _reassessment_result(self,tx,current,analysis,reassess,stale,when):
         """AUTH-27, after the action that ran under a reviewer's doubt was verified: this run is the reassessment on the
@@ -1178,6 +1259,7 @@ class OperationsStore:
         allowed,rule,reason=execution_permission(action_type,authority,decided_risk)
         if not allowed:raise OperationsConflict(f"{rule}: {reason}")
         target=(proposal.get("target") if isinstance(proposal.get("target"),dict) else None) or json.loads(proposal.get("target_json") or "{}")
+        from operations.action_lifecycle import initial
         self._put(tx,"OpsExecution",{"entity_id":execution_id,"shipment_id":case["shipment_id"],"case_id":case["entity_id"],
             "decision_id":decision_id,"recommendation_id":recommendation_id,"run_id":run_id,
             "action_code":proposal.get("action_code"),"action_type":action_type,"authority":authority,
@@ -1185,6 +1267,7 @@ class OperationsStore:
             "status":"AUTHORIZED","expected_result":proposal.get("action"),"idempotency_key":execution_id,"closure":closure,
             "target_device":target.get("device_id"),"expected_evidence_json":canonical(target.get("expected_evidence") or []),
             "case_opened_at":case.get("opened_at"),
+            "action_lifecycle_json":canonical(initial(when)),"action_target_json":canonical(target),
             "recorded_at":when,"occurred_at":when})
         self._link(tx,"OPS_INITIATES",source_id,execution_id,case["shipment_id"],when)
         recommendation=self._get(tx,"OpsRecommendation",recommendation_id)
@@ -1274,6 +1357,10 @@ class OperationsStore:
                 case=self._case(tx,current["case_id"])
                 deadline=(instant(when)+timedelta(hours=AUTO_OUTCOME_WINDOW_HOURS)).isoformat()
                 acknowledged=receipt.get("acknowledged") is not False
+                from operations import action_lifecycle
+                state=action_lifecycle.load(current) or action_lifecycle.initial(when)
+                current["action_lifecycle_json"]=canonical(action_lifecycle.dispatched(state,when,
+                    requires_responses=bool(getattr(self.adapter,"requires_response_events",False)),acknowledged=acknowledged))
                 current.update(status="ACKNOWLEDGED" if acknowledged else "NOT_ACKNOWLEDGED",receipt_ref=f"{mode}:{execution['entity_id']}",
                                mode=mode,executed_at=when,occurred_at=when,deadline_at=deadline if acknowledged else None,
                                expected_response_at=expected if acknowledged else None,
@@ -2356,7 +2443,21 @@ class OperationsStore:
                 # Recorded before run ids were stored: only a record made after the current run started counts.
                 return not run_at or instant(str(record.get("recorded_at")))>instant(str(run_at))
             if outcomes:outcomes[0].update(outcome_id=outcomes[0]["entity_id"],current_cycle=in_cycle(outcomes[0]))
-            for execution in executions:execution["current_cycle"]=in_cycle(execution)
+            from operations.action_lifecycle import view as action_view
+            for execution in executions:
+                execution["current_cycle"]=in_cycle(execution)
+                execution["action_lifecycle"]=action_view(execution)
+                execution.pop("action_lifecycle_json",None)
+                execution.pop("action_target_json",None)
+            active_actions=[e["action_lifecycle"] for e in executions if e.get("current_cycle") and e.get("action_lifecycle")]
+            human_decision=bool((recommendation or {}).get("risk_class") in ("HUMAN_REVIEW","PROHIBITED") or
+                                any(e.get("closure")=="HUMAN" for e in executions if e.get("current_cycle")) or
+                                any(r.get("model_verdict") in ("HUMAN_REVIEW","ESCALATE") for r in reviews))
+            resolution=("VERIFIED_RESOLVED" if case["workflow_state"]=="RESOLVED" and case.get("verified_outcome_id") else
+                        "HUMAN_DECISION_REQUIRED" if human_decision else
+                        "UNRESOLVED" if any(a["state"] in ("FAILED","REJECTED","EXPIRED","UNRESOLVED") or
+                                            (a["state"]=="VERIFIED" and not a.get("resolved")) for a in active_actions) else
+                        "OPERATIONAL_WORK_PENDING" if active_actions else "INVESTIGATION_PENDING")
             return {"case_id":case_id,"shipment_id":case["shipment_id"],"workflow_state":case["workflow_state"],
                 "symptom_codes":list(case.get("symptom_codes") or []),"opened_at":case.get("opened_at"),
                 "state_version":case["state_version"],"priority":case["priority"],"operational_status":case["operational_status"],
@@ -2366,5 +2467,7 @@ class OperationsStore:
                 # Who investigates the case or last did, and where that run stands (InvestigationStatusV3).
                 "investigation_status":self._investigation_status(tx,case),
                 # The current run's accepted agent investigation, or explicitly absent; never rule output.
-                "diagnosis":diagnosis,"synthetic":True}
+                "diagnosis":diagnosis,"synthetic":True,
+                "action_status":{"version":"suhail-action-1","resolution":resolution,
+                                 "human_decision_required":human_decision,"actions":active_actions,"synthetic":True}}
         return self._execute(read)

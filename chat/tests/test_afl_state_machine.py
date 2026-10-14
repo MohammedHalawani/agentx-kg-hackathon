@@ -44,7 +44,7 @@ class ScriptedFinalModel:
         self.review_calls = 0
         self.classifier_prompts = []
 
-    def invoke(self, messages):
+    def invoke(self, messages, **kwargs):
         system, prompt = messages[0].content, messages[1].content
         if system == extract._SYSTEM:
             response = {"city": None, "district": None, "courier": None, "category_hint": None}

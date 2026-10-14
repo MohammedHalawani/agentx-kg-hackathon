@@ -97,7 +97,8 @@ class DeadlineTests(Patched):
         self.assertIsInstance(raised.exception, _llm.ModelCallTimeout)
         self.assertGreaterEqual(waited, DEADLINE)
         self.assertLess(waited, DEADLINE + 2)                       # not the 30 s the provider would have taken
-        self.assertEqual((model.calls, model.timeouts), (1, [DEADLINE]))     # the HTTP client is given the same limit
+        self.assertEqual(model.calls,1)
+        self.assertTrue(all(0<t<=DEADLINE for t in model.timeouts))  # admission consumes the same deadline
 
     def test_a_call_that_returns_in_time_is_returned_and_an_error_is_raised_as_itself(self):
         model = self.use(Model("answer", ConnectionError("refused")))
@@ -106,8 +107,8 @@ class DeadlineTests(Patched):
             _llm.invoke(["m"], deadline=DEADLINE)
         self.assertEqual(model.calls, 2)
 
-    def test_without_a_deadline_the_call_is_the_plain_one(self):
-        plain = SimpleNamespace(invoke=lambda messages: SimpleNamespace(content="plain"))      # takes no timeout argument
+    def test_without_an_explicit_deadline_the_configured_limit_still_applies(self):
+        plain = SimpleNamespace(invoke=lambda messages,**kwargs: SimpleNamespace(content="plain"))
         with mock.patch.object(_llm, "model", return_value=plain):
             self.assertEqual(_llm.invoke(["m"]).content, "plain")
             self.assertEqual(_llm.ask_json("s", "u", {"a": ""}), {"a": ""})
@@ -148,7 +149,8 @@ class InvestigatorTests(Patched, ti.Base):
         self.assertEqual(investigator._review_call("s", "u", {"verdict": ""}), {"verdict": "ACCEPT"})
         with self.assertRaises(TimeoutError):
             investigator._review_call("s", "u", {"verdict": ""})
-        self.assertEqual(model.timeouts, [DEADLINE] * 4)
+        self.assertEqual(len(model.timeouts),4)
+        self.assertTrue(all(0<t<=DEADLINE for t in model.timeouts))
 
     def test_a_stalled_investigator_call_is_a_provider_failure_retried_once_and_then_the_next_reply_is_used(self):
         model = self.use(Model("hang", CONCLUSION), cap=2)
@@ -210,7 +212,8 @@ class NoToolsArmTests(Patched):
                                                   symptoms=("MILESTONE_OVERDUE",)))
         self.assertEqual((result.degraded, result.failure_mode, result.provider_failures, result.calls_used), (True, "model_unavailable", 2, 2))
         self.assertEqual(result.validation_error, "model call failed (ModelCallTimeout)")
-        self.assertEqual(model.timeouts, [DEADLINE, DEADLINE])
+        self.assertEqual(len(model.timeouts),2)
+        self.assertTrue(all(0<t<=DEADLINE for t in model.timeouts))
 
     def test_with_one_slot_the_baseline_s_retry_is_refused_and_it_fails_closed_with_both_attempts_counted(self):
         from stage3_eval.arms import CaseRef, NoToolsArm
@@ -219,7 +222,8 @@ class NoToolsArmTests(Patched):
                                                   symptoms=("MILESTONE_OVERDUE",)))
         self.assertEqual((result.degraded, result.failure_mode, result.provider_failures, result.calls_used), (True, "model_unavailable", 2, 2))
         self.assertEqual(result.validation_error, "model call failed (ProviderCapacityTimeout)")
-        self.assertEqual((model.calls, model.peak, model.timeouts), (1, 1, [DEADLINE]))     # the provider was called once
+        self.assertEqual((model.calls,model.peak),(1,1))
+        self.assertTrue(all(0<t<=DEADLINE for t in model.timeouts))
 
 
 class CapOneTests(Patched, ti.Base):

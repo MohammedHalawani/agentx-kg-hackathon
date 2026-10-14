@@ -310,7 +310,7 @@ class MeasuredModel:
         self.provider = provider
         self.calls = []
 
-    def invoke(self, messages):
+    def invoke(self, messages, **kwargs):
         system = messages[0].content
         stage = next((name for name, module in (("extract", extract), ("classify", classifier),
                       ("recommend", recommender), ("review", reviewer)) if system == module._SYSTEM), "unknown")
@@ -318,7 +318,7 @@ class MeasuredModel:
         metric = {"stage": stage, "error_type": None, "malformed_json": False, "usage": {},
                   "missing_declared_fields": [], "invalid_declared_fields": []}
         try:
-            response = self.provider.invoke(messages)
+            response = self.provider.invoke(messages, **kwargs)
             parsed = _llm.parse_json(_llm.message_text(getattr(response, "content", None)))
             metric["malformed_json"] = parsed is None
             if isinstance(parsed, dict):
@@ -470,7 +470,8 @@ def score_result(result, case, answer):
 def run(output_dir, models=MODELS, maximum=None):
     manifest, runtime = verify_bundle(output_dir)
     providers = {name: ChatLiteLLM(model=name, api_key=config.LLM_API_KEY, api_base=config.LLM_API_BASE,
-                                 temperature=0, request_timeout=TIMEOUT_SECONDS, max_retries=MAX_RETRIES) for name in models}
+                                 temperature=0, request_timeout=TIMEOUT_SECONDS, max_retries=MAX_RETRIES,
+                                 model_kwargs={"max_retries": 0}) for name in models}
     completed_now = 0
     for case in runtime["cases"]:
         for model_name in models:

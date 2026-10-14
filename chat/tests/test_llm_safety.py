@@ -113,7 +113,7 @@ class FinalContentTests(unittest.TestCase):
         content = [{"type": "thinking", "text": '{"rationale": "PRIVATE"}'},
                    {"type": "text", "text": json.dumps({"rationale": "الدليل النهائي", "confidence": 0.7,
                                                            "reasoning": "PRIVATE", "content": [{"type": "thinking"}]})}]
-        mock = SimpleNamespace(invoke=lambda messages: SimpleNamespace(content=content))
+        mock = SimpleNamespace(invoke=lambda messages,**kwargs: SimpleNamespace(content=content))
         with patch.object(_llm, "model", return_value=mock):
             self.assertEqual(_llm.ask_json("s", "u", {"rationale": "fallback", "confidence": 0.0}),
                              {"rationale": "الدليل النهائي", "confidence": 0.7})
@@ -122,14 +122,14 @@ class FinalContentTests(unittest.TestCase):
         content = json.dumps({"rationale": [{"type": "thinking", "text": "PRIVATE"}],
                               "grounded_in": [{"reasoning": "PRIVATE"}, "res-1"],
                               "confidence": "PRIVATE", "city": {"reasoning": "PRIVATE"}})
-        mock = SimpleNamespace(invoke=lambda messages: SimpleNamespace(content=content))
+        mock = SimpleNamespace(invoke=lambda messages,**kwargs: SimpleNamespace(content=content))
         default = {"rationale": "fallback", "grounded_in": [], "confidence": 0.0, "city": None}
         with patch.object(_llm, "model", return_value=mock):
             self.assertEqual(_llm.ask_json("s", "u", default),
                              {"rationale": "fallback", "grounded_in": ["res-1"], "confidence": 0.0, "city": None})
 
     def test_ask_json_sanitizes_marked_final_fields(self):
-        mock = SimpleNamespace(invoke=lambda messages: SimpleNamespace(
+        mock = SimpleNamespace(invoke=lambda messages,**kwargs: SimpleNamespace(
             content='{"rationale": "<think>PRIVATE</think>Evidence"}'))
         with patch.object(_llm, "model", return_value=mock):
             self.assertEqual(_llm.ask_json("s", "u", {"rationale": "fallback"}), {"rationale": "Evidence"})
@@ -137,7 +137,7 @@ class FinalContentTests(unittest.TestCase):
     def test_missing_content_and_invalid_json_fallback_without_raw_log(self):
         for response in (SimpleNamespace(), SimpleNamespace(content="PRIVATE invalid JSON"),
                          SimpleNamespace(content="[]")):
-            with patch.object(_llm, "model", return_value=SimpleNamespace(invoke=lambda messages: response)):
+            with patch.object(_llm, "model", return_value=SimpleNamespace(invoke=lambda messages,**kwargs: response)):
                 with self.assertLogs(_llm.log, level=logging.WARNING) as captured:
                     actual = _llm.ask_json("s", "u", {"items": []})
                 self.assertEqual(actual, {"items": []})
@@ -147,13 +147,13 @@ class FinalContentTests(unittest.TestCase):
         translate.to_arabic.cache_clear()
         content = [{"type": "reasoning", "text": "PRIVATE We need to translate"},
                    {"type": "text", "text": "تأخر تسليم الشحنة SHP-0227"}]
-        with patch.object(translate, "model", return_value=SimpleNamespace(invoke=lambda messages: SimpleNamespace(content=content))):
+        with patch.object(translate, "model", return_value=SimpleNamespace(invoke=lambda messages,**kwargs: SimpleNamespace(content=content))):
             self.assertEqual(translate.to_arabic("Shipment SHP-0227 is delayed"), "تأخر تسليم الشحنة SHP-0227")
 
     def test_translation_only_reasoning_falls_back_to_source(self):
         translate.to_arabic.cache_clear()
         content = [{"type": "thinking", "text": "PRIVATE العربية"}]
-        with patch.object(translate, "model", return_value=SimpleNamespace(invoke=lambda messages: SimpleNamespace(content=content))):
+        with patch.object(translate, "model", return_value=SimpleNamespace(invoke=lambda messages,**kwargs: SimpleNamespace(content=content))):
             self.assertEqual(translate.to_arabic("Shipment SHP-9999"), "Shipment SHP-9999")
 
     def test_stream_dto_drops_extra_and_nested_private_fields(self):
@@ -196,7 +196,8 @@ class FinalContentTests(unittest.TestCase):
              patch.object(_llm.config, "LLM_API_KEY", "test-key"), patch.object(_llm, "ChatLiteLLM") as cls:
             _llm.model()
             cls.assert_called_once_with(model="openai/gpt-oss:20b", api_base="https://ollama.com/v1", api_key="test-key", temperature=0,
-                                        request_timeout=_llm.config.LLM_TIMEOUT_SECONDS, max_retries=0, model_kwargs={"max_retries": 0})
+                                        request_timeout=_llm.config.LLM_TIMEOUT_SECONDS, max_retries=0, model_kwargs={"max_retries": 0},
+                                        max_tokens=2048)
         _llm.model.cache_clear()
 
 

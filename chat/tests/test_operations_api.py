@@ -82,6 +82,22 @@ class OperationsAPITests(unittest.TestCase):
         self.assertEqual(self.client.post("/cases/DEMO-CASE-01/decision",json={**body,"actor_id":"AI"},headers=self.headers()).status_code,422)
         self.assertEqual(self.client.post("/cases/DEMO-CASE-01/decision",json={**body,"expected_version":True},headers=self.headers()).status_code,422)
 
+    def test_synthetic_action_response_requires_authority_maps_ids_and_cannot_declare_success(self):
+        body={"execution_id":"SYN-OPS-EXECUTION-1","expected_revision":1,"response_id":"response_01",
+              "kind":"EVIDENCE_RECEIVED","occurred_at":"2026-09-20T13:00:00+00:00",
+              "evidence_ids":["SYN-SCAN-1"],"source_ref":"synthetic:controlled-field-response"}
+        path="/cases/SYN-OPS-CASE-1/action-responses"
+        self.assertEqual(self.client.post(path,json=body).status_code,403)
+        self.store.record_action_response.assert_not_called()
+        self.store.record_action_response.return_value={"action_lifecycle":{"state":"EVIDENCE_RECEIVED","synthetic":True}}
+        response=self.client.post(path,json=body,headers=self.headers())
+        self.assertEqual(response.status_code,200)
+        kwargs=self.store.record_action_response.call_args.kwargs
+        self.assertEqual(kwargs["case_id"],"DEMO-OPS-CASE-1")
+        self.assertEqual(kwargs["evidence_ids"],["DEMO-SCAN-1"])
+        for invalid in ({**body,"success":True},{**body,"resolved":True},{**body,"kind":"VERIFIED"},
+                        {**body,"source_ref":"real:carrier"},{**body,"evidence_ids":["SYN-SCAN"]*101}):
+            self.assertEqual(self.client.post(path,json=invalid,headers=self.headers()).status_code,422)
     def test_new_live_session_requires_server_authority(self):
         self.assertIn(self.client.post("/simulation/reset").status_code,(401,403))
         self.assertIn(self.client.post("/simulation/reset",json={"confirmation":"RESET-LEDGER-abc"}).status_code,(401,403))

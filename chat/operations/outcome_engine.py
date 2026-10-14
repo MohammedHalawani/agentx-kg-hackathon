@@ -54,8 +54,22 @@ def _evaluate(world, sid, execution, cutoff_text):
     cutoff, start = instant(cutoff_text), instant(execution["occurred_at"])
     action = execution["action_type"]
     nodes = world.nodes
-    packages = {n.id: n for n in nodes.values() if n.kind == "Package"}
+    packages = {n.id: n for n in nodes.values() if n.kind == "Package" and n.properties.get("shipment_id")==sid}
     later = [n for n in nodes.values() if (n.properties.get("shipment_id") == sid or n.id == sid) and _ingested_after(n, start, cutoff)]
+    strict=execution.get("action_protocol")=="suhail-action-1"
+    target=execution.get("action_target") or {}
+    if strict:
+        # The asynchronous response protocol is bound to explicit source-derived
+        # package/location/device targets and the original deadline. Receipt alone
+        # never backdates knowledge or legitimizes another shipment's record.
+        later=[n for n in later if n.properties.get("source_ref") and
+               instant(n.properties["recorded_at"])<=instant(execution["deadline_at"]) and
+               (not n.properties.get("occurred_at") or instant(n.properties["occurred_at"])<=instant(n.properties["recorded_at"])) and
+               (not n.properties.get("package_id") or n.properties["package_id"] in packages)]
+        if set(target.get("package_ids") or [])!=set(packages) or not packages:
+            expired=cutoff>=instant(execution["deadline_at"])
+            return _result("failure" if expired else "pending","invalid_action_target" if expired else None,[],
+                           "The request lacks an exact source-backed package target.")
     reports = [n for n in later if n.kind == "RecipientReport" and n.properties.get("report_code") == "NOT_RECEIVED"]
     if reports:
         return _result("failure", "dispute_unresolved", reports, "A recipient reported non-receipt after the action.")
@@ -67,6 +81,10 @@ def _evaluate(world, sid, execution, cutoff_text):
         scans = [n for n in later if n.kind == "ScanEvent" and n.properties.get("package_id") in packages and n.properties.get("readable") is True
                  and (number(n.properties.get("confidence")) or 0) >= minimum and n.properties.get("observed_barcode") is not None
                  and _made_after(n, start)]
+        if strict:
+            scans=[n for n in scans if target.get("baseline_device_ids") and n.properties.get("device_ref") and
+                   n.properties["device_ref"] not in target["baseline_device_ids"] and
+                   n.properties.get("facility_id") in target.get("facility_ids",[])]
         good = [n for n in scans if n.properties["observed_barcode"] == packages[n.properties["package_id"]].properties.get("manifest_barcode")]
         bad = [n for n in scans if n not in good]
         if bad:
@@ -102,6 +120,14 @@ def _evaluate(world, sid, execution, cutoff_text):
         # reconnect) is not this action's effect, and a request with no target device can confirm nothing.
         late = [n for n in later if n.kind == "CustodyEvent" and instant(n.properties["occurred_at"]) + allowance <= opened
                 and custody_corroborated(world, n, cutoff) and bool(device) and uploader(n) == device]
+        if strict:
+            late=[n for n in late if expected and (source:=nodes.get(n.properties.get("source_event_id"))) is not None and
+                  source.kind=="ScanEvent" and source.properties.get("source_ref") and source.properties.get("shipment_id")==sid and
+                  source.properties.get("readable") is True and
+                  source.properties.get("observed_barcode")==packages[n.properties["package_id"]].properties.get("manifest_barcode") and
+                  (number(source.properties.get("confidence")) or 0)>=(number(pp.get("barcode_min_confidence")) or 0) and
+                  _ingested_after(source,start,cutoff) and instant(source.properties["recorded_at"])<=instant(execution["deadline_at"]) and
+                  source.properties.get("device_ref")==device and instant(source.properties["occurred_at"])<=start]
         def covers(item):
             return any(n.properties.get("package_id") == item["package_id"] and n.properties.get("event_type") == item["predicate"]
                        and item["location_id"] in (n.properties.get("to_id"), n.properties.get("facility_id")) for n in late)
@@ -115,6 +141,16 @@ def _evaluate(world, sid, execution, cutoff_text):
         if action == "INITIATE_CUSTODY_RECONCILIATION":
             found = [n for n in later if n.kind == "CustodyEvent" and nodes.get(n.properties.get("to_id")) is not None
                      and nodes[n.properties["to_id"]].kind in FACILITIES and custody_corroborated(world, n, cutoff)]
+            if strict:
+                found=[n for n in found if n.properties.get("to_id") in target.get("facility_ids",[]) and
+                       (source:=nodes.get(n.properties.get("source_event_id"))) is not None and source.kind=="ScanEvent" and
+                       source.properties.get("shipment_id")==sid and source.properties.get("source_ref") and
+                       source.properties.get("facility_id")==n.properties.get("to_id") and
+                       source.properties.get("readable") is True and source.properties.get("device_ref") and
+                       (number(source.properties.get("confidence")) or 0)>=(number(pp.get("barcode_min_confidence")) or 0) and
+                       source.properties.get("observed_barcode")==packages[n.properties["package_id"]].properties.get("manifest_barcode") and
+                       _ingested_after(source,start,cutoff) and _made_after(source,start) and
+                       instant(source.properties["recorded_at"])<=instant(execution["deadline_at"])]
             outcome_type, reason = "custody_reconciled", "Corroborated custody at a facility was recorded for every package after the request."
         else:
             found = [n for n in later if n.kind == "ScanEvent" and n.properties.get("readable") is True and n.properties.get("facility_id")

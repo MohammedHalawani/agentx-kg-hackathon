@@ -18,6 +18,7 @@ import math
 import os
 import re
 import threading
+import time
 from copy import deepcopy
 from functools import lru_cache
 from typing import Any
@@ -140,6 +141,7 @@ def model() -> ChatLiteLLM:
 
 @lru_cache(maxsize=1)
 def _build_model() -> ChatLiteLLM:
+    from operations.inference_safety import output_limit
     return ChatLiteLLM(
         model=config.LLM_MODEL,
         api_key=config.LLM_API_KEY,
@@ -151,6 +153,7 @@ def _build_model() -> ChatLiteLLM:
         # ChatLiteLLM's wrapper retry field is not forwarded to LiteLLM's OpenAI
         # transport. Disable SDK retries there too: only the caller owns attempts.
         model_kwargs={"max_retries": 0},
+        max_tokens=output_limit(),
     )
 
 
@@ -194,7 +197,7 @@ class ProviderCapacityTimeout(ModelCallTimeout):
 
 def invoke(messages, *, deadline: float | None = None, client=None, entry: str = "invoke"):
     """One provider call. With `deadline` (seconds) the call is abandoned when it has not returned by then and
-    ModelCallTimeout is raised; without it this is model().invoke(messages), bounded only by the HTTP client.
+    ModelCallTimeout is raised. Without an explicit deadline the configured call deadline still applies.
     client: the chat model to call (default: the shared model()). entry: which function made the call, for the log.
 
     The call runs on its own thread so the wait can end at the deadline whatever the HTTP client is doing. The same
@@ -206,46 +209,69 @@ def invoke(messages, *, deadline: float | None = None, client=None, entry: str =
     (SUHAIL_PROVIDER_MAX_INFLIGHT) and holds it until the underlying call has ended. An abandoned call therefore keeps
     its slot after its caller has given up, and a retry cannot start beside it: it waits for a slot, for at most its own
     deadline (the default call timeout when it has none), and raises ProviderCapacityTimeout when none comes free."""
-    chat = model() if client is None else client
+    from operations.inference_safety import InferenceLedger
+    # One deadline begins before budget reservation/admission. HTTP execution receives
+    # only what remains; it cannot spend a second full timeout after waiting.
+    until = time.monotonic() + (call_timeout() if deadline is None else deadline)
+    ledger = InferenceLedger()
     labels, cancel = provider_gate.current()
     if not labels.get("role"):
         # The investigation path makes the investigator's turns through invoke and its review through ask_json.
         labels["role"] = ("investigator" if entry == "invoke" else "reviewer") if labels.get("run_id") else entry
+    reservation = ledger.reserve(messages, labels, until)
     try:
-        permit = provider_gate.shared().acquire(call_timeout() if deadline is None else deadline, cancel=cancel, labels=labels)
+        permit = provider_gate.shared().acquire(max(0, until - time.monotonic()), cancel=cancel, labels=labels)
     except provider_gate.CapacityUnavailable as error:
+        ledger.finish(reservation, dispatched=False)
         raise ProviderCapacityTimeout(f"no provider slot for the call ({error.reason})") from None
-    if deadline is None:
+    if time.monotonic() >= until or (cancel is not None and cancel.is_set()):
+        ledger.finish(reservation, dispatched=False)
+        permit.release("not_started")
+        raise ProviderCapacityTimeout("no time or claim remains for inference")
+    try:
+        chat = model() if client is None else client
+    except BaseException:
         try:
-            response = chat.invoke(messages)
-        except BaseException as error:
-            permit.release(type(error).__name__)
-            raise
-        permit.release()
-        return response
+            ledger.finish(reservation, dispatched=False)
+        finally:
+            permit.release("not_started")
+        raise
     outcome = {}
+    abandoned = threading.Event()
     context = contextvars.copy_context()      # callbacks and tracing of the calling thread apply to the call
 
     def call():
         result = "ok"
         try:
-            outcome["response"] = context.run(chat.invoke, messages, timeout=deadline)
+            remaining = until - time.monotonic()
+            if remaining <= 0:
+                ledger.finish(reservation, dispatched=False)
+                raise ProviderCapacityTimeout("deadline expired before HTTP dispatch")
+            outcome["response"] = context.run(chat.invoke, messages, timeout=min(remaining,config.LLM_TIMEOUT_SECONDS),
+                                              max_tokens=ledger.policy.max_output_tokens)
         except BaseException as error:        # delivered to the caller below, on its own thread
             outcome["error"], result = error, type(error).__name__
         finally:
-            permit.release(result)            # only here: when the underlying call has ended, however late
+            try:
+                ledger.finish(reservation, response=outcome.get("response"), abandoned=abandoned.is_set())
+            except BaseException as error:
+                outcome["error"] = error  # No trusted result if accounting failed.
+            finally:
+                permit.release(result)       # only when the underlying call ended, however late
 
     thread = threading.Thread(target=call, name="model-call", daemon=True)
     try:
         thread.start()
     except BaseException:
+        ledger.finish(reservation, dispatched=False)
         permit.release("not_started")
         raise
-    thread.join(deadline)
+    thread.join(max(0, until - time.monotonic()))
     if thread.is_alive():
+        abandoned.set()
         permit.abandon()                      # the slot stays taken until the provider call itself ends
-        log.warning("Model call abandoned after %.0f s (%s)", deadline, CALL_TIMEOUT_ENV)
-        raise ModelCallTimeout(f"model call exceeded {deadline:g} s")
+        log.warning("Model call abandoned at its shared deadline (%s)", CALL_TIMEOUT_ENV)
+        raise ModelCallTimeout("model call exceeded its admission-plus-inference deadline")
     if "error" in outcome:
         raise outcome["error"]
     return outcome["response"]

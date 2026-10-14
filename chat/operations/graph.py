@@ -19,7 +19,7 @@ import inspect
 from typing import TypedDict, Any
 
 from langgraph.graph import StateGraph, END
-from dataset_v2.contracts import digest
+from dataset_v2.contracts import digest, instant
 from operations.reasoning import triage, operational_status
 
 MAX_REVIEW_ROUNDS = 2
@@ -139,7 +139,23 @@ def action_target(tools, evidence_ids=None):
     # The device that should have made the missing observation, when it is silent; else any silent device.
     device = next((d for d in expected if d in silent), None) or (silent[0] if silent else (expected[0] if expected else None))
     device = device or cited_device(tools, evidence_ids)
-    return {"device_id": device, "expected_evidence": [{"package_id": r["package_id"], "predicate": r["predicate"],
+    from dataset_v2.derive import custody_corroborated
+    from operations.outcome_engine import FACILITIES
+    facilities={r["location_id"] for r in rows if r.get("location_id") in tools.nodes and tools.nodes[r["location_id"]].kind in FACILITIES}
+    for package in (n for n in tools.nodes.values() if n.kind=="Package"):
+        events=sorted((n for n in tools.nodes.values() if n.kind=="CustodyEvent" and n.properties.get("package_id")==package.id),
+                      key=lambda n:n.properties.get("occurred_at") or "",reverse=True)
+        latest=next((n for n in events if custody_corroborated(tools.world,n,instant(tools.as_of))),None)
+        if latest and latest.properties.get("to_id") in tools.nodes and tools.nodes[latest.properties["to_id"]].kind in FACILITIES:
+            facilities.add(latest.properties["to_id"])
+    mismatches=[n.id for n in tools.nodes.values() if n.kind=="ScanEvent" and n.properties.get("package_id") in tools.nodes and
+                n.properties.get("observed_barcode") is not None and
+                n.properties["observed_barcode"]!=tools.nodes[n.properties["package_id"]].properties.get("manifest_barcode")]
+    devices=sorted({tools.nodes[k].properties["device_ref"] for k in mismatches or evidence_ids or []
+                    if k in tools.nodes and tools.nodes[k].kind=="ScanEvent" and tools.nodes[k].properties.get("device_ref")})
+    return {"device_id": device, "facility_ids":sorted(facilities),"baseline_device_ids":devices,
+            "package_ids":sorted(n.id for n in tools.nodes.values() if n.kind=="Package"),
+            "expected_evidence": [{"package_id": r["package_id"], "predicate": r["predicate"],
                                                         "location_id": r["location_id"]} for r in rows]}
 
 

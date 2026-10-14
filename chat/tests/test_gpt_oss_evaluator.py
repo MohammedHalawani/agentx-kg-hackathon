@@ -157,8 +157,8 @@ class EvaluatorHarnessTests(unittest.TestCase):
     def test_extraction_does_not_control_frozen_evidence_or_hide_its_error(self):
         model = ScriptedFinalModel()
         original = model.invoke
-        def invoke(messages):
-            result = original(messages)
+        def invoke(messages, **kwargs):
+            result = original(messages, **kwargs)
             if messages[0].content == bench.extract._SYSTEM:
                 result.content = "invalid JSON"
             return result
@@ -169,7 +169,7 @@ class EvaluatorHarnessTests(unittest.TestCase):
         self.assertEqual(result["dry_disposition"], "accepted_recommendation")
 
     def test_type_only_provider_errors_have_no_raw_exception_payload(self):
-        def invoke(messages):
+        def invoke(messages, **kwargs):
             raise ValueError("PRIVATE PROVIDER SECRET TEXT")
         result = bench.evaluate_case(execution_case(), SimpleNamespace(invoke=invoke))
         self.assertEqual(result["error_type"], "ValueError")
@@ -177,7 +177,7 @@ class EvaluatorHarnessTests(unittest.TestCase):
         self.assertNotIn("PRIVATE", bench.encode(result))
 
     def test_wrong_shape_json_metrics_and_numeric_usage_are_safe(self):
-        provider = SimpleNamespace(invoke=lambda messages: SimpleNamespace(
+        provider = SimpleNamespace(invoke=lambda messages,**kwargs: SimpleNamespace(
             content=[{"type": "thinking", "text": "PRIVATE"}, {"type": "text", "text": '{"category": [], "confidence": "bad", "priority": "high", "rationale": "Summary"}'}],
             usage_metadata={"input_tokens": 12, "total_tokens": 20, "private": "SECRET"}))
         measured = bench.MeasuredModel(provider)
@@ -189,7 +189,7 @@ class EvaluatorHarnessTests(unittest.TestCase):
 
     def test_default_category_agreement_does_not_count_as_valid_model_inference(self):
         case = execution_case()
-        provider = SimpleNamespace(invoke=lambda messages: SimpleNamespace(content="invalid final JSON"))
+        provider = SimpleNamespace(invoke=lambda messages,**kwargs: SimpleNamespace(content="invalid final JSON"))
         with redirect_stdout(io.StringIO()):
             result = bench.evaluate_case(case, provider)
         answer = {"category": "recipient_unavailable", "action": "none", "plausibility_history": [],
@@ -205,7 +205,7 @@ class EvaluatorHarnessTests(unittest.TestCase):
             (bench.reviewer, {"verdict": "accept", "score": -2, "reason": "Evidence"}, "score"),
             (bench.extract, {"city": None, "district": None, "courier": None, "category_hint": "unsupported"}, "category_hint"),
         ):
-            measured = bench.MeasuredModel(SimpleNamespace(invoke=lambda messages: SimpleNamespace(content=json.dumps(payload))))
+            measured = bench.MeasuredModel(SimpleNamespace(invoke=lambda messages,**kwargs: SimpleNamespace(content=json.dumps(payload))))
             measured.invoke([SystemMessage(module._SYSTEM), HumanMessage("Complaint")])
             self.assertIn(expected, measured.calls[0]["invalid_declared_fields"])
             self.assertFalse(measured.calls[0]["malformed_json"])
@@ -247,7 +247,7 @@ class EvaluatorHarnessTests(unittest.TestCase):
         with TemporaryDirectory() as temp:
             directory = Path(temp)
             prepare_fixture(directory)
-            provider = SimpleNamespace(invoke=lambda messages: (_ for _ in ()).throw(ValueError("PRIVATE")))
+            provider = SimpleNamespace(invoke=lambda messages,**kwargs: (_ for _ in ()).throw(ValueError("PRIVATE")))
             with patch.object(bench, "ChatLiteLLM", return_value=provider), redirect_stdout(io.StringIO()):
                 bench.run(directory, maximum=2)
             bench.save_json(directory / "results" / "20b" / "case-999.json", {"unexpected": True})

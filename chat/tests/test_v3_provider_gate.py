@@ -181,7 +181,7 @@ class LimitTests(Gated):
 
     def test_calls_without_a_deadline_are_limited_too(self):
         provider = self.use(MockProvider("hang", "second"))
-        held = self.background(lambda: _llm.invoke(["plain"]))                 # no deadline: runs on the caller's own thread
+        held = self.background(lambda: _llm.invoke(["plain"],deadline=30))  # holder outlives the bounded waiters
         self.until(lambda: self.gate.snapshot()["inflight"] == 1)
         with self.assertRaises(_llm.ProviderCapacityTimeout):
             _llm.invoke(["other"])                                              # waits the default call timeout at most
@@ -382,7 +382,9 @@ class EveryCallerTests(Gated):
         snapshot = self.drained()
         self.assertEqual([c["role"] for c in snapshot["calls"]], ["invoke", "translation", "ask_json", "ask_json"])
         self.assertEqual((provider.peak, snapshot["peak_inflight"], snapshot["granted"], snapshot["released"]), (1, 1, 4, 4))
-        self.assertEqual([c["timeout"] for c in provider.calls], [30, None, DEADLINE, DEADLINE])      # translation still has no deadline
+        limits=[30,DEADLINE,DEADLINE,DEADLINE]
+        self.assertEqual(len(provider.calls),len(limits))
+        self.assertTrue(all(0<c["timeout"]<=limit for c,limit in zip(provider.calls,limits)))
 
     def test_the_log_names_each_call_and_never_its_prompt_or_reply(self):
         self.use(MockProvider("PRIVATE REPLY TEXT", "hang"))

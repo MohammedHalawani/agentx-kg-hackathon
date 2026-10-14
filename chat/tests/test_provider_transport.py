@@ -69,6 +69,7 @@ class TransportTests(unittest.TestCase):
         with self.assertRaises(litellm.ServiceUnavailableError):
             self.attempt()
         self.assertEqual(len(self.requests), 1)
+        self.assertEqual(self.requests[0]["max_tokens"],2048)
         self.assertEqual(self.gate.snapshot()["inflight"], 0)
 
     def test_429_has_exactly_one_http_request(self):
