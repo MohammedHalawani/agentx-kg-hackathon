@@ -1,0 +1,314 @@
+{
+  "date": "2026-10-14",
+  "branch": "codex/v3-1-corrective",
+  "worktree": "C:\\Projects\\suhail-v3-1-corrective",
+  "repair_parent": "bfbfa896d8206a0fd0b16b542e77510c291a8349",
+  "protected_v3_integration": "765cb4033e6f0238d7cf758e20a89b54cfe6a0bf",
+  "frozen_contract": "suhail-v3-1",
+  "scope": "Legacy test doubles and focused regression coverage; no production implementation changes.",
+  "changed_files": [
+    "chat/tests/test_operations_agents.py",
+    "docs/v3.1/fixture-repair-handoff.md",
+    "docs/v3.1/fixture-repair-verification.json"
+  ],
+  "ready_to_merge": true,
+  "merge_scope": "V3.1 fixture corrective branch, subject to final independent review; no merge performed.",
+  "before": {
+    "distinct_test_cases": 883,
+    "passed": 856,
+    "failed": 2,
+    "skipped": 25,
+    "unresolved_import_errors": 0
+  },
+  "before_source": "C:/Projects/suhail-v3-2-review-2026-10-14/review-summary.json",
+  "after": {
+    "affected_tests_independent_processes": [
+      {
+        "test": "tests.test_operations_agents.AgentPipelineTests.test_live_case_runs_agent_stages_and_low_risk_action_awaits_outcome_without_a_human",
+        "exit_code": 0,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "seconds": 9.953
+      },
+      {
+        "test": "tests.test_operations_agents.OutcomeEngineTests.test_live_world_resolves_only_from_later_verified_evidence_with_no_human",
+        "exit_code": 0,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "seconds": 11.625
+      }
+    ],
+    "affected_module": {
+      "passed": 19,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "note": "Includes three imported LiveSessionTests also loaded by unittest."
+    },
+    "full_offline_python": {
+      "tests_run": 886,
+      "passed": 861,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 25,
+      "seconds": 1368.578,
+      "successful": true,
+      "failures": [],
+      "error_details": [],
+      "skip_details": [
+        {
+          "test": "test_misread_label_rescan_succeeds (test_execution_neo4j.ExecutionNeo4jTests.test_misread_label_rescan_succeeds)",
+          "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+        },
+        {
+          "test": "test_offline_device_sync_resolves_from_the_late_upload_without_a_human (test_execution_neo4j.ExecutionNeo4jTests.test_offline_device_sync_resolves_from_the_late_upload_without_a_human)",
+          "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+        },
+        {
+          "test": "test_wrong_label_rescan_fails_verification_and_stays_unresolved (test_execution_neo4j.ExecutionNeo4jTests.test_wrong_label_rescan_fails_verification_and_stays_unresolved)",
+          "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+        },
+        {
+          "test": "test_1_only_delivered_messages_are_ingested_with_provenance (test_live_ingestion_neo4j.LiveIngestionNeo4jTests.test_1_only_delivered_messages_are_ingested_with_provenance)",
+          "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+        },
+        {
+          "test": "test_2_retransmissions_are_duplicates_and_reingest_is_idempotent (test_live_ingestion_neo4j.LiveIngestionNeo4jTests.test_2_retransmissions_are_duplicates_and_reingest_is_idempotent)",
+          "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+        },
+        {
+          "test": "test_3_late_upload_is_invisible_until_ingested_then_visible_as_late (test_live_ingestion_neo4j.LiveIngestionNeo4jTests.test_3_late_upload_is_invisible_until_ingested_then_visible_as_late)",
+          "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+        },
+        {
+          "test": "test_4_conflicting_retransmission_is_kept_apart_and_unknown_payload_rejected (test_live_ingestion_neo4j.LiveIngestionNeo4jTests.test_4_conflicting_retransmission_is_kept_apart_and_unknown_payload_rejected)",
+          "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+        },
+        {
+          "test": "test_5_reset_returns_every_provider_message_to_pending (test_live_ingestion_neo4j.LiveIngestionNeo4jTests.test_5_reset_returns_every_provider_message_to_pending)",
+          "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+        },
+        {
+          "test": "test_1_monitor_detection_against_truth (test_live_runtime_neo4j.LiveRuntimeNeo4jTests.test_1_monitor_detection_against_truth)",
+          "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+        },
+        {
+          "test": "test_2_slow_investigation_does_not_block_ingestion_or_monitoring (test_live_runtime_neo4j.LiveRuntimeNeo4jTests.test_2_slow_investigation_does_not_block_ingestion_or_monitoring)",
+          "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+        },
+        {
+          "test": "test_cases_open_from_ingested_evidence_and_are_investigated_within_the_budget (test_stage2_pilot.WorldPilotNeo4jTests.test_cases_open_from_ingested_evidence_and_are_investigated_within_the_budget)",
+          "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+        },
+        {
+          "test": "test_every_catalogue_query_returns_the_same_rows_from_neo4j_as_from_the_reference (test_stage2_pilot.WorldPilotNeo4jTests.test_every_catalogue_query_returns_the_same_rows_from_neo4j_as_from_the_reference)",
+          "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+        },
+        {
+          "test": "test_every_tool_query_ran_on_the_server_and_every_citation_is_valid (test_stage2_pilot.WorldPilotNeo4jTests.test_every_tool_query_ran_on_the_server_and_every_citation_is_valid)",
+          "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+        },
+        {
+          "test": "test_the_run_record_is_served_and_nothing_resolves_without_a_simulator (test_stage2_pilot.WorldPilotNeo4jTests.test_the_run_record_is_served_and_nothing_resolves_without_a_simulator)",
+          "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+        },
+        {
+          "test": "test_the_scorer_gives_each_case_a_verdict_from_the_runs_own_ingestion (test_stage2_pilot.WorldPilotNeo4jTests.test_the_scorer_gives_each_case_a_verdict_from_the_runs_own_ingestion)",
+          "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+        },
+        {
+          "test": "test_the_time_correct_check_passes (test_stage2_pilot.WorldPilotNeo4jTests.test_the_time_correct_check_passes)",
+          "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+        },
+        {
+          "test": "test_score_and_report (test_stage3_wiring.Stage3WiringNeo4jTests.test_score_and_report)",
+          "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+        },
+        {
+          "test": "test_selected_cases_open_in_the_run_and_only_they_are_investigated (test_stage3_wiring.Stage3WiringNeo4jTests.test_selected_cases_open_in_the_run_and_only_they_are_investigated)",
+          "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+        },
+        {
+          "test": "test_the_agent_arm_reads_the_run_record_back_and_the_ledger_holds_the_stores_own_count (test_stage3_wiring.Stage3WiringNeo4jTests.test_the_agent_arm_reads_the_run_record_back_and_the_ledger_holds_the_stores_own_count)",
+          "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+        },
+        {
+          "test": "test_the_dry_run_drives_the_replay_and_investigates_nothing (test_stage3_wiring.Stage3WiringNeo4jTests.test_the_dry_run_drives_the_replay_and_investigates_nothing)",
+          "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+        },
+        {
+          "test": "test_the_five_surfaces_are_captured_and_the_provenance_names_the_run (test_stage3_wiring.Stage3WiringNeo4jTests.test_the_five_surfaces_are_captured_and_the_provenance_names_the_run)",
+          "reason": "set SUHAIL_NEO4J_TESTS=1 to run against local Neo4j"
+        },
+        {
+          "test": "test_an_expired_claim_is_recovered_once_and_taken_once_and_its_old_owner_is_refused (test_v3_concurrency_neo4j.RaceTests.test_an_expired_claim_is_recovered_once_and_taken_once_and_its_old_owner_is_refused)",
+          "reason": "OUTSTANDING GATE, not a pass: set SUHAIL_V3_RACE_TESTS=1 and SUHAIL_V3_CI_DATABASE=shipments-v2-world-v3-ci-20261013 once the integrator has provisioned it"
+        },
+        {
+          "test": "test_two_clients_claim_two_different_cases_and_investigate_them_together (test_v3_concurrency_neo4j.RaceTests.test_two_clients_claim_two_different_cases_and_investigate_them_together)",
+          "reason": "OUTSTANDING GATE, not a pass: set SUHAIL_V3_RACE_TESTS=1 and SUHAIL_V3_CI_DATABASE=shipments-v2-world-v3-ci-20261013 once the integrator has provisioned it"
+        },
+        {
+          "test": "test_two_clients_racing_for_one_case_grant_it_exactly_once (test_v3_concurrency_neo4j.RaceTests.test_two_clients_racing_for_one_case_grant_it_exactly_once)",
+          "reason": "OUTSTANDING GATE, not a pass: set SUHAIL_V3_RACE_TESTS=1 and SUHAIL_V3_CI_DATABASE=shipments-v2-world-v3-ci-20261013 once the integrator has provisioned it"
+        },
+        {
+          "test": "test_with_capacity_one_two_racing_clients_never_both_hold_a_case (test_v3_concurrency_neo4j.RaceTests.test_with_capacity_one_two_racing_clients_never_both_hold_a_case)",
+          "reason": "OUTSTANDING GATE, not a pass: set SUHAIL_V3_RACE_TESTS=1 and SUHAIL_V3_CI_DATABASE=shipments-v2-world-v3-ci-20261013 once the integrator has provisioned it"
+        }
+      ]
+    },
+    "selected_regression_modules_from_full_run": {
+      "test_provider_transport": {
+        "passed": 4,
+        "failed": 0,
+        "errors": 0
+      },
+      "test_reviewer_evidence": {
+        "passed": 10,
+        "failed": 0,
+        "errors": 0
+      },
+      "test_identifier_boundary": {
+        "passed": 3,
+        "failed": 0,
+        "errors": 0
+      },
+      "test_stage2_investigation": {
+        "passed": 14,
+        "failed": 0,
+        "errors": 0
+      },
+      "test_operations_agents": {
+        "passed": 16,
+        "failed": 0,
+        "errors": 0
+      }
+    },
+    "frontend": {
+      "unit": {
+        "passed": 57,
+        "failed": 0,
+        "skipped": 0,
+        "test_files": 5,
+        "command": "npm test"
+      },
+      "typecheck": {
+        "result": "passed",
+        "command": "npm run typecheck"
+      },
+      "browser": {
+        "passed": 9,
+        "failed": 0,
+        "skipped": 0,
+        "browser": "Chrome",
+        "mode": "Scripted backend; no live model or database",
+        "command": "npm run test:e2e -- --grep \"relays an approval|backend's example brief_|two active investigations|Evidence chronology|Route evidence|Map draws\""
+      },
+      "build": {
+        "result": "passed",
+        "method": "Playwright webServer runs npm run build before preview on port 5191."
+      },
+      "warnings": [
+        "Existing bundle-size warning; NO_COLOR/FORCE_COLOR warning."
+      ]
+    }
+  },
+  "discovery": {
+    "cwd": "chat",
+    "method": "unittest.defaultTestLoader.discover('tests')",
+    "sys_path": [
+      "chat",
+      "chat/tests"
+    ],
+    "top_level_override": null
+  },
+  "negative_acceptance_safeguards": {
+    "result": "passed",
+    "assertions": [
+      "Packet-only source-time recomputation rejects a stale alternative assessment.",
+      "Missing source timing or missing alternative cannot obtain default ACCEPT.",
+      "Injected ACCEPT with alternatives_tested=no fails the unchanged production validator.",
+      "Neither honest HUMAN_REVIEW nor invalid-ACCEPT fallback creates OpsExecution/OpsOutcome or a resolved case."
+    ],
+    "tests": [
+      "FixtureReviewTests.test_reviewer_recomputes_source_times_and_uses_the_shared_session_and_context",
+      "FixtureReviewTests.test_missing_source_times_or_alternative_cannot_gain_default_acceptance",
+      "ReviewerFailureTests.test_untested_alternative_cannot_authorize_an_action_or_falsely_resolve"
+    ]
+  },
+  "four_original_corrections": {
+    "hidden_sdk_retries": "4 loopback HTTP tests passed, including one request for each 503/429/timeout logical attempt and explicit reviewer retry accounting.",
+    "bounded_source_backed_reviewer_evidence": "10 dedicated reviewer-evidence tests passed, including saved visible source excerpts, bounds, cutoffs/provenance and fail-closed references/verdicts.",
+    "demo_syn_identifiers": "3 boundary tests passed, including keyed references, collisions and cross-shipment lookup; frontend tests passed.",
+    "canonical_model_call_accounting": "14 Stage 2 tests passed; repaired positive graph additionally checks shared Session and completed investigation/run-log/latency counter agreement.",
+    "production_code_unchanged_from_repair_parent": true
+  },
+  "protection": {
+    "protected_checkouts": [
+      {
+        "path": "C:\\Projects\\suhail-v3-integration",
+        "head": "765cb4033e6f0238d7cf758e20a89b54cfe6a0bf",
+        "clean": true
+      },
+      {
+        "path": "C:\\Projects\\demo",
+        "head": "4cd43045a1db284e83cd5702d63acf7950492492",
+        "clean": true
+      }
+    ],
+    "videos": [
+      {
+        "path": "C:\\Projects\\demo\\.ui-integration\\showcase-videos\\suhail-video-A-v2.mp4",
+        "sha256": "d756c96697e87ba8c0897fcb92b8cb1e4762d31c47390325550c46f7594b6833",
+        "matches_recorded_snapshot": true
+      },
+      {
+        "path": "C:\\Projects\\demo\\.ui-integration\\showcase-videos\\suhail-video-B-v2.mp4",
+        "sha256": "fde09ee573128b8d1f6ddd828766daae0bbe409999d879d0a870eb0dac7d9072",
+        "matches_recorded_snapshot": true
+      }
+    ],
+    "frozen_manifest_sha256": "538d9fffe7c23cb9637be959e7c5ac0f83c76b3fab5c67b8e377e071d687e2b6",
+    "unchanged_production_contract_policy_gate_launcher_lockfiles": [
+      "chat/llm/pipeline/_llm.py",
+      "chat/operations/checks.py",
+      "chat/operations/investigator.py",
+      "chat/operations/identifiers.py",
+      "chat/operations/graph.py",
+      "chat/operations/authority.py",
+      "chat/operations/provider_gate.py",
+      "scripts/v3_backend.ps1",
+      "docs/v3/06-contract-examples.json",
+      "docs/v3/08-interface-reference.md",
+      "chat/uv.lock",
+      "frontend-next/package-lock.json"
+    ],
+    "neo4j_writes": 0,
+    "paid_inference": 0,
+    "v32_started": false,
+    "port_8022_changes": 0
+  },
+  "current_run_real_neo4j_verification": {
+    "performed": false,
+    "writes": 0,
+    "reason": "Offline-only repair gate. All opt-in live write/race tests remain skipped, not passed."
+  },
+  "remaining_risks": [
+    "Routine unattended billable use remains blocked: production has no explicit output-token ceiling or aggregate token/cost reservations; experiment controls are not shipped safeguards.",
+    "A strict wait-plus-execution deadline remains unsupported: admission and execution may each consume the configured timeout.",
+    "25 real Neo4j write/race/import gates were skipped in this repair run. No new real integration or live accuracy claim is made.",
+    "A deterministic receipt-time alternative tests protocol/safety behavior; it does not measure live diagnostic accuracy across playbook families."
+  ],
+  "artifacts": {
+    "directory": "artifacts/v3.1-fixture-repair",
+    "full_offline_log_sha256": "75c02ad693f1ec133ca69d28b0e1be52532af2e10053b83168df2a972e9a6410",
+    "repaired_test_source_sha256": "edb3c05327688c0d0ba64905024935804e76012dd2d116ce5971a26539f020f5"
+  },
+  "paid_inference": 0,
+  "merged": false,
+  "pushed": false,
+  "v32_started": false
+}
