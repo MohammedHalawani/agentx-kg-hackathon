@@ -8,6 +8,7 @@ the model's diagnosis; it removes automatic authority, so a person decides. The 
 checks next to the cited records.
 """
 from datetime import timedelta
+import json
 
 from dataset_v2.contracts import instant
 from dataset_v2.derive import assess_shipment
@@ -145,14 +146,15 @@ def citation_validity(inv, tools):
             "all_valid": not invalid, "citations": rows}
 
 
-def _record(key, tools):
+def _record(key, tools, *, provenance=False):
     if key in tools.external:  # Telemetry summaries, computed results and other shipments' records as the tools showed them.
         record = tools.external[key]
         return {"kind": record.get("kind") or "DeviceHeartbeat", **{k: v for k, v in record.items() if k != "kind"}}
     node = tools.nodes.get(key)
     if node is not None:
         return {"kind": node.kind, **{k: (v.isoformat() if hasattr(v, "isoformat") else v)
-                                      for k, v in node.properties.items() if k not in ENVELOPE}}
+                                      for k, v in node.properties.items() if k not in ENVELOPE or
+                                      (provenance and k in ("source_ref", "provenance", "raw_payload_hash", "dataset_id", "schema_version", "synthetic"))}}
     return None
 
 
@@ -166,9 +168,10 @@ def cited_records(inv, tools, limit=40):
     return records
 
 
-def review_context(inv, tools, citations, *, round_number=0, previous_reviews=(), computed_limit=40, uncited_limit=160):
+def review_context(inv, tools, citations, *, round_number=0, previous_reviews=(), computed_limit=40, uncited_limit=160,
+                   record_limit=40, record_chars=20000):
     """What the reviewer receives besides the cited records: citation validity, the tool-computed results the investigator
-    saw, the ids and kinds of what it retrieved but did not cite, the queries it made and, in a revision round, the
+    saw, bounded source contents and an inventory of what it retrieved but did not cite, the queries it made and, in a revision round, the
     reviewer's own earlier feedback and unsupported claims."""
     cited = set(_cited(inv))
     seen = [key for key in tools.computed if key in tools.retrieved]
@@ -185,11 +188,42 @@ def review_context(inv, tools, citations, *, round_number=0, previous_reviews=()
         take = uncited[kind][:max(budget, 0)]
         shown[kind] = {"count": len(uncited[kind]), "ids": take}
         budget -= len(take)
+    # Prefer previously flagged records and operational observations over catalogue
+    # metadata. This ordering depends on record kind/scope, never on a diagnosis.
+    flagged = {key for review in previous_reviews for key in review.get("unaddressed_contradictions") or []}
+    observations = {"ScanEvent", "CustodyEvent", "Package", "DeliveryAttempt", "DeliveryProof", "RecipientReport", "DepotReconciliation"}
+    candidates = [key for ids in uncited.values() for key in ids]
+    candidates.sort(key=lambda key: (key not in flagged,
+                                    (tools.index.get(key) or {}).get("kind") not in observations,
+                                    (tools.index.get(key) or {}).get("scope") == "other_shipment", key))
+    contents, used, excluded = {}, 2, 0
+    for key in candidates:
+        record = _record(key, tools, provenance=True)
+        valid = citation_validity({"hypotheses": [{"supporting_evidence_ids": [key]}]}, tools)["all_valid"]
+        if record is not None:
+            for field in ("recorded_at", "occurred_at"):
+                if record.get(field):
+                    try:
+                        valid = valid and instant(str(record[field])) <= tools.cutoff
+                    except ValueError:
+                        valid = False
+        if record is None or not valid:
+            excluded += 1
+            continue
+        size = len(json.dumps(key)) + 2 + len(json.dumps(record, ensure_ascii=True)) + (2 if contents else 0)
+        if len(contents) < record_limit and used + size <= record_chars:
+            contents[key] = record
+            used += size
     return {"review_round": round_number,
             "citation_validity": {k: citations[k] for k in ("snapshot_as_of", "cited", "valid", "invalid_ids", "all_valid")},
             "computed_results_seen": computed,
             "computed_results_not_shown": max(len(seen) - computed_limit, 0),
             "retrieved_but_uncited": shown,
+            "retrieved_uncited_records": contents,
+            "uncited_record_coverage": {"available": len(candidates), "shown": len(contents),
+                                        "excluded_invalid_or_unresolved": excluded,
+                                        "not_shown": len(candidates) - len(contents), "record_limit": record_limit,
+                                        "character_limit": record_chars},
             "tool_calls": [{"round": c["round"], "tool": c["tool"], "args": c["args"]} for c in tools.calls],
             **({"previous_reviews": [{"round": r.get("round"), "verdict": r.get("verdict"), "feedback": r.get("feedback"),
                                       "unsupported_claims": r.get("unsupported_claims") or [],

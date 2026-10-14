@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import savedWireEvidence from "../fixtures/v31-wire-evidence.json";
 import { applyNarration, narrationEvent } from "@/api/adapters";
 import {
   GRAPH_LIMIT,
@@ -229,6 +230,19 @@ describe("backend case detail", () => {
     expect(
       pipelineView([{ sequence: 1, stage: "classify", status: "RUNNING", output: { kind: "tool_call", tool: "custody_chain", purpose: "Trace who last held the parcel" } }]).stageDetail[2],
     ).toBe("Investigator queried custody chain: Trace who last held the parcel");
+  });
+
+  it("resolves public ID-keyed cross-shipment evidence in a saved live run excerpt", () => {
+    const detail = detailA();
+    detail.run!.result = { ...detail.run!.result, investigation_log: savedWireEvidence.investigation_log };
+    const mapped = applyDetail(base, detail).backend!.investigationLog!;
+    expect(mapped.steps).toHaveLength(1);
+    expect(mapped.steps[0].records).toBe(2);
+    expect(mapped.steps[0].beyondShipment).toBe(2);
+    expect(mapped.modelCallsUsed).toBe(8);
+    for (const call of savedWireEvidence.investigation_log.rounds[0].tool_calls)
+      for (const id of call.evidence_ids)
+        expect(Object.keys(savedWireEvidence.investigation_log.evidence_index)).toContain(id);
   });
 
   it("does not present an unacknowledged execution as carried out", () => {

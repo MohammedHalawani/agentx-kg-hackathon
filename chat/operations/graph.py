@@ -57,11 +57,19 @@ def topology():
 
 
 def analysis(state, events):
+    investigation = state.get("investigation")
+    run_log = state.get("log")
+    if isinstance(investigation, dict) and isinstance(run_log, dict):
+        # The conclusion predates its final review. The completed run log holds
+        # the shared session's final counters, including that review and retries.
+        counters = ("model_call_cap", "model_calls_used", "model_calls_by_role", "cap_reached", "calls_refused_by_cap")
+        if all(key in run_log for key in counters):
+            investigation = {**investigation, "model_calls": {key: run_log[key] for key in counters}}
     return {"result": state["result"], "proposal": state.get("proposal"), "review": state["review"],
             "trace": state["trace"], "context_hash": digest(state["context"]),
             "afl": {"iterations": len(state["trace"])}, "degraded": state.get("degraded") or [],
             "mode": state.get("mode", "deterministic_evidence_rules"), "outcome": None,
-            "investigation": state.get("investigation"), "checks": state.get("checks"), "authority": state.get("authority"),
+            "investigation": investigation, "checks": state.get("checks"), "authority": state.get("authority"),
             # Every investigation round, for audit and later scoring (None for rules-only runs).
             "investigation_log": state.get("log"),
             "pipeline_events": list(events), "topology": topology()}

@@ -639,6 +639,8 @@ investigation. You receive:
   fact about the records named in its input_ids, as of computed_as_of;
 - retrieved_but_uncited: ids and kinds of everything the investigator retrieved and did not cite, and tool_calls: the
   evidence queries it made;
+- retrieved_uncited_records: bounded actual source contents of those records, with provenance where available.
+  uncited_record_coverage reports omissions. An id in the inventory alone does not establish a contradiction;
 - citation_validity and deterministic_checks: computed by code;
 - in a revision round, previous_reviews: your own earlier feedback and unsupported claims.
 
@@ -648,7 +650,9 @@ Check, in this order:
 2. Support. Does each cited record or computed result say what the conclusion claims? Numbers, times and counts in the
    summary and assessments must appear in a cited record or computed result.
 3. Contradictions. Among the cited records, the computed results and what was retrieved but not cited, is there evidence
-   that contradicts the primary cause and that the conclusion does not address? List those ids.
+   that contradicts the primary cause and that the conclusion does not address? List only ids whose actual contents
+   you can read in this packet. Explain the conflicting fields or observations; evidence about a different segment
+   or event need not contradict the claimed one. Do not infer a record's contents from its id or kind.
 4. Alternatives. Was at least one alternative explanation tested: a hypothesis other than the primary cause, refuted or
    left uncertain on evidence from a tool call that could tell them apart?
 5. In a revision round: was each of your earlier points addressed?
@@ -686,14 +690,27 @@ def review(conclusion, records, checks, symptoms, *, ask=None, context=None, ses
     packet = {"case_symptoms": symptoms, "investigator_conclusion": {k: conclusion.get(k) for k in CONCLUSION_FIELDS if k in conclusion or k != "next_evidence_step"},
               "cited_records": records, "deterministic_checks": checks, "visible_evidence_ids": sorted(records), **(context or {})}
     default = {"verdict": "", "feedback": "", "unsupported_claims": [], "unaddressed_contradictions": [], "alternatives_tested": ""}
+    readable = set(records) | set(packet.get("retrieved_uncited_records") or {}) | set(packet.get("computed_results_seen") or {})
+    readable -= set((packet.get("citation_validity") or {}).get("invalid_ids") or [])
 
     def validate(out):
         if out.get("verdict") not in REVIEW_VERDICTS:
             return "verdict must be ACCEPT|REVISE|INSUFFICIENT_EVIDENCE|HUMAN_REVIEW|ESCALATE"
-        if not isinstance(out.get("feedback"), str) or not isinstance(out.get("unsupported_claims") or [], list):
+        if not isinstance(out.get("feedback"), str) or not isinstance(out.get("unsupported_claims"), list):
             return "feedback must be text and unsupported_claims a list"
-        if not isinstance(out.get("unaddressed_contradictions") or [], list):
+        if not isinstance(out.get("unaddressed_contradictions"), list):
             return "unaddressed_contradictions must be a list of evidence ids"
+        if any(not isinstance(claim, str) or not claim.strip() for claim in out["unsupported_claims"]):
+            return "unsupported_claims must contain nonempty text"
+        if any(not isinstance(key, str) or len(key) > 160 or key not in readable for key in out["unaddressed_contradictions"]):
+            return "contradiction ids must resolve to evidence contents shown in this review packet"
+        if out.get("verdict") == "ACCEPT":
+            if out["unsupported_claims"] or out["unaddressed_contradictions"]:
+                return "ACCEPT cannot contain unsupported claims or unaddressed contradictions"
+            if (packet.get("citation_validity") or {}).get("all_valid") is False:
+                return "ACCEPT requires valid citations"
+            if conclusion.get("primary_cause") != "INSUFFICIENT_EVIDENCE" and out.get("alternatives_tested") != "yes":
+                return "ACCEPT requires a tested alternative"
         if BLAME.search(out.get("feedback") or "") or GPS_DELIVERY.search(out.get("feedback") or ""):
             return "feedback attributes blame or misuses GPS"
         return None

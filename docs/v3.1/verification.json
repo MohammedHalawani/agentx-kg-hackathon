@@ -1,0 +1,81 @@
+{
+  "verified_at": "2026-10-14T12:20:47.810106+00:00",
+  "branch": "codex/v3-1-corrective",
+  "base_commit": "765cb4033e6f0238d7cf758e20a89b54cfe6a0bf",
+  "worktree": "C:\\Projects\\suhail-v3-1-corrective",
+  "contract_version": "suhail-v3-1",
+  "python": {
+    "tests": 154,
+    "passed": 154,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 209.635,
+    "modules": [
+      "test_provider_transport",
+      "test_identifier_boundary",
+      "test_reviewer_evidence",
+      "test_stage2_investigation",
+      "test_llm_safety",
+      "test_v3_provider_gate",
+      "test_investigator",
+      "test_v3_integration",
+      "test_latency_equivalence",
+      "test_model_call_timeout",
+      "test_preui_review_fixes",
+      "test_skip_to_next_event"
+    ]
+  },
+  "frontend": {
+    "adapter_tests_passed": 21,
+    "typecheck_exit_code": 0
+  },
+  "strict_transport_error_type_rerun": {
+    "passed": 4,
+    "failed": 0,
+    "seconds": 3.783
+  },
+  "loopback_transport": {
+    "503_requests_per_attempt": 1,
+    "429_requests_per_attempt": 1,
+    "timeout_requests_per_attempt": 1,
+    "explicit_reviewer_attempts": 2,
+    "explicit_reviewer_http_requests": 2
+  },
+  "protected_checkouts": [
+    {
+      "path": "C:\\Projects\\suhail-v3-integration",
+      "head": "765cb4033e6f0238d7cf758e20a89b54cfe6a0bf",
+      "clean": true
+    },
+    {
+      "path": "C:\\Projects\\demo",
+      "head": "4cd43045a1db284e83cd5702d63acf7950492492",
+      "clean": true
+    }
+  ],
+  "videos": [
+    {
+      "path": "C:\\Projects\\demo\\.ui-integration\\showcase-videos\\suhail-video-A-v2.mp4",
+      "sha256": "d756c96697e87ba8c0897fcb92b8cb1e4762d31c47390325550c46f7594b6833",
+      "matches_recorded_snapshot": true
+    },
+    {
+      "path": "C:\\Projects\\demo\\.ui-integration\\showcase-videos\\suhail-video-B-v2.mp4",
+      "sha256": "fde09ee573128b8d1f6ddd828766daae0bbe409999d879d0a870eb0dac7d9072",
+      "matches_recorded_snapshot": true
+    }
+  ],
+  "bundle_manifest_sha256": "538d9fffe7c23cb9637be959e7c5ac0f83c76b3fab5c67b8e377e071d687e2b6",
+  "saved_fixture_excerpts_match_original_sources": true,
+  "no_neo4j_data_access": true,
+  "no_paid_inference": true,
+  "port_8022_used": false,
+  "frozen_contract_authority_gate_launcher_lockfile_diffs": false,
+  "ready_to_merge_scoped_patch": true,
+  "routine_unattended_billable_use_blocked": true,
+  "remaining_risks": [
+    "No shipped output-token ceiling or aggregate token/cost reservations.",
+    "Gate admission and execution can each spend the full deadline.",
+    "Live semantic quality of changed reviewer packet has not been measured."
+  ]
+}

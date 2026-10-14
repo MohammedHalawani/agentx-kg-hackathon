@@ -148,6 +148,9 @@ def _build_model() -> ChatLiteLLM:
         # A hung provider call must surface as a failure the caller can route, never block forever.
         request_timeout=config.LLM_TIMEOUT_SECONDS,
         max_retries=0,
+        # ChatLiteLLM's wrapper retry field is not forwarded to LiteLLM's OpenAI
+        # transport. Disable SDK retries there too: only the caller owns attempts.
+        model_kwargs={"max_retries": 0},
     )
 
 

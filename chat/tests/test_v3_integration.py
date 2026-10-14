@@ -74,6 +74,25 @@ class InvestigationStatusTests(concurrency.Base):
             self.assertEqual(set(status["final_result"]), set(CONTRACT["finalized_case_status_http_example"]["final_result"]))
         self.assertNotIn("DEMO-", json.dumps(status))
 
+    def test_case_detail_public_ids_resolve_in_the_real_run_evidence_maps(self):
+        store, driver = self.make()
+        case_id = self.queue(driver)[0]
+        store.agents = concurrency.Hooked()
+        with approval_policy():
+            store.process_one(case_id=case_id, worker_id=concurrency.WORKERS[0])
+        detail = public_value(store.case_detail(case_id))
+        log = detail["run"]["result"]["investigation_log"]
+        self.assertTrue(log["evidence_index"])
+        for entry in log["rounds"]:
+            for call in entry["tool_calls"]:
+                for key in call["evidence_ids"]:
+                    self.assertTrue(key.startswith("SYN-"))
+                    self.assertIn(key, log["evidence_index"])
+        for field in ("computed_results", "cited_external_records"):
+            for key in log[field]:
+                self.assertTrue(key.startswith("SYN-"))
+                self.assertIn(key, log["evidence_index"])
+
     def served(self, store, case_id):
         """GET /cases/{id} as the server builds it: the read model over the store, then the public identifiers."""
         row = store.case_detail(case_id)

@@ -153,6 +153,17 @@ class Equivalence(unittest.TestCase):
                                     heartbeats=reader.heartbeats, port=counted, call_cap=20)
         return analysis, model.seen, agents.review_packets, reads["n"]
 
+    def test_final_budget_run_log_and_actual_scripted_turn_counts_agree(self):
+        for sid, sequence in zip(self.shipments[:3], PILOT_SEQUENCES[:3]):
+            with self.subTest(shipment=sid):
+                run, seen, reviews, _ = self.run_case(sid, sequence)
+                final = run["investigation"]["model_calls"]
+                log = run["investigation_log"]
+                self.assertEqual(final, {key: log[key] for key in final})
+                self.assertEqual(final["model_calls_used"], len(seen) + len(reviews))
+                self.assertEqual(final["model_calls_used"], run["latency"]["model"]["calls"])
+                self.assertEqual(final["model_calls_by_role"], {"investigator": len(seen), "reviewer": len(reviews)})
+
     def test_query_memo_changes_nothing_the_model_or_the_reviewer_sees(self):
         saved = 0
         for sid, sequence in zip(self.shipments, PILOT_SEQUENCES):

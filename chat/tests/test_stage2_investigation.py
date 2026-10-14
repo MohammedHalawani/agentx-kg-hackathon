@@ -201,6 +201,8 @@ class InvestigationRunTests(ti.Base):
         # Four investigator turns and two reviews, one counter.
         self.assertEqual((log["model_calls_used"], log["model_call_cap"], log["cap_reached"]), (6, investigator.DEFAULT_MODEL_CALL_CAP, False))
         self.assertEqual(log["model_calls_by_role"], {"investigator": 4, "reviewer": 2})
+        self.assertEqual(result["investigation"]["model_calls"],
+                         {key: log[key] for key in result["investigation"]["model_calls"]})
         self.assertEqual([r["model_calls_used"] for r in log["rounds"]], [3, 6])
         # Round two continued round one's conversation: its first model input holds the first tool result, the first
         # conclusion and the reviewer's points; the scan ids of round one are still citable.
@@ -236,6 +238,16 @@ class InvestigationRunTests(ti.Base):
         uncited = {i for group in packet["retrieved_but_uncited"].values() for i in group["ids"]}
         self.assertTrue(uncited)
         self.assertFalse(uncited & cited)
+        contents = packet["retrieved_uncited_records"]
+        self.assertTrue(contents)
+        self.assertTrue(set(contents) <= uncited)
+        self.assertFalse(set(contents) & cited)
+        self.assertLessEqual(len(contents), packet["uncited_record_coverage"]["record_limit"])
+        self.assertLessEqual(len(json.dumps(contents)), packet["uncited_record_coverage"]["character_limit"])
+        for record in contents.values():
+            for field in ("recorded_at", "occurred_at"):
+                if record.get(field):
+                    self.assertLessEqual(instant(record[field]), instant(packet["citation_validity"]["snapshot_as_of"]))
         self.assertEqual([c["tool"] for c in packet["tool_calls"]], ["scans", "policy"])
         self.assertIn("deterministic_checks", packet)
         log = result["investigation_log"]
@@ -390,7 +402,9 @@ class RunRecordTests(unittest.TestCase):
         # The run record next to it: the conclusion, the final review and the authority decision.
         run = detail["run"]["result"]
         self.assertEqual(run["investigation"]["primary_cause"], "INSUFFICIENT_EVIDENCE")
-        self.assertEqual(run["investigation"]["model_calls"]["model_calls_used"], 5)   # As the investigator returned, before the last review.
+        self.assertEqual(run["investigation"]["model_calls"]["model_calls_used"], 6)   # Includes the final independent review.
+        self.assertEqual(run["investigation"]["model_calls"]["model_calls_by_role"], {"investigator": 4, "reviewer": 2})
+        self.assertEqual(json.loads(stored["result_json"])["investigation"]["model_calls"], run["investigation"]["model_calls"])
         self.assertEqual(run["review"]["model_verdict"], "ACCEPT")
         self.assertEqual(run["authority"]["closure"], "HUMAN")
         self.assertEqual(detail["review"]["model_verdict"], "ACCEPT")

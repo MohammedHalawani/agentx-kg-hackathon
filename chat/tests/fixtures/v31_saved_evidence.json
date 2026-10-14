@@ -1,0 +1,795 @@
+{
+  "description": "Read-only excerpts of visible saved live evidence and accounting; no expected diagnoses or private truth.",
+  "cases": [
+    {
+      "source_file": "phase2.json",
+      "source_sha256": "fb130461517e3103e9454543ea27f1f69f29bf4d0daafee29dc06f78972eece5",
+      "shipment_id": "SYN-SHP-000064",
+      "as_of": "2026-09-15T21:00:29+00:00",
+      "nodes": [
+        {
+          "id": "SYN-SHP-000064-PKG-01",
+          "kind": "Package",
+          "properties": {
+            "weight_kg": 43.46,
+            "declared_class": "synthetic bulky goods",
+            "dataset_id": "SYN-SUHAIL-WORLD-TEST",
+            "manifest_barcode": "CP645707855SA",
+            "source_ref": "order-system",
+            "package_id": "SYN-SHP-000064-PKG-01",
+            "entity_id": "SYN-SHP-000064-PKG-01",
+            "shipment_id": "SYN-SHP-000064",
+            "height_m": 0.461,
+            "volume_m3": 0.266265302,
+            "schema_version": "suhail-v2.1",
+            "synthetic": true,
+            "recorded_at": "2026-09-14T11:00:21+00:00",
+            "provenance": "SYNTHETIC_ASSUMPTION",
+            "handling": "bulky",
+            "width_m": 0.593,
+            "length_m": 0.974
+          },
+          "after_investigation": false
+        },
+        {
+          "id": "SYN-SHP-000064-PKG-02",
+          "kind": "Package",
+          "properties": {
+            "weight_kg": 3.96,
+            "declared_class": "synthetic standard goods",
+            "dataset_id": "SYN-SUHAIL-WORLD-TEST",
+            "manifest_barcode": "CP911661843SA",
+            "source_ref": "order-system",
+            "package_id": "SYN-SHP-000064-PKG-02",
+            "entity_id": "SYN-SHP-000064-PKG-02",
+            "shipment_id": "SYN-SHP-000064",
+            "height_m": 0.165,
+            "volume_m3": 0.02175987,
+            "schema_version": "suhail-v2.1",
+            "synthetic": true,
+            "recorded_at": "2026-09-14T11:00:21+00:00",
+            "provenance": "SYNTHETIC_ASSUMPTION",
+            "handling": "standard",
+            "width_m": 0.283,
+            "length_m": 0.466
+          },
+          "after_investigation": false
+        },
+        {
+          "id": "SYN-SHP-000064-SCAN-001",
+          "kind": "ScanEvent",
+          "properties": {
+            "channel": "SPL_CORE",
+            "package_id": "SYN-SHP-000064-PKG-01",
+            "calibrated": false,
+            "feed_id": "SYN-FEED-bc806b7657beb99fe0a03da7",
+            "schema_version": "suhail-v2.1",
+            "provenance": "SYNTHETIC_ASSUMPTION",
+            "facility_id": "SYN-ORGWH-DMM-02",
+            "readable": true,
+            "ingest_lag_seconds": 93,
+            "raw_payload_hash": "824bcd487cf6c9b113c9bfcdf8cb3bd2ab241aa331bc5cfd94693521d231a780",
+            "dataset_id": "SYN-SUHAIL-WORLD-TEST",
+            "confidence": 0.953,
+            "source_ref": "spl-core:handheld",
+            "entity_id": "SYN-SHP-000064-SCAN-001",
+            "shipment_id": "SYN-SHP-000064",
+            "observation_type": "HANDHELD_RECEIPT",
+            "occurred_at": "2026-09-14T13:07:09+00:00",
+            "observed_barcode": "CP645707855SA",
+            "synthetic": true,
+            "recorded_at": "2026-09-14T13:08:42+00:00",
+            "ingested_at": "2026-09-14T21:00:29+00:00",
+            "feed_origin": "PROVIDER",
+            "provider_id": "SYN-PROV-SPL",
+            "device_ref": "SYN-DEV-HH-ORGWH-DMM-02"
+          },
+          "after_investigation": false
+        },
+        {
+          "id": "SYN-SHP-000064-SCAN-002",
+          "kind": "ScanEvent",
+          "properties": {
+            "channel": "SPL_CORE",
+            "package_id": "SYN-SHP-000064-PKG-02",
+            "calibrated": false,
+            "feed_id": "SYN-FEED-8487ca893cf8e70a8d0bbee7",
+            "schema_version": "suhail-v2.1",
+            "provenance": "SYNTHETIC_ASSUMPTION",
+            "facility_id": "SYN-ORGWH-DMM-02",
+            "readable": true,
+            "ingest_lag_seconds": 87,
+            "raw_payload_hash": "bb01ab99fb95ebbd0b7a08b82104eeb0596f8aa194c3a10f51053037a6d9eda8",
+            "dataset_id": "SYN-SUHAIL-WORLD-TEST",
+            "confidence": 0.971,
+            "source_ref": "spl-core:handheld",
+            "entity_id": "SYN-SHP-000064-SCAN-002",
+            "shipment_id": "SYN-SHP-000064",
+            "observation_type": "HANDHELD_RECEIPT",
+            "occurred_at": "2026-09-14T13:07:34+00:00",
+            "observed_barcode": "CP911661843SA",
+            "synthetic": true,
+            "recorded_at": "2026-09-14T13:09:01+00:00",
+            "ingested_at": "2026-09-14T21:00:29+00:00",
+            "feed_origin": "PROVIDER",
+            "provider_id": "SYN-PROV-SPL",
+            "device_ref": "SYN-DEV-HH-ORGWH-DMM-02"
+          },
+          "after_investigation": false
+        },
+        {
+          "id": "SYN-SHP-000064-SCAN-003",
+          "kind": "ScanEvent",
+          "properties": {
+            "channel": "SPL_CORE",
+            "package_id": "SYN-SHP-000064-PKG-01",
+            "calibrated": false,
+            "feed_id": "SYN-FEED-e2e6dba349a16314887444ac",
+            "schema_version": "suhail-v2.1",
+            "provenance": "SYNTHETIC_ASSUMPTION",
+            "facility_id": "SYN-ORGWH-DMM-02",
+            "vehicle_id": "SYN-VEH-FM-DMM-002",
+            "readable": true,
+            "ingest_lag_seconds": 86,
+            "trip_id": "SYN-TRIP-FM-DMM-0914-1830",
+            "raw_payload_hash": "4609915cbb46b4462748d4078e7a39b07684f619f2ef487d428937ffe7dc468e",
+            "dataset_id": "SYN-SUHAIL-WORLD-TEST",
+            "confidence": 0.956,
+            "source_ref": "driver-app",
+            "entity_id": "SYN-SHP-000064-SCAN-003",
+            "shipment_id": "SYN-SHP-000064",
+            "observation_type": "LOAD_CONFIRMATION",
+            "occurred_at": "2026-09-14T16:35:18+00:00",
+            "observed_barcode": "CP645707855SA",
+            "synthetic": true,
+            "recorded_at": "2026-09-14T16:36:44+00:00",
+            "ingested_at": "2026-09-14T21:00:29+00:00",
+            "feed_origin": "PROVIDER",
+            "provider_id": "SYN-PROV-SPL",
+            "device_ref": "SYN-DEV-APP-DRV-FM-DMM-002"
+          },
+          "after_investigation": false
+        },
+        {
+          "id": "SYN-SHP-000064-SCAN-005",
+          "kind": "ScanEvent",
+          "properties": {
+            "channel": "SPL_CORE",
+            "package_id": "SYN-SHP-000064-PKG-01",
+            "calibrated": false,
+            "feed_id": "SYN-FEED-5ca045b0c4d1c13509e772bd",
+            "schema_version": "suhail-v2.1",
+            "provenance": "SYNTHETIC_ASSUMPTION",
+            "facility_id": "SYN-SORT-DMM-01",
+            "readable": true,
+            "ingest_lag_seconds": 54,
+            "raw_payload_hash": "75485f3c505dcd86aec9ad1cd4d2522fc407c30de94e2de6d09f9cb6dec49f55",
+            "dataset_id": "SYN-SUHAIL-WORLD-TEST",
+            "confidence": 0.931,
+            "source_ref": "spl-core:sorter",
+            "entity_id": "SYN-SHP-000064-SCAN-005",
+            "shipment_id": "SYN-SHP-000064",
+            "observation_type": "SORTER_READ",
+            "occurred_at": "2026-09-14T19:13:28+00:00",
+            "observed_barcode": "CP645707895SA",
+            "synthetic": true,
+            "recorded_at": "2026-09-14T19:14:22+00:00",
+            "ingested_at": "2026-09-14T21:00:29+00:00",
+            "feed_origin": "PROVIDER",
+            "provider_id": "SYN-PROV-SPL",
+            "device_ref": "SYN-DEV-SR-SORT-DMM-01"
+          },
+          "after_investigation": false
+        },
+        {
+          "id": "SYN-SHP-000064-SCAN-006",
+          "kind": "ScanEvent",
+          "properties": {
+            "channel": "SPL_CORE",
+            "package_id": "SYN-SHP-000064-PKG-01",
+            "calibrated": false,
+            "feed_id": "SYN-FEED-49c27515cbf6f7d0cdd8e1f9",
+            "schema_version": "suhail-v2.1",
+            "provenance": "SYNTHETIC_ASSUMPTION",
+            "facility_id": "SYN-SORT-DMM-01",
+            "readable": true,
+            "ingest_lag_seconds": 106,
+            "raw_payload_hash": "a5d8d146a04dc0644ab38f2b1391da249442dddf9053da01333142de61f5c28a",
+            "dataset_id": "SYN-SUHAIL-WORLD-TEST",
+            "confidence": 0.975,
+            "source_ref": "spl-core:handheld",
+            "entity_id": "SYN-SHP-000064-SCAN-006",
+            "shipment_id": "SYN-SHP-000064",
+            "observation_type": "HANDHELD_EXCEPTION_SCAN",
+            "occurred_at": "2026-09-14T19:22:28+00:00",
+            "observed_barcode": "CP645707855SA",
+            "synthetic": true,
+            "recorded_at": "2026-09-14T19:24:14+00:00",
+            "ingested_at": "2026-09-14T21:00:29+00:00",
+            "feed_origin": "PROVIDER",
+            "provider_id": "SYN-PROV-SPL",
+            "device_ref": "SYN-DEV-HH-SORT-DMM-01"
+          },
+          "after_investigation": false
+        },
+        {
+          "id": "SYN-SHP-000064-SCAN-009",
+          "kind": "ScanEvent",
+          "properties": {
+            "channel": "SPL_CORE",
+            "package_id": "SYN-SHP-000064-PKG-02",
+            "calibrated": false,
+            "feed_id": "SYN-FEED-eb452456f2cb92ee56bc9ef0",
+            "schema_version": "suhail-v2.1",
+            "provenance": "SYNTHETIC_ASSUMPTION",
+            "facility_id": "SYN-SORT-DMM-01",
+            "readable": true,
+            "ingest_lag_seconds": 24,
+            "raw_payload_hash": "44da370d4581f18a4b23f3c22a409181eeffb7cc8035ccb650c6b21bd847cd27",
+            "dataset_id": "SYN-SUHAIL-WORLD-TEST",
+            "confidence": 0.935,
+            "source_ref": "spl-core:sorter",
+            "entity_id": "SYN-SHP-000064-SCAN-009",
+            "shipment_id": "SYN-SHP-000064",
+            "observation_type": "SORTER_READ",
+            "occurred_at": "2026-09-14T19:25:37+00:00",
+            "observed_barcode": "CP911665006SA",
+            "synthetic": true,
+            "recorded_at": "2026-09-14T19:26:01+00:00",
+            "ingested_at": "2026-09-14T21:00:29+00:00",
+            "feed_origin": "PROVIDER",
+            "provider_id": "SYN-PROV-SPL",
+            "device_ref": "SYN-DEV-SR-SORT-DMM-01"
+          },
+          "after_investigation": false
+        },
+        {
+          "id": "SYN-SHP-000064-SCAN-010",
+          "kind": "ScanEvent",
+          "properties": {
+            "channel": "SPL_CORE",
+            "package_id": "SYN-SHP-000064-PKG-02",
+            "calibrated": false,
+            "feed_id": "SYN-FEED-c2d2e4972dd38165d593fa3d",
+            "schema_version": "suhail-v2.1",
+            "provenance": "SYNTHETIC_ASSUMPTION",
+            "facility_id": "SYN-SORT-DMM-01",
+            "readable": true,
+            "ingest_lag_seconds": 82,
+            "raw_payload_hash": "906052e3c6e2b87b787e774454b15ec4845918e09b077e10f0c1dd6e3eaa152f",
+            "dataset_id": "SYN-SUHAIL-WORLD-TEST",
+            "confidence": 0.961,
+            "source_ref": "spl-core:handheld",
+            "entity_id": "SYN-SHP-000064-SCAN-010",
+            "shipment_id": "SYN-SHP-000064",
+            "observation_type": "HANDHELD_EXCEPTION_SCAN",
+            "occurred_at": "2026-09-14T19:32:37+00:00",
+            "observed_barcode": "CP911661843SA",
+            "synthetic": true,
+            "recorded_at": "2026-09-14T19:33:59+00:00",
+            "ingested_at": "2026-09-14T21:00:29+00:00",
+            "feed_origin": "PROVIDER",
+            "provider_id": "SYN-PROV-SPL",
+            "device_ref": "SYN-DEV-HH-SORT-DMM-01"
+          },
+          "after_investigation": false
+        }
+      ],
+      "evidence_index": {
+        "DEMO-CMP-3d95025ae9d50b07b2d5": {
+          "kind": "ComputedResult",
+          "occurred_at": null,
+          "recorded_at": null,
+          "scope": "computed"
+        },
+        "DEMO-CMP-57c906d2a9dae9ceb487": {
+          "kind": "ComputedResult",
+          "occurred_at": null,
+          "recorded_at": null,
+          "scope": "computed"
+        },
+        "DEMO-CMP-6f0bbbf2d960f078b4bf": {
+          "kind": "ComputedResult",
+          "occurred_at": null,
+          "recorded_at": null,
+          "scope": "computed"
+        },
+        "DEMO-CMP-777379250317b19e3133": {
+          "kind": "ComputedResult",
+          "occurred_at": null,
+          "recorded_at": null,
+          "scope": "computed"
+        },
+        "DEMO-CMP-784886ef49c391af897a": {
+          "kind": "ComputedResult",
+          "occurred_at": null,
+          "recorded_at": null,
+          "scope": "computed"
+        },
+        "DEMO-CMP-90f052d4c9345b2d3d3b": {
+          "kind": "ComputedResult",
+          "occurred_at": null,
+          "recorded_at": null,
+          "scope": "computed"
+        },
+        "DEMO-CMP-ae0b9ed6076049b0e0e8": {
+          "kind": "ComputedResult",
+          "occurred_at": null,
+          "recorded_at": null,
+          "scope": "computed"
+        },
+        "DEMO-CMP-c3171c6ec67f0ae2cf11": {
+          "kind": "ComputedResult",
+          "occurred_at": null,
+          "recorded_at": null,
+          "scope": "computed"
+        },
+        "DEMO-SHP-000064-PKG-01": {
+          "kind": "Package",
+          "occurred_at": null,
+          "recorded_at": "2026-09-14T11:00:21+00:00",
+          "scope": "shipment"
+        },
+        "DEMO-SHP-000064-PKG-02": {
+          "kind": "Package",
+          "occurred_at": null,
+          "recorded_at": "2026-09-14T11:00:21+00:00",
+          "scope": "shipment"
+        },
+        "DEMO-SHP-000064-SCAN-001": {
+          "kind": "ScanEvent",
+          "occurred_at": "2026-09-14T13:07:09+00:00",
+          "recorded_at": "2026-09-14T13:08:42+00:00",
+          "scope": "shipment"
+        },
+        "DEMO-SHP-000064-SCAN-002": {
+          "kind": "ScanEvent",
+          "occurred_at": "2026-09-14T13:07:34+00:00",
+          "recorded_at": "2026-09-14T13:09:01+00:00",
+          "scope": "shipment"
+        },
+        "DEMO-SHP-000064-SCAN-003": {
+          "kind": "ScanEvent",
+          "occurred_at": "2026-09-14T16:35:18+00:00",
+          "recorded_at": "2026-09-14T16:36:44+00:00",
+          "scope": "shipment"
+        },
+        "DEMO-SHP-000064-SCAN-005": {
+          "kind": "ScanEvent",
+          "occurred_at": "2026-09-14T19:13:28+00:00",
+          "recorded_at": "2026-09-14T19:14:22+00:00",
+          "scope": "shipment"
+        },
+        "DEMO-SHP-000064-SCAN-006": {
+          "kind": "ScanEvent",
+          "occurred_at": "2026-09-14T19:22:28+00:00",
+          "recorded_at": "2026-09-14T19:24:14+00:00",
+          "scope": "shipment"
+        },
+        "DEMO-SHP-000064-SCAN-009": {
+          "kind": "ScanEvent",
+          "occurred_at": "2026-09-14T19:25:37+00:00",
+          "recorded_at": "2026-09-14T19:26:01+00:00",
+          "scope": "shipment"
+        },
+        "DEMO-SHP-000064-SCAN-010": {
+          "kind": "ScanEvent",
+          "occurred_at": "2026-09-14T19:32:37+00:00",
+          "recorded_at": "2026-09-14T19:33:59+00:00",
+          "scope": "shipment"
+        }
+      },
+      "computed_results": {
+        "DEMO-CMP-3d95025ae9d50b07b2d5": {
+          "barcode_matches": true,
+          "barcode_min_confidence": 0.9,
+          "characters_differing": 0,
+          "computation": "BARCODE_COMPARISON",
+          "computed_as_of": "2026-09-15T21:00:29+00:00",
+          "confidence": 0.975,
+          "input_ids": [
+            "SYN-SHP-000064-PKG-01",
+            "SYN-SHP-000064-SCAN-006"
+          ],
+          "kind": "ComputedResult",
+          "manifest_barcode": "CP645707855SA",
+          "observed_barcode": "CP645707855SA",
+          "package_id": "SYN-SHP-000064-PKG-01",
+          "readable": true,
+          "scan_id": "SYN-SHP-000064-SCAN-006",
+          "scope": "computed",
+          "tool": "scans"
+        },
+        "DEMO-CMP-57c906d2a9dae9ceb487": {
+          "barcode_matches": true,
+          "barcode_min_confidence": 0.9,
+          "characters_differing": 0,
+          "computation": "BARCODE_COMPARISON",
+          "computed_as_of": "2026-09-15T21:00:29+00:00",
+          "confidence": 0.956,
+          "input_ids": [
+            "SYN-SHP-000064-PKG-01",
+            "SYN-SHP-000064-SCAN-003"
+          ],
+          "kind": "ComputedResult",
+          "manifest_barcode": "CP645707855SA",
+          "observed_barcode": "CP645707855SA",
+          "package_id": "SYN-SHP-000064-PKG-01",
+          "readable": true,
+          "scan_id": "SYN-SHP-000064-SCAN-003",
+          "scope": "computed",
+          "tool": "scans"
+        },
+        "DEMO-CMP-6f0bbbf2d960f078b4bf": {
+          "barcode_matches": true,
+          "barcode_min_confidence": 0.9,
+          "characters_differing": 0,
+          "computation": "BARCODE_COMPARISON",
+          "computed_as_of": "2026-09-15T21:00:29+00:00",
+          "confidence": 0.953,
+          "input_ids": [
+            "SYN-SHP-000064-PKG-01",
+            "SYN-SHP-000064-SCAN-001"
+          ],
+          "kind": "ComputedResult",
+          "manifest_barcode": "CP645707855SA",
+          "observed_barcode": "CP645707855SA",
+          "package_id": "SYN-SHP-000064-PKG-01",
+          "readable": true,
+          "scan_id": "SYN-SHP-000064-SCAN-001",
+          "scope": "computed",
+          "tool": "scans"
+        },
+        "DEMO-CMP-777379250317b19e3133": {
+          "barcode_matches": false,
+          "barcode_min_confidence": 0.9,
+          "characters_differing": 1,
+          "computation": "BARCODE_COMPARISON",
+          "computed_as_of": "2026-09-15T21:00:29+00:00",
+          "confidence": 0.931,
+          "input_ids": [
+            "SYN-SHP-000064-PKG-01",
+            "SYN-SHP-000064-SCAN-005"
+          ],
+          "kind": "ComputedResult",
+          "manifest_barcode": "CP645707855SA",
+          "observed_barcode": "CP645707895SA",
+          "package_id": "SYN-SHP-000064-PKG-01",
+          "readable": true,
+          "scan_id": "SYN-SHP-000064-SCAN-005",
+          "scope": "computed",
+          "tool": "scans"
+        },
+        "DEMO-CMP-784886ef49c391af897a": {
+          "barcode_matches": true,
+          "barcode_min_confidence": 0.9,
+          "characters_differing": 0,
+          "computation": "BARCODE_COMPARISON",
+          "computed_as_of": "2026-09-15T21:00:29+00:00",
+          "confidence": 0.987,
+          "input_ids": [
+            "SYN-SHP-000064-PKG-02",
+            "SYN-SHP-000064-SCAN-004"
+          ],
+          "kind": "ComputedResult",
+          "manifest_barcode": "CP911661843SA",
+          "observed_barcode": "CP911661843SA",
+          "package_id": "SYN-SHP-000064-PKG-02",
+          "readable": true,
+          "scan_id": "SYN-SHP-000064-SCAN-004",
+          "scope": "computed",
+          "tool": "scans"
+        },
+        "DEMO-CMP-90f052d4c9345b2d3d3b": {
+          "barcode_matches": true,
+          "barcode_min_confidence": 0.9,
+          "characters_differing": 0,
+          "computation": "BARCODE_COMPARISON",
+          "computed_as_of": "2026-09-15T21:00:29+00:00",
+          "confidence": 0.961,
+          "input_ids": [
+            "SYN-SHP-000064-PKG-02",
+            "SYN-SHP-000064-SCAN-010"
+          ],
+          "kind": "ComputedResult",
+          "manifest_barcode": "CP911661843SA",
+          "observed_barcode": "CP911661843SA",
+          "package_id": "SYN-SHP-000064-PKG-02",
+          "readable": true,
+          "scan_id": "SYN-SHP-000064-SCAN-010",
+          "scope": "computed",
+          "tool": "scans"
+        },
+        "DEMO-CMP-ae0b9ed6076049b0e0e8": {
+          "barcode_matches": false,
+          "barcode_min_confidence": 0.9,
+          "characters_differing": 4,
+          "computation": "BARCODE_COMPARISON",
+          "computed_as_of": "2026-09-15T21:00:29+00:00",
+          "confidence": 0.935,
+          "input_ids": [
+            "SYN-SHP-000064-PKG-02",
+            "SYN-SHP-000064-SCAN-009"
+          ],
+          "kind": "ComputedResult",
+          "manifest_barcode": "CP911661843SA",
+          "observed_barcode": "CP911665006SA",
+          "package_id": "SYN-SHP-000064-PKG-02",
+          "readable": true,
+          "scan_id": "SYN-SHP-000064-SCAN-009",
+          "scope": "computed",
+          "tool": "scans"
+        },
+        "DEMO-CMP-c3171c6ec67f0ae2cf11": {
+          "barcode_matches": true,
+          "barcode_min_confidence": 0.9,
+          "characters_differing": 0,
+          "computation": "BARCODE_COMPARISON",
+          "computed_as_of": "2026-09-15T21:00:29+00:00",
+          "confidence": 0.971,
+          "input_ids": [
+            "SYN-SHP-000064-PKG-02",
+            "SYN-SHP-000064-SCAN-002"
+          ],
+          "kind": "ComputedResult",
+          "manifest_barcode": "CP911661843SA",
+          "observed_barcode": "CP911661843SA",
+          "package_id": "SYN-SHP-000064-PKG-02",
+          "readable": true,
+          "scan_id": "SYN-SHP-000064-SCAN-002",
+          "scope": "computed",
+          "tool": "scans"
+        }
+      },
+      "conclusion_counters": {
+        "calls_refused_by_cap": 0,
+        "cap_reached": false,
+        "model_call_cap": 8,
+        "model_calls_by_role": {
+          "investigator": 6,
+          "reviewer": 1
+        },
+        "model_calls_used": 7
+      },
+      "final_counters": {
+        "model_call_cap": 8,
+        "model_calls_used": 8,
+        "model_calls_by_role": {
+          "investigator": 6,
+          "reviewer": 2
+        },
+        "cap_reached": false,
+        "calls_refused_by_cap": 0
+      },
+      "actual_call_roles": [
+        "investigator",
+        "investigator",
+        "investigator",
+        "reviewer",
+        "investigator",
+        "investigator",
+        "investigator",
+        "reviewer"
+      ]
+    },
+    {
+      "source_file": "phase3.json",
+      "source_sha256": "923318a735a608f9d8e31efedaaa19faeae73458070619a452dea6418fe8a134",
+      "shipment_id": "SYN-SHP-000194",
+      "as_of": "2026-09-15T21:00:29+00:00",
+      "nodes": [
+        {
+          "id": "SYN-SHP-000194-CUST-001",
+          "kind": "CustodyEvent",
+          "properties": {
+            "received_acknowledgments": 2,
+            "from_id": "SYN-ORG-KHB-M1",
+            "channel": "SPL_CORE",
+            "to_id": "SYN-ORGWH-KHB-01",
+            "package_id": "SYN-SHP-000194-PKG-01",
+            "required_acknowledgments": 2,
+            "feed_id": "SYN-FEED-65b5499f2baf36b4af49c5ac",
+            "schema_version": "suhail-v2.1",
+            "provenance": "SYNTHETIC_ASSUMPTION",
+            "event_type": "RECEIVED",
+            "source_event_id": "SYN-SHP-000194-SCAN-001",
+            "facility_id": "SYN-ORGWH-KHB-01",
+            "source_quality": "CORROBORATED",
+            "ingest_lag_seconds": 122,
+            "raw_payload_hash": "a0722eb2275c34f6561501093c9632733e21dd2b10175fc5958a48a7f19f2616",
+            "dataset_id": "SYN-SUHAIL-WORLD-TEST",
+            "source_ref": "spl-core:handheld",
+            "entity_id": "SYN-SHP-000194-CUST-001",
+            "shipment_id": "SYN-SHP-000194",
+            "occurred_at": "2026-09-15T14:11:22+00:00",
+            "synthetic": true,
+            "recorded_at": "2026-09-15T14:13:24+00:00",
+            "ingested_at": "2026-09-15T21:00:29+00:00",
+            "feed_origin": "PROVIDER",
+            "provider_id": "SYN-PROV-SPL"
+          },
+          "after_investigation": false
+        },
+        {
+          "id": "SYN-SHP-000194-CUST-003",
+          "kind": "CustodyEvent",
+          "properties": {
+            "received_acknowledgments": 2,
+            "from_id": "SYN-VEH-FM-KHB-005",
+            "channel": "SPL_CORE",
+            "to_id": "SYN-SORT-DMM-01",
+            "package_id": "SYN-SHP-000194-PKG-01",
+            "required_acknowledgments": 2,
+            "feed_id": "SYN-FEED-0ace24c70447d1b56338935f",
+            "schema_version": "suhail-v2.1",
+            "provenance": "SYNTHETIC_ASSUMPTION",
+            "event_type": "RECEIVED",
+            "source_event_id": "SYN-SHP-000194-SCAN-003",
+            "facility_id": "SYN-SORT-DMM-01",
+            "source_quality": "CORROBORATED",
+            "vehicle_id": "SYN-VEH-FM-KHB-005",
+            "ingest_lag_seconds": 45,
+            "trip_id": "SYN-TRIP-FM-KHB-0915-1830",
+            "raw_payload_hash": "0595c156d4cc81af2d18994ad03e98b1671c24465f97ce6aadc6532be7ba61e3",
+            "dataset_id": "SYN-SUHAIL-WORLD-TEST",
+            "source_ref": "spl-core:sorter",
+            "entity_id": "SYN-SHP-000194-CUST-003",
+            "shipment_id": "SYN-SHP-000194",
+            "occurred_at": "2026-09-15T17:38:50+00:00",
+            "assignment_id": "SYN-SHP-000194-ASSIGN-001",
+            "synthetic": true,
+            "recorded_at": "2026-09-15T17:39:35+00:00",
+            "ingested_at": "2026-09-15T21:00:29+00:00",
+            "feed_origin": "PROVIDER",
+            "provider_id": "SYN-PROV-SPL"
+          },
+          "after_investigation": false
+        },
+        {
+          "id": "SYN-SHP-000194-SCAN-001",
+          "kind": "ScanEvent",
+          "properties": {
+            "channel": "SPL_CORE",
+            "package_id": "SYN-SHP-000194-PKG-01",
+            "calibrated": false,
+            "feed_id": "SYN-FEED-d06243fe7a8f240362c0108f",
+            "schema_version": "suhail-v2.1",
+            "provenance": "SYNTHETIC_ASSUMPTION",
+            "facility_id": "SYN-ORGWH-KHB-01",
+            "readable": true,
+            "ingest_lag_seconds": 122,
+            "raw_payload_hash": "4f21f35fc4eea12a056ee8804a9f5b831f459efe46463e76a7268fa3e0c5149e",
+            "dataset_id": "SYN-SUHAIL-WORLD-TEST",
+            "confidence": 0.977,
+            "source_ref": "spl-core:handheld",
+            "entity_id": "SYN-SHP-000194-SCAN-001",
+            "shipment_id": "SYN-SHP-000194",
+            "observation_type": "HANDHELD_RECEIPT",
+            "occurred_at": "2026-09-15T14:11:22+00:00",
+            "observed_barcode": "EE369940536SA",
+            "synthetic": true,
+            "recorded_at": "2026-09-15T14:13:24+00:00",
+            "ingested_at": "2026-09-15T21:00:29+00:00",
+            "feed_origin": "PROVIDER",
+            "provider_id": "SYN-PROV-SPL",
+            "device_ref": "SYN-DEV-HH-ORGWH-KHB-01"
+          },
+          "after_investigation": false
+        },
+        {
+          "id": "SYN-SHP-000194-SCAN-003",
+          "kind": "ScanEvent",
+          "properties": {
+            "channel": "SPL_CORE",
+            "package_id": "SYN-SHP-000194-PKG-01",
+            "calibrated": false,
+            "feed_id": "SYN-FEED-7b6b7274bbe9e55e4f10f0ce",
+            "schema_version": "suhail-v2.1",
+            "provenance": "SYNTHETIC_ASSUMPTION",
+            "facility_id": "SYN-SORT-DMM-01",
+            "readable": true,
+            "ingest_lag_seconds": 45,
+            "raw_payload_hash": "08051a5b58fcd58fea1a0624bac1c2c2f3037bfaefff41725a93b74eebef3f9b",
+            "dataset_id": "SYN-SUHAIL-WORLD-TEST",
+            "confidence": 0.975,
+            "source_ref": "spl-core:sorter",
+            "entity_id": "SYN-SHP-000194-SCAN-003",
+            "shipment_id": "SYN-SHP-000194",
+            "observation_type": "SORTER_READ",
+            "occurred_at": "2026-09-15T17:38:50+00:00",
+            "observed_barcode": "EE369940536SA",
+            "synthetic": true,
+            "recorded_at": "2026-09-15T17:39:35+00:00",
+            "ingested_at": "2026-09-15T21:00:29+00:00",
+            "feed_origin": "PROVIDER",
+            "provider_id": "SYN-PROV-SPL",
+            "device_ref": "SYN-DEV-SR-SORT-DMM-01"
+          },
+          "after_investigation": false
+        }
+      ],
+      "evidence_index": {
+        "DEMO-CMP-44ffe8bfcdc5cd96de02": {
+          "kind": "ComputedResult",
+          "occurred_at": null,
+          "recorded_at": null,
+          "scope": "computed"
+        },
+        "DEMO-SHP-000194-CUST-001": {
+          "kind": "CustodyEvent",
+          "occurred_at": "2026-09-15T14:11:22+00:00",
+          "recorded_at": "2026-09-15T14:13:24+00:00",
+          "scope": "shipment"
+        },
+        "DEMO-SHP-000194-CUST-003": {
+          "kind": "CustodyEvent",
+          "occurred_at": "2026-09-15T17:38:50+00:00",
+          "recorded_at": "2026-09-15T17:39:35+00:00",
+          "scope": "shipment"
+        },
+        "DEMO-SHP-000194-SCAN-001": {
+          "kind": "ScanEvent",
+          "occurred_at": "2026-09-15T14:11:22+00:00",
+          "recorded_at": "2026-09-15T14:13:24+00:00",
+          "scope": "shipment"
+        },
+        "DEMO-SHP-000194-SCAN-003": {
+          "kind": "ScanEvent",
+          "occurred_at": "2026-09-15T17:38:50+00:00",
+          "recorded_at": "2026-09-15T17:39:35+00:00",
+          "scope": "shipment"
+        }
+      },
+      "computed_results": {
+        "DEMO-CMP-44ffe8bfcdc5cd96de02": {
+          "computation": "CUSTODY_TRANSFER_CHECK",
+          "computed_as_of": "2026-09-15T21:00:29+00:00",
+          "corroborated": true,
+          "event_id": "SYN-SHP-000194-CUST-003",
+          "follows_last_corroborated_holder": false,
+          "input_ids": [
+            "SYN-SHP-000194-CUST-001",
+            "SYN-SHP-000194-CUST-003",
+            "SYN-SHP-000194-SCAN-003"
+          ],
+          "kind": "ComputedResult",
+          "last_corroborated_holder_id": "SYN-ORGWH-KHB-01",
+          "reasons": [
+            "transfer starts from a holder other than the last corroborated one"
+          ],
+          "scope": "computed",
+          "tool": "custody_chain"
+        }
+      },
+      "conclusion_counters": {
+        "calls_refused_by_cap": 0,
+        "cap_reached": false,
+        "model_call_cap": 7,
+        "model_calls_by_role": {
+          "investigator": 5,
+          "reviewer": 1
+        },
+        "model_calls_used": 6
+      },
+      "final_counters": {
+        "model_call_cap": 7,
+        "model_calls_used": 7,
+        "model_calls_by_role": {
+          "investigator": 5,
+          "reviewer": 2
+        },
+        "cap_reached": false,
+        "calls_refused_by_cap": 0
+      },
+      "actual_call_roles": [
+        "investigator",
+        "investigator",
+        "investigator",
+        "investigator",
+        "reviewer",
+        "investigator",
+        "reviewer"
+      ]
+    }
+  ]
+}

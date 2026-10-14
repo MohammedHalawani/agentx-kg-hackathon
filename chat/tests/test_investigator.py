@@ -163,6 +163,24 @@ class LoopTests(Base):
             review = investigator.review({"hypotheses": []}, {}, [], [], ask=ask)
             self.assertEqual(review["verdict"], "UNAVAILABLE", ask.__name__); self.assertTrue(review["degraded"], ask.__name__)
 
+    def test_inconsistent_accept_is_retried_without_relaxing_independent_review(self):
+        seen = []
+        responses = iter([
+            {"verdict": "ACCEPT", "feedback": "Not established.", "unsupported_claims": ["The claimed transfer"],
+             "unaddressed_contradictions": [], "alternatives_tested": "yes"},
+            {"verdict": "REVISE", "feedback": "Re-examine the cited source.", "unsupported_claims": ["The claimed transfer"],
+             "unaddressed_contradictions": [], "alternatives_tested": "yes"},
+        ])
+
+        def ask(system, user, default):
+            seen.append(user)
+            return next(responses)
+
+        result = investigator.review({}, {}, [], [], ask=ask, repair=False)
+        self.assertEqual(result["verdict"], "REVISE")
+        self.assertEqual(len(seen), 2)
+        self.assertIn("ACCEPT cannot contain", seen[1])
+
 
 class FactCheckTests(Base):
     def test_delayed_sync_requires_late_upload_or_device_silence(self):
