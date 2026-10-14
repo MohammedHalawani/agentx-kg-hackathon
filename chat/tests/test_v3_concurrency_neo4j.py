@@ -4,8 +4,9 @@ tests.test_v3_concurrency shows the claim rules on an in-memory ledger that lets
 assumption about the database, not evidence. These tests replace the assumption: each client is its own Neo4j driver
 (its own connections and transactions) with its own store, and they race for the same records in a real database.
 
-Target: ONLY `shipments-v2-world-v3-ci-20261013`, the database the integrator created for these tests. The tests never
-create, replace or drop a database. The first run loads the race fixture into the empty target: the unit tests' small
+Target: ONLY `shipments-v2-world-v32-race-20261015`, the empty disposable database created for the V3.2 release gate
+(2026-10-15). The earlier target `shipments-v2-world-v3-ci-20261013` now holds the live-model test records and is refused
+like every other database. The tests never create, replace or drop a database. The first run loads the race fixture into the empty target: the unit tests' small
 synthetic mechanism world (tests.world_fixture, dataset DEMO-SUHAIL-WORLD-TEST), through the guarded V2 loader, with its
 feed pending. Later runs reuse it. A target that holds anything else is refused, never overwritten. After that the tests
 write only the operations ledger of that database (which they reset, with the development reset, as the other
@@ -13,7 +14,7 @@ integration tests do).
 
 To run (with the server's settings in the worktree's ignored .env):
 
-    SUHAIL_V3_RACE_TESTS=1  SUHAIL_V3_CI_DATABASE=shipments-v2-world-v3-ci-20261013
+    SUHAIL_V3_RACE_TESTS=1  SUHAIL_V3_CI_DATABASE=shipments-v2-world-v32-race-20261015   (docs/v3.2/run-neo4j-gate.ps1)
 
 Without SUHAIL_V3_RACE_TESTS=1 the race tests are SKIPPED, and a skip is an outstanding gate, not a pass. With it, the
 tests FAIL (they do not skip, and do not fall back to any other database) unless the named database is exactly the
@@ -29,7 +30,8 @@ import time
 import unittest
 from datetime import datetime, timedelta, timezone
 
-TARGET = "shipments-v2-world-v3-ci-20261013"
+TARGET = "shipments-v2-world-v32-race-20261015"
+RETIRED_TARGETS = ("shipments-v2-world-v3-ci-20261013",)   # holds evidence now; never a target again
 OPT_IN_ENV = "SUHAIL_V3_RACE_TESTS"
 DATABASE_ENV = "SUHAIL_V3_CI_DATABASE"
 OPERATIONS_ENV = "SUHAIL_OPERATIONS_DATABASE"     # the worktree's own setting; when set it must name the same target
@@ -103,7 +105,7 @@ class GuardTests(unittest.TestCase):
         self.assertIn("not set", refusal("", ()))
         self.assertIn("not set", refusal(None, ()))
         for other in ("shipments-v2-demo-ci-test", "shipments-v2-demo-test", "shipments-v2-demo", "shipments-v2-world-v3-20261013",
-                      "shipments-v2-world-v3-ci-20261013-2", TARGET.upper(), "neo4j", "shipments"):
+                      *RETIRED_TARGETS, TARGET + "-2", TARGET.upper(), "neo4j", "shipments"):
             self.assertIn("only", refusal(other, ()), other)
         self.assertIn("configured", refusal(TARGET, ("neo4j", TARGET)))
         self.assertIn("configured", refusal(TARGET, (TARGET.upper(),)))
@@ -122,7 +124,7 @@ class GuardTests(unittest.TestCase):
     def test_the_worktree_s_operations_setting_must_name_the_same_target(self):
         self.assertIsNone(refusal(TARGET, (), operations=TARGET))
         self.assertIsNone(refusal(TARGET, (), operations=None))
-        for other in ("shipments-v2-world-v3-20261013", "shipments-v2-demo", "shipments-v2-demo-ci-test"):
+        for other in ("shipments-v2-world-v3-20261013", *RETIRED_TARGETS, "shipments-v2-demo", "shipments-v2-demo-ci-test"):
             self.assertIn("same target", refusal(TARGET, (), operations=other), other)
 
     def test_the_target_is_a_world_database_the_operations_layer_already_allows(self):
@@ -181,26 +183,31 @@ class Client:
 
 @unittest.skipUnless(os.environ.get(OPT_IN_ENV) == "1",
                      f"OUTSTANDING GATE, not a pass: set {OPT_IN_ENV}=1 and {DATABASE_ENV}={TARGET} once the integrator has provisioned it")
+def prepare_target():
+    """Every refusal checked (before and after asking the server), then the race fixture ensured. Returns its manifest."""
+    import config
+    from neo4j import GraphDatabase
+    protected = (config.NEO4J_DATABASE, config.SHIPMENT_DATABASE, config.CHAT_DATABASE)
+    named, operations = os.environ.get(DATABASE_ENV), os.environ.get(OPERATIONS_ENV)
+    reason = refusal(named, protected, operations=operations)          # before any connection is made
+    if reason:
+        raise AssertionError("V3 race tests refused: " + reason)
+    probe = GraphDatabase.driver(config.NEO4J_URI, auth=(config.NEO4J_USERNAME, config.NEO4J_PASSWORD))
+    try:
+        with probe.session(database="system", default_access_mode="READ") as session:
+            on_server = {row["name"]: row["currentStatus"] for row in session.run("SHOW DATABASES YIELD name, currentStatus")}
+        reason = refusal(named, protected, on_server, operations)
+        if reason:
+            raise AssertionError("V3 race tests refused: " + reason)
+        return ensure_fixture(probe)
+    finally:
+        probe.close()
+
+
 class RaceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        import config
-        from neo4j import GraphDatabase
-        protected = (config.NEO4J_DATABASE, config.SHIPMENT_DATABASE, config.CHAT_DATABASE)
-        named, operations = os.environ.get(DATABASE_ENV), os.environ.get(OPERATIONS_ENV)
-        reason = refusal(named, protected, operations=operations)          # before any connection is made
-        if reason:
-            raise AssertionError("V3 race tests refused: " + reason)
-        probe = GraphDatabase.driver(config.NEO4J_URI, auth=(config.NEO4J_USERNAME, config.NEO4J_PASSWORD))
-        try:
-            with probe.session(database="system", default_access_mode="READ") as session:
-                on_server = {row["name"]: row["currentStatus"] for row in session.run("SHOW DATABASES YIELD name, currentStatus")}
-            reason = refusal(named, protected, on_server, operations)
-            if reason:
-                raise AssertionError("V3 race tests refused: " + reason)
-            cls.manifest = ensure_fixture(probe)
-        finally:
-            probe.close()
+        cls.manifest = prepare_target()
         cls.clients = []
 
     @classmethod
