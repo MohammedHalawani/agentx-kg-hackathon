@@ -49,6 +49,7 @@ class Tx:
                 if k!="OpsCase" or v["workflow_state"]!="AWAITING_OUTCOME" or (p.get("case_id") and v["entity_id"]!=p["case_id"]):continue
                 ex=[e for kk,e in self.ledger.values() if kk=="OpsExecution" and e["case_id"]==v["entity_id"] and e.get("status")=="ACKNOWLEDGED"]
                 for e in ex:
+                    if e.get("run_id") and e["run_id"]!=v.get("last_run_id"):continue
                     if p.get("force") or v.get("outcome_checked_as_of") is None or v["as_of"]>v["outcome_checked_as_of"] or e["deadline_at"]<=p["clock"]:
                         out.append({"case":copy.deepcopy(v),"execution":copy.deepcopy(e)})
             return Result(sorted(out,key=lambda r:str(r["case"]["as_of"]))[:p["limit"]])

@@ -44,7 +44,7 @@ def dispatched(state, when, *, requires_responses=False, acknowledged=True):
     return state
 
 
-def respond(state, event, *, now, deadline, revision):
+def respond(state, event, *, now, deadline, revision, superseded=False):
     """Idempotent append under the store transaction; late events are audited only."""
     required = {"response_id", "kind", "occurred_at", "evidence_ids", "source_ref"}
     if set(event) != required or event["kind"] not in EVENTS:
@@ -68,7 +68,7 @@ def respond(state, event, *, now, deadline, revision):
     if len(state["events"]) >= 100:
         raise OperationsConflict("Action response history limit reached")
     updated = copy.deepcopy(state)
-    late = clock > instant(deadline) or state["state"] in TERMINAL
+    late = superseded or clock > instant(deadline) or state["state"] in TERMINAL
     row = {"id": event["response_id"], **{k: v for k, v in event.items() if k != "response_id"},
            "recorded_at": now, "synthetic": True, "request_hash": fingerprint, "late": late}
     if not late:

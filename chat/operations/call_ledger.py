@@ -148,7 +148,18 @@ class CallLedger:
             handle.write(json.dumps(document, indent=1, ensure_ascii=False) + "\n")
             handle.flush()
             os.fsync(handle.fileno())
-        os.replace(temporary, self.path)
+        # Windows may briefly deny replacement while a closed file is still held
+        # by a filesystem observer. Keep the sealed temporary file and our lock;
+        # never publish a partial write or release a reservation to make it pass.
+        replace_until = time.monotonic() + 1.0
+        while True:
+            try:
+                os.replace(temporary, self.path)
+                break
+            except PermissionError:
+                if time.monotonic() >= replace_until:
+                    raise LedgerError("Atomic ledger replacement unavailable; the previous document is unchanged") from None
+                time.sleep(0.01)
 
     def reserve(self, run, maximum, *, commit=None, note="", resume=False):
         """Hold `maximum` calls for `run` before it starts, or refuse (LedgerRefused) and write nothing.

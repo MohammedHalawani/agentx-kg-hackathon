@@ -39,6 +39,32 @@ class LedgerTests(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
 
+    def test_transient_windows_sharing_violation_keeps_atomic_counts_without_duplicating_entries(self):
+        path=write_ledger(self.directory.name)
+        ledger=CallLedger(path)
+        original=os.replace
+        attempts=[]
+        def sharing_then_replace(*args):
+            attempts.append(True)
+            if len(attempts)==1:raise PermissionError("synthetic Windows sharing violation")
+            return original(*args)
+        with mock.patch("operations.call_ledger.os.replace",side_effect=sharing_then_replace):
+            ledger.reserve("synthetic-run",1)
+            ledger.settle("synthetic-run",2)
+        self.assertEqual(len(ledger.load()["entries"]),1)
+        self.assertEqual(ledger.spent,2)
+        self.assertTrue(ledger.entry("synthetic-run")["over_reservation"])
+        self.assertGreaterEqual(len(attempts),3)
+
+    def test_persistent_sharing_failure_keeps_the_maximum_reservation_and_fails_closed(self):
+        path=write_ledger(self.directory.name)
+        ledger=CallLedger(path);ledger.reserve("synthetic-run",4)
+        with mock.patch("operations.call_ledger.os.replace",side_effect=PermissionError("synthetic sharing violation")):
+            with self.assertRaises(LedgerError):ledger.settle("synthetic-run",1)
+        self.assertEqual(ledger.spent,4)
+        self.assertIsNone(ledger.entry("synthetic-run")["finished_at"])
+        self.assertFalse(path.with_name(path.name+".lock").exists())
+
     def test_the_committed_ledger_holds_the_two_runs_already_made(self):
         self.assertEqual(DEFAULT_PATH, ROOT / LEDGER_RELATIVE)
         ledger = CallLedger(DEFAULT_PATH)

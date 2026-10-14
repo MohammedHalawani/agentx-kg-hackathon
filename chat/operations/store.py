@@ -1030,7 +1030,8 @@ class OperationsStore:
             c=self._control(tx)
             rows=tx.run("MATCH(c:OpsEntity:OpsCase {dataset_id:$dataset,split:'development',workflow_state:'AWAITING_OUTCOME'}) "
                 "MATCH(e:OpsEntity:OpsExecution {case_id:c.entity_id,status:'ACKNOWLEDGED'}) "
-                "WHERE ($case_id IS NULL OR c.entity_id=$case_id) AND ($force OR c.outcome_checked_as_of IS NULL "
+                "WHERE (e.run_id IS NULL OR e.run_id=c.last_run_id) "
+                "AND ($case_id IS NULL OR c.entity_id=$case_id) AND ($force OR c.outcome_checked_as_of IS NULL "
                 "OR c.as_of > c.outcome_checked_as_of OR e.deadline_at <= $clock) "
                 "RETURN properties(c) AS case,properties(e) AS execution ORDER BY c.as_of LIMIT $limit",
                 dataset=self.dataset_id,clock=instant(c["as_of"]),limit=limit,case_id=case_id,force=force)
@@ -1039,6 +1040,7 @@ class OperationsStore:
         results=[]
         from dataset_v2.derive import assess_shipment
         for case,execution in items:
+            if execution.get("run_id") and execution["run_id"]!=case.get("last_run_id"):continue
             lifecycle=action_lifecycle.load(execution)
             if lifecycle and lifecycle.get("requires_response_events"):
                 if lifecycle["state"]!="EVIDENCE_RECEIVED":
@@ -1186,7 +1188,10 @@ class OperationsStore:
                 not execution.get("receipt_ref") or execution.get("mode")!=self.adapter.name):
                 raise OperationsConflict("Response must refer to this case's dispatched synthetic request")
             state=action_lifecycle.load(execution)
-            updated,replay=action_lifecycle.respond(state,event,now=when,deadline=execution["deadline_at"],revision=expected_revision)
+            superseded=(bool(execution.get("run_id") and execution["run_id"]!=case.get("last_run_id")) or
+                        case["workflow_state"] in ("OPEN","REOPENED","INVESTIGATING"))
+            updated,replay=action_lifecycle.respond(state,event,now=when,deadline=execution["deadline_at"],revision=expected_revision,
+                                                    superseded=superseded)
             if replay:return {"action_lifecycle":action_lifecycle.view(execution),"idempotent":True}
             world=evidence_world(self._reader().evidence(case["shipment_id"],when),self.config)
             for ref in evidence_ids:
@@ -1196,7 +1201,7 @@ class OperationsStore:
                     not instant(execution["occurred_at"])<instant(node.properties["recorded_at"])<=instant(when)):
                     raise OperationsConflict("Response evidence must be visible, own, source-backed and received after dispatch")
             execution["action_lifecycle_json"]=canonical(updated)
-            if updated["state"] in ("FAILED","REJECTED"):
+            if updated["state"] in ("FAILED","REJECTED") and not updated["events"][-1]["late"]:
                 execution["status"]="RESPONSE_"+updated["state"]
                 if not case.get("is_terminal"):
                     case.update(workflow_state="NEEDS_EVIDENCE",state_version=case["state_version"]+1)

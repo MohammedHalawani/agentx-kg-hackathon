@@ -209,6 +209,29 @@ class ActionStoreTests(unittest.TestCase):
         self.assertTrue(detail["action_status"]["human_decision_required"])
         self.assertIsNone(detail["outcome"])
 
+    def test_late_rejected_response_cannot_cancel_a_new_investigation_cycle(self):
+        self.make();self.response("REJECTED","rejected")
+        case=self.driver.ledger[self.case_id][1]
+        requested=self.store.request_reanalysis(self.case_id,"DEMO-OPERATOR-LOCAL",case["state_version"],"reanalyze_after_rejection")
+        self.assertEqual(requested["workflow_state"],"OPEN")
+        version=self.driver.ledger[self.case_id][1]["state_version"]
+        response=self.response("ACKNOWLEDGED","late-old-ack")
+        self.assertTrue(response["action_lifecycle"]["events"][-1]["late"])
+        current=self.driver.ledger[self.case_id][1]
+        self.assertEqual((current["workflow_state"],current["state_version"]),("OPEN",version))
+        self.assertFalse(any(k=="OpsOutcome" for k,_ in self.driver.ledger.values()))
+
+    def test_an_old_execution_cannot_verify_the_current_cycle(self):
+        self.make();self.response("ACKNOWLEDGED","ack");self.response("ACCEPTED","accepted")
+        self.move(30);refs=self.new_scans();self.response("EVIDENCE_RECEIVED","evidence",refs)
+        # A later recorded investigation owns the case; the old dispatch remains
+        # history. Its matching scan cannot certify the new cycle's disposition.
+        current=self.driver.ledger[self.case_id][1]
+        current.update(last_run_id="DEMO-OPS-RUN-NEW-CYCLE",state_version=current["state_version"]+1)
+        self.assertEqual(self.store.outcome_step(force=True),[])
+        self.assertFalse(any(k=="OpsOutcome" for k,_ in self.driver.ledger.values()))
+        self.assertNotEqual(current["workflow_state"],"RESOLVED")
+
     def test_custody_lifecycle_verifies_physical_check_without_inventing_an_old_handover(self):
         self.make("INITIATE_CUSTODY_RECONCILIATION")
         self.response("ACKNOWLEDGED","ack");self.response("ACCEPTED","accepted");self.response("STARTED","search")
