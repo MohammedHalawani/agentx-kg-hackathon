@@ -103,8 +103,8 @@ class EvidenceIntegrityTests(unittest.TestCase):
 
     def test_contradicted_count_retries_through_real_compiled_graph(self):
         original = ScriptedFinalModel.invoke
-        def responses(model, messages):
-            response = original(model, messages)
+        def responses(model, messages, **kwargs):
+            response = original(model, messages, **kwargs)
             payload = json.loads(response.content[-1]["text"])
             if messages[0].content == classifier._SYSTEM:
                 payload["category"] = "address_conflict"
