@@ -11,7 +11,7 @@ from operations.lifecycle import OperationsConflict
 
 VERSION = "suhail-action-1"
 EVENTS = frozenset(("ACKNOWLEDGED", "ACCEPTED", "STARTED", "EVIDENCE_RECEIVED", "REJECTED", "FAILED"))
-TERMINAL = frozenset(("REJECTED", "FAILED", "EXPIRED", "VERIFIED", "UNRESOLVED"))
+TERMINAL = frozenset(("REFUSED", "REJECTED", "FAILED", "EXPIRED", "VERIFIED", "UNRESOLVED"))
 
 
 class SyntheticActionAdapter:
@@ -96,6 +96,14 @@ def respond(state, event, *, now, deadline, revision):
     return updated, False
 
 
+def refused(state,when,rule):
+    updated=copy.deepcopy(state)
+    updated.update(authorization="REFUSED",dispatch="REFUSED",state="REFUSED",revision=state["revision"]+1)
+    updated["events"].append({"id":f"refusal-{updated['revision']}","kind":"AUTHORIZATION_REFUSED",
+                              "occurred_at":when,"recorded_at":when,"synthetic":True,"evidence_ids":[],"rule_id":rule})
+    return updated
+
+
 def verification(state, verdict, now, *, resolved=False):
     updated = copy.deepcopy(state)
     if verdict["status"] == "pending":
@@ -124,3 +132,17 @@ def view(execution):
             "operational_label": waiting.get(execution.get("action_type"), "AWAITING_OPERATIONAL_RESPONSE")
             if state["state"] in ("ACCEPTED", "EXECUTING") else state["state"],
             "synthetic": True}
+
+
+def case_status(case,actions,*,risk=None,human_closure=False,reviewer_human=False):
+    """Presentation of current authority facts, separate from historical task reports."""
+    from operations.authority import HUMAN_FLOOR_SYMPTOMS
+    resolved=case.get("workflow_state")=="RESOLVED" and bool(case.get("verified_outcome_id"))
+    human=not resolved and bool(set(case.get("symptom_codes") or [])&HUMAN_FLOOR_SYMPTOMS or
+                               case.get("workflow_state")=="ESCALATED" or risk in ("HUMAN_REVIEW","PROHIBITED") or
+                               human_closure or reviewer_human)
+    unresolved=case.get("workflow_state")=="REJECTED" or any(a["state"] in ("REFUSED","FAILED","REJECTED","EXPIRED","UNRESOLVED") or
+                                                            (a["state"]=="VERIFIED" and not a.get("resolved")) for a in actions)
+    resolution=("VERIFIED_RESOLVED" if resolved else "HUMAN_DECISION_REQUIRED" if human else
+                "UNRESOLVED" if unresolved else "OPERATIONAL_WORK_PENDING" if actions else "INVESTIGATION_PENDING")
+    return {"version":VERSION,"resolution":resolution,"human_decision_required":human,"actions":actions,"synthetic":True}

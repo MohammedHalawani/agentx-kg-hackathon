@@ -97,6 +97,16 @@ class LifecycleTests(unittest.TestCase):
         self.assertEqual(state["execution"],"FAILED")
         self.assertEqual(state["verification"],"NOT_REQUESTED")
 
+    def test_case_status_distinguishes_failed_work_policy_judgment_and_completed_human_decision(self):
+        for state in ("REFUSED","FAILED","REJECTED","EXPIRED","UNRESOLVED"):
+            result=life.case_status({"workflow_state":"HUMAN_REVIEW"},[{"state":state}])
+            self.assertEqual((result["resolution"],result["human_decision_required"]),("UNRESOLVED",False))
+        result=life.case_status({"workflow_state":"AWAITING_OUTCOME","symptom_codes":["RECIPIENT_REPORTED_NOT_RECEIVED"]},[{"state":"ACCEPTED"}])
+        self.assertEqual((result["resolution"],result["human_decision_required"]),("HUMAN_DECISION_REQUIRED",True))
+        result=life.case_status({"workflow_state":"RESOLVED","verified_outcome_id":"verified-human-outcome",
+                                "symptom_codes":["RECIPIENT_REPORTED_NOT_RECEIVED"]},[],risk="HUMAN_REVIEW",human_closure=True)
+        self.assertEqual((result["resolution"],result["human_decision_required"]),("VERIFIED_RESOLVED",False))
+
 
 class ActualVerifierTests(unittest.TestCase):
     results=[]

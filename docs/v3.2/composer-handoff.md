@@ -22,14 +22,14 @@ type ActionLifecycle = {
   execution_id: string;
   action_type: string;
   revision: number;
-  authorization: "AUTHORIZED";
-  dispatch: "PENDING" | "SENT" | "UNAVAILABLE";
+  authorization: "AUTHORIZED" | "REFUSED";
+  dispatch: "PENDING" | "SENT" | "UNAVAILABLE" | "REFUSED";
   acknowledgement: "PENDING" | "ACKNOWLEDGED";
   acceptance: "PENDING" | "ACCEPTED" | "REJECTED";
   execution: "PENDING" | "EXECUTING" | "FAILED" | "EXPIRED";
   verification: "NOT_REQUESTED" | "AWAITING_VERIFICATION" |
                 "VERIFIED_SUCCESS" | "VERIFIED_FAILURE";
-  state: "AUTHORIZED" | "AWAITING_ACKNOWLEDGEMENT" | "ACKNOWLEDGED" |
+  state: "AUTHORIZED" | "REFUSED" | "AWAITING_ACKNOWLEDGEMENT" | "ACKNOWLEDGED" |
          "ACCEPTED" | "EXECUTING" | "EVIDENCE_RECEIVED" | "REJECTED" |
          "FAILED" | "EXPIRED" | "VERIFIED" | "UNRESOLVED";
   operational_label: string;
@@ -44,12 +44,13 @@ type ActionLifecycle = {
 };
 ```
 
-Keep the axes separate. A transport receipt is not an employee acknowledgement, an accepted task is not an execution result, and an evidence receipt is not a verified result. `VERIFIED_SUCCESS` means the action's evidential effect was verified; the case can remain unresolved. Case closure is authoritative only through the verified outcome and `action_status.resolution`.
+Keep the axes separate. Operational axes retain the reported task facts; verification and case closure are later independent determinations. A transport receipt is not an employee acknowledgement, an accepted task is not an execution result, and an evidence receipt is not a verified result. `VERIFIED_SUCCESS` means the action's evidential effect was verified; the case can remain unresolved. Case closure is authoritative only through the verified outcome and `action_status.resolution`.
 
 ## Presentation and source access
 
 | Backend fact | Display |
 |---|---|
+| authorization/dispatch `REFUSED` | Authorization/context changed; nothing dispatched; show the recorded rule |
 | `AWAITING_ACKNOWLEDGEMENT` | Waiting for employee/device acknowledgement |
 | `ACKNOWLEDGED` | Request received; acceptance pending |
 | accepted/executing + `AWAITING_RESCAN` | Awaiting independent rescan |

@@ -21,7 +21,7 @@ class ActionStoreTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls): cls.base=generate(Config(total=90))
 
-    def make(self,action="REQUEST_RESCAN"):
+    def make(self,action="REQUEST_RESCAN",*,dispatch=True):
         self.world=copy.deepcopy(self.base)
         self.clock=instant(self.world.config.as_of)
         scans=[n for n in self.world.of_kind("ScanEvent") if n.properties.get("split")=="development" and n.properties.get("package_id") in self.world.nodes]
@@ -62,7 +62,8 @@ class ActionStoreTests(unittest.TestCase):
         self.store.initialize();self.store.adapter=SyntheticActionAdapter()
         self.driver.ledger[CONTROL_ID][1].update(as_of=self.clock,case_source="monitor",session_id="DEMO-OPS-SESSION-V32")
         self.case_id=seed_case(self.store,self.driver,self.sid,action,[cause],target=self.target,symptoms=symptoms)
-        [self.execution_id]=self.store.execute_step()
+        if dispatch:[self.execution_id]=self.store.execute_step()
+        else:self.execution_id=next(v["entity_id"] for k,v in self.driver.ledger.values() if k=="OpsExecution")
         environment=patch.dict(os.environ,{"SUHAIL_SYNTHETIC_ACTION_RESPONSES":"1"})
         environment.start();self.addCleanup(environment.stop)
         return self.store
@@ -192,6 +193,21 @@ class ActionStoreTests(unittest.TestCase):
         self.assertNotEqual(result["workflow_state"],"RESOLVED")
         self.assertFalse(self.store.case_detail(self.case_id)["outcome"]["success"])
         self.trace("concurrent-contradictory-evidence",False)
+
+    def test_refused_dispatch_updates_the_action_axes_and_preserves_new_human_policy_floor(self):
+        self.make(dispatch=False)
+        case=self.driver.ledger[self.case_id][1]
+        case["symptom_codes"].append("RECIPIENT_REPORTED_NOT_RECEIVED")
+        case["state_version"]+=1
+        self.assertEqual(self.store.execute_step(),[])
+        execution=self.driver.ledger[self.execution_id][1]
+        self.assertEqual(execution["status"],"REFUSED")
+        state=load(execution)
+        self.assertEqual((state["authorization"],state["dispatch"],state["state"]),("REFUSED","REFUSED","REFUSED"))
+        self.assertIsNone(execution.get("receipt_ref"))
+        detail=self.store.case_detail(self.case_id)
+        self.assertTrue(detail["action_status"]["human_decision_required"])
+        self.assertIsNone(detail["outcome"])
 
     def test_custody_lifecycle_verifies_physical_check_without_inventing_an_old_handover(self):
         self.make("INITIATE_CUSTODY_RECONCILIATION")

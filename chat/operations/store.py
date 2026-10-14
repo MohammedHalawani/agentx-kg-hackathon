@@ -1305,6 +1305,9 @@ class OperationsStore:
                 def refuse(tx,execution=execution,rule=rule,reason=reason):
                     c=self._control(tx,lock=True);when=c["as_of"]
                     current=self._get(tx,"OpsExecution",execution["entity_id"]);current.update(status="REFUSED",permission_rule=rule)
+                    from operations import action_lifecycle
+                    state=action_lifecycle.load(current)
+                    if state:current["action_lifecycle_json"]=canonical(action_lifecycle.refused(state,when,rule))
                     self._put(tx,"OpsExecution",current,update=True)
                     case=self._case(tx,current["case_id"]);old=case["workflow_state"]
                     if not case.get("is_terminal"):
@@ -1329,6 +1332,11 @@ class OperationsStore:
                                                       "routine_new_records":check["routine_new_records"]}))
                     return True
                 current.update(status="REFUSED",permission_rule=check["rule"]);self._put(tx,"OpsExecution",current,update=True)
+                from operations import action_lifecycle
+                state=action_lifecycle.load(current)
+                if state:
+                    current["action_lifecycle_json"]=canonical(action_lifecycle.refused(state,when,check["rule"]))
+                    self._put(tx,"OpsExecution",current,update=True)
                 if check["requeue"]:
                     self._requeue_stale(tx,case,when,"SUHAIL-AUTHORITY-POLICY","EXECUTION_CONTEXT_STALE",check,key=current["entity_id"])
                 else:
@@ -2450,14 +2458,10 @@ class OperationsStore:
                 execution.pop("action_lifecycle_json",None)
                 execution.pop("action_target_json",None)
             active_actions=[e["action_lifecycle"] for e in executions if e.get("current_cycle") and e.get("action_lifecycle")]
-            human_decision=bool((recommendation or {}).get("risk_class") in ("HUMAN_REVIEW","PROHIBITED") or
-                                any(e.get("closure")=="HUMAN" for e in executions if e.get("current_cycle")) or
-                                any(r.get("model_verdict") in ("HUMAN_REVIEW","ESCALATE") for r in reviews))
-            resolution=("VERIFIED_RESOLVED" if case["workflow_state"]=="RESOLVED" and case.get("verified_outcome_id") else
-                        "HUMAN_DECISION_REQUIRED" if human_decision else
-                        "UNRESOLVED" if any(a["state"] in ("FAILED","REJECTED","EXPIRED","UNRESOLVED") or
-                                            (a["state"]=="VERIFIED" and not a.get("resolved")) for a in active_actions) else
-                        "OPERATIONAL_WORK_PENDING" if active_actions else "INVESTIGATION_PENDING")
+            from operations.action_lifecycle import case_status
+            action_status=case_status(case,active_actions,risk=(recommendation or {}).get("risk_class"),
+                                     human_closure=any(e.get("closure")=="HUMAN" for e in executions if e.get("current_cycle")),
+                                     reviewer_human=any(r.get("model_verdict") in ("HUMAN_REVIEW","ESCALATE") for r in reviews))
             return {"case_id":case_id,"shipment_id":case["shipment_id"],"workflow_state":case["workflow_state"],
                 "symptom_codes":list(case.get("symptom_codes") or []),"opened_at":case.get("opened_at"),
                 "state_version":case["state_version"],"priority":case["priority"],"operational_status":case["operational_status"],
@@ -2468,6 +2472,5 @@ class OperationsStore:
                 "investigation_status":self._investigation_status(tx,case),
                 # The current run's accepted agent investigation, or explicitly absent; never rule output.
                 "diagnosis":diagnosis,"synthetic":True,
-                "action_status":{"version":"suhail-action-1","resolution":resolution,
-                                 "human_decision_required":human_decision,"actions":active_actions,"synthetic":True}}
+                "action_status":action_status}
         return self._execute(read)
