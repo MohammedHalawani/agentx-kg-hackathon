@@ -232,6 +232,39 @@ class ActionStoreTests(unittest.TestCase):
         self.assertFalse(any(k=="OpsOutcome" for k,_ in self.driver.ledger.values()))
         self.assertNotEqual(current["workflow_state"],"RESOLVED")
 
+    def test_expiry_selected_before_a_new_cycle_cannot_cancel_its_investigation(self):
+        self.make();self.move(60*96)
+        expire=self.store._expire_action;versions=[]
+        def reanalysis_before_expiry(execution_id):
+            case=self.driver.ledger[self.case_id][1]
+            # Controlled transaction interleave after selection: another run now
+            # owns the case, while the earlier action remains historical.
+            case.update(workflow_state="INVESTIGATING",last_run_id="DEMO-OPS-RUN-NEW-CYCLE",state_version=case["state_version"]+1)
+            versions.append(self.driver.ledger[self.case_id][1]["state_version"])
+            expire(execution_id)
+        with patch.object(self.store,"_expire_action",side_effect=reanalysis_before_expiry):
+            self.assertEqual(self.store.outcome_step(force=True),[])
+        case=self.driver.ledger[self.case_id][1]
+        self.assertEqual((case["workflow_state"],case["state_version"]),("INVESTIGATING",versions[0]))
+        self.assertFalse(any(k=="OpsOutcome" for k,_ in self.driver.ledger.values()))
+
+    def test_evidence_received_at_deadline_wins_over_a_stale_expiry_selection(self):
+        self.make();self.response("ACKNOWLEDGED","ack");self.response("ACCEPTED","accepted")
+        self.clock=self.driver.ledger[self.execution_id][1]["deadline_at"]
+        self.driver.ledger[CONTROL_ID][1]["as_of"]=self.clock
+        self.driver.ledger[self.case_id][1]["as_of"]=self.clock
+        expire=self.store._expire_action
+        def response_before_expiry(execution_id):
+            self.response("EVIDENCE_RECEIVED","on-time-evidence",self.new_scans())
+            expire(execution_id)
+        with patch.object(self.store,"_expire_action",side_effect=response_before_expiry):
+            self.assertEqual(self.store.outcome_step(force=True),[])
+        self.assertEqual(load(self.driver.ledger[self.execution_id][1])["state"],"EVIDENCE_RECEIVED")
+        self.assertEqual(self.driver.ledger[self.case_id][1]["workflow_state"],"AWAITING_OUTCOME")
+        self.assertFalse(any(k=="OpsOutcome" for k,_ in self.driver.ledger.values()))
+        [result]=self.store.outcome_step(force=True)
+        self.assertEqual(result["workflow_state"],"RESOLVED")
+
     def test_custody_lifecycle_verifies_physical_check_without_inventing_an_old_handover(self):
         self.make("INITIATE_CUSTODY_RECONCILIATION")
         self.response("ACKNOWLEDGED","ack");self.response("ACCEPTED","accepted");self.response("STARTED","search")

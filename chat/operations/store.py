@@ -1161,6 +1161,10 @@ class OperationsStore:
             state=action_lifecycle.load(execution)
             if not state or state["state"] in action_lifecycle.TERMINAL or instant(when)<instant(execution["deadline_at"]):return
             case=self._case(tx,execution["case_id"])
+            # Selection preceded this transaction. A new investigation or a
+            # just-received response must win over the stale expiry selection.
+            if (case["workflow_state"]!="AWAITING_OUTCOME" or state["state"]=="EVIDENCE_RECEIVED" or
+                (execution.get("run_id") and execution["run_id"]!=case.get("last_run_id"))):return
             execution["action_lifecycle_json"]=canonical(action_lifecycle.verification(state,
                 {"status":"pending","deadline_at":execution["deadline_at"]},when))
             execution["status"]="RESPONSE_EXPIRED"
