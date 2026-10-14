@@ -200,16 +200,15 @@ def invoke(messages, *, deadline: float | None = None, client=None, entry: str =
     ModelCallTimeout is raised. Without an explicit deadline the configured call deadline still applies.
     client: the chat model to call (default: the shared model()). entry: which function made the call, for the log.
 
-    The call runs on its own thread so the wait can end at the deadline whatever the HTTP client is doing. The same
-    number is also given to the client as its own timeout, so an abandoned call's connection is dropped by the client
-    at its next quiet period rather than at request_timeout. An abandoned call cannot be cancelled: if the provider
+    The call runs on its own thread so the wait can end at the deadline whatever the HTTP client is doing. The
+    remaining interval, capped by request_timeout, reaches the HTTP client too. An abandoned call cannot be cancelled: if the provider
     still answers, the answer is discarded (the provider's own call count still includes it, as it does a failed call).
 
     Every call, with or without a deadline, first takes a slot of the process's provider gate
     (SUHAIL_PROVIDER_MAX_INFLIGHT) and holds it until the underlying call has ended. An abandoned call therefore keeps
     its slot after its caller has given up, and a retry cannot start beside it: it waits for a slot, for at most its own
     deadline (the default call timeout when it has none), and raises ProviderCapacityTimeout when none comes free."""
-    from operations.inference_safety import InferenceLedger
+    from operations.inference_safety import InferenceLedger, SafetyRefused
     # One deadline begins before budget reservation/admission. HTTP execution receives
     # only what remains; it cannot spend a second full timeout after waiting.
     until = time.monotonic() + (call_timeout() if deadline is None else deadline)
@@ -219,20 +218,29 @@ def invoke(messages, *, deadline: float | None = None, client=None, entry: str =
         # The investigation path makes the investigator's turns through invoke and its review through ask_json.
         labels["role"] = ("investigator" if entry == "invoke" else "reviewer") if labels.get("run_id") else entry
     reservation = ledger.reserve(messages, labels, until)
+    def not_dispatched():
+        try:
+            ledger.finish(reservation,dispatched=False,until=until)
+        except (SafetyRefused,OSError):
+            # The conservative reservation remains charged. Cleanup cannot add a
+            # second wait or strand a provider slot when no request was dispatched.
+            log.warning("Undispatched inference reservation retained; budget reconciliation required")
     try:
         permit = provider_gate.shared().acquire(max(0, until - time.monotonic()), cancel=cancel, labels=labels)
     except provider_gate.CapacityUnavailable as error:
-        ledger.finish(reservation, dispatched=False)
+        not_dispatched()
         raise ProviderCapacityTimeout(f"no provider slot for the call ({error.reason})") from None
     if time.monotonic() >= until or (cancel is not None and cancel.is_set()):
-        ledger.finish(reservation, dispatched=False)
-        permit.release("not_started")
+        try:
+            not_dispatched()
+        finally:
+            permit.release("not_started")
         raise ProviderCapacityTimeout("no time or claim remains for inference")
     try:
         chat = model() if client is None else client
     except BaseException:
         try:
-            ledger.finish(reservation, dispatched=False)
+            not_dispatched()
         finally:
             permit.release("not_started")
         raise
@@ -245,7 +253,7 @@ def invoke(messages, *, deadline: float | None = None, client=None, entry: str =
         try:
             remaining = until - time.monotonic()
             if remaining <= 0:
-                ledger.finish(reservation, dispatched=False)
+                not_dispatched()
                 raise ProviderCapacityTimeout("deadline expired before HTTP dispatch")
             outcome["response"] = context.run(chat.invoke, messages, timeout=min(remaining,config.LLM_TIMEOUT_SECONDS),
                                               max_tokens=ledger.policy.max_output_tokens)
@@ -263,8 +271,10 @@ def invoke(messages, *, deadline: float | None = None, client=None, entry: str =
     try:
         thread.start()
     except BaseException:
-        ledger.finish(reservation, dispatched=False)
-        permit.release("not_started")
+        try:
+            not_dispatched()
+        finally:
+            permit.release("not_started")
         raise
     thread.join(max(0, until - time.monotonic()))
     if thread.is_alive():

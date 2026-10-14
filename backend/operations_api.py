@@ -118,10 +118,11 @@ class OperationsRuntime:
                                    agents=investigator if agents.enabled() else None)
         self.reader.store=self.store
         self.store.initialize()
-        self.simulator=attach_simulator(self.store,self.reader,manifest)
         if os.environ.get("SUHAIL_SYNTHETIC_ACTION_RESPONSES","").strip()=="1":
             from operations.action_lifecycle import SyntheticActionAdapter
             self.simulator=self.store.adapter=SyntheticActionAdapter()
+        else:
+            self.simulator=attach_simulator(self.store,self.reader,manifest)
         if os.environ.get("SUHAIL_NARRATION","").strip().lower() in ("1","true","on","yes"):
             # Canopus narration of each run, on its own thread, from recorded events only (operations.narration).
             from operations.narration import Narrator

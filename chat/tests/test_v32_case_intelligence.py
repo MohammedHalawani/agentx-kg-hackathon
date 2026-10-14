@@ -2,9 +2,9 @@
 
 These measure the offline protocol/evidence harness, not GPT-OSS diagnostic accuracy.
 """
-import copy
 import json
 from pathlib import Path
+from datetime import timedelta
 import unittest
 
 from dataset_v2.contracts import Node, World, Config, instant, iso
@@ -113,7 +113,7 @@ class CaseIntelligenceTests(unittest.TestCase):
             for row in case["nodes"]:world.nodes[row["id"]]=Node(row["id"],row["kind"],row["properties"])
             now=max(instant(n.properties["recorded_at"]) for n in world.nodes.values() if n.properties.get("recorded_at"))
             for action in ("REQUEST_RESCAN","INITIATE_CUSTODY_RECONCILIATION"):
-                execution={"action_type":action,"occurred_at":iso(now),"deadline_at":iso(now+__import__('datetime').timedelta(hours=24)),
+                execution={"action_type":action,"occurred_at":iso(now),"deadline_at":iso(now+timedelta(hours=24)),
                            "action_protocol":"suhail-action-1","action_target":{"package_ids":sorted(n.id for n in world.nodes.values() if n.kind=="Package")}}
                 self.assertEqual(evaluate(world,case["shipment_id"],execution,iso(now))["status"],"pending")
 

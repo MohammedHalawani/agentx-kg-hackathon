@@ -169,6 +169,30 @@ class ActionStoreTests(unittest.TestCase):
         self.assertTrue(set(self.response_refs)<=set(outcome["evidence_ids"]))
         self.trace("targeted-buffered-upload",True)
 
+    def test_concurrent_evidence_change_fences_a_stale_success_before_commit(self):
+        from types import SimpleNamespace
+        self.make();self.response("ACKNOWLEDGED","ack");self.response("ACCEPTED","accepted")
+        self.move(30);refs=self.new_scans();self.response("EVIDENCE_RECEIVED","new-source",refs)
+        reader=self.store._reader();changed=[]
+        def racing_evidence(sid,as_of):
+            context=reader.evidence(sid,as_of)
+            if not changed:
+                changed.append(True)
+                package=self.packages[0]
+                self.world.node("ScanEvent","DEMO-CONCURRENT-CONTRADICTION",shipment_id=self.sid,split="development",
+                    package_id=package.id,occurred_at=iso(self.clock),recorded_at=iso(self.clock),
+                    facility_id=self.facility,readable=True,confidence=.99,device_ref="DEMO-DEVICE-INDEPENDENT-RESPONSE",
+                    observed_barcode="DIFFERENT-IDENTITY",source_ref="synthetic:concurrent-source")
+                self.driver.ledger[self.case_id][1]["state_version"]+=1
+            return context
+        with patch.object(self.store,"_reader",return_value=SimpleNamespace(evidence=racing_evidence)):
+            self.assertEqual(self.store.outcome_step(force=True),[])
+        self.assertFalse(any(kind=="OpsOutcome" for kind,_ in self.driver.ledger.values()))
+        [result]=self.store.outcome_step(force=True)
+        self.assertNotEqual(result["workflow_state"],"RESOLVED")
+        self.assertFalse(self.store.case_detail(self.case_id)["outcome"]["success"])
+        self.trace("concurrent-contradictory-evidence",False)
+
     def test_custody_lifecycle_verifies_physical_check_without_inventing_an_old_handover(self):
         self.make("INITIATE_CUSTODY_RECONCILIATION")
         self.response("ACKNOWLEDGED","ack");self.response("ACCEPTED","accepted");self.response("STARTED","search")

@@ -8,7 +8,7 @@ import threading
 import time
 from types import SimpleNamespace
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 from operations.inference_safety import InferenceLedger, Policy, SafetyRefused
 from operations import provider_gate
@@ -106,6 +106,26 @@ class SafetyTests(unittest.TestCase):
         until = time.monotonic() + 2
         while gate.snapshot()["inflight"] and time.monotonic() < until: time.sleep(.01)
         self.assertEqual(self.ledger.load()["entries"][0]["status"], "abandoned")
+
+    def test_expired_preflight_with_unavailable_accounting_never_leaks_a_provider_slot(self):
+        gate=provider_gate.ProviderGate(1)
+        old=provider_gate.use(gate);self.addCleanup(provider_gate.use,old)
+        ledger=Mock(policy=self.policy)
+        ledger.finish.side_effect=SafetyRefused("ledger unavailable")
+        provider=Mock()
+        with patch("operations.inference_safety.InferenceLedger",return_value=ledger):
+            with self.assertRaises(_llm.ProviderCapacityTimeout):
+                _llm.invoke(["m"],deadline=0,client=provider)
+        provider.invoke.assert_not_called()
+        self.assertEqual(gate.snapshot()["inflight"],0)
+
+    def test_budget_lock_contention_is_bounded_by_the_same_deadline_before_any_provider_call(self):
+        self.path.with_name(self.path.name+".lock").write_text("held by another writer")
+        provider=Mock();started=time.monotonic()
+        with patch("operations.inference_safety.InferenceLedger",return_value=self.ledger):
+            with self.assertRaises(SafetyRefused):_llm.invoke(["m"],deadline=.05,client=provider)
+        self.assertLess(time.monotonic()-started,.20)
+        provider.invoke.assert_not_called()
 
 
 if __name__ == "__main__": unittest.main()

@@ -4,7 +4,7 @@
   "mode": "offline scripted roles; real production validators/authority/verifier/closure",
   "live_model_quality": "NOT MEASURED: no billable inference. Classification/reviewer scores below measure scripted fixtures only.",
   "tests": {
-    "passed": 17,
+    "passed": 18,
     "failed": 0,
     "errors": 0,
     "skipped": 0
@@ -21,8 +21,8 @@
     "actual_verifier_probes": 26,
     "negative_or_ambiguous_verifier_probes": 23,
     "false_action_successes": 0,
-    "end_to_end_traces": 6,
-    "negative_or_unresolved_case_traces": 4,
+    "end_to_end_traces": 7,
+    "negative_or_unresolved_case_traces": 5,
     "false_case_resolutions": 0,
     "verified_case_resolutions": 2
   },
@@ -580,6 +580,133 @@
         "synthetic": true
       },
       "expected_may_resolve": true
+    },
+    {
+      "workflow": "concurrent-contradictory-evidence",
+      "case_id": "SYN-OPS-CASE-fc9bd58ac6df9fbe1ea5d2c2",
+      "shipment_id": "SYN-SHP-000077",
+      "synthetic": true,
+      "workflow_state": "HUMAN_REVIEW",
+      "outcome": {
+        "dataset_id": "SYN-SUHAIL-V2-FOUNDATION",
+        "synthetic": true,
+        "split": "development",
+        "holdout_group": "SYN-SHP-000077",
+        "provenance": "SYNTHETIC_ASSUMPTION",
+        "entity_id": "SYN-OPS-OUTCOME-0a7281ccd109d5ba1a86aec4",
+        "shipment_id": "SYN-SHP-000077",
+        "case_id": "SYN-OPS-CASE-fc9bd58ac6df9fbe1ea5d2c2",
+        "run_id": "SYN-OPS-RUN-be0e9be2d99e7f25bc1acef2",
+        "execution_id": "SYN-OPS-EXECUTION-5efb317813c3e6e5c602ddb8",
+        "action_code": "BARCODE_MISMATCH",
+        "action_type": "REQUEST_RESCAN",
+        "success": false,
+        "outcome_type": "barcode_still_differs",
+        "evidence_ids": [
+          "SYN-CONCURRENT-CONTRADICTION"
+        ],
+        "verification_status": "VERIFIED",
+        "verified_at": "2026-10-21T00:30:00+00:00",
+        "verifier_id": "SUHAIL-OUTCOME-VERIFIER",
+        "invalidated": false,
+        "observed_at": "2026-10-21T00:30:00+00:00",
+        "reason": "A readable rescan after the request still differs from the manifest barcode.",
+        "rule_id": "verify-request-rescan-barcode-still-differs",
+        "expected_effect": "Request a package rescan at the current facility.",
+        "exception_cleared": false,
+        "remaining_symptoms": [],
+        "source": "evidence_verifier",
+        "trusted_precedent": true,
+        "recorded_at": "2026-10-21T00:30:00+00:00",
+        "occurred_at": "2026-10-21T00:30:00+00:00",
+        "outcome_id": "SYN-OPS-OUTCOME-0a7281ccd109d5ba1a86aec4",
+        "current_cycle": true
+      },
+      "action_status": {
+        "version": "suhail-action-1",
+        "resolution": "UNRESOLVED",
+        "human_decision_required": false,
+        "actions": [
+          {
+            "acceptance": "ACCEPTED",
+            "acknowledgement": "ACKNOWLEDGED",
+            "authorization": "AUTHORIZED",
+            "created_at": "2026-10-21T00:00:00+00:00",
+            "dispatch": "SENT",
+            "dispatched_at": "2026-10-21T00:00:00+00:00",
+            "events": [
+              {
+                "evidence_ids": [],
+                "id": "dispatch",
+                "kind": "DISPATCHED",
+                "occurred_at": "2026-10-21T00:00:00+00:00",
+                "recorded_at": "2026-10-21T00:00:00+00:00",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [],
+                "id": "ack",
+                "kind": "ACKNOWLEDGED",
+                "late": false,
+                "occurred_at": "2026-10-21T00:00:00+00:00",
+                "recorded_at": "2026-10-21T00:00:00+00:00",
+                "request_hash": "345702dbfee6a00964fa5a0a3c4bffaa79f5557c4c8571876543f2b982827994",
+                "source_ref": "synthetic:controlled-field-response",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [],
+                "id": "accepted",
+                "kind": "ACCEPTED",
+                "late": false,
+                "occurred_at": "2026-10-21T00:00:00+00:00",
+                "recorded_at": "2026-10-21T00:00:00+00:00",
+                "request_hash": "69bdb1f100af0f3e93266df3ee4a44f8f31de1491b97573811cec955baf7cc75",
+                "source_ref": "synthetic:controlled-field-response",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [
+                  "SYN-RESPONSE-SCAN-0",
+                  "SYN-RESPONSE-SCAN-1"
+                ],
+                "id": "new-source",
+                "kind": "EVIDENCE_RECEIVED",
+                "late": false,
+                "occurred_at": "2026-10-21T00:30:00+00:00",
+                "recorded_at": "2026-10-21T00:30:00+00:00",
+                "request_hash": "b32abb88dd292f3ff5bf4c453420b92663f20497c00dc34a0fd7194ea7990ee4",
+                "source_ref": "synthetic:controlled-field-response",
+                "synthetic": true
+              },
+              {
+                "evidence_ids": [
+                  "SYN-CONCURRENT-CONTRADICTION"
+                ],
+                "id": "verification-5",
+                "kind": "UNRESOLVED",
+                "occurred_at": "2026-10-21T00:30:00+00:00",
+                "recorded_at": "2026-10-21T00:30:00+00:00",
+                "rule_id": "verify-request-rescan-barcode-still-differs",
+                "synthetic": true
+              }
+            ],
+            "execution": "PENDING",
+            "requires_response_events": true,
+            "resolved": false,
+            "revision": 5,
+            "state": "UNRESOLVED",
+            "verification": "VERIFIED_FAILURE",
+            "version": "suhail-action-1",
+            "execution_id": "SYN-OPS-EXECUTION-5efb317813c3e6e5c602ddb8",
+            "action_type": "REQUEST_RESCAN",
+            "operational_label": "UNRESOLVED",
+            "synthetic": true
+          }
+        ],
+        "synthetic": true
+      },
+      "expected_may_resolve": false
     },
     {
       "workflow": "custody-confirmed-original-handover-uncertain",

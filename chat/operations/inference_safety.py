@@ -148,10 +148,10 @@ class InferenceLedger:
             self._write(data,until=until)
         return row["id"]
 
-    def finish(self, key, *, response=None, dispatched=True, abandoned=False):
+    def finish(self, key, *, response=None, dispatched=True, abandoned=False, until=None):
         # Accounting is bounded too. If a crashed writer left a lock, the durable
         # pre-dispatch maximum remains charged and the result is not trusted.
-        until=time.monotonic()+1
+        until=time.monotonic()+1 if until is None else until
         with self.locked(until):
             data = self.load()
             row = next(e for e in data["entries"] if e["id"] == key)
@@ -174,4 +174,3 @@ class InferenceLedger:
             self._write(data,until=until)
             if row["status"] == "provider_limit_breach":
                 raise SafetyRefused("Provider usage exceeded its reservation")
-

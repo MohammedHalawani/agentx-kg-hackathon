@@ -23,7 +23,7 @@ The existing verifier gains stricter source/package/facility/device/deadline che
 
 These execute the real store, authority rechecks, verifier and closure code on the existing transactional in-memory Neo4j port. Their initial accepted investigation is scripted to isolate request/response/verifier behavior. `offline-evaluation.json` includes actual rule IDs, source IDs and lifecycle histories. A serious recipient dispute also retains deterministic human authority; valid-looking proof does not erase nonreceipt.
 
-The controlled evaluation currently reports 26 verifier probes (23 negative/ambiguous), zero false action successes, six complete store traces (four unresolved/safety boundaries), zero false case resolutions and two verified resolutions. Five scripted classification/citation probes, four substantive alternatives, one correct abstention and the independent wrong-interpretation rejection exercise the offline harness. **They are not live GPT-OSS accuracy measurements.** Full regression/frontend totals are finalized in `verification.json` after the gate.
+The controlled evaluation reports 26 verifier probes (23 negative/ambiguous), zero false action successes, seven complete store traces (five unresolved/safety boundaries), zero false case resolutions and two verified resolutions. These include a concurrent-source-change test that prevents a stale success from committing. Five scripted classification/citation probes, four substantive alternatives, one correct abstention and the independent wrong-interpretation rejection exercise the offline harness. **They are not live GPT-OSS accuracy measurements.** Full regression/frontend totals are finalized in `verification.json` after the gate.
 
 ## Configuration and reproduction
 
