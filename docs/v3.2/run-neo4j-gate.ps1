@@ -76,8 +76,8 @@ try {
     # PowerShell aborts on the first such line. The verdict is the Python process exit code alone.
     $ErrorActionPreference = 'Continue'
     $PSNativeCommandUseErrorActionPreference = $false
-    $modules = if ($V32Only) { @('tests.test_v32_actions_neo4j') } else { @('tests.test_v3_concurrency_neo4j', 'tests.test_v32_actions_neo4j') }
-    & $Python -m unittest -v @modules 2>&1 |
+    [string[]]$modules = if ($V32Only) { @('tests.test_v32_actions_neo4j') } else { @('tests.test_v3_concurrency_neo4j', 'tests.test_v32_actions_neo4j') }
+    & $Python -m unittest -v $modules 2>&1 |
         ForEach-Object { $text = "$_"; if ($text -eq 'System.Management.Automation.RemoteException') { '' } else { $text } } |
         Tee-Object -FilePath $log
     $code = $LASTEXITCODE
