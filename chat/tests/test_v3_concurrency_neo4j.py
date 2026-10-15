@@ -24,11 +24,15 @@ configured protected databases, and it is online on the server. GuardTests check
 No model: investigations here run on rules only.
 """
 import json
+import logging
 import os
 import threading
 import time
 import unittest
 from datetime import datetime, timedelta, timezone
+
+# The server's schema hints ("label does not exist" on a fresh database) are not results; they buried them in the log.
+logging.getLogger("neo4j.notifications").setLevel(logging.ERROR)
 
 TARGET = "shipments-v2-world-v32-race-20261015"
 RETIRED_TARGETS = ("shipments-v2-world-v3-ci-20261013",)   # holds evidence now; never a target again
