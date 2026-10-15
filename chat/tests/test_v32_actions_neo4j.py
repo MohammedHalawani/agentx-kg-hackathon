@@ -103,7 +103,7 @@ class ActionProtocolNeo4jTests(unittest.TestCase):
 
     def scans(self, client, sid, packages, facility, device, barcode=None, key="RESCAN"):
         """One readable scan per package, made now, at `facility` by `device`."""
-        from dataset_v2.contracts import Node, digest, iso
+        from dataset_v2.contracts import Node, digest, instant, iso
         with client.driver.session(database=TARGET, default_access_mode="READ") as session:
             manifest = {row["id"]: row["barcode"] for row in session.run(
                 "MATCH (p:V2Entity:Package) WHERE p.entity_id IN $ids RETURN p.entity_id AS id, p.manifest_barcode AS barcode",
@@ -113,7 +113,7 @@ class ActionProtocolNeo4jTests(unittest.TestCase):
         for package in packages:
             node_id = f"{sid}-V32-{key}-{digest([package, now, device, barcode])[:8]}"
             nodes.append(Node(node_id, "ScanEvent", {
-                "shipment_id": sid, "package_id": package, "occurred_at": iso(now), "recorded_at": iso(now),
+                "shipment_id": sid, "package_id": package, "occurred_at": iso(instant(now)), "recorded_at": iso(instant(now)),
                 "source_ref": SOURCE, "readable": True, "confidence": .99, "facility_id": facility, "device_ref": device,
                 "observation_type": key, "observed_barcode": barcode or manifest[package], "calibrated": False}))
         self.deliver(client, nodes)

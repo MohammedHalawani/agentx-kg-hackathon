@@ -14,7 +14,8 @@
 # only), then runs the same two modules without the opt-in: the guard tests run and every database test is skipped.
 param([string]$Python = 'C:\Projects\suhail-v3-1-corrective\chat\.venv\Scripts\python.exe',
       [string]$EnvFile = 'C:\Projects\suhail-v3-integration\.env',
-      [switch]$OfflineCheck)
+      [switch]$OfflineCheck,
+      [switch]$V32Only)                                       # rerun only the V3.2 action-protocol module
 $ErrorActionPreference = 'Stop'
 $Target = 'shipments-v2-world-v32-race-20261015'
 $Refused = @('shipments-v2-world-v3-ci-20261013', 'shipments-v2-world-v3-20261013', 'neo4j', 'system', 'shipments')
@@ -75,7 +76,8 @@ try {
     # PowerShell aborts on the first such line. The verdict is the Python process exit code alone.
     $ErrorActionPreference = 'Continue'
     $PSNativeCommandUseErrorActionPreference = $false
-    & $Python -m unittest -v tests.test_v3_concurrency_neo4j tests.test_v32_actions_neo4j 2>&1 |
+    $modules = if ($V32Only) { @('tests.test_v32_actions_neo4j') } else { @('tests.test_v3_concurrency_neo4j', 'tests.test_v32_actions_neo4j') }
+    & $Python -m unittest -v @modules 2>&1 |
         ForEach-Object { $text = "$_"; if ($text -eq 'System.Management.Automation.RemoteException') { '' } else { $text } } |
         Tee-Object -FilePath $log
     $code = $LASTEXITCODE
