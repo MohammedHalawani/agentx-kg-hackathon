@@ -9,8 +9,12 @@
 # NEO4J_PASSWORD), plus the names of the application's own databases so the tests can refuse them. If a key is
 # missing you are prompted (the password masked). Nothing is printed, written to disk or kept after the run.
 # No model key is read; model settings are blanked. No paid inference, no external request.
+#
+# -OfflineCheck: no credentials used and no connection made. Reports which connection keys the .env provides (names
+# only), then runs the same two modules without the opt-in: the guard tests run and every database test is skipped.
 param([string]$Python = 'C:\Projects\suhail-v3-1-corrective\chat\.venv\Scripts\python.exe',
-      [string]$EnvFile = 'C:\Projects\suhail-v3-integration\.env')
+      [string]$EnvFile = 'C:\Projects\suhail-v3-integration\.env',
+      [switch]$OfflineCheck)
 $ErrorActionPreference = 'Stop'
 $Target = 'shipments-v2-world-v32-race-20261015'
 $Refused = @('shipments-v2-world-v3-ci-20261013', 'shipments-v2-world-v3-20261013', 'neo4j', 'system', 'shipments')
@@ -21,8 +25,14 @@ $wanted = 'NEO4J_URI','NEO4J_USERNAME','NEO4J_PASSWORD','NEO4J_DATABASE','SHIPME
 $cfg = @{}
 if (Test-Path -LiteralPath $EnvFile) {
     foreach ($line in Get-Content -LiteralPath $EnvFile) {
-        if ($line -match '^\s*([A-Z_]+)\s*=(.*)$' -and $wanted -contains $Matches[1]) { $cfg[$Matches[1]] = $Matches[2].Trim().Trim('"', "'") }
+        # Key names contain digits (NEO4J_...).
+        if ($line -match '^\s*([A-Z0-9_]+)\s*=(.*)$' -and $wanted -contains $Matches[1]) { $cfg[$Matches[1]] = $Matches[2].Trim().Trim('"', "'") }
     }
+}
+Write-Host ('Connection keys found in .env: ' + ((@('NEO4J_URI','NEO4J_USERNAME','NEO4J_PASSWORD') | Where-Object { $cfg[$_] }) -join ', '))
+if ($OfflineCheck) {
+    foreach ($name in 'NEO4J_URI','NEO4J_USERNAME','NEO4J_PASSWORD') { $cfg.Remove($name) }
+    $cfg.NEO4J_URI = 'bolt://127.0.0.1:1'; $cfg.NEO4J_USERNAME = 'offline'; $cfg.NEO4J_PASSWORD = 'offline'
 }
 if (-not $cfg.NEO4J_URI) { $cfg.NEO4J_URI = 'neo4j://127.0.0.1:7687' }
 if (-not $cfg.NEO4J_USERNAME) { $cfg.NEO4J_USERNAME = Read-Host 'Neo4j user' }
@@ -41,7 +51,7 @@ if ($Refused -contains $Target) { throw 'Refused: the target is a protected data
 $settings = @{
     NEO4J_URI = $cfg.NEO4J_URI; NEO4J_USERNAME = $cfg.NEO4J_USERNAME; NEO4J_PASSWORD = $cfg.NEO4J_PASSWORD
     NEO4J_DATABASE = $cfg.NEO4J_DATABASE; SHIPMENT_DATABASE = $cfg.SHIPMENT_DATABASE; CHAT_DATABASE = $cfg.CHAT_DATABASE
-    SUHAIL_V3_RACE_TESTS = '1'; SUHAIL_V3_CI_DATABASE = $Target; SUHAIL_OPERATIONS_DATABASE = $Target
+    SUHAIL_V3_RACE_TESTS = $(if ($OfflineCheck) { '0' } else { '1' }); SUHAIL_V3_CI_DATABASE = $Target; SUHAIL_OPERATIONS_DATABASE = $Target
     SUHAIL_NEO4J_TESTS = '0'                                  # the V2 scratch-database tests stay off
     OLLAMA_API_KEY = ''; OPENAI_API_KEY = ''; LLM_API_KEY = 'offline-placeholder'; LLM_API_BASE = 'http://127.0.0.1:1/v1'
     LITELLM_LOCAL_MODEL_COST_MAP = 'True'; LITELLM_TELEMETRY = 'False'; SUHAIL_PROVIDER_MAX_INFLIGHT = '1'
@@ -55,14 +65,24 @@ foreach ($name in $settings.Keys) {
     [Environment]::SetEnvironmentVariable($name, $settings[$name], 'Process')
 }
 $cfg = $null; $secure = $null
-$log = Join-Path $root 'artifacts\v3.2\neo4j-gate.log'
+$log = Join-Path $root $(if ($OfflineCheck) { 'artifacts\v3.2\neo4j-gate-offline-check.log' } else { 'artifacts\v3.2\neo4j-gate.log' })
+New-Item -ItemType Directory -Force -Path (Split-Path -Parent $log) | Out-Null
 Write-Host "Target: $Target only. Log: $log"
+$code = $null
 Push-Location (Join-Path $root 'chat')
 try {
-    & $Python -m unittest -v tests.test_v3_concurrency_neo4j tests.test_v32_actions_neo4j 2>&1 | Tee-Object -FilePath $log
+    # unittest writes its progress and results to stderr. That is output, not a PowerShell error: under 'Stop', Windows
+    # PowerShell aborts on the first such line. The verdict is the Python process exit code alone.
+    $ErrorActionPreference = 'Continue'
+    $PSNativeCommandUseErrorActionPreference = $false
+    & $Python -m unittest -v tests.test_v3_concurrency_neo4j tests.test_v32_actions_neo4j 2>&1 |
+        ForEach-Object { $text = "$_"; if ($text -eq 'System.Management.Automation.RemoteException') { '' } else { $text } } |
+        Tee-Object -FilePath $log
     $code = $LASTEXITCODE
 } finally {
+    $ErrorActionPreference = 'Stop'
     Pop-Location
     foreach ($name in $previous.Keys) { [Environment]::SetEnvironmentVariable($name, $previous[$name], 'Process') }
 }
-Write-Host "Exit code: $code (0 = every test passed)"
+Write-Host "Python exit code: $code (0 = every test that ran passed; skips are listed above and are not passes)"
+exit $code
