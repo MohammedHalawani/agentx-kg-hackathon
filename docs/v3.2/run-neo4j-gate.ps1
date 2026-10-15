@@ -15,7 +15,8 @@
 param([string]$Python = 'C:\Projects\suhail-v3-1-corrective\chat\.venv\Scripts\python.exe',
       [string]$EnvFile = 'C:\Projects\suhail-v3-integration\.env',
       [switch]$OfflineCheck,
-      [switch]$V32Only)                                       # rerun only the V3.2 action-protocol module
+      [switch]$V32Only,                                       # rerun only the V3.2 action-protocol module
+      [string]$Only)                                          # unittest -k pattern: rerun only matching tests
 $ErrorActionPreference = 'Stop'
 $Target = 'shipments-v2-world-v32-race-20261015'
 $Refused = @('shipments-v2-world-v3-ci-20261013', 'shipments-v2-world-v3-20261013', 'neo4j', 'system', 'shipments')
@@ -77,6 +78,7 @@ try {
     $ErrorActionPreference = 'Continue'
     $PSNativeCommandUseErrorActionPreference = $false
     [string[]]$modules = if ($V32Only) { @('tests.test_v32_actions_neo4j') } else { @('tests.test_v3_concurrency_neo4j', 'tests.test_v32_actions_neo4j') }
+    if ($Only) { $modules = @('-k', $Only) + $modules }
     & $Python -m unittest -v $modules 2>&1 |
         ForEach-Object { $text = "$_"; if ($text -eq 'System.Management.Automation.RemoteException') { '' } else { $text } } |
         Tee-Object -FilePath $log

@@ -180,6 +180,28 @@ class ActionProtocolNeo4jTests(unittest.TestCase):
             self.assertNotEqual(client.store.status()["as_of"], before, "the fixture clock ended before the action deadline")
         return deadline
 
+    def assert_credited_reads_qualify(self, client, outcome, refs):
+        """The verifier credits every qualifying read after dispatch, not only the ones a response named: each credited
+        read must be a readable read of this shipment's packages, matching the manifest, at the directed facility, by a
+        device other than the baseline one, received after dispatch. The responder's own rescan must be among them."""
+        from dataset_v2.contracts import instant
+        from operations.schema import public_value
+        self.assertLessEqual(set(refs), set(outcome["evidence_ids"]), outcome)
+        dispatched = instant(self.execution(client)["occurred_at"])
+        with client.driver.session(database=TARGET, default_access_mode="READ") as session:
+            reads = [dict(row["n"]) for row in session.run(
+                "MATCH (n:V2Entity:ScanEvent) WHERE n.entity_id IN $ids "
+                "OPTIONAL MATCH (p:V2Entity:Package {entity_id:n.package_id}) "
+                "RETURN n {.shipment_id,.package_id,.facility_id,.device_ref,.observed_barcode,.readable,.recorded_at,"
+                "manifest:p.manifest_barcode} AS n", ids=outcome["evidence_ids"])]
+        self.assertEqual(len(reads), len(outcome["evidence_ids"]), outcome)
+        for read in reads:
+            self.assertEqual((read["shipment_id"], read["facility_id"], read["readable"], read["observed_barcode"]),
+                             (self.case["sid"], self.case["facility"], True, read["manifest"]), read)
+            self.assertIn(read["package_id"], self.case["packages"], read)
+            self.assertNotEqual(read["device_ref"], self.case["device"], read)
+            self.assertGreater(instant(public_value(read["recorded_at"])), dispatched, read)
+
     def outcomes(self, client):
         return self.rows(client, "OpsOutcome", case_id=self.case["case_id"])
 
@@ -239,7 +261,7 @@ class ActionProtocolNeo4jTests(unittest.TestCase):
         self.assertEqual(result["workflow_state"], "RESOLVED", (result, restarted.store.case_detail(case["case_id"]).get("outcome")))
         [outcome] = self.outcomes(restarted)
         self.assertEqual((outcome["success"], outcome["outcome_type"], outcome["verifier_id"]), (True, "barcode_corrected", "SUHAIL-OUTCOME-VERIFIER"))
-        self.assertEqual(set(outcome["evidence_ids"]), set(refs))
+        self.assert_credited_reads_qualify(restarted, outcome, refs)
         detail = restarted.store.case_detail(case["case_id"])
         self.assertEqual((detail["action_status"]["resolution"], self.lifecycle(restarted)["verification"]), ("VERIFIED_RESOLVED", "VERIFIED_SUCCESS"))
         self.assertEqual(restarted.store.outcome_step(force=True), [])             # verified once
@@ -343,7 +365,8 @@ class ActionProtocolNeo4jTests(unittest.TestCase):
             self.assertEqual([r["workflow_state"] for r in first.store.outcome_step(force=True)], ["RESOLVED"])
         if state in ("EVIDENCE_RECEIVED", "VERIFIED"):            # verified from the real rescan, once
             [outcome] = self.outcomes(first)
-            self.assertEqual((outcome["success"], set(outcome["evidence_ids"])), (True, set(refs)))
+            self.assertTrue(outcome["success"], outcome)
+            self.assert_credited_reads_qualify(first, outcome, refs)
         else:                                                     # the expiry won: the response is history, nothing verified
             self.assertEqual(first.store.outcome_step(force=True), [])
             self.assertEqual(self.outcomes(first), [])
