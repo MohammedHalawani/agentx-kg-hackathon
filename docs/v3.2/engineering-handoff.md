@@ -50,7 +50,16 @@ Run `scripts/v32_offline_evaluation.py` with the existing locked Python environm
 ## Integration gates and next actions
 
 - V3.1 independent review: done (READY TO MERGE YES); merged locally into `v3/integration` at `7287e44`. No base reconciliation is needed.
-- Real Neo4j execution of the new write paths (`action_lifecycle_json`, expiry/verification fences under the transaction lock, run-scoped outcome selection) is untested. Every V3.2 store test runs on the in-memory transactional port. Running them, and the 4 race tests, against a disposable V3.2 database needs Fahad's separate authorization.
+- Real Neo4j gate: done on 2026-10-15 (below).
+
+## Real Neo4j gate (2026-10-15, authorized by Fahad)
+
+Database `shipments-v2-world-v32-race-20261015`, created empty by Fahad for this gate; the only target the harness accepts. The CI database (live-model records), the frozen V3 world and the V2 databases are refused by name and were not used. Runner: `docs/v3.2/run-neo4j-gate.ps1` (reads only the `NEO4J_*` connection keys; model settings blanked; no inference).
+
+- Race tests (`test_v3_concurrency_neo4j`): 4 guard + **4/4 race tests passed** (expired claim recovered once, two clients on two cases together, one case granted exactly once, capacity one never doubled). Raw log `artifacts/v3.2/neo4j-gate-run-2.log`.
+- V3.2 action protocol on real Neo4j with separate clients (`test_v32_actions_neo4j`): **6/6 passed** at `056a6d2` (`artifacts/v3.2/neo4j-gate-run-4-v32.log`). Covered: authorization/dispatch/acknowledgement/acceptance without an outcome; restart replay; only the independent rescan resolves; racing identical responses write once and conflicting ones leave exactly one winner; foreign evidence refused; rejection and expiry unresolved without a human-decision claim; evidence racing expiry at the deadline commits exactly one ordering; a contradiction ingested by another client during verification fences the stale success; late responses and old-cycle expiry cannot touch a reanalysed case.
+- Defects found in V3.2 production code: none. Test-side corrections only (timestamp type; the verifier also credits a qualifying routine scan received after dispatch, now checked read by read).
+- Not covered on real Neo4j: device-sync and custody verifier variants (same write path; verifier logic covered offline), and live-model investigation.
 - Independently review V3.2 budget durability, price assumptions, deadline handling, response idempotency/source checks, stale-verdict fences and human/closure boundaries. This offline branch is a review candidate, not a new live-production certification.
 - Composer implements the additive consumer and pending/unresolved/verified/human distinctions from `composer-handoff.md`, then retains the 60-minute independent Phase C source/storyline QA in the existing Composer thread/worktree. Current browser checks validate compatibility of the unchanged frontend, not an implemented V3.2 interface.
 - Before live database integration, separately provision/validate an isolated V3.2 mutable world target and synthetic response feed. Do not run this build on the protected integration, V2 databases or frozen V3 dataset. No new database/import/race gate is claimed here; disabled live tests remain skips.
