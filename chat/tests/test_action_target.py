@@ -44,6 +44,27 @@ class ActionTargetTests(unittest.TestCase):
         self.assertEqual(target["device_id"], "DEMO-DEV-S")
         self.assertEqual(target["expected_evidence"], [{"package_id": "P", "predicate": "RECEIVED", "location_id": "L"}])
 
+    def test_a_rescan_is_targeted_where_this_shipments_package_was_misread(self):
+        def n(id, kind, **properties):
+            return SimpleNamespace(id=id, kind=kind, properties=properties)
+        nodes = {k.id: k for k in (
+            n("P", "Package", shipment_id="S", manifest_barcode="M"),
+            n("Q", "Package", shipment_id="OTHER", manifest_barcode="M"),
+            n("F-MISREAD", "Hub"), n("F-READ", "Hub"), n("F-FOREIGN", "Hub"), n("VAN", "Vehicle"),
+            n("S1", "ScanEvent", shipment_id="S", package_id="P", facility_id="F-MISREAD", observed_barcode="X", device_ref="D1"),
+            n("S2", "ScanEvent", shipment_id="S", package_id="P", facility_id="F-READ", observed_barcode="M", device_ref="D2"),
+            n("S3", "ScanEvent", shipment_id="S", package_id="P", facility_id="VAN", observed_barcode="X", device_ref="D3"),
+            n("S4", "ScanEvent", shipment_id="OTHER", package_id="Q", facility_id="F-FOREIGN", observed_barcode="X"))}
+        t = tools(nodes=nodes)
+        t.sid = "S"
+        target = action_target(t, [], "REQUEST_RESCAN")
+        # Only the facility of this shipment's own mismatched read: not a matching read, not a non-facility location,
+        # not another shipment's record.
+        self.assertEqual(target["facility_ids"], ["F-MISREAD"])
+        self.assertEqual(target["baseline_device_ids"], ["D1", "D3"])   # unchanged: the devices of the mismatched reads
+        for other in (None, "INITIATE_CUSTODY_RECONCILIATION", "REQUEST_DEVICE_SYNC"):
+            self.assertEqual(action_target(t, [], other)["facility_ids"], [])   # other actions' targets are unchanged
+
 
 if __name__ == "__main__":
     unittest.main()

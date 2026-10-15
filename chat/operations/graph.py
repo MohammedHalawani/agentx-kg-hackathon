@@ -123,10 +123,11 @@ def cited_device(tools, evidence_ids):
     return next((d for d in direct + by_scan if isinstance(d, str) and d), None)
 
 
-def action_target(tools, evidence_ids=None):
+def action_target(tools, evidence_ids=None, action_type=None):
     """What an executed action must later be checked against, computed by code from this snapshot:
     the expected observations that are missing now and the silent device that should have made them. When the
-    snapshot names no such device, the target is the device the recommendation cites as evidence (cited_device)."""
+    snapshot names no such device, the target is the device the recommendation cites as evidence (cited_device).
+    A rescan is also expected at the facility where this shipment's own package was read with a differing label."""
     rows = [r for r in tools._journey()["milestones"] if r["state"] == "missing_after_deadline"]
     silent = [d for d, report in tools.device_reports.items() if report.get("reporting_state") == "SILENT"]
     expected = []
@@ -151,6 +152,13 @@ def action_target(tools, evidence_ids=None):
     mismatches=[n.id for n in tools.nodes.values() if n.kind=="ScanEvent" and n.properties.get("package_id") in tools.nodes and
                 n.properties.get("observed_barcode") is not None and
                 n.properties["observed_barcode"]!=tools.nodes[n.properties["package_id"]].properties.get("manifest_barcode")]
+    if action_type=="REQUEST_RESCAN":
+        for k in mismatches:
+            scan,package=tools.nodes[k].properties,tools.nodes[tools.nodes[k].properties["package_id"]]
+            place=tools.nodes.get(scan.get("facility_id"))
+            if (scan.get("shipment_id")==tools.sid and package.kind=="Package" and package.properties.get("shipment_id")==tools.sid
+                    and place is not None and place.kind in FACILITIES):
+                facilities.add(scan["facility_id"])
     devices=sorted({tools.nodes[k].properties["device_ref"] for k in mismatches or evidence_ids or []
                     if k in tools.nodes and tools.nodes[k].kind=="ScanEvent" and tools.nodes[k].properties.get("device_ref")})
     return {"device_id": device, "facility_ids":sorted(facilities),"baseline_device_ids":devices,
@@ -302,7 +310,7 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
                 text = ACTIONS[action][3]
                 proposal = {"code": code, "action_code": code, "action_type": action, "action": text, "action_en": text,
                             "action_ar": ACTION_SUMMARY_AR[action],
-                            "evidence_ids": basis, "requires_approval": True, "resolves": False, "target": action_target(tools_for(s), basis),
+                            "evidence_ids": basis, "requires_approval": True, "resolves": False, "target": action_target(tools_for(s), basis, action),
                             "investigated_by": "agent",
                             "planner": {"mode": inv["mode"], "action_type": action, "evidence_basis": basis}}
         elif s["result"]["recommendations"]:
