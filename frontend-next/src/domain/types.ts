@@ -1,4 +1,8 @@
-import type { ApiBrief } from "@/api/contracts";
+import type {
+  ApiBrief,
+  ApiActionStatus,
+  ApiPipelineEvent,
+} from "@/api/contracts";
 export type CaseStatus =
   | "queued"
   | "investigating"
@@ -130,7 +134,7 @@ export interface GraphNode {
   occurredAt?: string;
   /** Backend evidence: the Neo4j label this node was served with. */
   sourceKind?: string;
-  /** Backend evidence: a record the diagnosis, recommendation, rule checks or outcome cite. */
+  /** Backend evidence: a record the findings, recommendation or outcome cite; retrieval alone is separate. */
   cited?: boolean;
   /** Backend evidence: an image stored with the record (e.g. a proof-of-delivery photo). */
   media?: string;
@@ -198,11 +202,7 @@ export interface AuthorityDecision {
   caseId: string;
   action: string;
   verdict:
-    | "approved"
-    | "rejected"
-    | "escalated"
-    | "evidence_requested"
-    | "reopened";
+    "approved" | "rejected" | "escalated" | "evidence_requested" | "reopened";
   actor: string;
   timestamp: string;
   reason: string;
@@ -250,6 +250,8 @@ export interface OperationalCase {
 }
 /** Authoritative state the backend served for a case. The browser never derives these. */
 export interface BackendCaseState {
+  actionStatus?: ApiActionStatus | null;
+  pipelineEvents?: ApiPipelineEvent[];
   caseId: string;
   shipmentId: string;
   workflowState: string;
@@ -404,9 +406,16 @@ export interface BackendCaseState {
   /** The backend's one assessment of the case, composed from its records (API shape). */
   brief?: ApiBrief | null;
   /** Per pipeline step: the backend's short fact for its latest round. */
-  stageFacts?: Record<number, { en: string; ar: string | null; status: string }>;
+  stageFacts?: Record<
+    number,
+    { en: string; ar: string | null; status: string }
+  >;
   /** The run's stored narration, oldest first; empty until the backend narrates a run. */
-  narration?: { runId: string | null; status: string; events: NarrationEvent[] };
+  narration?: {
+    runId: string | null;
+    status: string;
+    events: NarrationEvent[];
+  };
   /** The backend's statement of why the case is unresolved and what it needs next. */
   nextStep?: {
     code: string;
@@ -457,12 +466,7 @@ export interface InvestigationStageEvent {
   evidenceIds?: string[];
   /** "policy": the deterministic authority policy. "system": monitor, ingestion, execution adapter, rule worker. */
   actorRole?:
-    | "investigator"
-    | "reviewer"
-    | "operator"
-    | "verifier"
-    | "policy"
-    | "system";
+    "investigator" | "reviewer" | "operator" | "verifier" | "policy" | "system";
   kind: AuditKind;
   title: string;
   detail: string;
@@ -510,7 +514,12 @@ export interface BackendConnection {
   /** Shipments in a curated session, when the monitor is limited to a listed set. */
   curatedShipments?: number | null;
   queue?: { total: number; loaded: number; truncated: boolean };
-  audit?: { total: number; loaded: number; truncated: boolean; loading: boolean };
+  audit?: {
+    total: number;
+    loaded: number;
+    truncated: boolean;
+    loading: boolean;
+  };
   /** Whether operator controls can be sent from this page (same-origin, loopback). */
   controls: "available" | "unavailable" | "unknown";
 }
@@ -598,7 +607,8 @@ export interface OperationsService {
   }>;
 }
 /** Lab builds only: the fixture narration for a stage. The connected build shows recorded text instead. */
-const lab = (text: string) => (import.meta.env.VITE_SUHAIL_DATA === "lab" ? text : "");
+const lab = (text: string) =>
+  import.meta.env.VITE_SUHAIL_DATA === "lab" ? text : "";
 export const stages = [
   {
     label: "Collect",
@@ -609,13 +619,17 @@ export const stages = [
   {
     label: "Graph",
     arabic: "العلاقات",
-    detail: lab("Reconstructing the expected journey and linked custody evidence."),
+    detail: lab(
+      "Reconstructing the expected journey and linked custody evidence.",
+    ),
     kind: "evidence",
   },
   {
     label: "Diagnose",
     arabic: "التشخيص",
-    detail: lab("Comparing parcel custody observations and manifest contradictions."),
+    detail: lab(
+      "Comparing parcel custody observations and manifest contradictions.",
+    ),
     kind: "investigation",
   },
   {
@@ -639,13 +653,17 @@ export const stages = [
   {
     label: "Route",
     arabic: "التوجيه",
-    detail: lab("Routing the authorized local recovery action for simulated execution."),
+    detail: lab(
+      "Routing the authorized local recovery action for simulated execution.",
+    ),
     kind: "execution",
   },
   {
     label: "Outcome",
     arabic: "النتيجة",
-    detail: lab("Independently checking the new custody observation and result."),
+    detail: lab(
+      "Independently checking the new custody observation and result.",
+    ),
     kind: "verification",
   },
 ] as const;

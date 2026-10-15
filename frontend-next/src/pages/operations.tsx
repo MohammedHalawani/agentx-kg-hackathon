@@ -51,6 +51,10 @@ import {
 } from "@/domain/case-view";
 import { useCanopusScreen } from "@/state/canopus";
 import { humanize } from "@/api/adapters";
+import {
+  verifiedResolution,
+  waitingLabel,
+} from "@/domain/investigation-workspace";
 const LAB_BUILD = import.meta.env.VITE_SUHAIL_DATA === "lab";
 
 export function OperationsPage() {
@@ -74,17 +78,22 @@ export function OperationsPage() {
   const [operational, setOperational] = useState("all");
   const [sort, setSort] = useState("newest");
   const [resolvedOpen, setResolvedOpen] = useState(false);
+  const [queueTab, setQueueTab] = useState<"waiting" | "resolved">("waiting");
   const [refreshing, setRefreshing] = useState(false);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   useCanopusScreen({
     screen: "operations",
     filters: { search: query, status, priority, city, cause },
   });
-  const active = cases.filter((c) => c.status !== "resolved");
-  const resolved = cases.filter(
-    (c) => c.status === "resolved" && c.outcome?.successful,
-  );
+  const active = cases.filter((c) => !verifiedResolution(c));
+  const resolved = cases.filter((c) => verifiedResolution(c));
   const activeClaims = connection?.worker?.activeCases ?? [];
+  const waiting = active.filter(
+    (c) =>
+      !activeClaims.some((claim) => claim.caseId === c.id) &&
+      !["queued", "investigating"].includes(c.status),
+  );
+  const queueEntries = queueTab === "waiting" ? waiting : resolved;
   // Backend: active V3 claims, else legacy single id. Lab: the one simulated run.
   const running = backend
     ? activeClaims.length
@@ -573,14 +582,14 @@ export function OperationsPage() {
                 : running
                   ? `${displayId(running)} · ${t(stages[running.run?.stage ?? 0].label, stages[running.run?.stage ?? 0].arabic)}`
                   : automatic
-                  ? t(
-                      "Picking the oldest eligible case",
-                      "اختيار أقدم حالة مؤهلة",
-                    )
-                  : t(
-                      "New automatic investigations paused",
-                      "بدء تحقيقات تلقائية جديدة متوقف مؤقتاً",
-                    )}
+                    ? t(
+                        "Picking the oldest eligible case",
+                        "اختيار أقدم حالة مؤهلة",
+                      )
+                    : t(
+                        "New automatic investigations paused",
+                        "بدء تحقيقات تلقائية جديدة متوقف مؤقتاً",
+                      )}
               <Badge variant="outline" className="fifo-badge">
                 FIFO
               </Badge>
@@ -702,8 +711,10 @@ export function OperationsPage() {
                 aria-label="Expand resolved panel"
               >
                 <CheckCheck size={15} />
-                <span>{t("Resolved", "المحلولة")}</span>
-                <Badge variant="secondary">{resolved.length}</Badge>
+                <span>{t("Waiting / Resolved", "المنتظرة / المحلولة")}</span>
+                <Badge variant="secondary">
+                  {waiting.length} / {resolved.length}
+                </Badge>
                 <ChevronRight size={13} />
               </Button>
             </CollapsibleTrigger>
@@ -715,13 +726,12 @@ export function OperationsPage() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 8 }}
                 className="resolved-panel surface"
-                aria-label="Verified resolutions"
+                aria-label="Waiting and resolved cases"
               >
                 <div className="section-heading compact">
                   <h2>
                     <CheckCheck size={15} />
-                    {t("Resolved", "المحلولة")}
-                    <Badge variant="secondary">{resolved.length}</Badge>
+                    {t("Case queue", "قائمة الحالات")}
                   </h2>
                   <CollapsibleTrigger asChild>
                     <Button
@@ -733,15 +743,62 @@ export function OperationsPage() {
                     </Button>
                   </CollapsibleTrigger>
                 </div>
+                <div
+                  className="queue-tabs"
+                  role="tablist"
+                  aria-label={t("Case queue scope", "نطاق قائمة الحالات")}
+                >
+                  <button
+                    role="tab"
+                    id="waiting-tab"
+                    aria-selected={queueTab === "waiting"}
+                    aria-controls="case-queue-panel"
+                    onClick={() => setQueueTab("waiting")}
+                  >
+                    {t("Waiting", "المنتظرة")} <span>{waiting.length}</span>
+                  </button>
+                  <button
+                    role="tab"
+                    id="resolved-tab"
+                    aria-selected={queueTab === "resolved"}
+                    aria-controls="case-queue-panel"
+                    onClick={() => setQueueTab("resolved")}
+                  >
+                    {t("Resolved", "المحلولة")} <span>{resolved.length}</span>
+                  </button>
+                </div>
                 <p className="resolved-intro">
                   {t(
-                    "Independently verified outcomes",
-                    "نتائج تحققت بشكل مستقل",
+                    queueTab === "resolved"
+                      ? "Independently verified resolutions"
+                      : "Operational work, evidence and decisions pending",
+                    queueTab === "resolved"
+                      ? "حلول تحققت بشكل مستقل"
+                      : "بانتظار العمل التشغيلي والأدلة والقرارات",
                   )}
                 </p>
-                <ScrollArea className="resolved-scroll">
+                <ScrollArea
+                  className="resolved-scroll"
+                  id="case-queue-panel"
+                  role="tabpanel"
+                  aria-labelledby={
+                    queueTab === "waiting" ? "waiting-tab" : "resolved-tab"
+                  }
+                >
+                  {!queueEntries.length && (
+                    <p className="resolved-intro">
+                      {t(
+                        queueTab === "waiting"
+                          ? "No waiting cases in the loaded queue."
+                          : "No verified resolutions in the loaded queue.",
+                        queueTab === "waiting"
+                          ? "لا حالات منتظرة في القائمة المحملة."
+                          : "لا حلول متحققة في القائمة المحملة.",
+                      )}
+                    </p>
+                  )}
                   <AnimatePresence initial={false}>
-                    {resolved.map((c) => (
+                    {queueEntries.map((c) => (
                       <motion.div
                         key={c.id}
                         layout
@@ -749,15 +806,33 @@ export function OperationsPage() {
                         animate={{ opacity: 1, x: 0 }}
                       >
                         <Link className="resolved-entry" to={`/cases/${c.id}`}>
-                          <span className="verified-check">
-                            <CheckCheck size={14} />
+                          <span
+                            className={
+                              queueTab === "resolved"
+                                ? "verified-check"
+                                : "waiting-check"
+                            }
+                          >
+                            {queueTab === "resolved" ? (
+                              <CheckCheck size={14} />
+                            ) : (
+                              <Clock3 size={14} />
+                            )}
                           </span>
                           <div>
                             <b dir="ltr">{displayId(c)}</b>
                             <p>{c.issue}</p>
+                            {queueTab === "waiting" && (
+                              <p className="waiting-label">
+                                {t(...waitingLabel(c))}
+                              </p>
+                            )}
                             <small>
                               <Clock3 size={10} />
-                              {timeLabel(c.outcome!.timestamp)} AST
+                              {timeLabel(
+                                c.outcome?.timestamp ?? c.openedAt,
+                              )}{" "}
+                              AST
                             </small>
                           </div>
                           <ArrowRight size={13} />

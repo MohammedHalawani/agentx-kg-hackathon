@@ -323,6 +323,7 @@ function GraphInner({
   filter?: string;
 }) {
   const canvasRef = useRef<HTMLDivElement>(null);
+  const backend = !!c.backend;
   const { t, preferences } = usePreferences();
   const [layout, setLayout] = useState<"force" | "tree">("force");
   const [pathOnly, setPathOnly] = useState(false);
@@ -429,8 +430,7 @@ function GraphInner({
     // Whatever the operator selected (on the map too) or expanded is always drawn, and so are
     // the records a narration message points at (bounded, so a wide query stays readable).
     if (selectedNode) keep.add(selectedNode.id);
-    for (const id of (highlight ?? []).slice(0, 18))
-      if (byId.has(id)) keep.add(id);
+    for (const id of highlight ?? []) if (byId.has(id)) keep.add(id);
     for (const [id, count] of Object.entries(expanded)) {
       const around = (neighbours.get(id) ?? [])
         .map((other) => byId.get(other))
@@ -486,8 +486,9 @@ function GraphInner({
         ? [selectedNode.id, ...(neighbours.get(selectedNode.id) ?? [])]
         : [],
     );
-    const stageKinds =
-      stage === 1
+    const stageKinds = backend
+      ? []
+      : stage === 1
         ? ["facility"]
         : stage === 2
           ? ["observation", "vehicle", "package"]
@@ -500,7 +501,7 @@ function GraphInner({
     // message on screen cites, else the cited evidence path.
     const narrated = new Set(highlight ?? []);
     const lit = selectedNode
-      ? related
+      ? new Set([...related, ...narrated])
       : narrated.size
         ? new Set([
             ...narrated,
@@ -604,6 +605,7 @@ function GraphInner({
     layoutPositions,
     layout,
     stage,
+    backend,
     pathOnly,
     preferences.theme,
     setNodes,
@@ -717,6 +719,18 @@ function GraphInner({
         dir="ltr"
         data-testid="knowledge-graph"
       >
+        {!pool.length && (
+          <p
+            className="workspace-empty-visual"
+            role="status"
+            data-testid="graph-empty-state"
+          >
+            {t(
+              "No source graph records are available for this case.",
+              "لا سجلات رسم مصدر متاحة لهذه الحالة.",
+            )}
+          </p>
+        )}
         <ReactFlow
           nodes={nodes}
           edges={edges}

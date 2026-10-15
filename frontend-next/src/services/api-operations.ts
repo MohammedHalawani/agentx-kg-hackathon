@@ -61,6 +61,9 @@ const PAGE_LIMIT = 100;
 const MAX_QUEUE_PAGES = 10;
 const MAX_AUDIT_PAGES = 30;
 const RESOLVED_DETAILS = 30;
+const DETAIL_BATCH = 24;
+const WAITING_BATCH = 8;
+const DETAIL_CONCURRENCY = 3;
 const OPERATIONAL: Record<string, string> = {
   ON_TIME: "في الموعد",
   NEEDS_ATTENTION: "تحتاج انتباهاً",
@@ -128,6 +131,9 @@ export class ApiOperationsService implements OperationsService {
   private auditSince: string | null = null;
   private started = false;
   private polls = 0;
+  private waitingOffset = 0;
+  private pipelineVersions = new Map<string, number>();
+  private readEpoch = 0;
   private automatic = false;
   private connection: BackendConnection = {
     state: "connecting",
@@ -167,6 +173,7 @@ export class ApiOperationsService implements OperationsService {
       document.addEventListener("visibilitychange", this.onVisible);
   }
   stop() {
+    this.readEpoch += 1;
     this.started = false;
     if (this.timer) clearInterval(this.timer);
     this.timer = null;
@@ -177,6 +184,11 @@ export class ApiOperationsService implements OperationsService {
       if (watcher.retry) clearTimeout(watcher.retry);
       watcher.stream = undefined;
     }
+    for (const watcher of this.activeStreams.values()) {
+      watcher.stream?.close();
+      if (watcher.retry) clearTimeout(watcher.retry);
+    }
+    this.activeStreams.clear();
   }
   private onVisible = () => {
     if (!document.hidden) void this.refresh();
@@ -299,13 +311,39 @@ export class ApiOperationsService implements OperationsService {
     return this.refreshing;
   };
   private async read() {
+    const epoch = this.readEpoch;
     try {
-      const status = await this.client.get<ApiWorkerStatus>("/worker/status");
-      const queue = await this.pages<ApiQueueCase>(
-        "/cases/queue",
-        { scope: "all" },
-        MAX_QUEUE_PAGES,
-      );
+      const [status, activeQueue, resolvedQueue] = await Promise.all([
+        this.client.get<ApiWorkerStatus>("/worker/status"),
+        this.pages<ApiQueueCase>(
+          "/cases/queue",
+          { scope: "active" },
+          MAX_QUEUE_PAGES,
+        ),
+        this.pages<ApiQueueCase>(
+          "/cases/queue",
+          { scope: "resolved" },
+          MAX_QUEUE_PAGES,
+        ),
+      ]);
+      const queue = {
+        items: [
+          ...new Map(
+            [...activeQueue.items, ...resolvedQueue.items].map((row) => [
+              row.case_id,
+              row,
+            ]),
+          ).values(),
+        ],
+        first: {
+          ...activeQueue.first,
+          filtered_total:
+            activeQueue.first.filtered_total +
+            resolvedQueue.first.filtered_total,
+        },
+        truncated: activeQueue.truncated || resolvedQueue.truncated,
+      };
+      if (epoch !== this.readEpoch) return;
       // Origin cities and coordinates come from Explore; re-read occasionally, not every poll.
       if (this.polls % 6 === 0) {
         try {
@@ -324,6 +362,7 @@ export class ApiOperationsService implements OperationsService {
         }
       }
       this.polls += 1;
+      if (epoch !== this.readEpoch) return;
       const present = new Set<string>();
       const stale: string[] = [];
       for (const row of queue.items) {
@@ -333,6 +372,14 @@ export class ApiOperationsService implements OperationsService {
           this.dirty.cases = true;
         }
         const previous = this.cases.get(row.case_id);
+        if (
+          (row.state_version ?? 0) <
+          Math.max(
+            previous?.backend?.stateVersion ?? 0,
+            this.pipelineVersions.get(row.case_id) ?? 0,
+          )
+        )
+          continue;
         const joined = this.explore.get(row.case_id);
         const signature = JSON.stringify([row, joined?.origin_city ?? null]);
         if (previous && this.rowSignature.get(row.case_id) === signature)
@@ -398,7 +445,6 @@ export class ApiOperationsService implements OperationsService {
         .filter((row) => row.workflow_state === "RESOLVED")
         .slice(-RESOLVED_DETAILS)
         .map((row) => row.case_id);
-      const wanted = new Set([...stale, ...this.watchers.keys(), ...resolved]);
       const activeIds =
         worker.activeCases.length > 0
           ? worker.activeCases.map((row) => row.caseId)
@@ -406,18 +452,49 @@ export class ApiOperationsService implements OperationsService {
             ? [worker.activeCaseId]
             : [];
       this.syncActiveStreams(activeIds);
-      await Promise.all([
-        ...[...wanted]
-          .filter(
-            (id) =>
-              !activeIds.includes(id) &&
-              !this.cases.get(id)?.backend?.detailLoaded,
+      // Queue items have no action state. Rotate through a small waiting batch,
+      // including already-loaded rows: ACK/ACCEPT need not change case version.
+      const waiting = activeQueue.items.filter(
+        (row) =>
+          !activeIds.includes(row.case_id) &&
+          !["OPEN", "REOPENED", "INVESTIGATING"].includes(row.workflow_state),
+      );
+      const waitingIds = waiting.length
+        ? Array.from(
+            { length: Math.min(WAITING_BATCH, waiting.length) },
+            (_, n) =>
+              waiting[(this.waitingOffset + n) % waiting.length].case_id,
           )
-          .map((id) => this.loadDetail(id).catch(() => undefined)),
-        ...activeIds.map((id) => this.loadDetail(id, true).catch(() => undefined)),
-      ]);
-      if (this.audit.size) void this.loadAudit();
+        : [];
+      this.waitingOffset = waiting.length
+        ? (this.waitingOffset + WAITING_BATCH) % waiting.length
+        : 0;
+      const wanted = [
+        ...new Set([
+          ...this.watchers.keys(),
+          ...activeIds,
+          ...waitingIds,
+          ...stale,
+          ...resolved.filter(
+            (id) => !this.cases.get(id)?.backend?.detailLoaded,
+          ),
+        ]),
+      ].slice(0, DETAIL_BATCH);
+      let cursor = 0;
+      await Promise.all(
+        Array.from(
+          { length: Math.min(DETAIL_CONCURRENCY, wanted.length) },
+          async () => {
+            while (cursor < wanted.length) {
+              const id = wanted[cursor++];
+              await this.loadDetail(id, true).catch(() => undefined);
+            }
+          },
+        ),
+      );
+      if (epoch === this.readEpoch && this.audit.size) void this.loadAudit();
     } catch (error) {
+      if (epoch !== this.readEpoch) return;
       this.connect({
         state: this.connection.lastSyncAt ? "degraded" : "offline",
         error: message(error),
@@ -427,13 +504,25 @@ export class ApiOperationsService implements OperationsService {
   }
 
   private loadDetail(id: string, force = false): Promise<void> {
+    const epoch = this.readEpoch;
     const running = this.details.get(id);
-    if (running && !force) return running;
+    if (running) return running;
+    if (!force && this.cases.get(id)?.backend?.detailLoaded)
+      return Promise.resolve();
     const load = this.client
       .get<ApiCaseDetail>(`/cases/${encodeURIComponent(id)}`)
       .then((detail) => {
+        if (epoch !== this.readEpoch) return;
         if (detail.case_id !== id) return;
         const base = this.cases.get(id) ?? placeholderCase(id);
+        if (
+          detail.state_version <
+          Math.max(
+            base.backend?.stateVersion ?? 0,
+            this.pipelineVersions.get(id) ?? 0,
+          )
+        )
+          return;
         // An unchanged detail (the worker's case is re-read every poll) changes nothing.
         const signature = JSON.stringify(detail);
         if (
@@ -464,6 +553,7 @@ export class ApiOperationsService implements OperationsService {
         this.commit();
       })
       .catch((error) => {
+        if (epoch !== this.readEpoch) return;
         const base = this.cases.get(id) ?? placeholderCase(id);
         this.put({
           ...base,
@@ -481,6 +571,12 @@ export class ApiOperationsService implements OperationsService {
 
   /** Hold a case open: load its evidence and follow its recorded pipeline events live. */
   watchCase = (id: string) => {
+    const background = this.activeStreams.get(id);
+    if (background) {
+      background.stream?.close();
+      if (background.retry) clearTimeout(background.retry);
+      this.activeStreams.delete(id);
+    }
     const watcher = this.watchers.get(id) ?? { count: 0, attempt: 0 };
     watcher.count += 1;
     this.watchers.set(id, watcher);
@@ -503,7 +599,7 @@ export class ApiOperationsService implements OperationsService {
   private syncActiveStreams(activeIds: string[]) {
     const keep = new Set(activeIds);
     for (const id of [...this.activeStreams.keys()]) {
-      if (keep.has(id) || this.watchers.has(id)) continue;
+      if (keep.has(id) && !this.watchers.has(id)) continue;
       const entry = this.activeStreams.get(id);
       entry?.stream?.close();
       if (entry?.retry) clearTimeout(entry.retry);
@@ -547,20 +643,18 @@ export class ApiOperationsService implements OperationsService {
     }
     watcher.stream = stream;
     const reconnect = () => {
+      if (bucket.get(id) !== watcher || watcher.stream !== stream) return;
       stream.close();
       if (watcher.stream === stream) watcher.stream = undefined;
       const stillWanted =
-        this.started &&
-        (this.watchers.has(id) || this.activeStreams.has(id));
+        this.started && (this.watchers.has(id) || this.activeStreams.has(id));
       if (!stillWanted) return;
       const delay = Math.min(15000, 1000 * 2 ** Math.min(watcher.attempt, 4));
       watcher.attempt += 1;
-      watcher.retry = setTimeout(
-        () => this.followPipeline(id, bucket),
-        delay,
-      );
+      watcher.retry = setTimeout(() => this.followPipeline(id, bucket), delay);
     };
     stream.addEventListener("pipeline", (event) => {
+      if (bucket.get(id) !== watcher || watcher.stream !== stream) return;
       watcher.attempt = 0;
       let state: ApiPipelineState;
       try {
@@ -568,18 +662,40 @@ export class ApiOperationsService implements OperationsService {
       } catch {
         return;
       }
+      if (
+        !state ||
+        !Array.isArray(state.events) ||
+        !Number.isInteger(state.state_version) ||
+        typeof state.workflow_state !== "string" ||
+        typeof state.status !== "string"
+      )
+        return;
+      state.events = state.events.filter(
+        (row) =>
+          row &&
+          Number.isInteger(row.sequence) &&
+          typeof row.stage === "string" &&
+          typeof row.status === "string",
+      );
       const current = this.cases.get(id);
       if (!current) return;
       const changed =
         current.backend?.stateVersion !== state.state_version ||
         current.backend?.workflowState !== state.workflow_state;
-      this.put(applyPipeline(current, state));
+      const next = applyPipeline(current, state);
+      if (next === current) return;
+      this.pipelineVersions.set(
+        id,
+        Math.max(state.state_version, this.pipelineVersions.get(id) ?? 0),
+      );
+      this.put(next);
       this.commit();
       // The stream carries stages only; a state change means new evidence, review or outcome.
       if (changed) void this.loadDetail(id, true).catch(() => undefined);
     });
     // The narrator's messages for the run, as they are stored (de-duplicated by id).
     stream.addEventListener("narration", (event) => {
+      if (bucket.get(id) !== watcher || watcher.stream !== stream) return;
       let message: ApiNarrationEvent;
       try {
         message = JSON.parse(event.data) as ApiNarrationEvent;
@@ -588,6 +704,12 @@ export class ApiOperationsService implements OperationsService {
       }
       const current = this.cases.get(id);
       if (!current || !message?.id) return;
+      if (
+        message.run_id &&
+        current.run?.id &&
+        message.run_id !== current.run.id
+      )
+        return;
       const next = applyNarration(current, message);
       if (next === current) return;
       this.put(next);

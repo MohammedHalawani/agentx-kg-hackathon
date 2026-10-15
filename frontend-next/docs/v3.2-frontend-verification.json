@@ -1,0 +1,234 @@
+{
+  "schema": "suhail-v32-frontend-verification-1",
+  "date": "2026-10-16",
+  "branch": "codex/v3-2-frontend",
+  "worktree": "C:\\Projects\\suhail-v3-2-frontend",
+  "exact_base": "9cf56345cd53998f41ab8d2c2f58a1e74f2b2a4e",
+  "final_commit": "See the completion SHA; this verification report is included in that commit.",
+  "ready_for_frontend_review": true,
+  "merged": false,
+  "pushed": false,
+  "deployed": false,
+  "changed_files": [
+    "frontend-next/docs/v3.2-frontend-audit.md",
+    "frontend-next/docs/v3.2-frontend-handoff.md",
+    "frontend-next/docs/v3.2-frontend-verification.json",
+    "frontend-next/src/api/adapters.ts",
+    "frontend-next/src/api/contracts.ts",
+    "frontend-next/src/components/action-lifecycle.tsx",
+    "frontend-next/src/components/app-shell.tsx",
+    "frontend-next/src/components/case-assessment.tsx",
+    "frontend-next/src/components/investigation-selector.tsx",
+    "frontend-next/src/components/knowledge-graph.tsx",
+    "frontend-next/src/components/next-step.tsx",
+    "frontend-next/src/components/retrieval-activity.tsx",
+    "frontend-next/src/components/route-map.tsx",
+    "frontend-next/src/components/shared.tsx",
+    "frontend-next/src/domain/investigation-workspace.ts",
+    "frontend-next/src/domain/types.ts",
+    "frontend-next/src/main.tsx",
+    "frontend-next/src/pages/investigation.tsx",
+    "frontend-next/src/pages/operations.tsx",
+    "frontend-next/src/services/api-operations.ts",
+    "frontend-next/src/styles/investigation-workspace.css",
+    "frontend-next/tests/e2e-backend/backend-stub.ts",
+    "frontend-next/tests/e2e-backend/connected.spec.ts",
+    "frontend-next/tests/e2e-backend/v32-workspace.spec.ts",
+    "frontend-next/tests/fixtures/v32-action-status.wire.json",
+    "frontend-next/tests/fixtures/v32-actions.ts",
+    "frontend-next/tests/unit/api-service.test.ts",
+    "frontend-next/tests/unit/investigation-workspace.test.ts"
+  ],
+  "tests": {
+    "unit": {
+      "command": "npm test",
+      "passed": 74,
+      "failed": 0,
+      "skipped": 0,
+      "files": 6
+    },
+    "typecheck": {
+      "command": "npm run typecheck",
+      "result": "passed"
+    },
+    "browser": {
+      "command": "npm run test:e2e",
+      "browser": "Chrome",
+      "passed": 28,
+      "failed": 0,
+      "skipped": 0,
+      "scope": "Full existing scripted-backend suite plus seven V3.2 scenarios, including 1440x900 and 1920x1080 desktop density/focus checks; no real database/model calls."
+    },
+    "build": {
+      "result": "passed via Playwright webServer",
+      "advisory": "Existing minified chunks above 500 kB."
+    },
+    "eslint": {
+      "result": "passed",
+      "errors": 0,
+      "warnings": 0,
+      "scope": "16 targeted modified production TS/TSX modules, plus fresh visual-component checks; main.tsx stylesheet import checked by typecheck/build."
+    },
+    "python_backend_suite": "NOT RUN: backend production source unchanged; no new Neo4j/race/model gate claimed."
+  },
+  "contracts": {
+    "base": "suhail-v3-1",
+    "action": "suhail-action-1",
+    "backend_changes": 0,
+    "reads": [
+      "GET /worker/status",
+      "GET /cases/queue?scope=active",
+      "GET /cases/queue?scope=resolved",
+      "GET /cases/{id}",
+      "GET /cases/{id}/events"
+    ],
+    "new_automatic_posts": 0
+  },
+  "desktop": {
+    "primary_viewports": [
+      "1440x900",
+      "1920x1080"
+    ],
+    "resizable_map_kg": true,
+    "focus_controls_verified": true,
+    "dedicated_mobile_experience_added": false
+  },
+  "bounds": {
+    "queue_pages_per_scope": 10,
+    "queue_page_size": 100,
+    "poll_detail_batch": 24,
+    "poll_detail_concurrency": 3,
+    "rotating_waiting_batch": 8,
+    "graph_nodes": 96,
+    "activity_operations_visible": 12,
+    "source_buttons_per_operation": 20,
+    "note": "Selected-case watches and SSE changes may also request per-case deduplicated details; the concurrency bound above covers poll enrichment."
+  },
+  "safety": [
+    "One keyed workspace per selected case; no combined-case map or graph.",
+    "No writes on viewing/selection/subscription; no automatic operational response.",
+    "Closed/stale callbacks and old HTTP details cannot overwrite newer case state; old-run narration is ignored.",
+    "New-run presentation clears previous findings, action, outcome and narration.",
+    "V3.2 case-resolution flag governs green resolution, even when legacy brief text disagrees.",
+    "Retrieval is separate from citation; missing source/geo mappings stay explicit.",
+    "Visible synthetic-data identification and existing authority controls retained."
+  ],
+  "fixture_provenance": {
+    "source": "docs/v3.2/action-status.examples.json",
+    "sha256": "82032ef29dfcb4575712d49a0a27cd623c0a726e46d943ab316fdd241a708894",
+    "actual_backend_trace_count": 7,
+    "runtime_bundle_contains_fixture_markers": false
+  },
+  "protection": {
+    "merges": 0,
+    "pushes": 0,
+    "port_8022_changes": 0,
+    "paid_inference": 0,
+    "database_writes": 0,
+    "backend_unchanged": true,
+    "deployments": 0,
+    "videos": [
+      {
+        "unchanged": true,
+        "path": "C:\\Projects\\demo\\.ui-integration\\showcase-videos\\suhail-video-A-v2.mp4",
+        "sha256": "d756c96697e87ba8c0897fcb92b8cb1e4762d31c47390325550c46f7594b6833"
+      },
+      {
+        "unchanged": true,
+        "path": "C:\\Projects\\demo\\.ui-integration\\showcase-videos\\suhail-video-B-v2.mp4",
+        "sha256": "fde09ee573128b8d1f6ddd828766daae0bbe409999d879d0a870eb0dac7d9072"
+      }
+    ],
+    "frozen_manifest_sha256": "538d9fffe7c23cb9637be959e7c5ac0f83c76b3fab5c67b8e377e071d687e2b6",
+    "date": "2026-10-16",
+    "checkouts": [
+      {
+        "head": "9cf56345cd53998f41ab8d2c2f58a1e74f2b2a4e",
+        "path": "C:/Projects/suhail-v3-integration",
+        "clean": true
+      },
+      {
+        "head": "7287e44ad99c9a8b90aac7543e8218c1302aa31a",
+        "path": "C:/Projects/suhail-v3-1-corrective",
+        "clean": true
+      },
+      {
+        "head": "4cd43045a1db284e83cd5702d63acf7950492492",
+        "path": "C:/Projects/demo",
+        "clean": true
+      }
+    ]
+  },
+  "screenshots": [
+    {
+      "path": "C:\\Projects\\suhail-v3-2-frontend\\artifacts\\v3.2-frontend\\screenshots\\desktop-1440x900.png",
+      "sha256": "6cc6b7c2eebfd60b61c4281a9e85658fd8fa5a4cf30720dd4da2786adf12d7dc",
+      "context": "Actual UI with labelled scripted HTTP fixtures; not live GPT-OSS/Neo4j evidence."
+    },
+    {
+      "path": "C:\\Projects\\suhail-v3-2-frontend\\artifacts\\v3.2-frontend\\screenshots\\desktop-1920x1080.png",
+      "sha256": "a5381704961c58c7203acbdc2cd605aa806084b529559c36b929bb9ea63953d7",
+      "context": "Actual UI with labelled scripted HTTP fixtures; not live GPT-OSS/Neo4j evidence."
+    },
+    {
+      "path": "C:\\Projects\\suhail-v3-2-frontend\\artifacts\\v3.2-frontend\\screenshots\\second-worker-case.png",
+      "sha256": "9a3db0a3f863092d1bd2e551baef4cfdee13bbb9879305d70fd16aa29b1c2463",
+      "context": "Actual UI with labelled scripted HTTP fixtures; not live GPT-OSS/Neo4j evidence."
+    },
+    {
+      "path": "C:\\Projects\\suhail-v3-2-frontend\\artifacts\\v3.2-frontend\\screenshots\\selected-retrieval.png",
+      "sha256": "9d5647f39c56612ca8f8538dc6ed40c028dd82de5dd9847b3a6d65fa0a0478c7",
+      "context": "Actual UI with labelled scripted HTTP fixtures; not live GPT-OSS/Neo4j evidence."
+    },
+    {
+      "path": "C:\\Projects\\suhail-v3-2-frontend\\artifacts\\v3.2-frontend\\screenshots\\verified-resolution.png",
+      "sha256": "7d6930ae70a6d1c426abda73efd0522a646ee2682f43a2a3d1df2ee4ad6afc9c",
+      "context": "Actual UI with labelled scripted HTTP fixtures; not live GPT-OSS/Neo4j evidence."
+    }
+  ],
+  "generated_baseline_screenshots": {
+    "tracked_restored": 16,
+    "untracked_preserved_in_ignored_artifacts": 3
+  },
+  "source_sha256": {
+    "frontend-next/docs/v3.2-frontend-audit.md": "6853e2ceac1992449a172f4bce722ee23b97e4e613ea06032aa706c18f88dff5",
+    "frontend-next/docs/v3.2-frontend-handoff.md": "79ba39d257c0c4eb40e1079dffe2a1ae354f7d2b7808e6af35047399eabfeb59",
+    "frontend-next/src/api/adapters.ts": "804c2bea7485b2df2cacb0afd7528ac97d1f69b898d8082a2418dea77052c2bb",
+    "frontend-next/src/api/contracts.ts": "1e62cdbd6ab69ca8830f7c994c86a984f7b6b4c487c64d4af0a2d7ea48f53b6f",
+    "frontend-next/src/components/action-lifecycle.tsx": "510f1504932a0ccc92fc1a7d2a315a1d825ae074dcbf27dc8281ded7eafed8f0",
+    "frontend-next/src/components/app-shell.tsx": "8ae509a0266bf207bc2c2200fd6975d2ff73366566a01d446a36e5e1b0218bc0",
+    "frontend-next/src/components/case-assessment.tsx": "04686f35df1ec2f06c7b114f832d07909ea65588fa0478c2b4153e9a260ff75f",
+    "frontend-next/src/components/investigation-selector.tsx": "29f2f49212eac3c0ec2b40e833ab58c2bf9f93b1bd9b87f74de998c6b8f24a04",
+    "frontend-next/src/components/knowledge-graph.tsx": "3e9302bef4f0b40dd8cee847d55db06be8f9a6150731c6728c0b31da52dcc840",
+    "frontend-next/src/components/next-step.tsx": "4bf44ef95f9edff81c7c73536df3de46904aa5e54b23c06eb8b5bc73c546d95f",
+    "frontend-next/src/components/retrieval-activity.tsx": "a93159ade498ce9828c6da8e853e562101cba77dfc2b72fd61d4d8e46bd09867",
+    "frontend-next/src/components/route-map.tsx": "942cc827d62ca59935057b0540bbc42fbec98032d8b4c15c1012a10a7c23f811",
+    "frontend-next/src/components/shared.tsx": "c2d2239563a35df5a874ad73781e38e8424f6e1ccaa4689b33f556d155017446",
+    "frontend-next/src/domain/investigation-workspace.ts": "2bb149a4837473728bac1daf0f9c10457167e864bb0979d1032d749197a8a8f4",
+    "frontend-next/src/domain/types.ts": "182140c494fb3aad6a0d0ddf6509a7d64619e7ee995acc3ce984fe5c331052b8",
+    "frontend-next/src/main.tsx": "f3463419d45660cc8357dec71b262ea0dcb1029da004565190baf17577298e16",
+    "frontend-next/src/pages/investigation.tsx": "dd1f8417f4597d420295c2d9da2c2605b11394f387197f0d8aef7dc7d38d3e60",
+    "frontend-next/src/pages/operations.tsx": "40cd3ee024190e53c11a4d5889f32313c799ec30b23bbeb9ba348d995fa6489a",
+    "frontend-next/src/services/api-operations.ts": "6b42c6cf09a70f8285ab3965565d3dc38f1a561831527ee49e567613c6bbe564",
+    "frontend-next/src/styles/investigation-workspace.css": "0660d85c7023afd811eac6696a19f92b98bc75803443289c98a3620f06795a70",
+    "frontend-next/tests/e2e-backend/backend-stub.ts": "78ad1f6d890e823277e37cc66fd940fa2ffcd0d827aba2da0af34fae335526d7",
+    "frontend-next/tests/e2e-backend/connected.spec.ts": "a70efac023e62c51b3924a3cd4b8493c74239203c114ca50d245d2622f4415c8",
+    "frontend-next/tests/e2e-backend/v32-workspace.spec.ts": "e94144b8ad680c457c6f44dc3a93999cc85c5cfea1994a114273e81d3a2c4712",
+    "frontend-next/tests/fixtures/v32-action-status.wire.json": "82032ef29dfcb4575712d49a0a27cd623c0a726e46d943ab316fdd241a708894",
+    "frontend-next/tests/fixtures/v32-actions.ts": "554228c8c9202de8726d12756185907aee0ce29d7a364b60d8e667c570ba9d7a",
+    "frontend-next/tests/unit/api-service.test.ts": "c00b7341e6efe0e80b89ef3e395698872f558bd23da9dcc502e30f1d6f4189a3",
+    "frontend-next/tests/unit/investigation-workspace.test.ts": "e77a959aaacfb6c39f2831fe7fda0a2398e6501bcd225509d516603400cfe5da"
+  },
+  "log_sha256": {
+    "artifacts-v32-browser-final.log": "8a221764f236e8771ba1549fad6985067aec81fe9e1c3af0b16ec7c626aef122",
+    "artifacts-v32-lint-final.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "artifacts-v32-typecheck-final.log": "7e835f4563e62edac23f47b5a90f18b68bd896052cb31a5fcc989147826494c7",
+    "artifacts-v32-unit-final.log": "ebcc37c6d1607998c5ee09333b32818dfb56909b6b604d15ad69ed153582c18f"
+  },
+  "remaining_limits": [
+    "Computed/cross-shipment results without source graph references remain unavailable; stronger lineage needs explicit source-ID mapping.",
+    "Already-served records cropped at the graph bound need frontend expansion; only unserved IDs need a bounded backend lookup.",
+    "SSE identity is established by the case URL and run; optional case_id would strengthen envelope validation.",
+    "Live read-only smoke, independent curated-case storyline QA and final integration signoff remain separate; no paid/model/database gate is claimed."
+  ]
+}

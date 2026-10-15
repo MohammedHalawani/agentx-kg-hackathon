@@ -3,13 +3,19 @@ import { CheckCircle2, ChevronDown, Hourglass, Send } from "lucide-react";
 import type { OperationalCase } from "@/domain/types";
 import { dateTimeLabel } from "@/lib/dates";
 import { usePreferences } from "@/state/preferences";
+import {
+  actionLabel,
+  verifiedResolution,
+  waitingLabel,
+} from "@/domain/investigation-workspace";
 
 /**
  * The case as one assessment: the problem, the finding, the review when it was challenged,
  * the action and the status, in the backend's own sentences (its `brief`, composed by code
  * from stored records). A pending action says who received the request, what is awaited and
  * until when. Confidence, the reviewer's original words, record ids and rule ids are in the
- * details, one click away. Nothing here is written by the browser.
+ * details, one click away. V3.2 operational labels come from its independent lifecycle
+ * axes; the older brief's action/status wording cannot override those facts.
  */
 export function CaseAssessment({
   c,
@@ -22,12 +28,21 @@ export function CaseAssessment({
   const [open, setOpen] = useState(false);
   const brief = c.backend?.brief;
   if (!brief) return null;
+  const lifecycle = c.backend?.actionStatus;
+  const resolved = lifecycle ? verifiedResolution(c) : brief.resolved;
+  const statusLabel = resolved
+    ? ["Verified resolved", "تم التحقق من الحل"]
+    : waitingLabel(c);
+  const currentAction = lifecycle?.actions[0];
   const arabic = preferences.language === "ar";
   const say = (en?: string | null, ar?: string | null) =>
     arabic && ar ? ar : (en ?? "");
   const action = brief.actions?.[0];
   const pending =
-    !!action && !action.outcome && action.status !== "not_delivered";
+    !lifecycle &&
+    !!action &&
+    !action.outcome &&
+    action.status !== "not_delivered";
   // The backend's "action" line already carries the request, its recipient, what is awaited
   // and the deadline; the separate block is only for a brief without that line.
   const hasActionLine = (brief.lines ?? []).some(
@@ -35,12 +50,12 @@ export function CaseAssessment({
   );
   return (
     <div className="case-assessment" data-testid="case-assessment">
-      <div className={`assessment-state ${brief.resolved ? "resolved" : ""}`}>
-        {brief.resolved ? <CheckCircle2 size={13} /> : <Hourglass size={13} />}
-        {say(brief.waiting_label_en, brief.waiting_label_ar) ||
-          (brief.resolved
-            ? t("Resolved and verified", "حُلّت وتم التحقق")
-            : "")}
+      <div className={`assessment-state ${resolved ? "resolved" : ""}`}>
+        {resolved ? <CheckCircle2 size={13} /> : <Hourglass size={13} />}
+        {lifecycle
+          ? t(statusLabel[0], statusLabel[1])
+          : say(brief.waiting_label_en, brief.waiting_label_ar) ||
+            (resolved ? t("Resolved and verified", "حُلّت وتم التحقق") : "")}
       </div>
       <dl>
         {(brief.lines ?? []).map((line) => (
@@ -52,7 +67,18 @@ export function CaseAssessment({
             }
           >
             <dt>{say(line.label_en, line.label_ar)}</dt>
-            <dd>{say(line.text_en, line.text_ar)}</dd>
+            <dd>
+              {lifecycle && line.key === "status"
+                ? t(statusLabel[0], statusLabel[1])
+                : lifecycle && line.key === "action"
+                  ? currentAction
+                    ? t(...actionLabel(currentAction))
+                    : t(
+                        "No operational action is recorded.",
+                        "لا إجراء تشغيلياً مسجلاً.",
+                      )
+                  : say(line.text_en, line.text_ar)}
+            </dd>
           </div>
         ))}
       </dl>
@@ -217,6 +243,8 @@ export function AssessmentAnswers({
     arabic && ar ? ar : (en ?? "");
   const cause = brief.suspected_cause;
   const action = brief.actions?.[0];
+  const lifecycle = c.backend?.actionStatus;
+  const resolved = lifecycle ? verifiedResolution(c) : brief.resolved;
   const next = c.backend?.nextStep;
   const rows: [string, string, React.ReactNode][] = [
     [
@@ -301,8 +329,12 @@ export function AssessmentAnswers({
         "What action was taken or recommended?",
         "ما الإجراء المتخذ أو الموصى به؟",
       ),
-      say(action?.text_en, action?.text_ar) ||
-        say(brief.policy?.text_en, brief.policy?.text_ar),
+      lifecycle
+        ? lifecycle.actions[0]
+          ? t(...actionLabel(lifecycle.actions[0]))
+          : t("No operational action is recorded.", "لا إجراء تشغيلياً مسجلاً.")
+        : say(action?.text_en, action?.text_ar) ||
+          say(brief.policy?.text_en, brief.policy?.text_ar),
     ],
     [
       "next",
@@ -313,12 +345,19 @@ export function AssessmentAnswers({
       "resolved",
       t("Is the shipment issue resolved?", "هل حُلّت مشكلة الشحنة؟"),
       <>
-        <span className={`assessment-tag ${brief.resolved ? "accepted" : ""}`}>
-          {brief.resolved
+        <span className={`assessment-tag ${resolved ? "accepted" : ""}`}>
+          {resolved
             ? t("Yes · independently verified", "نعم · تم التحقق المستقل")
             : t("No · not resolved", "لا · غير محلولة")}
         </span>
-        {say(brief.verification?.text_en, brief.verification?.text_ar)}
+        {lifecycle
+          ? resolved
+            ? t(
+                "Backend-verified case resolution.",
+                "حل الحالة متحقق منه من الخادم.",
+              )
+            : t(...waitingLabel(c))
+          : say(brief.verification?.text_en, brief.verification?.text_ar)}
       </>,
     ],
   ];

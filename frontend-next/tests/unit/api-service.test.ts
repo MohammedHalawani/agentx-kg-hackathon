@@ -21,7 +21,13 @@ import {
   workerStatus,
 } from "../fixtures/backend";
 
-type Call = { method: string; path: string; query: URLSearchParams; body: unknown; token: string | null };
+type Call = {
+  method: string;
+  path: string;
+  query: URLSearchParams;
+  body: unknown;
+  token: string | null;
+};
 type Handler = (call: Call) => unknown;
 class HttpError {
   constructor(
@@ -36,7 +42,14 @@ function backend(overrides: Record<string, Handler> = {}) {
   const routes: Record<string, Handler> = {
     "GET /operations/session": () => session,
     "GET /worker/status": () => workerStatus,
-    "GET /cases/queue": () => page(queueRows),
+    "GET /cases/queue": (call) =>
+      page(
+        queueRows.filter((row) =>
+          call.query.get("scope") === "resolved"
+            ? row.workflow_state === "RESOLVED"
+            : row.workflow_state !== "RESOLVED",
+        ),
+      ),
     "GET /explore": () => page(exploreItems),
     "GET /audit": () => page(auditRows),
     "GET /schema": () => schema,
@@ -57,11 +70,14 @@ function backend(overrides: Record<string, Handler> = {}) {
     calls.push(call);
     const handler = routes[`${call.method} ${call.path}`];
     try {
-      if (!handler) throw new HttpError(404, "Operational case or shipment not found");
-      return new Response(JSON.stringify(handler(call)), { status: 200 });
+      if (!handler)
+        throw new HttpError(404, "Operational case or shipment not found");
+      return new Response(JSON.stringify(await handler(call)), { status: 200 });
     } catch (error) {
       if (error instanceof HttpError)
-        return new Response(JSON.stringify({ detail: error.detail }), { status: error.status });
+        return new Response(JSON.stringify({ detail: error.detail }), {
+          status: error.status,
+        });
       throw error;
     }
   }) as typeof fetch;
@@ -77,7 +93,9 @@ function backend(overrides: Record<string, Handler> = {}) {
       this.closed = true;
     }
     emit(type: string, data: unknown) {
-      this.listeners.get(type)?.({ data: JSON.stringify(data) } as MessageEvent);
+      this.listeners.get(type)?.({
+        data: JSON.stringify(data),
+      } as MessageEvent);
     }
   }
   const streams: Stream[] = [];
@@ -116,11 +134,13 @@ describe("ApiOperationsService reads", () => {
     });
     expect(snapshot.cases.map((c) => c.id)).toEqual([CASE_C, CASE_A, CASE_B]);
     expect(snapshot.automatic).toBe(false);
-    // Only the resolved case's detail was needed: its independently verified outcome.
+    // Resolved outcomes and a bounded waiting set both require authoritative detail.
     expect(find(service, CASE_B).outcome?.successful).toBe(true);
-    expect(find(service, CASE_A).backend?.detailLoaded).toBe(false);
+    expect(find(service, CASE_A).backend?.detailLoaded).toBe(true);
     expect(service.catalog().source).toBe("backend");
-    expect(service.catalog().causes).toEqual([{ value: "DELAYED_SYNC", label: "Delayed sync" }]);
+    expect(service.catalog().causes).toEqual([
+      { value: "DELAYED_SYNC", label: "Delayed sync" },
+    ]);
     expect(service.catalog().cities).toContain("Dammam");
   });
 
@@ -129,24 +149,30 @@ describe("ApiOperationsService reads", () => {
     const { service } = backend({
       "GET /cases/queue": (call) => {
         served += 1;
-        expect(call.query.get("scope")).toBe("all");
+        expect(["active", "resolved"]).toContain(call.query.get("scope"));
         expect(call.query.get("limit")).toBe("100");
         return {
-          ...page([{ ...queueRows[2], case_id: `SYN-CASE-P${served}` }], `cursor-${served}`),
+          ...page(
+            [{ ...queueRows[2], case_id: `SYN-CASE-P${served}` }],
+            `cursor-${served}`,
+          ),
           filtered_total: 5000,
         };
       },
     });
     await service.refresh();
     const queue = service.getSnapshot().connection?.queue;
-    expect(served).toBe(10);
-    expect(queue).toEqual({ total: 5000, loaded: 10, truncated: true });
+    expect(served).toBe(20);
+    expect(queue).toEqual({ total: 10000, loaded: 20, truncated: true });
   });
 
   it("shows nothing rather than stand-in data when the backend is unreachable", async () => {
     const { service } = backend({
       "GET /worker/status": () => {
-        throw new HttpError(503, "The validated V2 operations database is unavailable");
+        throw new HttpError(
+          503,
+          "The validated V2 operations database is unavailable",
+        );
       },
     });
     await service.refresh();
@@ -154,7 +180,9 @@ describe("ApiOperationsService reads", () => {
     expect(snapshot.cases).toEqual([]);
     expect(snapshot.events).toEqual([]);
     expect(snapshot.connection?.state).toBe("offline");
-    expect(snapshot.connection?.error).toMatch(/V2 operations database is unavailable/);
+    expect(snapshot.connection?.error).toMatch(
+      /V2 operations database is unavailable/,
+    );
   });
 
   it("keeps the last read, marked interrupted, when the backend drops out later", async () => {
@@ -186,11 +214,22 @@ describe("ApiOperationsService reads", () => {
     await service.loadAudit();
     const snapshot = service.getSnapshot();
     expect(snapshot.events).toHaveLength(4);
-    expect(snapshot.events.every((event) => event.simulated === false)).toBe(true);
+    expect(snapshot.events.every((event) => event.simulated === false)).toBe(
+      true,
+    );
     expect(snapshot.events[0].id).toBe("SYN-AUD-4");
     expect(snapshot.decisions).toHaveLength(1);
-    expect(snapshot.decisions[0]).toMatchObject({ caseId: CASE_B, verdict: "approved", reason: "" });
-    expect(snapshot.connection?.audit).toMatchObject({ total: 4, loaded: 4, truncated: false, loading: false });
+    expect(snapshot.decisions[0]).toMatchObject({
+      caseId: CASE_B,
+      verdict: "approved",
+      reason: "",
+    });
+    expect(snapshot.connection?.audit).toMatchObject({
+      total: 4,
+      loaded: 4,
+      truncated: false,
+      loading: false,
+    });
   });
 
   it("lists a decision once even though the case detail and the audit ledger both record it", async () => {
@@ -198,7 +237,13 @@ describe("ApiOperationsService reads", () => {
       [`GET /cases/${CASE_B}`]: () => ({
         ...detailB(),
         // The same approval as the audit record, on the dataset clock.
-        decisions: [{ decision: "approve", occurred_at: "2026-09-03T13:00:00+00:00", actor_id: "SYN-OPERATOR-LOCAL" }],
+        decisions: [
+          {
+            decision: "approve",
+            occurred_at: "2026-09-03T13:00:00+00:00",
+            actor_id: "SYN-OPERATOR-LOCAL",
+          },
+        ],
       }),
     });
     await service.refresh();
@@ -212,7 +257,11 @@ describe("ApiOperationsService reads", () => {
   it("reads the live schema from the backend", async () => {
     const { service } = backend();
     const result = await service.schema();
-    expect(result.nodes.map((n) => n.label)).toEqual(["Shipment", "Package", "CustodyEvent"]);
+    expect(result.nodes.map((n) => n.label)).toEqual([
+      "Shipment",
+      "Package",
+      "CustodyEvent",
+    ]);
     expect(result.relationships).toHaveLength(2);
   });
 });
@@ -233,7 +282,11 @@ describe("ApiOperationsService operator requests", () => {
     expect(post.token).toBe(session.token);
     const body = post.body as Record<string, unknown>;
     // The backend forbids extra fields and does not store reasons; none is sent.
-    expect(Object.keys(body).sort()).toEqual(["decision", "expected_version", "idempotency_key"]);
+    expect(Object.keys(body).sort()).toEqual([
+      "decision",
+      "expected_version",
+      "idempotency_key",
+    ]);
     expect(body.decision).toBe("approve");
     expect(body.expected_version).toBe(7);
     expect(String(body.idempotency_key)).toMatch(/^approve_[A-Za-z0-9]{8,}$/);
@@ -247,12 +300,15 @@ describe("ApiOperationsService operator requests", () => {
             ...detailA().recommendation!,
             approvable: false,
             approval_rule: "AUTH-20-approval-context-stale",
-            approval_reason: "The basis changed; the case is re-investigated before anything is approved.",
+            approval_reason:
+              "The basis changed; the case is re-investigated before anything is approved.",
           },
         }),
     });
     await world.service.refresh();
-    await expect(world.service.decide(CASE_A, "approved", "")).rejects.toThrow(/basis changed/);
+    await expect(world.service.decide(CASE_A, "approved", "")).rejects.toThrow(
+      /basis changed/,
+    );
     expect(world.posts()).toHaveLength(0);
   });
 
@@ -262,7 +318,10 @@ describe("ApiOperationsService operator requests", () => {
       [`GET /cases/${CASE_A}`]: () => detailA({ state_version: version }),
       [`POST /cases/${CASE_A}/decision`]: () => {
         version = 8;
-        throw new HttpError(409, "Case changed; reload its authoritative version");
+        throw new HttpError(
+          409,
+          "Case changed; reload its authoritative version",
+        );
       },
     });
     await world.service.refresh();
@@ -279,14 +338,27 @@ describe("ApiOperationsService operator requests", () => {
       [`GET /cases/${CASE_A}`]: () =>
         detailA({
           workflow_state: "AWAITING_OUTCOME",
-          executions: [{ receipt_ref: "SYN-RCPT-9", status: "ACKNOWLEDGED", current_cycle: true }],
+          executions: [
+            {
+              receipt_ref: "SYN-RCPT-9",
+              status: "ACKNOWLEDGED",
+              current_cycle: true,
+            },
+          ],
         }),
-      [`POST /cases/${CASE_A}/outcomes`]: () => ({ case_id: CASE_A, workflow_state: "AWAITING_OUTCOME", verified: false }),
+      [`POST /cases/${CASE_A}/outcomes`]: () => ({
+        case_id: CASE_A,
+        workflow_state: "AWAITING_OUTCOME",
+        verified: false,
+      }),
     });
     await world.service.refresh();
     await world.service.verify(CASE_A);
     const body = world.posts()[0].body as Record<string, unknown>;
-    expect(Object.keys(body).sort()).toEqual(["expected_version", "idempotency_key"]);
+    expect(Object.keys(body).sort()).toEqual([
+      "expected_version",
+      "idempotency_key",
+    ]);
     // The verifier found nothing: the case is still awaiting its outcome.
     expect(find(world.service, CASE_A).status).toBe("verifying");
     expect(find(world.service, CASE_A).outcome).toBeUndefined();
@@ -294,8 +366,12 @@ describe("ApiOperationsService operator requests", () => {
 
   it("sends a person's finding with its evidence and lets the backend decide the state", async () => {
     const world = backend({
-      [`GET /cases/${CASE_A}`]: () => detailA({ workflow_state: "HUMAN_REVIEW" }),
-      [`POST /cases/${CASE_A}/human-outcome`]: () => ({ case_id: CASE_A, workflow_state: "HUMAN_REVIEW" }),
+      [`GET /cases/${CASE_A}`]: () =>
+        detailA({ workflow_state: "HUMAN_REVIEW" }),
+      [`POST /cases/${CASE_A}/human-outcome`]: () => ({
+        case_id: CASE_A,
+        workflow_state: "HUMAN_REVIEW",
+      }),
     });
     await world.service.refresh();
     await world.service.recordHumanOutcome(CASE_A, {
@@ -304,7 +380,13 @@ describe("ApiOperationsService operator requests", () => {
       evidenceIds: ["SYN-SHP-000101-CUST-02-01"],
     });
     const body = world.posts()[0].body as Record<string, unknown>;
-    expect(Object.keys(body).sort()).toEqual(["evidence_ids", "expected_version", "finding", "idempotency_key", "outcome_type"]);
+    expect(Object.keys(body).sort()).toEqual([
+      "evidence_ids",
+      "expected_version",
+      "finding",
+      "idempotency_key",
+      "outcome_type",
+    ]);
     expect(body.outcome_type).toBe("parcel_not_found");
     // The browser resolves nothing: the case is whatever the backend then reports.
     expect(find(world.service, CASE_A).status).toBe("human_review");
@@ -321,14 +403,27 @@ describe("ApiOperationsService operator requests", () => {
     let refusals = 1;
     const skipping = backend({
       "POST /simulation/skip": () => {
-        if (refusals-- > 0) throw new HttpError(503, "The V2 graph is unavailable");
-        return { reason: "case_opened", simulated_minutes: 600, cases: [{ case_id: CASE_A }], still_awaiting_evidence: 1 };
+        if (refusals-- > 0)
+          throw new HttpError(503, "The V2 graph is unavailable");
+        return {
+          reason: "case_opened",
+          simulated_minutes: 600,
+          cases: [{ case_id: CASE_A }],
+          still_awaiting_evidence: 1,
+        };
       },
     });
     await skipping.service.refresh();
     skipping.service.skipRetryMs = 1;
-    await expect(skipping.service.skipClock()).resolves.toMatchObject({ reason: "case_opened", simulatedMinutes: 600, caseIds: [CASE_A], stillAwaiting: 1 });
-    expect(skipping.calls.filter((call) => call.path === "/simulation/skip")).toHaveLength(2);
+    await expect(skipping.service.skipClock()).resolves.toMatchObject({
+      reason: "case_opened",
+      simulatedMinutes: 600,
+      caseIds: [CASE_A],
+      stillAwaiting: 1,
+    });
+    expect(
+      skipping.calls.filter((call) => call.path === "/simulation/skip"),
+    ).toHaveLength(2);
     refusals = 2;
     await expect(skipping.service.skipClock()).rejects.toThrow(/unavailable/);
     expect(world.posts()[0].path).toBe("/worker/start");
@@ -345,42 +440,180 @@ describe("ApiOperationsService operator requests", () => {
   it("refuses to start an investigation the lifecycle does not allow, and has no local simulation", async () => {
     const world = backend();
     await world.service.refresh();
-    await expect(world.service.investigate(CASE_A)).rejects.toThrow(/only starts an investigation for a queued case/);
+    await expect(world.service.investigate(CASE_A)).rejects.toThrow(
+      /only starts an investigation for a queued case/,
+    );
     expect(world.posts()).toHaveLength(0);
     const before = world.service.getSnapshot();
     world.service.tick();
     expect(world.service.getSnapshot()).toBe(before);
-    expect(() => world.service.addCase()).toThrow(/opened by the backend monitor/);
+    expect(() => world.service.addCase()).toThrow(
+      /opened by the backend monitor/,
+    );
     expect(() => world.service.reset()).toThrow(/cannot be reset/);
     expect(world.service.answer()).toBe("");
   });
 
   it("says so when the backend answers 200 but did not run the investigation", async () => {
     const world = backend({
-      [`GET /cases/${CASE_C}`]: () => detailA({ case_id: CASE_C, workflow_state: "OPEN", state_version: 1, run: null, pipeline: { events: [], status: "QUEUED" }, recommendation: null }),
-      [`POST /cases/${CASE_C}/investigate`]: () => ({ processed: false, outcome: null }),
+      [`GET /cases/${CASE_C}`]: () =>
+        detailA({
+          case_id: CASE_C,
+          workflow_state: "OPEN",
+          state_version: 1,
+          run: null,
+          pipeline: { events: [], status: "QUEUED" },
+          recommendation: null,
+        }),
+      [`POST /cases/${CASE_C}/investigate`]: () => ({
+        processed: false,
+        outcome: null,
+      }),
     });
     await world.service.refresh();
-    await expect(world.service.investigate(CASE_C)).rejects.toThrow(/did not start this investigation/);
+    await expect(world.service.investigate(CASE_C)).rejects.toThrow(
+      /did not start this investigation/,
+    );
     expect(find(world.service, CASE_C).status).toBe("queued");
   });
 
   it("retries once with a fresh session when the backend restarted and rotated its token", async () => {
     let tokens = 0;
     const world = backend({
-      "GET /operations/session": () => ({ ...session, token: `token-${(tokens += 1)}-abcdefgh` }),
+      "GET /operations/session": () => ({
+        ...session,
+        token: `token-${(tokens += 1)}-abcdefgh`,
+      }),
       [`POST /cases/${CASE_A}/decision`]: (call) => {
-        if (call.token !== "token-2-abcdefgh") throw new HttpError(403, "A local operations session is required");
-        return { case_id: CASE_A, workflow_state: "ESCALATED", state_version: 8 };
+        if (call.token !== "token-2-abcdefgh")
+          throw new HttpError(403, "A local operations session is required");
+        return {
+          case_id: CASE_A,
+          workflow_state: "ESCALATED",
+          state_version: 8,
+        };
       },
     });
     await world.service.refresh();
     await world.service.decide(CASE_A, "escalated", "");
-    expect(world.posts().map((call) => call.token)).toEqual(["token-1-abcdefgh", "token-2-abcdefgh"]);
+    expect(world.posts().map((call) => call.token)).toEqual([
+      "token-1-abcdefgh",
+      "token-2-abcdefgh",
+    ]);
   });
 });
 
 describe("ApiOperationsService live pipeline", () => {
+  it("ignores an older HTTP detail completed after a newer case-specific SSE frame", async () => {
+    const world = backend();
+    await world.service.refresh();
+    const close = world.service.watchCase(CASE_A);
+    const stream = world.streams.at(-1)!;
+    let started = false;
+    let complete: (detail: ReturnType<typeof detailA>) => void = () => {
+      throw new Error("Request not started");
+    };
+    world.routes[`GET /cases/${CASE_A}`] = () =>
+      new Promise<ReturnType<typeof detailA>>((resolve) => {
+        started = true;
+        complete = resolve;
+      });
+    const pending = world.service.refresh();
+    await vi.waitFor(() => expect(started).toBe(true));
+    stream.emit("pipeline", {
+      workflow_state: "INVESTIGATING",
+      state_version: 8,
+      run_id: "SYN-RUN-1",
+      status: "RUNNING",
+      events: [
+        {
+          sequence: 901,
+          stage: "classify",
+          status: "RUNNING",
+          output: { kind: "tool_call", tool: "scans", evidence_ids: [] },
+        },
+      ],
+    });
+    complete(detailA({ as_of: "2026-09-03T12:00:00+00:00" }));
+    await pending;
+    expect(find(world.service, CASE_A).backend?.workflowState).toBe(
+      "INVESTIGATING",
+    );
+    expect(
+      find(world.service, CASE_A).backend?.pipelineEvents?.at(-1)?.sequence,
+    ).toBe(901);
+    expect(world.posts()).toEqual([]);
+    close();
+    world.service.stop();
+  });
+  it("ignores closed-case streams and incomplete frames without changing another case or posting work", async () => {
+    const world = backend();
+    await world.service.refresh();
+    const closeA = world.service.watchCase(CASE_A);
+    const old = world.streams.at(-1)!;
+    closeA();
+    const closeB = world.service.watchCase(CASE_B);
+    const beforeA = find(world.service, CASE_A);
+    const beforeB = find(world.service, CASE_B);
+    old.emit("pipeline", {
+      workflow_state: "RESOLVED",
+      state_version: 999,
+      run_id: "foreign-run",
+      status: "COMPLETE",
+      events: [],
+    });
+    world.streams.at(-1)!.emit("pipeline", { status: "incomplete" });
+    expect(find(world.service, CASE_A)).toBe(beforeA);
+    expect(find(world.service, CASE_B)).toBe(beforeB);
+    world.streams
+      .at(-1)!
+      .emit("narration", {
+        id: "old-run-message",
+        run_id: "SYN-SUPERSEDED-RUN",
+        sequence: 900,
+        stage: "classify",
+        kind: "agent_output",
+        text_en: "An old run's words",
+      });
+    expect(find(world.service, CASE_B)).toBe(beforeB);
+    expect(world.posts()).toEqual([]);
+    closeB();
+    world.service.stop();
+  });
+
+  it("caps and rotates waiting-detail enrichment and limits concurrent HTTP reads", async () => {
+    const rows = Array.from({ length: 60 }, (_, index) => ({
+      ...queueRows[0],
+      case_id: `SYN-WAIT-${index}`,
+    }));
+    let inflight = 0;
+    let maximum = 0;
+    const routes: Record<string, Handler> = {
+      "GET /cases/queue": (call) =>
+        page(call.query.get("scope") === "active" ? rows : []),
+    };
+    for (const row of rows)
+      routes[`GET /cases/${row.case_id}`] = async () => {
+        inflight++;
+        maximum = Math.max(maximum, inflight);
+        await new Promise((resolve) => setTimeout(resolve, 3));
+        inflight--;
+        return detailA({ case_id: row.case_id });
+      };
+    const world = backend(routes);
+    await world.service.refresh();
+    const first = world.calls.filter((call) =>
+      /^\/cases\/SYN-WAIT/.test(call.path),
+    );
+    expect(first).toHaveLength(8);
+    expect(maximum).toBeLessThanOrEqual(3);
+    await world.service.refresh();
+    const all = world.calls.filter((call) =>
+      /^\/cases\/SYN-WAIT/.test(call.path),
+    );
+    expect(new Set(all.map((call) => call.path)).size).toBe(16);
+    expect(world.posts()).toEqual([]);
+  });
   it("loads a watched case's evidence and follows its recorded stages as they stream in", async () => {
     const world = backend({
       [`GET /cases/${CASE_C}`]: () =>
@@ -391,14 +624,22 @@ describe("ApiOperationsService live pipeline", () => {
           run: null,
           pipeline: { events: [], status: "QUEUED" },
           recommendation: null,
-          diagnosis: { ...detailA().diagnosis!, available: false, reason: "not_investigated" },
+          diagnosis: {
+            ...detailA().diagnosis!,
+            available: false,
+            reason: "not_investigated",
+          },
         }),
     });
     await world.service.refresh();
     const unwatch = world.service.watchCase(CASE_C);
-    await vi.waitFor(() => expect(find(world.service, CASE_C).backend?.detailLoaded).toBe(true));
+    await vi.waitFor(() =>
+      expect(find(world.service, CASE_C).backend?.detailLoaded).toBe(true),
+    );
     expect(world.streams).toHaveLength(1);
-    expect(world.streams[0].url).toBe(`http://127.0.0.1:8000/cases/${CASE_C}/events`);
+    expect(world.streams[0].url).toBe(
+      `http://127.0.0.1:8000/cases/${CASE_C}/events`,
+    );
     expect(find(world.service, CASE_C).run).toBeUndefined();
     expect(controls(find(world.service, CASE_C)).investigate).toBe(true);
 
@@ -412,7 +653,9 @@ describe("ApiOperationsService live pipeline", () => {
     const running = find(world.service, CASE_C);
     expect(running.status).toBe("investigating");
     expect(running.run?.stage).toBe(2);
-    expect(running.backend?.stageDetail[2]).toMatch(/not reconciled at session end/);
+    expect(running.backend?.stageDetail[2]).toMatch(
+      /not reconciled at session end/,
+    );
 
     unwatch();
     expect(world.streams[0].closed).toBe(true);
@@ -444,11 +687,15 @@ describe("ApiOperationsService live pipeline", () => {
     await world.service.refresh();
     world.service.watchCase("SYN-CASE-NOPE");
     await vi.waitFor(() =>
-      expect(find(world.service, "SYN-CASE-NOPE").backend?.detailError).toMatch(/not found/),
+      expect(find(world.service, "SYN-CASE-NOPE").backend?.detailError).toMatch(
+        /not found/,
+      ),
     );
     expect(find(world.service, "SYN-CASE-NOPE").evidence).toEqual([]);
     // It never appears as a queue row.
-    expect(world.service.getSnapshot().cases.map((c) => c.id)).not.toContain("SYN-CASE-NOPE");
+    expect(world.service.getSnapshot().cases.map((c) => c.id)).not.toContain(
+      "SYN-CASE-NOPE",
+    );
     expect(world.service.getSnapshot().cases).toHaveLength(3);
   });
 });

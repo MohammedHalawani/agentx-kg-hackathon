@@ -20,6 +20,10 @@ import {
   EmptyDescription,
 } from "@/components/ui/empty";
 import { timeLabel } from "@/lib/dates";
+import {
+  verifiedResolution,
+  waitingLabel,
+} from "@/domain/investigation-workspace";
 
 const arabicStatus: Record<CaseStatus, string> = {
   queued: "في الانتظار",
@@ -41,18 +45,32 @@ export function StatusBadge({
 }) {
   const { t } = usePreferences();
   const workflow = c?.backend ? workflowLabels[c.backend.workflowState] : null;
+  const actionStatus = c?.backend?.actionStatus;
+  const lifecycleLabel =
+    actionStatus &&
+    !["OPEN", "REOPENED", "INVESTIGATING"].includes(c!.backend!.workflowState)
+      ? verifiedResolution(c!)
+        ? ["Verified resolved", "تم التحقق من الحل"]
+        : waitingLabel(c!)
+      : null;
+  const shownStatus =
+    actionStatus && status === "resolved" && !verifiedResolution(c!)
+      ? "needs_evidence"
+      : status;
   return (
-    <Badge variant="outline" className={`status-badge status-${status}`}>
-      {status === "resolved" ? (
+    <Badge variant="outline" className={`status-badge status-${shownStatus}`}>
+      {shownStatus === "resolved" ? (
         <Check size={11} />
       ) : ["investigating", "executing", "verifying"].includes(status) ? (
         <LoaderCircle className="slow-spin" size={11} />
       ) : (
         <span className="status-dot" />
       )}
-      {workflow
-        ? t(workflow[0], workflow[1])
-        : t(statusLabels[status], arabicStatus[status])}
+      {lifecycleLabel
+        ? t(lifecycleLabel[0], lifecycleLabel[1])
+        : workflow
+          ? t(workflow[0], workflow[1])
+          : t(statusLabels[status], arabicStatus[status])}
     </Badge>
   );
 }
@@ -74,7 +92,11 @@ export function PriorityLabel({ priority }: { priority: Priority }) {
 }
 export function CaseLink({ id, label }: { id: string; label?: string }) {
   return (
-    <Link className="case-link" to={`/cases/${id}`} title={label ? id : undefined}>
+    <Link
+      className="case-link"
+      to={`/cases/${id}`}
+      title={label ? id : undefined}
+    >
       {label || id}
       <ArrowUpRight size={12} />
     </Link>

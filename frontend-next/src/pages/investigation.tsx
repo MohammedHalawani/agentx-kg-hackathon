@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Link,
   Navigate,
@@ -65,6 +65,13 @@ import {
   CaseAssessment,
 } from "@/components/case-assessment";
 import { NarrationStrip } from "@/components/narration";
+import { InvestigationSelector } from "@/components/investigation-selector";
+import { RetrievalActivity } from "@/components/retrieval-activity";
+import { ActionLifecycle } from "@/components/action-lifecycle";
+import {
+  evidenceFocus,
+  retrievalEvents,
+} from "@/domain/investigation-workspace";
 import { explainStage, type StageState } from "@/domain/stage-explain";
 import { HumanOutcomeDialog } from "@/components/human-outcome-dialog";
 import {
@@ -90,6 +97,10 @@ function stageTarget(c: OperationalCase, index: number) {
 }
 export function InvestigationPage() {
   const { caseId } = useParams();
+  return <InvestigationWorkspace key={caseId ?? "no-case"} />;
+}
+function InvestigationWorkspace() {
+  const { caseId } = useParams();
   const { key: navigationKey } = useLocation();
   const [params] = useSearchParams();
   const {
@@ -113,6 +124,8 @@ export function InvestigationPage() {
     backend ? null : "warehouse",
   );
   const [relationship, setRelationship] = useState<string | null>(null);
+  const [followRetrieval, setFollowRetrieval] = useState(true);
+  const lastRetrieval = useRef("");
   const [previewStage, setPreviewStage] = useState<number | null>(null);
   // A stored photograph of the selected record, enlarged.
   const [photo, setPhoto] = useState<string | null>(null);
@@ -146,6 +159,29 @@ export function InvestigationPage() {
   const groupRef = useGroupRef();
   const smallCanvas = useMediaQuery("(max-width:767px)");
   const requestedEvidence = params.get("evidence");
+  const latestRetrieval = retrievalEvents(c?.backend?.pipelineEvents).at(-1);
+  useEffect(() => {
+    if (
+      !c ||
+      !followRetrieval ||
+      c.backend?.workflowState !== "INVESTIGATING" ||
+      !latestRetrieval
+    )
+      return;
+    const key = `${c.run?.id}:${latestRetrieval.sequence}`;
+    if (lastRetrieval.current === key) return;
+    lastRetrieval.current = key;
+    const ids = latestRetrieval.output?.evidence_ids ?? [];
+    setNarrated({ id: `retrieval-${latestRetrieval.sequence}`, ids });
+    setSelected(
+      ids.find(
+        (id) =>
+          c.nodes.some((node) => node.id === id) ||
+          c.evidence.some((item) => item.id === id),
+      ) ?? null,
+    );
+    setRelationship(null);
+  }, [c, followRetrieval, latestRetrieval]);
   const evidenceIsValid = !!c?.evidence.some((e) => e.id === requestedEvidence);
   const requestedStage = params.has("stage")
     ? Number(params.get("stage"))
@@ -316,6 +352,16 @@ export function InvestigationPage() {
     (n) => n.id === selected || n.evidenceId === selected,
   );
   const edge = c.relationships.find((e) => e.id === relationship);
+  const focused = evidenceFocus(
+    c,
+    narrated.ids.length
+      ? narrated.ids
+      : selected
+        ? [selected]
+        : relationship
+          ? [relationship]
+          : [],
+  );
   // Lab: one simulated run at a time. Backend: the server decides and refuses if it must.
   const active =
     !backend &&
@@ -340,8 +386,28 @@ export function InvestigationPage() {
     .at(-1);
   const caseEvents = events.filter((e) => e.caseId === c.id);
   const select = (id: string) => {
+    setFollowRetrieval(false);
+    setNarrated({ id: null, ids: [] });
     setSelected(id);
     setRelationship(null);
+  };
+  const focusRetrieved = (ids: string[], key: string) => {
+    setFollowRetrieval(false);
+    const target = evidenceFocus(c, ids);
+    setNarrated({ id: key, ids });
+    setRelationship(null);
+    setSelected(
+      ids.find(
+        (id) =>
+          c.nodes.some((node) => node.id === id) ||
+          c.evidence.some((item) => item.id === id),
+      ) ?? null,
+    );
+    // Missing geographic identifiers deliberately leave the map at its current view.
+    if (!target.mapIds.length)
+      setSelected(
+        ids.find((id) => c.nodes.some((node) => node.id === id)) ?? null,
+      );
   };
   const act = (fn: () => void | Promise<void>) => {
     try {
@@ -630,6 +696,16 @@ export function InvestigationPage() {
           )}
         </div>
       </div>
+      <InvestigationSelector selected={c.id} />
+      {c.backend?.detailError && (
+        <p className="case-refresh-warning" role="status">
+          {t(
+            "Case detail refresh failed; showing the last recorded evidence.",
+            "تعذّر تحديث تفاصيل الحالة؛ تُعرض آخر أدلة مسجلة.",
+          )}{" "}
+          {c.backend.detailError}
+        </p>
+      )}
       <section className="pipeline surface" aria-label="Investigation pipeline">
         <div className="pipeline-meta">
           <b>{t("Investigation pipeline", "مسار التحقيق")}</b>
@@ -1068,12 +1144,22 @@ export function InvestigationPage() {
               </div>
             </>
           )}
-          {c.backend?.detailLoaded && (
-            <EvidenceChronology
+          {c.backend && (
+            <RetrievalActivity
               c={c}
-              selected={selected}
-              onSelect={select}
+              selected={narrated.id}
+              onFocus={focusRetrieved}
+              onEvidence={select}
+              following={followRetrieval}
+              onFollow={() => {
+                lastRetrieval.current = "";
+                setFollowRetrieval((value) => !value);
+              }}
             />
+          )}
+          <ActionLifecycle c={c} onEvidence={select} />
+          {c.backend?.detailLoaded && (
+            <EvidenceChronology c={c} selected={selected} onSelect={select} />
           )}
           {queuedForCapacity && (
             <p className="context-assigned" data-testid="investigation-queued">
@@ -1192,7 +1278,12 @@ export function InvestigationPage() {
           <ResizablePanel id="map" defaultSize="50%" minSize="30%">
             <RouteMap
               c={c}
-              selected={selected}
+              selected={
+                c.evidence.some((item) => item.id === selected)
+                  ? selected
+                  : (focused.mapIds[0] ?? null)
+              }
+              highlight={focused.mapIds}
               onSelect={select}
               stage={stage}
             />
@@ -1208,11 +1299,13 @@ export function InvestigationPage() {
               selected={selected}
               onSelect={select}
               onRelation={(id) => {
+                setFollowRetrieval(false);
+                setNarrated({ id: null, ids: [] });
                 setRelationship(id);
                 setSelected(null);
               }}
               stage={stage}
-              highlight={narrated.ids}
+              highlight={focused.graphIds}
             />
           </ResizablePanel>
         </ResizablePanelGroup>

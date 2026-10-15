@@ -28,7 +28,11 @@ export function NextStep({ c }: { c: OperationalCase }) {
         <ArrowRight size={15} />
         <div>
           <small>{t("NEXT BEST ACTION", "أفضل إجراء تالٍ")}</small>
-          <p>{preferences.language === "ar" ? step.textAr || step.text : step.text}</p>
+          <p>
+            {preferences.language === "ar"
+              ? step.textAr || step.text
+              : step.text}
+          </p>
           {!step.resolved && c.recommendation.available && (
             <span className="next-step-recommended">
               {t("Recommended action on record", "الإجراء الموصى به المسجل")}:{" "}
@@ -101,16 +105,31 @@ export function NextStep({ c }: { c: OperationalCase }) {
                       ? t("approved by an operator", "بموافقة مشغل")
                       : t("automatic under policy", "تلقائي وفق السياسة")}{" "}
                     ·{" "}
-                    {item.status === "ACKNOWLEDGED"
-                      ? t("request delivered", "سُلّم الطلب")
-                      : t("request not delivered", "لم يُسلّم الطلب")}
+                    {item.status === "RESPONSE_REJECTED"
+                      ? t("task rejected", "رُفضت المهمة")
+                      : item.status === "RESPONSE_FAILED"
+                        ? t("operational task failed", "فشلت المهمة التشغيلية")
+                        : item.status === "RESPONSE_EXPIRED"
+                          ? t("response deadline expired", "انتهت مهلة الرد")
+                          : item.status === "ACKNOWLEDGED"
+                            ? t("request delivered", "سُلّم الطلب")
+                            : t("request not delivered", "لم يُسلّم الطلب")}
                     {item.verificationStatus
                       ? ` · ${
                           item.success
                             ? item.exceptionCleared === false
-                              ? t("verified, the exception remains", "تم التحقق، الاستثناء باقٍ")
-                              : t("verified as successful", "تم التحقق من نجاحه")
-                            : t("verified as not successful", "تم التحقق من عدم نجاحه")
+                              ? t(
+                                  "verified, the exception remains",
+                                  "تم التحقق، الاستثناء باقٍ",
+                                )
+                              : t(
+                                  "verified as successful",
+                                  "تم التحقق من نجاحه",
+                                )
+                            : t(
+                                "verified as not successful",
+                                "تم التحقق من عدم نجاحه",
+                              )
                         }${item.reason ? `: ${item.reason}` : ""}`
                       : item.status === "ACKNOWLEDGED"
                         ? ` · ${t("no verified outcome yet", "لا نتيجة متحقق منها بعد")}`

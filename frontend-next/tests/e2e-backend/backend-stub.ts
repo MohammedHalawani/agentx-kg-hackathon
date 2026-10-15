@@ -21,7 +21,11 @@ import {
 import type { ApiCaseDetail, ApiQueueCase } from "../../src/api/contracts";
 
 export interface Stub {
-  posts: { path: string; body: Record<string, unknown>; token: string | null }[];
+  posts: {
+    path: string;
+    body: Record<string, unknown>;
+    token: string | null;
+  }[];
   /** Mutable backend state the handlers serve. */
   state: {
     online: boolean;
@@ -89,8 +93,11 @@ export async function stubBackend(page: Page): Promise<Stub> {
             run_id: "OPS-RUN-A",
             workflow_state: stub.state.detailA.workflow_state,
             answered_at: "2026-09-03T14:05:00+00:00",
-            kind: /original/i.test(body.question) ? "record_answer" : "canopus_answer",
-            answer_en: "The reviewer accepted the finding; the action waits for an operator.",
+            kind: /original/i.test(body.question)
+              ? "record_answer"
+              : "canopus_answer",
+            answer_en:
+              "The reviewer accepted the finding; the action waits for an operator.",
             answer_ar: null,
             evidence_ids: [`${SHIP_A}-CUST-02-01`, "SYN-CMP-1"],
             graph_node_ids: [`${SHIP_A}-CUST-02-01`],
@@ -110,7 +117,11 @@ export async function stubBackend(page: Page): Promise<Stub> {
                 rule_id: "AUTH-19-operator-approved",
                 reason: "The recommendation can be approved by an operator.",
                 label_en: "Approve the recommended action",
-                confirm: { method: "POST", path: `/cases/${CASE_A}/decision`, body: { decision: "approve", expected_version: 1 } },
+                confirm: {
+                  method: "POST",
+                  path: `/cases/${CASE_A}/decision`,
+                  body: { decision: "approve", expected_version: 1 },
+                },
               },
               {
                 type: "reanalyze",
@@ -201,7 +212,17 @@ export async function stubBackend(page: Page): Promise<Stub> {
           simulator: { state: stub.state.clock, speed: 60 },
         });
       }
-      if (path === "/cases/queue") return json(route, pageOf(stub.state.queue));
+      if (path === "/cases/queue")
+        return json(
+          route,
+          pageOf(
+            stub.state.queue.filter((row) =>
+              url.searchParams.get("scope") === "resolved"
+                ? row.workflow_state === "RESOLVED"
+                : row.workflow_state !== "RESOLVED",
+            ),
+          ),
+        );
       if (path === "/explore") return json(route, pageOf(exploreItems));
       if (path === "/audit") return json(route, pageOf(auditRows));
       if (path === "/schema") return json(route, schema);
@@ -228,27 +249,31 @@ export async function stubBackend(page: Page): Promise<Stub> {
       }
       if (path.endsWith("/events")) {
         const caseId = path.split("/")[2];
-        const runId =
-          caseId === CASE_C
-            ? "SYN-RUN-C"
-            : caseId === CASE_A
-              ? "SYN-RUN-1"
-              : "SYN-RUN-1";
         const detail =
           caseId === CASE_C
-            ? { workflow_state: "INVESTIGATING", state_version: 1 }
-            : {
-                workflow_state: stub.state.detailA.workflow_state,
-                state_version: stub.state.detailA.state_version,
-              };
+            ? {
+                workflow_state: "INVESTIGATING",
+                state_version: 1,
+                run: { entity_id: "SYN-RUN-C" },
+                pipeline: {
+                  status: "RUNNING",
+                  events: pipelineEvents.slice(0, 2),
+                },
+              }
+            : caseId === CASE_V3
+              ? stub.state.detailV3
+              : caseId === CASE_B
+                ? detailB()
+                : stub.state.detailA;
         return route.fulfill({
           status: 200,
           contentType: "text/event-stream",
           body: `event: pipeline\ndata: ${JSON.stringify({
-            ...detail,
-            run_id: runId,
-            status: caseId === CASE_A ? "REVIEWED" : "RUNNING",
-            events: caseId === CASE_C ? pipelineEvents.slice(0, 2) : pipelineEvents,
+            workflow_state: detail.workflow_state,
+            state_version: detail.state_version,
+            run_id: detail.run?.entity_id ?? null,
+            status: detail.pipeline?.status ?? "UNKNOWN",
+            events: detail.pipeline?.events ?? [],
           })}\n\n`,
         });
       }

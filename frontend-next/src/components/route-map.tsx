@@ -98,6 +98,7 @@ export function RouteMap({
   stage,
   network = false,
   onFacility,
+  highlight = [],
 }: {
   c: OperationalCase;
   selected: string | null;
@@ -105,13 +106,18 @@ export function RouteMap({
   stage: number;
   network?: boolean;
   onFacility?: (id: string) => void;
+  highlight?: string[];
 }) {
   const { t } = usePreferences();
   const { catalog, backend: fromBackend } = useOperations();
   // Connected build: always the backend, so lab-only branches are removed at build time.
   const backend = !LAB_BUILD || fromBackend;
   // Lab: the fixture network. Backend: facilities located in evidence the backend served.
-  const facilities = catalog.facilities;
+  const facilities = network
+    ? catalog.facilities
+    : catalog.facilities.filter((facility) =>
+        c.nodes.some((node) => node.id === facility.id),
+      );
   const [layers, setLayers] = useState({
     expected: true,
     actual: true,
@@ -123,6 +129,21 @@ export function RouteMap({
   const [errors, setErrors] = useState(0);
   const [fitKey, setFitKey] = useState(0);
   const effectiveBasemap = errors >= 3 ? "schematic" : basemap;
+  const highlightedObservations = c.evidence.filter((item) =>
+    highlight.includes(item.id),
+  );
+  const segmentFocused = (
+    segment: OperationalCase["route"]["vehicleSegments"][number],
+  ) =>
+    highlightedObservations.some(
+      (item) =>
+        item.vehicleId === segment.vehicleId &&
+        (segment.routeRunId
+          ? item.routeRunId === segment.routeRunId
+          : segment.tripId
+            ? item.tripId === segment.tripId
+            : !item.routeRunId && !item.tripId),
+    );
   const activeEvidence = c.backend
     ? (c.backend.stageEvidence[stage] ?? [])
     : stage === 1
@@ -256,30 +277,31 @@ export function RouteMap({
             />
           )}
           {layers.vehicle &&
-            (c.route.vehicleSegments.length
-              ? c.route.vehicleSegments.map((segment, index) => (
-                  <Polyline
-                    key={`${segment.vehicleId}-${index}`}
-                    positions={segment.points}
-                    pathOptions={{
-                      color: "#5a97b9",
-                      weight: 2,
-                      dashArray: "3 7",
-                      opacity: stage === 2 ? 1 : 0.7,
-                    }}
-                  />
-                ))
-              : (
-                  <Polyline
-                    positions={c.route.vehicle}
-                    pathOptions={{
-                      color: "#5a97b9",
-                      weight: 2,
-                      dashArray: "3 7",
-                      opacity: stage === 2 ? 1 : 0.7,
-                    }}
-                  />
-                ))}
+            (c.route.vehicleSegments.length ? (
+              c.route.vehicleSegments.map((segment, index) => (
+                <Polyline
+                  key={`${segment.vehicleId}-${index}`}
+                  className="vehicle-route"
+                  positions={segment.points}
+                  pathOptions={{
+                    color: segmentFocused(segment) ? "#8b6ccb" : "#5a97b9",
+                    weight: segmentFocused(segment) ? 4 : 2,
+                    dashArray: "3 7",
+                    opacity: segmentFocused(segment) || stage === 2 ? 1 : 0.7,
+                  }}
+                />
+              ))
+            ) : (
+              <Polyline
+                positions={c.route.vehicle}
+                pathOptions={{
+                  color: "#5a97b9",
+                  weight: 2,
+                  dashArray: "3 7",
+                  opacity: stage === 2 ? 1 : 0.7,
+                }}
+              />
+            ))}
           {c.evidence
             .filter(
               (e) =>
@@ -299,7 +321,7 @@ export function RouteMap({
                 alt={e.label}
                 title={e.label}
                 icon={L.divIcon({
-                  className: `evidence-marker ${e.confidence} ${selected === e.id ? "selected" : ""} ${activeEvidence.includes(e.id) ? "stage-focus" : ""}`,
+                  className: `evidence-marker ${e.confidence} ${selected === e.id ? "selected" : ""} ${highlight.includes(e.id) || activeEvidence.includes(e.id) ? "stage-focus" : ""}`,
                   html: `<span>${e.kind === "gps" ? "↗" : i + 1}</span>`,
                   iconSize: [28, 28],
                   iconAnchor: [14, 14],
@@ -335,6 +357,18 @@ export function RouteMap({
             />
           )}
         </MapContainer>
+        {!c.evidence.some((item) => item.selectable !== false) && (
+          <p
+            className="workspace-empty-visual"
+            role="status"
+            data-testid="map-empty-state"
+          >
+            {t(
+              "No located source observations are available for this case.",
+              "لا ملاحظات مصدر ذات موقع متاحة لهذه الحالة.",
+            )}
+          </p>
+        )}
         <div className="map-tools">
           <Button
             variant="outline"

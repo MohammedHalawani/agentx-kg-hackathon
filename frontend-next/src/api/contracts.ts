@@ -125,11 +125,7 @@ export interface ApiLayerPoint {
   disposition?: string;
 }
 export type ApiRunStatus =
-  | "QUEUED"
-  | "RUNNING"
-  | "REVIEWED"
-  | "ABORTED"
-  | "FAILED";
+  "QUEUED" | "RUNNING" | "REVIEWED" | "ABORTED" | "FAILED";
 export interface ApiInvestigationFinalResult {
   workflow_state: WorkflowState;
   review_verdict: string | null;
@@ -243,6 +239,8 @@ export interface ApiPipelineEvent {
     purpose?: string;
     round?: number;
     evidence_ids?: string[];
+    computed_ids?: string[];
+    args?: Record<string, unknown>;
     edge_ids?: string[];
     nodes?: number;
     relationships?: number;
@@ -321,6 +319,7 @@ export interface ApiRecommendation {
   approval_context_stale?: boolean;
 }
 export interface ApiExecution {
+  action_lifecycle?: ApiActionLifecycle | null;
   entity_id?: string;
   receipt_ref?: string;
   action_type?: string;
@@ -338,6 +337,8 @@ export interface ApiExecution {
   current_cycle?: boolean;
 }
 export interface ApiOutcome {
+  rule_id?: string;
+  verifier_id?: string;
   outcome_id?: string;
   entity_id?: string;
   invalidated?: boolean;
@@ -389,13 +390,15 @@ export interface ApiActionExplanation extends ApiText {
   deadline_text_en?: string | null;
   deadline_text_ar?: string | null;
   continues_automatically?: boolean;
-  outcome?: (ApiText & {
-    verification_status?: string;
-    success?: boolean | null;
-    outcome_type?: string | null;
-    exception_cleared?: boolean | null;
-    verified_at?: string | null;
-  }) | null;
+  outcome?:
+    | (ApiText & {
+        verification_status?: string;
+        success?: boolean | null;
+        outcome_type?: string | null;
+        exception_cleared?: boolean | null;
+        verified_at?: string | null;
+      })
+    | null;
 }
 /** The case as one assessment, recomputed by the backend from its records on every read. */
 export interface ApiBrief {
@@ -405,14 +408,16 @@ export interface ApiBrief {
   waiting_label_ar?: string | null;
   lines?: ({ key: string; label_en?: string; label_ar?: string } & ApiText)[];
   what_happened?: (ApiText & { opened_at?: string | null }) | null;
-  suspected_cause?: (ApiText & {
-    status?: "accepted" | "hypothesis_not_accepted" | "none" | string;
-    code?: string | null;
-    label_en?: string | null;
-    label_ar?: string | null;
-    confidence?: string | null;
-    investigator_summary?: string | null;
-  }) | null;
+  suspected_cause?:
+    | (ApiText & {
+        status?: "accepted" | "hypothesis_not_accepted" | "none" | string;
+        code?: string | null;
+        label_en?: string | null;
+        label_ar?: string | null;
+        confidence?: string | null;
+        investigator_summary?: string | null;
+      })
+    | null;
   evidence?: {
     id: string;
     kind?: string;
@@ -421,28 +426,34 @@ export interface ApiBrief {
     occurred_at?: string | null;
     in_graph?: boolean;
   }[];
-  review?: (ApiText & {
-    status?: string;
-    reason_summary_en?: string | null;
-    reason_summary_ar?: string | null;
-    reason_original?: string | null;
-    verdict_code?: string | null;
-  }) | null;
-  policy?: (ApiText & {
-    decision?: string;
-    action_type?: string | null;
-    action_label_en?: string | null;
-    action_label_ar?: string | null;
-    rule_id?: string | null;
-    rule_reason?: string | null;
-  }) | null;
+  review?:
+    | (ApiText & {
+        status?: string;
+        reason_summary_en?: string | null;
+        reason_summary_ar?: string | null;
+        reason_original?: string | null;
+        verdict_code?: string | null;
+      })
+    | null;
+  policy?:
+    | (ApiText & {
+        decision?: string;
+        action_type?: string | null;
+        action_label_en?: string | null;
+        action_label_ar?: string | null;
+        rule_id?: string | null;
+        rule_reason?: string | null;
+      })
+    | null;
   actions?: ApiActionExplanation[];
-  verification?: (ApiText & {
-    status?: string;
-    outcome_type?: string | null;
-    verified_at?: string | null;
-    verifier_reason?: string | null;
-  }) | null;
+  verification?:
+    | (ApiText & {
+        status?: string;
+        outcome_type?: string | null;
+        verified_at?: string | null;
+        verifier_reason?: string | null;
+      })
+    | null;
   technical?: {
     workflow_state?: string;
     state_version?: number;
@@ -491,7 +502,11 @@ export interface ApiCanopusAnswer {
     reason?: string | null;
     label_en?: string | null;
     label_ar?: string | null;
-    confirm?: { method?: string; path?: string; body?: Record<string, unknown> } | null;
+    confirm?: {
+      method?: string;
+      path?: string;
+      body?: Record<string, unknown>;
+    } | null;
   }[];
   /** Offers the rules do not allow now; shown only when the operator asks why. */
   unavailable_offers?: {
@@ -570,6 +585,7 @@ export interface ApiNextStep {
   }[];
 }
 export interface ApiCaseDetail {
+  action_status?: ApiActionStatus | null;
   next_step?: ApiNextStep | null;
   narration?: ApiNarration | null;
   brief?: ApiBrief | null;
@@ -592,7 +608,11 @@ export interface ApiCaseDetail {
     result?: ApiRunResult | null;
   } | null;
   /** While a re-investigation is queued: the earlier run, superseded. Never the current run. */
-  previous_run?: { entity_id?: string; recorded_at?: string; superseded?: boolean } | null;
+  previous_run?: {
+    entity_id?: string;
+    recorded_at?: string;
+    superseded?: boolean;
+  } | null;
   evidence: { nodes: ApiEvidenceNode[]; edges: ApiEvidenceEdge[] };
   ledger_graph?: { nodes: ApiEvidenceNode[]; edges: ApiEvidenceEdge[] };
   diagnosis?: ApiDiagnosis;
@@ -643,6 +663,50 @@ export interface ApiCaseDetail {
   route_evidence?: ApiRouteEvidenceV3 | null;
   investigation_status?: ApiInvestigationStatusV3 | null;
 }
+/** Additive suhail-action-1 facts; no frontend transition or outcome inference. */
+export interface ApiActionEvent {
+  id: string;
+  kind: string;
+  occurred_at: string;
+  recorded_at: string;
+  evidence_ids: string[];
+  synthetic: true;
+  source_ref?: string;
+  late?: boolean;
+  rule_id?: string;
+}
+export interface ApiActionLifecycle {
+  version: "suhail-action-1";
+  execution_id: string;
+  action_type: string;
+  revision: number;
+  authorization: string;
+  dispatch: string;
+  acknowledgement: string;
+  acceptance: string;
+  execution: string;
+  verification: string;
+  state: string;
+  operational_label: string;
+  requires_response_events: boolean;
+  resolved?: boolean;
+  created_at: string;
+  dispatched_at?: string;
+  events: ApiActionEvent[];
+  synthetic: true;
+}
+export interface ApiActionStatus {
+  version: "suhail-action-1";
+  resolution:
+    | "VERIFIED_RESOLVED"
+    | "HUMAN_DECISION_REQUIRED"
+    | "UNRESOLVED"
+    | "OPERATIONAL_WORK_PENDING"
+    | "INVESTIGATION_PENDING";
+  human_decision_required: boolean;
+  actions: ApiActionLifecycle[];
+  synthetic: true;
+}
 export interface ApiToolCall {
   round?: number;
   tool: string;
@@ -692,7 +756,11 @@ export interface ApiRunResult {
     rounds?: {
       round: number;
       tool_calls?: ApiToolCall[];
-      citation_validity?: { cited?: number; valid?: number; all_valid?: boolean } | null;
+      citation_validity?: {
+        cited?: number;
+        valid?: number;
+        all_valid?: boolean;
+      } | null;
       fact_checks?: { check: string; passed: boolean; detail?: string }[];
       review?: {
         verdict?: string;

@@ -27,16 +27,17 @@ test("Operations shows the backend queue with real identities and honest labels"
   await expect(page.locator(".environment-badge")).toHaveText("Connected");
   await expect(page.locator(".sidebar-system")).toContainText("Backend connected");
   await expect(page.locator(".operator-button")).toContainText("SYN-OPERATOR-LOCAL");
-  // Demo-facing cleanup: no workspace card, no visible dataset wording, the logo alone.
+  // Preserve the compact logo/workspace layout and identify synthetic data visibly.
   await expect(page.locator(".workspace-selector")).toHaveCount(0);
   await expect(page.locator(".brand-logo .brand-full")).toBeVisible();
   await expect(page.locator(".brand-header")).toHaveText("");
-  await expect(page.locator("body")).not.toContainText(/synthetic/i);
+  await expect(page.getByTestId("synthetic-data-label")).toHaveText("Synthetic data");
   await expect(page.locator(".environment-badge")).toHaveAttribute("data-dataset", "synthetic");
   await expect(page.locator("body")).not.toContainText(LAB_ONLY);
   // Only the independently verified case is in Resolved.
   await page.getByRole("button", { name: "Expand resolved panel" }).click();
-  const resolved = page.getByLabel("Verified resolutions");
+  await page.getByRole("tab", { name: /^Resolved/ }).click();
+  const resolved = page.getByRole("tabpanel");
   await expect(resolved.locator(".resolved-entry")).toHaveCount(1);
   await expect(resolved).toContainText("SYN-SHP-000102");
   // Filters work on the loaded queue; the cause list holds accepted diagnoses only.
@@ -182,8 +183,9 @@ test("Investigation shows recorded evidence, keeps GPS apart from custody, and r
   await page.keyboard.press("Escape");
   await page.goto("/app/operations");
   await page.getByRole("button", { name: "Expand resolved panel" }).click();
+  await page.getByRole("tab", { name: /^Resolved/ }).click();
   await expect(
-    page.getByLabel("Verified resolutions").locator(".resolved-entry"),
+    page.getByRole("tabpanel").locator(".resolved-entry"),
   ).toHaveCount(1);
 });
 

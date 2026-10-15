@@ -498,7 +498,7 @@ function TopBar() {
           </Button>
           <span
             className="environment-badge"
-            // Engineering marker only: the dataset's kind stays recorded without visible wording.
+            // Keep connection status separate from the visible synthetic-data label.
             data-dataset={
               backend && connection?.synthetic ? "synthetic" : undefined
             }
@@ -519,6 +519,14 @@ function TopBar() {
                   : t("Backend offline", "الخادم غير متصل")
               : t("UI lab", "مختبر الواجهة")}
           </span>
+          {(!backend || connection?.synthetic) && (
+            <span
+              className="synthetic-data-label"
+              data-testid="synthetic-data-label"
+            >
+              {t("Synthetic data", "بيانات اصطناعية")}
+            </span>
+          )}
           <Button
             variant="ghost"
             size="icon-sm"
