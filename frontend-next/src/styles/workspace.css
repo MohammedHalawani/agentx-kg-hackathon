@@ -1472,6 +1472,10 @@ a {
   color: var(--border);
   font-style: normal;
 }
+.monitor-overview {
+  flex-wrap: wrap;
+  margin: -4px 0 10px;
+}
 .operations-workbench {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 42px;

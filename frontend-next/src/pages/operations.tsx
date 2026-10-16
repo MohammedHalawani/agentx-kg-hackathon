@@ -28,6 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { OperationsFilters } from "@/components/operations-filters";
+import { MonitorOverview } from "@/components/monitor-overview";
 import {
   defaultQueueFilters,
   caseQueuePage,
@@ -355,6 +356,7 @@ export function OperationsPage() {
           {human.length} {t("need attention", "تتطلب انتباهاً")}
         </span>
       </PageTitle>
+      {backend && <MonitorOverview />}
       <div
         className={`operations-workbench ${resolvedOpen ? "resolved-expanded" : ""}`}
       >
