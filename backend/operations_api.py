@@ -310,6 +310,10 @@ def worker_status():
     status=invoke(runtime.store.status)
     status["workers"]=runtime.workers.status()
     status["database"]=runtime.database
+    # Provider lanes (letters and states, never a key) and the inference budget; why the server stopped Auto, if it did.
+    try:status["provider"]=public_value(runtime.workers.provider_status())
+    except Exception as error:status["provider"]={"available":False,"reason":type(error).__name__}
+    status["auto_stop"]=public_value(runtime.workers.auto_stop()) if hasattr(runtime.workers,"auto_stop") else None
     return status
 
 
@@ -317,6 +321,19 @@ def worker_status():
 def monitor_overview():
     """Shipments monitored, with no active exception, and cases by stage (V3.4). Read-only; no model call."""
     return invoke(get_runtime().store.monitor_overview)
+
+
+@router.post("/worker/provider-lanes/{lane}/enable")
+def enable_provider_lane(lane: str,request: Request):
+    """Put a provider lane that was disabled (a refused key, repeated rate limits) or is cooling down back in service: an
+    operator's decision, audited in the log. 404 for a lane this process does not have."""
+    actor=authority.authorize(request)
+    from operations import provider_gate
+    gate=provider_gate.shared()
+    if lane not in gate.names:raise HTTPException(404,"No such provider lane")
+    was=gate.enable(gate.names.index(lane))
+    log.warning("Provider lane %s enable requested by %s (was out of service: %s)",lane,actor["actor_id"],was)
+    return {"lane":lane,"was_out_of_service":was,"lanes":gate.lanes_snapshot()}
 
 
 @router.get("/simulation/status")

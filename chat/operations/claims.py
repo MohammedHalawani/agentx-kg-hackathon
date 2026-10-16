@@ -1,6 +1,6 @@
 """Ownership of a running investigation: one claim per case, a wall-clock lease, and the test every write passes.
 
-Up to SUHAIL_INVESTIGATION_WORKERS (1 or 2) cases are investigated at once. A case is owned by exactly one claim:
+Up to SUHAIL_INVESTIGATION_WORKERS (1 to 4) cases are investigated at once. A case is owned by exactly one claim:
 
   worker_id       who holds it (an investigation loop, or one operator request)
   claim_id        the unique token of this grant; the run id is derived from it
@@ -36,7 +36,7 @@ log = logging.getLogger("suhail.claims")
 WORKERS_ENV = "SUHAIL_INVESTIGATION_WORKERS"
 LEASE_ENV = "SUHAIL_CLAIM_LEASE_SECONDS"
 HEARTBEAT_ENV = "SUHAIL_CLAIM_HEARTBEAT_SECONDS"
-WORKER_COUNTS = (1, 2)
+WORKER_COUNTS = (1, 2, 3, 4)
 DEFAULT_WORKERS = 1
 DEFAULT_LEASE_SECONDS = 180.0
 LEASE_BOUNDS = (1.0, 3600.0)
@@ -76,7 +76,7 @@ def _number(value, default):
 
 
 def investigation_workers(value=None):
-    """How many cases may be investigated at once: 1 (the default, and the fallback) or 2. Anything else is 1."""
+    """How many cases may be investigated at once: 1 (the default, and the fallback) to 4. Anything else is 1."""
     text = os.environ.get(WORKERS_ENV, "") if value is None else value
     number = _number(text, DEFAULT_WORKERS)
     return int(number) if number in WORKER_COUNTS else DEFAULT_WORKERS

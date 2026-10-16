@@ -508,6 +508,15 @@ export interface BackendConnection {
     concurrency: number;
     processedCount: number;
     lastCaseId: string | null;
+    /** Provider lanes as the backend reports them (absent from a backend without them). */
+    lanes?: { lane: string; state: string; reason: string | null }[];
+    /** Model calls now: which worker is in a call on which lane, and which waits for a lane. */
+    calls?: {
+      inFlight: { workerId: string | null; caseId: string | null; lane: string }[];
+      waiting: { workerId: string | null; caseId: string | null }[];
+    };
+    /** Why the server stopped automatic investigation, when it did. */
+    autoStop?: { reason: string; paused: boolean } | null;
   };
   /** The backend's simulated clock: whether it is advancing, and how fast. */
   clock?: { running: boolean; speed: number };

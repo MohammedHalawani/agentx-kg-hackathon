@@ -32,7 +32,11 @@ import {
   investigationAssignments,
   workerCapacity,
 } from "@/domain/desktop-operations";
-import { stages, type InvestigationStatus } from "@/domain/types";
+import {
+  stages,
+  type BackendConnection,
+  type InvestigationStatus,
+} from "@/domain/types";
 
 const LAB_BUILD = import.meta.env.VITE_SUHAIL_DATA === "lab";
 const PAGE_SIZE = 12;
@@ -43,22 +47,39 @@ function AssignmentTile({
   selected,
   reduced,
   simulated,
+  call,
 }: {
   claim: InvestigationStatus;
   online: boolean;
   selected: boolean;
   reduced: boolean;
   simulated: boolean;
+  /** The backend's model-call report for this worker: in a call on a lane, waiting for a lane, neither (null), or
+   * not reported at all (undefined: an older backend). */
+  call?: { lane: string } | "waiting" | null;
 }) {
   const { t } = usePreferences();
   const { isMobile, setOpenMobile } = useSidebar();
   const [hover, setHover] = useState(false);
   const [focus, setFocus] = useState(false);
   const playing = (hover || focus) && !reduced;
-  const running = assignmentIsRunning(claim, online);
-  const stage = claim.activeStage
-    ? humanize(claim.activeStage)
-    : t("Stage unavailable", "المرحلة غير متاحة");
+  const claimRunning = assignmentIsRunning(claim, online);
+  // With a model-call report, the activity signal means a provider call is really in flight for this worker.
+  const running =
+    call === undefined
+      ? claimRunning
+      : claimRunning && call !== null && call !== "waiting";
+  const callText =
+    call === undefined || call === null || !online
+      ? null
+      : call === "waiting"
+        ? t("waiting for a lane", "بانتظار مسار")
+        : t(`model call · lane ${call.lane}`, `استدعاء نموذج · مسار ${call.lane}`);
+  const stage =
+    (claim.activeStage
+      ? humanize(claim.activeStage)
+      : t("Stage unavailable", "المرحلة غير متاحة")) +
+    (callText ? ` · ${callText}` : "");
   const state = !online
     ? t(
         "Last reported · connection interrupted",
@@ -91,6 +112,15 @@ function AssignmentTile({
           data-testid={`worker-case-${claim.caseId}`}
           className={`worker-tile ${selected ? "selected" : ""}`}
           data-running={running}
+          data-model-call={
+            call === undefined
+              ? undefined
+              : call === null
+                ? "none"
+                : call === "waiting"
+                  ? "waiting"
+                  : call.lane
+          }
           aria-current={selected ? "page" : undefined}
           aria-label={`${identity} · ${claim.shipmentId || claim.caseId} · ${stage} · ${state}`}
           onMouseEnter={() => setHover(true)}
@@ -145,6 +175,89 @@ function AssignmentTile({
   );
 }
 
+/** This worker's model call as the backend reports it (undefined when the backend reports no calls at all). */
+function modelCall(
+  worker: BackendConnection["worker"],
+  claim: InvestigationStatus,
+): { lane: string } | "waiting" | null | undefined {
+  const calls = worker?.calls;
+  if (!calls) return undefined;
+  const mine = (c: { workerId: string | null; caseId: string | null }) =>
+    c.workerId === claim.workerId && c.caseId === claim.caseId;
+  const inFlight = calls.inFlight.find(mine);
+  if (inFlight) return { lane: inFlight.lane };
+  return calls.waiting.some(mine) ? "waiting" : null;
+}
+
+const LANE_STATE: Record<string, [string, string]> = {
+  ready: ["ready", "جاهز"],
+  busy: ["in a call", "في استدعاء"],
+  cooling: ["cooling down after a rate limit", "تهدئة بعد حد المعدل"],
+  disabled: ["out of service", "خارج الخدمة"],
+};
+
+/** One mark per provider lane, in the state the backend reports. Letters only; a key is never shown or known here. */
+function ProviderLanes({
+  lanes,
+  online,
+}: {
+  lanes: { lane: string; state: string; reason: string | null }[];
+  online: boolean;
+}) {
+  const { t } = usePreferences();
+  const inService = lanes.filter((lane) =>
+    ["ready", "busy"].includes(lane.state),
+  ).length;
+  const describe = (lane: { lane: string; state: string; reason: string | null }) => {
+    const [en, ar] = LANE_STATE[lane.state] ?? [lane.state, lane.state];
+    return `${t("Lane", "مسار")} ${lane.lane}: ${t(en, ar)}${lane.reason ? ` (${lane.reason})` : ""}`;
+  };
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <p
+          className="worker-lanes"
+          tabIndex={0}
+          data-testid="provider-lanes"
+          aria-label={`${t("Provider lanes", "مسارات المزوّد")}: ${lanes.map(describe).join("; ")}`}
+        >
+          <span>{t("Lanes", "المسارات")}</span>
+          <span className="worker-lane-marks">
+            {lanes.map((lane) => (
+              <i
+                key={lane.lane}
+                data-lane={lane.lane}
+                data-state={online ? lane.state : "unknown"}
+              >
+                {lane.lane}
+              </i>
+            ))}
+          </span>
+          <b>
+            {inService}/{lanes.length}
+          </b>
+        </p>
+      </TooltipTrigger>
+      <TooltipContent side="right" className="worker-tooltip">
+        {lanes.map((lane) => (
+          <span key={lane.lane}>{describe(lane)}</span>
+        ))}
+        <small>
+          {online
+            ? t(
+                "One provider call at most per lane; lanes are shared by all workers.",
+                "استدعاء واحد للمزوّد كحد أقصى لكل مسار؛ المسارات مشتركة بين جميع العمال.",
+              )
+            : t(
+                "Last reported · connection interrupted",
+                "آخر حالة مسجلة · الاتصال متقطع",
+              )}
+        </small>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 export function WorkingAgents() {
   const {
     connection,
@@ -187,6 +300,11 @@ export function WorkingAgents() {
     ? workerCapacity(worker)
     : Math.max(0, 1 - assignments.length);
   const paused = backend ? worker?.state === "paused" : !automatic;
+  // Why the server itself stopped Auto (budget, run limit), shown only while Auto is paused.
+  const stoppedBy =
+    backend && paused && worker?.autoStop?.paused
+      ? humanize(worker.autoStop.reason)
+      : null;
   const unavailable =
     !online ||
     (backend && (!worker || !["running", "paused"].includes(worker.state)));
@@ -207,6 +325,9 @@ export function WorkingAgents() {
           {backend ? (worker?.concurrency ?? "—") : 1}
         </b>
       </p>
+      {backend && worker?.lanes && worker.lanes.length > 0 && (
+        <ProviderLanes lanes={worker.lanes} online={online} />
+      )}
       <div className="worker-grid">
         <AnimatePresence initial={false}>
           {assignments
@@ -225,6 +346,7 @@ export function WorkingAgents() {
                   selected={selected === claim.caseId}
                   reduced={reduced}
                   simulated={!backend}
+                  call={backend ? modelCall(worker, claim) : undefined}
                 />
               </motion.div>
             ))}
@@ -256,7 +378,9 @@ export function WorkingAgents() {
                 </b>
                 <small>
                   {paused
-                    ? t("Auto paused", "التلقائي متوقف")
+                    ? stoppedBy
+                      ? t("Auto stopped by server", "أوقف الخادم التلقائي")
+                      : t("Auto paused", "التلقائي متوقف")
                     : t("Pool capacity", "سعة المجموعة")}
                 </small>
               </span>
@@ -269,8 +393,8 @@ export function WorkingAgents() {
                   "حالة العمال غير متاحة؛ التكليفات المعروضة هي آخر لقطة مسجلة.",
                 )
               : t(
-                  `${free} unassigned investigation slots${paused ? "; automatic assignment is paused" : ""}.`,
-                  `${free} أماكن تحقيق غير مكلّفة${paused ? "؛ التكليف التلقائي متوقف" : ""}.`,
+                  `${free} unassigned investigation slots${paused ? "; automatic assignment is paused" : ""}${stoppedBy ? ` (server: ${stoppedBy})` : ""}.`,
+                  `${free} أماكن تحقيق غير مكلّفة${paused ? "؛ التكليف التلقائي متوقف" : ""}${stoppedBy ? ` (الخادم: ${stoppedBy})` : ""}.`,
                 )}
           </TooltipContent>
         </Tooltip>

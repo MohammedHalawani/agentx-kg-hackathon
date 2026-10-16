@@ -680,6 +680,54 @@ export const workerStatusDual: ApiWorkerStatus = {
   },
 };
 
+/** V3.4: four workers, four provider lanes (one cooling down), two workers in a model call and one waiting for a lane.
+ * Scripted fixture for UI checks; it is not a live measurement. */
+export const workerStatusQuad: ApiWorkerStatus = {
+  ...workerStatus,
+  worker: {
+    ...workerStatus.worker,
+    state: "running",
+    concurrency: 4,
+    active_count: 4,
+    active_case_id: null,
+    active_shipment_id: null,
+    active_cases: [
+      ...workerStatusDual.worker.active_cases!,
+      ...[3, 4].map((n) => ({
+        ...workerStatusDual.worker.active_cases![1],
+        case_id: `SYN-OPS-CASE-QUAD-${n}`,
+        shipment_id: `SYN-SHP-00011${n}`,
+        worker_id: `investigation-${n}`,
+        claim_id: `SYN-CLAIM-QUAD-${n}`,
+        run_id: `SYN-RUN-QUAD-${n}`,
+        active_stage: n === 3 ? "retrieve" : "extract",
+      })),
+    ],
+  },
+  provider: {
+    available: true,
+    lanes_configured: 4,
+    limit: 4,
+    inflight: 2,
+    waiting: 1,
+    workers: 4,
+    lanes: [
+      { lane: "A", state: "busy", busy: true, disabled: null },
+      { lane: "B", state: "busy", busy: true, disabled: null },
+      { lane: "C", state: "cooling", busy: false, disabled: "RateLimitError", cooling_seconds_left: 42 },
+      { lane: "D", state: "ready", busy: false, disabled: null },
+    ],
+    calls: {
+      in_flight: [
+        { worker_id: "investigation-1", case_id: CASE_A, role: "reviewer", lane: "A" },
+        { worker_id: "investigation-2", case_id: CASE_C, role: "investigator", lane: "B" },
+      ],
+      waiting: [{ worker_id: "investigation-3", case_id: "SYN-OPS-CASE-QUAD-3", role: "investigator" }],
+    },
+  },
+  auto_stop: null,
+};
+
 export const session = {
   token: "test-token-0123456789",
   mode: "synthetic_local_operations",

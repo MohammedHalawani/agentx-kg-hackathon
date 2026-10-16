@@ -117,15 +117,15 @@ class Gated(unittest.TestCase):
 
 
 class SettingTests(unittest.TestCase):
-    def test_the_limit_is_one_by_default_and_only_one_or_two_are_allowed(self):
+    def test_the_limit_is_one_by_default_and_only_one_to_four_are_allowed(self):
         self.assertEqual((provider_gate.MAX_INFLIGHT_ENV, provider_gate.DEFAULT_LIMIT), ("SUHAIL_PROVIDER_MAX_INFLIGHT", 1))
         with mock.patch.dict(os.environ, {}, clear=False):
             os.environ.pop(provider_gate.MAX_INFLIGHT_ENV, None)
             self.assertEqual(ProviderGate().limit, 1)
-            for text, expected in (("1", 1), ("2", 2), ("3", 1), ("0", 1), ("-1", 1), ("many", 1), ("", 1), ("1.5", 1), ("inf", 1)):
+            for text, expected in (("1", 1), ("2", 2), ("3", 3), ("4", 4), ("5", 1), ("0", 1), ("-1", 1), ("many", 1), ("", 1), ("1.5", 1), ("inf", 1)):
                 os.environ[provider_gate.MAX_INFLIGHT_ENV] = text
                 self.assertEqual((provider_gate.max_inflight(), ProviderGate().limit), (expected, expected), text)
-        self.assertEqual((ProviderGate(2).limit, ProviderGate(9).limit), (2, 1))
+        self.assertEqual((ProviderGate(2).limit, ProviderGate(4).limit, ProviderGate(9).limit), (2, 4, 1))
 
 
 class LimitTests(Gated):

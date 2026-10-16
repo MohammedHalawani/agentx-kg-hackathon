@@ -229,7 +229,7 @@ class ShippedSettingsTests(unittest.TestCase):
             self.assertEqual((claims.investigation_workers(), provider_gate.max_inflight(), lease, claims.heartbeat_seconds(lease)),
                              (1, 1, 180.0, 15.0))
         self.assertEqual({claims.WORKERS_ENV, claims.LEASE_ENV, claims.HEARTBEAT_ENV, provider_gate.MAX_INFLIGHT_ENV}, set(SETTINGS))
-        self.assertEqual((claims.WORKER_COUNTS, provider_gate.LIMITS), ((1, 2), (1, 2)))
+        self.assertEqual((claims.WORKER_COUNTS, provider_gate.LIMITS), ((1, 2, 3, 4), (1, 2, 3, 4)))     # V3.4: up to four
 
     def test_env_example_documents_the_four_settings_at_their_defaults(self):
         lines = (ROOT / ".env.example").read_text(encoding="utf-8").splitlines()

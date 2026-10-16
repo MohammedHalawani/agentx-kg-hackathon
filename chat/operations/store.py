@@ -366,7 +366,7 @@ class OperationsStore:
         self.stage_flush_seconds = None
         self.stage_timer = threading.Timer
         self.demo_shipments = demo_shipments()   # None, or the only shipments the monitor may open cases for
-        # Investigation claims (operations.claims): how many cases may be investigated at once (1 or 2;
+        # Investigation claims (operations.claims): how many cases may be investigated at once (1 to 4;
         # SUHAIL_INVESTIGATION_WORKERS), a claim's wall-clock lease and how often its owner renews it (None:
         # SUHAIL_CLAIM_LEASE_SECONDS and SUHAIL_CLAIM_HEARTBEAT_SECONDS, default 180 s and 15 s), the wall clock (tests
         # give their own) and whether each claim renews itself on a thread (tests renew by hand).
@@ -601,6 +601,22 @@ class OperationsStore:
             if component == "worker": self.process_one(manual=True)
             else: self.tick(step=True)
         return self.status()
+
+    def halt_auto(self, reason):
+        """Pause automatic investigation from inside the server (operations.workers: a budget that cannot pay for another
+        investigation, or a bounded test's run limit). Only while no claim is live: no running investigation is taken
+        from its worker for this, unlike an operator's pause. Returns whether Auto was paused now."""
+        def halt(tx):
+            c = self._control(tx, lock=True)
+            if c["worker_state"] != "running" or self._live_claims(tx, self._wall()):
+                return False
+            c["worker_state"] = "paused"
+            self._put(tx, "OpsControl", c, update=True)
+            return True
+        paused = self._execute(halt, write=True)
+        if paused:
+            log.warning("Automatic investigation paused by the server (%s)", reason)
+        return paused
 
     SKIP_STEP_MINUTES = 30      # The clock moves in steps of thirty simulated minutes while skipping (it can stop up to that late).
     SKIP_MAX_HOURS = 168

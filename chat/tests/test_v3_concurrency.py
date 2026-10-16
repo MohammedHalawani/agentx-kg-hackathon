@@ -158,11 +158,11 @@ class Base(unittest.TestCase):
 
 
 class SettingsTests(unittest.TestCase):
-    def test_one_worker_is_the_default_and_only_one_or_two_are_allowed(self):
+    def test_one_worker_is_the_default_and_only_one_to_four_are_allowed(self):
         with mock.patch.dict(os.environ, {}, clear=False):
             os.environ.pop(claims.WORKERS_ENV, None)
             self.assertEqual(claims.investigation_workers(), 1)
-            for text, expected in (("1", 1), ("2", 2), ("3", 1), ("0", 1), ("-2", 1), ("two", 1), ("", 1), ("2.5", 1), ("nan", 1)):
+            for text, expected in (("1", 1), ("2", 2), ("3", 3), ("4", 4), ("5", 1), ("0", 1), ("-2", 1), ("two", 1), ("", 1), ("2.5", 1), ("nan", 1)):
                 os.environ[claims.WORKERS_ENV] = text
                 self.assertEqual(claims.investigation_workers(), expected, text)
 
