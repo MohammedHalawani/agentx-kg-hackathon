@@ -137,12 +137,18 @@ def model(lane: int = 0) -> ChatLiteLLM:
     Built once, under a lock: two investigations that start together get the same client, never two. The client holds
     configuration only; each call's messages, parameters and callbacks are its own.
 
-    lane: the provider gate's lane (operations.provider_gate). Lane 0 uses config.LLM_API_KEY, lane 1 config.LLM_API_KEY2;
-    everything else about the two clients is identical."""
+    lane: the provider lane (operations.provider_gate), by letter (A to D) or by its place among the configured lanes
+    (0 is lane A). Each lane's client uses that lane's key; everything else about the clients is identical."""
+    name = lane if isinstance(lane, str) else _lane_name(lane)
     with _model_lock:
-        if lane not in _clients:
-            _clients[lane] = _build_model(lane)
-        return _clients[lane]
+        if name not in _clients:
+            _clients[name] = _build_model(name)
+        return _clients[name]
+
+
+def _lane_name(index: int) -> str:
+    lanes = provider_gate.provider_lanes()
+    return lanes[index] if 0 <= index < len(lanes) else lanes[0]
 
 
 _clients = {}
@@ -153,13 +159,13 @@ def _clear_clients():
         _clients.clear()
 
 
-def lane_key(lane: int):
-    """The provider key of a lane. Lane 1 exists only with a second, distinct key; anything else is lane 0's key."""
-    second = getattr(config, "LLM_API_KEY2", None)
-    return second if lane == 1 and second and second != config.LLM_API_KEY else config.LLM_API_KEY
+def lane_key(lane):
+    """The provider key of a lane, by letter or by its place among the configured lanes (distinct keys only: a place
+    with no distinct key of its own is lane A's key)."""
+    return provider_gate.lane_key(lane if isinstance(lane, str) else _lane_name(lane))
 
 
-def _build_model(lane: int = 0) -> ChatLiteLLM:
+def _build_model(lane="A") -> ChatLiteLLM:
     from operations.inference_safety import output_limit
     return ChatLiteLLM(
         model=config.LLM_MODEL,
@@ -230,8 +236,13 @@ def invoke(messages, *, deadline: float | None = None, client=None, entry: str =
 
     The slot is a lane bound to one provider key (operations.provider_gate); the call uses that lane's own client.
     lane: only that lane (a per-key check); the product leaves it None. A provider answer that forbids the key
-    (authentication, permission, rate/plan limit) takes the lane out of service; the call is not re-sent elsewhere."""
-    from operations.inference_safety import InferenceLedger, SafetyRefused
+    (authentication, permission, rate/plan limit) takes the lane out of service or cools it down; the call is not
+    re-sent elsewhere.
+
+    Budget (operations.inference_safety): the input size and the aggregate budget are checked before a lane is taken,
+    only lanes whose own budget can pay are asked for, and the call is reserved ON ITS LANE before it is dispatched, so
+    a process that dies mid-call has already charged the right key."""
+    from operations.inference_safety import InferenceLedger, SafetyRefused, input_bound
     # One deadline begins before budget reservation/admission. HTTP execution receives
     # only what remains; it cannot spend a second full timeout after waiting.
     until = time.monotonic() + (call_timeout() if deadline is None else deadline)
@@ -240,7 +251,29 @@ def invoke(messages, *, deadline: float | None = None, client=None, entry: str =
     if not labels.get("role"):
         # The investigation path makes the investigator's turns through invoke and its review through ask_json.
         labels["role"] = ("investigator" if entry == "invoke" else "reviewer") if labels.get("run_id") else entry
-    reservation = ledger.reserve(messages, labels, until)
+    if input_bound(messages) > ledger.policy.max_input_bytes:
+        raise SafetyRefused("Input exceeds the configured conservative token bound")
+    gate = provider_gate.shared()
+    names = tuple(getattr(gate, "names", provider_gate.LANE_NAMES[:getattr(gate, "limit", 1)]))
+    lanes = None
+    if callable(getattr(type(ledger), "affordable", None)):     # the real ledger (a test may stand in a double)
+        wanted = list(names) if lane is None else list(names[lane:lane + 1])
+        affordable = set(ledger.affordable(messages, wanted, until))
+        lanes = [i for i, name in enumerate(names) if name in affordable]
+        if not lanes:
+            raise SafetyRefused("Per-lane inference call/token/cost reservation refused on every lane")
+    try:
+        permit = gate.acquire(max(0, until - time.monotonic()), cancel=cancel, labels=labels, lane=lane,
+                              **({} if lanes is None else {"lanes": lanes}))
+    except provider_gate.CapacityUnavailable as error:
+        raise ProviderCapacityTimeout(f"no provider slot for the call ({error.reason})") from None
+    lane = getattr(permit, "lane", 0)
+    lane_name = getattr(permit, "name", None) or provider_gate.LANE_NAMES[lane]
+    try:
+        reservation = ledger.reserve(messages, labels, until, lane=lane_name)
+    except BaseException:
+        permit.release("not_started")
+        raise
     def not_dispatched():
         try:
             ledger.finish(reservation,dispatched=False,until=until)
@@ -248,24 +281,17 @@ def invoke(messages, *, deadline: float | None = None, client=None, entry: str =
             # The conservative reservation remains charged. Cleanup cannot add a
             # second wait or strand a provider slot when no request was dispatched.
             log.warning("Undispatched inference reservation retained; budget reconciliation required")
-    try:
-        permit = provider_gate.shared().acquire(max(0, until - time.monotonic()), cancel=cancel, labels=labels, lane=lane)
-    except provider_gate.CapacityUnavailable as error:
-        not_dispatched()
-        raise ProviderCapacityTimeout(f"no provider slot for the call ({error.reason})") from None
     if time.monotonic() >= until or (cancel is not None and cancel.is_set()):
         try:
             not_dispatched()
         finally:
             permit.release("not_started")
         raise ProviderCapacityTimeout("no time or claim remains for inference")
-    lane = getattr(permit, "lane", 0)
-    lane_name = provider_gate.LANE_NAMES[lane]
     try:
-        # The shared client of lane 0 (what a caller such as translation passes explicitly) means "the shared model":
+        # The shared client of lane A (what a caller such as translation passes explicitly) means "the shared model":
         # it is replaced by the shared client of the lane this call was given. Any other client is used as given.
-        default = client is None or client is _clients.get(0)
-        chat = (model(lane) if lane else model()) if default else client
+        default = client is None or client is _clients.get("A")
+        chat = (model(lane_name) if lane_name != "A" else model()) if default else client
     except BaseException:
         try:
             not_dispatched()
@@ -293,8 +319,8 @@ def invoke(messages, *, deadline: float | None = None, client=None, entry: str =
                                               max_tokens=ledger.policy.max_output_tokens)
         except BaseException as error:        # delivered to the caller below, on its own thread
             outcome["error"], result = error, type(error).__name__
-            if result in provider_gate.LANE_FAULTS and hasattr(getattr(permit, "gate", None), "disable"):
-                permit.gate.disable(lane, result)
+            if result in provider_gate.LANE_FAULTS and hasattr(getattr(permit, "gate", None), "fault"):
+                permit.gate.fault(lane, result)
         finally:
             if outcome.get("sent"):
                 transport.info("provider transport return request=%s lane=%s outcome=%s at=%s mono=%.3f", request_id, lane_name,

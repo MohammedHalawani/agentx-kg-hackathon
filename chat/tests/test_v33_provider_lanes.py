@@ -115,7 +115,7 @@ class SharedLimitTests(unittest.TestCase):
         self.assertEqual(self.shared_limit("2", KEY_A, KEY_A), 1)      # the same account twice is still one lane
         self.assertEqual(self.shared_limit("2", None, None), 1)
         self.assertEqual(self.shared_limit("1", KEY_A, KEY_B), 1)      # a second key never raises the limit by itself
-        self.assertEqual(self.shared_limit("3", KEY_A, KEY_B), 1)      # only 1 and 2 exist
+        self.assertEqual(self.shared_limit("3", KEY_A, KEY_B), 2)      # three asked for, two distinct keys: two (V3.4)
         with mock.patch.dict(os.environ, {provider_gate.LANE_B_ENV: "off"}):
             self.assertEqual(self.shared_limit("2", KEY_A, KEY_B), 1)  # lane B switched off: one lane, as before
 

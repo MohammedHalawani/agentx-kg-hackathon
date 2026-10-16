@@ -38,9 +38,12 @@ LLM_API_KEY = (
     or os.getenv("OPENAI_API_KEY")
     or os.getenv("OLLAMA_API_KEY")
 )
-# A second provider key (another account) opens a second provider lane: operations.provider_gate then allows one call
-# in flight per key, so SUHAIL_PROVIDER_MAX_INFLIGHT=2 takes effect only with two distinct keys. Never logged.
+# Up to three more provider keys (other accounts) open more provider lanes, A to D in this order: operations.provider_gate
+# allows one call in flight per DISTINCT key, so SUHAIL_PROVIDER_MAX_INFLIGHT=N takes effect only with N distinct keys
+# (a key given twice is one lane). Never logged.
 LLM_API_KEY2 = os.getenv("LLM_API_KEY2") or None
+LLM_API_KEY3 = os.getenv("LLM_API_KEY3") or None
+LLM_API_KEY4 = os.getenv("LLM_API_KEY4") or None
 LLM_TIMEOUT_SECONDS = float(os.getenv("LLM_TIMEOUT_SECONDS", "120"))
 LLM_API_BASE = os.getenv("LLM_API_BASE") or (
     "https://ollama.com/v1" if LLM_MODEL.startswith("openai/gpt-oss:") else None
