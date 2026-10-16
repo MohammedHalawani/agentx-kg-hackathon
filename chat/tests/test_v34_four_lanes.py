@@ -560,7 +560,8 @@ class FourWorkerStoreTests(Base):
         self.assertEqual((two["peak"], four["peak"]), (2, 4))
         self.assertTrue(all(count > 0 for count in four["by_worker"].values()), four)
         self.assertEqual((two["cases_run_twice"], four["cases_run_twice"]), (0, 0))
-        self.assertLess(four["seconds"], two["seconds"])
+        # No timing claim: in this in-memory ledger one writer at a time dominates, so wall time says nothing about a
+        # provider. Speed is measured only by the live comparison.
 
 
 class AutoStopTests(Base):

@@ -223,8 +223,10 @@ class ProviderGate:
         return self.disabled[i] is None and not self._cool(i)
 
     def _free(self, lanes):
-        """A lane this caller may take now (the first free lane in service among `lanes`), else None."""
-        return next((i for i in lanes if not self.busy[i] and self._in_service(i)), None)
+        """A lane this caller may take now, else None: of the free lanes in service among `lanes`, the one that has
+        carried the fewest calls (the first on a tie), so the calls spread over every key instead of piling onto lane A."""
+        free = [i for i in lanes if not self.busy[i] and self._in_service(i)]
+        return min(free, key=lambda i: (self.lane_granted[i], i)) if free else None
 
     def _lanes(self, lane, lanes):
         if lane is not None:

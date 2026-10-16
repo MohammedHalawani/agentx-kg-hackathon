@@ -313,7 +313,7 @@ def worker_status():
     # Provider lanes (letters and states, never a key) and the inference budget; why the server stopped Auto, if it did.
     try:status["provider"]=public_value(runtime.workers.provider_status())
     except Exception as error:status["provider"]={"available":False,"reason":type(error).__name__}
-    status["auto_stop"]=public_value(runtime.workers.auto_stop())
+    status["auto_stop"]=public_value(runtime.workers.auto_stop()) if hasattr(runtime.workers,"auto_stop") else None
     return status
 
 

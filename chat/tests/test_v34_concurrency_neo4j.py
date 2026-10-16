@@ -37,12 +37,12 @@ class FourClientRaceTests(unittest.TestCase):
     tearDownClass = base.RaceTests.__dict__["tearDownClass"]
     client, fresh, rows, race = base.RaceTests.client, base.RaceTests.fresh, base.RaceTests.rows, base.RaceTests.race
 
-    def clients(self, count, **options):
+    def group(self, count, **options):
         first, opened, options = self.fresh(options.pop("cases"), **options)
         return [first, *[self.client(**options) for _ in range(count - 1)]], opened, options
 
     def test_four_clients_claim_four_different_cases_and_investigate_them_together(self):
-        clients, opened, options = self.clients(4, cases=4, capacity=4)
+        clients, opened, options = self.group(4, cases=4, capacity=4)
         clients[0].store.control("worker", "start")
         together, release = threading.Barrier(4), threading.Event()
         entered = [threading.Event() for _ in clients]
@@ -69,7 +69,7 @@ class FourClientRaceTests(unittest.TestCase):
         self.assertEqual(observer.store.status()["worker"]["active_count"], 0)
 
     def test_four_clients_racing_for_one_case_grant_it_exactly_once(self):
-        clients, opened, options = self.clients(4, cases=ROUNDS, capacity=4)
+        clients, opened, options = self.group(4, cases=ROUNDS, capacity=4)
         for case_id in opened:
             results = self.race({name: (lambda c=c, name=name: c.store.process_one(case_id=case_id, worker_id=name))
                                  for c, name in zip(clients, WORKERS)})
@@ -83,7 +83,7 @@ class FourClientRaceTests(unittest.TestCase):
         self.assertEqual(clients[0].store.status()["worker"]["active_count"], 0)
 
     def test_with_three_places_four_racing_clients_never_hold_more_than_three(self):
-        clients, opened, options = self.clients(4, cases=ROUNDS * 2, capacity=3)
+        clients, opened, options = self.group(4, cases=ROUNDS * 2, capacity=3)
         inside, peak, lock = [0], [0], threading.Lock()
 
         def counted(client):
@@ -150,7 +150,7 @@ class FourClientRaceTests(unittest.TestCase):
 
     def test_a_pause_cancels_four_running_investigations_and_each_case_is_then_taken_once(self):
         from operations import claims
-        clients, opened, options = self.clients(4, cases=4, capacity=4)
+        clients, opened, options = self.group(4, cases=4, capacity=4)
         clients[0].store.control("worker", "start")
         together, release = threading.Barrier(4), threading.Event()
         entered = [threading.Event() for _ in clients]
@@ -184,7 +184,7 @@ class FourClientRaceTests(unittest.TestCase):
         self.assertEqual({r["claim_epoch"] for r in finished}, {3})                         # grant, revoke, grant
 
     def test_a_round_s_finished_cases_are_never_claimed_again_and_the_next_round_takes_the_next_cases(self):
-        clients, opened, options = self.clients(4, cases=8, capacity=4)
+        clients, opened, options = self.group(4, cases=8, capacity=4)
         oldest = sorted(self.rows(clients[0], "OpsCase"), key=lambda c: (str(c["opened_at"]), c["entity_id"]))
         first_round = self.race({name: (lambda c=c, name=name: c.store.process_one(manual=True, worker_id=name))
                                  for c, name in zip(clients, WORKERS)})
