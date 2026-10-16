@@ -112,9 +112,20 @@ before it refuses 300 with HTTP 422 until it is restarted.
 | `model_call_cap` | the per-case model-call cap was reached before a valid conclusion |
 | `turn_budget_exhausted` | the investigator used every turn of the round (it kept calling tools, or never produced a usable reply) without a valid conclusion. Error text: `turn budget exhausted without a valid conclusion`. Until this change it was reported as `invalid_model_output`; the split applies with or without the demo options |
 | `invalid_model_output` | a conclusion (or a review verdict) that was still invalid after its corrective retry (and its repair, when that option is on) |
+| `context_exhausted` | V3.4.1: the role could not stay within `SUHAIL_MAX_INPUT_BYTES` even after older tool results were compacted and a conclude-only turn was offered. No oversized request was sent. Error text starts `context limit`. The investigator's result carries `partial_investigation` (every evidence id it retrieved, its last hypotheses marked as not a diagnosis, the reviewer's points) |
 
-All four route the same way as before: `authority.rule_id` `AUTH-02-model-degraded`, `workflow_state` `HUMAN_REVIEW`,
-no conclusion substituted.
+The first four route the same way as before: `authority.rule_id` `AUTH-02-model-degraded`, `workflow_state` `HUMAN_REVIEW`,
+no conclusion substituted. `context_exhausted` alone (no other degraded role) routes to `HUMAN_REVIEW` under
+`AUTH-28-context-exhausted` ("Input limit reached ..."), and the review stage's `reason_code` is
+`INVESTIGATOR_CONTEXT_EXHAUSTED` instead of `INVESTIGATOR_UNAVAILABLE`.
+
+V3.4.1 input limit (always on; `operations/context_budget.py`): every investigator and reviewer request is measured before
+it uses a model call, exactly as the dispatcher measures it, and nothing changes while it fits. When it would not fit,
+older tool results are replaced by a digest (each evidence id with its kind, scope and times, computed results with their
+values, the tool and its arguments; labelled `COMPACTED`); evidence a review or a conclusion marked as contradicting is
+never shortened, and the full records stay in `investigation_log.evidence_index`. When that is not enough the
+investigator gets conclude-only turns (`context_conclude_only: true`, a `context_limit_conclude_only` RUNNING event).
+What was done is recorded as `context_management` on the investigation and on `investigation_log`.
 
 `degraded[]` has one more kind, which is not a failed model role:
 

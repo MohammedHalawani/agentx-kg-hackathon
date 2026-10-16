@@ -135,7 +135,7 @@ closure checks are untouched (`tests/test_material_reinvestigation.py`, `tests/t
 
 | Field | Meaning |
 | --- | --- |
-| `mode` | `gpt-oss` for a valid conclusion; else `model_unavailable`, `invalid_model_output`, `model_call_cap` or `turn_budget_exhausted`. |
+| `mode` | `gpt-oss` for a valid conclusion; else `model_unavailable`, `invalid_model_output`, `model_call_cap`, `turn_budget_exhausted` or `context_exhausted` (V3.4.1; see `docs/api/demo-lifecycle.md`). |
 | `forced_final_turn` | `true` when the round used the forced final turn (`SUHAIL_FORCED_CONCLUSION=1`; see `docs/api/demo-lifecycle.md`). Absent otherwise. Also on `investigation_log` and `investigation_log.rounds[].investigator`, and on case detail's `diagnosis`. |
 | `degraded` | `true` when no valid conclusion was reached. Then `primary_cause` is `null` and `hypotheses` is empty. |
 | `primary_cause` | A cause code of the catalogue, or `INSUFFICIENT_EVIDENCE`. (`UNKNOWN` from the model is stored as `INSUFFICIENT_EVIDENCE`.) |
