@@ -22,6 +22,10 @@ import os
 from operations import latency
 from operations.agents import BLAME, CAUSES, GPS_DELIVERY, VERDICTS
 from operations.authority import ACTIONS, EVIDENCE_GATHERING
+from operations.context_budget import (CONTEXT_ERROR, CONTEXT_EXHAUSTED, HEADROOM_BYTES, ContextLedger, fit_review_packet,
+                                       limit as context_limit, request_bytes, text_bytes)
+from operations.context_budget import log as context_log
+from operations.inference_safety import ContextLimitExceeded
 
 MAX_TOOL_CALLS = 10          # per investigation round
 MAX_TURNS = 14               # model turns per investigation round
@@ -61,6 +65,18 @@ FORCED_MESSAGE = ("No more tool calls are possible. Reply with action conclude n
                   "retrieved, or conclude INSUFFICIENT_EVIDENCE and name what is missing and the next step. Either is a valid answer.")
 TURN_BUDGET_ERROR = "turn budget exhausted without a valid conclusion"
 TURN_BUDGET_KIND = "turn_budget_exhausted"
+# V3.4.1: the conversation has no room for another tool result, even after older results were compacted. The investigator is
+# asked to conclude from what it has (always on: an oversized request can never be sent, so the alternative is no conclusion
+# at all). The message names no cause and adds no evidence; the conclusion goes through the same validator, reviewer and
+# authority. If no valid conclusion follows, or the conclude-only request itself cannot fit, the investigation ends as
+# context_exhausted with everything it gathered attached for a person (never "model unavailable").
+CONTEXT_FINAL_MESSAGE = ("The conversation has reached its input limit, so no more tool calls are possible. Reply with action "
+                         "conclude now: conclude from the evidence you have already retrieved (every id you were given is still "
+                         "citable, including those in shortened results), or conclude INSUFFICIENT_EVIDENCE and name what is "
+                         "missing and the next step. Either is a valid answer.")
+CONTEXT_EVENT_MESSAGE = "input limit reached; the investigator is asked to conclude from the evidence already retrieved"
+CONTEXT_SUMMARY = ("The investigation stopped at its input limit before a valid conclusion; the evidence it gathered is attached "
+                   "for a person. No AI diagnosis was produced.")
 RESERVED_FOR_REVIEW = 1      # the investigator always leaves one call for the independent review
 ABSTENTION = "INSUFFICIENT_EVIDENCE"
 CAUSE_CHOICES = (*CAUSES, "UNKNOWN")   # UNKNOWN is accepted as an older spelling of INSUFFICIENT_EVIDENCE
@@ -307,6 +323,12 @@ class CallBudget:
         self.by_role[role] = self.by_role.get(role, 0) + 1
         return True
 
+    def give_back(self, role):
+        """Return a call that was counted but never dispatched (the dispatcher refused it before sending)."""
+        if self.by_role.get(role):
+            self.used -= 1
+            self.by_role[role] -= 1
+
     def snapshot(self):
         return {"model_call_cap": self.cap, "model_calls_used": self.used, "model_calls_by_role": dict(self.by_role),
                 "cap_reached": self.refused > 0, "calls_refused_by_cap": self.refused}
@@ -323,6 +345,8 @@ class Session:
         self.reviews = []           # earlier review results (verdict, feedback, unsupported claims)
         self.turns = []             # every model call's timing (operations.latency.turn_record); measurement only
         self.forced_final_turn = False  # SUHAIL_FORCED_CONCLUSION: a round of this case used its forced final turn
+        self.conclusions = []       # every valid conclusion of this investigation, in order (the current hypotheses are the last)
+        self.context = ContextLedger(context_limit())   # what was done to stay within the input limit (V3.4.1)
 
 
 class CallCapReached(RuntimeError):
@@ -330,11 +354,14 @@ class CallCapReached(RuntimeError):
 
 
 def failure_mode(error):
-    """How a model role failed: the provider call itself, the model-call cap, the investigator's turn budget, or output
-    that never passed validation."""
+    """How a model role failed: the provider call itself, the model-call cap, the investigator's turn budget, the input
+    limit (context_exhausted: the request could not be made to fit, so it was never sent), or output that never passed
+    validation."""
     text = str(error or "")
     if text.startswith("model-call cap"):
         return "model_call_cap"
+    if text.startswith("context limit"):
+        return CONTEXT_EXHAUSTED
     if text.startswith("turn budget exhausted"):
         return TURN_BUDGET_KIND
     return "model_unavailable" if text.startswith("model call failed") else "invalid_model_output"
@@ -456,6 +483,27 @@ def revision_message(review, feedback, remaining):
             f"a cause, conclude INSUFFICIENT_EVIDENCE with what is missing and the next step. Model turns available: {remaining}.")
 
 
+def context_event(session=None):
+    """What the input-limit conclude-only turn reports: that it is happening and the calls used so far. Nothing about the case."""
+    return {"kind": "context_limit_conclude_only", "role": "investigator", "message": CONTEXT_EVENT_MESSAGE,
+            **({"model_calls": session.budget.snapshot()} if session is not None else {})}
+
+
+def partial_handoff(session, tools):
+    """What a person receives when the investigation stopped at its input limit: everything it gathered, and its last
+    hypotheses only as what they are (a conclusion the reviewer sent back is not a diagnosis)."""
+    last = session.conclusions[-1] if session.conclusions else None
+    review = session.reviews[-1] if session.reviews else None
+    return {"reason": "input_limit", "tool_steps": len(session.steps), "retrieved_evidence_ids": sorted(tools.retrieved),
+            "computed_ids": sorted(k for k in getattr(tools, "computed", {}) if k in tools.retrieved),
+            "last_hypotheses": (last or {}).get("hypotheses") or [], "last_primary_cause": (last or {}).get("primary_cause"),
+            "last_hypotheses_status": ("sent back by the independent reviewer; not a diagnosis" if last and review else
+                                       "none concluded" if not last else "not reviewed; not a diagnosis"),
+            "reviewer_points": ({k: review.get(k) for k in ("verdict", "feedback", "unsupported_claims", "unaddressed_contradictions")}
+                                if review else None),
+            "next_step": "A person reviews the evidence gathered so far; no action runs automatically."}
+
+
 def investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, review=None, prefetch=None,
                 on_repair=None, repair=None, on_forced=None, forced=None):
     """Run one investigation round of the bounded tool loop. Returns a result dict; never raises for model failures.
@@ -465,14 +513,22 @@ def investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, 
     repair: one extra attempt after a conclusion that is still invalid after its retry (None reads
     SUHAIL_INVALID_OUTPUT_REPAIR); on_repair(event) is told when that attempt is about to be made.
     forced: one final conclude-only turn when the turn budget is exhausted (None reads SUHAIL_FORCED_CONCLUSION);
-    on_forced(event) is told when that turn is about to be made."""
+    on_forced(event) is told when that turn, or the input-limit conclude-only turn, is about to be made.
+
+    Input limit (V3.4.1, operations.context_budget): every request is measured before it uses a model call, exactly as
+    the dispatcher measures it. Nothing changes while it fits. When it would not, older tool results are compacted (ids,
+    kinds, scopes, times and computed values kept); when that is not enough, the investigator gets conclude-only turns. A request that still cannot fit is never sent: the round ends as context_exhausted with the
+    evidence gathered so far attached (partial_investigation)."""
     turn = turn or model_turn
     repair = repair_enabled() if repair is None else bool(repair)
     forced = forced_enabled() if forced is None else bool(forced)
     forcing, limit = False, MAX_TURNS
+    closing = False   # conclude-only because the input limit leaves no room for another tool result
     repairing, repaired = False, 0
     session = session or Session()
     budget = session.budget
+    ctx = session.context
+    bound = ctx.bound
     revising = session.messages is not None
     batch = tool_batch()
     if not revising:
@@ -501,14 +557,33 @@ def investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, 
         messages.append({"role": "assistant", "content": json.dumps({"action": "call", **prefetched} if batch <= 1 else
                                                                     {"action": "call", "calls": [prefetched]}, ensure_ascii=False)})
         messages.append({"role": "user", "content": f"TOOL RESULT {PREFETCH_TOOL}: {result['result']}"})
+        ctx.note_result(len(messages) - 1, step)
 
     def reject(text):
         errors.append({"turn": turns, "error": text})
         return text
 
+    def conclude_only(why, size):
+        # The input limit leaves no room for another tool result: conclude-only turns (one, its corrective retry and, where
+        # the option is on and unused, one repair). Earlier rejections are not repeated.
+        nonlocal closing, limit, problem, repairing, provider_failures, invalid_conclusions
+        closing, limit = True, turns + ATTEMPTS_PER_TURN + (1 if repair and not repaired else 0)
+        problem, repairing, provider_failures, invalid_conclusions = None, False, 0, 0
+        ctx.conclude_only = {"round": round_number, "turn": turns + 1, "why": why, "request_bytes": size,
+                             "tool_calls_made": len(session.steps), "compacted_results": len(ctx.compactions)}
+        context_log.info("context limit: conclude-only turn (%s) round=%s request_bytes=%s bound=%s", why, round_number, size, bound)
+        if on_forced:
+            on_forced(context_event(session))
+
+    def exhausted(why, size):
+        ctx.exhausted = {"round": round_number, "turn": turns, "why": why, "request_bytes": size, "bound": bound}
+        context_log.warning("context limit: investigation stopped round=%s (%s) request_bytes=%s bound=%s; evidence gathered so "
+                            "far handed to a person", round_number, why, size, bound)
+        return CONTEXT_ERROR
+
     while True:
         if turns >= limit:
-            if forced and not forcing and budget.remaining > RESERVED_FOR_REVIEW:
+            if forced and not forcing and not closing and budget.remaining > RESERVED_FOR_REVIEW:
                 # The forced final turn: the same conversation and only FORCED_MESSAGE. Earlier rejections are not repeated.
                 # Room for that turn, its one corrective retry and, where the option is on and unused, one repair.
                 forcing, limit = True, turns + ATTEMPTS_PER_TURN + (1 if repair and not repaired else 0)
@@ -517,14 +592,10 @@ def investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, 
                 if on_forced:
                     on_forced(forced_event(session))
                 continue
-            error = TURN_BUDGET_ERROR
+            error = exhausted("no valid conclusion in the conclude-only turns", ctx.max_request) if closing else TURN_BUDGET_ERROR
             break
-        if not budget.take("investigator", reserve=RESERVED_FOR_REVIEW):
-            # During the forced final turn's retry the cap only ends what the exhausted turn budget started.
-            error = TURN_BUDGET_ERROR if forcing else "model-call cap reached before a valid conclusion"
-            break
-        turns += 1
-        last = budget.remaining <= RESERVED_FOR_REVIEW or turns >= MAX_TURNS
+        # Whether this turn may still call tools: as the turn count and the call budget will stand once it is taken.
+        last = budget.remaining - 1 <= RESERVED_FOR_REVIEW or turns + 1 >= MAX_TURNS
         notes = []
         if problem and repairing:
             repairing = False
@@ -534,15 +605,58 @@ def investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, 
             notes.append(f"Your previous reply was rejected: {problem}. Reply with one corrected JSON object.")
         if forcing:
             notes.append(FORCED_MESSAGE)
+        elif closing:
+            notes.append(CONTEXT_FINAL_MESSAGE)
         elif last or made() >= MAX_TOOL_CALLS:
             notes.append("No further tool calls are possible: reply with action conclude now. If the evidence does not establish a cause, "
                          "conclude INSUFFICIENT_EVIDENCE and name what is missing and the next step.")
         sent = messages + [{"role": "user", "content": " ".join(notes)}] if notes else messages
+        if bound is not None:
+            size = request_bytes(sent)
+            if size > bound:
+                # The request would be refused. Shorten older tool results (oldest first, leaving room for about one more
+                # result); if that is not enough, conclude-only, where the latest turn's results may be shortened too.
+                extra = size - request_bytes(messages)
+                ctx.compact(session, tools, bound - extra - HEADROOM_BYTES)
+                if request_bytes(messages) + extra > bound and not (closing or forcing or last):
+                    conclude_only("the conversation does not fit after compacting older tool results", size)
+                    continue
+                if request_bytes(messages) + extra > bound:
+                    ctx.compact(session, tools, bound - extra, latest_too=True)
+                sent = messages + [{"role": "user", "content": " ".join(notes)}] if notes else messages
+                size = request_bytes(sent)
+            if size > bound:
+                # Never sent: an oversized request would be refused, and sending it again changes nothing.
+                error = exhausted("the conclude-only request does not fit", size)
+                break
+            ctx.max_request = max(ctx.max_request, size)
+        if not budget.take("investigator", reserve=RESERVED_FOR_REVIEW):
+            # During the forced final turn's retry the cap only ends what the exhausted turn budget started.
+            error = TURN_BUDGET_ERROR if forcing else "model-call cap reached before a valid conclusion"
+            break
+        turns += 1
         latency.take_usage()
         latency.take_reply()
         started = latency.now()
         try:
             out = turn(sent)
+        except ContextLimitExceeded as exc:
+            # The dispatcher refused the request before sending it (its measure disagreed with ours). Not a provider failure,
+            # not charged, and never re-sent as it was: shorten what can be shortened and conclude, or stop.
+            budget.give_back("investigator")
+            session.turns.append(latency.turn_record("investigator", round_number, latency.now() - started, "context_refused",
+                                                     prompt_chars=sum(len(m["content"]) for m in sent)))
+            ctx.refused.append({"round": round_number, "turn": turns, "request_bytes": exc.size, "bound": exc.limit})
+            reject("context limit: request refused before dispatch")
+            saved = 0
+            if exc.size and exc.limit:
+                saved = ctx.compact(session, tools, request_bytes(messages) - (exc.size - exc.limit) - 4096, latest_too=True)
+            if not saved or len(ctx.refused) > 2:
+                error = exhausted("the dispatcher refused the request and nothing more could be shortened", exc.size)
+                break
+            if not closing:
+                conclude_only("the dispatcher refused the request", exc.size)
+            continue
         except Exception as exc:  # Transport/provider failure: type only.
             session.turns.append(latency.turn_record("investigator", round_number, latency.now() - started, "provider_failure",
                                                      prompt_chars=sum(len(m["content"]) for m in sent)))
@@ -573,12 +687,12 @@ def investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, 
             if unknown is not False:
                 problem = reject(f"unknown tool {_sanitize(unknown, 60)}")
                 continue
-            if made() >= MAX_TOOL_CALLS or last:
+            if made() >= MAX_TOOL_CALLS or last or closing or forcing:
                 problem = reject("tool budget exhausted; conclude now with what you have")
                 continue
             problem = None
             room = min(batch, MAX_TOOL_CALLS - made())
-            ran, results = [], []
+            ran, results, ran_steps = [], [], []
             for c in requested[:room]:
                 purpose = _sanitize(c.get("purpose"), 160)
                 if BLAME.search(purpose) or GPS_DELIVERY.search(purpose):
@@ -590,6 +704,7 @@ def investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, 
                         "model_seconds": session.turns[-1]["seconds"], "tool_seconds": tools.calls[-1].get("seconds")}
                 steps.append(step)
                 session.steps.append(step)
+                ran_steps.append(step)
                 if on_step:
                     on_step(step)
                 ran.append({"tool": c["tool"], "args": c.get("args"), "purpose": c.get("purpose")})
@@ -599,7 +714,9 @@ def investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, 
             messages.append({"role": "assistant", "content": json.dumps(reply, ensure_ascii=False)})
             if len(requested) > room:
                 results[-1] += f" NOTE: only the first {room} of your {len(requested)} calls ran (per-reply or tool-call limit)."
-            messages.extend({"role": "user", "content": text} for text in results)
+            for text, step in zip(results, ran_steps):
+                messages.append({"role": "user", "content": text})
+                ctx.note_result(len(messages) - 1, step)
             continue
         problem = validate_conclusion(out, tools.retrieved)
         if problem:
@@ -613,26 +730,37 @@ def investigate(tools, *, turn=None, on_step=None, feedback=None, session=None, 
                     if on_repair:
                         on_repair(repair_event("investigator", problem, session))
                     continue
-                # A forced final turn that is still invalid ends as the exhausted turn budget it came from.
-                error = TURN_BUDGET_ERROR if forcing else problem
+                # A forced final turn that is still invalid ends as the exhausted turn budget it came from; a conclude-only
+                # turn at the input limit ends as the exhausted context it came from.
+                error = (TURN_BUDGET_ERROR if forcing else
+                         exhausted("no valid conclusion in the conclude-only turns", ctx.max_request) if closing else problem)
                 break
             continue
         conclusion = _clean_conclusion(out)
+        session.conclusions.append(conclusion)
         messages.append({"role": "assistant", "content": json.dumps({"action": "conclude", **conclusion}, ensure_ascii=False)})
+        record = ctx.record()
         return {"mode": "gpt-oss", "degraded": False, "steps": list(session.steps), "round_steps": steps,
                 "retrieved_evidence_ids": sorted(tools.retrieved), "validation_error": None, "validation_errors": errors,
                 "model_calls": budget.snapshot(), **({"invalid_output_repairs": repaired} if repaired else {}),
-                **({FORCED_KIND: True} if forcing else {}), **conclusion}
+                **({FORCED_KIND: True} if forcing else {}), **({"context_conclude_only": True} if closing else {}),
+                **({"context_management": record} if record else {}), **conclusion}
     # A provider failure is "model_unavailable"; the cap is "model_call_cap"; a model that kept calling tools or never
-    # concluded validly within the round's turns is "turn_budget_exhausted"; a conclusion with schema, citation, blame or GPS
+    # concluded validly within the round's turns is "turn_budget_exhausted"; an investigation that could not stay within its
+    # input limit is "context_exhausted" (nothing oversized was sent); a conclusion with schema, citation, blame or GPS
     # violations that survived the corrective retry is "invalid_model_output". No diagnosis is substituted in any of them.
-    return {"mode": failure_mode(error), "degraded": True, "steps": list(session.steps), "round_steps": steps,
+    mode = failure_mode(error)
+    record = ctx.record()
+    return {"mode": mode, "degraded": True, "steps": list(session.steps), "round_steps": steps,
             "retrieved_evidence_ids": sorted(tools.retrieved), "validation_error": error, "validation_errors": errors,
             "model_calls": budget.snapshot(), **({"invalid_output_repairs": repaired} if repaired else {}),
-            **({FORCED_KIND: True} if forcing else {}),
+            **({FORCED_KIND: True} if forcing else {}), **({"context_conclude_only": True} if closing else {}),
+            **({"context_management": record} if record else {}),
+            **({"partial_investigation": partial_handoff(session, tools)} if mode == CONTEXT_EXHAUSTED else {}),
             "hypotheses": [], "primary_cause": None, "confidence": None, "missing_evidence": [],
             "next_evidence_step": "", "recommended_action": None, "requires_physical_check": True,
-            "summary": "Investigation could not reach a valid conclusion; no AI diagnosis was produced."}
+            "summary": CONTEXT_SUMMARY if mode == CONTEXT_EXHAUSTED else
+                       "Investigation could not reach a valid conclusion; no AI diagnosis was produced."}
 
 
 REVIEWER_SYSTEM = """You are Suhail's independent reviewer for a synthetic logistics operation. You did not run the
@@ -696,6 +824,22 @@ def review(conclusion, records, checks, symptoms, *, ask=None, context=None, ses
     packet = {"case_symptoms": symptoms, "investigator_conclusion": {k: conclusion.get(k) for k in CONCLUSION_FIELDS if k in conclusion or k != "next_evidence_step"},
               "cited_records": records, "deterministic_checks": checks, "visible_evidence_ids": sorted(records), **(context or {})}
     default = {"verdict": "", "feedback": "", "unsupported_claims": [], "unaddressed_contradictions": [], "alternatives_tested": ""}
+    # V3.4.1: the review request is measured before it is sent. Only bounded, optional parts may shrink (and the packet says
+    # so); when it still cannot fit, nothing is sent and the review is UNAVAILABLE as context_exhausted (fail closed).
+    bound, trimmed = context_limit(), None
+    if bound is not None:
+        fitted, trimmed = fit_review_packet(REVIEWER_SYSTEM, packet, bound)
+        if fitted is None:
+            context_log.warning("context limit: review not dispatched (round %s): the packet does not fit the %d-byte bound "
+                                "without dropping what the review rests on", (context or {}).get("review_round"), bound)
+            return {"verdict": "UNAVAILABLE", "feedback": "Independent model review could not be completed.", "unsupported_claims": [],
+                    "unaddressed_contradictions": [], "alternatives_tested": "", "mode": CONTEXT_EXHAUSTED, "degraded": True,
+                    "validation_error": "context limit reached before the review could be sent",
+                    "context_management": {"input_bound_bytes": bound, "trimmed": trimmed, "dispatched": False}}
+        if trimmed:
+            context_log.info("context limit: review packet trimmed to fit (%d uncited record contents, %d computed input lists)",
+                             len(trimmed["uncited_records_removed"]), len(trimmed["computed_input_lists_shortened"]))
+        packet = fitted
     readable = set(records) | set(packet.get("retrieved_uncited_records") or {}) | set(packet.get("computed_results_seen") or {})
     readable -= set((packet.get("citation_validity") or {}).get("invalid_ids") or [])
 
@@ -731,6 +875,12 @@ def review(conclusion, records, checks, symptoms, *, ask=None, context=None, ses
             reply = ask(system, user, default_)
             outcome = "review"
             return reply
+        except ContextLimitExceeded:
+            # Refused before dispatch: not a provider failure and not a call made (operations.agents._ask stops on it).
+            outcome = "context_refused"
+            if session is not None:
+                session.budget.give_back("reviewer")
+            raise
         finally:
             if session is not None:
                 session.turns.append(latency.turn_record("reviewer", len(session.reviews), latency.now() - started, outcome,
@@ -747,12 +897,13 @@ def review(conclusion, records, checks, symptoms, *, ask=None, context=None, ses
         user = (json.dumps({"facts": packet}, default=str, ensure_ascii=False) +
                 f"\n\nYour last outputs were rejected. Validation error: {error}. Return exactly one well-formed JSON object and "
                 f"nothing else, in this shape: {REVIEW_SHAPE}")
-        try:
-            again = counted(REVIEWER_SYSTEM, user, default)
-            if isinstance(again, dict) and not validate(again):
-                out, mode = again, "gpt-oss"
-        except Exception:  # A provider failure or malformed output: the repair did not succeed.
-            pass
+        if bound is None or text_bytes(REVIEWER_SYSTEM, user) <= bound:     # an oversized repair is never sent
+            try:
+                again = counted(REVIEWER_SYSTEM, user, default)
+                if isinstance(again, dict) and not validate(again):
+                    out, mode = again, "gpt-oss"
+            except Exception:  # A provider failure or malformed output: the repair did not succeed.
+                pass
     if out is None:
         capped = session is not None and session.budget.refused > refused_before
         # Still UNAVAILABLE for authority (fail closed); the mode says whether the call failed, was refused by the cap or
@@ -761,12 +912,14 @@ def review(conclusion, records, checks, symptoms, *, ask=None, context=None, ses
                 "unaddressed_contradictions": [], "alternatives_tested": "",
                 "mode": "model_call_cap" if capped else failure_mode(error), "degraded": True,
                 "validation_error": "model-call cap reached before the review completed" if capped else error,
-                **({"invalid_output_repairs": repaired} if repaired else {})}
+                **({"invalid_output_repairs": repaired} if repaired else {}),
+                **({"context_management": {"input_bound_bytes": bound, "trimmed": trimmed}} if trimmed else {})}
     return {"verdict": out["verdict"], "feedback": _sanitize(out["feedback"], 500),
             "unsupported_claims": [_sanitize(x, 200) for x in out.get("unsupported_claims") or []][:6],
             "unaddressed_contradictions": [_sanitize(x, 160) for x in out.get("unaddressed_contradictions") or [] if isinstance(x, str)][:10],
             "alternatives_tested": out.get("alternatives_tested") if out.get("alternatives_tested") in ("yes", "no") else "",
-            "mode": mode, "degraded": False, "validation_error": None, **({"invalid_output_repairs": repaired} if repaired else {})}
+            "mode": mode, "degraded": False, "validation_error": None, **({"invalid_output_repairs": repaired} if repaired else {}),
+            **({"context_management": {"input_bound_bytes": bound, "trimmed": trimmed}} if trimmed else {})}
 
 
 def _review_call(system, user, default):

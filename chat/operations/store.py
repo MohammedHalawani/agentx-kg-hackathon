@@ -1805,7 +1805,9 @@ class OperationsStore:
                     continue
                 failure=("returned output that failed validation" if item.get("kind")=="invalid_model_output" else
                          "reached the per-case model-call cap" if item.get("kind")=="model_call_cap" else
-                         "used its turn budget without a valid conclusion" if item.get("kind")=="turn_budget_exhausted" else "unavailable")
+                         "used its turn budget without a valid conclusion" if item.get("kind")=="turn_budget_exhausted" else
+                         "stopped at its input limit; nothing oversized was sent and the evidence gathered is attached"
+                         if item.get("kind")=="context_exhausted" else "unavailable")
                 self._audit(tx,current,"MODEL_DEGRADED",when,actor="SUHAIL-"+item["role"].upper(),key=item["role"],
                             result=f"{item['role']} {failure} ({item.get('error') or 'no valid output'}); automatic execution blocked.")
             from operations.authority import execution_permission

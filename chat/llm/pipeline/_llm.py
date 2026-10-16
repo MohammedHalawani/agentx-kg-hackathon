@@ -31,6 +31,7 @@ from operations import provider_gate
 
 log = logging.getLogger("pipeline.llm")
 transport = logging.getLogger("suhail.provider.transport")
+context_log = logging.getLogger("suhail.context")   # input-limit decisions: sizes, roles and ids only (V3.4.1)
 
 _FENCE_RE = re.compile(r"```(?:json)?\s*(.*?)```", re.DOTALL)
 _PRIVATE_TAG_RE = re.compile(
@@ -242,7 +243,7 @@ def invoke(messages, *, deadline: float | None = None, client=None, entry: str =
     Budget (operations.inference_safety): the input size and the aggregate budget are checked before a lane is taken,
     only lanes whose own budget can pay are asked for, and the call is reserved ON ITS LANE before it is dispatched, so
     a process that dies mid-call has already charged the right key."""
-    from operations.inference_safety import InferenceLedger, SafetyRefused, input_bound
+    from operations.inference_safety import ContextLimitExceeded, InferenceLedger, SafetyRefused, input_bound
     # One deadline begins before budget reservation/admission. HTTP execution receives
     # only what remains; it cannot spend a second full timeout after waiting.
     until = time.monotonic() + (call_timeout() if deadline is None else deadline)
@@ -251,8 +252,13 @@ def invoke(messages, *, deadline: float | None = None, client=None, entry: str =
     if not labels.get("role"):
         # The investigation path makes the investigator's turns through invoke and its review through ask_json.
         labels["role"] = ("investigator" if entry == "invoke" else "reviewer") if labels.get("run_id") else entry
-    if input_bound(messages) > ledger.policy.max_input_bytes:
-        raise SafetyRefused("Input exceeds the configured conservative token bound")
+    size = input_bound(messages)
+    if size > ledger.policy.max_input_bytes:
+        # Not dispatched, not charged, and not a provider failure (V3.4.1). Sizes and labels only; never the prompt.
+        context_log.warning("context limit: request not dispatched role=%s case=%s run=%s bytes=%d bound=%d",
+                            labels.get("role"), labels.get("case_id", "-"), labels.get("run_id", "-"), size,
+                            ledger.policy.max_input_bytes)
+        raise ContextLimitExceeded(size, ledger.policy.max_input_bytes)
     gate = provider_gate.shared()
     names = tuple(getattr(gate, "names", provider_gate.LANE_NAMES[:getattr(gate, "limit", 1)]))
     lanes = None

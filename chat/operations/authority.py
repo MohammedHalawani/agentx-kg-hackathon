@@ -258,6 +258,7 @@ RULE_IDS = {
     "requires human investigation regardless": "AUTH-14-symptom-floor",
     "Evidence kept changing": "AUTH-15-superseded-snapshot",
     "Model role unavailable": "AUTH-02-model-degraded",
+    "Input limit reached": "AUTH-28-context-exhausted",
     "Reviewer rejected": "AUTH-16-review-rejected",
     "No grounded proposal": "AUTH-17-no-proposal",
     "approval context changed": "AUTH-20-approval-context-stale",

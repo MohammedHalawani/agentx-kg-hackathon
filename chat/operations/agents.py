@@ -152,11 +152,16 @@ ATTEMPTS = 2  # One call plus one corrective retry.
 
 def _ask(system, packet, extra, default, validate, call):
     """Bounded attempts; returns (output, mode, error). output is None when every attempt failed."""
+    from operations.inference_safety import ContextLimitExceeded
     user = json.dumps({"facts": packet, **extra}, default=str, ensure_ascii=False)
     feedback = None
     for _ in range(ATTEMPTS):
         try:
             out = call(system, user + (f"\n\nYour previous output was rejected: {feedback} Return corrected JSON only." if feedback else ""), default)
+        except ContextLimitExceeded:
+            # Refused before dispatch for its size (V3.4.1): the same request would be refused again, so it is not retried,
+            # and it is not a provider failure.
+            return None, "context_exhausted", "context limit reached; the request was not dispatched"
         except Exception as error:  # Timeouts, transport and provider errors: type only, never provider text.
             feedback = f"model call failed ({type(error).__name__})"
             continue

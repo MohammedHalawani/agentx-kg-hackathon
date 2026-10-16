@@ -220,7 +220,7 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
             # Nothing to review: shown as not taken, or as unavailable when the investigator failed; never as a rejection.
             status = ("REJECTED" if verdict == "reject" else
                       "HUMAN_REVIEW" if verdict == "human_review" else
-                      ("DEGRADED" if update["review"].get("reason_code") == "INVESTIGATOR_UNAVAILABLE" else "SKIPPED")
+                      ("DEGRADED" if update["review"].get("reason_code") in ("INVESTIGATOR_UNAVAILABLE", "INVESTIGATOR_CONTEXT_EXHAUSTED") else "SKIPPED")
                       if verdict == "no_proposal" else
                       "DEGRADED" if len(update.get("degraded") or []) > len(state.get("degraded") or []) else "COMPLETED")
             emit(name, status, merged, output)
@@ -339,7 +339,10 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
                 "investigator": {"mode": (inv or {}).get("mode"), "degraded": bool((inv or {}).get("degraded")),
                                  "validation_error": (inv or {}).get("validation_error"),
                                  "validation_errors": (inv or {}).get("validation_errors") or [],
-                                 **({"forced_final_turn": True} if (inv or {}).get("forced_final_turn") else {})},
+                                 **({"forced_final_turn": True} if (inv or {}).get("forced_final_turn") else {}),
+                                 # V3.4.1: present only when the round came near its input limit.
+                                 **({"context_conclude_only": True} if (inv or {}).get("context_conclude_only") else {}),
+                                 **({"partial_investigation": inv["partial_investigation"]} if (inv or {}).get("partial_investigation") else {})},
                 "citation_validity": (checks or {}).get("citations"),
                 "fact_checks": (checks or {}).get("checks"),
                 "review": {"verdict": verdict.get("verdict"), "model_verdict": verdict.get("model_verdict"), "reason_code": verdict.get("reason_code"),
@@ -349,7 +352,8 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
                            "alternatives_tested": (model_review or {}).get("alternatives_tested"),
                            "mode": (model_review or {}).get("mode", "deterministic_evidence_guard"),
                            "degraded": bool((model_review or {}).get("degraded")),
-                           "validation_error": (model_review or {}).get("validation_error")},
+                           "validation_error": (model_review or {}).get("validation_error"),
+                           **({"context_management": model_review["context_management"]} if (model_review or {}).get("context_management") else {})},
                 **(session.budget.snapshot() if session else {})}
 
     def run_log(tools):
@@ -367,7 +371,9 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
                 "computed_results": {k: tools.computed[k] for k in seen} if tools else {},
                 "cited_external_records": {k: tools.external[k] for k in sorted(cited) if tools and k in tools.external and k not in tools.computed},
                 "evidence_index": {k: tools.index[k] for k in sorted(tools.retrieved) if k in tools.index} if tools else {},
-                "disabled_tools": sorted(tools.disabled) if tools else []}
+                "disabled_tools": sorted(tools.disabled) if tools else [],
+                # V3.4.1: what was done to stay within the input limit (shortened results keep their ids), when anything was.
+                **({"context_management": session.context.record()} if session.context.record() else {})}
 
     def review_stage(s):
         kinds = {n["id"]: n["kind"] for n in s["context"]["nodes"]}
@@ -376,6 +382,10 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
         inv = s.get("investigation")
         if s["proposal"]:
             verdict = guard(s["proposal"], visible, kinds)
+        elif agents and inv is not None and inv.get("degraded") and inv.get("mode") == "context_exhausted":
+            # V3.4.1: the investigation stopped at its input limit. Nothing oversized was sent; what it gathered is attached.
+            verdict = {"verdict": "no_proposal", "reason_code": "INVESTIGATOR_CONTEXT_EXHAUSTED",
+                       "feedback": "The investigation stopped at its input limit before a valid conclusion; the evidence it gathered is attached, there is no proposal to review and a person must review the case."}
         elif agents and (inv is None or inv.get("degraded")):
             # The investigator failed: there is nothing to review. Not a rejection, and no guard check fired.
             verdict = {"verdict": "no_proposal", "reason_code": "INVESTIGATOR_UNAVAILABLE",
@@ -470,7 +480,11 @@ def build_graph(config, retrieve, precedents, *, commit=None, on_event=None, eve
         checks = s.get("checks") or {}
         if s.get("degraded"):
             roles = ", ".join(sorted({d["role"] for d in s["degraded"]}))
-            authority = {"risk_class": "HUMAN_REVIEW", "reason": f"Model role unavailable ({roles}); automatic execution blocked.",
+            # V3.4.1: a role that stopped at its input limit is not an unavailable model (AUTH-28, not AUTH-02).
+            context = all(d.get("kind") == "context_exhausted" for d in s["degraded"])
+            reason = (f"Input limit reached ({roles}): no oversized request was sent; the evidence gathered so far is attached and "
+                      "automatic execution is blocked." if context else f"Model role unavailable ({roles}); automatic execution blocked.")
+            authority = {"risk_class": "HUMAN_REVIEW", "reason": reason,
                          "action_type": (s.get("proposal") or {}).get("action_type"), "policy": "deterministic_action_authority"}
             state = {**s, "authority": authority, "result": {**s["result"], "workflow_state": "HUMAN_REVIEW"}}
         elif s["review"]["verdict"] not in ("accept", "human_review") and not doubted_evidence_request(s):

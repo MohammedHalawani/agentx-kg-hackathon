@@ -29,6 +29,15 @@ class SafetyRefused(RuntimeError):
     pass
 
 
+class ContextLimitExceeded(SafetyRefused):
+    """A request whose conservative input bound exceeds SUHAIL_MAX_INPUT_BYTES. Never dispatched and never charged. It is
+    not a provider failure: sending the same request again would be refused the same way (V3.4.1)."""
+
+    def __init__(self, size=None, limit=None):
+        super().__init__("Input exceeds the configured conservative token bound")
+        self.size, self.limit = size, limit
+
+
 def positive(name, default=None, *, integer=False):
     try:
         value = Decimal(os.environ.get(name, str(default) if default is not None else ""))
@@ -49,6 +58,11 @@ def output_limit():
 def input_bound(messages):
     """UTF-8 bytes plus conservative message framing: an upper token bound for this text-only protocol."""
     return len(json.dumps([getattr(m, "content", m) for m in messages], ensure_ascii=False).encode("utf-8")) + 32 * len(messages) + 256
+
+
+def input_limit():
+    """SUHAIL_MAX_INPUT_BYTES, read exactly as Policy.configured reads it, so a caller can check a request before dispatch."""
+    return positive("SUHAIL_MAX_INPUT_BYTES", 65536, integer=True)
 
 
 @dataclass(frozen=True)
@@ -168,7 +182,7 @@ class InferenceLedger:
         # Refuse rather than truncate evidence/context.
         incoming = input_bound(messages)
         if incoming > self.policy.max_input_bytes:
-            raise SafetyRefused("Input exceeds the configured conservative token bound")
+            raise ContextLimitExceeded(incoming, self.policy.max_input_bytes)
         return incoming, incoming + self.policy.max_output_tokens, self.policy.cost(incoming, self.policy.max_output_tokens)
 
     def _aggregate_fits(self, entries, tokens, cost):
