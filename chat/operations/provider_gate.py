@@ -204,6 +204,7 @@ class ProviderGate:
         self.outcomes = [None] * self.limit     # the outcome of each lane's last call
         self.lane_granted = [0] * self.limit
         self.queue = deque()                    # the callers waiting, in the order they asked
+        self.asking = {}                        # ticket -> (labels, wall time asked) of each waiting caller, for status
         self.sequence = itertools.count(1)
         self.recent = deque(maxlen=RECENT)      # the last calls, for measurement: ids and times only
 
@@ -311,6 +312,7 @@ class ProviderGate:
                         raise CapacityUnavailable("queue_full")
                     ticket = object()
                     self.queue.append(ticket)
+                    self.asking[ticket] = ({key: (labels or {}).get(key) for key in LABELS}, datetime.now(timezone.utc).isoformat())
                     try:
                         while self._free(allowed) is None or self.queue[0] is not ticket:
                             remaining = wait - (self.clock() - asked)
@@ -325,6 +327,7 @@ class ProviderGate:
                             self.condition.wait(min(remaining, POLL_SECONDS))
                     finally:
                         self.queue.remove(ticket)
+                        self.asking.pop(ticket, None)
                         self.condition.notify_all()     # whoever is first now looks again
             except CapacityUnavailable as error:
                 self.refused += 1
@@ -382,6 +385,15 @@ class ProviderGate:
                      "cooling_seconds_left": round(max(0.0, self.cooling[i][0] - now), 1) if self.cooling[i] else None,
                      "rate_limits_in_a_row": self.strikes[i], "last_fault": dict(self.faults[i]) if self.faults[i] else None,
                      "last_outcome": self.outcomes[i]} for i in range(self.limit)]
+
+    def activity(self):
+        """Who has a call in flight on which lane, and who is waiting for a lane, now: labels (role, case, run, worker),
+        lane letters and wall times only. A worker shown here is really in a provider call or really waiting for one."""
+        with self.condition:
+            in_flight = [{**{key: record[key] for key in LABELS}, "lane": self.names[record["lane"]], "since": record["started_at"],
+                          "abandoned": record["abandoned"]} for record in self.recent if record["finished_at"] is None]
+            waiting = [{**self.asking[ticket][0], "since": self.asking[ticket][1]} for ticket in self.queue if ticket in self.asking]
+        return {"in_flight": in_flight, "waiting": waiting}
 
     def snapshot(self):
         """Counters and the recent calls (ids, times and outcomes; no content)."""

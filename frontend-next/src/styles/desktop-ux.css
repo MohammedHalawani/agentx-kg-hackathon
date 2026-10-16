@@ -14,6 +14,50 @@
   font-variant-numeric: tabular-nums;
   color: var(--foreground);
 }
+.worker-lanes {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0 4px 8px;
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+.worker-lanes b {
+  margin-inline-start: auto;
+  font-variant-numeric: tabular-nums;
+  color: var(--foreground);
+}
+.worker-lane-marks {
+  display: flex;
+  gap: 3px;
+}
+.worker-lane-marks i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+.worker-lane-marks i[data-state="busy"] {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.worker-lane-marks i[data-state="cooling"] {
+  border-style: dashed;
+  color: var(--muted-foreground);
+}
+.worker-lane-marks i[data-state="disabled"] {
+  border-color: var(--destructive);
+  color: var(--destructive);
+  text-decoration: line-through;
+}
 .worker-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -126,6 +170,7 @@
   gap: 6px;
 }
 [data-state="collapsed"] .worker-roster-summary,
+[data-state="collapsed"] .worker-lanes,
 [data-state="collapsed"] .worker-tile-text {
   display: none;
 }

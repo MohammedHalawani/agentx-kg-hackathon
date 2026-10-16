@@ -766,6 +766,40 @@ export function workerConnectionOf(
     concurrency: w.concurrency,
     processedCount: w.processed_count ?? 0,
     lastCaseId: w.last_case_id ?? null,
+    ...providerOf(status),
+  };
+}
+
+/** Lane states and model-call activity exactly as reported; nothing is inferred when the backend sends none. */
+function providerOf(
+  status: ApiWorkerStatus,
+): Pick<
+  NonNullable<BackendConnection["worker"]>,
+  "lanes" | "calls" | "autoStop"
+> {
+  const provider = status.provider;
+  const autoStop = status.auto_stop
+    ? { reason: status.auto_stop.reason, paused: !!status.auto_stop.paused }
+    : null;
+  if (!provider?.lanes) return { autoStop };
+  return {
+    lanes: provider.lanes.map((lane) => ({
+      lane: lane.lane,
+      state: lane.state,
+      reason: lane.disabled ?? null,
+    })),
+    calls: {
+      inFlight: (provider.calls?.in_flight ?? []).map((call) => ({
+        workerId: call.worker_id ?? null,
+        caseId: call.case_id ?? null,
+        lane: call.lane ?? "",
+      })),
+      waiting: (provider.calls?.waiting ?? []).map((call) => ({
+        workerId: call.worker_id ?? null,
+        caseId: call.case_id ?? null,
+      })),
+    },
+    autoStop,
   };
 }
 

@@ -800,6 +800,35 @@ export interface ApiWorkerStatus {
     demo_shipments?: { enabled?: boolean; count?: number };
   };
   simulator?: { state: string; speed: number };
+  /** V3.4: provider lanes (letters and states, never a key), who is in a call or waiting for a lane, and the budget. */
+  provider?: ApiProviderStatus;
+  /** V3.4: why the server stopped automatic investigation, when it did. */
+  auto_stop?: { reason: string; at?: string; paused?: boolean } | null;
+}
+export interface ApiProviderLane {
+  lane: string;
+  state: string;
+  busy?: boolean;
+  granted?: number;
+  disabled?: string | null;
+  cooling_seconds_left?: number | null;
+}
+export interface ApiProviderCall {
+  worker_id?: string | null;
+  case_id?: string | null;
+  role?: string | null;
+  lane?: string;
+  since?: string;
+}
+export interface ApiProviderStatus {
+  available?: boolean;
+  lanes_configured?: number;
+  limit?: number;
+  inflight?: number;
+  waiting?: number;
+  workers?: number;
+  lanes?: ApiProviderLane[];
+  calls?: { in_flight?: ApiProviderCall[]; waiting?: ApiProviderCall[] };
 }
 export interface ApiSession {
   token: string;

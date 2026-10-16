@@ -5,7 +5,7 @@ hand. These tests run the real queries and transactions: the execution, response
 control lock between separate drivers, and the fences that keep a stale transaction from committing.
 
 Same gate and same single target as tests.test_v3_concurrency_neo4j (prepare_target refuses every other database): opt in
-with SUHAIL_V3_RACE_TESTS=1 and SUHAIL_V3_CI_DATABASE=shipments-v2-world-v32-race-20261015 (docs/v3.2/run-neo4j-gate.ps1).
+with SUHAIL_V3_RACE_TESTS=1 and SUHAIL_V3_CI_DATABASE=shipments-v2-world-v34-race-20261016 (docs/v3.4/run-neo4j-gate.ps1).
 Without the opt-in every test is SKIPPED, and a skip is an outstanding gate, not a pass.
 
 Scripted only: no model, no external request. The case is opened and its recommendation recorded by tests.world_live.seed_case
@@ -306,6 +306,32 @@ class ActionProtocolNeo4jTests(unittest.TestCase):
             self.respond(second, "REJECTED", "ack")
         with self.assertRaises(OperationsConflict):
             self.respond(second, "STARTED", "started", revision=revision)
+        self.assertNotEqual(self.stored_case()["workflow_state"], "RESOLVED")
+
+    def test_four_clients_racing_the_same_and_conflicting_responses_write_once(self):
+        # V3.4: the same protocol with four separate clients answering at once.
+        from operations.lifecycle import OperationsConflict
+        case = self.barcode_case()
+        clients = [case["client"], self.client(), self.client(), self.client()]
+        clients[0].store.tick(seconds=60, manual=True, speed=1)
+        revision = self.lifecycle()["revision"]
+        same = self.race({f"client-{n}": (lambda c=c: self.respond(c, "ACKNOWLEDGED", "ack4", revision=revision))
+                          for n, c in enumerate(clients)})
+        self.assertTrue(all(isinstance(r, dict) for r in same.values()), same)
+        self.assertEqual(sorted(r["idempotent"] for r in same.values()), [False, True, True, True])   # written once, replayed 3x
+        self.assertEqual(self.lifecycle()["revision"], revision + 1)
+        revision += 1
+        kinds = ("ACCEPTED", "REJECTED", "ACCEPTED", "REJECTED")
+        conflicting = self.race({f"{kind}-{n}": (lambda c=c, kind=kind, n=n: self.respond(c, kind, f"answer-{n}", revision=revision))
+                                 for n, (c, kind) in enumerate(zip(clients, kinds))})
+        won = [name for name, r in conflicting.items() if isinstance(r, dict)]
+        lost = [r for r in conflicting.values() if isinstance(r, OperationsConflict)]
+        self.assertEqual((len(won), len(lost)), (1, 3), conflicting)                         # one wins; the stale ones are refused
+        state = self.lifecycle()
+        self.assertEqual(state["revision"], revision + 1)
+        self.assertEqual(state["state"], won[0].split("-")[0])
+        self.assertEqual(len(self.response_audits(clients[0])), 2)
+        self.assertEqual(self.outcomes(clients[0]), [])
         self.assertNotEqual(self.stored_case()["workflow_state"], "RESOLVED")
 
     def test_rejection_foreign_evidence_and_expiry_stay_unresolved(self):

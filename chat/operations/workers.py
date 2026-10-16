@@ -244,7 +244,7 @@ class WorkerPool:
         snapshot = gate.snapshot()
         status = {"lanes_configured": provider_gate.lane_count(), "limit": gate.limit, "inflight": snapshot["inflight"],
                   "waiting": snapshot["waiting"], "peak_inflight": snapshot["peak_inflight"], "refused": snapshot["refused"],
-                  "lanes": snapshot["lanes"], "workers": len(self.investigators),
+                  "lanes": snapshot["lanes"], "calls": gate.activity(), "workers": len(self.investigators),
                   "model_investigation": getattr(self.store, "agents", None) is not None}
         try:
             budget = InferenceLedger().summary(lanes=gate.names)

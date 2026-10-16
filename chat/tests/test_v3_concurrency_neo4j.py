@@ -4,9 +4,9 @@ tests.test_v3_concurrency shows the claim rules on an in-memory ledger that lets
 assumption about the database, not evidence. These tests replace the assumption: each client is its own Neo4j driver
 (its own connections and transactions) with its own store, and they race for the same records in a real database.
 
-Target: ONLY `shipments-v2-world-v32-race-20261015`, the empty disposable database created for the V3.2 release gate
-(2026-10-15). The earlier target `shipments-v2-world-v3-ci-20261013` now holds the live-model test records and is refused
-like every other database. The tests never create, replace or drop a database. The first run loads the race fixture into the empty target: the unit tests' small
+Target: ONLY `shipments-v2-world-v34-race-20261016`, the empty disposable database created for the V3.4 four-worker
+gate (2026-10-16). The earlier targets are refused like every other database: `shipments-v2-world-v3-ci-20261013` holds the
+live-model test records and `shipments-v2-world-v32-race-20261015` is kept as the V3.2 gate's evidence. The tests never create, replace or drop a database. The first run loads the race fixture into the empty target: the unit tests' small
 synthetic mechanism world (tests.world_fixture, dataset DEMO-SUHAIL-WORLD-TEST), through the guarded V2 loader, with its
 feed pending. Later runs reuse it. A target that holds anything else is refused, never overwritten. After that the tests
 write only the operations ledger of that database (which they reset, with the development reset, as the other
@@ -14,7 +14,7 @@ integration tests do).
 
 To run (with the server's settings in the worktree's ignored .env):
 
-    SUHAIL_V3_RACE_TESTS=1  SUHAIL_V3_CI_DATABASE=shipments-v2-world-v32-race-20261015   (docs/v3.2/run-neo4j-gate.ps1)
+    SUHAIL_V3_RACE_TESTS=1  SUHAIL_V3_CI_DATABASE=shipments-v2-world-v34-race-20261016   (docs/v3.4/run-neo4j-gate.ps1)
 
 Without SUHAIL_V3_RACE_TESTS=1 the race tests are SKIPPED, and a skip is an outstanding gate, not a pass. With it, the
 tests FAIL (they do not skip, and do not fall back to any other database) unless the named database is exactly the
@@ -34,8 +34,8 @@ from datetime import datetime, timedelta, timezone
 # The server's schema hints ("label does not exist" on a fresh database) are not results; they buried them in the log.
 logging.getLogger("neo4j.notifications").setLevel(logging.ERROR)
 
-TARGET = "shipments-v2-world-v32-race-20261015"
-RETIRED_TARGETS = ("shipments-v2-world-v3-ci-20261013",)   # holds evidence now; never a target again
+TARGET = "shipments-v2-world-v34-race-20261016"
+RETIRED_TARGETS = ("shipments-v2-world-v3-ci-20261013", "shipments-v2-world-v32-race-20261015")   # evidence now; never a target
 OPT_IN_ENV = "SUHAIL_V3_RACE_TESTS"
 DATABASE_ENV = "SUHAIL_V3_CI_DATABASE"
 OPERATIONS_ENV = "SUHAIL_OPERATIONS_DATABASE"     # the worktree's own setting; when set it must name the same target

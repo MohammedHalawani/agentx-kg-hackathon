@@ -17,6 +17,7 @@ import {
   session,
   workerStatus,
   workerStatusDual,
+  workerStatusQuad,
 } from "../fixtures/backend";
 import type { ApiCaseDetail, ApiQueueCase } from "../../src/api/contracts";
 
@@ -35,6 +36,8 @@ export interface Stub {
     worker: string;
     clock: string;
     dualWorker: boolean;
+    /** V3.4: four workers and four provider lanes. */
+    quadWorker: boolean;
   };
 }
 
@@ -53,6 +56,7 @@ export async function stubBackend(page: Page): Promise<Stub> {
       worker: "paused",
       clock: "paused",
       dualWorker: false,
+      quadWorker: false,
     },
   };
   const json = (route: Route, body: unknown, status = 200) =>
@@ -205,7 +209,11 @@ export async function stubBackend(page: Page): Promise<Stub> {
       }
       if (path === "/operations/session") return json(route, session);
       if (path === "/worker/status") {
-        const dual = stub.state.dualWorker ? workerStatusDual : workerStatus;
+        const dual = stub.state.quadWorker
+          ? workerStatusQuad
+          : stub.state.dualWorker
+            ? workerStatusDual
+            : workerStatus;
         return json(route, {
           ...dual,
           worker: { ...dual.worker, state: stub.state.worker },

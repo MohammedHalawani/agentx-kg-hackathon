@@ -179,6 +179,21 @@ class LaneHealthTests(unittest.TestCase):
             gate.acquire(1, lanes=[2])
         self.assertEqual(refused.exception.reason, "lane_disabled")
 
+    def test_activity_names_who_is_in_a_call_on_which_lane_and_who_waits(self):
+        gate = provider_gate.ProviderGate(1)
+        held = gate.acquire(1, labels={"worker_id": "investigation-1", "case_id": "DEMO-OPS-CASE-1", "role": "investigator"})
+        waiter = threading.Thread(target=lambda: gate.acquire(2, labels={"worker_id": "investigation-2", "case_id": "DEMO-OPS-CASE-2"}).release())
+        waiter.start()
+        deadline = time.monotonic() + 2
+        while not gate.waiting and time.monotonic() < deadline:
+            time.sleep(0.01)
+        activity = gate.activity()
+        self.assertEqual([(c["worker_id"], c["lane"], c["role"]) for c in activity["in_flight"]], [("investigation-1", "A", "investigator")])
+        self.assertEqual([(c["worker_id"], c["case_id"]) for c in activity["waiting"]], [("investigation-2", "DEMO-OPS-CASE-2")])
+        held.release()
+        waiter.join(3)
+        self.assertEqual(gate.activity(), {"in_flight": [], "waiting": []})
+
     def test_waiters_are_served_in_order_across_four_lanes(self):
         gate = provider_gate.ProviderGate(4)
         held = [gate.acquire(1) for _ in range(4)]
