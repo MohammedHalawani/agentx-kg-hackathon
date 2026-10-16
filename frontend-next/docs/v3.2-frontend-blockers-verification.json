@@ -1,0 +1,251 @@
+{
+  "schema": "suhail-v32-frontend-blockers-verification-1",
+  "date": "2026-10-16",
+  "branch": "codex/v3-2-frontend",
+  "worktree": "C:\\Projects\\suhail-v3-2-frontend",
+  "candidate": "1eb15a6d7a57bdde2ac6cc6bbb25786172c2c489",
+  "protected_integration": "9cf56345cd53998f41ab8d2c2f58a1e74f2b2a4e",
+  "correction_commit": "Exact SHA supplied in the completion report; this report is included in that commit.",
+  "ready_to_merge_frontend": true,
+  "merged": false,
+  "pushed": false,
+  "deployed": false,
+  "blockers": {
+    "B1": "FIXED: closure classification and bounded rotation over all loaded resolved rows; confirmation remains authoritative.",
+    "B2": "FIXED: actual map/KG canvases exceed 400 px at both desktop sizes; modest vertical scrolling retained."
+  },
+  "tests": {
+    "unit": {
+      "command": "npm test",
+      "passed": 77,
+      "failed": 0,
+      "skipped": 0
+    },
+    "browser": {
+      "command": "npm run test:e2e",
+      "connected": {
+        "passed": 29,
+        "failed": 0,
+        "skipped": 0
+      },
+      "original_lab": {
+        "passed": 20,
+        "failed": 0,
+        "skipped": 0
+      },
+      "normal_gate_includes_lab": true
+    },
+    "final_copy_smoke": {
+      "command": "npm run test:e2e:backend -- tests/e2e-backend/v32-workspace.spec.ts -g '45 reported-resolved|desktop workspace'",
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "scope": "Rebuild and recheck B1 and both desktop sizes after aligning the footer copy with reported versus verified closure."
+    },
+    "typecheck": {
+      "command": "npm run typecheck",
+      "result": "passed"
+    },
+    "build": {
+      "commands": [
+        "npm run build",
+        "npm run build:lab"
+      ],
+      "result": "passed via Playwright webServer",
+      "advisory": "Existing large-chunk warning."
+    },
+    "targeted_lint": {
+      "result": "passed",
+      "errors": 0,
+      "warnings": 0,
+      "scope": "4 changed production TS/TSX modules, 4 changed test modules and lab Playwright config"
+    },
+    "initial_gate": {
+      "connected_passed": 29,
+      "lab_passed": 18,
+      "lab_failed": 2,
+      "result": "Resolved by built lab preview and waiting for committed filter selections; initial log retained separately."
+    },
+    "intermediate_preview_attempt": "Interrupted after preview inherited connected mode and local proxy requests were refused. Fixed explicit --mode lab; raw log retained. Not counted as a passing gate.",
+    "live_model_neo4j_tests": "NOT RUN; no live model, database write or race-test claim."
+  },
+  "regression": {
+    "resolved_cases": 45,
+    "queue_page_size_in_test": 15,
+    "poll_cycles": 13,
+    "held_detail_reads": 3,
+    "failed_detail_statuses": [
+      404,
+      503
+    ],
+    "successful_detail_without_verification": true,
+    "later_recovery_verified": true,
+    "resolved_batch": 8,
+    "total_poll_detail_batch": 24,
+    "poll_detail_concurrency": 3,
+    "verified_only_from_fresh_authoritative_detail": true,
+    "pending_closure_not_active_or_waiting": true
+  },
+  "test_fixtures_excluded_connected_bundle": true,
+  "desktop_measurements": [
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "map": {
+        "x": 335,
+        "y": 508.703125,
+        "width": 531,
+        "height": 401
+      },
+      "graph": {
+        "x": 878,
+        "y": 508.703125,
+        "width": 531,
+        "height": 401
+      }
+    },
+    {
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "map": {
+        "x": 351,
+        "y": 508.703125,
+        "width": 755,
+        "height": 481
+      },
+      "graph": {
+        "x": 1118,
+        "y": 508.703125,
+        "width": 755,
+        "height": 481
+      }
+    }
+  ],
+  "polish": {
+    "newest_first_current_action": "FIXED",
+    "terminal_state_over_waiting_label": "FIXED",
+    "direct_vs_one_hop_styling": "Deferred; candidate behavior retained.",
+    "tighter_highlight_limit": "Deferred; existing 96-node graph bound retained."
+  },
+  "protection": {
+    "merges": 0,
+    "pushes": 0,
+    "port_8022_changes": 0,
+    "paid_inference": 0,
+    "database_writes": 0,
+    "backend_unchanged": true,
+    "deployments": 0,
+    "videos": [
+      {
+        "unchanged": true,
+        "path": "C:\\Projects\\demo\\.ui-integration\\showcase-videos\\suhail-video-A-v2.mp4",
+        "sha256": "d756c96697e87ba8c0897fcb92b8cb1e4762d31c47390325550c46f7594b6833"
+      },
+      {
+        "unchanged": true,
+        "path": "C:\\Projects\\demo\\.ui-integration\\showcase-videos\\suhail-video-B-v2.mp4",
+        "sha256": "fde09ee573128b8d1f6ddd828766daae0bbe409999d879d0a870eb0dac7d9072"
+      }
+    ],
+    "frozen_manifest_sha256": "538d9fffe7c23cb9637be959e7c5ac0f83c76b3fab5c67b8e377e071d687e2b6",
+    "date": "2026-10-16",
+    "checkouts": [
+      {
+        "head": "9cf56345cd53998f41ab8d2c2f58a1e74f2b2a4e",
+        "path": "C:/Projects/suhail-v3-integration",
+        "clean": true
+      },
+      {
+        "head": "7287e44ad99c9a8b90aac7543e8218c1302aa31a",
+        "path": "C:/Projects/suhail-v3-1-corrective",
+        "clean": true
+      },
+      {
+        "head": "4cd43045a1db284e83cd5702d63acf7950492492",
+        "path": "C:/Projects/demo",
+        "clean": true
+      }
+    ]
+  },
+  "changed_files": [
+    "frontend-next/docs/v3.2-frontend-blockers-handoff.md",
+    "frontend-next/docs/v3.2-frontend-blockers-verification.json",
+    "frontend-next/docs/v3.2-frontend-handoff.md",
+    "frontend-next/package.json",
+    "frontend-next/playwright.lab.config.ts",
+    "frontend-next/src/components/shared.tsx",
+    "frontend-next/src/domain/investigation-workspace.ts",
+    "frontend-next/src/pages/operations.tsx",
+    "frontend-next/src/services/api-operations.ts",
+    "frontend-next/src/styles/investigation-workspace.css",
+    "frontend-next/tests/e2e-backend/v32-workspace.spec.ts",
+    "frontend-next/tests/e2e/workspace.spec.ts",
+    "frontend-next/tests/unit/api-service.test.ts",
+    "frontend-next/tests/unit/investigation-workspace.test.ts"
+  ],
+  "source_sha256": {
+    "frontend-next/docs/v3.2-frontend-blockers-handoff.md": "8135e74d7732c5682a42dee1a78e81987c65cf82aa6a95188cbacf2626e68693",
+    "frontend-next/docs/v3.2-frontend-handoff.md": "91a71f162fa4dec7e5a3ed4b37a22775d896763439f9aecb8dbf6ade5642b555",
+    "frontend-next/package.json": "b3e9ec433fb469de5652420fce8d9787be8d96361bc9609337170871d8ccfffd",
+    "frontend-next/playwright.lab.config.ts": "aa4cbfc7cba68f305d1369746e5eb0a06c61334fa1f6032636ab76ed8c4a26f4",
+    "frontend-next/src/components/shared.tsx": "57377e72a1dc6d91d503156cf0794537f9b69ad47d6159c603d9b8b433f50f29",
+    "frontend-next/src/domain/investigation-workspace.ts": "92db9607ba6e10ac3adef8a4468434ee62b44d56bc71e8320c5588abf7552d99",
+    "frontend-next/src/pages/operations.tsx": "88c6b8d928699c0d2578ca0994ff11394f38087b532a7a8e3f933d3f97357a7b",
+    "frontend-next/src/services/api-operations.ts": "d334087deb9569add429ea69b79d4f54bee8782270f6659fb6ace4d990f80d19",
+    "frontend-next/src/styles/investigation-workspace.css": "07d1f1b942d3c48f36e8ecc1883e8c45d42ed555278cd585533e5e7d985564a8",
+    "frontend-next/tests/e2e-backend/v32-workspace.spec.ts": "c6ae985b61d6dba499968cf3d7696f6c64bfd6e45dd9c6756754b7f4ec1bfe50",
+    "frontend-next/tests/e2e/workspace.spec.ts": "e7780d890e1ee1ec6cd53ded7359448be250dff73df416e4ab7876e5486e523a",
+    "frontend-next/tests/unit/api-service.test.ts": "2e381a05134602c5858c653f74da67c4b53726a16a01e22210cc40f894aeab70",
+    "frontend-next/tests/unit/investigation-workspace.test.ts": "6b29ae6baf202a4ad7fe86dd5abde4a95a90fe5c02500f880fa93b9914c947a5"
+  },
+  "screenshots": [
+    {
+      "path": "C:\\Projects\\suhail-v3-2-frontend\\artifacts\\v3.2-frontend-blockers\\screenshots\\desktop-1440x900.png",
+      "sha256": "8b0126ed5a979a75fd5f978f4c857aa0f00ba84d9739d98d2ed1786aab7c4f44",
+      "context": "Actual interface with labelled scripted HTTP fixtures; not live backend/model evidence."
+    },
+    {
+      "path": "C:\\Projects\\suhail-v3-2-frontend\\artifacts\\v3.2-frontend-blockers\\screenshots\\desktop-1920x1080.png",
+      "sha256": "df1964e30b0bdb66ad134fe4ba462aaa2cae7c952355164872f26b9146270c28",
+      "context": "Actual interface with labelled scripted HTTP fixtures; not live backend/model evidence."
+    },
+    {
+      "path": "C:\\Projects\\suhail-v3-2-frontend\\artifacts\\v3.2-frontend-blockers\\screenshots\\resolved-verification-pending.png",
+      "sha256": "c1d5ebb67c0d60793f3a6e5cd995426b7aae76ca2e4bc9b622cc9615e27c07de",
+      "context": "Actual interface with labelled scripted HTTP fixtures; not live backend/model evidence."
+    },
+    {
+      "path": "C:\\Projects\\suhail-v3-2-frontend\\artifacts\\v3.2-frontend-blockers\\screenshots\\second-worker-case.png",
+      "sha256": "c9860f5b6761226d306c94601019391af61afcbb5e6fc6ed0cfa3360df6ecdc7",
+      "context": "Actual interface with labelled scripted HTTP fixtures; not live backend/model evidence."
+    },
+    {
+      "path": "C:\\Projects\\suhail-v3-2-frontend\\artifacts\\v3.2-frontend-blockers\\screenshots\\selected-retrieval.png",
+      "sha256": "d6057c7f67d449e8029e968903ec7fea4e66ae8b13c5c39c2db66735fb6cd4b0",
+      "context": "Actual interface with labelled scripted HTTP fixtures; not live backend/model evidence."
+    },
+    {
+      "path": "C:\\Projects\\suhail-v3-2-frontend\\artifacts\\v3.2-frontend-blockers\\screenshots\\verified-resolution.png",
+      "sha256": "e58081f2756d2d5248441668bc2cf83156e7b2548d5666d36caf3714cd95d599",
+      "context": "Actual interface with labelled scripted HTTP fixtures; not live backend/model evidence."
+    }
+  ],
+  "log_sha256": {
+    "artifacts-v32-blockers-browser-initial.log": "804c4e1019e82b125bf18fa0e083a10ecdf25bf7320da63ce843584e75f6a63d",
+    "artifacts-v32-blockers-browser-preview-config.log": "f384b5960d31f0f9ff19e31742b670d1b992af825f9a55d88c835cb5d1ab497e",
+    "artifacts-v32-blockers-browser.log": "9e7f15d26edbe920b504739b7feada8dd8f7f0c00271d237415ee979acd2af7a",
+    "artifacts-v32-blockers-copy-smoke.log": "00c9ca16705901c4d27d4120d022ae1401dc2f69528a260835871caebf88a0d2",
+    "artifacts-v32-blockers-format.log": "48ef5e98c9247412d6ed66ebb05df71c347056d9795a65f47202a9c5517a10e1",
+    "artifacts-v32-blockers-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "artifacts-v32-blockers-typecheck.log": "7e835f4563e62edac23f47b5a90f18b68bd896052cb31a5fcc989147826494c7",
+    "artifacts-v32-blockers-unit.log": "0db0232f1c6780e3a359c56b69b41ed687f6076d42b7336a9e4de4b1758e0c06"
+  },
+  "remaining_integration_gates": [
+    "Independent final review before merge.",
+    "Separately authorized read-only live UI smoke and curated-case evidence/storyline QA."
+  ]
+}

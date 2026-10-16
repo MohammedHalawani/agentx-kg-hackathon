@@ -1,21 +1,96 @@
 import { test, expect } from "@playwright/test";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { stubBackend } from "./backend-stub";
 import {
   CASE_A,
+  CASE_B,
   CASE_V3,
   SHIP_A,
   SHIP_V3,
   workerStatusDual,
   detailA,
+  detailB,
   detailV3Route,
   queueRows,
 } from "../fixtures/backend";
 import { actionTraces } from "../fixtures/v32-actions";
 import type { ApiCaseDetail, ApiPipelineEvent } from "../../src/api/contracts";
 
-const captures = "../artifacts/v3.2-frontend/screenshots";
+const captures = "../artifacts/v3.2-frontend-blockers/screenshots";
 mkdirSync(captures, { recursive: true });
+
+test("45 reported-resolved rows stay out of open and Waiting while slow or missing verification remains neutral", async ({
+  page,
+}) => {
+  const stub = await stubBackend(page);
+  const rows = Array.from({ length: 45 }, (_, index) => ({
+    ...queueRows[1],
+    case_id: index === 0 ? CASE_B : `SYN-RESOLVED-${index}`,
+    shipment_id:
+      index === 0 ? queueRows[1].shipment_id : `SYN-RESOLVED-SHIP-${index}`,
+    workflow_state: "RESOLVED" as const,
+  }));
+  stub.state.queue = [queueRows[0], ...rows];
+  let release!: () => void;
+  const slow = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route(
+    (url) => url.pathname === `/cases/${CASE_B}`,
+    async (route) => {
+      await slow;
+      await route.fulfill({ json: detailB() });
+    },
+  );
+  await page.goto("/app/operations");
+  await expect(page.locator("tbody tr")).toHaveCount(1);
+  await expect(page.locator(".ledger-bottom")).toContainText(
+    "Only independently verified outcomes receive a verified resolution check.",
+  );
+  await expect(page.locator("tbody")).not.toContainText("SYN-RESOLVED");
+  await page.getByRole("button", { name: "Expand resolved panel" }).click();
+  const panel = page.getByRole("complementary", {
+    name: "Waiting and resolved cases",
+  });
+  await expect(panel.getByRole("tabpanel")).not.toContainText(
+    rows[0].shipment_id,
+  );
+  await panel.getByRole("tab", { name: /Resolved/ }).click();
+  await expect(panel.getByTestId("resolution-pending-count")).toContainText(
+    "45 reported resolved",
+  );
+  await expect(panel.locator(".resolved-entry")).toHaveCount(45);
+  await expect(panel.locator(".verified-check")).toHaveCount(0);
+  const queueViewport = panel
+    .getByRole("tabpanel")
+    .locator('[data-slot="scroll-area-viewport"]');
+  expect((await queueViewport.boundingBox())!.height).toBeLessThanOrEqual(400);
+  await queueViewport.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  await expect(
+    panel.getByRole("link", { name: new RegExp(rows[44].shipment_id) }),
+  ).toBeInViewport();
+  await queueViewport.evaluate((element) => {
+    element.scrollTop = 0;
+  });
+  await page.screenshot({
+    path: `${captures}/resolved-verification-pending.png`,
+    fullPage: true,
+  });
+  await expect(panel.locator(".resolved-entry").first()).toContainText(
+    /checking verification|verification unavailable/,
+  );
+  release();
+  await expect(panel.locator(".verified-check")).toHaveCount(1);
+  await expect(panel.getByTestId("resolution-pending-count")).toContainText(
+    "44 reported resolved",
+  );
+  await panel.getByRole("tab", { name: /Waiting/ }).click();
+  await expect(panel.getByRole("tabpanel")).not.toContainText("SYN-RESOLVED");
+  await expect(page.locator("tbody tr")).toHaveCount(1);
+  expect(stub.posts).toEqual([]);
+});
 
 for (const viewport of [
   { width: 1440, height: 900 },
@@ -41,8 +116,20 @@ for (const viewport of [
     expect(Math.abs(balancedMap.y - balancedGraph.y)).toBeLessThan(2);
     expect(balancedMap.width).toBeGreaterThan(400);
     expect(balancedGraph.width).toBeGreaterThan(400);
+    // Measure the evidence canvases, not the surrounding cards. Scrolling is
+    // preferable to shrinking map tiles and graph labels below a usable size.
+    expect(balancedMap.height).toBeGreaterThanOrEqual(400);
+    expect(balancedGraph.height).toBeGreaterThanOrEqual(400);
+    writeFileSync(
+      `${captures}/desktop-${viewport.width}x${viewport.height}.json`,
+      JSON.stringify(
+        { viewport, map: balancedMap, graph: balancedGraph },
+        null,
+        2,
+      ),
+    );
     expect(balancedMap.y + balancedMap.height).toBeLessThanOrEqual(
-      viewport.height - 30,
+      viewport.height + 130,
     );
     expect((await workers.boundingBox())!.height).toBeLessThan(65);
     expect(
@@ -71,6 +158,7 @@ for (const viewport of [
       .toBeLessThan(2);
     await page.screenshot({
       path: `${captures}/desktop-${viewport.width}x${viewport.height}.png`,
+      fullPage: true,
     });
     expect(stub.posts).toEqual([]);
   });

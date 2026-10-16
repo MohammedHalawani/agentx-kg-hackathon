@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { applyDetail, applyPipeline, caseFromQueue } from "@/api/adapters";
 import {
   actionLabel,
+  caseQueueGroup,
   evidenceFocus,
   retrievalEvents,
   verifiedResolution,
@@ -12,6 +13,48 @@ import { actionCase, actionTraces } from "../fixtures/v32-actions";
 import type { ApiPipelineEvent } from "@/api/contracts";
 
 describe("V3.2 authoritative action projection", () => {
+  it("keeps reported closure separate from active work and requires fresh authoritative detail for verified resolution", () => {
+    const row = { ...queueRows[1], workflow_state: "RESOLVED" as const };
+    const unloaded = caseFromQueue(row);
+    expect(caseQueueGroup(unloaded)).toBe("resolution_pending");
+    expect(verifiedResolution(unloaded)).toBe(false);
+    expect(waitingLabel(unloaded)[0]).toMatch(/checking verification/);
+    const confirmed = actionCase(
+      actionTraces.findIndex(
+        (trace) => trace.action_status.resolution === "VERIFIED_RESOLVED",
+      ),
+    );
+    expect(caseQueueGroup(confirmed)).toBe("resolved");
+    const stale = {
+      ...confirmed,
+      backend: { ...confirmed.backend!, detailLoaded: false },
+    };
+    expect(caseQueueGroup(stale)).toBe("resolution_pending");
+    expect(verifiedResolution(stale)).toBe(false);
+    const reopened = {
+      ...confirmed,
+      status: "queued" as const,
+      backend: { ...confirmed.backend!, workflowState: "REOPENED" },
+    };
+    expect(caseQueueGroup(reopened)).toBe("active");
+    expect(verifiedResolution(reopened)).toBe(false);
+  });
+  it("uses the backend newest-first action order and terminal state before a stale waiting label", () => {
+    const c = actionCase(0);
+    const action = c.backend!.actionStatus!.actions[0];
+    c.backend!.actionStatus!.actions = [
+      { ...action, state: "EXPIRED", operational_label: "EXPIRED" },
+      { ...action, state: "ACCEPTED", operational_label: "AWAITING_RESCAN" },
+    ];
+    expect(waitingLabel(c)[0]).toMatch(/Request expired/);
+    expect(
+      actionLabel({
+        ...action,
+        state: "REJECTED",
+        operational_label: "AWAITING_RESCAN",
+      })[0],
+    ).toMatch(/Task rejected/);
+  });
   it("reports failed detail enrichment instead of inventing continued progress", () => {
     const c = actionCase(0);
     c.backend = {

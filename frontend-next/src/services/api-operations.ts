@@ -29,6 +29,7 @@ import {
   workerConnectionOf,
 } from "@/api/adapters";
 import { cityLocations, moreCityLocations } from "@/domain/geo";
+import { verifiedResolution } from "@/domain/investigation-workspace";
 import type {
   AuthorityDecision,
   CanopusAnswer,
@@ -60,7 +61,7 @@ const PAGE_LIMIT = 100;
 /** Bounded reads: the screens say so when the backend holds more than was loaded. */
 const MAX_QUEUE_PAGES = 10;
 const MAX_AUDIT_PAGES = 30;
-const RESOLVED_DETAILS = 30;
+const RESOLVED_BATCH = 8;
 const DETAIL_BATCH = 24;
 const WAITING_BATCH = 8;
 const DETAIL_CONCURRENCY = 3;
@@ -132,6 +133,7 @@ export class ApiOperationsService implements OperationsService {
   private started = false;
   private polls = 0;
   private waitingOffset = 0;
+  private resolvedOffset = 0;
   private pipelineVersions = new Map<string, number>();
   private readEpoch = 0;
   private automatic = false;
@@ -441,10 +443,23 @@ export class ApiOperationsService implements OperationsService {
       this.commit();
       // Evidence is loaded for what a screen needs: watched cases, changed cases, and the
       // resolved cases whose verified outcome the Resolved rail shows.
-      const resolved = queue.items
+      const resolved = resolvedQueue.items
         .filter((row) => row.workflow_state === "RESOLVED")
-        .slice(-RESOLVED_DETAILS)
         .map((row) => row.case_id);
+      // Rotate over the whole loaded resolved queue, including failures. A slow or
+      // missing record is retried on a later turn; it cannot exclude older cases.
+      const resolvedIds = resolved.length
+        ? Array.from(
+            { length: Math.min(RESOLVED_BATCH, resolved.length) },
+            (_, n) => resolved[(this.resolvedOffset + n) % resolved.length],
+          ).filter((id) => {
+            const current = this.cases.get(id);
+            return !current || !verifiedResolution(current);
+          })
+        : [];
+      this.resolvedOffset = resolved.length
+        ? (this.resolvedOffset + RESOLVED_BATCH) % resolved.length
+        : 0;
       const activeIds =
         worker.activeCases.length > 0
           ? worker.activeCases.map((row) => row.caseId)
@@ -474,10 +489,8 @@ export class ApiOperationsService implements OperationsService {
           ...this.watchers.keys(),
           ...activeIds,
           ...waitingIds,
+          ...resolvedIds,
           ...stale,
-          ...resolved.filter(
-            (id) => !this.cases.get(id)?.backend?.detailLoaded,
-          ),
         ]),
       ].slice(0, DETAIL_BATCH);
       let cursor = 0;

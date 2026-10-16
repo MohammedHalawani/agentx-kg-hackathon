@@ -6,6 +6,10 @@ import {
 } from "@/services/api-operations";
 import { controls } from "@/domain/case-view";
 import {
+  caseQueueGroup,
+  verifiedResolution,
+} from "@/domain/investigation-workspace";
+import {
   CASE_A,
   CASE_B,
   CASE_C,
@@ -122,6 +126,128 @@ const find = (service: ApiOperationsService, id: string) => {
 afterEach(() => vi.useRealTimers());
 
 describe("ApiOperationsService reads", () => {
+  it("rotates all 45 paged resolved cases across polls without treating slow or missing verification as open work", async () => {
+    const rows = Array.from({ length: 45 }, (_, index) => ({
+      ...queueRows[1],
+      case_id: `SYN-RESOLVED-${index}`,
+      shipment_id: `SYN-RESOLVED-SHIP-${index}`,
+      workflow_state: "RESOLVED" as const,
+    }));
+    let releaseSlow!: () => void;
+    const slow = new Promise<void>((resolve) => {
+      releaseSlow = resolve;
+    });
+    let activeReads = 0,
+      peakReads = 0;
+    const handlers: Record<string, Handler> = {
+      "GET /cases/queue": (call) => {
+        if (call.query.get("scope") !== "resolved") return page([]);
+        const offset = Number(call.query.get("cursor") ?? 0);
+        return {
+          ...page(rows.slice(offset, offset + 15)),
+          filtered_total: 45,
+          next_cursor: offset + 15 < rows.length ? String(offset + 15) : null,
+        };
+      },
+      "GET /explore": () => page([]),
+    };
+    rows.forEach((row, index) => {
+      handlers[`GET /cases/${row.case_id}`] = async () => {
+        activeReads += 1;
+        peakReads = Math.max(peakReads, activeReads);
+        try {
+          if (index < 3) await slow;
+          if (index === 0)
+            throw new HttpError(404, "Verification detail is missing");
+          if (index === 44)
+            throw new HttpError(503, "Verification temporarily unavailable");
+          return {
+            ...detailB(),
+            case_id: row.case_id,
+            shipment_id: row.shipment_id,
+            state_version: row.state_version,
+            // HTTP success without a verifier record is still unconfirmed.
+            ...(index === 43 ? { outcome: null } : {}),
+          };
+        } finally {
+          activeReads -= 1;
+        }
+      };
+    });
+    const world = backend(handlers);
+    const first = world.service.refresh();
+    await vi.waitFor(() => expect(activeReads).toBe(3));
+    expect(world.service.getSnapshot().cases).toHaveLength(45);
+    expect(
+      world.service
+        .getSnapshot()
+        .cases.every((c) => caseQueueGroup(c) === "resolution_pending"),
+    ).toBe(true);
+    expect(world.service.getSnapshot().cases.some(verifiedResolution)).toBe(
+      false,
+    );
+    releaseSlow();
+    await first;
+    expect(
+      world.calls.filter((call) => /^\/cases\/SYN-RESOLVED-/.test(call.path)),
+    ).toHaveLength(8);
+    for (let cycle = 0; cycle < 6; cycle += 1) {
+      const before = world.calls.length;
+      await world.service.refresh();
+      const requested = world.calls
+        .slice(before)
+        .filter((call) => /^\/cases\/SYN-RESOLVED-/.test(call.path));
+      expect(requested.length).toBeLessThanOrEqual(8);
+      expect(
+        world.service
+          .getSnapshot()
+          .cases.some((c) => caseQueueGroup(c) === "active"),
+      ).toBe(false);
+    }
+    const attempted = world.calls.filter((call) =>
+      /^\/cases\/SYN-RESOLVED-/.test(call.path),
+    );
+    expect(new Set(attempted.map((call) => call.path)).size).toBe(45);
+    expect(
+      attempted.filter((call) => call.path === `/cases/${rows[0].case_id}`)
+        .length,
+    ).toBeGreaterThan(1);
+    expect(
+      world.calls.filter(
+        (call) =>
+          call.path === "/cases/queue" && call.query.get("cursor") === "30",
+      ),
+    ).toHaveLength(7);
+    expect(peakReads).toBe(3);
+    const remaining = world.service
+      .getSnapshot()
+      .cases.filter((c) => !verifiedResolution(c));
+    expect(remaining.map((c) => c.id).sort()).toEqual(
+      [rows[0].case_id, rows[43].case_id, rows[44].case_id].sort(),
+    );
+    expect(
+      remaining.every((c) => caseQueueGroup(c) === "resolution_pending"),
+    ).toBe(true);
+    // A transiently missing record can be confirmed on a later rotation.
+    for (const index of [43, 44])
+      world.routes[`GET /cases/${rows[index].case_id}`] = () => ({
+        ...detailB(),
+        case_id: rows[index].case_id,
+        shipment_id: rows[index].shipment_id,
+        state_version: rows[index].state_version,
+      });
+    for (let cycle = 0; cycle < 6; cycle += 1) await world.service.refresh();
+    expect(verifiedResolution(find(world.service, rows[44].case_id))).toBe(
+      true,
+    );
+    expect(verifiedResolution(find(world.service, rows[43].case_id))).toBe(
+      true,
+    );
+    expect(caseQueueGroup(find(world.service, rows[0].case_id))).toBe(
+      "resolution_pending",
+    );
+    expect(world.posts()).toEqual([]);
+  });
   it("shows the backend's queue, newest first, and loads resolved outcomes for the Resolved rail", async () => {
     const { service } = backend();
     await service.refresh();
@@ -565,16 +691,14 @@ describe("ApiOperationsService live pipeline", () => {
     world.streams.at(-1)!.emit("pipeline", { status: "incomplete" });
     expect(find(world.service, CASE_A)).toBe(beforeA);
     expect(find(world.service, CASE_B)).toBe(beforeB);
-    world.streams
-      .at(-1)!
-      .emit("narration", {
-        id: "old-run-message",
-        run_id: "SYN-SUPERSEDED-RUN",
-        sequence: 900,
-        stage: "classify",
-        kind: "agent_output",
-        text_en: "An old run's words",
-      });
+    world.streams.at(-1)!.emit("narration", {
+      id: "old-run-message",
+      run_id: "SYN-SUPERSEDED-RUN",
+      sequence: 900,
+      stage: "classify",
+      kind: "agent_output",
+      text_en: "An old run's words",
+    });
     expect(find(world.service, CASE_B)).toBe(beforeB);
     expect(world.posts()).toEqual([]);
     closeB();

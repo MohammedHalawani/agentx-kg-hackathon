@@ -52,6 +52,7 @@ import {
 import { useCanopusScreen } from "@/state/canopus";
 import { humanize } from "@/api/adapters";
 import {
+  caseQueueGroup,
   verifiedResolution,
   waitingLabel,
 } from "@/domain/investigation-workspace";
@@ -85,15 +86,17 @@ export function OperationsPage() {
     screen: "operations",
     filters: { search: query, status, priority, city, cause },
   });
-  const active = cases.filter((c) => !verifiedResolution(c));
+  const active = cases.filter((c) => caseQueueGroup(c) === "active");
   const resolved = cases.filter((c) => verifiedResolution(c));
+  const closed = cases.filter((c) => caseQueueGroup(c) !== "active");
+  const pendingResolution = closed.length - resolved.length;
   const activeClaims = connection?.worker?.activeCases ?? [];
   const waiting = active.filter(
     (c) =>
       !activeClaims.some((claim) => claim.caseId === c.id) &&
       !["queued", "investigating"].includes(c.status),
   );
-  const queueEntries = queueTab === "waiting" ? waiting : resolved;
+  const queueEntries = queueTab === "waiting" ? waiting : closed;
   // Backend: active V3 claims, else legacy single id. Lab: the one simulated run.
   const running = backend
     ? activeClaims.length
@@ -688,8 +691,8 @@ export function OperationsPage() {
             <ShieldCheckIcon />
             <span>
               {t(
-                "Only independently verified outcomes move to Resolved.",
-                "لا تنتقل إلى المحلولة إلا النتائج المتحققة بشكل مستقل.",
+                "Only independently verified outcomes receive a verified resolution check.",
+                "لا تُمنح علامة الحل المتحقق إلا للنتائج المتحققة بشكل مستقل.",
               )}
             </span>
             <Link to="/audit">
@@ -713,7 +716,7 @@ export function OperationsPage() {
                 <CheckCheck size={15} />
                 <span>{t("Waiting / Resolved", "المنتظرة / المحلولة")}</span>
                 <Badge variant="secondary">
-                  {waiting.length} / {resolved.length}
+                  {waiting.length} / {closed.length}
                 </Badge>
                 <ChevronRight size={13} />
               </Button>
@@ -764,19 +767,31 @@ export function OperationsPage() {
                     aria-controls="case-queue-panel"
                     onClick={() => setQueueTab("resolved")}
                   >
-                    {t("Resolved", "المحلولة")} <span>{resolved.length}</span>
+                    {t("Resolved", "المحلولة")} <span>{closed.length}</span>
                   </button>
                 </div>
                 <p className="resolved-intro">
                   {t(
                     queueTab === "resolved"
-                      ? "Independently verified resolutions"
+                      ? "Backend-reported resolutions · verification shown per case"
                       : "Operational work, evidence and decisions pending",
                     queueTab === "resolved"
-                      ? "حلول تحققت بشكل مستقل"
+                      ? "حلول أبلغ عنها الخادم · حالة التحقق موضحة لكل حالة"
                       : "بانتظار العمل التشغيلي والأدلة والقرارات",
                   )}
                 </p>
+                {queueTab === "resolved" && pendingResolution > 0 && (
+                  <p
+                    className="resolved-intro"
+                    role="status"
+                    data-testid="resolution-pending-count"
+                  >
+                    {t(
+                      `${pendingResolution} reported resolved · verification pending or unavailable`,
+                      `${pendingResolution} أُبلغ عن حلها · التحقق قيد الانتظار أو غير متاح`,
+                    )}
+                  </p>
+                )}
                 <ScrollArea
                   className="resolved-scroll"
                   id="case-queue-panel"
@@ -808,12 +823,12 @@ export function OperationsPage() {
                         <Link className="resolved-entry" to={`/cases/${c.id}`}>
                           <span
                             className={
-                              queueTab === "resolved"
+                              verifiedResolution(c)
                                 ? "verified-check"
                                 : "waiting-check"
                             }
                           >
-                            {queueTab === "resolved" ? (
+                            {verifiedResolution(c) ? (
                               <CheckCheck size={14} />
                             ) : (
                               <Clock3 size={14} />
@@ -822,7 +837,7 @@ export function OperationsPage() {
                           <div>
                             <b dir="ltr">{displayId(c)}</b>
                             <p>{c.issue}</p>
-                            {queueTab === "waiting" && (
+                            {!verifiedResolution(c) && (
                               <p className="waiting-label">
                                 {t(...waitingLabel(c))}
                               </p>

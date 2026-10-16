@@ -233,13 +233,17 @@
   color: var(--muted-foreground);
   padding: 6px;
 }
+.resolved-scroll {
+  flex: none;
+  min-height: 0;
+}
 @media (min-width: 1280px) {
   .evidence-split {
-    --evidence-height: clamp(340px, calc(100dvh - 550px), 560px);
+    --evidence-height: clamp(480px, calc(100dvh - 520px), 600px);
   }
   .case-context {
     width: 224px;
-    max-height: clamp(340px, calc(100dvh - 550px), 560px);
+    max-height: clamp(480px, calc(100dvh - 520px), 600px);
     overflow-y: auto;
     overscroll-behavior: contain;
     padding-inline-end: 8px;

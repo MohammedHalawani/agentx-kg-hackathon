@@ -2,9 +2,22 @@ import type { ApiActionLifecycle, ApiPipelineEvent } from "@/api/contracts";
 import type { OperationalCase } from "@/domain/types";
 
 export function verifiedResolution(c: OperationalCase) {
+  if (
+    c.backend &&
+    (!c.backend.detailLoaded || c.backend.workflowState !== "RESOLVED")
+  )
+    return false;
   if (c.backend?.actionStatus)
     return c.backend.actionStatus.resolution === "VERIFIED_RESOLVED";
   return c.status === "resolved" && c.outcome?.successful === true;
+}
+
+/** Queue closure and independently verified resolution are separate facts. */
+export function caseQueueGroup(c: OperationalCase) {
+  if (verifiedResolution(c)) return "resolved";
+  if (c.backend?.workflowState === "RESOLVED" || c.status === "resolved")
+    return "resolution_pending";
+  return "active";
 }
 
 export function actionLabel(action: ApiActionLifecycle): [string, string] {
@@ -70,6 +83,18 @@ export function actionLabel(action: ApiActionLifecycle): [string, string] {
       "لم تثبت الأدلة الأثر المطلوب",
     ],
   };
+  // Terminal facts win over an inconsistent/stale waiting projection.
+  if (
+    [
+      "REFUSED",
+      "REJECTED",
+      "FAILED",
+      "EXPIRED",
+      "VERIFIED",
+      "UNRESOLVED",
+    ].includes(action.state)
+  )
+    return labels[action.state];
   return (
     labels[action.operational_label] ??
     labels[action.state] ?? [
@@ -80,6 +105,16 @@ export function actionLabel(action: ApiActionLifecycle): [string, string] {
 }
 
 export function waitingLabel(c: OperationalCase): [string, string] {
+  if (caseQueueGroup(c) === "resolution_pending")
+    return c.backend?.detailError
+      ? [
+          "Reported resolved · verification unavailable",
+          "أُبلغ عن الحل · التحقق غير متاح",
+        ]
+      : [
+          "Reported resolved · checking verification",
+          "أُبلغ عن الحل · جارٍ التحقق",
+        ];
   if (c.backend?.detailError && !c.backend.detailLoaded)
     return ["Operational status unavailable", "الحالة التشغيلية غير متاحة"];
   const status = c.backend?.actionStatus;
@@ -90,7 +125,7 @@ export function waitingLabel(c: OperationalCase): [string, string] {
     c.backend.allowed.approve
   )
     return ["Awaiting approval", "بانتظار الموافقة"];
-  const action = status?.actions.at(-1);
+  const action = status?.actions[0];
   if (action) return actionLabel(action);
   if (status?.resolution === "UNRESOLVED")
     return ["Unresolved · evidence needed", "غير محلولة · أدلة مطلوبة"];

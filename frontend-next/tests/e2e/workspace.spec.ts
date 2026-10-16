@@ -25,6 +25,10 @@ test.afterEach(async ({ page }) => {
 async function choose(page: Page, label: string, option: string) {
   await page.getByRole("combobox", { name: label, exact: true }).click();
   await page.getByRole("option", { name: option, exact: true }).click();
+  // Wait for the selected value to render before the next dependent filter.
+  await expect(
+    page.getByRole("combobox", { name: label, exact: true }),
+  ).toContainText(option);
 }
 async function openChat(page: Page) {
   await page
@@ -108,9 +112,15 @@ test("Operations filters, pagination, resolved rail, and navigation", async ({
   ).toBeVisible();
   await page.getByRole("textbox", { name: "Search exception queue" }).fill("");
   await page.getByRole("button", { name: "Expand resolved panel" }).click();
-  await expect(
-    page.getByRole("complementary", { name: "Verified resolutions" }),
-  ).toContainText("SHP-10453");
+  const queue = page.getByRole("complementary", {
+    name: "Waiting and resolved cases",
+  });
+  await expect(queue.getByRole("tab", { name: /Waiting/ })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await queue.getByRole("tab", { name: /Resolved/ }).click();
+  await expect(queue.getByRole("tabpanel")).toContainText("SHP-10453");
   await page.getByRole("button", { name: "Collapse resolved panel" }).click();
   await page.getByRole("link", { name: "SHP-10498", exact: true }).click();
   await expect(
@@ -344,9 +354,16 @@ test("Human approval authorizes execution, and only verified outcome moves to Re
   const toast = page.locator('[data-sonner-toast][data-type="success"]');
   await expect(toast).toContainText("SHP-10482 resolved — outcome verified");
   await page.getByRole("button", { name: "Expand resolved panel" }).click();
-  await expect(
-    page.getByRole("complementary", { name: "Verified resolutions" }),
-  ).toContainText("SHP-10482");
+  const queue = page.getByRole("complementary", {
+    name: "Waiting and resolved cases",
+  });
+  await expect(queue.getByRole("tab", { name: /Waiting/ })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await expect(queue.getByRole("tabpanel")).not.toContainText("SHP-10482");
+  await queue.getByRole("tab", { name: /Resolved/ }).click();
+  await expect(queue.getByRole("tabpanel")).toContainText("SHP-10482");
   await toast.getByRole("button", { name: "Open case", exact: true }).click();
   await page.clock.runFor(50);
   await expect(

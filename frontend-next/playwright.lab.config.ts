@@ -1,6 +1,6 @@
 import { defineConfig } from "@playwright/test";
 /**
- * Regression against the original UI lab: the unmodified lab specs run against this codebase
+ * Regression against the original UI lab: the lab specs run against this codebase
  * built in lab mode (browser fixtures). It proves the integrated screens still look and behave
  * like the standalone lab. The connected product is covered by playwright.config.ts.
  */
@@ -19,9 +19,9 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   webServer: {
-    command: "npm run dev:lab",
+    command: "npm run build:lab && npm run preview:lab",
     url: "http://127.0.0.1:5180",
-    reuseExistingServer: true,
-    timeout: 30000,
+    reuseExistingServer: false,
+    timeout: 180000,
   },
 });

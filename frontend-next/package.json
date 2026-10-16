@@ -11,9 +11,11 @@
     "lint": "eslint .",
     "typecheck": "tsc -b && tsc -p tsconfig.tests.json",
     "test": "vitest run",
-    "test:e2e": "playwright test",
+    "test:e2e": "npm run test:e2e:backend && npm run test:e2e:lab",
+    "test:e2e:backend": "playwright test",
     "test:e2e:lab": "playwright test --config playwright.lab.config.ts",
     "preview": "vite preview --host 127.0.0.1 --port 5191 --strictPort",
+    "preview:lab": "vite preview --mode lab --outDir dist-lab --host 127.0.0.1 --port 5180 --strictPort",
     "test:e2e:live": "playwright test --config playwright.live.config.ts"
   },
   "dependencies": {

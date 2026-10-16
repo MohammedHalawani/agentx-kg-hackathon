@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/empty";
 import { timeLabel } from "@/lib/dates";
 import {
+  caseQueueGroup,
   verifiedResolution,
   waitingLabel,
 } from "@/domain/investigation-workspace";
@@ -46,22 +47,24 @@ export function StatusBadge({
   const { t } = usePreferences();
   const workflow = c?.backend ? workflowLabels[c.backend.workflowState] : null;
   const actionStatus = c?.backend?.actionStatus;
-  const lifecycleLabel =
-    actionStatus &&
-    !["OPEN", "REOPENED", "INVESTIGATING"].includes(c!.backend!.workflowState)
+  const pendingResolution = c && caseQueueGroup(c) === "resolution_pending";
+  const lifecycleLabel = pendingResolution
+    ? waitingLabel(c!)
+    : actionStatus &&
+        !["OPEN", "REOPENED", "INVESTIGATING"].includes(
+          c!.backend!.workflowState,
+        )
       ? verifiedResolution(c!)
         ? ["Verified resolved", "تم التحقق من الحل"]
         : waitingLabel(c!)
       : null;
-  const shownStatus =
-    actionStatus && status === "resolved" && !verifiedResolution(c!)
-      ? "needs_evidence"
-      : status;
+  const shownStatus = pendingResolution ? "verifying" : status;
   return (
     <Badge variant="outline" className={`status-badge status-${shownStatus}`}>
       {shownStatus === "resolved" ? (
         <Check size={11} />
-      ) : ["investigating", "executing", "verifying"].includes(status) ? (
+      ) : !pendingResolution &&
+        ["investigating", "executing", "verifying"].includes(shownStatus) ? (
         <LoaderCircle className="slow-spin" size={11} />
       ) : (
         <span className="status-dot" />
