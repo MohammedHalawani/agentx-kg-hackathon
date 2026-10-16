@@ -156,7 +156,7 @@ function Navigation() {
             >
               <img
                 className="brand-full"
-                src={asset("suhail-logo.png")}
+                src={asset("suhail-wordmark.jpeg")}
                 alt="Suhail"
               />
               <img

@@ -208,6 +208,9 @@
   max-height: 46px;
   max-width: 100%;
   object-fit: contain;
+  /* Display the supplied dark-on-black JPEG as ink without a rectangular backdrop. */
+  filter: brightness(12) contrast(2) invert(1);
+  mix-blend-mode: multiply;
 }
 .brand.brand-logo .brand-star {
   position: absolute;
@@ -218,9 +221,13 @@
   transform: translate(-50%, -50%) scale(0.6);
   pointer-events: none;
 }
-.dark .brand.brand-logo img {
-  /* The assets are black ink on transparency; inverted they read as white ink, with no box. */
+.dark .brand.brand-logo .brand-star {
+  /* Preserve the original transparent star in the collapsed sidebar. */
   filter: invert(1);
+}
+.dark .brand.brand-logo .brand-full {
+  filter: brightness(12) contrast(2);
+  mix-blend-mode: screen;
 }
 [data-state="collapsed"] .brand-header:has(.brand-logo) {
   padding: 16px 0 6px !important;
