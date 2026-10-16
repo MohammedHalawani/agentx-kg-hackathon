@@ -139,9 +139,12 @@ def detection_sentences(detail):
         where_en = f" at the {kind_en}{shown}" if place.get("kind") and place.get("kind") != "Recipient" else ""
         where_ar = f" في {kind_ar}{shown}" if place.get("kind") and place.get("kind") != "Recipient" else ""
         due = _when(row.get("deadline_at"))
+        grace = int(row.get("grace_seconds") or 0) // 60
+        grace_en, grace_ar = (f" (including {grace} min grace)", f" (مع مهلة {grace} دقيقة)") if grace else ("", "")
+        lead_en = "the" if row.get("delivery_promise") else "the expected"
         if row.get("state") == "missing_after_deadline":
-            en.append(f"the expected {what_en}{where_en} was due by {due} (including {int(row.get('grace_seconds') or 0) // 60} min grace) and has no confirmed record")
-            ar.append(f"كان {what_ar} المتوقع{where_ar} مستحقاً بحلول {due} (مع مهلة {int(row.get('grace_seconds') or 0) // 60} دقيقة) ولا يوجد سجل مؤكد له")
+            en.append(f"{lead_en} {what_en}{where_en} was due by {due}{grace_en} and has no confirmed record")
+            ar.append(f"كان {what_ar}{where_ar} مستحقاً بحلول {due}{grace_ar} ولا يوجد سجل مؤكد له")
         else:
             en.append(f"the {what_en}{where_en} was due by {due} and was recorded at {_when(row.get('observed_at'))}")
             ar.append(f"كان {what_ar}{where_ar} مستحقاً بحلول {due} وسُجّل في {_when(row.get('observed_at'))}")
@@ -558,8 +561,9 @@ def build(detail):
                         **{k: recorded[k] for k in ("text_en", "text_ar", "short_en", "short_ar")}}
     verification.update(outcome_type=outcome.get("outcome_type"), verified_at=outcome.get("verified_at"), verifier_reason=outcome.get("reason"))
 
-    lines = [{"key": "problem", "label_en": "Problem", "label_ar": "المشكلة", "text_en": _join([s["label_en"] for s in symptoms]) + "." if symptoms else happened_en,
-              "text_ar": ("، ".join(s["label_ar"] or s["code"] for s in symptoms) + ".") if symptoms else happened_ar},
+    lines = [{"key": "problem", "label_en": "Problem", "label_ar": "المشكلة",
+              "text_en": (_join([s["label_en"] for s in symptoms]) + "." + (" " + detected_en if detected_en else "")) if symptoms else happened_en,
+              "text_ar": ("، ".join(s["label_ar"] or s["code"] for s in symptoms) + "." + (" " + detected_ar if detected_ar else "")) if symptoms else happened_ar},
              {"key": "finding", "label_en": "Finding", "label_ar": "ما توصل إليه التحقيق", "text_en": cause_text, "text_ar": cause_text_ar}]
     if review_status in ("challenged", "asked_for_person", "unavailable"):
         # The Review line states the challenge, so the Finding line does not repeat it. Where a stored summary of the
