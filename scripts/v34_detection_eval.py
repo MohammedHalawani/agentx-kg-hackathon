@@ -221,7 +221,9 @@ def main():
                                "kinds": dict(Counter(r["kind"] for v in late.values() for r in v)),
                                "cleared_transitions_on_those_shipments": len(late_cleared)},
               "panels": panels, "no_scan_not_due": {"shipment_clock_pairs": not_due, "with_active_finding": not_due_opened},
-              "promise_contract": dict(promise_rows)}
+              "promise_contract": dict(promise_rows),
+              "openings": {sid: {"opened_at": iso(opened_at(sid)), "codes": next(c for _, c, _ in timelines[sid] if c),
+                                 "codes_at_horizon": final[sid]["active_codes"]} for sid in live if opened_at(sid)}}
 
     # ---- scoring against external truth (read last) ----
     if args.truth:
@@ -265,7 +267,7 @@ def main():
     text = json.dumps(report, indent=1, default=str)
     if args.out:
         Path(args.out).write_text(text, encoding="utf-8")
-    summary = {k: v for k, v in report.items() if k not in ("per_clock", "cleared_transitions")}
+    summary = {k: v for k, v in report.items() if k not in ("per_clock", "cleared_transitions", "openings")}
     summary["cleared_transitions"] = {k: v for k, v in report["cleared_transitions"].items() if k != "rows"}
     summary["per_clock"] = [{k: r[k] for k in ("clock", "booked", "population", "cases_opened_by_clock", "healthy_now_no_active_finding")} for r in per_clock]
     print(json.dumps(summary, indent=1, default=str))

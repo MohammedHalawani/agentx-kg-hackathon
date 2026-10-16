@@ -178,3 +178,35 @@ class LiveMonitor(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class BriefDetection(unittest.TestCase):
+    """The case brief restates the monitor's evidence in plain words, without record codes, and never calls a cleared
+    alert a resolution."""
+    DETECTION = {"version": "monitor-detection-1", "as_of": "2026-09-15T15:15:00+00:00", "rules": [
+        {"code": "MISSED_MILESTONE", "symptom": "MILESTONE_OVERDUE", "reasons": ["absent"], "evidence_ids": ["DEMO-SHP-000005-EM-01-02"], "requires_human_review": False}],
+        "milestones": [{"package_id": "DEMO-SHP-000005-PKG-01", "milestone_id": "DEMO-SHP-000005-EM-01-02", "predicate": "RECEIVED", "delivery_promise": False,
+                        "expected_location": {"id": "DEMO-HUB-RUH-01", "kind": "Hub", "name": None}, "latest_at": "2026-09-15T14:00:00+00:00",
+                        "grace_seconds": 1800, "deadline_at": "2026-09-15T14:30:00+00:00", "observed_at": None, "state": "missing_after_deadline"}],
+        "comparisons": [], "custody": [{"package_id": "DEMO-SHP-000005-PKG-01", "last_corroborated_event_id": "DEMO-SHP-000005-CUST-004",
+                                        "last_corroborated_holder": {"id": "DEMO-VEH-LH-RUH-002", "kind": "Vehicle", "name": None},
+                                        "unconfirmed_event_ids": [], "conflicting": False, "parcel_location_from_gps": None}]}
+
+    def test_the_brief_says_which_step_was_due_where_and_when(self):
+        from operations import brief
+        from operations.canopus import code_free
+        en, ar = brief.detection_sentences({"detection": self.DETECTION, "monitor_alert": {"state": "ACTIVE", "cleared_symptoms": []}})
+        self.assertIn("arrival at the hub DEMO-HUB-RUH-01 was due by 2026-09-15 14:30 UTC (including 30 min grace)", en)
+        self.assertIn("last confirmed custody is with a vehicle", en)
+        self.assertNotIn("CUST-004", en)          # A record id is not operator vocabulary.
+        self.assertTrue(code_free(en), en)
+        self.assertTrue(ar)
+
+    def test_a_cleared_alert_is_said_not_to_be_a_resolution(self):
+        from operations import brief
+        from operations.canopus import code_free
+        en, _ = brief.detection_sentences({"detection": self.DETECTION,
+                                           "monitor_alert": {"state": "CLEARED", "cleared_symptoms": ["CUSTODY_TRANSFER_UNCONFIRMED"]}})
+        self.assertIn("the alert no longer stands, which is not a resolution", en)
+        self.assertTrue(code_free(en), en)
+        self.assertEqual(brief.detection_sentences({}), ("", ""))
