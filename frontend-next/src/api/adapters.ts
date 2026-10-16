@@ -756,12 +756,13 @@ export function workerConnectionOf(
   const w = status.worker;
   const activeCases = (w.active_cases ?? []).map(investigationStatusOf);
   const legacy = w.active_case_id ?? null;
+  const v3 = w.active_cases !== undefined;
   return {
     state: w.state,
     activeCaseId:
-      legacy ?? (activeCases.length === 1 ? activeCases[0].caseId : null),
+      v3 ? (activeCases.length === 1 ? activeCases[0].caseId : null) : legacy,
     activeCases,
-    activeCount: w.active_count ?? activeCases.length,
+    activeCount: w.active_count ?? (v3 ? activeCases.length : legacy ? 1 : 0),
     concurrency: w.concurrency,
     processedCount: w.processed_count ?? 0,
     lastCaseId: w.last_case_id ?? null,

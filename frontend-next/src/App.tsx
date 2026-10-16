@@ -93,12 +93,13 @@ function AppRoutes() {
           mobile
             ? "top-center"
             : preferences.language === "ar"
-              ? "bottom-right"
-              : "bottom-left"
+              ? "top-left"
+              : "top-right"
         }
         richColors
         closeButton
-        offset={{ bottom: "24px", left: "24px", right: "24px" }}
+        visibleToasts={1}
+        offset={{ top: "72px", left: "24px", right: "24px" }}
         mobileOffset={{ top: "12px", left: "12px", right: "12px" }}
       />
     </>

@@ -11,10 +11,6 @@ import {
   Play,
   RefreshCw,
   Search,
-  SlidersHorizontal,
-  Sparkles,
-  ShieldCheck,
-  X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
@@ -24,13 +20,13 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleTrigger } from "@/components/ui/collapsible";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { SelectControl } from "@/components/select-control";
+import { OperationsFilters } from "@/components/operations-filters";
+import {
+  defaultQueueFilters,
+  investigationAssignments,
+  operationsCollection,
+} from "@/domain/desktop-operations";
 import { DataTable } from "@/components/data-table";
 import {
   CaseLink,
@@ -41,16 +37,14 @@ import {
 import { timeLabel } from "@/lib/dates";
 import { useOperations } from "@/state/operations";
 import { usePreferences } from "@/state/preferences";
-import { stages, type OperationalCase } from "@/domain/types";
+import { type OperationalCase } from "@/domain/types";
 import {
   displayId,
   matchesCause,
   matchesOperational,
-  operationalOf,
   searchText,
 } from "@/domain/case-view";
 import { useCanopusScreen } from "@/state/canopus";
-import { humanize } from "@/api/adapters";
 import {
   caseQueueGroup,
   verifiedResolution,
@@ -63,7 +57,6 @@ export function OperationsPage() {
     cases,
     automatic,
     service,
-    catalog,
     backend: fromBackend,
     connection,
   } = useOperations();
@@ -72,12 +65,8 @@ export function OperationsPage() {
   const { t } = usePreferences();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("all");
-  const [priority, setPriority] = useState("all");
-  const [city, setCity] = useState("all");
-  const [cause, setCause] = useState("all");
-  const [operational, setOperational] = useState("all");
-  const [sort, setSort] = useState("newest");
+  const [filters, setFilters] = useState(defaultQueueFilters);
+  const { status, priority, city, cause, operational, sort } = filters;
   const [resolvedOpen, setResolvedOpen] = useState(false);
   const [queueTab, setQueueTab] = useState<"waiting" | "resolved">("waiting");
   const [refreshing, setRefreshing] = useState(false);
@@ -90,36 +79,22 @@ export function OperationsPage() {
   const resolved = cases.filter((c) => verifiedResolution(c));
   const closed = cases.filter((c) => caseQueueGroup(c) !== "active");
   const pendingResolution = closed.length - resolved.length;
-  const activeClaims = connection?.worker?.activeCases ?? [];
-  const waiting = active.filter(
-    (c) =>
-      !activeClaims.some((claim) => claim.caseId === c.id) &&
-      !["queued", "investigating"].includes(c.status),
-  );
+  const activeClaims = investigationAssignments(connection?.worker, cases);
+  const collectionOf = (c: OperationalCase) =>
+    operationsCollection(c, activeClaims);
+  const waiting = cases.filter((c) => collectionOf(c) === "waiting");
   const queueEntries = queueTab === "waiting" ? waiting : closed;
-  // Backend: active V3 claims, else legacy single id. Lab: the one simulated run.
-  const running = backend
-    ? activeClaims.length
-      ? cases.find((c) => c.id === activeClaims[0].caseId)
-      : connection?.worker?.activeCaseId
-        ? cases.find((c) => c.id === connection?.worker?.activeCaseId)
-        : undefined
-    : cases.find((c) =>
-        ["investigating", "executing", "verifying"].includes(c.status),
-      );
-  const activeCards = backend
-    ? activeClaims.slice(0, 2).map((claim) => ({
-        claim,
-        c: cases.find((item) => item.id === claim.caseId),
-      }))
-    : running
-      ? [{ claim: null, c: running }]
-      : [];
   const human = active.filter((c) =>
     ["human_review", "needs_evidence", "escalated"].includes(c.status),
   );
   const resetPage = () => setPagination((p) => ({ ...p, pageIndex: 0 }));
-  const filtered = active
+  const filtered = cases
+    .filter(
+      (c) =>
+        query.trim() ||
+        filters.collection === "all" ||
+        collectionOf(c) === filters.collection,
+    )
     .filter(
       (c) =>
         (status === "all" ||
@@ -190,24 +165,6 @@ export function OperationsPage() {
       ),
     },
     {
-      id: "operational",
-      header: t("Operational status", "الحالة التشغيلية"),
-      size: 130,
-      cell: ({ row }) => (
-        <span className="tracking-label">
-          {t(operationalOf(row.original)[1], operationalOf(row.original)[2])}
-        </span>
-      ),
-    },
-    {
-      id: "city",
-      header: t("City", "المدينة"),
-      size: 90,
-      cell: ({ row }) => (
-        <span className="muted">{row.original.shipment.destination}</span>
-      ),
-    },
-    {
       id: "time",
       header: t("Received · AST", "الوصول · السعودية"),
       size: 100,
@@ -240,12 +197,7 @@ export function OperationsPage() {
   ];
   const clear = () => {
     setQuery("");
-    setPriority("all");
-    setStatus("all");
-    setCity("all");
-    setCause("all");
-    setOperational("all");
-    setSort("newest");
+    setFilters(defaultQueueFilters);
     resetPage();
   };
   function refresh() {
@@ -362,132 +314,16 @@ export function OperationsPage() {
                 }}
               />
             </div>
-            <SelectControl
-              label="Filter by status"
-              value={status}
-              onChange={(v) => {
-                setStatus(v);
+            <OperationsFilters
+              value={filters}
+              onChange={(next) => {
+                setFilters(next);
                 resetPage();
               }}
-              options={[
-                { value: "all", label: t("All workflows", "كل الحالات") },
-                { value: "queued", label: t("Queued", "في الانتظار") },
-                {
-                  value: "investigating",
-                  label: t("Investigating", "قيد التحقيق"),
-                },
-                {
-                  value: "attention",
-                  label: t("Human attention", "تدخل بشري"),
-                },
-                {
-                  value: "human_review",
-                  label: t("Awaiting approval", "بانتظار الموافقة"),
-                },
-                {
-                  value: "needs_evidence",
-                  label: t("Needs evidence", "يتطلب أدلة"),
-                },
-                { value: "verifying", label: t("Verifying", "التحقق") },
-                { value: "escalated", label: t("Escalated", "تم التصعيد") },
-              ]}
+              cities={cities}
             />
-            <SelectControl
-              label="Filter by priority"
-              value={priority}
-              onChange={(v) => {
-                setPriority(v);
-                resetPage();
-              }}
-              options={[
-                { value: "all", label: t("All priorities", "كل الأولويات") },
-                { value: "high", label: t("High", "مرتفع") },
-                { value: "medium", label: t("Medium", "متوسط") },
-                { value: "low", label: t("Low", "منخفض") },
-              ]}
-            />
-            <SelectControl
-              label="Filter by city"
-              value={city}
-              onChange={(v) => {
-                setCity(v);
-                resetPage();
-              }}
-              options={[
-                { value: "all", label: t("All cities", "كل المدن") },
-                ...cities.map((city) => ({ value: city, label: city })),
-              ]}
-            />
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  aria-label="More queue filters"
-                  variant={
-                    cause !== "all" || operational !== "all"
-                      ? "secondary"
-                      : "outline"
-                  }
-                  size="icon-sm"
-                >
-                  <SlidersHorizontal size={14} />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="end" className="filter-popover">
-                <label>{t("Exception cause", "سبب الاستثناء")}</label>
-                <SelectControl
-                  label="Filter by cause"
-                  value={cause}
-                  onChange={(v) => {
-                    setCause(v);
-                    resetPage();
-                  }}
-                  options={[
-                    { value: "all", label: t("All causes", "كل الأسباب") },
-                    ...catalog.causes,
-                  ]}
-                />
-                <label>{t("Operational status", "الحالة التشغيلية")}</label>
-                <SelectControl
-                  label="Operational status filter"
-                  value={operational}
-                  onChange={(v) => {
-                    setOperational(v);
-                    resetPage();
-                  }}
-                  options={[
-                    { value: "all", label: t("All statuses", "كل الحالات") },
-                    ...catalog.operational.map((item) => ({
-                      value: item.value,
-                      label: t(item.label, item.arabic),
-                    })),
-                  ]}
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={clear}
-                  className="w-full"
-                >
-                  {t("Clear all filters", "مسح كل عوامل التصفية")}
-                </Button>
-              </PopoverContent>
-            </Popover>
-            <SelectControl
-              label="Sort cases"
-              value={sort}
-              onChange={(v) => {
-                setSort(v);
-                resetPage();
-              }}
-              options={[
-                { value: "newest", label: t("Newest first", "الأحدث أولاً") },
-                { value: "oldest", label: t("Oldest first", "الأقدم أولاً") },
-                {
-                  value: "priority",
-                  label: t("Priority first", "الأولوية أولاً"),
-                },
-              ]}
-            />
+          </div>
+          <div className="queue-controls">
             {backend && connection?.clock && service.setClock && (
               <Button
                 variant="outline"
@@ -574,81 +410,36 @@ export function OperationsPage() {
           </div>
           <div className="ledger-caption">
             <span>
-              <span
-                className={automatic || running ? "live-dot" : "paused-dot"}
-              />
-              {activeCards.length > 1
+              {query.trim() || filters.collection === "all"
                 ? t(
-                    `${activeCards.length} active investigations`,
-                    `${activeCards.length} تحقيقات نشطة`,
+                    "Search / history · all loaded cases",
+                    "البحث / السجل · كل الحالات المحملة",
                   )
-                : running
-                  ? `${displayId(running)} · ${t(stages[running.run?.stage ?? 0].label, stages[running.run?.stage ?? 0].arabic)}`
-                  : automatic
-                    ? t(
-                        "Picking the oldest eligible case",
-                        "اختيار أقدم حالة مؤهلة",
-                      )
-                    : t(
-                        "New automatic investigations paused",
-                        "بدء تحقيقات تلقائية جديدة متوقف مؤقتاً",
-                      )}
-              <Badge variant="outline" className="fifo-badge">
-                FIFO
-              </Badge>
+                : filters.collection === "unassigned"
+                  ? t(
+                      "Open cases with no reported assignment",
+                      "حالات مفتوحة دون تكليف مسجل",
+                    )
+                  : t("Filtered case collection", "مجموعة حالات مصفاة")}
             </span>
-            <span>
-              {t("Unresolved cases", "الحالات غير المحلولة")}
-              <Badge variant="secondary">{filtered.length}</Badge>
-            </span>
+            <Badge variant="secondary">{filtered.length}</Badge>
           </div>
-          <div className="automatic-state-note" id="automatic-state-note">
-            <ShieldCheck size={12} />
+          <p className="automatic-state-note" id="automatic-state-note">
             {t(
-              "Monitoring active · mandatory review and outcome verification remain enforced.",
-              "المراقبة نشطة · تبقى المراجعة والتحقق الإلزاميان مفروضين.",
+              "Automatic claims are rechecked by the backend. Review and outcome verification remain mandatory.",
+              "يتحقق الخادم من التكليفات التلقائية. تظل المراجعة والتحقق من النتائج إلزاميين.",
             )}
-            {activeCards.length > 0 && !automatic && (
-              <span>
-                {t(
-                  "Active investigations continue in parallel.",
-                  "تستمر التحقيقات النشطة بالتوازي.",
-                )}
-              </span>
-            )}
-          </div>
-          {activeCards.length > 0 && (
-            <div
-              className="active-investigations"
-              data-testid="active-investigations"
-            >
-              {activeCards.map(({ claim, c: row }) =>
-                row ? (
-                  <Link
-                    key={row.id}
-                    className="active-investigation-card"
-                    to={`/cases/${row.id}`}
-                  >
-                    <small>
-                      {claim?.runStatus === "QUEUED"
-                        ? t("QUEUED FOR WORKER", "في انتظار العامل")
-                        : t("INVESTIGATING", "قيد التحقيق")}
-                    </small>
-                    <b>{displayId(row)}</b>
-                    <span className="cell-secondary">
-                      {claim?.activeStage
-                        ? humanize(claim.activeStage)
-                        : t(
-                            stages[row.run?.stage ?? 0].label,
-                            stages[row.run?.stage ?? 0].arabic,
-                          )}
-                    </span>
-                  </Link>
-                ) : null,
+          </p>
+          {connection?.queue?.truncated && (
+            <p className="automatic-state-note">
+              {t(
+                "Only the loaded subset is shown; additional backend cases are outside this view.",
+                "تُعرض المجموعة المحملة فقط؛ توجد حالات إضافية خارج هذا العرض.",
               )}
-            </div>
+            </p>
           )}
           <DataTable
+            compact
             columns={columns}
             data={filtered}
             rowId={(c) => c.id}
@@ -666,7 +457,9 @@ export function OperationsPage() {
                       "The Suhail backend is not reachable",
                       "تعذر الوصول إلى خادم سهيل",
                     )
-                  : t("No matching exceptions", "لا توجد استثناءات مطابقة")
+                  : !query.trim() && filters.collection === "unassigned"
+                    ? t("No unassigned cases", "لا حالات غير مكلّفة")
+                    : t("No matching exceptions", "لا توجد استثناءات مطابقة")
             }
             emptyDescription={
               backend && connection?.state === "offline"
@@ -687,19 +480,10 @@ export function OperationsPage() {
             }
             animate
           />
-          <div className="ledger-bottom">
-            <ShieldCheckIcon />
-            <span>
-              {t(
-                "Only independently verified outcomes receive a verified resolution check.",
-                "لا تُمنح علامة الحل المتحقق إلا للنتائج المتحققة بشكل مستقل.",
-              )}
-            </span>
-            <Link to="/audit">
-              {t("View audit", "سجل التدقيق")}
-              <ArrowRight size={12} />
-            </Link>
-          </div>
+          <Link className="queue-audit-link" to="/audit">
+            {t("View audit", "سجل التدقيق")}
+            <ArrowRight size={12} />
+          </Link>
         </section>
         <Collapsible
           open={resolvedOpen}
@@ -714,7 +498,7 @@ export function OperationsPage() {
                 aria-label="Expand resolved panel"
               >
                 <CheckCheck size={15} />
-                <span>{t("Waiting / Resolved", "المنتظرة / المحلولة")}</span>
+                <span>{t("Waiting / Closed", "المنتظرة / المغلقة")}</span>
                 <Badge variant="secondary">
                   {waiting.length} / {closed.length}
                 </Badge>
@@ -729,7 +513,7 @@ export function OperationsPage() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 8 }}
                 className="resolved-panel surface"
-                aria-label="Waiting and resolved cases"
+                aria-label="Waiting and closed cases"
               >
                 <div className="section-heading compact">
                   <h2>
@@ -767,29 +551,31 @@ export function OperationsPage() {
                     aria-controls="case-queue-panel"
                     onClick={() => setQueueTab("resolved")}
                   >
-                    {t("Resolved", "المحلولة")} <span>{closed.length}</span>
+                    {t("Closed", "المغلقة")} <span>{closed.length}</span>
                   </button>
                 </div>
                 <p className="resolved-intro">
                   {t(
                     queueTab === "resolved"
-                      ? "Backend-reported resolutions · verification shown per case"
+                      ? "Closed cases · verification shown per case"
                       : "Operational work, evidence and decisions pending",
                     queueTab === "resolved"
-                      ? "حلول أبلغ عنها الخادم · حالة التحقق موضحة لكل حالة"
+                      ? "حالات مغلقة · حالة التحقق موضحة لكل حالة"
                       : "بانتظار العمل التشغيلي والأدلة والقرارات",
                   )}
                 </p>
-                {queueTab === "resolved" && pendingResolution > 0 && (
+                {queueTab === "resolved" && (
                   <p
-                    className="resolved-intro"
+                    className="closed-counts"
                     role="status"
                     data-testid="resolution-pending-count"
                   >
-                    {t(
-                      `${pendingResolution} reported resolved · verification pending or unavailable`,
-                      `${pendingResolution} أُبلغ عن حلها · التحقق قيد الانتظار أو غير متاح`,
-                    )}
+                    <span>
+                      {resolved.length} {t("verified", "متحققة")}
+                    </span>
+                    <span>
+                      {pendingResolution} {t("unconfirmed", "غير مؤكدة")}
+                    </span>
                   </p>
                 )}
                 <ScrollArea
@@ -805,10 +591,10 @@ export function OperationsPage() {
                       {t(
                         queueTab === "waiting"
                           ? "No waiting cases in the loaded queue."
-                          : "No verified resolutions in the loaded queue.",
+                          : "No closed cases in the loaded queue.",
                         queueTab === "waiting"
                           ? "لا حالات منتظرة في القائمة المحملة."
-                          : "لا حلول متحققة في القائمة المحملة.",
+                          : "لا حالات مغلقة في القائمة المحملة.",
                       )}
                     </p>
                   )}
@@ -856,23 +642,6 @@ export function OperationsPage() {
                     ))}
                   </AnimatePresence>
                 </ScrollArea>
-                {running && (
-                  <Link className="rail-running" to={`/cases/${running.id}`}>
-                    <Sparkles size={14} />
-                    <div>
-                      <small>
-                        {t("CURRENTLY INVESTIGATING", "قيد التحقيق الآن")}
-                      </small>
-                      <b>{displayId(running)}</b>
-                      <p>
-                        {t(
-                          stages[running.run?.stage ?? 0].label,
-                          stages[running.run?.stage ?? 0].arabic,
-                        )}
-                      </p>
-                    </div>
-                  </Link>
-                )}
                 <dl className="rail-summary">
                   <div>
                     <dt>{t("Open cases", "حالات مفتوحة")}</dt>
@@ -904,24 +673,20 @@ export function OperationsPage() {
         </Collapsible>
       </div>
       {(query ||
-        status !== "all" ||
-        priority !== "all" ||
-        city !== "all" ||
-        cause !== "all" ||
-        operational !== "all") && (
+        Object.keys(filters).some(
+          (key) =>
+            filters[key as keyof typeof filters] !==
+            defaultQueueFilters[key as keyof typeof filters],
+        )) && (
         <Button
           variant="ghost"
           size="sm"
           onClick={clear}
           className="clear-filters-link"
         >
-          <X size={12} />
           {t("Clear applied filters", "مسح عوامل التصفية المطبقة")}
         </Button>
       )}
     </>
   );
-}
-function ShieldCheckIcon() {
-  return <CheckCheck size={12} />;
 }

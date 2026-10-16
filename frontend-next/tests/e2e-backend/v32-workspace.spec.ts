@@ -19,11 +19,11 @@ import type { ApiCaseDetail, ApiPipelineEvent } from "../../src/api/contracts";
 const captures = "../artifacts/v3.2-frontend-blockers/screenshots";
 mkdirSync(captures, { recursive: true });
 
-test("45 reported-resolved rows stay out of open and Waiting while slow or missing verification remains neutral", async ({
+test("52 reported-resolved rows stay out of open and Waiting while slow or missing verification remains neutral", async ({
   page,
 }) => {
   const stub = await stubBackend(page);
-  const rows = Array.from({ length: 45 }, (_, index) => ({
+  const rows = Array.from({ length: 52 }, (_, index) => ({
     ...queueRows[1],
     case_id: index === 0 ? CASE_B : `SYN-RESOLVED-${index}`,
     shipment_id:
@@ -43,23 +43,20 @@ test("45 reported-resolved rows stay out of open and Waiting while slow or missi
     },
   );
   await page.goto("/app/operations");
-  await expect(page.locator("tbody tr")).toHaveCount(1);
-  await expect(page.locator(".ledger-bottom")).toContainText(
-    "Only independently verified outcomes receive a verified resolution check.",
-  );
+  await expect(page.locator("tbody tr")).toHaveCount(0);
   await expect(page.locator("tbody")).not.toContainText("SYN-RESOLVED");
   await page.getByRole("button", { name: "Expand resolved panel" }).click();
   const panel = page.getByRole("complementary", {
-    name: "Waiting and resolved cases",
+    name: "Waiting and closed cases",
   });
   await expect(panel.getByRole("tabpanel")).not.toContainText(
     rows[0].shipment_id,
   );
-  await panel.getByRole("tab", { name: /Resolved/ }).click();
+  await panel.getByRole("tab", { name: /Closed/ }).click();
   await expect(panel.getByTestId("resolution-pending-count")).toContainText(
-    "45 reported resolved",
+    "52 unconfirmed",
   );
-  await expect(panel.locator(".resolved-entry")).toHaveCount(45);
+  await expect(panel.locator(".resolved-entry")).toHaveCount(52);
   await expect(panel.locator(".verified-check")).toHaveCount(0);
   const queueViewport = panel
     .getByRole("tabpanel")
@@ -69,7 +66,7 @@ test("45 reported-resolved rows stay out of open and Waiting while slow or missi
     element.scrollTop = element.scrollHeight;
   });
   await expect(
-    panel.getByRole("link", { name: new RegExp(rows[44].shipment_id) }),
+    panel.getByRole("link", { name: new RegExp(rows[51].shipment_id) }),
   ).toBeInViewport();
   await queueViewport.evaluate((element) => {
     element.scrollTop = 0;
@@ -84,11 +81,11 @@ test("45 reported-resolved rows stay out of open and Waiting while slow or missi
   release();
   await expect(panel.locator(".verified-check")).toHaveCount(1);
   await expect(panel.getByTestId("resolution-pending-count")).toContainText(
-    "44 reported resolved",
+    "51 unconfirmed",
   );
   await panel.getByRole("tab", { name: /Waiting/ }).click();
   await expect(panel.getByRole("tabpanel")).not.toContainText("SYN-RESOLVED");
-  await expect(page.locator("tbody tr")).toHaveCount(1);
+  await expect(page.locator("tbody tr")).toHaveCount(0);
   expect(stub.posts).toEqual([]);
 });
 
@@ -104,7 +101,7 @@ for (const viewport of [
     stub.state.dualWorker = true;
     await page.goto(`/app/cases/${CASE_A}`);
     await expect(page.getByTestId("synthetic-data-label")).toBeVisible();
-    const workers = page.getByTestId("investigation-selector");
+    const workers = page.getByTestId("working-agents");
     await expect(workers.getByRole("link")).toHaveCount(2);
     await expect(
       page.getByTestId("knowledge-graph").locator(".entity-node").first(),
@@ -131,7 +128,11 @@ for (const viewport of [
     expect(balancedMap.y + balancedMap.height).toBeLessThanOrEqual(
       viewport.height + 130,
     );
-    expect((await workers.boundingBox())!.height).toBeLessThan(65);
+    // Assignments now live in the collapsed left nav, outside the case canvas.
+    expect(
+      (await workers.getByRole("link").first().boundingBox())!.height,
+    ).toBeLessThan(40);
+    expect((await workers.boundingBox())!.x).toBeLessThan(balancedMap.x);
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth),
     ).toBeLessThanOrEqual(viewport.width);
@@ -214,7 +215,7 @@ test("one workspace switches between two real worker claims without mixing evide
   });
   await page.goto(`/app/cases/${CASE_A}`);
   await expect(
-    page.getByTestId("investigation-selector").getByRole("link"),
+    page.getByTestId("working-agents").getByRole("link"),
   ).toHaveCount(2);
   await expect(page.getByTestId("retrieval-100")).toBeVisible();
   await page.getByTestId("retrieval-100").click();
@@ -268,9 +269,10 @@ test("one workspace switches between two real worker claims without mixing evide
   );
   dual.worker.active_cases = [dual.worker.active_cases![1]];
   dual.worker.active_count = 1;
-  await expect(
-    page.getByText("1 slots available", { exact: true }),
-  ).toBeVisible({ timeout: 10000 });
+  await expect(page.getByTestId("worker-capacity")).toContainText(
+    "1 available",
+    { timeout: 10000 },
+  );
   expect(stub.posts).toEqual([]);
 });
 
@@ -400,10 +402,8 @@ test("Waiting/Resolved follows a saved verifier result; accepting a task never r
   await expect(page.getByRole("tabpanel")).toContainText(
     "Awaiting independent rescan",
   );
-  await page.getByRole("tab", { name: /^Resolved/ }).click();
-  await expect(page.getByRole("tabpanel")).toContainText(
-    "No verified resolutions",
-  );
+  await page.getByRole("tab", { name: /^Closed/ }).click();
+  await expect(page.getByRole("tabpanel")).toContainText("No closed cases");
   current = {
     ...current,
     workflow_state: trace.workflow_state,

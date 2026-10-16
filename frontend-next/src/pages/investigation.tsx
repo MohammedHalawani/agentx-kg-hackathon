@@ -65,7 +65,6 @@ import {
   CaseAssessment,
 } from "@/components/case-assessment";
 import { NarrationStrip } from "@/components/narration";
-import { InvestigationSelector } from "@/components/investigation-selector";
 import { RetrievalActivity } from "@/components/retrieval-activity";
 import { ActionLifecycle } from "@/components/action-lifecycle";
 import {
@@ -696,7 +695,6 @@ function InvestigationWorkspace() {
           )}
         </div>
       </div>
-      <InvestigationSelector selected={c.id} />
       {c.backend?.detailError && (
         <p className="case-refresh-warning" role="status">
           {t(

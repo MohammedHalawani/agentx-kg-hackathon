@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/empty";
 import { SelectControl } from "@/components/select-control";
 import { usePreferences } from "@/state/preferences";
+import { tablePages } from "@/domain/desktop-operations";
 
 export function DataTable<T>({
   columns,
@@ -44,6 +45,7 @@ export function DataTable<T>({
   emptyTitle,
   emptyDescription,
   animate = false,
+  compact = false,
 }: {
   columns: ColumnDef<T>[];
   data: T[];
@@ -56,6 +58,7 @@ export function DataTable<T>({
   emptyTitle: string;
   emptyDescription: string;
   animate?: boolean;
+  compact?: boolean;
 }) {
   const { t } = usePreferences();
   const table = useReactTable({
@@ -134,7 +137,7 @@ export function DataTable<T>({
           </EmptyHeader>
         </Empty>
       )}
-      <div className="table-footer">
+      <div className={`table-footer ${compact ? "compact-table-footer" : ""}`}>
         <span>
           {t(
             `Showing ${count === 0 ? 0 : pagination.pageIndex * pagination.pageSize + 1}–${Math.min((pagination.pageIndex + 1) * pagination.pageSize, count)} of ${count}`,
@@ -167,11 +170,42 @@ export function DataTable<T>({
                   <ChevronLeft size={14} />
                 </Button>
               </PaginationItem>
-              <PaginationItem>
-                <span className="page-index">
-                  {Math.min(pagination.pageIndex + 1, pageCount)} / {pageCount}
-                </span>
-              </PaginationItem>
+              {compact && !manualPagination ? (
+                tablePages(pagination.pageIndex, pageCount).map(
+                  (number, index) => (
+                    <PaginationItem key={`${number}-${index}`}>
+                      {number === "ellipsis" ? (
+                        <span className="page-ellipsis" aria-hidden="true">
+                          …
+                        </span>
+                      ) : (
+                        <Button
+                          size="icon-sm"
+                          variant={
+                            number === pagination.pageIndex
+                              ? "secondary"
+                              : "ghost"
+                          }
+                          aria-label={`Table page ${number + 1}`}
+                          aria-current={
+                            number === pagination.pageIndex ? "page" : undefined
+                          }
+                          onClick={() => table.setPageIndex(number)}
+                        >
+                          {number + 1}
+                        </Button>
+                      )}
+                    </PaginationItem>
+                  ),
+                )
+              ) : (
+                <PaginationItem>
+                  <span className="page-index">
+                    {Math.min(pagination.pageIndex + 1, pageCount)} /{" "}
+                    {pageCount}
+                  </span>
+                </PaginationItem>
+              )}
               <PaginationItem>
                 <Button
                   aria-label="Next table page"

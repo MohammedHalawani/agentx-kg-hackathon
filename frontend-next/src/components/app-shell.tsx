@@ -61,6 +61,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { OperationalNotifications } from "@/components/operational-notifications";
+import { WorkingAgents } from "@/components/working-agents";
 import { useOperations } from "@/state/operations";
 import { usePreferences } from "@/state/preferences";
 import { StatusBadge } from "@/components/shared";
@@ -103,12 +104,13 @@ function Navigation() {
   const { setOpenMobile, isMobile, setOpen } = useSidebar();
   const location = useLocation();
   // Opening a case gives the case, map and graph the room: the sidebar folds to its icons.
-  // It is folded once per case opened; the operator can expand it again at any time.
+  // Fold once when entering the workspace, preserving the operator's choice when switching cases.
   const onCase = backend && location.pathname.startsWith("/cases/");
-  const casePath = onCase ? location.pathname : "";
+  const wasOnCase = useRef(false);
   useEffect(() => {
-    if (casePath && !isMobile) setOpen(false);
-  }, [casePath, isMobile, setOpen]);
+    if (onCase && !wasOnCase.current && !isMobile) setOpen(false);
+    wasOnCase.current = onCase;
+  }, [onCase, isMobile, setOpen]);
   const [workspace, setWorkspace] = useState(false);
   const [help, setHelp] = useState(false);
   const attention = cases.filter((c) => c.status === "human_review").length;
@@ -230,6 +232,7 @@ function Navigation() {
               ))}
             </SidebarMenu>
           </SidebarGroup>
+          <WorkingAgents />
           <SidebarGroup className="secondary-nav">
             <SidebarGroupLabel>
               {t("PREFERENCES", "التفضيلات")}

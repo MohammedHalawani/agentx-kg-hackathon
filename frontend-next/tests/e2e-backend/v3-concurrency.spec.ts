@@ -8,9 +8,10 @@ test("Operations shows two active investigations from worker.active_cases", asyn
   stub.state.dualWorker = true;
   stub.state.worker = "running";
   await page.goto("/app/operations");
-  await expect(page.getByTestId("active-investigations")).toBeVisible();
-  await expect(page.getByText("2 active investigations")).toBeVisible();
+  await expect(page.getByTestId("working-agents")).toBeVisible();
+  await expect(page.getByTestId("working-agents")).toContainText("2 / 2");
+  await expect(page.locator("tbody tr")).toHaveCount(0);
   await expect(
-    page.getByTestId("active-investigations").getByRole("link"),
+    page.getByTestId("working-agents").getByRole("link"),
   ).toHaveCount(2);
 });

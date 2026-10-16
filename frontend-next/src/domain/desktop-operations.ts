@@ -1,0 +1,115 @@
+import type {
+  BackendConnection,
+  InvestigationStatus,
+  OperationalCase,
+} from "@/domain/types";
+import { caseQueueGroup } from "@/domain/investigation-workspace";
+
+export type OperationsCollection =
+  "unassigned" | "assigned" | "waiting" | "closed";
+
+export type QueueFilters = {
+  collection: string;
+  status: string;
+  priority: string;
+  city: string;
+  cause: string;
+  operational: string;
+  sort: string;
+};
+export const defaultQueueFilters: QueueFilters = {
+  collection: "unassigned",
+  status: "all",
+  priority: "all",
+  city: "all",
+  cause: "all",
+  operational: "all",
+  sort: "newest",
+};
+
+export function investigationAssignments(
+  worker: BackendConnection["worker"],
+  cases: readonly OperationalCase[],
+): InvestigationStatus[] {
+  if (!worker) return [];
+  if (worker.activeCases.length || !worker.activeCaseId)
+    return worker.activeCases;
+  const c = cases.find((item) => item.id === worker.activeCaseId);
+  return [
+    {
+      caseId: worker.activeCaseId,
+      shipmentId: c?.shipment.id ?? "",
+      workerId: null,
+      runId: c?.run?.id ?? null,
+      runStatus: c?.backend?.pipelineStatus ?? "UNKNOWN",
+      activeStage: null,
+      workflowState: c?.backend?.workflowState ?? "UNKNOWN",
+      startedAt: null,
+      updatedAt: null,
+      leaseExpiresAt: null,
+      asOf: null,
+      stateVersion: c?.backend?.stateVersion ?? 0,
+    },
+  ];
+}
+
+/** Display placement only. Claim eligibility and authorization remain backend decisions. */
+export function operationsCollection(
+  c: OperationalCase,
+  assignments: readonly InvestigationStatus[] = [],
+): OperationsCollection {
+  if (caseQueueGroup(c) !== "active") return "closed";
+  if (assignments.some((claim) => claim.caseId === c.id)) return "assigned";
+  if (c.backend) {
+    if (["OPEN", "REOPENED"].includes(c.backend.workflowState))
+      return "unassigned";
+    if (c.backend.workflowState === "INVESTIGATING") return "assigned";
+    return "waiting";
+  }
+  if (c.status === "queued") return "unassigned";
+  if (c.status === "investigating") return "assigned";
+  return "waiting";
+}
+
+export function assignmentIsRunning(
+  claim: InvestigationStatus,
+  online: boolean,
+) {
+  return (
+    online &&
+    claim.workflowState === "INVESTIGATING" &&
+    claim.runStatus === "RUNNING"
+  );
+}
+
+/** Free capacity is a pool count, not a fabricated roster of idle worker identities. */
+export function workerCapacity(worker: BackendConnection["worker"]) {
+  if (!worker) return null;
+  return Math.max(
+    0,
+    worker.concurrency -
+      Math.max(worker.activeCount, worker.activeCases.length),
+  );
+}
+
+/** Numbered pages refer only to the loaded row array, never unvisited backend cursors. */
+export function tablePages(
+  current: number,
+  count: number,
+): (number | "ellipsis")[] {
+  const pages = new Set(
+    [0, count - 1, current - 1, current, current + 1].filter(
+      (n) => n >= 0 && n < count,
+    ),
+  );
+  const result: (number | "ellipsis")[] = [];
+  [...pages]
+    .sort((a, b) => a - b)
+    .forEach((n) => {
+      const previous = result.at(-1);
+      if (typeof previous === "number" && n - previous > 1)
+        result.push("ellipsis");
+      result.push(n);
+    });
+  return result;
+}

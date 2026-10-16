@@ -23,12 +23,23 @@ test.afterEach(async ({ page }) => {
 });
 
 async function choose(page: Page, label: string, option: string) {
+  const queueFilter = [
+    "Sort cases",
+    "Filter by city",
+    "Filter by status",
+    "Filter by priority",
+  ].includes(label);
+  if (queueFilter) await page.getByRole("button", { name: /^Filters/ }).click();
   await page.getByRole("combobox", { name: label, exact: true }).click();
   await page.getByRole("option", { name: option, exact: true }).click();
   // Wait for the selected value to render before the next dependent filter.
   await expect(
     page.getByRole("combobox", { name: label, exact: true }),
   ).toContainText(option);
+  if (queueFilter)
+    await page
+      .getByRole("button", { name: "Apply filters", exact: true })
+      .click();
 }
 async function openChat(page: Page) {
   await page
@@ -93,16 +104,27 @@ test("Operations filters, pagination, resolved rail, and navigation", async ({
   await expect(
     page.getByRole("heading", { name: "Operations", exact: true }),
   ).toBeVisible();
+  await page.getByRole("button", { name: /^Filters/ }).click();
+  await page
+    .getByRole("combobox", { name: "Case collection", exact: true })
+    .click();
+  await page
+    .getByRole("option", { name: "All loaded cases", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Apply filters", exact: true })
+    .click();
   await expect(
-    page.getByText("Showing 1–10 of 12", { exact: true }),
+    page.getByText(`Showing 1–10 of 29`, { exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Next table page" }).click();
   await expect(
-    page.getByText("Showing 11–12 of 12", { exact: true }),
+    page.getByText(`Showing 11–20 of 29`, { exact: true }),
   ).toBeVisible();
   await choose(page, "Sort cases", "Oldest first");
-  await expect(page.locator("tbody tr").first()).toContainText("SHP-10433");
+  await expect(page.locator("tbody tr").first()).toContainText("SHP-10312");
   await choose(page, "Filter by city", "Khobar");
+  await choose(page, "Filter by status", "Queued");
   await expect(page.locator("tbody tr")).toHaveCount(2);
   await page
     .getByRole("textbox", { name: "Search exception queue" })
@@ -113,13 +135,13 @@ test("Operations filters, pagination, resolved rail, and navigation", async ({
   await page.getByRole("textbox", { name: "Search exception queue" }).fill("");
   await page.getByRole("button", { name: "Expand resolved panel" }).click();
   const queue = page.getByRole("complementary", {
-    name: "Waiting and resolved cases",
+    name: "Waiting and closed cases",
   });
   await expect(queue.getByRole("tab", { name: /Waiting/ })).toHaveAttribute(
     "aria-selected",
     "true",
   );
-  await queue.getByRole("tab", { name: /Resolved/ }).click();
+  await queue.getByRole("tab", { name: /Closed/ }).click();
   await expect(queue.getByRole("tabpanel")).toContainText("SHP-10453");
   await page.getByRole("button", { name: "Collapse resolved panel" }).click();
   await page.getByRole("link", { name: "SHP-10498", exact: true }).click();
@@ -350,19 +372,21 @@ test("Human approval authorizes execution, and only verified outcome moves to Re
     timeout: 6000,
   });
   await page.clock.runFor(2400);
-  await expect(page.locator("tbody tr")).toHaveCount(0, { timeout: 6000 });
+  await expect(page.locator("tbody")).toContainText("Resolved", {
+    timeout: 6000,
+  });
   const toast = page.locator('[data-sonner-toast][data-type="success"]');
   await expect(toast).toContainText("SHP-10482 resolved — outcome verified");
   await page.getByRole("button", { name: "Expand resolved panel" }).click();
   const queue = page.getByRole("complementary", {
-    name: "Waiting and resolved cases",
+    name: "Waiting and closed cases",
   });
   await expect(queue.getByRole("tab", { name: /Waiting/ })).toHaveAttribute(
     "aria-selected",
     "true",
   );
   await expect(queue.getByRole("tabpanel")).not.toContainText("SHP-10482");
-  await queue.getByRole("tab", { name: /Resolved/ }).click();
+  await queue.getByRole("tab", { name: /Closed/ }).click();
   await expect(queue.getByRole("tabpanel")).toContainText("SHP-10482");
   await toast.getByRole("button", { name: "Open case", exact: true }).click();
   await page.clock.runFor(50);
@@ -389,11 +413,10 @@ test("Automatic investigation progresses one FIFO case and finishes after pause"
   await choose(page, "Sort cases", "Oldest first");
   await page.getByRole("switch", { name: "Automatic investigation" }).click();
   await page.clock.runFor(2400);
-  await expect(
-    page.locator('tr[data-testid="data-row-SHP-10471"]'),
-  ).toContainText("Investigating");
+  await expect(page.getByTestId("data-row-SHP-10471")).toHaveCount(0);
+  await expect(page.getByTestId("worker-case-SHP-10471")).toBeVisible();
   await page.getByRole("switch", { name: "Automatic investigation" }).click();
-  await page.getByRole("link", { name: "SHP-10471", exact: true }).click();
+  await page.getByTestId("worker-case-SHP-10471").click();
   await page.clock.runFor(50);
   await openChat(page);
   await page.clock.runFor(50);

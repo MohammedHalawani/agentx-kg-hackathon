@@ -12,18 +12,19 @@ test("Operations shows the backend queue with real identities and honest labels"
   await page.goto("/app/");
   await expect(page).toHaveURL(/\/app\/operations$/);
   const rows = page.locator("[data-testid^='data-row-']");
-  await expect(rows).toHaveCount(2);
+  await expect(rows).toHaveCount(1);
   // Newest first; the shipment id is shown, the link is the case.
   await expect(rows.first()).toContainText("SYN-SHP-000103");
   await expect(rows.first()).toContainText("Recipient reported not received");
   await expect(rows.first()).toContainText("Queued");
   await expect(rows.first()).toContainText("Not set");
+  await expect(page.getByTestId(`data-row-${CASE_A}`)).toHaveCount(0);
+  await page.getByRole("textbox", { name: "Search exception queue" }).fill(SHIP_A);
   const reviewed = page.getByTestId(`data-row-${CASE_A}`);
   await expect(reviewed).toContainText(SHIP_A);
   await expect(reviewed).toContainText("Riyadh");
   await expect(reviewed).toContainText("Dammam");
   await expect(reviewed).toContainText("Awaiting approval");
-  await expect(reviewed).toContainText("Unreconciled custody");
   await expect(page.locator(".environment-badge")).toHaveText("Connected");
   await expect(page.locator(".sidebar-system")).toContainText("Backend connected");
   await expect(page.locator(".operator-button")).toContainText("SYN-OPERATOR-LOCAL");
@@ -36,7 +37,7 @@ test("Operations shows the backend queue with real identities and honest labels"
   await expect(page.locator("body")).not.toContainText(LAB_ONLY);
   // Only the independently verified case is in Resolved.
   await page.getByRole("button", { name: "Expand resolved panel" }).click();
-  await page.getByRole("tab", { name: /^Resolved/ }).click();
+  await page.getByRole("tab", { name: /^Closed/ }).click();
   const resolved = page.getByRole("tabpanel");
   await expect(resolved.locator(".resolved-entry")).toHaveCount(1);
   await expect(resolved).toContainText("SYN-SHP-000102");
@@ -62,7 +63,7 @@ test("An unreachable backend shows nothing and says so; no stand-in data appears
   await expect(page.locator("body")).not.toContainText(LAB_ONLY);
   // When it answers again the queue appears without a reload.
   stub.state.online = true;
-  await expect(page.locator("[data-testid^='data-row-']")).toHaveCount(2, {
+  await expect(page.locator("[data-testid^='data-row-']")).toHaveCount(1, {
     timeout: 15000,
   });
   await expect(page.locator(".backend-notice")).toHaveCount(0);
@@ -183,7 +184,7 @@ test("Investigation shows recorded evidence, keeps GPS apart from custody, and r
   await page.keyboard.press("Escape");
   await page.goto("/app/operations");
   await page.getByRole("button", { name: "Expand resolved panel" }).click();
-  await page.getByRole("tab", { name: /^Resolved/ }).click();
+  await page.getByRole("tab", { name: /^Closed/ }).click();
   await expect(
     page.getByRole("tabpanel").locator(".resolved-entry"),
   ).toHaveCount(1);
@@ -556,7 +557,7 @@ test("Connected screens for visual review", async ({ page }) => {
     await page.screenshot({ path: `screenshots/connected-${name}.png` });
   };
   await page.goto("/app/operations");
-  await expect(page.locator("[data-testid^='data-row-']")).toHaveCount(2);
+  await expect(page.locator("[data-testid^='data-row-']")).toHaveCount(1);
   await shot("operations");
   await page.goto(`/app/cases/${CASE_A}`);
   await expect(
@@ -597,7 +598,7 @@ test("Connected screens for visual review", async ({ page }) => {
   await page.getByRole("button", { name: "Toggle theme" }).click();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/app/operations");
-  await expect(page.locator("[data-testid^='data-row-']")).toHaveCount(2);
+  await expect(page.locator("[data-testid^='data-row-']")).toHaveCount(1);
   // No horizontal overflow of the page at phone width.
   expect(
     await page.evaluate(
