@@ -112,6 +112,12 @@ class Tx:
                 if (when,n.id)>(p["cursor"],p["id"]) and (p["step"] or when<=p["target"]):
                     events.append({"props":temporal_properties(n.properties),"labels":[n.kind],"time":when})
             return Result(sorted(events,key=lambda r:(r["time"],r["props"]["entity_id"]))[:100])
+        if q.startswith("MATCH (ship:V2Entity:Shipment"):
+            return Result([{"n":sum(1 for n in self.driver.world.of_kind("Shipment") if n.properties.get("split")=="development"
+                                    and instant(n.properties["recorded_at"])<=p["clock"])}])
+        if q.startswith("MATCH(w:OpsEntity:OpsMonitorWatch") or q.startswith("MATCH(c:OpsEntity:OpsCase {dataset_id:$dataset,split:'development'}) RETURN"):
+            kind="OpsMonitorWatch" if "OpsMonitorWatch" in q else "OpsCase"
+            return Result([{"props":copy.deepcopy(v)} for k,v in self.ledger.values() if k==kind])
         raise AssertionError("Unhandled fixed store query: "+q)
 
 

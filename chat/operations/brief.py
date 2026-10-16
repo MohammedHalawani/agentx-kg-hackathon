@@ -113,6 +113,69 @@ def _join(parts):
     return parts[0] if len(parts) == 1 else ", ".join(parts[:-1]) + " and " + parts[-1] if parts else ""
 
 
+PREDICATES = {"RECEIVED": ("arrival", "الوصول"), "LOADED": ("loading", "التحميل"), "DELIVERED": ("delivery", "التسليم")}
+PLACES = {"Hub": ("hub", "المركز"), "SortingCenter": ("sorting centre", "مركز الفرز"), "DeliveryDepot": ("delivery depot", "مستودع التوزيع"),
+          "Branch": ("branch", "الفرع"), "FulfillmentWarehouse": ("fulfilment warehouse", "مستودع التجهيز"),
+          "OrganizationWarehouse": ("sender's warehouse", "مستودع المرسل"), "Recipient": ("recipient", "المستلم")}
+
+
+HOLDERS = {"Vehicle": ("vehicle", "مركبة"), "Driver": ("driver", "سائق"), "Container": ("container", "حاوية")}
+
+
+def detection_sentences(detail):
+    """(English, Arabic) account of the evidence the monitor detected the case on (operations.detection), and whether
+    that alert still stands. Restated from stored fields; never a cause."""
+    from operations.canopus import OPERATOR_IDS   # canopus imports this module; imported here, as code_free is
+    detection = detail.get("detection") or {}
+    en, ar = [], []
+    for row in (detection.get("milestones") or [])[:2]:
+        place = row.get("expected_location") or {}
+        kind_en, kind_ar = PLACES.get(place.get("kind"), ("location", "الموقع"))
+        what_en, what_ar = PREDICATES.get(row.get("predicate"), (str(row.get("predicate") or "step").lower(), str(row.get("predicate") or "")))
+        if row.get("delivery_promise"):
+            what_en, what_ar = "promised delivery", "التسليم الموعود"
+        # Facility identifiers are operator vocabulary; other record ids stay out of the sentence (operations.canopus.code_free).
+        shown = f" {place.get('id')}" if OPERATOR_IDS.match(str(place.get("id") or "")) else ""
+        where_en = f" at the {kind_en}{shown}" if place.get("kind") and place.get("kind") != "Recipient" else ""
+        where_ar = f" في {kind_ar}{shown}" if place.get("kind") and place.get("kind") != "Recipient" else ""
+        due = _when(row.get("deadline_at"))
+        grace = int(row.get("grace_seconds") or 0) // 60
+        grace_en, grace_ar = (f" (including {grace} min grace)", f" (مع مهلة {grace} دقيقة)") if grace else ("", "")
+        lead_en = "the" if row.get("delivery_promise") else "the expected"
+        if row.get("state") == "missing_after_deadline":
+            en.append(f"{lead_en} {what_en}{where_en} was due by {due}{grace_en} and has no confirmed record")
+            ar.append(f"كان {what_ar}{where_ar} مستحقاً بحلول {due}{grace_ar} ولا يوجد سجل مؤكد له")
+        else:
+            en.append(f"the {what_en}{where_en} was due by {due} and was recorded at {_when(row.get('observed_at'))}")
+            ar.append(f"كان {what_ar}{where_ar} مستحقاً بحلول {due} وسُجّل في {_when(row.get('observed_at'))}")
+    for row in (detection.get("comparisons") or [])[:1]:
+        if row.get("predicate") == "BARCODE":
+            en.append(f"a scan read {row.get('actual')} where the manifest says {row.get('expected')}")
+            ar.append(f"قرأ مسح {row.get('actual')} بينما يذكر البيان {row.get('expected')}")
+        else:
+            en.append(f"a calibrated scale read {row.get('actual')} kg against {row.get('expected')} kg declared (tolerance {row.get('tolerance_kg')} kg)")
+            ar.append(f"قرأ ميزان معاير {row.get('actual')} كغ مقابل {row.get('expected')} كغ مصرّح بها (التفاوت المسموح {row.get('tolerance_kg')} كغ)")
+    last = next((row for row in detection.get("custody") or [] if row.get("last_corroborated_event_id")), None)
+    holder = (last or {}).get("last_corroborated_holder") or {}
+    if en and holder.get("kind"):
+        word_en, word_ar = PLACES.get(holder["kind"], HOLDERS.get(holder["kind"], ("holder", "الحائز")))
+        shown = f" {holder.get('id')}" if OPERATOR_IDS.match(str(holder.get("id") or "")) else ""
+        en.append(f"the last confirmed custody is with a {word_en}{shown}")
+        ar.append(f"آخر حيازة مؤكدة لدى {word_ar}{shown}")
+    text_en = ("The monitor's evidence: " + "; ".join(en) + ".") if en else ""
+    text_ar = ("أدلة المراقب: " + "؛ ".join(ar) + ".") if ar else ""
+    alert = detail.get("monitor_alert") or {}
+    cleared = [_label(SYMPTOMS, c)[0].lower() for c in alert.get("cleared_symptoms") or []]
+    if alert.get("state") == "CLEARED":
+        text_en += (" " if text_en else "") + ("Later evidence no longer shows " + _join(cleared) + "; the alert no longer stands, which is not a resolution: "
+                                               "the case still needs its investigation and verification.")
+        text_ar += (" " if text_ar else "") + "لم تعد الأدلة اللاحقة تُظهر ما رصده المراقب؛ زال التنبيه، وهذا ليس حلاً: ما زالت الحالة تحتاج إلى التحقيق والتحقق."
+    elif alert.get("state") == "PARTLY_CLEARED":
+        text_en += (" " if text_en else "") + "Later evidence no longer shows " + _join(cleared) + "; the rest of the alert still stands."
+        text_ar += (" " if text_ar else "") + "لم تعد الأدلة اللاحقة تُظهر جزءاً مما رصده المراقب؛ وبقية التنبيه قائمة."
+    return text_en, text_ar
+
+
 def _symptom_codes(detail):
     codes = detail.get("symptom_codes")
     if codes:
@@ -410,6 +473,9 @@ def build(detail):
     happened_en = (f"Suhail's monitor opened this case for shipment {shipment}: " + _join([s["label_en"][0].lower() + s["label_en"][1:] for s in symptoms]) + "."
                    if symptoms else f"Suhail's monitor opened this case for shipment {shipment}.")
     happened_ar = ("فتح نظام المراقبة هذه الحالة: " + "، ".join(s["label_ar"] or s["code"] for s in symptoms) + ".") if symptoms else "فتح نظام المراقبة هذه الحالة."
+    detected_en, detected_ar = detection_sentences(detail)
+    if detected_en:
+        happened_en, happened_ar = happened_en + " " + detected_en, happened_ar + " " + detected_ar
 
     cause = findings.get("primary_cause")
     cause_en, cause_ar = _label(CAUSES, cause) if cause else (None, None)
@@ -495,8 +561,9 @@ def build(detail):
                         **{k: recorded[k] for k in ("text_en", "text_ar", "short_en", "short_ar")}}
     verification.update(outcome_type=outcome.get("outcome_type"), verified_at=outcome.get("verified_at"), verifier_reason=outcome.get("reason"))
 
-    lines = [{"key": "problem", "label_en": "Problem", "label_ar": "المشكلة", "text_en": _join([s["label_en"] for s in symptoms]) + "." if symptoms else happened_en,
-              "text_ar": ("، ".join(s["label_ar"] or s["code"] for s in symptoms) + ".") if symptoms else happened_ar},
+    lines = [{"key": "problem", "label_en": "Problem", "label_ar": "المشكلة",
+              "text_en": (_join([s["label_en"] for s in symptoms]) + "." + (" " + detected_en if detected_en else "")) if symptoms else happened_en,
+              "text_ar": ("، ".join(s["label_ar"] or s["code"] for s in symptoms) + "." + (" " + detected_ar if detected_ar else "")) if symptoms else happened_ar},
              {"key": "finding", "label_en": "Finding", "label_ar": "ما توصل إليه التحقيق", "text_en": cause_text, "text_ar": cause_text_ar}]
     if review_status in ("challenged", "asked_for_person", "unavailable"):
         # The Review line states the challenge, so the Finding line does not repeat it. Where a stored summary of the

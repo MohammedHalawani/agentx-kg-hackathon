@@ -313,6 +313,12 @@ def worker_status():
     return status
 
 
+@router.get("/operations/monitor/overview")
+def monitor_overview():
+    """Shipments monitored, with no active exception, and cases by stage (V3.4). Read-only; no model call."""
+    return invoke(get_runtime().store.monitor_overview)
+
+
 @router.get("/simulation/status")
 def simulation_status():
     status=invoke(get_runtime().store.status)
