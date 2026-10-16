@@ -35,6 +35,9 @@ FIELDS = {
                 # AUTH-27: the verified outcome of an action that ran under a reviewer's doubt, while the case waits for
                 # its reassessment (cleared by that run).
                 "reassess_outcome_id",
+                # V3.4: why the monitor detected the case (operations.detection, visible evidence only) and whether that
+                # alert still stands on the evidence visible now. Neither is a diagnosis, a resolution or a verified outcome.
+                "detection_json", "monitor_alert_state", "monitor_alert_cleared", "monitor_alert_since",
                 # V3 ownership of a running investigation (operations.claims). claim_id, claim_at (the simulation clock
                 # at the grant), last_run_id, as_of and state_version keep their meaning. worker_id names the owner;
                 # claim_epoch counts every change of ownership and never goes back; claim_wall_at, lease_expires_at and
@@ -75,6 +78,8 @@ FIELDS = {
     "OpsNotification": {"case_id", "trigger", "status", "mode", "external_calls"},
     "OpsCommand": {"case_id", "idempotency_key", "request_hash", "result_json", "command_type"},
     "OpsRiskFlag": {"active", "certainty", "promise_at", "latest_estimate_at", "earliest_estimate_at", "evidence_ids", "checked_at"},
+    # The monitor's latest verdict per checked shipment (V3.4 Operations overview): never truth, never a case.
+    "OpsMonitorWatch": {"status", "active_symptoms", "checked_at", "first_checked_at", "checks"},
 }
 # Wall-clock UTC times of a claim and its run. Stored as temporal values like every other ledger time.
 WALL_FIELDS = ("claim_wall_at", "lease_expires_at", "lease_heartbeat_at", "updated_wall_at", "finished_wall_at")

@@ -263,6 +263,7 @@ SYMPTOM_STATUS = (("RECIPIENT_REPORTED_NOT_RECEIVED", "DELIVERY_DISPUTE"), ("CUS
 # Standing symptoms (conditions still true at the clock) and the one clearance check shared by the outcome verifier
 # and a person's recorded finding live in operations.closure.
 from operations.closure import STANDING_SYMPTOMS, delivered as delivery_corroborated, finding_evidence, remaining_symptoms
+from operations.detection import ALERT_ACTIVE, ALERT_CLEARED, ALERT_PARTLY_CLEARED, alert_state, detection_summary, detection_text, merge_detection
 
 
 def monitor_finding(assessment):
@@ -815,32 +816,41 @@ class OperationsStore:
             # Milestone risk is a travel-window estimate from route bounds, not a validated prediction:
             # it is recorded as a watch flag and never opens a case on its own.
             forecast=journey_forecast(world,assessment) if not finding["open"] else {"available":False}
-            findings.append((sid,finding,context["as_of"],forecast,context))
+            # Why the rules fired (milestone, deadline, location, last corroborated custody), kept for the case record.
+            detection=detection_summary(assessment,world,lambda code:SYMPTOMS.get(code,"EVIDENCE_MISSING")) if finding["open"] else None
+            findings.append((sid,finding,context["as_of"],forecast,context,detection))
         def record(tx):
             c=self._control(tx,lock=True);opened=[]
-            for sid,finding,as_of,forecast,context in findings:
+            for sid,finding,as_of,forecast,context,detection in findings:
                 c["monitor_checked"]=c.get("monitor_checked",0)+1
                 self._risk_flag(tx,sid,forecast,as_of)
+                self._watch(tx,sid,finding,as_of)
                 cases=[public_value(r["props"]) for r in tx.run("MATCH(c:OpsCase {shipment_id:$sid,dataset_id:$dataset,split:'development'}) RETURN properties(c) AS props",
                         sid=sid,dataset=self.dataset_id)]
                 # Records ingested since a finished investigation: only a material one requeues its case.
                 for case in cases:self._reinvestigate_for_evidence(tx,case,context,as_of)
-                if not finding["open"]:continue
                 active=[x for x in cases if not x.get("is_terminal") and x["workflow_state"]!="RESOLVED"]
+                if not finding["open"]:
+                    # Nothing is found now: an open case's monitored alert no longer stands (recorded, never a resolution).
+                    for case in active:self._alert_state(tx,case,finding["symptoms"],as_of)
+                    continue
                 if active:
                     # The open case follows this shipment; newly observed symptoms are added to it, not a new case.
                     case=active[0];new=sorted(set(finding["symptoms"])-set(case.get("symptom_codes") or []))
                     if new:
-                        case.update(symptom_codes=sorted(set(case.get("symptom_codes") or [])|set(new)),state_version=case["state_version"]+1)
+                        case.update(symptom_codes=sorted(set(case.get("symptom_codes") or [])|set(new)),state_version=case["state_version"]+1,
+                                    detection_json=canonical(merge_detection(case.get("detection_json"),detection)))
                         if not case.get("diagnosis_available"):case["operational_status"]=symptom_status(case["symptom_codes"])
                         self._put(tx,"OpsCase",case,update=True)
-                        self._audit(tx,case,"SYMPTOMS_UPDATED",as_of,actor="SUHAIL-MONITOR",result="New symptoms: "+", ".join(new))
+                        self._audit(tx,case,"SYMPTOMS_UPDATED",as_of,actor="SUHAIL-MONITOR",result="New symptoms: "+", ".join(new)
+                                    +". "+detection_text(detection,new))
                         self._reinvestigate_for_symptoms(tx,case,new,as_of)
+                    for other in active:self._alert_state(tx,other,finding["symptoms"],as_of)
                     continue
                 seen=set().union(*[set(x.get("symptom_codes") or []) for x in cases]) if cases else set()
                 if cases and set(finding["symptoms"])<=seen:
                     continue  # Same symptoms as an already resolved case: nothing new to open.
-                opened.append(self._open_monitored_case(tx,sid,finding["symptoms"],as_of,c.get("session_id"),len(cases)))
+                opened.append(self._open_monitored_case(tx,sid,finding["symptoms"],as_of,c.get("session_id"),len(cases),detection=detection))
                 c["monitor_opened"]=c.get("monitor_opened",0)+1
             self._put(tx,"OpsControl",c,update=True)
             return opened
@@ -918,7 +928,36 @@ class OperationsStore:
         if existing and existing.get("active")==at_risk and existing.get("latest_estimate_at")==flag["latest_estimate_at"]:return
         self._put(tx,"OpsRiskFlag",flag,update=bool(existing))
 
-    def _open_monitored_case(self,tx,sid,symptoms,when,session_id,sequence=0):
+    def _watch(self,tx,sid,finding,when):
+        """The monitor's latest verdict on a shipment it checked: no active exception, or the symptoms it found. One
+        record per shipment, overwritten on every check; the Operations overview counts these (never truth)."""
+        identifier=identity("watch",sid)
+        existing=self._get(tx,"OpsMonitorWatch",identifier)
+        self._put(tx,"OpsMonitorWatch",{"entity_id":identifier,"shipment_id":sid,"recorded_at":(existing or {}).get("recorded_at",when),
+            "occurred_at":when,"status":"ACTIVE_EXCEPTION" if finding["open"] else "NO_ACTIVE_EXCEPTION",
+            "active_symptoms":list(finding["symptoms"]),"checked_at":when,"first_checked_at":(existing or {}).get("first_checked_at",when),
+            "checks":((existing or {}).get("checks") or 0)+1},update=bool(existing))
+
+    def _alert_state(self,tx,case,fresh,when):
+        """Whether the alert a case was opened for still stands on the evidence visible now (operations.detection).
+        Recorded on the case with an audit entry when it changes. It never moves the workflow, never closes the case and
+        is not a verified outcome: the investigation, the verifier and a person's finding are unchanged. As with the
+        evidence check, the case version is not touched (no claim or decision is invalidated by it)."""
+        state,cleared=alert_state(case.get("symptom_codes"),fresh)
+        if case.get("monitor_alert_state",ALERT_ACTIVE)==state and list(case.get("monitor_alert_cleared") or [])==cleared:
+            return state
+        case.update(monitor_alert_state=state,monitor_alert_cleared=cleared,monitor_alert_since=when)
+        self._put(tx,"OpsCase",case,update=True)
+        text={ALERT_CLEARED:"The monitor no longer finds any of the case's symptoms on the evidence visible now ("+", ".join(cleared)
+                             +"). The alert is recorded as cleared by later evidence; this is not a verified resolution and the case "
+                             "continues through investigation and verification.",
+              ALERT_PARTLY_CLEARED:"No longer found on the evidence visible now: "+", ".join(cleared)+". Still found: "
+                             +", ".join(sorted(set(fresh)))+". Not a resolution.",
+              ALERT_ACTIVE:"The monitor finds all of the case's symptoms again: "+", ".join(sorted(set(fresh)))+"."}[state]
+        self._audit(tx,case,"MONITOR_ALERT_"+state,when,actor="SUHAIL-MONITOR",key="alert:"+state+":"+",".join(cleared),result=text)
+        return state
+
+    def _open_monitored_case(self,tx,sid,symptoms,when,session_id,sequence=0,detection=None):
         identifier=identity("case","monitor",session_id,sid,*([sequence] if sequence else []))
         status=symptom_status(symptoms)
         row=tx.run("MATCH(s:V2Entity:Shipment {entity_id:$sid,dataset_id:$dataset,split:'development'}) RETURN s.destination_city AS city",
@@ -927,9 +966,12 @@ class OperationsStore:
             "session_id":session_id,"workflow_state":"OPEN","operational_status":status,
             "priority":"high" if status in {"CRITICAL","UNRECONCILED_CUSTODY","DELIVERY_DISPUTE"} else "medium",
             "symptom_codes":symptoms,"cause_codes":[],"city":row["city"] if row else "","opened_at":when,"recorded_at":when,"as_of":when,"state_version":0,
-            "issue_summary":MONITOR_SUMMARY_PENDING,"diagnosis_available":False,"rule_signal_codes":[]})
+            "issue_summary":MONITOR_SUMMARY_PENDING,"diagnosis_available":False,"rule_signal_codes":[],
+            "detection_json":canonical(merge_detection(None,detection)) if detection else None,"monitor_alert_state":ALERT_ACTIVE,
+            "monitor_alert_cleared":[],"monitor_alert_since":when})
         self._link(tx,"OPS_ABOUT",identifier,sid,sid,when)
-        self._audit(tx,case,"CASE_OPENED",when,result="Monitor symptoms: "+", ".join(symptoms),actor="SUHAIL-MONITOR")
+        self._audit(tx,case,"CASE_OPENED",when,result="Monitor symptoms: "+", ".join(symptoms)+(". "+detection_text(detection,symptoms) if detection else ""),
+                    actor="SUHAIL-MONITOR")
         return identifier
 
     def reset_confirmation(self):
@@ -2481,5 +2523,52 @@ class OperationsStore:
                 "investigation_status":self._investigation_status(tx,case),
                 # The current run's accepted agent investigation, or explicitly absent; never rule output.
                 "diagnosis":diagnosis,"synthetic":True,
-                "action_status":action_status}
+                "action_status":action_status,
+                # Why the monitor opened the case (rules and their evidence) and whether that alert still stands now.
+                "detection":json.loads(case["detection_json"]) if case.get("detection_json") else None,
+                "monitor_alert":{"state":case.get("monitor_alert_state") or ALERT_ACTIVE,"cleared_symptoms":list(case.get("monitor_alert_cleared") or []),
+                                 "since":case.get("monitor_alert_since"),"is_resolution":False}}
         return self._execute(read)
+
+    # Workflow states grouped for the Operations overview. Nothing here is a verified outcome except VERIFIED_STATES.
+    OVERVIEW_GROUPS = {"awaiting_investigation": ("OPEN", "REOPENED"), "investigating": ("INVESTIGATING",),
+                       "action_pending": ("RECOMMENDATION_READY", "AWAITING_APPROVAL", "ACTION_INITIATED", "AWAITING_OUTCOME", "NEEDS_EVIDENCE"),
+                       "human_review": ("HUMAN_REVIEW", "ESCALATED", "REJECTED")}
+
+    def monitor_overview(self):
+        """Counts for the Operations overview, read from the monitor's per-shipment watch records and the case ledger at
+        the current clock. Shipments the monitor has not checked yet are counted as not yet monitored, never as healthy."""
+        def read(tx):
+            control=self._control(tx)
+            clock=instant(control["as_of"])
+            booked=tx.run("MATCH (ship:V2Entity:Shipment {dataset_id:$dataset,split:'development'}) WHERE ship.recorded_at <= $clock "
+                          "RETURN count(ship) AS n",dataset=self.dataset_id,clock=clock).single()
+            watches=[public_value(r["props"]) for r in tx.run("MATCH(w:OpsEntity:OpsMonitorWatch {dataset_id:$dataset,split:'development'}) "
+                                                              "RETURN properties(w) AS props",dataset=self.dataset_id)]
+            cases=[public_value(r["props"]) for r in tx.run("MATCH(c:OpsEntity:OpsCase {dataset_id:$dataset,split:'development'}) "
+                                                            "RETURN properties(c) AS props",dataset=self.dataset_id)]
+            return control,(booked["n"] if booked else 0),watches,cases
+        control,booked,watches,cases=self._execute(read)
+        open_cases=[c for c in cases if not c.get("is_terminal") and c["workflow_state"]!="RESOLVED"]
+        with_open_case={c["shipment_id"] for c in open_cases}
+        groups={name:sum(1 for c in open_cases if c["workflow_state"] in states) for name,states in self.OVERVIEW_GROUPS.items()}
+        verified=[c for c in cases if c["workflow_state"]=="RESOLVED" and c.get("verified_outcome_id")]
+        return {"synthetic":True,"as_of":control["as_of"],"source":"monitor watch records and the case ledger (no truth, no model)",
+                "shipments_booked":booked,
+                "shipments_monitored":len(watches),
+                "no_active_exception":sum(1 for w in watches if w.get("status")=="NO_ACTIVE_EXCEPTION" and w["shipment_id"] not in with_open_case),
+                "active_exception":sum(1 for w in watches if w.get("status")=="ACTIVE_EXCEPTION"),
+                "cases_total":len(cases),"cases_open":len(open_cases),
+                "awaiting_investigation":groups["awaiting_investigation"],"investigating":groups["investigating"],
+                "action_pending":groups["action_pending"],"human_review":groups["human_review"],
+                "alerts_cleared_by_later_evidence":sum(1 for c in open_cases if c.get("monitor_alert_state")==ALERT_CLEARED),
+                "alerts_partly_cleared":sum(1 for c in open_cases if c.get("monitor_alert_state")==ALERT_PARTLY_CLEARED),
+                "verified_resolved":len(verified),
+                "monitor":{"checks":control.get("monitor_checked",0),"cases_opened":control.get("monitor_opened",0),
+                           "pending":len(control.get("monitor_queue") or []),
+                           "curated":self.demo_shipments is not None},
+                "definitions":{"shipments_monitored":"development shipments the monitor has checked at least once this session",
+                               "no_active_exception":"monitored shipments whose latest check found no rule match and that have no open case",
+                               "alerts_cleared_by_later_evidence":"open cases whose monitored symptoms are no longer found on the evidence "
+                                                                  "visible now; not resolved and not verified",
+                               "verified_resolved":"cases closed by the verifier or a person's verified finding"}}
