@@ -148,7 +148,7 @@ class InferenceLedger:
             self._write(data,until=until)
         return row["id"]
 
-    def finish(self, key, *, response=None, dispatched=True, abandoned=False, until=None):
+    def finish(self, key, *, response=None, dispatched=True, abandoned=False, until=None, lane=None):
         # Accounting is bounded too. If a crashed writer left a lock, the durable
         # pre-dispatch maximum remains charged and the result is not trusted.
         until=time.monotonic()+1 if until is None else until
@@ -157,6 +157,8 @@ class InferenceLedger:
             row = next(e for e in data["entries"] if e["id"] == key)
             if row["status"] in ("abandoned", "not_dispatched"):
                 return
+            if lane is not None:   # which provider key (lane A/B, never the key) carried the call: per-account spend
+                row["lane"] = str(lane)
             if abandoned:
                 row.update(status="abandoned", calls=1, tokens=row["input_reserved"] + row["output_reserved"],
                            usd=str(self.policy.cost(row["input_reserved"], row["output_reserved"])))

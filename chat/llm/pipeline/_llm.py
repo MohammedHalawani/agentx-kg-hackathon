@@ -20,7 +20,7 @@ import re
 import threading
 import time
 from copy import deepcopy
-from functools import lru_cache
+from datetime import datetime, timezone
 from typing import Any
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -30,6 +30,7 @@ import config
 from operations import provider_gate
 
 log = logging.getLogger("pipeline.llm")
+transport = logging.getLogger("suhail.provider.transport")
 
 _FENCE_RE = re.compile(r"```(?:json)?\s*(.*?)```", re.DOTALL)
 _PRIVATE_TAG_RE = re.compile(
@@ -127,24 +128,42 @@ def _content_text(block: Any) -> str:
 _model_lock = threading.Lock()
 
 
-def model() -> ChatLiteLLM:
-    """One shared, memoized chat model for every pipeline stage - same construction
+def model(lane: int = 0) -> ChatLiteLLM:
+    """One shared, memoized chat model per provider lane for every pipeline stage - same construction
     chat/llm/agent.py uses, minus streaming (no stage streams; the pipeline reports
     per-stage, not per-token). temperature=0 because every stage is a judgement that should
     be reproducible for the same input, not a creative generation.
 
     Built once, under a lock: two investigations that start together get the same client, never two. The client holds
-    configuration only; each call's messages, parameters and callbacks are its own."""
+    configuration only; each call's messages, parameters and callbacks are its own.
+
+    lane: the provider gate's lane (operations.provider_gate). Lane 0 uses config.LLM_API_KEY, lane 1 config.LLM_API_KEY2;
+    everything else about the two clients is identical."""
     with _model_lock:
-        return _build_model()
+        if lane not in _clients:
+            _clients[lane] = _build_model(lane)
+        return _clients[lane]
 
 
-@lru_cache(maxsize=1)
-def _build_model() -> ChatLiteLLM:
+_clients = {}
+
+
+def _clear_clients():
+    with _model_lock:
+        _clients.clear()
+
+
+def lane_key(lane: int):
+    """The provider key of a lane. Lane 1 exists only with a second, distinct key; anything else is lane 0's key."""
+    second = getattr(config, "LLM_API_KEY2", None)
+    return second if lane == 1 and second and second != config.LLM_API_KEY else config.LLM_API_KEY
+
+
+def _build_model(lane: int = 0) -> ChatLiteLLM:
     from operations.inference_safety import output_limit
     return ChatLiteLLM(
         model=config.LLM_MODEL,
-        api_key=config.LLM_API_KEY,
+        api_key=lane_key(lane),
         api_base=config.LLM_API_BASE,
         temperature=0,
         # A hung provider call must surface as a failure the caller can route, never block forever.
@@ -157,7 +176,7 @@ def _build_model() -> ChatLiteLLM:
     )
 
 
-model.cache_clear = _build_model.cache_clear      # as when model() itself was the cached function
+model.cache_clear = _clear_clients      # as when model() itself was the cached function
 
 
 # The wall-clock limit of ONE live model call (an investigator turn, a reviewer call, the no-tools baseline's call).
@@ -195,7 +214,7 @@ class ProviderCapacityTimeout(ModelCallTimeout):
     was not called. A TimeoutError like ModelCallTimeout, so every caller treats it as the provider failure it is."""
 
 
-def invoke(messages, *, deadline: float | None = None, client=None, entry: str = "invoke"):
+def invoke(messages, *, deadline: float | None = None, client=None, entry: str = "invoke", lane: int | None = None):
     """One provider call. With `deadline` (seconds) the call is abandoned when it has not returned by then and
     ModelCallTimeout is raised. Without an explicit deadline the configured call deadline still applies.
     client: the chat model to call (default: the shared model()). entry: which function made the call, for the log.
@@ -207,7 +226,11 @@ def invoke(messages, *, deadline: float | None = None, client=None, entry: str =
     Every call, with or without a deadline, first takes a slot of the process's provider gate
     (SUHAIL_PROVIDER_MAX_INFLIGHT) and holds it until the underlying call has ended. An abandoned call therefore keeps
     its slot after its caller has given up, and a retry cannot start beside it: it waits for a slot, for at most its own
-    deadline (the default call timeout when it has none), and raises ProviderCapacityTimeout when none comes free."""
+    deadline (the default call timeout when it has none), and raises ProviderCapacityTimeout when none comes free.
+
+    The slot is a lane bound to one provider key (operations.provider_gate); the call uses that lane's own client.
+    lane: only that lane (a per-key check); the product leaves it None. A provider answer that forbids the key
+    (authentication, permission, rate/plan limit) takes the lane out of service; the call is not re-sent elsewhere."""
     from operations.inference_safety import InferenceLedger, SafetyRefused
     # One deadline begins before budget reservation/admission. HTTP execution receives
     # only what remains; it cannot spend a second full timeout after waiting.
@@ -226,7 +249,7 @@ def invoke(messages, *, deadline: float | None = None, client=None, entry: str =
             # second wait or strand a provider slot when no request was dispatched.
             log.warning("Undispatched inference reservation retained; budget reconciliation required")
     try:
-        permit = provider_gate.shared().acquire(max(0, until - time.monotonic()), cancel=cancel, labels=labels)
+        permit = provider_gate.shared().acquire(max(0, until - time.monotonic()), cancel=cancel, labels=labels, lane=lane)
     except provider_gate.CapacityUnavailable as error:
         not_dispatched()
         raise ProviderCapacityTimeout(f"no provider slot for the call ({error.reason})") from None
@@ -236,8 +259,13 @@ def invoke(messages, *, deadline: float | None = None, client=None, entry: str =
         finally:
             permit.release("not_started")
         raise ProviderCapacityTimeout("no time or claim remains for inference")
+    lane = getattr(permit, "lane", 0)
+    lane_name = provider_gate.LANE_NAMES[lane]
     try:
-        chat = model() if client is None else client
+        # The shared client of lane 0 (what a caller such as translation passes explicitly) means "the shared model":
+        # it is replaced by the shared client of the lane this call was given. Any other client is used as given.
+        default = client is None or client is _clients.get(0)
+        chat = (model(lane) if lane else model()) if default else client
     except BaseException:
         try:
             not_dispatched()
@@ -245,6 +273,7 @@ def invoke(messages, *, deadline: float | None = None, client=None, entry: str =
             permit.release("not_started")
         raise
     outcome = {}
+    request_id = getattr(permit, "record", {}).get("request_id", "-")
     abandoned = threading.Event()
     context = contextvars.copy_context()      # callbacks and tracing of the calling thread apply to the call
 
@@ -255,13 +284,23 @@ def invoke(messages, *, deadline: float | None = None, client=None, entry: str =
             if remaining <= 0:
                 not_dispatched()
                 raise ProviderCapacityTimeout("deadline expired before HTTP dispatch")
+            # Transport record: the moments the HTTP request is handed to the client and comes back, per lane. Ids,
+            # lane and wall times only; never a prompt, a reply or a key.
+            transport.info("provider transport dispatch request=%s lane=%s at=%s mono=%.3f", request_id, lane_name,
+                           datetime.now(timezone.utc).isoformat(), time.monotonic())
+            outcome["sent"] = True
             outcome["response"] = context.run(chat.invoke, messages, timeout=min(remaining,config.LLM_TIMEOUT_SECONDS),
                                               max_tokens=ledger.policy.max_output_tokens)
         except BaseException as error:        # delivered to the caller below, on its own thread
             outcome["error"], result = error, type(error).__name__
+            if result in provider_gate.LANE_FAULTS and hasattr(getattr(permit, "gate", None), "disable"):
+                permit.gate.disable(lane, result)
         finally:
+            if outcome.get("sent"):
+                transport.info("provider transport return request=%s lane=%s outcome=%s at=%s mono=%.3f", request_id, lane_name,
+                               result, datetime.now(timezone.utc).isoformat(), time.monotonic())
             try:
-                ledger.finish(reservation, response=outcome.get("response"), abandoned=abandoned.is_set())
+                ledger.finish(reservation, response=outcome.get("response"), abandoned=abandoned.is_set(), lane=lane_name)
             except BaseException as error:
                 outcome["error"] = error  # No trusted result if accounting failed.
             finally:
