@@ -16,7 +16,7 @@ import {
 import { actionTraces } from "../fixtures/v32-actions";
 import type { ApiCaseDetail, ApiPipelineEvent } from "../../src/api/contracts";
 
-const captures = "../artifacts/v3.2-frontend-blockers/screenshots";
+const captures = "../artifacts/final-sidebar-polish/workspace-regression";
 mkdirSync(captures, { recursive: true });
 
 test("52 reported-resolved rows stay out of open and Waiting while slow or missing verification remains neutral", async ({
@@ -56,21 +56,21 @@ test("52 reported-resolved rows stay out of open and Waiting while slow or missi
   await expect(panel.getByTestId("resolution-pending-count")).toContainText(
     "52 unconfirmed",
   );
-  await expect(panel.locator(".resolved-entry")).toHaveCount(52);
+  await expect(panel.locator(".resolved-entry")).toHaveCount(4);
   await expect(panel.locator(".verified-check")).toHaveCount(0);
-  const queueViewport = panel
-    .getByRole("tabpanel")
-    .locator('[data-slot="scroll-area-viewport"]');
-  expect((await queueViewport.boundingBox())!.height).toBeLessThanOrEqual(400);
-  await queueViewport.evaluate((element) => {
-    element.scrollTop = element.scrollHeight;
+  const pager = panel.getByRole("navigation", {
+    name: "Case queue pagination",
   });
+  for (let index = 0; index < 12; index++)
+    await pager.getByRole("button", { name: "Next case queue page" }).click();
+  await expect(pager).toContainText("Showing 49–52 of 52");
   await expect(
     panel.getByRole("link", { name: new RegExp(rows[51].shipment_id) }),
   ).toBeInViewport();
-  await queueViewport.evaluate((element) => {
-    element.scrollTop = 0;
-  });
+  for (let index = 0; index < 12; index++)
+    await pager
+      .getByRole("button", { name: "Previous case queue page" })
+      .click();
   await page.screenshot({
     path: `${captures}/resolved-verification-pending.png`,
     fullPage: true,
@@ -100,7 +100,8 @@ for (const viewport of [
     const stub = await stubBackend(page);
     stub.state.dualWorker = true;
     await page.goto(`/app/cases/${CASE_A}`);
-    await expect(page.getByTestId("synthetic-data-label")).toBeVisible();
+    await expect(page.getByTestId("synthetic-data-label")).toHaveCount(0);
+    await expect(page.getByTestId("demo-provenance")).toBeInViewport();
     const workers = page.getByTestId("working-agents");
     await expect(workers.getByRole("link")).toHaveCount(2);
     await expect(

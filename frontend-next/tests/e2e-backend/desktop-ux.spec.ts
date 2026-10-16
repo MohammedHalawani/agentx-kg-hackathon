@@ -11,7 +11,7 @@ import {
 } from "../fixtures/backend";
 import type { ApiWorkerStatus } from "../../src/api/contracts";
 
-const captures = "../artifacts/desktop-ux/screenshots";
+const captures = "../artifacts/final-sidebar-polish/workspace-regression";
 mkdirSync(captures, { recursive: true });
 async function select(page: Page, label: string, option: string) {
   const control = page.getByRole("combobox", { name: label, exact: true });

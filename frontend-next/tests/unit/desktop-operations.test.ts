@@ -6,6 +6,7 @@ import {
   assignmentIsRunning,
   workerCapacity,
   tablePages,
+  caseQueuePage,
 } from "@/domain/desktop-operations";
 import { queueRows, workerStatus, workerStatusDual } from "../fixtures/backend";
 
@@ -82,6 +83,53 @@ describe("Desktop case placement and actual worker assignments", () => {
 });
 
 describe("Loaded-row pagination", () => {
+  it.each([
+    [0, 0, 0],
+    [1, 1, 1],
+    [4, 4, 1],
+    [5, 4, 2],
+    [52, 4, 13],
+  ])(
+    "bounds a %i-case sidebar to four records while retaining its loaded count",
+    (count, rendered, pages) => {
+      const result = caseQueuePage(
+        Array.from({ length: count }, (_, index) => index),
+        0,
+      );
+      expect(result.items).toHaveLength(rendered);
+      expect(result.total).toBe(count);
+      expect(result.pageCount).toBe(pages);
+    },
+  );
+  it("clamps the last page after removals and handles an empty queue without phantom pages", () => {
+    const entries = Array.from({ length: 52 }, (_, index) => index);
+    expect(caseQueuePage(entries, 12).items).toEqual([48, 49, 50, 51]);
+    expect(caseQueuePage(entries.slice(0, 49), 12).items).toEqual([48]);
+    expect(caseQueuePage(entries.slice(0, 4), 12)).toMatchObject({
+      pageIndex: 0,
+      pageCount: 1,
+      items: [0, 1, 2, 3],
+    });
+    expect(caseQueuePage([], 12)).toMatchObject({
+      pageIndex: 0,
+      pageCount: 0,
+      start: 0,
+      end: 0,
+    });
+    expect(caseQueuePage(entries, -1).pageIndex).toBe(0);
+  });
+  it("preserves the identity and order of source records instead of rewriting cases for a page", () => {
+    const records = Array.from({ length: 6 }, (_, index) => ({
+      id: `source-${index}`,
+    }));
+    const result = caseQueuePage(records, 1);
+    expect(result.items.map((item) => item.id)).toEqual([
+      "source-4",
+      "source-5",
+    ]);
+    expect(result.items[0]).toBe(records[4]);
+    expect(records).toHaveLength(6);
+  });
   it("shows actual first/current/last pages and ellipses without nonexistent page numbers", () => {
     expect(tablePages(0, 1)).toEqual([0]);
     expect(tablePages(0, 0)).toEqual([]);

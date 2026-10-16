@@ -1,8 +1,15 @@
-import { useState } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   CheckCheck,
+  ChevronLeft,
   ChevronRight,
   Clock3,
   PanelRightClose,
@@ -20,10 +27,11 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { OperationsFilters } from "@/components/operations-filters";
 import {
   defaultQueueFilters,
+  caseQueuePage,
+  CASE_QUEUE_PAGE_SIZE,
   investigationAssignments,
   operationsCollection,
 } from "@/domain/desktop-operations";
@@ -69,6 +77,9 @@ export function OperationsPage() {
   const { status, priority, city, cause, operational, sort } = filters;
   const [resolvedOpen, setResolvedOpen] = useState(false);
   const [queueTab, setQueueTab] = useState<"waiting" | "resolved">("waiting");
+  const [queuePages, setQueuePages] = useState({ waiting: 0, resolved: 0 });
+  const queueList = useRef<HTMLDivElement>(null);
+  const focusedQueueCase = useRef<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   useCanopusScreen({
@@ -84,6 +95,56 @@ export function OperationsPage() {
     operationsCollection(c, activeClaims);
   const waiting = cases.filter((c) => collectionOf(c) === "waiting");
   const queueEntries = queueTab === "waiting" ? waiting : closed;
+  const waitingPageCount = Math.ceil(waiting.length / CASE_QUEUE_PAGE_SIZE);
+  const closedPageCount = Math.ceil(closed.length / CASE_QUEUE_PAGE_SIZE);
+  const queuePage = caseQueuePage(queueEntries, queuePages[queueTab]);
+  useLayoutEffect(() => {
+    // Keep keyboard focus inside the queue if a polled removal unmounts its focused row.
+    if (!focusedQueueCase.current || document.activeElement !== document.body)
+      return;
+    const links = [
+      ...(queueList.current?.querySelectorAll<HTMLAnchorElement>(
+        "a[data-case-id]",
+      ) ?? []),
+    ];
+    const target =
+      links.find((link) => link.dataset.caseId === focusedQueueCase.current) ??
+      links[0] ??
+      queueList.current;
+    target?.focus();
+  }, [queuePage.items]);
+  useEffect(() => {
+    // Persist the clamp so later arrivals cannot revive an out-of-range old page.
+    setQueuePages((previous) => {
+      const waiting = Math.min(
+        previous.waiting,
+        Math.max(0, waitingPageCount - 1),
+      );
+      const resolved = Math.min(
+        previous.resolved,
+        Math.max(0, closedPageCount - 1),
+      );
+      return waiting === previous.waiting && resolved === previous.resolved
+        ? previous
+        : { waiting, resolved };
+    });
+  }, [waitingPageCount, closedPageCount]);
+  function moveQueueTab(event: KeyboardEvent<HTMLButtonElement>) {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const next =
+      event.key === "Home"
+        ? "waiting"
+        : event.key === "End"
+          ? "resolved"
+          : queueTab === "waiting"
+            ? "resolved"
+            : "waiting";
+    setQueueTab(next);
+    document
+      .getElementById(next === "waiting" ? "waiting-tab" : "resolved-tab")
+      ?.focus();
+  }
   const human = active.filter((c) =>
     ["human_review", "needs_evidence", "escalated"].includes(c.status),
   );
@@ -540,6 +601,8 @@ export function OperationsPage() {
                     id="waiting-tab"
                     aria-selected={queueTab === "waiting"}
                     aria-controls="case-queue-panel"
+                    tabIndex={queueTab === "waiting" ? 0 : -1}
+                    onKeyDown={moveQueueTab}
                     onClick={() => setQueueTab("waiting")}
                   >
                     {t("Waiting", "المنتظرة")} <span>{waiting.length}</span>
@@ -549,6 +612,8 @@ export function OperationsPage() {
                     id="resolved-tab"
                     aria-selected={queueTab === "resolved"}
                     aria-controls="case-queue-panel"
+                    tabIndex={queueTab === "resolved" ? 0 : -1}
+                    onKeyDown={moveQueueTab}
                     onClick={() => setQueueTab("resolved")}
                   >
                     {t("Closed", "المغلقة")} <span>{closed.length}</span>
@@ -564,6 +629,17 @@ export function OperationsPage() {
                       : "بانتظار العمل التشغيلي والأدلة والقرارات",
                   )}
                 </p>
+                {connection?.queue?.truncated && (
+                  <p
+                    className="case-queue-subset"
+                    data-testid="case-queue-subset"
+                  >
+                    {t(
+                      "Loaded queue only · more cases exist on the backend. Counts below describe loaded records.",
+                      "القائمة المحملة فقط · توجد حالات إضافية في الخادم. الأعداد أدناه للسجلات المحملة.",
+                    )}
+                  </p>
+                )}
                 {queueTab === "resolved" && (
                   <p
                     className="closed-counts"
@@ -578,8 +654,10 @@ export function OperationsPage() {
                     </span>
                   </p>
                 )}
-                <ScrollArea
-                  className="resolved-scroll"
+                <div
+                  className="case-queue-list"
+                  ref={queueList}
+                  tabIndex={-1}
                   id="case-queue-panel"
                   role="tabpanel"
                   aria-labelledby={
@@ -598,50 +676,107 @@ export function OperationsPage() {
                       )}
                     </p>
                   )}
-                  <AnimatePresence initial={false}>
-                    {queueEntries.map((c) => (
-                      <motion.div
-                        key={c.id}
-                        layout
-                        initial={{ opacity: 0, x: -8 }}
-                        animate={{ opacity: 1, x: 0 }}
+                  {queuePage.items.map((c) => (
+                    <Link
+                      key={c.id}
+                      data-case-id={c.id}
+                      onFocus={() => {
+                        focusedQueueCase.current = c.id;
+                      }}
+                      onBlur={() => {
+                        focusedQueueCase.current = null;
+                      }}
+                      className="resolved-entry"
+                      to={`/cases/${c.id}`}
+                    >
+                      <span
+                        className={
+                          verifiedResolution(c)
+                            ? "verified-check"
+                            : "waiting-check"
+                        }
                       >
-                        <Link className="resolved-entry" to={`/cases/${c.id}`}>
-                          <span
-                            className={
-                              verifiedResolution(c)
-                                ? "verified-check"
-                                : "waiting-check"
-                            }
-                          >
-                            {verifiedResolution(c) ? (
-                              <CheckCheck size={14} />
-                            ) : (
-                              <Clock3 size={14} />
-                            )}
-                          </span>
-                          <div>
-                            <b dir="ltr">{displayId(c)}</b>
-                            <p>{c.issue}</p>
-                            {!verifiedResolution(c) && (
-                              <p className="waiting-label">
-                                {t(...waitingLabel(c))}
-                              </p>
-                            )}
-                            <small>
-                              <Clock3 size={10} />
-                              {timeLabel(
-                                c.outcome?.timestamp ?? c.openedAt,
-                              )}{" "}
-                              AST
-                            </small>
-                          </div>
-                          <ArrowRight size={13} />
-                        </Link>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </ScrollArea>
+                        {verifiedResolution(c) ? (
+                          <CheckCheck size={14} />
+                        ) : (
+                          <Clock3 size={14} />
+                        )}
+                      </span>
+                      <div>
+                        <b dir="ltr">{displayId(c)}</b>
+                        <p>{c.issue}</p>
+                        {!verifiedResolution(c) && (
+                          <p className="waiting-label">
+                            {t(...waitingLabel(c))}
+                          </p>
+                        )}
+                        <small>
+                          <Clock3 size={10} />
+                          {timeLabel(c.outcome?.timestamp ?? c.openedAt)} AST
+                        </small>
+                      </div>
+                      <ArrowRight size={13} />
+                    </Link>
+                  ))}
+                </div>
+                <nav
+                  className="case-queue-pagination"
+                  aria-label={t("Case queue pagination", "ترقيم قائمة الحالات")}
+                >
+                  <span>
+                    {t(
+                      `Showing ${queuePage.total ? queuePage.start + 1 : 0}–${queuePage.end} of ${queuePage.total}${connection?.queue?.truncated ? " loaded" : ""}`,
+                      `عرض ${queuePage.total ? queuePage.start + 1 : 0}–${queuePage.end} من ${queuePage.total}${connection?.queue?.truncated ? " محملة" : ""}`,
+                    )}
+                  </span>
+                  <div>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={t(
+                        "Previous case queue page",
+                        "الصفحة السابقة للحالات",
+                      )}
+                      disabled={!queuePage.pageIndex}
+                      onClick={() =>
+                        setQueuePages((previous) => ({
+                          ...previous,
+                          [queueTab]: queuePage.pageIndex - 1,
+                        }))
+                      }
+                    >
+                      <ChevronLeft size={13} />
+                    </Button>
+                    <span
+                      className="case-queue-page-index"
+                      dir="ltr"
+                      aria-live="polite"
+                    >
+                      {queuePage.pageCount ? queuePage.pageIndex + 1 : 0} /{" "}
+                      {queuePage.pageCount}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={t(
+                        "Next case queue page",
+                        "الصفحة التالية للحالات",
+                      )}
+                      disabled={
+                        !queuePage.pageCount ||
+                        queuePage.pageIndex >= queuePage.pageCount - 1
+                      }
+                      onClick={() =>
+                        setQueuePages((previous) => ({
+                          ...previous,
+                          [queueTab]: queuePage.pageIndex + 1,
+                        }))
+                      }
+                    >
+                      <ChevronRight size={13} />
+                    </Button>
+                  </div>
+                </nav>
                 <dl className="rail-summary">
                   <div>
                     <dt>{t("Open cases", "حالات مفتوحة")}</dt>
@@ -656,17 +791,10 @@ export function OperationsPage() {
                     <dd>{resolved.length}</dd>
                   </div>
                 </dl>
-                <Button
-                  asChild
-                  variant="ghost"
-                  size="sm"
-                  className="rail-history"
-                >
-                  <Link to="/audit?kind=resolution">
-                    {t("Resolution history", "سجل الحلول")}
-                    <ArrowRight size={13} />
-                  </Link>
-                </Button>
+                <Link className="rail-history" to="/audit?kind=resolution">
+                  {t("Resolution history", "سجل الحلول")}
+                  <ArrowRight size={13} />
+                </Link>
               </motion.aside>
             )}
           </AnimatePresence>

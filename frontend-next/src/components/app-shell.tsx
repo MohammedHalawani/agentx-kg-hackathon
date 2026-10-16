@@ -501,7 +501,7 @@ function TopBar() {
           </Button>
           <span
             className="environment-badge"
-            // Keep connection status separate from the visible synthetic-data label.
+            // Dataset metadata remains available; the persistent footer discloses demo provenance.
             data-dataset={
               backend && connection?.synthetic ? "synthetic" : undefined
             }
@@ -522,14 +522,6 @@ function TopBar() {
                   : t("Backend offline", "الخادم غير متصل")
               : t("UI lab", "مختبر الواجهة")}
           </span>
-          {(!backend || connection?.synthetic) && (
-            <span
-              className="synthetic-data-label"
-              data-testid="synthetic-data-label"
-            >
-              {t("Synthetic data", "بيانات اصطناعية")}
-            </span>
-          )}
           <Button
             variant="ghost"
             size="icon-sm"
@@ -782,12 +774,12 @@ export function AppShell() {
             <Outlet />
           </Suspense>
         </motion.main>
-        <footer className="app-footer">
+        <footer className="app-footer" data-testid="demo-footer">
           <span>
             SUHAIL <span>·</span>{" "}
             {t("Logistics intelligence", "الذكاء اللوجستي")}
           </span>
-          <span>
+          <span data-testid="demo-provenance">
             {backend
               ? t(
                   "Simulated operations · demonstration data, not SPL systems",

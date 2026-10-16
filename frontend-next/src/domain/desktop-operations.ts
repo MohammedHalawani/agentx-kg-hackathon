@@ -113,3 +113,25 @@ export function tablePages(
     });
   return result;
 }
+
+export const CASE_QUEUE_PAGE_SIZE = 4;
+
+/** Pages only the loaded queue. It never requests records or infers server totals. */
+export function caseQueuePage<T>(items: readonly T[], requestedPage: number) {
+  const total = items.length;
+  const pageCount = Math.ceil(total / CASE_QUEUE_PAGE_SIZE);
+  const pageIndex = Math.max(
+    0,
+    Math.min(Math.floor(requestedPage), pageCount - 1),
+  );
+  const start = pageIndex * CASE_QUEUE_PAGE_SIZE;
+  const end = Math.min(start + CASE_QUEUE_PAGE_SIZE, total);
+  return {
+    items: items.slice(start, end),
+    total,
+    pageIndex,
+    pageCount,
+    start,
+    end,
+  };
+}

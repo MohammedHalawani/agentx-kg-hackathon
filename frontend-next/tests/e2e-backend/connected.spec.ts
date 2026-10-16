@@ -32,7 +32,8 @@ test("Operations shows the backend queue with real identities and honest labels"
   await expect(page.locator(".workspace-selector")).toHaveCount(0);
   await expect(page.locator(".brand-logo .brand-full")).toBeVisible();
   await expect(page.locator(".brand-header")).toHaveText("");
-  await expect(page.getByTestId("synthetic-data-label")).toHaveText("Synthetic data");
+  await expect(page.getByTestId("synthetic-data-label")).toHaveCount(0);
+  await expect(page.getByTestId("demo-provenance")).toContainText("demonstration data, not SPL systems");
   await expect(page.locator(".environment-badge")).toHaveAttribute("data-dataset", "synthetic");
   await expect(page.locator("body")).not.toContainText(LAB_ONLY);
   // Only the independently verified case is in Resolved.

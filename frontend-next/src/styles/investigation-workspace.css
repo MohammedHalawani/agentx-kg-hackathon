@@ -233,10 +233,6 @@
   color: var(--muted-foreground);
   padding: 6px;
 }
-.resolved-scroll {
-  flex: none;
-  min-height: 0;
-}
 @media (min-width: 1280px) {
   .evidence-split {
     --evidence-height: clamp(480px, calc(100dvh - 520px), 600px);
