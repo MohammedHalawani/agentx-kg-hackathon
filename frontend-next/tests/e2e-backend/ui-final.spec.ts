@@ -207,20 +207,30 @@ test("Canopus on Operations applies a visible, reversible view without a model c
     "no AI model used",
   );
   const chip = page.getByTestId("assistant-view");
-  await expect(chip).toContainText("Need a person now");
+  await expect(chip).toContainText("Needs a person");
+  await expect(chip).toContainText("1 matching case");
+  // One compact indicator: no banner, no repeated captions.
+  await expect(page.locator(".assistant-view-chip")).toHaveCount(0);
+  await expect(page.locator(".ledger-caption")).toHaveCount(0);
+  // The Auto note is for screen readers only.
+  await expect(page.locator("#automatic-state-note")).toHaveClass(/sr-only/);
   await expect(page.getByTestId(`data-row-${CASE_A}`)).toBeVisible();
   const ask = page.getByRole("textbox", {
     name: "Ask Canopus about the queue",
   });
   await ask.fill("Filter to barcode problems");
   await ask.press("Enter");
-  await expect(chip).toContainText("barcode");
+  await expect(chip).toContainText("Barcode problems");
+  await expect(chip).toContainText("0 matching cases");
   await page
     .getByRole("button", { name: "Minimize Canopus conversation" })
     .click();
   await chip.getByRole("button", { name: "Undo" }).click();
-  await expect(chip).toContainText("Need a person now");
-  await chip.getByRole("button", { name: "Clear Canopus view" }).click();
+  await expect(chip).toContainText("Needs a person");
+  await page.screenshot({
+    path: "test-results/ui-final/operations-filter-chip.png",
+  });
+  await chip.getByRole("button", { name: "Clear Canopus filter" }).click();
   await expect(page.getByTestId("assistant-view")).toHaveCount(0);
   // The assistant only reads: no request reached the backend.
   expect(stub.posts).toEqual([]);

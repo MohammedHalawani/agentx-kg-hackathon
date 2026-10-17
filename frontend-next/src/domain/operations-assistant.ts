@@ -337,3 +337,26 @@ export function answerOps(
         ],
   };
 }
+
+/** The compact chip text for the applied view: a few words, no explanation. */
+export function viewShortLabel(view: OpsView): [string, string] {
+  switch (view.kind) {
+    case "urgent":
+      return [`${view.limit} most urgent`, `أكثر ${view.limit} إلحاحاً`];
+    case "overdue":
+      return ["Overdue", "متأخرة"];
+    case "problem": {
+      const [en, ar] = PROBLEM_LABEL[view.problem];
+      return [en[0].toUpperCase() + en.slice(1), ar];
+    }
+    case "custody_wait":
+      return ["Awaiting custody verification", "بانتظار التحقق من الحيازة"];
+    case "human":
+      return ["Needs a person", "تحتاج شخصاً"];
+    case "priority":
+      return [
+        `${PRIORITY_WORDS[view.priority][0]} priority`,
+        `الأولوية ${PRIORITY_WORDS[view.priority][1]}`,
+      ];
+  }
+}

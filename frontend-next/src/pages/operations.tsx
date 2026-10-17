@@ -69,7 +69,11 @@ import {
   lastUpdateOf,
   nextActionOf,
 } from "@/domain/priority";
-import { viewLabel, viewRule, viewRows } from "@/domain/operations-assistant";
+import {
+  viewRule,
+  viewRows,
+  viewShortLabel,
+} from "@/domain/operations-assistant";
 import {
   clearOpsView,
   undoOpsView,
@@ -549,6 +553,38 @@ export function OperationsPage() {
               }}
               cities={cities}
             />
+            {assistant && (
+              <div
+                className="assistant-filter"
+                role="status"
+                data-testid="assistant-view"
+                title={t(...viewRule(assistant.view))}
+              >
+                <span className="assistant-filter-chip">
+                  <Sparkles size={11} aria-hidden="true" />
+                  {t(...viewShortLabel(assistant.view))}
+                  <button
+                    type="button"
+                    aria-label={t("Clear Canopus filter", "إزالة تصفية كانوبس")}
+                    onClick={clearOpsView}
+                  >
+                    <X size={11} />
+                  </button>
+                </span>
+                <span className="assistant-filter-count">
+                  {t(
+                    `${filtered.length} matching case${filtered.length === 1 ? "" : "s"}`,
+                    `${filtered.length} حالة مطابقة`,
+                  )}
+                </span>
+                {canUndoAssistant && (
+                  <Button variant="ghost" size="sm" onClick={undoOpsView}>
+                    <Undo2 size={12} />
+                    {t("Undo", "تراجع")}
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
           <div className="queue-controls">
             {backend && connection?.clock && (
@@ -675,14 +711,10 @@ export function OperationsPage() {
               <RefreshCw size={14} className={refreshing ? "slow-spin" : ""} />
             </Button>
           </div>
-          <div className="ledger-caption">
-            <span>
-              {assistant
-                ? t(
-                    "Canopus view · loaded open cases",
-                    "عرض كانوبس · الحالات المفتوحة المحملة",
-                  )
-                : query.trim() || filters.collection === "all"
+          {!assistant && (
+            <div className="ledger-caption">
+              <span>
+                {query.trim() || filters.collection === "all"
                   ? t(
                       "Search / history · all loaded cases",
                       "البحث / السجل · كل الحالات المحملة",
@@ -693,10 +725,12 @@ export function OperationsPage() {
                         "حالات مفتوحة دون تكليف مسجل",
                       )
                     : t("Filtered case collection", "مجموعة حالات مصفاة")}
-            </span>
-            <Badge variant="secondary">{filtered.length}</Badge>
-          </div>
-          <p className="automatic-state-note" id="automatic-state-note">
+              </span>
+              <Badge variant="secondary">{filtered.length}</Badge>
+            </div>
+          )}
+          {/* Read by screen readers with the Auto switch; not repeated on screen. */}
+          <p className="sr-only" id="automatic-state-note">
             {t(
               "Automatic claims are rechecked by the backend. Review and outcome verification remain mandatory.",
               "يتحقق الخادم من التكليفات التلقائية. تظل المراجعة والتحقق من النتائج إلزاميين.",
@@ -709,42 +743,6 @@ export function OperationsPage() {
                 "تُعرض المجموعة المحملة فقط؛ توجد حالات إضافية خارج هذا العرض.",
               )}
             </p>
-          )}
-          {assistant && (
-            <div
-              className="assistant-view-chip"
-              role="status"
-              data-testid="assistant-view"
-            >
-              <Sparkles size={13} aria-hidden="true" />
-              <div>
-                <b>
-                  {t("Canopus applied", "طبّق كانوبس")}:{" "}
-                  {t(...viewLabel(assistant.view))}
-                </b>
-                <small>
-                  {t(...viewRule(assistant.view))}{" "}
-                  {t(
-                    "Visible view only · nothing changed on the server.",
-                    "عرض مرئي فقط · لم يتغير شيء في الخادم.",
-                  )}
-                </small>
-              </div>
-              {canUndoAssistant && (
-                <Button variant="ghost" size="sm" onClick={undoOpsView}>
-                  <Undo2 size={12} />
-                  {t("Undo", "تراجع")}
-                </Button>
-              )}
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label={t("Clear Canopus view", "إزالة عرض كانوبس")}
-                onClick={clearOpsView}
-              >
-                <X size={13} />
-              </Button>
-            </div>
           )}
           <DataTable
             compact

@@ -610,3 +610,43 @@ button.kpi-card:focus-visible {
   font-size: 12px;
   flex-basis: 100%;
 }
+
+/* The one compact indicator of a Canopus-applied filter, in the toolbar. */
+.assistant-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  font-size: 12px;
+}
+.assistant-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 4px 0 9px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--primary);
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border));
+  font-weight: 500;
+  white-space: nowrap;
+}
+.assistant-filter-chip button {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.assistant-filter-chip button:hover {
+  background: color-mix(in srgb, var(--primary) 15%, transparent);
+}
+.assistant-filter-count {
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
