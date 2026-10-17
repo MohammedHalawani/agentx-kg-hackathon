@@ -9,6 +9,7 @@ import {
 import { useGroupRef } from "react-resizable-panels";
 import {
   ArrowLeft,
+  ClipboardList,
   ArrowRight,
   Check,
   Clock3,
@@ -57,6 +58,8 @@ import { InvestigatorFindings } from "@/components/investigator-findings";
 import { InvestigationRecord } from "@/components/investigation-record";
 import { EvidenceChronology } from "@/components/evidence-chronology";
 import { NextStep } from "@/components/next-step";
+import { WorkOrder } from "@/components/work-order";
+import { isReviewedDisposition } from "@/domain/work-order";
 import { DIRECTOR } from "@/director";
 import { PhoneOverlay } from "@/director/phone-overlay";
 import { ClockNotice } from "@/components/clock-notice";
@@ -156,6 +159,40 @@ function InvestigationWorkspace() {
   const [details, setDetails] = useState(false);
   const [humanOutcome, setHumanOutcome] = useState(false);
   const groupRef = useGroupRef();
+  // Decision view vs Evidence view. A reviewed disposition (or a handoff to a person) opens
+  // in Decision view; the operator's own choice is kept per case until a reinvestigation
+  // actually starts, which returns the case to the Evidence view to watch it.
+  const [viewChoice, setViewChoice] = useState<
+    Record<string, "decision" | "evidence">
+  >({});
+  const reviewed = !!c && isReviewedDisposition(c);
+  const mode: "decision" | "evidence" =
+    c && reviewed ? (viewChoice[c.id] ?? "decision") : "evidence";
+  const reinvestigating =
+    !!c &&
+    (c.status === "investigating" ||
+      c.backend?.workflowState === "INVESTIGATING");
+  const caseKey = c?.id;
+  useEffect(() => {
+    if (!caseKey || !reinvestigating) return;
+    setViewChoice((all) => {
+      if (!(caseKey in all)) return all;
+      const rest = { ...all };
+      delete rest[caseKey];
+      return rest;
+    });
+  }, [caseKey, reinvestigating]);
+  // Records that arrived after the operator opened the Decision view are announced on it.
+  const evidenceCount = (c?.evidence.length ?? 0) + (c?.nodes.length ?? 0);
+  const baseline = useRef<{ key: string; count: number } | null>(null);
+  if (mode === "decision" && caseKey) {
+    if (baseline.current?.key !== caseKey)
+      baseline.current = { key: caseKey, count: evidenceCount };
+  } else if (baseline.current) baseline.current = null;
+  const newEvidence =
+    mode === "decision" && baseline.current
+      ? Math.max(0, evidenceCount - baseline.current.count)
+      : 0;
   const smallCanvas = useMediaQuery("(max-width:767px)");
   const requestedEvidence = params.get("evidence");
   const latestRetrieval = retrievalEvents(c?.backend?.pipelineEvents).at(-1);
@@ -220,6 +257,12 @@ function InvestigationWorkspace() {
     selectedEvidenceId: selected,
     stage: previewStage ?? c?.run?.stage ?? 0,
   });
+  useEffect(() => {
+    // The map takes the narrow panel in Decision view, half the workspace in Evidence view.
+    const value = mode === "decision" ? 38 : 50;
+    setSplit(value);
+    groupRef.current?.setLayout({ map: value, graph: 100 - value });
+  }, [mode, caseKey, groupRef]);
   useEffect(() => {
     setSelected(backend ? null : "warehouse");
     setRelationship(null);
@@ -609,6 +652,97 @@ function InvestigationWorkspace() {
             : null;
     }
   };
+  const decisionControls = (
+    <>
+      <div className="context-actions">
+        {c.status === "human_review" ? (
+          <>
+            {can.approve && (
+              <Button size="sm" onClick={() => setVerdict("approved")}>
+                {t("Review & authorize", "مراجعة وتفويض")}
+                <ArrowRight size={12} />
+              </Button>
+            )}
+            {c.backend && !can.approve && c.backend.detailLoaded && (
+              <p className="context-assigned">
+                {c.backend.approvalReason ??
+                  t(
+                    "The backend does not offer an approval for this case.",
+                    "لا يتيح الخادم الموافقة على هذه الحالة.",
+                  )}
+              </p>
+            )}
+            {can.reject && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setVerdict("rejected")}
+              >
+                {backend
+                  ? t("Reject the action", "رفض الإجراء")
+                  : t("Reject / request evidence", "رفض / طلب أدلة")}
+              </Button>
+            )}
+            {can.escalate && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setVerdict("escalated")}
+              >
+                {t("Escalate case", "تصعيد الحالة")}
+              </Button>
+            )}
+          </>
+        ) : c.status === "verifying" ? (
+          can.verify && (
+            <Button size="sm" onClick={() => act(() => service.verify(c.id))}>
+              <ShieldCheck size={13} />
+              {backend
+                ? t(
+                    "Ask the verifier to check now",
+                    "اطلب من المتحقق الفحص الآن",
+                  )
+                : t("Verify outcome", "التحقق من النتيجة")}
+            </Button>
+          )
+        ) : c.status === "resolved" ? (
+          <StatusBadge status={c.status} c={c} />
+        ) : c.status === "needs_evidence" ? (
+          can.escalate && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setVerdict("escalated")}
+            >
+              {t("Escalate for evidence", "التصعيد لطلب الأدلة")}
+            </Button>
+          )
+        ) : c.status === "escalated" ? (
+          <p className="context-assigned">
+            {backend
+              ? t("Escalated for human follow-up", "صُعّدت لمتابعة بشرية")
+              : t(
+                  "Assigned to dispatch supervision",
+                  "مُسند إلى إشراف الإرسال",
+                )}
+          </p>
+        ) : null}
+        {can.humanOutcome && c.backend?.detailLoaded && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setHumanOutcome(true)}
+          >
+            {t("Record a person's finding", "تسجيل نتيجة فحص بشري")}
+          </Button>
+        )}
+        <Button size="sm" variant="ghost" onClick={() => setDetails(true)}>
+          <FileSearch size={13} />
+          {t("Full assessment", "التقييم الكامل")}
+        </Button>
+      </div>
+    </>
+  );
   return (
     <>
       <Breadcrumb className="mb-4">
@@ -740,124 +874,124 @@ function InvestigationWorkspace() {
                   : c.backend?.investigationLog?.degradedKinds.includes(
                         "context_exhausted",
                       )
-                  ? t(
-                      "Investigation reached its context limit · evidence preserved for human review",
-                      "بلغ التحقيق حد السياق · الأدلة محفوظة لمراجعة بشرية",
-                    )
-                  : c.backend?.investigationLog?.degradedKinds.includes(
-                        "turn_budget_exhausted",
-                      )
                     ? t(
-                        "The investigator reached no conclusion within its turn budget · no diagnosis · with a person",
-                        "لم يصل المحقق إلى استنتاج ضمن عدد أدواره · لا تشخيص · لدى شخص",
+                        "Investigation reached its context limit · evidence preserved for human review",
+                        "بلغ التحقيق حد السياق · الأدلة محفوظة لمراجعة بشرية",
                       )
                     : c.backend?.investigationLog?.degradedKinds.includes(
-                          "snapshot_changed",
+                          "turn_budget_exhausted",
                         )
                       ? t(
-                          "Evidence changed during the investigation · a person must review the latest evidence",
-                          "تغيرت الأدلة أثناء التحقيق · على شخص مراجعة أحدث الأدلة",
+                          "The investigator reached no conclusion within its turn budget · no diagnosis · with a person",
+                          "لم يصل المحقق إلى استنتاج ضمن عدد أدواره · لا تشخيص · لدى شخص",
                         )
                       : c.backend?.investigationLog?.degradedKinds.includes(
-                            "model_unavailable",
-                          ) && !c.backend.diagnosisAvailable
-                        ? t(
-                            "The model was unavailable · no investigation result · with a person",
-                            "النموذج غير متاح · لا نتيجة تحقيق · لدى شخص",
+                            "snapshot_changed",
                           )
-                        : c.backend?.investigationLog?.degraded.length &&
-                            !c.backend.diagnosisAvailable
+                        ? t(
+                            "Evidence changed during the investigation · a person must review the latest evidence",
+                            "تغيرت الأدلة أثناء التحقيق · على شخص مراجعة أحدث الأدلة",
+                          )
+                        : c.backend?.investigationLog?.degradedKinds.includes(
+                              "model_unavailable",
+                            ) && !c.backend.diagnosisAvailable
                           ? t(
-                              "The model's reply could not be used · no diagnosis · with a person",
-                              "تعذر استخدام رد النموذج · لا تشخيص · لدى شخص",
+                              "The model was unavailable · no investigation result · with a person",
+                              "النموذج غير متاح · لا نتيجة تحقيق · لدى شخص",
                             )
-                          : c.execution && !c.execution.successful
+                          : c.backend?.investigationLog?.degraded.length &&
+                              !c.backend.diagnosisAvailable
                             ? t(
-                                "The request could not be delivered · nothing carried out · with a person",
-                                "تعذر تسليم الطلب · لم يُنفذ شيء · لدى شخص",
+                                "The model's reply could not be used · no diagnosis · with a person",
+                                "تعذر استخدام رد النموذج · لا تشخيص · لدى شخص",
                               )
-                            : c.backend?.workflowState === "HUMAN_REVIEW"
-                              ? c.backend.authority?.ruleId
-                                ? t(
-                                    `Routed to a person by policy rule ${c.backend.authority.ruleId} · the agent's finding is not verified`,
-                                    `أُحيلت إلى شخص بقاعدة السياسة ${c.backend.authority.ruleId} · استنتاج الوكيل غير متحقق منه`,
-                                  )
-                                : t(
-                                    "Waiting for a person to investigate",
-                                    "بانتظار تحقيق بشري",
-                                  )
-                              : c.status === "human_review"
-                                ? t(
-                                    "Waiting for operator authority",
-                                    "بانتظار صلاحية المشغل",
-                                  )
-                                : c.status === "needs_evidence"
+                            : c.execution && !c.execution.successful
+                              ? t(
+                                  "The request could not be delivered · nothing carried out · with a person",
+                                  "تعذر تسليم الطلب · لم يُنفذ شيء · لدى شخص",
+                                )
+                              : c.backend?.workflowState === "HUMAN_REVIEW"
+                                ? c.backend.authority?.ruleId
                                   ? t(
-                                      "Blocked · independent evidence needed",
-                                      "متوقف · يحتاج أدلة مستقلة",
+                                      `Routed to a person by policy rule ${c.backend.authority.ruleId} · the agent's finding is not verified`,
+                                      `أُحيلت إلى شخص بقاعدة السياسة ${c.backend.authority.ruleId} · استنتاج الوكيل غير متحقق منه`,
                                     )
-                                  : c.status === "escalated"
+                                  : t(
+                                      "Waiting for a person to investigate",
+                                      "بانتظار تحقيق بشري",
+                                    )
+                                : c.status === "human_review"
+                                  ? t(
+                                      "Waiting for operator authority",
+                                      "بانتظار صلاحية المشغل",
+                                    )
+                                  : c.status === "needs_evidence"
                                     ? t(
-                                        "Escalated · manual follow-up",
-                                        "تم التصعيد · متابعة بشرية",
+                                        "Blocked · independent evidence needed",
+                                        "متوقف · يحتاج أدلة مستقلة",
                                       )
-                                    : c.backend?.supersededRunId &&
-                                        c.status === "queued"
+                                    : c.status === "escalated"
                                       ? t(
-                                          "Queued for re-investigation · the earlier run is superseded",
-                                          "في انتظار إعادة التحقيق · التحقيق السابق لم يعد سارياً",
+                                          "Escalated · manual follow-up",
+                                          "تم التصعيد · متابعة بشرية",
                                         )
-                                      : c.run
-                                        ? backend
-                                          ? c.status === "investigating"
-                                            ? `${
-                                                c.backend?.repairing
+                                      : c.backend?.supersededRunId &&
+                                          c.status === "queued"
+                                        ? t(
+                                            "Queued for re-investigation · the earlier run is superseded",
+                                            "في انتظار إعادة التحقيق · التحقيق السابق لم يعد سارياً",
+                                          )
+                                        : c.run
+                                          ? backend
+                                            ? c.status === "investigating"
+                                              ? `${
+                                                  c.backend?.repairing
+                                                    ? t(
+                                                        "Model reply invalid, retrying · no diagnosis is substituted",
+                                                        "رد النموذج غير صالح، إعادة المحاولة · لا يُستبدل تشخيص",
+                                                      )
+                                                    : t(
+                                                        "Investigation in progress",
+                                                        "التحقيق جارٍ",
+                                                      )
+                                                }${
+                                                  c.backend?.stageElapsed?.[
+                                                    c.run.stage
+                                                  ] !== undefined
+                                                    ? ` · ${secondsLabel(c.backend.stageElapsed[c.run.stage])}`
+                                                    : ""
+                                                }`
+                                              : c.status === "verifying"
+                                                ? c.backend?.expectedResponseAt
                                                   ? t(
-                                                      "Model reply invalid, retrying · no diagnosis is substituted",
-                                                      "رد النموذج غير صالح، إعادة المحاولة · لا يُستبدل تشخيص",
+                                                      `Request delivered · an answer is scheduled for ${dateTimeLabel(c.backend.expectedResponseAt)}`,
+                                                      `سُلّم الطلب · إجابة مجدولة عند ${dateTimeLabel(c.backend.expectedResponseAt)}`,
+                                                    )
+                                                  : c.backend
+                                                        ?.verificationDeadline
+                                                    ? t(
+                                                        `Request delivered · answer expected by ${dateTimeLabel(c.backend.verificationDeadline)}`,
+                                                        `سُلّم الطلب · الإجابة متوقعة قبل ${dateTimeLabel(c.backend.verificationDeadline)}`,
+                                                      )
+                                                    : t(
+                                                        "Executed · awaiting independent verification",
+                                                        "نُفذ · بانتظار التحقق المستقل",
+                                                      )
+                                                : c.backend?.timing
+                                                      ?.totalSeconds != null
+                                                  ? t(
+                                                      `Recorded run · investigated in ${secondsLabel(c.backend.timing.totalSeconds)}`,
+                                                      `تحقيق مسجل · استغرق ${secondsLabel(c.backend.timing.totalSeconds)}`,
                                                     )
                                                   : t(
-                                                      "Investigation in progress",
-                                                      "التحقيق جارٍ",
+                                                      "Recorded run",
+                                                      "تحقيق مسجل",
                                                     )
-                                              }${
-                                                c.backend?.stageElapsed?.[
-                                                  c.run.stage
-                                                ] !== undefined
-                                                  ? ` · ${secondsLabel(c.backend.stageElapsed[c.run.stage])}`
-                                                  : ""
-                                              }`
-                                            : c.status === "verifying"
-                                              ? c.backend?.expectedResponseAt
-                                                ? t(
-                                                    `Request delivered · an answer is scheduled for ${dateTimeLabel(c.backend.expectedResponseAt)}`,
-                                                    `سُلّم الطلب · إجابة مجدولة عند ${dateTimeLabel(c.backend.expectedResponseAt)}`,
-                                                  )
-                                                : c.backend
-                                                      ?.verificationDeadline
-                                                  ? t(
-                                                      `Request delivered · answer expected by ${dateTimeLabel(c.backend.verificationDeadline)}`,
-                                                      `سُلّم الطلب · الإجابة متوقعة قبل ${dateTimeLabel(c.backend.verificationDeadline)}`,
-                                                    )
-                                                  : t(
-                                                      "Executed · awaiting independent verification",
-                                                      "نُفذ · بانتظار التحقق المستقل",
-                                                    )
-                                              : c.backend?.timing
-                                                    ?.totalSeconds != null
-                                                ? t(
-                                                    `Recorded run · investigated in ${secondsLabel(c.backend.timing.totalSeconds)}`,
-                                                    `تحقيق مسجل · استغرق ${secondsLabel(c.backend.timing.totalSeconds)}`,
-                                                  )
-                                                : t(
-                                                    "Recorded run",
-                                                    "تحقيق مسجل",
-                                                  )
-                                          : t(
-                                              "Simulated run in progress",
-                                              "تحقيق محاكى جارٍ",
-                                            )
-                                        : t("Queued", "في الانتظار")}
+                                            : t(
+                                                "Simulated run in progress",
+                                                "تحقيق محاكى جارٍ",
+                                              )
+                                          : t("Queued", "في الانتظار")}
           </span>
           {previewStage !== null && previewStage !== (c.run?.stage ?? 0) && (
             <Button
@@ -1014,8 +1148,8 @@ function InvestigationWorkspace() {
         )}
         <ClockNotice c={c} />
         {/* The pipeline's final output. */}
-        <NextStep c={c} />
-        {c.backend && (
+        {mode === "evidence" && <NextStep c={c} />}
+        {c.backend && mode === "evidence" && (
           <NarrationStrip
             key={c.id}
             c={c}
@@ -1049,7 +1183,43 @@ function InvestigationWorkspace() {
               )}`}
           </span>
         </div>
-        <div className="view-modes" role="group" aria-label="Workspace view">
+        {reviewed && (
+          <div
+            className="view-switch"
+            role="group"
+            aria-label={t("Case view", "عرض الحالة")}
+            data-testid="view-switch"
+          >
+            <Button
+              variant={mode === "decision" ? "default" : "ghost"}
+              size="sm"
+              aria-pressed={mode === "decision"}
+              onClick={() =>
+                setViewChoice((all) => ({ ...all, [c.id]: "decision" }))
+              }
+            >
+              <ClipboardList size={13} />
+              {t("Decision view", "عرض القرار")}
+            </Button>
+            <Button
+              variant={mode === "evidence" ? "default" : "ghost"}
+              size="sm"
+              aria-pressed={mode === "evidence"}
+              onClick={() =>
+                setViewChoice((all) => ({ ...all, [c.id]: "evidence" }))
+              }
+            >
+              <Network size={13} />
+              {t("Evidence view", "عرض الأدلة")}
+            </Button>
+          </div>
+        )}
+        <div
+          className="view-modes"
+          role="group"
+          aria-label="Workspace view"
+          hidden={mode === "decision"}
+        >
           <Button
             variant={Math.abs(split - 50) < 1 ? "outline" : "ghost"}
             aria-label="Balanced view"
@@ -1079,9 +1249,13 @@ function InvestigationWorkspace() {
           </Button>
         </div>
       </div>
-      <div className="case-workspace">
+      <div
+        className={`case-workspace ${mode === "decision" ? "decision-mode" : ""}`}
+        data-view={mode}
+      >
         <aside
           className={`case-context ${c.backend?.brief ? "with-assessment" : ""}`}
+          hidden={mode === "decision"}
         >
           {c.backend?.brief ? (
             <div className="context-section">
@@ -1174,96 +1348,7 @@ function InvestigationWorkspace() {
               )}
             </p>
           )}
-          <div className="context-actions">
-            {c.status === "human_review" ? (
-              <>
-                {can.approve && (
-                  <Button size="sm" onClick={() => setVerdict("approved")}>
-                    {t("Review & authorize", "مراجعة وتفويض")}
-                    <ArrowRight size={12} />
-                  </Button>
-                )}
-                {c.backend && !can.approve && c.backend.detailLoaded && (
-                  <p className="context-assigned">
-                    {c.backend.approvalReason ??
-                      t(
-                        "The backend does not offer an approval for this case.",
-                        "لا يتيح الخادم الموافقة على هذه الحالة.",
-                      )}
-                  </p>
-                )}
-                {can.reject && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setVerdict("rejected")}
-                  >
-                    {backend
-                      ? t("Reject the action", "رفض الإجراء")
-                      : t("Reject / request evidence", "رفض / طلب أدلة")}
-                  </Button>
-                )}
-                {can.escalate && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setVerdict("escalated")}
-                  >
-                    {t("Escalate case", "تصعيد الحالة")}
-                  </Button>
-                )}
-              </>
-            ) : c.status === "verifying" ? (
-              can.verify && (
-                <Button
-                  size="sm"
-                  onClick={() => act(() => service.verify(c.id))}
-                >
-                  <ShieldCheck size={13} />
-                  {backend
-                    ? t(
-                        "Ask the verifier to check now",
-                        "اطلب من المتحقق الفحص الآن",
-                      )
-                    : t("Verify outcome", "التحقق من النتيجة")}
-                </Button>
-              )
-            ) : c.status === "resolved" ? (
-              <StatusBadge status={c.status} c={c} />
-            ) : c.status === "needs_evidence" ? (
-              can.escalate && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setVerdict("escalated")}
-                >
-                  {t("Escalate for evidence", "التصعيد لطلب الأدلة")}
-                </Button>
-              )
-            ) : c.status === "escalated" ? (
-              <p className="context-assigned">
-                {backend
-                  ? t("Escalated for human follow-up", "صُعّدت لمتابعة بشرية")
-                  : t(
-                      "Assigned to dispatch supervision",
-                      "مُسند إلى إشراف الإرسال",
-                    )}
-              </p>
-            ) : null}
-            {can.humanOutcome && c.backend?.detailLoaded && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setHumanOutcome(true)}
-              >
-                {t("Record a person's finding", "تسجيل نتيجة فحص بشري")}
-              </Button>
-            )}
-            <Button size="sm" variant="ghost" onClick={() => setDetails(true)}>
-              <FileSearch size={13} />
-              {t("Full assessment", "التقييم الكامل")}
-            </Button>
-          </div>
+          {mode === "evidence" && decisionControls}
           <span className="context-lab">
             <span className="live-dot" />
             {backend
@@ -1299,19 +1384,41 @@ function InvestigationWorkspace() {
             aria-label="Resize map and graph"
           />
           <ResizablePanel id="graph" defaultSize="50%" minSize="30%">
-            <KnowledgeGraph
-              c={c}
-              selected={selected}
-              onSelect={select}
-              onRelation={(id) => {
-                setFollowRetrieval(false);
-                setNarrated({ id: null, ids: [] });
-                setRelationship(id);
-                setSelected(null);
-              }}
-              stage={stage}
-              highlight={focused.graphIds}
-            />
+            <div className="graph-slot">
+              {mode === "decision" && (
+                <div className="order-layer">
+                  <WorkOrder
+                    c={c}
+                    onEvidence={select}
+                    onShowGraph={() =>
+                      setViewChoice((all) => ({ ...all, [c.id]: "evidence" }))
+                    }
+                    newEvidence={newEvidence}
+                    controls={decisionControls}
+                  />
+                </div>
+              )}
+              {/* The graph stays mounted under the work order, so returning to it keeps its state. */}
+              <div
+                className="graph-layer"
+                aria-hidden={mode === "decision"}
+                inert={mode === "decision"}
+              >
+                <KnowledgeGraph
+                  c={c}
+                  selected={selected}
+                  onSelect={select}
+                  onRelation={(id) => {
+                    setFollowRetrieval(false);
+                    setNarrated({ id: null, ids: [] });
+                    setRelationship(id);
+                    setSelected(null);
+                  }}
+                  stage={stage}
+                  highlight={focused.graphIds}
+                />
+              </div>
+            </div>
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>

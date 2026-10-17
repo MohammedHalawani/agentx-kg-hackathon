@@ -8,6 +8,7 @@ import "./styles/canopus.css";
 import "./styles/integration.css";
 import "./styles/investigation-workspace.css";
 import "./styles/desktop-ux.css";
+import "./styles/ui-final.css";
 import App from "./App";
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

@@ -908,13 +908,12 @@ export class ApiOperationsService implements OperationsService {
     language: "en" | "ar",
     history: { role: "operator" | "canopus"; text: string }[],
   ): Promise<CanopusAnswer> => {
+    let raw: ApiCanopusAnswer;
     try {
-      return canopusAnswer(
-        await this.client.post<ApiCanopusAnswer>(
-          `/cases/${encodeURIComponent(id)}/canopus/ask`,
-          { question, language, history: history.slice(-6) },
-          60000,
-        ),
+      raw = await this.client.post<ApiCanopusAnswer>(
+        `/cases/${encodeURIComponent(id)}/canopus/ask`,
+        { question, language, history: history.slice(-6) },
+        60000,
       );
     } catch (error) {
       if (
@@ -924,6 +923,12 @@ export class ApiOperationsService implements OperationsService {
         throw new Error("Canopus questions are not enabled on this backend.");
       throw error;
     }
+    // An answer is shown only for the case it was asked about.
+    if (raw.case_id !== id)
+      throw new Error(
+        "The answer was about a different case and was discarded.",
+      );
+    return canopusAnswer(raw);
   };
   /**
    * Sends an offer's own request after the operator confirmed it. Only for a request with no

@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ArrowUp, ChevronDown, Network } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { CanopusAnswer, CanopusOffer, OperationalCase } from "@/domain/types";
+import type {
+  CanopusAnswer,
+  CanopusOffer,
+  OperationalCase,
+} from "@/domain/types";
 import { useOperations } from "@/state/operations";
 import { usePreferences } from "@/state/preferences";
 
@@ -42,7 +46,9 @@ const highlightInGraph = (caseId: string, ids: string[]) =>
     new CustomEvent("suhail:graph-highlight", { detail: { caseId, ids } }),
   );
 const openAuthorize = (caseId: string) =>
-  window.dispatchEvent(new CustomEvent("suhail:authorize", { detail: { caseId } }));
+  window.dispatchEvent(
+    new CustomEvent("suhail:authorize", { detail: { caseId } }),
+  );
 
 const clock = (value: string | null | undefined) =>
   value && !Number.isNaN(Date.parse(value))
@@ -75,7 +81,10 @@ const plain = (text: string) =>
 /** Paragraphs and short bullets, as a chat answer reads. */
 function Prose({ text, rtl }: { text: string; rtl: boolean }) {
   const blocks: (string | string[])[] = [];
-  for (const line of plain(text).split(/\n+/).map((item) => item.trim()).filter(Boolean)) {
+  for (const line of plain(text)
+    .split(/\n+/)
+    .map((item) => item.trim())
+    .filter(Boolean)) {
     const bullet = /^(?:[-*•]|\d+[.)])\s+(.*)$/.exec(line);
     const last = blocks.at(-1);
     if (bullet)
@@ -100,10 +109,18 @@ function Prose({ text, rtl }: { text: string; rtl: boolean }) {
   );
 }
 
-function OfferButton({ c, offer }: { c: OperationalCase; offer: CanopusOffer }) {
+function OfferButton({
+  c,
+  offer,
+}: {
+  c: OperationalCase;
+  offer: CanopusOffer;
+}) {
   const { service } = useOperations();
   const { t, preferences } = usePreferences();
-  const [state, setState] = useState<"idle" | "confirm" | "sending" | "done">("idle");
+  const [state, setState] = useState<"idle" | "confirm" | "sending" | "done">(
+    "idle",
+  );
   const [error, setError] = useState("");
   const label = (preferences.language === "ar" && offer.labelAr) || offer.label;
   // A decision that has a dialog today is confirmed in that dialog, never from here.
@@ -113,7 +130,8 @@ function OfferButton({ c, offer }: { c: OperationalCase; offer: CanopusOffer }) 
         {label} · {t("review and authorize", "راجع وفوّض")}
       </Button>
     );
-  if (state === "done") return <span className="chat-note">{t("Requested.", "تم الطلب.")}</span>;
+  if (state === "done")
+    return <span className="chat-note">{t("Requested.", "تم الطلب.")}</span>;
   return (
     <>
       <Button
@@ -123,8 +141,7 @@ function OfferButton({ c, offer }: { c: OperationalCase; offer: CanopusOffer }) 
         onClick={() => {
           if (state === "idle") return setState("confirm");
           setState("sending");
-          service
-            .confirmCanopusOffer!(c.id, offer)
+          service.confirmCanopusOffer!(c.id, offer)
             .then(() => setState("done"))
             .catch((e: Error) => {
               setError(e.message);
@@ -132,7 +149,9 @@ function OfferButton({ c, offer }: { c: OperationalCase; offer: CanopusOffer }) 
             });
         }}
       >
-        {state === "confirm" ? t(`Confirm: ${label}`, `تأكيد: ${label}`) : label}
+        {state === "confirm"
+          ? t(`Confirm: ${label}`, `تأكيد: ${label}`)
+          : label}
       </Button>
       {error && (
         <span className="chat-note" role="alert">
@@ -151,11 +170,17 @@ function Answer({ c, turn }: { c: OperationalCase; turn: Turn }) {
   const quoted = wantsQuote(turn.question);
   const sources = answer.evidenceIds.length || answer.graphNodeIds.length;
   const hasDetails =
-    sources > 0 || (!quoted && answer.quotes.length > 0) || answer.unavailable.length > 0;
+    sources > 0 ||
+    (!quoted && answer.quotes.length > 0) ||
+    answer.unavailable.length > 0;
   const quotes = (
     <>
       {answer.quotes.map((quote) => (
-        <blockquote key={quote.recordId} className="chat-quote" data-testid="canopus-quote">
+        <blockquote
+          key={quote.recordId}
+          className="chat-quote"
+          data-testid="canopus-quote"
+        >
           <small>
             {quote.role === "reviewer"
               ? t("The reviewer's own words", "كلام المراجع نفسه")
@@ -168,16 +193,23 @@ function Answer({ c, turn }: { c: OperationalCase; turn: Turn }) {
     </>
   );
   return (
-    <div className="chat-answer" data-testid="canopus-answer" data-kind={answer.kind}>
+    <div
+      className="chat-answer"
+      data-testid="canopus-answer"
+      data-kind={answer.kind}
+    >
       <Prose
         text={(arabic && answer.textAr) || answer.text}
         rtl={arabic && !!answer.textAr}
       />
+      <OnRecord c={c} />
       {quoted && quotes}
       {answer.unavailable.length > 0 && wantsWhyNot(turn.question) && (
         <ul className="chat-why-not" data-testid="canopus-unavailable">
           {answer.unavailable.map((item, index) => (
-            <li key={index}>{plain((arabic && item.reasonAr) || item.reason)}</li>
+            <li key={index}>
+              {plain((arabic && item.reasonAr) || item.reason)}
+            </li>
           ))}
         </ul>
       )}
@@ -191,18 +223,28 @@ function Answer({ c, turn }: { c: OperationalCase; turn: Turn }) {
       <div className="chat-meta">
         <span>
           Canopus
-          {answer.kind === "record_answer" &&
-            ` · ${t("from the case record", "من سجل الحالة")}`}
+          {answer.kind === "record_answer"
+            ? ` · ${t("built from the case record · no AI model", "مبني من سجل الحالة · دون نموذج ذكاء اصطناعي")}`
+            : answer.model
+              ? ` · ${t(`written by ${answer.model} from this case's records`, `كتبه ${answer.model} من سجلات هذه الحالة`)}`
+              : ""}
           {answer.answeredAt && ` · ${clock(answer.answeredAt)}`}
         </span>
         {answer.graphNodeIds.length > 0 && (
-          <button type="button" onClick={() => highlightInGraph(c.id, answer.graphNodeIds)}>
+          <button
+            type="button"
+            onClick={() => highlightInGraph(c.id, answer.graphNodeIds)}
+          >
             <Network size={11} />
             {t("Show in graph", "أظهر في الرسم")}
           </button>
         )}
         {hasDetails && (
-          <button type="button" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
+          <button
+            type="button"
+            aria-expanded={open}
+            onClick={() => setOpen((value) => !value)}
+          >
             {t("Sources", "المصادر")}
             <ChevronDown size={11} className={open ? "open" : ""} />
           </button>
@@ -271,9 +313,51 @@ export function CanopusAskThread({ c }: { c: OperationalCase }) {
 
 const SUGGESTED: [string, string][] = [
   ["What happened to this shipment?", "ماذا حدث لهذه الشحنة؟"],
-  ["What is Suhail waiting for?", "ماذا ينتظر سهيل؟"],
-  ["Who needs to act next?", "من يجب أن يتصرف بعد ذلك؟"],
+  ["What did the investigator find?", "ماذا وجد المحقق؟"],
+  ["What should we do next?", "ماذا يجب أن نفعل بعد ذلك؟"],
+  ["Which evidence supports this?", "ما الأدلة التي تدعم ذلك؟"],
 ];
+const CHALLENGED: [string, string] = [
+  "Why did the reviewer reject the conclusion?",
+  "لماذا رفض المراجع النتيجة؟",
+];
+
+/**
+ * What the case record states, beside Canopus's prose: the cause's standing (accepted or a
+ * hypothesis) and the current status, both from the backend's brief, so a fact on record is
+ * never confused with the answer's wording.
+ */
+function OnRecord({ c }: { c: OperationalCase }) {
+  const { t, preferences } = usePreferences();
+  const brief = c.backend?.brief;
+  if (!brief) return null;
+  const arabic = preferences.language === "ar";
+  const cause = brief.suspected_cause;
+  const status = (brief.lines ?? []).find((line) => line.key === "status");
+  return (
+    <ul className="chat-on-record" data-testid="canopus-on-record">
+      {cause && cause.status !== "none" && (
+        <li>
+          <b>{t("Cause on record", "السبب المسجل")}:</b>{" "}
+          {cause.status === "accepted"
+            ? t("accepted by the independent review", "قبلته المراجعة المستقلة")
+            : t(
+                "a hypothesis, not accepted by the independent review",
+                "فرضية لم تقبلها المراجعة المستقلة",
+              )}
+          {cause.label_en &&
+            ` · ${arabic ? (cause.label_ar ?? cause.label_en) : cause.label_en}`}
+        </li>
+      )}
+      {status && (
+        <li>
+          <b>{t("Status on record", "الوضع المسجل")}:</b>{" "}
+          {arabic ? (status.text_ar ?? status.text_en) : status.text_en}
+        </li>
+      )}
+    </ul>
+  );
+}
 
 export function CanopusAskComposer({ c }: { c: OperationalCase }) {
   const { service } = useOperations();
@@ -318,8 +402,20 @@ export function CanopusAskComposer({ c }: { c: OperationalCase }) {
     <div className="chat-composer-area" data-testid="canopus-ask">
       {turns.length === 0 && (
         <div className="chat-suggested">
-          {SUGGESTED.map(([en, ar]) => (
-            <button key={en} type="button" disabled={waiting} onClick={() => ask(t(en, ar))}>
+          {[
+            ...SUGGESTED,
+            ...(["challenged", "asked_for_person"].includes(
+              c.backend?.brief?.review?.status ?? "",
+            )
+              ? [CHALLENGED]
+              : []),
+          ].map(([en, ar]) => (
+            <button
+              key={en}
+              type="button"
+              disabled={waiting}
+              onClick={() => ask(t(en, ar))}
+            >
               {t(en, ar)}
             </button>
           ))}
@@ -332,8 +428,14 @@ export function CanopusAskComposer({ c }: { c: OperationalCase }) {
         }}
       >
         <input
-          aria-label={t("Ask Canopus about this case", "اسأل كانوبس عن هذه الحالة")}
-          placeholder={t(`Ask about ${c.shipment.id}…`, `اسأل عن ${c.shipment.id}…`)}
+          aria-label={t(
+            "Ask Canopus about this case",
+            "اسأل كانوبس عن هذه الحالة",
+          )}
+          placeholder={t(
+            `Ask about ${c.shipment.id}…`,
+            `اسأل عن ${c.shipment.id}…`,
+          )}
           maxLength={500}
           value={draft}
           disabled={waiting}

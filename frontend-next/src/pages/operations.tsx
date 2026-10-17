@@ -37,12 +37,7 @@ import {
   operationsCollection,
 } from "@/domain/desktop-operations";
 import { DataTable } from "@/components/data-table";
-import {
-  CaseLink,
-  PageTitle,
-  PriorityLabel,
-  StatusBadge,
-} from "@/components/shared";
+import { CaseLink, PageTitle, PriorityLabel } from "@/components/shared";
 import { timeLabel } from "@/lib/dates";
 import { useOperations } from "@/state/operations";
 import { usePreferences } from "@/state/preferences";
@@ -54,6 +49,19 @@ import {
   searchText,
 } from "@/domain/case-view";
 import { useCanopusScreen } from "@/state/canopus";
+import {
+  byRecordedPriority,
+  lastUpdateOf,
+  nextActionOf,
+} from "@/domain/priority";
+import { viewLabel, viewRule, viewRows } from "@/domain/operations-assistant";
+import {
+  clearOpsView,
+  undoOpsView,
+  useCanUndoOpsView,
+  useOpsView,
+} from "@/state/ops-view";
+import { Sparkles, Undo2, X } from "lucide-react";
 import {
   caseQueueGroup,
   verifiedResolution,
@@ -150,37 +158,42 @@ export function OperationsPage() {
     ["human_review", "needs_evidence", "escalated"].includes(c.status),
   );
   const resetPage = () => setPagination((p) => ({ ...p, pageIndex: 0 }));
-  const filtered = cases
-    .filter(
-      (c) =>
-        query.trim() ||
-        filters.collection === "all" ||
-        collectionOf(c) === filters.collection,
-    )
-    .filter(
-      (c) =>
-        (status === "all" ||
-          c.status === status ||
-          (status === "attention" &&
-            ["human_review", "needs_evidence", "escalated"].includes(
-              c.status,
-            ))) &&
-        (priority === "all" || c.priority === priority) &&
-        (city === "all" ||
-          c.shipment.destination === city ||
-          c.shipment.origin === city) &&
-        matchesCause(c, cause) &&
-        matchesOperational(c, operational) &&
-        searchText(c).includes(query.toLowerCase()),
-    )
-    .sort((a, b) =>
-      sort === "priority"
-        ? { high: 0, medium: 1, low: 2, unknown: 3 }[a.priority] -
-          { high: 0, medium: 1, low: 2, unknown: 3 }[b.priority]
-        : sort === "newest"
-          ? Date.parse(b.openedAt) - Date.parse(a.openedAt)
-          : Date.parse(a.openedAt) - Date.parse(b.openedAt),
-    );
+  const assistant = useOpsView();
+  const canUndoAssistant = useCanUndoOpsView();
+  // A view Canopus applied replaces the collection and filters until it is cleared or undone;
+  // it is shown above the table, and it only reads the loaded cases.
+  const filtered = assistant
+    ? viewRows(assistant.view, cases)
+    : cases
+        .filter(
+          (c) =>
+            query.trim() ||
+            filters.collection === "all" ||
+            collectionOf(c) === filters.collection,
+        )
+        .filter(
+          (c) =>
+            (status === "all" ||
+              c.status === status ||
+              (status === "attention" &&
+                ["human_review", "needs_evidence", "escalated"].includes(
+                  c.status,
+                ))) &&
+            (priority === "all" || c.priority === priority) &&
+            (city === "all" ||
+              c.shipment.destination === city ||
+              c.shipment.origin === city) &&
+            matchesCause(c, cause) &&
+            matchesOperational(c, operational) &&
+            searchText(c).includes(query.toLowerCase()),
+        )
+        .sort((a, b) =>
+          sort === "priority"
+            ? byRecordedPriority(a, b)
+            : sort === "newest"
+              ? Date.parse(b.openedAt) - Date.parse(a.openedAt)
+              : Date.parse(a.openedAt) - Date.parse(b.openedAt),
+        );
   const safePagination = {
     ...pagination,
     pageIndex: Math.min(
@@ -188,11 +201,38 @@ export function OperationsPage() {
       Math.max(0, Math.ceil(filtered.length / pagination.pageSize) - 1),
     ),
   };
+  const sortByPriority = () => {
+    setFilters((value) => ({
+      ...value,
+      sort: value.sort === "priority" ? "newest" : "priority",
+    }));
+    resetPage();
+  };
   const columns: ColumnDef<OperationalCase>[] = [
+    {
+      id: "priority",
+      header: () => (
+        <button
+          type="button"
+          className="sort-header"
+          aria-label={t("Sort by priority", "الترتيب حسب الأولوية")}
+          aria-pressed={sort === "priority" || !!assistant}
+          onClick={sortByPriority}
+          disabled={!!assistant}
+        >
+          {t("Priority", "الأولوية")}
+          <span aria-hidden="true">
+            {sort === "priority" || assistant ? "↓" : "↕"}
+          </span>
+        </button>
+      ),
+      size: 80,
+      cell: ({ row }) => <PriorityLabel priority={row.original.priority} />,
+    },
     {
       id: "shipment",
       header: t("Shipment", "الشحنة"),
-      size: 140,
+      size: 130,
       cell: ({ row }) => (
         <>
           <CaseLink id={row.original.id} label={displayId(row.original)} />
@@ -206,33 +246,34 @@ export function OperationsPage() {
     },
     {
       accessorKey: "issue",
-      header: t("Exception", "الاستثناء"),
-      size: 190,
+      header: t("Problem", "المشكلة"),
+      size: 200,
       cell: ({ row }) => (
         <span className="exception-name">{row.original.issue}</span>
       ),
     },
     {
-      accessorKey: "priority",
-      header: t("Priority", "الأولوية"),
-      size: 75,
-      cell: ({ row }) => <PriorityLabel priority={row.original.priority} />,
-    },
-    {
-      accessorKey: "status",
-      header: t("Workflow", "سير العمل"),
-      size: 145,
-      cell: ({ row }) => (
-        <StatusBadge status={row.original.status} c={row.original} />
-      ),
+      id: "next",
+      header: t("Next action", "الإجراء التالي"),
+      size: 160,
+      cell: ({ row }) => {
+        const next = nextActionOf(row.original);
+        return (
+          <span
+            className={`next-action-cell ${next.pending ? "muted" : ""} ${next.actor === "operator" ? "by-operator" : ""}`}
+          >
+            {t(next.label[0], next.label[1])}
+          </span>
+        );
+      },
     },
     {
       id: "time",
-      header: t("Received · AST", "الوصول · السعودية"),
+      header: t("Last update · AST", "آخر تحديث · السعودية"),
       size: 100,
       cell: ({ row }) => (
         <span className="received-time">
-          {timeLabel(row.original.openedAt)}
+          {timeLabel(lastUpdateOf(row.original))}
         </span>
       ),
     },
@@ -473,17 +514,22 @@ export function OperationsPage() {
           </div>
           <div className="ledger-caption">
             <span>
-              {query.trim() || filters.collection === "all"
+              {assistant
                 ? t(
-                    "Search / history · all loaded cases",
-                    "البحث / السجل · كل الحالات المحملة",
+                    "Canopus view · loaded open cases",
+                    "عرض كانوبس · الحالات المفتوحة المحملة",
                   )
-                : filters.collection === "unassigned"
+                : query.trim() || filters.collection === "all"
                   ? t(
-                      "Open cases with no reported assignment",
-                      "حالات مفتوحة دون تكليف مسجل",
+                      "Search / history · all loaded cases",
+                      "البحث / السجل · كل الحالات المحملة",
                     )
-                  : t("Filtered case collection", "مجموعة حالات مصفاة")}
+                  : filters.collection === "unassigned"
+                    ? t(
+                        "Open cases with no reported assignment",
+                        "حالات مفتوحة دون تكليف مسجل",
+                      )
+                    : t("Filtered case collection", "مجموعة حالات مصفاة")}
             </span>
             <Badge variant="secondary">{filtered.length}</Badge>
           </div>
@@ -500,6 +546,42 @@ export function OperationsPage() {
                 "تُعرض المجموعة المحملة فقط؛ توجد حالات إضافية خارج هذا العرض.",
               )}
             </p>
+          )}
+          {assistant && (
+            <div
+              className="assistant-view-chip"
+              role="status"
+              data-testid="assistant-view"
+            >
+              <Sparkles size={13} aria-hidden="true" />
+              <div>
+                <b>
+                  {t("Canopus applied", "طبّق كانوبس")}:{" "}
+                  {t(...viewLabel(assistant.view))}
+                </b>
+                <small>
+                  {t(...viewRule(assistant.view))}{" "}
+                  {t(
+                    "Visible view only · nothing changed on the server.",
+                    "عرض مرئي فقط · لم يتغير شيء في الخادم.",
+                  )}
+                </small>
+              </div>
+              {canUndoAssistant && (
+                <Button variant="ghost" size="sm" onClick={undoOpsView}>
+                  <Undo2 size={12} />
+                  {t("Undo", "تراجع")}
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label={t("Clear Canopus view", "إزالة عرض كانوبس")}
+                onClick={clearOpsView}
+              >
+                <X size={13} />
+              </Button>
+            </div>
           )}
           <DataTable
             compact

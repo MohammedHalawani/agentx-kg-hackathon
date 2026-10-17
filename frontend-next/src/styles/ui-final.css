@@ -1,0 +1,464 @@
+/* Final operator experience: Decision view work order, view switch, priority labels and the
+   Operations assistant's applied-view chip. Brand tokens only. */
+
+/* Recorded priority, restrained: High red, Medium amber, Low neutral, Unknown gray. */
+.domain-data-table .priority {
+  padding: 2px 8px 2px 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid transparent;
+}
+.domain-data-table .priority i {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+}
+.domain-data-table .priority-high {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-color: color-mix(in srgb, var(--danger) 25%, transparent);
+}
+.domain-data-table .priority-high i {
+  background: var(--danger);
+}
+.domain-data-table .priority-medium {
+  color: var(--warning);
+  background: var(--warning-soft);
+  border-color: color-mix(in srgb, var(--warning) 25%, transparent);
+}
+.domain-data-table .priority-medium i {
+  background: var(--warning);
+  height: 6px;
+}
+.domain-data-table .priority-low {
+  color: var(--foreground);
+  background: var(--muted);
+  border-color: var(--border);
+}
+.domain-data-table .priority-low i {
+  background: var(--muted-foreground);
+  height: 6px;
+}
+.domain-data-table .priority-unknown {
+  color: var(--muted-foreground);
+  background: transparent;
+  border-color: var(--border);
+}
+.domain-data-table .priority-unknown i {
+  background: var(--border);
+}
+.sort-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.sort-header:disabled {
+  cursor: default;
+}
+.sort-header span {
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+.next-action-cell {
+  font-size: 12px;
+}
+.next-action-cell.muted {
+  color: var(--muted-foreground);
+}
+.next-action-cell.by-operator {
+  font-weight: 600;
+  color: var(--primary);
+}
+
+/* The view Canopus applied to the table, always visible while it applies. */
+.assistant-view-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border));
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--foreground);
+}
+.assistant-view-chip > svg {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+.assistant-view-chip > div {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.assistant-view-chip b {
+  font-size: 12px;
+}
+.assistant-view-chip small {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+
+/* Decision view / Evidence view switch. */
+.view-switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--muted);
+}
+.view-switch button {
+  height: 28px;
+  gap: 5px;
+}
+
+/* Decision view: the map narrows, the work order takes the graph's place. */
+.graph-slot {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+}
+.graph-layer {
+  height: 100%;
+}
+.decision-mode .graph-layer {
+  visibility: hidden;
+}
+.order-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow-y: auto;
+  animation: order-in 220ms ease-out;
+}
+@keyframes order-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .order-layer {
+    animation: none;
+  }
+}
+.case-context[hidden],
+.view-modes[hidden] {
+  display: none !important;
+}
+
+.work-order {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card, var(--background));
+}
+.order-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.order-header > div {
+  flex: 1;
+  min-width: 0;
+}
+.order-header small {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--muted-foreground);
+}
+.order-header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.order-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--info-soft);
+  color: var(--info);
+}
+.order-status.person {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.order-status.resolved {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.order-graph {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--primary);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 9px;
+  cursor: pointer;
+}
+.order-graph:hover {
+  background: var(--accent);
+}
+.order-new-evidence {
+  margin: 0;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  background: var(--info-soft);
+  color: var(--foreground);
+}
+.order-primary {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.order-row {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 12px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+}
+.order-row:first-child {
+  border-top: 0;
+}
+.order-row dt {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding-top: 2px;
+}
+.order-row dd {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.order-row.emphasis {
+  background: var(--accent);
+}
+.order-row.emphasis dd {
+  display: flex;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+.order-row.emphasis dd > svg {
+  color: var(--primary);
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+.order-why-person {
+  display: block;
+  margin-top: 4px;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.order-parties {
+  display: grid;
+  gap: 5px;
+}
+.order-parties > span {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.order-parties > span > svg {
+  align-self: center;
+  color: var(--muted-foreground);
+}
+.order-parties small,
+.order-note {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.order-proof {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.order-proof h4 {
+  margin: 0 0 6px;
+  font-size: 12px;
+}
+.order-proof figure {
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+.order-proof img {
+  max-height: 160px;
+  max-width: 100%;
+  border-radius: 8px;
+  object-fit: contain;
+}
+.order-proof figcaption,
+.order-proof-missing {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.order-proof figcaption button,
+.order-evidence button {
+  font: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--primary);
+  cursor: pointer;
+  text-align: start;
+}
+.order-secondary {
+  display: grid;
+  gap: 6px;
+}
+.order-fold {
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+.order-fold > button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: var(--foreground);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: start;
+}
+.order-fold > button small {
+  flex: 1;
+  min-width: 0;
+  font-weight: 400;
+  color: var(--muted-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: end;
+}
+.order-fold > button svg {
+  margin-inline-start: auto;
+  flex-shrink: 0;
+  transition: transform 150ms;
+}
+.order-fold.open > button svg {
+  transform: rotate(180deg);
+}
+.order-fold-body {
+  padding: 0 12px 10px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.order-fold-body p {
+  margin: 0 0 6px;
+}
+.order-fold-body .muted {
+  color: var(--muted-foreground);
+}
+.order-fold-body blockquote {
+  margin: 6px 0 0;
+  padding: 6px 10px;
+  border-inline-start: 3px solid var(--border);
+  color: var(--muted-foreground);
+}
+.order-fold-body blockquote small {
+  display: block;
+  font-size: 10px;
+}
+.order-evidence {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+.order-evidence button {
+  display: inline-flex;
+  gap: 8px;
+  color: var(--foreground);
+}
+.order-evidence button span {
+  color: var(--primary);
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+}
+.order-evidence button:disabled span {
+  color: var(--muted-foreground);
+}
+.order-controls {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.order-controls .context-assigned {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin: 0;
+}
+@media (max-width: 767px) {
+  .order-row {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+  .order-layer {
+    position: relative;
+  }
+  .decision-mode .graph-layer {
+    display: none;
+  }
+}
+
+/* Canopus: the record's own statement beside the answer. */
+.chat-on-record {
+  margin: 6px 0 0;
+  padding: 6px 9px;
+  list-style: none;
+  border-radius: 8px;
+  background: var(--muted);
+  font-size: 11px;
+  color: var(--muted-foreground);
+  display: grid;
+  gap: 2px;
+}
+.chat-on-record b {
+  color: var(--foreground);
+  font-weight: 600;
+}

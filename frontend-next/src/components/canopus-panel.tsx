@@ -3,6 +3,11 @@ import {
   CanopusAskThread,
   useAskCount,
 } from "@/components/canopus-ask";
+import {
+  OperationsAskComposer,
+  OperationsAskThread,
+  useOpsTurnCount,
+} from "@/components/operations-ask";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "motion/react";
@@ -79,7 +84,11 @@ export function CanopusPanel() {
   const selected = cases.find((c) => c.id === context.caseId);
   // Connected product: questions go to the backend's ask endpoint, about the open case only.
   const asking = !connected && !!selected?.backend && !!service.askCanopus;
-  const asked = useAskCount(asking ? selected?.id : undefined);
+  // Connected product, Operations screen with no case chosen: the rule-based queue assistant.
+  const opsAsking = !connected && !selected && context.screen === "operations";
+  const opsAsked = useOpsTurnCount();
+  const asked =
+    useAskCount(asking ? selected?.id : undefined) + (opsAsking ? opsAsked : 0);
   const expanded = presentation === "expanded";
   const close = canopus.close;
   useEffect(() => {
@@ -260,7 +269,15 @@ export function CanopusPanel() {
                   ? t("Suhail operations assistant", "مساعد سهيل للعمليات")
                   : asking
                     ? t("Suhail assistant", "مساعد سهيل")
-                    : t("Open a case to ask about it", "افتح حالة للسؤال عنها")}
+                    : opsAsking
+                      ? t(
+                          "Queue filters by Suhail's rules",
+                          "تصفية القائمة بقواعد سهيل",
+                        )
+                      : t(
+                          "Open a case to ask about it",
+                          "افتح حالة للسؤال عنها",
+                        )}
               </p>
             </div>
             <div className="canopus-panel-actions">
@@ -377,6 +394,14 @@ export function CanopusPanel() {
               ]}
             />
           </div>
+          {opsAsking && asked > 0 && (
+            <div
+              className="canopus-transcript chat-scroll"
+              key="ask-operations"
+            >
+              <OperationsAskThread />
+            </div>
+          )}
           {asking && selected && asked > 0 && (
             // The conversation about the open case scrolls on its own, newest message in view.
             <div
@@ -389,7 +414,7 @@ export function CanopusPanel() {
           <div
             className="canopus-transcript"
             key={key}
-            hidden={asking && asked > 0}
+            hidden={(asking || opsAsking) && asked > 0}
           >
             <ConversationTranscript
               messages={thread.messages}
@@ -423,10 +448,15 @@ export function CanopusPanel() {
                                 "Ask about this shipment.",
                                 "اسأل عن هذه الشحنة.",
                               )
-                            : t(
-                                "Open a case to ask Canopus about it.",
-                                "افتح حالة لتسأل كانوبس عنها.",
-                              )
+                            : opsAsking
+                              ? t(
+                                  "Ask me to find cases in the queue.",
+                                  "اطلب مني العثور على حالات في القائمة.",
+                                )
+                              : t(
+                                  "Open a case to ask Canopus about it.",
+                                  "افتح حالة لتسأل كانوبس عنها.",
+                                )
                           : selected
                             ? t("Let’s follow the evidence.", "لنتتبع الأدلة.")
                             : t("How can I help?", "كيف يمكنني مساعدتك؟")}
@@ -437,10 +467,15 @@ export function CanopusPanel() {
                               "Understand evidence, decisions, and outcomes. Or ask me to find what matters on this page.",
                               "افهم الأدلة والقرارات والنتائج، أو اطلب مني العثور على ما يهمك في هذه الصفحة.",
                             )
-                          : t(
-                              "Canopus answers from this case's records. It takes no action on its own.",
-                              "يجيب كانوبس من سجلات هذه الحالة. لا ينفذ أي إجراء من تلقاء نفسه.",
-                            )}
+                          : opsAsking
+                            ? t(
+                                "I filter and sort the table you see, from the loaded backend queue, by fixed rules. No AI model is used and nothing changes on the server.",
+                                "أصفّي الجدول الظاهر وأرتّبه من القائمة المحملة من الخادم بقواعد ثابتة. لا يُستخدم نموذج ذكاء اصطناعي ولا يتغير شيء في الخادم.",
+                              )
+                            : t(
+                                "Canopus answers from this case's records. It takes no action on its own.",
+                                "يجيب كانوبس من سجلات هذه الحالة. لا ينفذ أي إجراء من تلقاء نفسه.",
+                              )}
                       </p>
                     </div>
                     <div className="suggested-questions">
@@ -474,7 +509,12 @@ export function CanopusPanel() {
               <CanopusAskComposer c={selected} />
             </footer>
           )}
-          <footer className="canopus-compose-area" hidden={asking}>
+          {opsAsking && (
+            <footer className="canopus-compose-area">
+              <OperationsAskComposer />
+            </footer>
+          )}
+          <footer className="canopus-compose-area" hidden={asking || opsAsking}>
             <ChatComposer
               value={input}
               onChange={(value) =>
