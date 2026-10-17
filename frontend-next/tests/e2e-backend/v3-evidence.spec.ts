@@ -15,12 +15,14 @@ test("Evidence chronology stays visible when the backend sends a case brief", as
         {
           key: "problem",
           label_en: "Problem",
-          text_en: "Delivery authentication failed while vehicle telemetry continued.",
+          text_en:
+            "Delivery authentication failed while vehicle telemetry continued.",
         },
         {
           key: "finding",
           label_en: "Finding",
-          text_en: "Authentication evidence did not validate the recorded handoff.",
+          text_en:
+            "Authentication evidence did not validate the recorded handoff.",
         },
         {
           key: "action",

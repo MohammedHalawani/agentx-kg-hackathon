@@ -109,7 +109,10 @@ test("A reviewed case opens in Decision view and the full Evidence view is one c
   await expect(page.getByTestId("work-order")).toHaveCount(0);
   await expect(page.getByTestId("case-assessment")).toBeVisible();
   await expect(page.locator(".graph-layer")).toBeVisible();
-  await expect(page.locator(".graph-layer")).not.toHaveAttribute("aria-hidden", "true");
+  await expect(page.locator(".graph-layer")).not.toHaveAttribute(
+    "aria-hidden",
+    "true",
+  );
   await page.screenshot({
     path: "test-results/ui-final/evidence-view.png",
     fullPage: true,

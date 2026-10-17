@@ -16,7 +16,8 @@ test("Operations shows the backend queue with real identities and honest labels"
   // Newest first; the shipment id is shown, the link is the case.
   await expect(rows.first()).toContainText("SYN-SHP-000103");
   await expect(rows.first()).toContainText("Recipient reported not received");
-  await expect(rows.first()).toContainText("Queued");
+  // No repeated "Queued" column: an uninvestigated case says it awaits investigation.
+  await expect(rows.first()).toContainText("Awaiting investigation");
   await expect(rows.first()).toContainText("Not set");
   await expect(page.getByTestId(`data-row-${CASE_A}`)).toHaveCount(0);
   await page
@@ -26,7 +27,8 @@ test("Operations shows the backend queue with real identities and honest labels"
   await expect(reviewed).toContainText(SHIP_A);
   await expect(reviewed).toContainText("Riyadh");
   await expect(reviewed).toContainText("Dammam");
-  await expect(reviewed).toContainText("Awaiting approval");
+  // The next action, from the recorded workflow state.
+  await expect(reviewed).toContainText("Approve or reject the action");
   await expect(page.locator(".environment-badge")).toHaveText("Connected");
   // The connection is shown once, in the top bar; the sidebar no longer repeats it.
   await expect(page.locator(".sidebar-system")).toHaveCount(0);
@@ -337,6 +339,14 @@ test("A case reads as one assessment with a connected pipeline; details and comm
   };
   await page.goto(`/app/cases/${CASE_A}`);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(SHIP_A);
+  // A reviewed case opens on its work order; the assessment is in the Evidence view.
+  await expect(page.getByTestId("order-happened")).toContainText(
+    "Barcode mismatch detected at the sorting center.",
+  );
+  await page
+    .getByTestId("view-switch")
+    .getByRole("button", { name: "Evidence view" })
+    .click();
   // One assessment: the four lines, in the backend's words.
   const assessment = page.getByTestId("case-assessment");
   await expect(assessment).toContainText(
@@ -405,6 +415,9 @@ for (const name of [
       },
     };
     await page.goto(`/app/cases/${CASE_A}`);
+    const views = page.getByTestId("view-switch");
+    if (await views.isVisible())
+      await views.getByRole("button", { name: "Evidence view" }).click();
     const assessment = page.getByTestId("case-assessment");
     for (const line of example.brief.lines as { text_en: string }[])
       await expect(assessment).toContainText(line.text_en);
@@ -574,7 +587,9 @@ test("Canopus keeps its floating window but answers nothing while it has no back
   page,
 }) => {
   await stubBackend(page);
-  await page.goto("/app/operations");
+  // Operations has its rule-based queue assistant; elsewhere, with no case open, Canopus
+  // has nothing to ask about and generates nothing.
+  await page.goto("/app/audit");
   await page.getByRole("button", { name: "Open Canopus assistant" }).click();
   const panel = page.locator(".canopus-window");
   await expect(panel).toBeVisible();

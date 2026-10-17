@@ -479,6 +479,16 @@ test("V3.2 rejection overrides an inconsistent legacy brief without green resolu
     }),
   );
   await page.goto(`/app/cases/${trace.case_id}`);
+  // Decision view: the lifecycle decides the work order's status, never the legacy brief.
+  await expect(page.getByTestId("order-status")).toContainText("Task rejected");
+  await expect(page.getByTestId("work-order")).not.toContainText(
+    "request not delivered",
+  );
+  await expect(page.getByTestId("order-status")).not.toHaveClass(/resolved/);
+  await page
+    .getByTestId("view-switch")
+    .getByRole("button", { name: "Evidence view" })
+    .click();
   await expect(page.getByTestId("case-assessment")).toContainText(
     "Task rejected",
   );

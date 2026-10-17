@@ -75,7 +75,11 @@ export function WorkOrder({
     say(reviewLine?.text_en, reviewLine?.text_ar) ||
     next?.blockedBy?.reason ||
     say(brief.policy?.text_en, brief.policy?.text_ar);
-  const statusLine = say(line("status")?.text_en, line("status")?.text_ar);
+  // With a V3.2 action lifecycle, its independent axes decide the status; the brief's older
+  // status sentence cannot override them (as in the Evidence view's assessment).
+  const statusLine = lifecycle
+    ? ""
+    : say(line("status")?.text_en, line("status")?.text_ar);
   const nextLine = next ? (arabic ? next.textAr || next.text : next.text) : "";
   const statusText = resolved
     ? t("Verified resolved", "تم التحقق من الحل")
@@ -174,7 +178,7 @@ export function WorkOrder({
                 ? arabic
                   ? next.textAr || next.text
                   : next.text
-                : say(line("status")?.text_en, line("status")?.text_ar)}
+                : statusLine || statusText}
               {person && personReason && (
                 <em className="order-why-person" data-testid="order-why-person">
                   {t("Why a person:", "لماذا يلزم شخص:")} {personReason}
@@ -245,6 +249,7 @@ export function WorkOrder({
           <dd>
             {statusLine && statusLine !== nextLine ? statusLine : statusText}
             {!resolved &&
+              !lifecycle &&
               brief.verification &&
               brief.verification.status !== "not_applicable" && (
                 <span className="order-verification">
@@ -342,7 +347,7 @@ export function WorkOrder({
           summary={
             currentAction
               ? t(...actionLabel(currentAction))
-              : action
+              : action && !lifecycle
                 ? say(action.label_en, action.label_ar)
                 : t("Nothing sent", "لم يُرسل شيء")
           }
@@ -350,7 +355,12 @@ export function WorkOrder({
           <p>
             {currentAction
               ? t(...actionLabel(currentAction))
-              : say(line("action")?.text_en, line("action")?.text_ar)}
+              : lifecycle
+                ? t(
+                    "No operational action is recorded.",
+                    "لا إجراء تشغيلياً مسجلاً.",
+                  )
+                : say(line("action")?.text_en, line("action")?.text_ar)}
           </p>
           {brief.policy && brief.policy.decision !== "none" && (
             <p className="muted">
