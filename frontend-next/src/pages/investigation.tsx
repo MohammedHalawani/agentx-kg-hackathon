@@ -738,6 +738,13 @@ function InvestigationWorkspace() {
                             "نتيجة فحص بشري مسجلة · الحالة ما زالت مفتوحة",
                           )
                   : c.backend?.investigationLog?.degradedKinds.includes(
+                        "context_exhausted",
+                      )
+                  ? t(
+                      "Investigation reached its context limit · evidence preserved for human review",
+                      "بلغ التحقيق حد السياق · الأدلة محفوظة لمراجعة بشرية",
+                    )
+                  : c.backend?.investigationLog?.degradedKinds.includes(
                         "turn_budget_exhausted",
                       )
                     ? t(

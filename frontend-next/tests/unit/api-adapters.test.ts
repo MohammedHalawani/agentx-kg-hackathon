@@ -267,6 +267,12 @@ describe("backend case detail", () => {
     expect(spent.backend?.investigationLog?.degraded[0]).toMatch(/no valid conclusion within its turn budget/);
     expect(spent.backend?.investigationLog?.degraded[0]).not.toMatch(/not valid, so nothing/);
     expect(spent.backend?.investigationLog?.rejectedReplies).toEqual(["empty reply"]);
+    // V3.4.2: stopping at the context limit is its own state, never "the model's reply could not be used".
+    const limit = applyDetail(base, detailA({ workflow_state: "HUMAN_REVIEW", run: { ...seed.run!, result: { ...seed.run!.result!, mode: "context_exhausted", degraded: [{ role: "investigator", kind: "context_exhausted", error: "context limit reached before a valid conclusion" }] } } }));
+    expect(limit.backend?.investigationLog?.degradedKinds).toEqual(["context_exhausted"]);
+    expect(limit.backend?.investigationLog?.degraded[0]).toMatch(/reached its context limit/);
+    expect(limit.backend?.investigationLog?.degraded[0]).toMatch(/preserved for a person/);
+    expect(limit.backend?.investigationLog?.degraded[0]).not.toMatch(/reply|not valid|did not answer/);
     expect(spent.backend?.timing?.totalSeconds).toBe(90.9);
     // The backend's next step is carried as stated; nothing is derived in the browser.
     const held = applyDetail(base, detailA({ workflow_state: "HUMAN_REVIEW", next_step: { code: "INVESTIGATE_AND_RECORD_FINDING", actor: "operator", text_en: "A person must investigate.", text_ar: "", resolved: false, blocked_by: { rule_id: "AUTH-06-evidence-conflict", reason: "Evidence conflicts.", review_verdict: "ACCEPT" }, missing_evidence: ["a later scan"], attempted: [{ action_type: "REQUEST_DEVICE_SYNC", authority: "OPERATOR_APPROVAL", status: "ACKNOWLEDGED", verification_status: "VERIFIED", success: false, reason: "No confirming evidence." }] } }));

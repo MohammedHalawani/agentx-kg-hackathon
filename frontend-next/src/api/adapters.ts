@@ -674,6 +674,9 @@ function investigationLogOf(
       if (item.kind === "snapshot_superseded" || item.role === "snapshot")
         // Not a model failure: the evidence moved while the investigation ran.
         return "Evidence changed during the investigation, so its conclusion rests on a superseded snapshot. A person must review the latest evidence.";
+      if (item.kind === "context_exhausted")
+        // V3.4.2: stopped at the input limit before another request could be sent; nothing failed at the model.
+        return `The ${who} reached its context limit before another request could be sent. No diagnosis was substituted. The evidence gathered is preserved for a person.`;
       if (item.kind === "turn_budget_exhausted")
         return `The ${who} reached no valid conclusion within its turn budget. No diagnosis was substituted. A person has this case.`;
       if (item.kind === "invalid_model_output")

@@ -3,6 +3,7 @@ import type { Diagnosis, DiagnosisAbsentReason, ShipmentDetail } from '@/contrac
 /** Human-review reasons by the authority rule the routing recorded (run.result.authority.rule_id). */
 const BY_RULE: Record<string, string> = {
   'AUTH-02-model-degraded': 'ops.overview.humanReason.modelUnavailable',
+  'AUTH-28-context-exhausted': 'ops.overview.humanReason.contextExhausted',
   'AUTH-03-reviewer-human': 'ops.overview.humanRequiredJudgment',
   'AUTH-04-contractor-custody': 'ops.overview.humanReason.contractorCustody',
   'AUTH-05-sensitive': 'ops.overview.humanReason.sensitive',

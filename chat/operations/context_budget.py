@@ -12,8 +12,9 @@ characters, each tool result adds a median 3.5k (largest 6.5k), and the bound co
 Compaction (no model is used to summarise): an older tool result becomes a digest that keeps every id it named, each
 evidence id with its kind, scope and times as the run's evidence index holds them, every computed comparison with its
 values, the tool and its arguments, and a label saying that it was shortened, why, and that calling the tool again shows
-the full result. Nothing is dropped silently: every id found in the original text is in the digest, the run records
-which results were shortened and which ids they carried, and the full records stay in the run's evidence index for the
+the full result. It ends with the same CITABLE_EVIDENCE_IDS list as the original; other ids the original only mentioned
+(devices, facilities, packages) are kept by name and labelled as not citable (V3.4.2). Nothing is dropped silently:
+every id found in the original text is in the digest, the run records which results were shortened and which ids they carried, and the full records stay in the run's evidence index for the
 reviewer and the UI. Results that hold evidence a review or the conclusion marked as contradicting are never shortened.
 Results that the current hypotheses cite, and the latest tool turn's results, are shortened only when nothing else lets a
 conclusion fit (the cited records reach the reviewer in full regardless).
@@ -101,15 +102,26 @@ def digest(step, original, tools, *, reason="input limit"):
             values["input_ids_count"] = len(values.pop("input_ids"))
         computed[key] = values
     body = {"args": step.get("args") or {}, "evidence": evidence, "computed": computed}
+    # V3.4.2: what may be cited is exactly what the original result listed as citable (this call's evidence and computed ids),
+    # repeated at the end under the same CITABLE_EVIDENCE_IDS marker the investigator is told to cite from. Other ids the
+    # original text mentioned inside its records (devices, facilities, packages, routes) are kept by name and labelled: those
+    # no tool has returned as evidence are not citable; those another tool returned stay citable through that result.
+    citable = list(dict.fromkeys([*step["evidence_ids"], *(step.get("computed_ids") or [])]))
+    retrieved = set(getattr(tools, "retrieved", ()) or ())
+    mentioned = sorted(ids_in(original) - set(citable))
+    not_citable = [key for key in mentioned if key not in retrieved]
+    elsewhere = [key for key in mentioned if key in retrieved]
+    if not_citable:
+        body["mentioned_ids_not_citable"] = not_citable
+    if elsewhere:
+        body["mentioned_ids_citable_from_other_results"] = elsewhere
     head = (f"{TOOL_PREFIX}{step['tool']} ({COMPACTED} for the {reason}. Each evidence id is kept with its kind/scope and times as "
-            f"id@occurred_at+Ns (recorded N seconds later); computed results keep their values; every id here stays citable. The "
-            f"full result is in the run's evidence index: call {step['tool']} again to read it in full): ")
-    text = head + json.dumps(body, default=str, ensure_ascii=False, separators=(",", ":"))
-    missing = sorted(ids_in(original) - ids_in(text))
-    if missing:   # ids the original text named inside its records (packages, devices, inputs): kept by name
-        body["also_named"] = missing
-        text = head + json.dumps(body, default=str, ensure_ascii=False, separators=(",", ":"))
-    return text
+            f"id@occurred_at+Ns (recorded N seconds later); computed results keep their values. Cite only the ids under "
+            f"CITABLE_EVIDENCE_IDS at the end. Ids under mentioned_ids_not_citable are names that appeared inside these records "
+            f"(devices, facilities, packages, routes), not evidence: never cite them. The full result is in the run's evidence "
+            f"index: call {step['tool']} again to read it in full): ")
+    return (head + json.dumps(body, default=str, ensure_ascii=False, separators=(",", ":")) +
+            " CITABLE_EVIDENCE_IDS: " + json.dumps(citable))   # the same form as tools.py
 
 
 class ContextLedger:

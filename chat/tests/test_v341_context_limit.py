@@ -448,7 +448,10 @@ class Digest(unittest.TestCase):
         self.assertIn('"ScanEvent/shipment":["DEMO-SHP-1-SCAN-001@2026-09-16T10:00:00Z+9000s"]', text)
         self.assertIn('"outside_tolerance":true', text)
         self.assertIn('"difference_kg":1.4', text)
-        self.assertIn("every id here stays citable", text)
+        # V3.4.2: only the original's citable list is citable; DEMO-DEV-9 is kept by name, labelled not citable.
+        self.assertTrue(text.endswith(' CITABLE_EVIDENCE_IDS: ["DEMO-SHP-1-SCAN-001", "DEMO-CMP-abc"]'))
+        self.assertIn('"mentioned_ids_not_citable":["DEMO-DEV-9"]', text)
+        self.assertNotIn("every id here stays citable", text)
 
     def test_cited_and_contradicting_evidence_is_never_shortened(self):
         tools = FakeTools()
