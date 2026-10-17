@@ -38,6 +38,8 @@ export interface Stub {
     dualWorker: boolean;
     /** V3.4: four workers and four provider lanes. */
     quadWorker: boolean;
+    /** GET /operations/monitor/overview, in the backend's shape. */
+    overview: Record<string, unknown>;
   };
 }
 
@@ -57,6 +59,23 @@ export async function stubBackend(page: Page): Promise<Stub> {
       clock: "paused",
       dualWorker: false,
       quadWorker: false,
+      overview: {
+        synthetic: true,
+        as_of: "2026-09-03T14:00:00+00:00",
+        shipments_booked: 40,
+        shipments_monitored: 32,
+        no_active_exception: 29,
+        active_exception: 3,
+        cases_total: 3,
+        cases_open: 2,
+        awaiting_investigation: 1,
+        investigating: 0,
+        action_pending: 1,
+        human_review: 0,
+        alerts_cleared_by_later_evidence: 0,
+        alerts_partly_cleared: 0,
+        verified_resolved: 1,
+      },
     },
   };
   const json = (route: Route, body: unknown, status = 200) =>
@@ -208,6 +227,8 @@ export async function stubBackend(page: Page): Promise<Stub> {
         return json(route, { detail: "Not found" }, 404);
       }
       if (path === "/operations/session") return json(route, session);
+      if (path === "/operations/monitor/overview")
+        return json(route, stub.state.overview);
       if (path === "/worker/status") {
         const dual = stub.state.quadWorker
           ? workerStatusQuad

@@ -75,6 +75,8 @@ export function WorkOrder({
     say(reviewLine?.text_en, reviewLine?.text_ar) ||
     next?.blockedBy?.reason ||
     say(brief.policy?.text_en, brief.policy?.text_ar);
+  const statusLine = say(line("status")?.text_en, line("status")?.text_ar);
+  const nextLine = next ? (arabic ? next.textAr || next.text : next.text) : "";
   const statusText = resolved
     ? t("Verified resolved", "تم التحقق من الحل")
     : lifecycle
@@ -241,11 +243,18 @@ export function WorkOrder({
         <div className="order-row" data-testid="order-status-row">
           <dt>{t("Current status", "الوضع الحالي")}</dt>
           <dd>
-            {say(line("status")?.text_en, line("status")?.text_ar) ||
-              statusText}
+            {statusLine && statusLine !== nextLine ? statusLine : statusText}
+            {!resolved &&
+              brief.verification &&
+              brief.verification.status !== "not_applicable" && (
+                <span className="order-verification">
+                  {say(brief.verification.text_en, brief.verification.text_ar)}
+                </span>
+              )}
           </dd>
         </div>
       </dl>
+      <div className="order-controls">{controls}</div>
       {proof.relevant && (
         <section className="order-proof" data-testid="order-proof">
           <h4>{t("Proof of delivery", "إثبات التسليم")}</h4>
@@ -441,7 +450,6 @@ export function WorkOrder({
           </p>
         </Fold>
       </div>
-      <footer className="order-controls">{controls}</footer>
     </article>
   );
 }

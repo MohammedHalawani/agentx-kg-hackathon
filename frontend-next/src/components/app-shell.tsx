@@ -21,7 +21,6 @@ import {
   HelpCircle,
   Moon,
   Sun,
-  ArrowUpRight,
   CheckCheck,
   ArrowRight,
   FolderCheck,
@@ -113,6 +112,11 @@ function Navigation() {
   }, [onCase, isMobile, setOpen]);
   const [workspace, setWorkspace] = useState(false);
   const [help, setHelp] = useState(false);
+  useEffect(() => {
+    const open = () => setHelp(true);
+    window.addEventListener("suhail:help", open);
+    return () => window.removeEventListener("suhail:help", open);
+  }, []);
   const attention = cases.filter((c) => c.status === "human_review").length;
   // Backend: "Investigation" opens the case being viewed, the last one opened, or the queue.
   const openCase = location.pathname.startsWith("/cases/")
@@ -134,7 +138,6 @@ function Navigation() {
       : cases[0]
         ? `/cases/${cases[0].id}`
         : "/operations";
-  const online = connection?.state === "online";
   const closeMobile = () => {
     if (isMobile) setOpenMobile(false);
   };
@@ -254,33 +257,8 @@ function Navigation() {
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter>
-          <div className="sidebar-system">
-            <span className={!backend || online ? "live-dot" : "paused-dot"} />
-            <span>
-              {backend
-                ? online
-                  ? t("Backend connected", "الخادم متصل")
-                  : connection?.state === "connecting"
-                    ? t("Connecting to backend", "جارٍ الاتصال بالخادم")
-                    : t("Backend unreachable", "تعذر الوصول إلى الخادم")
-                : t("Local simulation", "محاكاة محلية")}
-              {!backend && (
-                <small>{t("Isolated UI lab", "مختبر واجهة مستقل")}</small>
-              )}
-            </span>
-            <ShieldCheck size={14} />
-          </div>
+          {/* The connection is shown in the top bar; the guide opens from its help icon. */}
           <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                tooltip={t("Workspace guide", "دليل مساحة العمل")}
-                onClick={() => setHelp(true)}
-              >
-                <HelpCircle size={17} />
-                <span>{t("Workspace guide", "دليل مساحة العمل")}</span>
-                <ArrowUpRight size={12} className="ms-auto" />
-              </SidebarMenuButton>
-            </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
@@ -548,6 +526,15 @@ function TopBar() {
             ) : (
               <Sun size={15} />
             )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={t("Workspace guide", "دليل مساحة العمل")}
+            title={t("Workspace guide", "دليل مساحة العمل")}
+            onClick={() => window.dispatchEvent(new Event("suhail:help"))}
+          >
+            <HelpCircle size={15} />
           </Button>
           <Button
             variant="ghost"

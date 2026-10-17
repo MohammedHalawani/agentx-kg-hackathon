@@ -9,11 +9,16 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   CheckCheck,
+  CircleCheckBig,
+  Hourglass,
+  Inbox,
+  ScanSearch,
+  UserRound,
   ChevronLeft,
   ChevronRight,
   Clock3,
   PanelRightClose,
-  FastForward,
+  SkipForward,
   Pause,
   Play,
   RefreshCw,
@@ -28,11 +33,21 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { OperationsFilters } from "@/components/operations-filters";
-import { MonitorOverview } from "@/components/monitor-overview";
+import {
+  MonitoringStatus,
+  useMonitorOverview,
+} from "@/components/monitor-overview";
+import { KpiCards } from "@/components/kpi-cards";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   defaultQueueFilters,
   caseQueuePage,
   CASE_QUEUE_PAGE_SIZE,
+  STAGE_GROUPS,
   investigationAssignments,
   operationsCollection,
 } from "@/domain/desktop-operations";
@@ -90,6 +105,35 @@ export function OperationsPage() {
   const queueList = useRef<HTMLDivElement>(null);
   const focusedQueueCase = useRef<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const overview = useMonitorOverview(backend);
+  // A KPI card applies the matching stage filter over all loaded cases; "Clear applied
+  // filters" undoes it. Its count is the backend's; the table lists the loaded cases.
+  const kpiFilter =
+    filters.collection === "all" &&
+    filters.stage === "all" &&
+    filters.status === "all"
+      ? "open"
+      : filters.stage === "awaiting_investigation"
+        ? "awaiting"
+        : filters.stage === "action_pending"
+          ? "pending"
+          : filters.stage === "human_review"
+            ? "person"
+            : null;
+  function applyKpi(card: "open" | "awaiting" | "pending" | "person") {
+    setQuery("");
+    setFilters({
+      ...defaultQueueFilters,
+      collection: "all",
+      stage: {
+        open: "all",
+        awaiting: "awaiting_investigation",
+        pending: "action_pending",
+        person: "human_review",
+      }[card],
+    });
+    resetPage();
+  }
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   useCanopusScreen({
     screen: "operations",
@@ -180,6 +224,11 @@ export function OperationsPage() {
                   c.status,
                 ))) &&
             (priority === "all" || c.priority === priority) &&
+            (filters.stage === "all" ||
+              (caseQueueGroup(c) === "active" &&
+                !!STAGE_GROUPS[filters.stage]?.includes(
+                  c.backend?.workflowState ?? "",
+                ))) &&
             (city === "all" ||
               c.shipment.destination === city ||
               c.shipment.origin === city) &&
@@ -391,13 +440,87 @@ export function OperationsPage() {
           "استثناءات الشحنات التي تتطلب إجراءً.",
         )}
       >
-        <span className="inline-count">
-          {active.length} {t("open", "مفتوحة")}
-          <i>·</i>
-          {human.length} {t("need attention", "تتطلب انتباهاً")}
-        </span>
+        {!backend && (
+          <span className="inline-count">
+            {active.length} {t("open", "مفتوحة")}
+            <i>·</i>
+            {human.length} {t("need attention", "تتطلب انتباهاً")}
+          </span>
+        )}
       </PageTitle>
-      {backend && <MonitorOverview />}
+      {backend && (
+        <>
+          <KpiCards
+            testId="operations-kpis"
+            label={t("Case counts", "أعداد الحالات")}
+            cards={[
+              {
+                key: "open",
+                icon: <Inbox size={15} />,
+                value: overview?.cases_open ?? null,
+                label: t("Open cases", "حالات مفتوحة"),
+                title: t(
+                  "Cases not closed, as the backend's case ledger counts them now.",
+                  "الحالات غير المغلقة كما يعدها سجل الحالات في الخادم الآن.",
+                ),
+                active: kpiFilter === "open",
+                onSelect: () => applyKpi("open"),
+              },
+              {
+                key: "awaiting",
+                icon: <ScanSearch size={15} />,
+                value: overview?.awaiting_investigation ?? null,
+                label: t("Awaiting investigation", "بانتظار التحقيق"),
+                title: t(
+                  "Detected exceptions not yet investigated.",
+                  "استثناءات مكتشفة لم يُحقَّق فيها بعد.",
+                ),
+                active: kpiFilter === "awaiting",
+                onSelect: () => applyKpi("awaiting"),
+              },
+              {
+                key: "pending",
+                icon: <Hourglass size={15} />,
+                value: overview?.action_pending ?? null,
+                label: t("Action pending", "إجراء معلّق"),
+                title: t(
+                  "Investigated; a recommendation, approval, request or outcome is pending.",
+                  "اكتمل التحقيق؛ توصية أو موافقة أو طلب أو نتيجة معلّقة.",
+                ),
+                active: kpiFilter === "pending",
+                onSelect: () => applyKpi("pending"),
+              },
+              {
+                key: "person",
+                icon: <UserRound size={15} />,
+                value: overview?.human_review ?? null,
+                label: t("With a person", "لدى شخص"),
+                title: t(
+                  "Human review, escalated or rejected.",
+                  "مراجعة بشرية أو مصعّدة أو مرفوضة.",
+                ),
+                active: kpiFilter === "person",
+                onSelect: () => applyKpi("person"),
+              },
+              {
+                key: "verified",
+                icon: <CircleCheckBig size={15} />,
+                value: overview?.verified_resolved ?? null,
+                label: t("Verified resolved", "حُلّت بتحقق"),
+                title: t(
+                  "Closed by the verifier or a person's verified finding.",
+                  "أُغلقت بالمدقق أو بنتيجة بشرية متحقق منها.",
+                ),
+                onSelect: () => {
+                  setResolvedOpen(true);
+                  setQueueTab("resolved");
+                },
+              },
+            ]}
+          />
+          <MonitoringStatus overview={overview} />
+        </>
+      )}
       <div
         className={`operations-workbench ${resolvedOpen ? "resolved-expanded" : ""}`}
       >
@@ -428,55 +551,95 @@ export function OperationsPage() {
             />
           </div>
           <div className="queue-controls">
-            {backend && connection?.clock && service.setClock && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="clock-control"
-                data-testid="clock-control"
-                aria-pressed={connection.clock.running}
-                disabled={skipping || connection.controls === "unavailable"}
-                title={t(
-                  "The simulated clock. New exceptions arrive and requests are answered only while it runs.",
-                  "الساعة المحاكاة. تصل الاستثناءات الجديدة وتُجاب الطلبات فقط أثناء تشغيلها.",
-                )}
-                onClick={() =>
-                  void service.setClock!(!connection.clock!.running).catch(
-                    (e: Error) => toast.error(e.message),
-                  )
-                }
+            {backend && connection?.clock && (
+              <span
+                className={`clock-state ${connection.clock.running ? "running" : ""}`}
+                data-testid="clock-state"
               >
-                {connection.clock.running ? (
-                  <Pause size={12} />
-                ) : (
-                  <Play size={12} />
-                )}
+                <Clock3 size={11} />
                 {connection.clock.running
                   ? t(
-                      `Clock running ×${connection.clock.speed} · Pause`,
-                      `الساعة تعمل ×${connection.clock.speed} · إيقاف`,
+                      `Clock ×${connection.clock.speed}`,
+                      `الساعة ×${connection.clock.speed}`,
                     )
-                  : t("Clock paused · Start", "الساعة متوقفة · تشغيل")}
-              </Button>
+                  : t("Clock paused", "الساعة متوقفة")}
+              </span>
+            )}
+            {backend && connection?.clock && service.setClock && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon-sm"
+                    className="clock-control"
+                    data-testid="clock-control"
+                    aria-pressed={connection.clock.running}
+                    aria-label={
+                      connection.clock.running
+                        ? t(
+                            "Pause the simulated clock",
+                            "إيقاف الساعة المحاكاة",
+                          )
+                        : t(
+                            "Start the simulated clock",
+                            "تشغيل الساعة المحاكاة",
+                          )
+                    }
+                    disabled={skipping || connection.controls === "unavailable"}
+                    onClick={() =>
+                      void service.setClock!(!connection.clock!.running).catch(
+                        (e: Error) => toast.error(e.message),
+                      )
+                    }
+                  >
+                    {connection.clock.running ? (
+                      <Pause size={13} />
+                    ) : (
+                      <Play size={13} />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {connection.clock.running
+                    ? t(
+                        "Pause the simulated clock. New exceptions and request answers stop arriving until it runs again. Investigations are not affected.",
+                        "إيقاف الساعة المحاكاة. يتوقف وصول الاستثناءات الجديدة وإجابات الطلبات حتى تعمل مجدداً. لا يتأثر التحقيق.",
+                      )
+                    : t(
+                        "Start the simulated clock. New exceptions arrive and requests are answered only while it runs. This does not start an investigation.",
+                        "تشغيل الساعة المحاكاة. تصل الاستثناءات الجديدة وتُجاب الطلبات فقط أثناء تشغيلها. لا يبدأ ذلك تحقيقاً.",
+                      )}
+                </TooltipContent>
+              </Tooltip>
             )}
             {backend && connection?.clock && service.skipClock && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="clock-control"
-                data-testid="clock-skip"
-                disabled={skipping || connection.controls === "unavailable"}
-                title={t(
-                  "Runs the clock fast until an awaited result arrives or a new case opens, then returns to the current speed. Every other shipment ages by the skipped time.",
-                  "يشغّل الساعة بسرعة حتى تصل نتيجة منتظرة أو تُفتح حالة جديدة، ثم يعود إلى السرعة الحالية. تتقدم كل الشحنات الأخرى بالزمن المتخطى.",
-                )}
-                onClick={skipToNext}
-              >
-                <FastForward size={12} />
-                {skipping
-                  ? t("Skipping…", "جارٍ التخطي…")
-                  : t("Skip to next event", "تخطَّ إلى الحدث التالي")}
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon-sm"
+                    className="clock-control"
+                    data-testid="clock-skip"
+                    aria-label={t(
+                      "Skip the simulated clock to the next event",
+                      "تخطي الساعة المحاكاة إلى الحدث التالي",
+                    )}
+                    disabled={skipping || connection.controls === "unavailable"}
+                    onClick={skipToNext}
+                  >
+                    <SkipForward
+                      size={13}
+                      className={skipping ? "slow-spin" : ""}
+                    />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {t(
+                    "Run the simulated clock fast until an awaited result arrives or a new case opens, then return to the current speed. It does not start an AI investigation.",
+                    "تشغيل الساعة المحاكاة بسرعة حتى تصل نتيجة منتظرة أو تُفتح حالة جديدة، ثم العودة إلى السرعة الحالية. لا يبدأ تحقيقاً بالذكاء الاصطناعي.",
+                  )}
+                </TooltipContent>
+              </Tooltip>
             )}
             <label className="inline-automation">
               <span>{t("Auto", "تلقائي")}</span>
@@ -665,6 +828,14 @@ export function OperationsPage() {
                     <CheckCheck size={15} />
                     {t("Case queue", "قائمة الحالات")}
                   </h2>
+                  <Link
+                    className="view-all-decisions"
+                    to="/decisions"
+                    data-testid="view-all-decisions"
+                  >
+                    {t("View all decisions", "عرض كل القرارات")}
+                    <ArrowRight size={12} />
+                  </Link>
                   <CollapsibleTrigger asChild>
                     <Button
                       size="icon-sm"

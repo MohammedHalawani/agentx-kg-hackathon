@@ -7,6 +7,7 @@ import {
   ArrowRight,
   Clock3,
   FileSearch,
+  AlertTriangle,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -29,6 +30,7 @@ import {
   PriorityLabel,
 } from "@/components/shared";
 import { dateTimeLabel } from "@/lib/dates";
+import { KpiCards } from "@/components/kpi-cards";
 import { useOperations } from "@/state/operations";
 import { usePreferences } from "@/state/preferences";
 import type { AuthorityDecision, OperationalCase } from "@/domain/types";
@@ -68,6 +70,10 @@ export function DecisionsPage() {
     c: OperationalCase;
     verdict: AuthorityDecision["verdict"];
   } | null>(null);
+  const selectTab = (value: string) => {
+    setTab(value);
+    setPagination((p) => ({ ...p, pageIndex: 0 }));
+  };
   const pending = cases.filter((c) =>
     ["human_review", "needs_evidence", "escalated"].includes(c.status),
   );
@@ -238,10 +244,7 @@ export function DecisionsPage() {
         row.original.reason ||
         (backend ? (
           <span className="cell-secondary">
-            {t(
-              "Not stored by the backend yet",
-              "لا يخزنه الخادم بعد",
-            )}
+            {t("Not stored by the backend yet", "لا يخزنه الخادم بعد")}
           </span>
         ) : (
           ""
@@ -291,34 +294,66 @@ export function DecisionsPage() {
               )}
         </span>
       </PageTitle>
-      <div className="decision-counts">
-        <span>
-          <Clock3 size={12} />
-          <b>{pending.filter(awaitingApproval).length}</b>
-          {t("awaiting approval", "بانتظار الموافقة")}
-        </span>
-        <span>
-          <b>{pending.filter((c) => c.status === "needs_evidence").length}</b>
-          {t("need evidence", "تحتاج أدلة")}
-        </span>
-        <span>
-          <b>{pending.filter((c) => c.status === "escalated").length}</b>
-          {t("escalated", "تم التصعيد")}
-        </span>
-        <span>
-          <b>{decisions.length}</b>
-          {t("decisions recorded", "قرارات مسجلة")}
-        </span>
-      </div>
+      <KpiCards
+        testId="decision-kpis"
+        label={t("Decision counts", "أعداد القرارات")}
+        cards={[
+          {
+            key: "approval",
+            icon: <Clock3 size={15} />,
+            value: pending.filter(awaitingApproval).length,
+            label: t("Awaiting approval", "بانتظار الموافقة"),
+            title: t(
+              "Loaded cases whose reviewed recommendation waits for an operator's approval.",
+              "الحالات المحملة التي تنتظر توصيتها المراجَعة موافقة مشغل.",
+            ),
+            active: tab === "approval",
+            onSelect: () =>
+              selectTab(tab === "approval" ? "review" : "approval"),
+          },
+          {
+            key: "evidence",
+            icon: <FileSearch size={15} />,
+            value: pending.filter((c) => c.status === "needs_evidence").length,
+            label: t("Need evidence", "تحتاج أدلة"),
+            title: t(
+              "Loaded cases the workflow holds for more evidence (needs evidence or rejected).",
+              "الحالات المحملة التي يوقفها سير العمل لطلب أدلة إضافية (تحتاج أدلة أو مرفوضة).",
+            ),
+            active: tab === "evidence",
+            onSelect: () =>
+              selectTab(tab === "evidence" ? "review" : "evidence"),
+          },
+          {
+            key: "escalated",
+            icon: <AlertTriangle size={15} />,
+            value: pending.filter((c) => c.status === "escalated").length,
+            label: t("Escalated", "تم التصعيد"),
+            title: t(
+              "Loaded cases escalated to a person.",
+              "الحالات المحملة المصعّدة إلى شخص.",
+            ),
+            active: tab === "escalated",
+            onSelect: () =>
+              selectTab(tab === "escalated" ? "review" : "escalated"),
+          },
+          {
+            key: "recorded",
+            icon: <ShieldCheck size={15} />,
+            value: decisions.length,
+            label: t("Decisions recorded", "قرارات مسجلة"),
+            title: t(
+              "Operator decisions in the backend's decision record (approvals, rejections, escalations). A count of decisions, not of cases.",
+              "قرارات المشغلين في سجل القرارات بالخادم (موافقات ورفض وتصعيد). عدد قرارات وليس عدد حالات.",
+            ),
+            active: tab === "history",
+            onSelect: () => selectTab(tab === "history" ? "review" : "history"),
+          },
+        ]}
+      />
       <section className="surface decision-table-surface">
         <div className="decision-table-toolbar">
-          <Tabs
-            value={tab}
-            onValueChange={(v) => {
-              setTab(v);
-              setPagination((p) => ({ ...p, pageIndex: 0 }));
-            }}
-          >
+          <Tabs value={tab} onValueChange={selectTab}>
             <TabsList>
               <TabsTrigger value="review">
                 {t("Human review", "مراجعة بشرية")}
@@ -505,7 +540,10 @@ export function DecisionsPage() {
                               "The backend does not offer an approval for this case.",
                               "لا يتيح الخادم الموافقة على هذه الحالة.",
                             ))
-                          : t("Loading from the backend…", "جارٍ التحميل من الخادم…")}
+                          : t(
+                              "Loading from the backend…",
+                              "جارٍ التحميل من الخادم…",
+                            )}
                       </p>
                     )}
                     {controls(details).reject && (

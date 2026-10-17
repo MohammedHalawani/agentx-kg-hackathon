@@ -16,6 +16,20 @@ export type QueueFilters = {
   cause: string;
   operational: string;
   sort: string;
+  /** A case-ledger stage group, as the backend's monitor overview counts it. */
+  stage: string;
+};
+/** The workflow states of each overview group (chat/operations/store.py OVERVIEW_GROUPS). */
+export const STAGE_GROUPS: Record<string, readonly string[]> = {
+  awaiting_investigation: ["OPEN", "REOPENED"],
+  action_pending: [
+    "RECOMMENDATION_READY",
+    "AWAITING_APPROVAL",
+    "ACTION_INITIATED",
+    "AWAITING_OUTCOME",
+    "NEEDS_EVIDENCE",
+  ],
+  human_review: ["HUMAN_REVIEW", "ESCALATED", "REJECTED"],
 };
 export const defaultQueueFilters: QueueFilters = {
   collection: "unassigned",
@@ -25,6 +39,7 @@ export const defaultQueueFilters: QueueFilters = {
   cause: "all",
   operational: "all",
   sort: "newest",
+  stage: "all",
 };
 
 export function investigationAssignments(
