@@ -270,3 +270,18 @@ test("Sidebar: no guide entry or duplicate connection line, expanded and collaps
     path: "test-results/ui-final/sidebar-collapsed.png",
   });
 });
+
+test("The work order reads in Arabic and dark mode", async ({ page }) => {
+  const stub = await stubBackend(page);
+  stub.state.detailA = detailA({ brief });
+  await page.goto(`/app/cases/${CASE_A}`);
+  await expect(page.getByTestId("work-order")).toBeVisible();
+  await page.getByRole("button", { name: "Switch to Arabic" }).click();
+  await page.getByRole("button", { name: "تبديل المظهر" }).click();
+  await expect(page.getByTestId("work-order")).toContainText("أفضل إجراء تالٍ");
+  await expect(page.getByTestId("view-switch")).toContainText("عرض القرار");
+  await page.screenshot({
+    path: "test-results/ui-final/decision-view-ar-dark.png",
+    fullPage: true,
+  });
+});

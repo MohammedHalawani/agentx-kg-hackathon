@@ -595,3 +595,18 @@ button.kpi-card:focus-visible {
   white-space: nowrap;
   font-size: 11px;
 }
+/* The decision buttons read as one row in the work order. */
+.work-order .order-controls .context-actions {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.work-order .order-controls .context-actions button {
+  font-size: 12px;
+  padding-inline: 10px;
+}
+.work-order .order-controls .context-assigned {
+  font-size: 12px;
+  flex-basis: 100%;
+}
