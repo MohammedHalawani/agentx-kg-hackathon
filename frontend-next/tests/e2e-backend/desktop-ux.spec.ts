@@ -216,12 +216,8 @@ test("drawer drafts, apply, individual reset and honest loaded-page numbers reta
   // Manual/cursor tables keep previous/next navigation, without invented random access.
   await page.goto("/app/audit");
   await expect(page.getByTestId("audit-event-count")).toHaveText("4");
-  await expect(
-    page.getByRole("button", { name: /^Table page \d/ }),
-  ).toHaveCount(0);
-  await expect(
-    page.getByRole("button", { name: "Next table page" }),
-  ).toBeVisible();
+  await expect(page.getByRole("button", {name: /^Table page \d/})).toHaveCount(0);
+  await expect(page.getByRole("button", {name: "Next table page"})).toBeVisible();
   expect(stub.posts).toEqual([]);
 });
 
@@ -311,10 +307,7 @@ for (const viewport of [
     // A real UI notification triggered by a scripted read. It stays above the evidence area.
     await page.goto("/app/operations");
     await page.getByRole("button", { name: "Refresh queue" }).click();
-    const toast = page
-      .locator("[data-sonner-toast]")
-      .filter({ hasText: "Queue read from the backend" })
-      .first();
+    const toast = page.locator("[data-sonner-toast]").filter({hasText: "Queue read from the backend"}).first();
     await expect(toast).toContainText("Queue read from the backend");
     await page.getByTestId(`worker-case-${CASE_A}`).click();
     await expect(page.getByTestId("knowledge-graph")).toBeVisible();

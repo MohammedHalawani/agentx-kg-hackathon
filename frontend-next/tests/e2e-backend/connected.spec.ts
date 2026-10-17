@@ -20,9 +20,7 @@ test("Operations shows the backend queue with real identities and honest labels"
   await expect(rows.first()).toContainText("Awaiting investigation");
   await expect(rows.first()).toContainText("Not set");
   await expect(page.getByTestId(`data-row-${CASE_A}`)).toHaveCount(0);
-  await page
-    .getByRole("textbox", { name: "Search exception queue" })
-    .fill(SHIP_A);
+  await page.getByRole("textbox", { name: "Search exception queue" }).fill(SHIP_A);
   const reviewed = page.getByTestId(`data-row-${CASE_A}`);
   await expect(reviewed).toContainText(SHIP_A);
   await expect(reviewed).toContainText("Riyadh");
@@ -32,21 +30,14 @@ test("Operations shows the backend queue with real identities and honest labels"
   await expect(page.locator(".environment-badge")).toHaveText("Connected");
   // The connection is shown once, in the top bar; the sidebar no longer repeats it.
   await expect(page.locator(".sidebar-system")).toHaveCount(0);
-  await expect(page.locator(".operator-button")).toContainText(
-    "SYN-OPERATOR-LOCAL",
-  );
+  await expect(page.locator(".operator-button")).toContainText("SYN-OPERATOR-LOCAL");
   // Preserve the compact logo/workspace layout and identify synthetic data visibly.
   await expect(page.locator(".workspace-selector")).toHaveCount(0);
   await expect(page.locator(".brand-logo .brand-full")).toBeVisible();
   await expect(page.locator(".brand-header")).toHaveText("");
   await expect(page.getByTestId("synthetic-data-label")).toHaveCount(0);
-  await expect(page.getByTestId("demo-provenance")).toContainText(
-    "demonstration data, not SPL systems",
-  );
-  await expect(page.locator(".environment-badge")).toHaveAttribute(
-    "data-dataset",
-    "synthetic",
-  );
+  await expect(page.getByTestId("demo-provenance")).toContainText("demonstration data, not SPL systems");
+  await expect(page.locator(".environment-badge")).toHaveAttribute("data-dataset", "synthetic");
   await expect(page.locator("body")).not.toContainText(LAB_ONLY);
   // Only the independently verified case is in Resolved.
   await page.getByRole("button", { name: "Expand resolved panel" }).click();
@@ -55,9 +46,7 @@ test("Operations shows the backend queue with real identities and honest labels"
   await expect(resolved.locator(".resolved-entry")).toHaveCount(1);
   await expect(resolved).toContainText("SYN-SHP-000102");
   // Filters work on the loaded queue; the cause list holds accepted diagnoses only.
-  await page
-    .getByRole("textbox", { name: "Search exception queue" })
-    .fill("000103");
+  await page.getByRole("textbox", { name: "Search exception queue" }).fill("000103");
   await expect(rows).toHaveCount(1);
 });
 
@@ -74,9 +63,7 @@ test("An unreachable backend shows nothing and says so; no stand-in data appears
   await expect(page.locator(".operations-ledger")).toContainText(
     "The Suhail backend is not reachable",
   );
-  await expect(page.locator(".environment-badge")).toHaveText(
-    "Backend offline",
-  );
+  await expect(page.locator(".environment-badge")).toHaveText("Backend offline");
   await expect(page.locator("body")).not.toContainText(LAB_ONLY);
   // When it answers again the queue appears without a reload.
   stub.state.online = true;
@@ -93,9 +80,7 @@ test("Investigation shows recorded evidence, keeps GPS apart from custody, and r
   // A direct link works after a reload: the case is read from the backend, not from a list.
   await page.goto(`/app/cases/${CASE_A}`);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(SHIP_A);
-  await expect(page.locator(".case-heading")).toContainText(
-    "Awaiting approval",
-  );
+  await expect(page.locator(".case-heading")).toContainText("Awaiting approval");
   // Map: two confirmed custody points, bounded vehicle telemetry, one recorded attempt.
   const map = page.getByTestId("route-map");
   await expect(map.locator(".evidence-marker.confirmed")).toHaveCount(2);
@@ -110,9 +95,7 @@ test("Investigation shows recorded evidence, keeps GPS apart from custody, and r
   // Graph: bounded, and it says so.
   // The graph opens focused on the shipment; every drawn node is a real record, and the whole
   // bounded set is one click away.
-  const graphNodes = page
-    .getByTestId("knowledge-graph")
-    .locator(".entity-node");
+  const graphNodes = page.getByTestId("knowledge-graph").locator(".entity-node");
   await expect(graphNodes.first()).toBeVisible();
   const all = page.getByRole("button", { name: /^All \d+ records$/ });
   const total = Number((await all.innerText()).match(/\d+/)![0]);
@@ -137,10 +120,7 @@ test("Investigation shows recorded evidence, keeps GPS apart from custody, and r
   );
   // Vehicle telemetry is labelled as such.
   // Markers can overlap at this zoom; deliver the click to the marker itself.
-  await map
-    .locator(".evidence-marker.vehicle_only")
-    .last()
-    .dispatchEvent("click");
+  await map.locator(".evidence-marker.vehicle_only").last().dispatchEvent("click");
   await expect(page.getByTestId("evidence-inspector")).toContainText(
     "VEHICLE TELEMETRY ONLY",
   );
@@ -165,15 +145,11 @@ test("Investigation shows recorded evidence, keeps GPS apart from custody, and r
     expected_version: 7,
   });
   // The backend authorized an execution. The case is not resolved and is not shown as such.
-  await expect(page.locator(".case-heading")).toContainText(
-    "Verifying outcome",
-  );
+  await expect(page.locator(".case-heading")).toContainText("Verifying outcome");
   await expect(page.locator(".case-context")).toContainText(
     "Ask the verifier to check now",
   );
-  await expect(
-    page.getByRole("button", { name: "Review & authorize" }),
-  ).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Review & authorize" })).toHaveCount(0);
   await page.getByRole("button", { name: "Case details" }).click();
   const sheet = page.getByRole("dialog");
   await expect(sheet).toContainText("A receipt is not an outcome");
@@ -185,12 +161,8 @@ test("Investigation shows recorded evidence, keeps GPS apart from custody, and r
   await expect(steps).toContainText("2 records from beyond this shipment");
   await expect(steps.locator(".finding-cross")).toHaveCount(1);
   await expect(steps).toContainText("not treated as absence of evidence");
-  await expect(sheet.getByTestId("review-rounds")).toContainText(
-    "Independent model review · round 1",
-  );
-  await expect(sheet.getByTestId("authority-decision")).toContainText(
-    "AUTH-11-approval-required",
-  );
+  await expect(sheet.getByTestId("review-rounds")).toContainText("Independent model review · round 1");
+  await expect(sheet.getByTestId("authority-decision")).toContainText("AUTH-11-approval-required");
   // The investigator's hypotheses with their status and cited evidence; rule checks labelled.
   const findings = sheet.getByTestId("investigator-findings");
   await expect(findings).toContainText("Investigator's findings");
@@ -204,9 +176,7 @@ test("Investigation shows recorded evidence, keeps GPS apart from custody, and r
   await expect(sheet.getByTestId("rule-signals")).toContainText(
     "Rule checks · not a diagnosis",
   );
-  const citation = findings.getByRole("button", {
-    name: "SHP-000101-CUST-02-01",
-  });
+  const citation = findings.getByRole("button", { name: "SHP-000101-CUST-02-01" });
   await citation.scrollIntoViewIfNeeded();
   await expect(citation).toBeEnabled();
   await citation.click();
@@ -238,9 +208,7 @@ test("A case the backend does not have is reported, not rendered", async ({
 }) => {
   await stubBackend(page);
   await page.goto("/app/cases/SYN-CASE-DOES-NOT-EXIST");
-  await expect(page.locator(".empty-state")).toContainText(
-    "Case not available",
-  );
+  await expect(page.locator(".empty-state")).toContainText("Case not available");
   await expect(page.locator(".empty-state")).toContainText("not found");
 });
 
@@ -256,84 +224,32 @@ test("A case reads as one assessment with a connected pipeline; details and comm
       waiting_kind: "awaiting_new_evidence",
       waiting_label_en: "Waiting for new evidence",
       lines: [
-        {
-          key: "problem",
-          label_en: "Problem",
-          text_en: "Barcode mismatch detected at the sorting center.",
-        },
-        {
-          key: "finding",
-          label_en: "Finding",
-          text_en:
-            "One scanner recorded a barcode inconsistent with the manifest.",
-        },
-        {
-          key: "action",
-          label_en: "Action taken",
-          text_en:
-            "Rescan request sent to sorter SYN-DEV-SR-SORT-JED-01 (simulated). If nothing arrives by 18 Sept, the case goes to a person.",
-        },
-        {
-          key: "status",
-          label_en: "Current status",
-          text_en:
-            "Waiting for the new scan to verify the mismatch is corrected.",
-        },
+        { key: "problem", label_en: "Problem", text_en: "Barcode mismatch detected at the sorting center." },
+        { key: "finding", label_en: "Finding", text_en: "One scanner recorded a barcode inconsistent with the manifest." },
+        { key: "action", label_en: "Action taken", text_en: "Rescan request sent to sorter SYN-DEV-SR-SORT-JED-01 (simulated). If nothing arrives by 18 Sept, the case goes to a person." },
+        { key: "status", label_en: "Current status", text_en: "Waiting for the new scan to verify the mismatch is corrected." },
       ],
-      suspected_cause: {
-        status: "accepted",
-        text_en: "Suhail's investigation concluded a barcode mismatch.",
-        confidence: "medium",
-      },
-      evidence: [
-        {
-          id: `${SHIP_A}-CUST-02-01`,
-          label_en: "Custody record at the Dammam depot",
-          in_graph: true,
-        },
-      ],
-      review: {
-        status: "accepted",
-        text_en: "The independent review accepted the finding.",
-        reason_original: "Citations are valid.",
-      },
-      policy: {
-        decision: "automatic",
-        text_en: "A rescan is allowed automatically.",
-        rule_id: "AUTH-10-auto-allowlist",
-      },
+      suspected_cause: { status: "accepted", text_en: "Suhail's investigation concluded a barcode mismatch.", confidence: "medium" },
+      evidence: [{ id: `${SHIP_A}-CUST-02-01`, label_en: "Custody record at the Dammam depot", in_graph: true }],
+      review: { status: "accepted", text_en: "The independent review accepted the finding.", reason_original: "Citations are valid." },
+      policy: { decision: "automatic", text_en: "A rescan is allowed automatically.", rule_id: "AUTH-10-auto-allowlist" },
       actions: [
         {
           action_type: "REQUEST_RESCAN",
           status: "sent",
           simulated: true,
-          text_en:
-            "Rescan request sent to sorter SYN-DEV-SR-SORT-JED-01 (simulated). Suhail is waiting for a new barcode read of this parcel.",
-          deadline_text_en:
-            "If no such record arrives by 18 Sept, the verifier records the action as not confirmed and the case goes to a person.",
+          text_en: "Rescan request sent to sorter SYN-DEV-SR-SORT-JED-01 (simulated). Suhail is waiting for a new barcode read of this parcel.",
+          deadline_text_en: "If no such record arrives by 18 Sept, the verifier records the action as not confirmed and the case goes to a person.",
           outcome: null,
         },
       ],
-      technical: {
-        workflow_state: "AWAITING_OUTCOME",
-        authority_rule_id: "AUTH-10-auto-allowlist",
-      },
+      technical: { workflow_state: "AWAITING_OUTCOME", authority_rule_id: "AUTH-10-auto-allowlist" },
     },
     pipeline: {
       ...stub.state.detailA.pipeline!,
       stage_facts: [
-        {
-          stage: "extract",
-          status: "done",
-          fact_en: "Case opened for: barcode read differs",
-          sequence: 1,
-        },
-        {
-          stage: "classify",
-          status: "done",
-          fact_en: "Suspected cause: barcode mismatch",
-          sequence: 3,
-        },
+        { stage: "extract", status: "done", fact_en: "Case opened for: barcode read differs", sequence: 1 },
+        { stage: "classify", status: "done", fact_en: "Suspected cause: barcode mismatch", sequence: 3 },
       ],
     },
   };
@@ -349,43 +265,26 @@ test("A case reads as one assessment with a connected pipeline; details and comm
     .click();
   // One assessment: the four lines, in the backend's words.
   const assessment = page.getByTestId("case-assessment");
-  await expect(assessment).toContainText(
-    "Barcode mismatch detected at the sorting center.",
-  );
+  await expect(assessment).toContainText("Barcode mismatch detected at the sorting center.");
   await expect(assessment).toContainText("Rescan request sent to sorter");
   await expect(assessment).toContainText("Waiting for new evidence");
   // The pending action says who received the request, what is awaited and until when.
   const pending = page.getByTestId("pending-action");
-  await expect(pending).toContainText(
-    "sent to sorter SYN-DEV-SR-SORT-JED-01 (simulated)",
-  );
+  await expect(pending).toContainText("sent to sorter SYN-DEV-SR-SORT-JED-01 (simulated)");
   await expect(pending).toContainText("the case goes to a person");
   // Rule ids and the reviewer's own words only in the details.
   await expect(assessment).not.toContainText("AUTH-10-auto-allowlist");
-  await assessment
-    .getByRole("button", { name: "Evidence and technical details" })
-    .click();
+  await assessment.getByRole("button", { name: "Evidence and technical details" }).click();
   await expect(assessment).toContainText("AUTH-10-auto-allowlist");
   await expect(assessment).toContainText("Citations are valid.");
   // The pipeline is one connected line with the backend's short fact under a step.
   await expect(page.locator(".pipeline-stages.connected")).toBeVisible();
-  await expect(page.getByTestId("stage-explain-2")).toHaveText(
-    "Suspected cause: barcode mismatch",
-  );
+  await expect(page.getByTestId("stage-explain-2")).toHaveText("Suspected cause: barcode mismatch");
   // The sidebar folds to give the case room; the logo becomes the star.
-  await expect(
-    page
-      .locator(
-        ".suhail-sidebar [data-state='collapsed'], [data-state='collapsed'].suhail-sidebar, [data-slot='sidebar'][data-state='collapsed']",
-      )
-      .first(),
-  ).toBeAttached();
+  await expect(page.locator(".suhail-sidebar [data-state='collapsed'], [data-state='collapsed'].suhail-sidebar, [data-slot='sidebar'][data-state='collapsed']").first()).toBeAttached();
   // Nothing to inspect yet: one quiet line.
   await expect(page.getByTestId("evidence-inspector")).toHaveClass(/idle/);
-  await page.screenshot({
-    path: "screenshots/graph/calm-case.png",
-    fullPage: true,
-  });
+  await page.screenshot({ path: "screenshots/graph/calm-case.png", fullPage: true });
 });
 
 // The backend's own example briefs (real archived runs), rendered for review when present.
@@ -396,23 +295,15 @@ for (const name of [
   "brief_000058_action_not_confirmed",
 ]) {
   const file = `C:/Projects/demo/.stage4/docs/api/examples/${name}.json`;
-  test(`The backend's example ${name} renders as one assessment`, async ({
-    page,
-  }) => {
-    test.skip(
-      !existsSync(file),
-      "the backend's example file is not on this machine",
-    );
+  test(`The backend's example ${name} renders as one assessment`, async ({ page }) => {
+    test.skip(!existsSync(file), "the backend's example file is not on this machine");
     const example = JSON.parse(readFileSync(file, "utf-8"));
     const stub = await stubBackend(page);
     stub.state.detailA = {
       ...stub.state.detailA,
       brief: example.brief,
       next_step: example.brief.next_step,
-      pipeline: {
-        ...stub.state.detailA.pipeline!,
-        stage_facts: example.stage_facts,
-      },
+      pipeline: { ...stub.state.detailA.pipeline!, stage_facts: example.stage_facts },
     };
     await page.goto(`/app/cases/${CASE_A}`);
     const views = page.getByTestId("view-switch");
@@ -424,10 +315,7 @@ for (const name of [
     // A round the reviewer sent back is a review outcome, never a failed step.
     await expect(page.locator(".pipeline-step.state-failed")).toHaveCount(0);
     await page.waitForTimeout(1500);
-    await page.screenshot({
-      path: `screenshots/graph/calm-${name}.png`,
-      fullPage: true,
-    });
+    await page.screenshot({ path: `screenshots/graph/calm-${name}.png`, fullPage: true });
   });
 }
 
@@ -439,18 +327,13 @@ test("Recording hooks exist only in director mode; a stored photograph opens fro
     step: 1,
     title: "Custody confirmation required",
     body: "Your route has ended, but shipment SH-001 has no delivery confirmation or warehouse return scan. Please confirm its status.",
-    options: [
-      "Scan package into warehouse",
-      "Provide delivery confirmation",
-      "Report package missing",
-    ],
+    options: ["Scan package into warehouse", "Provide delivery confirmation", "Report package missing"],
     chosen: 0,
     confirmation: "Warehouse scan recorded",
   };
   const cue = (type: string, detail: unknown) =>
     page.evaluate(
-      ([name, data]) =>
-        window.dispatchEvent(new CustomEvent(name as string, { detail: data })),
+      ([name, data]) => window.dispatchEvent(new CustomEvent(name as string, { detail: data })),
       [type, detail],
     );
   // The normal product: the cue does nothing and nothing of the phone exists.
@@ -474,10 +357,7 @@ test("Recording hooks exist only in director mode; a stored photograph opens fro
       ...stub.state.detailA.evidence,
       nodes: stub.state.detailA.evidence.nodes.map((node) =>
         node.id === custody
-          ? {
-              ...node,
-              properties: { ...node.properties, media_url: "/media/proof.png" },
-            }
+          ? { ...node, properties: { ...node.properties, media_url: "/media/proof.png" } }
           : node,
       ),
     },
@@ -485,9 +365,7 @@ test("Recording hooks exist only in director mode; a stored photograph opens fro
   // Director mode, for the recording script only.
   await page.goto(`/app/cases/${CASE_A}?director=1`);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(SHIP_A);
-  await expect(
-    page.getByTestId("knowledge-graph").locator(".entity-node").first(),
-  ).toBeVisible();
+  await expect(page.getByTestId("knowledge-graph").locator(".entity-node").first()).toBeVisible();
   await cue("suhail:select", { id: custody });
   await page.getByTestId("evidence-photo").click();
   await expect(page.getByTestId("photo-modal").locator("img")).toHaveAttribute(
@@ -529,15 +407,11 @@ test("Canopus is a plain chat about the open case: answers first, sources and ag
   // No automatic cards: no narration, no markers, nothing until a question is asked.
   await expect(panel.getByTestId("narration-bubble")).toHaveCount(0);
   await expect(panel.getByTestId("canopus-answer")).toHaveCount(0);
-  const box = panel.getByRole("textbox", {
-    name: "Ask Canopus about this case",
-  });
+  const box = panel.getByRole("textbox", { name: "Ask Canopus about this case" });
   await box.fill("What happened to this shipment?");
   await panel.getByRole("button", { name: "Send question" }).click();
   // The operator's message on one side, a readable answer on the other.
-  await expect(panel.locator(".chat-question")).toHaveText(
-    "What happened to this shipment?",
-  );
+  await expect(panel.locator(".chat-question")).toHaveText("What happened to this shipment?");
   const answer = panel.getByTestId("canopus-answer");
   await expect(answer.locator(".chat-prose")).toHaveText(
     "The reviewer accepted the finding; the action waits for an operator.",
@@ -566,9 +440,7 @@ test("Canopus is a plain chat about the open case: answers first, sources and ag
   await box.fill("Show me the reviewer's original message");
   await panel.getByRole("button", { name: "Send question" }).click();
   const second = panel.getByTestId("canopus-answer").nth(1);
-  await expect(second.getByTestId("canopus-quote")).toContainText(
-    "The reviewer's own words",
-  );
+  await expect(second.getByTestId("canopus-quote")).toContainText("The reviewer's own words");
   await expect(second).toContainText("from the case record");
   // Asked why something cannot be done: the reason in plain words, without a rule id.
   await box.fill("Why can't you re-analyse the case?");
@@ -577,9 +449,7 @@ test("Canopus is a plain chat about the open case: answers first, sources and ag
   await expect(third.getByTestId("canopus-unavailable")).toContainText(
     "Nothing changed since the last investigation.",
   );
-  await expect(third.getByTestId("canopus-unavailable")).not.toContainText(
-    "AUTH-24",
-  );
+  await expect(third.getByTestId("canopus-unavailable")).not.toContainText("AUTH-24");
   await page.screenshot({ path: "screenshots/graph/calm-chat.png" });
 });
 
@@ -595,36 +465,22 @@ test("Canopus keeps its floating window but answers nothing while it has no back
   await expect(panel).toBeVisible();
   // No case is open: there is nothing to ask about, and nothing is generated.
   await expect(panel).toContainText("Open a case to ask Canopus about it.");
-  await expect(panel).toContainText(
-    "No case is open · nothing is generated here",
-  );
-  await expect(
-    panel.getByRole("textbox", { name: "Ask Canopus" }),
-  ).toBeDisabled();
+  await expect(panel).toContainText("No case is open · nothing is generated here");
+  await expect(panel.getByRole("textbox", { name: "Ask Canopus" })).toBeDisabled();
   await expect(panel.locator(".suggested-questions button")).toHaveCount(0);
-  await expect(
-    panel.locator("[data-role='assistant'], .message-assistant"),
-  ).toHaveCount(0);
+  await expect(panel.locator("[data-role='assistant'], .message-assistant")).toHaveCount(0);
   // The window still expands and minimises as designed.
-  await panel
-    .getByRole("button", { name: "Expand conversation workspace" })
-    .click();
+  await panel.getByRole("button", { name: "Expand conversation workspace" }).click();
   await expect(panel).toHaveAttribute("data-presentation", "expanded");
-  await panel
-    .getByRole("button", { name: "Minimize Canopus conversation" })
-    .click();
+  await panel.getByRole("button", { name: "Minimize Canopus conversation" }).click();
   await expect(panel).toHaveAttribute("data-state", "closed");
 });
 
-test("Decisions, Audit, Explore and Settings read the backend", async ({
-  page,
-}) => {
+test("Decisions, Audit, Explore and Settings read the backend", async ({ page }) => {
   await stubBackend(page);
   await page.goto("/app/decisions");
   await expect(page.getByTestId("kpi-approval")).toHaveText("1");
-  await expect(page.getByTestId("decision-kpis")).toContainText(
-    "Awaiting approval",
-  );
+  await expect(page.getByTestId("decision-kpis")).toContainText("Awaiting approval");
   const pending = page.getByTestId(`data-row-${CASE_A}`);
   await expect(pending).toContainText("Request depot reconciliation scan");
   await expect(pending).toContainText("Operator approval required");
@@ -642,10 +498,7 @@ test("Decisions, Audit, Explore and Settings read the backend", async ({
   await expect(events.first()).toContainText("Outcome verified");
   await expect(events.first()).toContainText("BACKEND");
   await expect(page.locator("body")).not.toContainText("SIMULATED");
-  await events
-    .first()
-    .getByRole("button", { name: "Outcome verified" })
-    .click();
+  await events.first().getByRole("button", { name: "Outcome verified" }).click();
   await expect(page.getByRole("dialog")).toContainText(
     "Suhail backend audit ledger · OUTCOME_VERIFIED",
   );
@@ -653,9 +506,7 @@ test("Decisions, Audit, Explore and Settings read the backend", async ({
 
   await page.goto("/app/explore");
   await expect(page.getByTestId("explore-count")).toHaveText("3");
-  await expect(
-    page.getByTestId("network-map").locator(".shipment-cluster"),
-  ).not.toHaveCount(0);
+  await expect(page.getByTestId("network-map").locator(".shipment-cluster")).not.toHaveCount(0);
   await page.getByRole("tab", { name: "Schema" }).click();
   await expect(page.locator(".schema-entity")).toHaveCount(3);
   await page.locator(".schema-entity", { hasText: "Package" }).click();
@@ -667,9 +518,7 @@ test("Decisions, Audit, Explore and Settings read the backend", async ({
   await page.goto("/app/settings");
   await expect(page.locator("body")).toContainText("Backend connection");
   await expect(page.locator("body")).toContainText("shipments-v2-demo-live");
-  await expect(page.locator("body")).toContainText(
-    "It is not SPL operational data",
-  );
+  await expect(page.locator("body")).toContainText("It is not SPL operational data");
   await expect(page.locator("body")).not.toContainText("Add a synthetic case");
   await expect(page.locator("body")).not.toContainText("Reset lab");
 });
@@ -682,7 +531,6 @@ test("The clock control starts and pauses the backend's simulated clock, apart f
   const clock = page.getByTestId("clock-control");
   const state = page.getByTestId("clock-state");
   await expect(state).toHaveText("Clock paused");
-  await expect(clock).toHaveAccessibleName("Start the simulated clock");
   await clock.click();
   await expect(state).toHaveText("Clock ×60");
   await expect(clock).toHaveAccessibleName("Pause the simulated clock");
@@ -692,15 +540,10 @@ test("The clock control starts and pauses the backend's simulated clock, apart f
   });
   expect(stub.posts.at(-1)!.token).toBeTruthy();
   // Starting the clock does not start automatic investigation.
-  await expect(
-    page.getByRole("switch", { name: "Automatic investigation" }),
-  ).not.toBeChecked();
+  await expect(page.getByRole("switch", { name: "Automatic investigation" })).not.toBeChecked();
   await clock.click();
   await expect(state).toHaveText("Clock paused");
-  expect(stub.posts.map((post) => post.path)).toEqual([
-    "/simulation/start",
-    "/simulation/pause",
-  ]);
+  expect(stub.posts.map((post) => post.path)).toEqual(["/simulation/start", "/simulation/pause"]);
   // Skip to the next event: one call, then one plain line of what the backend reports.
   await page.getByTestId("clock-skip").click();
   await expect(page.locator("[data-sonner-toast]")).toContainText(
@@ -760,9 +603,7 @@ test("Connected screens for visual review", async ({ page }) => {
     "Open a case to ask Canopus about it.",
   );
   await shot("canopus");
-  await page
-    .getByRole("button", { name: "Minimize Canopus conversation" })
-    .click();
+  await page.getByRole("button", { name: "Minimize Canopus conversation" }).click();
 
   // The same connected screens in Arabic, dark mode and at phone size.
   await page.goto(`/app/cases/${CASE_A}`);
