@@ -1,4 +1,5 @@
-import type { OperationalCase, Priority } from "@/domain/types";
+import type { CaseStatus, OperationalCase, Priority } from "@/domain/types";
+import { statusLabels } from "@/domain/types";
 import { caseQueueGroup } from "@/domain/investigation-workspace";
 
 /**
@@ -49,6 +50,16 @@ export const EVIDENCE_STATES = new Set([
   "AWAITING_OUTCOME",
 ]);
 
+const LAB_STATUS_AR: Record<CaseStatus, string> = {
+  queued: "في الانتظار",
+  investigating: "قيد التحقيق",
+  human_review: "بانتظار الموافقة",
+  needs_evidence: "يتطلب أدلة",
+  executing: "قيد التنفيذ",
+  verifying: "التحقق من النتيجة",
+  escalated: "تم التصعيد",
+  resolved: "تم الحل",
+};
 const STEP_LABELS: Record<string, [string, string]> = {
   NONE: ["No action needed", "لا إجراء مطلوب"],
   START_INVESTIGATION: ["Investigate", "التحقيق"],
@@ -110,6 +121,13 @@ export function nextActionOf(c: OperationalCase): {
   actor: "operator" | "system" | "none" | null;
   pending: boolean;
 } {
+  // Lab fixtures have no backend lifecycle: their simulated status is the next action.
+  if (!c.backend)
+    return {
+      label: [statusLabels[c.status], LAB_STATUS_AR[c.status]],
+      actor: null,
+      pending: c.status === "queued",
+    };
   const step = c.backend?.nextStep;
   const state = c.backend?.workflowState;
   if (step && STEP_LABELS[step.code])
